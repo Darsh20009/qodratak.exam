@@ -52,29 +52,32 @@ export const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
           <ul className="space-y-2">
             {navItems.map((item) => (
               <li key={item.href}>
-                <Link href={item.href}>
-                  <div className={cn(
+                {/* Use the div as a clickable element with onClick to navigate */}
+                <div 
+                  onClick={() => window.location.href = item.href}
+                  className={cn(
                     "flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium cursor-pointer",
                     location === item.href 
                       ? "bg-primary text-primary-foreground" 
                       : "hover:bg-muted/50"
-                  )}>
-                    <item.icon className="h-5 w-5" />
-                    <span>{item.name}</span>
-                  </div>
-                </Link>
+                  )}
+                >
+                  <item.icon className="h-5 w-5" />
+                  <span>{item.name}</span>
+                </div>
               </li>
             ))}
           </ul>
         </nav>
         <Separator />
         <div className="p-4">
-          <Link href="/profile">
-            <div className="flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium hover:bg-muted/50 cursor-pointer">
-              <UserIcon className="h-5 w-5" />
-              <span>{userName || "تسجيل الدخول"}</span>
-            </div>
-          </Link>
+          <div 
+            onClick={() => window.location.href = "/profile"}
+            className="flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium hover:bg-muted/50 cursor-pointer"
+          >
+            <UserIcon className="h-5 w-5" />
+            <span>{userName || "تسجيل الدخول"}</span>
+          </div>
         </div>
       </div>
 
@@ -82,17 +85,19 @@ export const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
       <div className="fixed bottom-0 left-0 right-0 z-50 bg-white dark:bg-gray-800 border-t dark:border-gray-700 md:hidden">
         <nav className="flex justify-around items-center h-16">
           {navItems.map((item) => (
-            <Link key={item.href} href={item.href}>
-              <div className={cn(
+            <div 
+              key={item.href}
+              onClick={() => window.location.href = item.href}
+              className={cn(
                 "flex flex-col items-center justify-center p-2 rounded-md cursor-pointer",
                 location === item.href 
                   ? "text-primary" 
                   : "text-muted-foreground"
-              )}>
-                <item.icon className="h-5 w-5" />
-                <span className="text-xs">{item.name}</span>
-              </div>
-            </Link>
+              )}
+            >
+              <item.icon className="h-5 w-5" />
+              <span className="text-xs">{item.name}</span>
+            </div>
           ))}
         </nav>
       </div>
@@ -103,11 +108,12 @@ export const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
         <header className="bg-white dark:bg-gray-800 border-b dark:border-gray-700 md:hidden">
           <div className="flex items-center justify-between p-4">
             <h1 className="text-xl font-bold text-primary">قدراتي</h1>
-            <Link href="/profile">
-              <div className="p-2 cursor-pointer">
-                <UserIcon className="h-5 w-5" />
-              </div>
-            </Link>
+            <div 
+              onClick={() => window.location.href = "/profile"}
+              className="p-2 cursor-pointer"
+            >
+              <UserIcon className="h-5 w-5" />
+            </div>
           </div>
         </header>
 

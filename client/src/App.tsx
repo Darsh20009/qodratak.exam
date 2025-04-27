@@ -18,11 +18,11 @@ import {
 import { cn } from "@/lib/utils";
 import { useState, useEffect } from "react";
 import AskQuestionPage from "@/pages/AskQuestionPage";
+import ProfilePage from "@/pages/ProfilePage";
 
 // Create new page components (these will be implemented soon)
 const QiyasTests = () => <div className="container py-8"><h1 className="text-3xl font-bold mb-4">اختبارات قياس</h1><p>سيتم تنفيذ هذه الصفحة قريباً</p></div>
 const AbilitiesTest = () => <div className="container py-8"><h1 className="text-3xl font-bold mb-4">اختبر قدراتك</h1><p>سيتم تنفيذ هذه الصفحة قريباً</p></div>
-const Profile = () => <div className="container py-8"><h1 className="text-3xl font-bold mb-4">الملف الشخصي</h1><p>سيتم تنفيذ هذه الصفحة قريباً</p></div>
 
 function MainLayout({ children }: { children: React.ReactNode }) {
   const [location] = useLocation();
@@ -149,7 +149,7 @@ function Router() {
         {() => <MainLayout><div className="container py-8"><h1 className="text-3xl font-bold mb-4">المكتبة</h1><p>سيتم تنفيذ هذه الصفحة قريباً</p></div></MainLayout>}
       </Route>
       <Route path="/profile">
-        {() => <MainLayout><Profile /></MainLayout>}
+        {() => <MainLayout><ProfilePage /></MainLayout>}
       </Route>
       {/* Fallback to 404 */}
       <Route>
