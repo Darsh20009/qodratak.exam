@@ -1,0 +1,982 @@
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ذكائي - مساعدك الشخصي (واجهة)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="">
+<link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700&amp;display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<style>
+    /* --- تصميم القائمة المنسدلة --- */
+    .dropdown {
+        position: relative;
+        display: inline-block;
+    }
+
+    .dropdown-content {
+        display: none;
+        position: absolute;
+        left: 0;
+        background-color: var(--widget-bg);
+        min-width: 160px;
+        box-shadow: 0 8px 16px rgba(0,0,0,0.2);
+        border-radius: 8px;
+        z-index: 1;
+        border: 1px solid var(--widget-border);
+    }
+
+    .dropdown-content.show {
+        display: block;
+    }
+
+    .chat-history-item {
+        color: var(--widget-text);
+        padding: 12px 16px;
+        text-decoration: none;
+        display: block;
+        transition: background-color 0.3s;
+    }
+
+    .chat-history-item:hover {
+        background-color: var(--widget-msg-assistant-bg);
+    }
+
+    /* --- متغيرات CSS للثيمات --- */
+    :root {
+        --primary-color: #6a11cb;
+        --secondary-color: #2575fc;
+        --gradient-primary: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+        --gradient-secondary: linear-gradient(135deg, var(--secondary-color), var(--primary-color));
+        --font-main: 'Cairo', sans-serif;
+
+        /* Light Mode */
+        --widget-bg-light: rgba(255, 255, 255, 0.95);
+        --widget-header-bg-light: var(--gradient-primary);
+        --widget-header-text-light: #ffffff;
+        --widget-text-light: #333333;
+        --widget-input-bg-light: #ffffff;
+        --widget-input-border-light: #e0e0e0;
+        --widget-msg-user-bg-light: var(--gradient-secondary);
+        --widget-msg-user-text-light: #ffffff;
+        --widget-msg-assistant-bg-light: #f4f6f8;
+        --widget-msg-assistant-text-light: #333333;
+        --widget-shadow-light: rgba(0, 91, 179, 0.3);
+        --widget-border-light: rgba(0, 0, 0, 0.1);
+        --widget-muted-text-light: #6c757d;
+
+
+        /* Dark Mode Defaults */
+        --widget-bg-dark: rgba(30, 30, 30, 0.95);
+        --widget-header-bg-dark: linear-gradient(135deg, #1e1e1e, #2c2c2c); /* Dark gradient */
+        --widget-header-text-dark: #e0e0e0;
+        --widget-text-dark: #e0e0e0;
+        --widget-input-bg-dark: #2c2c2c;
+        --widget-input-border-dark: #444444;
+        --widget-msg-user-bg-dark: var(--gradient-secondary); /* Keep user message vibrant */
+        --widget-msg-user-text-dark: #ffffff;
+        --widget-msg-assistant-bg-dark: #3a3a3a;
+        --widget-msg-assistant-text-dark: #e0e0e0;
+        --widget-shadow-dark: rgba(255, 255, 255, 0.1);
+        --widget-border-dark: rgba(255, 255, 255, 0.15);
+         --widget-muted-text-dark: #adb5bd;
+
+        /* Applied Variables */
+        --widget-bg: var(--widget-bg-light);
+        --widget-header-bg: var(--widget-header-bg-light);
+        --widget-header-text: var(--widget-header-text-light);
+        --widget-text: var(--widget-text-light);
+        --widget-input-bg: var(--widget-input-bg-light);
+        --widget-input-border: var(--widget-input-border-light);
+        --widget-msg-user-bg: var(--widget-msg-user-bg-light);
+        --widget-msg-user-text: var(--widget-msg-user-text-light);
+        --widget-msg-assistant-bg: var(--widget-msg-assistant-bg-light);
+        --widget-msg-assistant-text: var(--widget-msg-assistant-text-light);
+        --widget-shadow: var(--widget-shadow-light);
+        --widget-border: var(--widget-border-light);
+        --widget-muted-text: var(--widget-muted-text-light);
+    }
+
+    /* --- Dark Mode Styles for Widget --- */
+    .chatbot-window.dark-mode {
+         --widget-bg: var(--widget-bg-dark);
+         --widget-header-bg: var(--widget-header-bg-dark);
+         --widget-header-text: var(--widget-header-text-dark);
+         --widget-text: var(--widget-text-dark);
+         --widget-input-bg: var(--widget-input-bg-dark);
+         --widget-input-border: var(--widget-input-border-dark);
+         --widget-msg-user-bg: var(--widget-msg-user-bg-dark);
+         --widget-msg-user-text: var(--widget-msg-user-text-dark);
+         --widget-msg-assistant-bg: var(--widget-msg-assistant-bg-dark);
+         --widget-msg-assistant-text: var(--widget-msg-assistant-text-dark);
+         --widget-shadow: var(--widget-shadow-dark);
+         --widget-border: var(--widget-border-dark);
+         --widget-muted-text: var(--widget-muted-text-dark);
+    }
+
+    /* --- إعادة ضبط وتحسينات أساسية --- */
+    * {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+        font-family: var(--font-main);
+        transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease; /* Smooth transitions */
+    }
+
+    /* --- حاوية الشات بوت الرئيسية --- */
+    .chatbot-container {
+        position: fixed;
+        bottom: 20px;
+        left: 20px; /* Adjusted from right for RTL consistency if needed, otherwise keep right */
+        /* right: 20px; */
+        z-index: 1000;
+    }
+
+    /* --- زر فتح/إغلاق الشات بوت --- */
+    .chatbot-toggle {
+        width: 60px;
+        height: 60px;
+        border-radius: 50%;
+        background: var(--gradient-primary);
+        color: white;
+        border: none;
+        cursor: pointer;
+        box-shadow: 0 8px 25px var(--widget-shadow);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 26px;
+        transition: all 0.4s cubic-bezier(0.68, -0.55, 0.27, 1.55);
+        animation: pulse-glow 2.5s infinite ease-in-out;
+    }
+
+    .chatbot-toggle:hover {
+        transform: scale(1.1) rotate(-10deg);
+    }
+
+    @keyframes pulse-glow {
+         0% { transform: scale(1); box-shadow: 0 8px 25px var(--widget-shadow); }
+         50% { transform: scale(1.05); box-shadow: 0 12px 35px var(--widget-shadow); }
+         100% { transform: scale(1); box-shadow: 0 8px 25px var(--widget-shadow); }
+    }
+
+    /* --- نافذة الشات بوت --- */
+    .chatbot-window {
+        width: 370px;
+        height: 580px;
+        background-color: var(--widget-bg);
+        backdrop-filter: blur(15px);
+        -webkit-backdrop-filter: blur(15px);
+        border-radius: 20px;
+        box-shadow: 0 10px 40px var(--widget-shadow);
+        overflow: hidden;
+        display: none;
+        flex-direction: column;
+        position: absolute;
+        bottom: 90px;
+        left: 0;
+        border: 1px solid var(--widget-border);
+        opacity: 0;
+        transform: translateY(20px) scale(0.98);
+        transform-origin: bottom left;
+        transition: all 0.4s ease-out;
+    }
+
+    .chatbot-window.expanded {
+        width: 90vw;
+        height: 90vh;
+        bottom: 5vh;
+        left: 5vw;
+    }
+
+    .chatbot-window.active {
+        display: flex;
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
+
+    /* --- رأس نافذة الشات --- */
+    .chatbot-header {
+        background: var(--widget-header-bg);
+        color: var(--widget-header-text);
+        padding: 15px 20px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.1); /* Keep a subtle border */
+        flex-shrink: 0;
+    }
+
+    .chatbot-title {
+        font-weight: 700;
+        font-size: 1.2rem;
+    }
+
+    .header-controls {
+        display: flex;
+        align-items: center;
+        gap: 15px;
+    }
+
+    #widgetDarkModeToggle {
+        background: none;
+        border: none;
+        color: rgba(255, 255, 255, 0.8); /* Lighter color for visibility */
+        font-size: 1.3rem; /* Slightly smaller */
+        cursor: pointer;
+        transition: color 0.3s ease;
+        padding: 0;
+         line-height: 1;
+    }
+    #widgetDarkModeToggle:hover {
+        color: var(--widget-header-text);
+    }
+    /* Ensure dark mode toggle icon uses header text color in dark mode */
+    .dark-mode #widgetDarkModeToggle {
+         color: rgba(224, 224, 224, 0.8);
+    }
+    .dark-mode #widgetDarkModeToggle:hover {
+         color: var(--widget-header-text);
+    }
+
+
+    .chatbot-close {
+        background: none;
+        border: none;
+        color: rgba(255, 255, 255, 0.8);
+        font-size: 1.6rem;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        padding: 0;
+        line-height: 1;
+    }
+    .chatbot-close:hover {
+        color: var(--widget-header-text);
+        transform: rotate(90deg);
+    }
+
+
+    /* --- منطقة المحتوى الرئيسي (تضم الاسم أو الرسائل) --- */
+    .chatbot-main-content {
+        flex: 1;
+        display: flex; /* Use flex to manage children visibility */
+        flex-direction: column; /* Stack children vertically */
+        overflow: hidden; /* Prevent content overflow issues */
+    }
+
+
+    /* --- قسم إدخال الاسم داخل الواجهة --- */
+    #widget-name-entry {
+        padding: 30px 25px;
+        text-align: center;
+        display: flex; /* Hidden by default via JS */
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        flex: 1; /* Take up available space */
+         background-color: var(--widget-bg); /* Match window background */
+    }
+    #widget-name-entry.hidden {
+        display: none;
+    }
+
+
+    #widget-name-entry h3 {
+        color: var(--primary-color);
+        margin-bottom: 10px;
+        font-weight: 600;
+    }
+     /* Specific color for dark mode title */
+     .dark-mode #widget-name-entry h3 {
+         color: var(--secondary-color);
+     }
+
+
+    #widget-name-entry p {
+        color: var(--widget-muted-text);
+        margin-bottom: 20px;
+        font-size: 0.9rem;
+         line-height: 1.5;
+    }
+
+    #widget-name-entry input {
+        width: 100%;
+        padding: 12px 15px;
+        border: 1px solid var(--widget-input-border);
+        border-radius: 8px;
+        margin-bottom: 15px;
+        font-size: 0.95rem;
+        background-color: var(--widget-input-bg);
+        color: var(--widget-text);
+        outline: none;
+    }
+     #widget-name-entry input:focus {
+         border-color: var(--primary-color);
+         box-shadow: 0 0 0 3px rgba(106, 17, 203, 0.1);
+     }
+      /* Dark mode focus */
+      .dark-mode #widget-name-entry input:focus {
+          box-shadow: 0 0 0 3px rgba(37, 117, 252, 0.15);
+      }
+
+    #widget-name-entry button {
+        background: var(--gradient-primary);
+        color: white;
+        border: none;
+        padding: 10px 25px;
+        border-radius: 8px;
+        cursor: pointer;
+        font-size: 0.95rem;
+        font-weight: 600;
+        transition: all 0.3s ease;
+        width: 100%;
+    }
+     #widget-name-entry button:hover {
+         opacity: 0.9;
+         transform: translateY(-1px);
+     }
+
+     .widget-error-message {
+         color: #e74c3c;
+         font-size: 0.85rem;
+         margin-top: 8px;
+         min-height: 1em;
+     }
+
+    /* --- منطقة عرض الرسائل --- */
+    .chatbot-messages {
+        flex: 1;
+        padding: 20px;
+        overflow-y: auto;
+        display: none; /* Hidden until name is entered */
+        flex-direction: column;
+        gap: 12px;
+        scrollbar-width: thin;
+        scrollbar-color: var(--primary-color) transparent;
+    }
+     .chatbot-messages.visible {
+         display: flex; /* Show when name is entered */
+     }
+
+    .chatbot-messages::-webkit-scrollbar { width: 6px; }
+    .chatbot-messages::-webkit-scrollbar-track { background: transparent; }
+    .chatbot-messages::-webkit-scrollbar-thumb { background-color: var(--primary-color); border-radius: 3px; }
+
+    /* --- تصميم الرسائل (مع المتغيرات) --- */
+    .chatbot-message {
+        max-width: 85%;
+        padding: 10px 18px; /* Adjusted padding */
+        border-radius: 18px;
+        line-height: 1.55;
+        font-size: 0.92rem; /* Adjusted size */
+        position: relative;
+        word-wrap: break-word;
+        box-shadow: 0 3px 8px rgba(0, 0, 0, 0.08);
+        opacity: 0;
+        transform: translateY(10px);
+        animation: fadeInUp 0.4s ease-out forwards;
+    }
+
+    .user-message {
+        background: var(--widget-msg-user-bg);
+        color: var(--widget-msg-user-text);
+        margin-left: auto;
+        border-bottom-right-radius: 8px;
+    }
+
+    .assistant-message {
+        background: var(--widget-msg-assistant-bg);
+        color: var(--widget-msg-assistant-text);
+        margin-right: auto;
+        border-bottom-left-radius: 8px;
+    }
+
+    @keyframes fadeInUp { to { opacity: 1; transform: translateY(0); } }
+
+    /* --- مؤشر الكتابة --- */
+    .typing-indicator {
+        display: flex; align-items: center; gap: 5px; padding: 12px 18px;
+    }
+    .typing-indicator span {
+        width: 7px; height: 7px; background-color: var(--widget-muted-text);
+        border-radius: 50%; animation: typingBounce 1.4s infinite ease-in-out;
+    }
+    .typing-indicator span:nth-child(1) { animation-delay: 0s; }
+    .typing-indicator span:nth-child(2) { animation-delay: 0.2s; }
+    .typing-indicator span:nth-child(3) { animation-delay: 0.4s; }
+    @keyframes typingBounce { 0%, 60%, 100% { transform: scale(0.4); opacity: 0.5; } 30% { transform: scale(1.0); opacity: 1; } }
+
+    /* --- منطقة الإدخال --- */
+    .chatbot-input {
+        padding: 12px 15px; /* Adjusted padding */
+        background-color: var(--widget-input-bg); /* Match input background */
+        border-top: 1px solid var(--widget-input-border);
+        display: none; /* Hidden until name is entered */
+        gap: 10px;
+        align-items: center;
+        flex-shrink: 0;
+    }
+     .chatbot-input.visible {
+         display: flex; /* Show when name is entered */
+     }
+
+    .chatbot-input input {
+        flex: 1;
+        padding: 10px 15px; /* Adjusted padding */
+        border-radius: 20px;
+        border: 1px solid var(--widget-input-border);
+        font-size: 0.95rem;
+        outline: none;
+        background-color: var(--widget-input-bg);
+        color: var(--widget-text);
+    }
+     .chatbot-input input:focus {
+         border-color: var(--primary-color);
+         box-shadow: 0 0 0 3px rgba(106, 17, 203, 0.1);
+     }
+     /* Dark mode focus */
+     .dark-mode .chatbot-input input:focus {
+         box-shadow: 0 0 0 3px rgba(37, 117, 252, 0.15);
+     }
+
+    .chatbot-input button {
+        padding: 8px; /* Adjust padding for icon */
+        width: 38px; height: 38px; /* Adjust size */
+        border-radius: 50%;
+        border: none;
+        background: var(--gradient-primary);
+        color: white;
+        cursor: pointer;
+        font-size: 1rem; /* Adjust icon size */
+        transition: all 0.3s ease;
+        display: flex; justify-content: center; align-items: center;
+    }
+    .chatbot-input button:hover { opacity: 0.9; transform: scale(1.05); }
+    .chatbot-input button:disabled { opacity: 0.5; cursor: not-allowed; }
+
+    /* --- تصميم متجاوب --- */
+    @media (max-width: 480px) {
+        .chatbot-container { bottom: 10px; left: 10px; right: 10px; }
+        .chatbot-toggle { width: 55px; height: 55px; font-size: 24px; }
+        .chatbot-window {
+             width: calc(100vw - 20px); /* Full width minus padding */
+             height: calc(100vh - 80px); /* Adjusted height */
+             bottom: 75px; left: 0; border-radius: 15px;
+             transform-origin: bottom center; /* Adjust transform origin */
+        }
+        .chatbot-header { padding: 12px 15px; }
+         .chatbot-title { font-size: 1.1rem; }
+         .chatbot-close, #widgetDarkModeToggle { font-size: 1.2rem;}
+         .header-controls { gap: 10px; }
+
+        #widget-name-entry { padding: 20px; }
+         #widget-name-entry h3 { font-size: 1.1rem;}
+         #widget-name-entry p { font-size: 0.85rem;}
+
+        .chatbot-messages { padding: 15px; gap: 10px;}
+        .chatbot-message { max-width: 90%; font-size: 0.9rem; padding: 8px 15px;}
+        .chatbot-input { padding: 10px; }
+        .chatbot-input input { padding: 8px 12px; font-size: 0.9rem;}
+        .chatbot-input button { width: 35px; height: 35px; font-size: 0.9rem;}
+    }
+</style>
+
+
+<div class="chatbot-container">
+    <div class="chatbot-window" id="chatbotWindow">
+        <div class="chatbot-header">
+            <div class="chatbot-title" style="cursor: pointer;" onclick="window.location.reload()">ذكائي</div>
+            <div class="header-controls">
+                <button id="changeUserButton" aria-label="تغيير المستخدم" style="background: none; border: none; color: var(--widget-header-text); font-size: 1.2rem; cursor: pointer;">
+                    <i class="fas fa-user-edit"></i>
+                </button>
+                <div class="dropdown">
+                    <button id="newChatButton" aria-label="محادثة جديدة" style="background: none; border: none; color: var(--widget-header-text); font-size: 1.2rem; cursor: pointer;">
+                        <i class="fas fa-plus"></i>
+                    </button>
+                    <div class="dropdown-content" id="chatHistoryDropdown">
+                        <a href="#" class="chat-history-item" data-chat-id="new">محادثة جديدة</a>
+                        
+                    </div>
+                </div>
+                <button id="expandButton" aria-label="تكبير/تصغير النافذة" style="background: none; border: none; color: var(--widget-header-text); font-size: 1.2rem; cursor: pointer;">
+                    <i class="fas fa-expand"></i>
+                </button>
+                <button id="widgetDarkModeToggle" aria-label="تبديل الوضع الداكن/الفاتح">
+                     <i class="fas fa-moon"></i> </button>
+                <button class="chatbot-close" id="chatbotClose" aria-label="إغلاق المحادثة">×</button>
+            </div>
+        </div>
+        <div class="chatbot-main-content">
+            <div id="widget-name-entry">
+                 <h3>مرحباً بك مجدداً!</h3>
+                 <p>لتقديم تجربة أفضل، يرجى إخبارنا باسمك.</p>
+                 <input type="text" id="widgetNameInput" placeholder="اسمك الكريم..." aria-label="أدخل اسمك">
+                 <button id="widgetSubmitNameButton">ابدأ</button>
+                 <p id="widgetNameError" class="widget-error-message"></p>
+             </div>
+             <div class="chatbot-messages" id="chatbotMessages">
+                </div>
+        </div>
+         <div class="chatbot-input" id="chatbotInputArea">
+            <input type="text" id="userInput" placeholder="اكتب سؤالك هنا...">
+            <button id="sendButton" aria-label="إرسال الرسالة"> <i class="fas fa-paper-plane"></i></button>
+        </div>
+    </div>
+    <button class="chatbot-toggle" id="chatbotToggle" aria-label="فتح المحادثة">
+        <i class="fas fa-robot"></i> </button>
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // إضافة وظيفة تكبير/تصغير النافذة
+        const expandButton = document.getElementById('expandButton');
+        expandButton.addEventListener('click', () => {
+            chatbotWindow.classList.toggle('expanded');
+            const isExpanded = chatbotWindow.classList.contains('expanded');
+            expandButton.innerHTML = isExpanded ? '<i class="fas fa-compress"></i>' : '<i class="fas fa-expand"></i>';
+        });
+    // إضافة وظيفة تغيير المستخدم
+    const changeUserButton = document.getElementById('changeUserButton');
+    changeUserButton.addEventListener('click', () => {
+        chatbotMessages.innerHTML = ''; // مسح المحادثة
+        chatInitialized = false;
+        userName = '';
+        localStorage.removeItem('chatUserName'); // حذف الاسم المحفوظ
+        showNameEntryInterface();
+    });
+
+    // إدارة المحادثات السابقة
+    let chatHistory = JSON.parse(localStorage.getItem('chatHistory') || '[]');
+    const chatHistoryDropdown = document.getElementById('chatHistoryDropdown');
+    const newChatButton = document.getElementById('newChatButton');
+
+    function updateChatHistoryDropdown() {
+        chatHistoryDropdown.innerHTML = '<a href="#" class="chat-history-item" data-chat-id="new">محادثة جديدة</a>';
+        chatHistory.forEach((chat, index) => {
+            const chatDate = new Date(chat.date).toLocaleDateString('ar-SA');
+            chatHistoryDropdown.innerHTML += `
+                <a href="#" class="chat-history-item" data-chat-id="${index}">
+                    محادثة ${chatDate}
+                </a>`;
+        });
+    }
+
+    function saveCurrentChat() {
+        if (chatbotMessages.children.length > 0) {
+            const currentChat = {
+                messages: chatbotMessages.innerHTML,
+                date: new Date().toISOString()
+            };
+            chatHistory.push(currentChat);
+            if (chatHistory.length > 5) chatHistory.shift(); // حفظ آخر 5 محادثات فقط
+            localStorage.setItem('chatHistory', JSON.stringify(chatHistory));
+            updateChatHistoryDropdown();
+        }
+    }
+
+    newChatButton.addEventListener('click', (e) => {
+        e.stopPropagation();
+        chatHistoryDropdown.classList.toggle('show');
+        updateChatHistoryDropdown();
+    });
+
+    chatHistoryDropdown.addEventListener('click', (e) => {
+        if (e.target.classList.contains('chat-history-item')) {
+            e.preventDefault();
+            const chatId = e.target.getAttribute('data-chat-id');
+
+            if (chatId === 'new') {
+                saveCurrentChat();
+                chatbotMessages.innerHTML = '';
+                sendInitialWelcomeMessage();
+            } else {
+                saveCurrentChat();
+                const selectedChat = chatHistory[parseInt(chatId)];
+                chatbotMessages.innerHTML = selectedChat.messages;
+            }
+
+            chatHistoryDropdown.classList.remove('show');
+        }
+    });
+
+    // إغلاق القائمة عند النقر خارجها
+    document.addEventListener('click', (e) => {
+        if (!e.target.matches('#newChatButton')) {
+            chatHistoryDropdown.classList.remove('show');
+        }
+    });
+        // --- عناصر الواجهة ---
+        const chatbotWindow = document.getElementById('chatbotWindow');
+        const chatbotToggle = document.getElementById('chatbotToggle');
+        const chatbotClose = document.getElementById('chatbotClose');
+        const chatbotMessages = document.getElementById('chatbotMessages');
+        const chatbotInputArea = document.getElementById('chatbotInputArea');
+        const userInput = document.getElementById('userInput');
+        const sendButton = document.getElementById('sendButton');
+
+        // عناصر إدخال الاسم
+        const widgetNameEntry = document.getElementById('widget-name-entry');
+        const widgetNameInput = document.getElementById('widgetNameInput');
+        const widgetSubmitNameButton = document.getElementById('widgetSubmitNameButton');
+        const widgetNameError = document.getElementById('widgetNameError');
+
+        // عناصر الوضع الليلي
+        const darkModeToggle = document.getElementById('widgetDarkModeToggle');
+        const sunIcon = '<i class="fas fa-sun"></i>';
+        const moonIcon = '<i class="fas fa-moon"></i>';
+
+        let isChatOpen = false;
+        let userName = localStorage.getItem('chatUserName') || ''; // تحميل الاسم المحفوظ
+        let chatInitialized = !!userName; // هل تم إدخال الاسم من قبل؟
+
+         // --- إعداد الوضع الليلي ---
+        function applyTheme(theme) {
+            const isDark = theme === 'dark';
+            chatbotWindow.classList.toggle('dark-mode', isDark);
+            darkModeToggle.innerHTML = isDark ? sunIcon : moonIcon;
+        }
+
+        const savedTheme = localStorage.getItem('widgetTheme') || 'light';
+        applyTheme(savedTheme);
+
+        darkModeToggle.addEventListener('click', () => {
+            const isDarkMode = chatbotWindow.classList.contains('dark-mode');
+            const newTheme = isDarkMode ? 'light' : 'dark';
+            applyTheme(newTheme);
+            localStorage.setItem('widgetTheme', newTheme);
+        });
+
+
+         // --- قاعدة المعرفة (محدثة) ---
+          const knowledgeBase = {
+            "intents": {
+                // أسئلة عامة وترحيب
+                "ترحيب": {
+                    triggers: ["مرحبا", "اهلا", "السلام عليكم", "هاي", "ياهلا", "كيف الحال", "كيفك"],
+                    response: () => {
+                        const greetings = [
+                            `أهلاً بك يا ${userName || 'زائر'}! أنا ذكائي، كيف يمكنني خدمتك اليوم؟`,
+                            `مرحباً ${userName || 'يا صديقي'}! أنا هنا للمساعدة، تفضل بالسؤال.`,
+                            `أهلاً وسهلاً ${userName || 'فيك'}! أنا ذكائي، جاهز للإجابة. ما الذي يدور في ذهنك؟`
+                        ];
+                        return greetings[Math.floor(Math.random() * greetings.length)];
+                    }
+                },
+                "هوية": { triggers: ["من انت", "ما اسمك", "مين انت"], response: "أنا ذكائي، مساعد افتراضي لتقديم المعلومات والمساعدة في مواضيع متنوعة." },
+                "قدرات": { triggers: ["ماذا تستطيع", "ايش تقدر تسوي", "قدراتك", "ساعدني"], response: "يمكنني الإجابة على أسئلتك، شرح المفاهيم، إجراء حسابات بسيطة، إخبارك بالوقت/التاريخ، وتقديم معلومات عامة أو عن البرمجة (خاصة Java). اسألني!" },
+                "شكر": { triggers: ["شكرا", "مشكور", "تسلم", "يعطيك العافية"], response: [`على الرحب والسعة يا ${userName || ''}!`, "العفو! لا تتردد في السؤال.", "خدمتك تسعدني!"] },
+                "وداع": { triggers: ["مع السلامة", "باي", "اشوفك", "في امان الله"], response: [`إلى اللقاء يا ${userName || ''}!`, "مع السلامة!", "في أمان الله!"] },
+                "وقت": { triggers: ["الوقت", "كم الساعة", "الساعه كم"], response: () => `الوقت الآن ${new Date().toLocaleTimeString('ar-SA')}.` },
+                "تاريخ": { triggers: ["التاريخ", "تاريخ اليوم", "اليوم ايش"], response: () => `تاريخ اليوم ${new Date().toLocaleDateString('ar-SA', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}.` },
+                "حساب": { triggers: ["احسب", "ناتج", "عملية حسابية"], response: "أعطني العملية الحسابية البسيطة لأجربها (مثال: احسب 5 * 10)." },
+                "نكتة": { triggers: ["نكتة", "نكته", "ضحكني"], response: ["مرة واحد فتح بقالة سماها (بقالة المستقبل)، سألوه ليش؟ قالهم عشان اللي يشتري بالدين يدفع بكرة!", "ليه الطماطم بتدخل الجنة؟ عشان طول حياتها بتستغفر!", "مرة مدرس رياضة اتجوز مدرسة رياضة، جابوا ولد سموه كابتن!"] },
+                "نصيحة": { triggers: ["نصيحة", "انصحني"], response: ["تعلم شيئاً جديداً كل يوم.", "خذ قسطاً من الراحة.", "لا تخف من الفشل.", `كن لطيفاً ${userName || ''}.`] },
+                "طقس": { triggers: ["الطقس", "حالة الجو"], response: "لا أستطيع الوصول لبيانات الطقس الحية حالياً. جرب تطبيقات الطقس المتخصصة." },
+                "برمجة_عام": { triggers: ["برمجة", "كود", "تطوير"], response: "البرمجة عالم ممتع! هل تهتم بلغة معينة مثل Python, JavaScript, Java, C++؟" },
+                "جافا_ما هي": { triggers: ["جافا", "java", "ايش جافا"], response: "Java لغة برمجة كائنية قوية ومستقلة عن المنصة (تشتغل في كل مكان)." },
+                "جافا_ميزات": { triggers: ["ميزات جافا", "خصائص java"], response: "أهم ميزات Java: كائنية التوجه (OOP)، استقلالية المنصة (JVM)، إدارة الذاكرة التلقائية، تعدد الخيوط، الأمان، ومكتبة غنية." },
+                "جافا_استخدامات": { triggers: ["استخدامات جافا", "اين تستخدم java"], response: "Java مستخدمة في: تطبيقات الويب (Back-end)، أندرويد، أنظمة الشركات، البيانات الضخمة، تطبيقات علمية، وألعاب." },
+                "جافا_تعلم": { triggers: ["تعلم جافا", "كيف اتعلم java"], response: "لتعلم Java ابدأ بالأساسيات ثم الكائنات (OOP). مصادر جيدة: Oracle Docs, Udemy, Coursera, YouTube." },
+                "جافا_اصدارات": { triggers: ["اصدارات جافا", "java versions"], response: "Java لها إصدارات دعم طويل الأمد (LTS) مستقرة مثل 8, 11, 17, 21، وإصدارات أحدث كل 6 أشهر." },
+                "الوحدة": {
+                    triggers: ["اشعر بالوحدة", "انا وحيد", "كيف اتغلب على الوحدة", "مشاعر الوحدة"],
+                    response: [
+                        "الوحدة شعور طبيعي، حاول التواصل مع الأصدقاء والعائلة.",
+                        "جرب الانضمام لنشاطات اجتماعية أو نوادي تهتم بهواياتك.",
+                        "اجعل وقت وحدتك مثمراً بتطوير مهاراتك وهواياتك.",
+                        "تذكر أن الوحدة مؤقتة، وهناك دائماً فرص جديدة للتواصل."
+                    ]
+                },
+                "نصائح_عامة": {
+                    triggers: ["انصحني", "نصيحة", "محتاج نصيحة", "ارشدني"],
+                    response: [
+                        "ابدأ يومك باكراً واجعل لنفسك روتيناً صحياً.",
+                        "لا تقارن نفسك بالآخرين، ركز على تطوير ذاتك.",
+                        "اجعل لنفسك أهدافاً واضحة وخطط لتحقيقها.",
+                        "تعلم شيئاً جديداً كل يوم مهما كان بسيطاً."
+                    ]
+                },
+                "تنظيم_الوقت": {
+                    triggers: ["كيف انظم وقتي", "ادارة الوقت", "تنظيم اليوم", "جدول يومي"],
+                    response: [
+                        "حدد أولوياتك وركز على المهام الأهم أولاً.",
+                        "استخدم تقنية بومودورو: 25 دقيقة عمل و5 دقائق راحة.",
+                        "خطط ليومك مسبقاً واكتب مهامك.",
+                        "قسم المشاريع الكبيرة إلى مهام صغيرة يمكن إنجازها."
+                    ]
+                },
+                "رياضيات_بسيطة": {
+                    triggers: ["احسب", "عملية حسابية", "رياضيات"],
+                    response: "يمكنني مساعدتك في العمليات الحسابية البسيطة. مثال: احسب 5 * 10"
+                },
+                "رياضيات_متقدمة": {
+                    triggers: ["معادلة", "مسألة رياضية", "حل المعادلة"],
+                    response: "للمسائل الرياضية المعقدة، أقترح تقسيمها إلى خطوات بسيطة وحلها خطوة بخطوة."
+                },
+                "تطوير_ذاتي": {
+                    triggers: ["كيف اطور نفسي", "تطوير الذات", "تنمية شخصية"],
+                    response: [
+                        "اقرأ باستمرار في مجالات متنوعة.",
+                        "تعلم مهارات جديدة تفيدك في حياتك وعملك.",
+                        "عمل على تحسين لغتك ومهارات التواصل.",
+                        "مارس الرياضة وحافظ على صحتك."
+                    ]
+                },
+                "تحفيز": {
+                    triggers: ["كيف انجح", "التحفيز", "النجاح", "تشجيع"],
+                    response: [
+                        "النجاح رحلة وليس وجهة، استمتع بكل خطوة.",
+                        "اجعل لنفسك أهدافاً واضحة وقابلة للقياس.",
+                        "تعلم من أخطائك واستمر في المحاولة.",
+                        "احط نفسك بأشخاص إيجابيين وملهمين."
+                    ]
+                },
+                "علاقات": {
+                    triggers: ["علاقات اجتماعية", "صداقة", "تواصل", "مهارات اجتماعية"],
+                    response: [
+                        "كن مستمعاً جيداً للآخرين.",
+                        "أظهر اهتماماً حقيقياً بمن حولك.",
+                        "شارك في النشاطات الاجتماعية.",
+                        "احترم اختلافات الآخرين وتقبلها."
+                    ]
+                },
+                "صحة_نفسية": {
+                    triggers: ["صحة نفسية", "اكتئاب", "قلق", "توتر"],
+                    response: [
+                        "لا تتردد في طلب المساعدة المهنية عند الحاجة.",
+                        "مارس تمارين التنفس والتأمل للتخفيف من التوتر.",
+                        "حافظ على روتين صحي من النوم والطعام.",
+                        "عبر عن مشاعرك بطريقة صحية."
+                    ]
+                },
+                "تعليم": {
+                    triggers: ["دراسة", "تعليم", "مذاكرة", "كيف اذاكر"],
+                    response: [
+                        "قسم وقت المذاكرة إلى فترات قصيرة مع استراحات.",
+                        "استخدم طرق متنوعة للتعلم: قراءة، سمع، تطبيق عملي.",
+                        "اشرح ما تعلمته لغيرك لتثبيت المعلومات.",
+                        "اجعل لنفسك مكاناً هادئاً ومنظماً للدراسة."
+                    ]
+                },
+                "صحة": {
+                    triggers: ["صحة", "رياضة", "تمارين", "تغذية"],
+                    response: [
+                        "مارس الرياضة بانتظام، 30 دقيقة يومياً على الأقل.",
+                        "تناول غذاءً متوازناً وصحياً.",
+                        "احصل على قسط كافٍ من النوم.",
+                        "اشرب كمية كافية من الماء يومياً."
+                    ]
+                },
+                "مال": {
+                    triggers: ["ادارة المال", "توفير", "ميزانية", "استثمار"],
+                    response: [
+                        "ضع ميزانية شهرية وحاول الالتزام بها.",
+                        "ادخر جزءاً من دخلك مهما كان صغيراً.",
+                        "تعلم أساسيات الاستثمار.",
+                        "تجنب المصاريف غير الضرورية."
+                    ]
+                }
+            },
+            "default_response": [
+                "لم أفهم سؤالك تماماً. هل يمكنك إعادة صياغته؟",
+                `عذراً ${userName || ''}، هذا خارج معرفتي الحالية.`,
+                "أحتاج توضيح أكثر لأفهم طلبك."
+            ]
+        };
+
+         // --- وظائف الشات الأساسية ---
+
+        function addMessage(text, sender) {
+            const messageElement = document.createElement('div');
+            messageElement.classList.add('chatbot-message');
+            messageElement.classList.add(sender === 'user' ? 'user-message' : 'assistant-message');
+            messageElement.innerHTML = text;
+            chatbotMessages.appendChild(messageElement);
+            scrollToBottom();
+        }
+
+         function scrollToBottom() {
+             chatbotMessages.scrollTo({ top: chatbotMessages.scrollHeight, behavior: 'smooth' });
+         }
+
+         function getRandomResponse(responses) {
+             let response = Array.isArray(responses)
+                 ? responses[Math.floor(Math.random() * responses.length)]
+                 : responses;
+
+             if (typeof response === 'function') {
+                 response = response(); // Execute function if it's a response generator
+             }
+
+             // Replace placeholder if it exists and userName is available
+              return typeof response === 'string' ? response.replace('${userName}', userName || 'زائر') : response;
+         }
+
+
+         function processUserInput(input) {
+            const normalizedInput = input.toLowerCase().trim().replace(/[؟!,.]/g, '');
+
+            const calcMatch = normalizedInput.match(/احسب\s+(-?\d+(\.\d+)?)\s*([\+\-\*\/])\s*(-?\d+(\.\d+)?)/);
+            if (calcMatch) {
+                // ... (Calculation logic remains the same)
+                 try {
+                     const num1 = parseFloat(calcMatch[1]);
+                     const operator = calcMatch[3];
+                     const num2 = parseFloat(calcMatch[4]);
+                     let result;
+                     switch (operator) {
+                         case '+': result = num1 + num2; break;
+                         case '-': result = num1 - num2; break;
+                         case '*': result = num1 * num2; break;
+                         case '/':
+                             if (num2 === 0) return "لا يمكن القسمة على صفر!";
+                             result = num1 / num2;
+                             break;
+                         default: return "عملية حسابية غير معروفة.";
+                     }
+                     if (result % 1 !== 0) result = result.toFixed(2);
+                      return `يا ${userName || 'عزيزي'}، نتيجة ${num1} ${operator} ${num2} هي ${result}`;
+                 } catch (e) { return "خطأ في الحساب. تأكد من التنسيق."; }
+            }
+
+             let bestMatchIntent = null;
+             let highestPriority = -1;
+
+             for (const intentName in knowledgeBase.intents) {
+                 const intent = knowledgeBase.intents[intentName];
+                 for (const trigger of intent.triggers) {
+                     const lowerTrigger = trigger.toLowerCase();
+                     if (normalizedInput.includes(lowerTrigger)) {
+                         let currentPriority = lowerTrigger.length;
+                         if (currentPriority > highestPriority) {
+                             highestPriority = currentPriority;
+                             bestMatchIntent = intent;
+                         }
+                     }
+                 }
+             }
+
+            return bestMatchIntent
+                 ? getRandomResponse(bestMatchIntent.response)
+                 : getRandomResponse(knowledgeBase.default_response);
+        }
+
+
+        function showTypingIndicator() {
+             if (document.getElementById('typingIndicator')) return;
+             const typingElement = document.createElement('div');
+             typingElement.classList.add('chatbot-message', 'assistant-message', 'typing-indicator');
+             typingElement.id = 'typingIndicator';
+             typingElement.innerHTML = '<span></span><span></span><span></span>';
+             chatbotMessages.appendChild(typingElement);
+             scrollToBottom();
+         }
+
+         function hideTypingIndicator() {
+             const typingElement = document.getElementById('typingIndicator');
+             if (typingElement) chatbotMessages.removeChild(typingElement);
+         }
+
+         function handleSend() {
+             const userText = userInput.value.trim();
+             if (userText) {
+                 userInput.disabled = true;
+                 sendButton.disabled = true;
+                 addMessage(userText, 'user');
+                 userInput.value = '';
+                 showTypingIndicator();
+
+                 setTimeout(() => {
+                     hideTypingIndicator();
+                     const response = processUserInput(userText);
+                     addMessage(response, 'assistant');
+                     userInput.disabled = false;
+                     sendButton.disabled = false;
+                     userInput.focus();
+                 }, 800 + Math.random() * 700);
+             }
+         }
+
+         // --- إدارة حالة الواجهة (الاسم والشات) ---
+         function showChatInterface() {
+             widgetNameEntry.classList.add('hidden');
+             chatbotMessages.classList.add('visible');
+             chatbotInputArea.classList.add('visible');
+             userInput.focus();
+             // إرسال رسالة ترحيب أولية إذا كانت المحادثة فارغة
+             if (chatbotMessages.children.length === 0 || (chatbotMessages.children.length === 1 && chatbotMessages.children[0].id === 'typingIndicator')) {
+                  sendInitialWelcomeMessage();
+             }
+         }
+
+         function showNameEntryInterface() {
+             widgetNameEntry.classList.remove('hidden');
+             chatbotMessages.classList.remove('visible');
+             chatbotInputArea.classList.remove('visible');
+             widgetNameInput.focus();
+         }
+
+         function sendInitialWelcomeMessage() {
+            showTypingIndicator();
+             setTimeout(() => {
+                 hideTypingIndicator();
+                 const initialGreeting = `أهلاً بك يا ${userName}! أنا ذكائي، كيف يمكنني مساعدتك؟`;
+                 addMessage(initialGreeting, 'assistant');
+             }, 600);
+         }
+
+        // --- ربط الأحداث ---
+
+        // فتح وإغلاق الواجهة
+        chatbotToggle.addEventListener('click', () => {
+            isChatOpen = !isChatOpen;
+            chatbotWindow.classList.toggle('active');
+            chatbotToggle.innerHTML = isChatOpen ? '<i class="fas fa-times"></i>' : '<i class="fas fa-robot"></i>'; // تغيير الأيقونة
+
+             if (isChatOpen) {
+                // التحقق مما إذا كان الاسم مطلوبًا
+                 if (!chatInitialized) {
+                     showNameEntryInterface();
+                 } else {
+                     showChatInterface();
+                     // إرسال رسالة ترحيب فقط إذا كانت المحادثة فارغة تماما
+                     if (chatbotMessages.children.length === 0) {
+                        sendInitialWelcomeMessage();
+                     }
+                 }
+             }
+        });
+
+        chatbotClose.addEventListener('click', () => {
+            isChatOpen = false;
+            chatbotWindow.classList.remove('active');
+            chatbotToggle.innerHTML = '<i class="fas fa-robot"></i>';
+        });
+
+        // إرسال الاسم
+        widgetSubmitNameButton.addEventListener('click', () => {
+             const name = widgetNameInput.value.trim();
+             if (name) {
+                 userName = name;
+                 localStorage.setItem('chatUserName', userName); // حفظ الاسم
+                 chatInitialized = true;
+                 widgetNameError.textContent = ''; // مسح أي خطأ سابق
+                 showChatInterface(); // عرض واجهة الشات
+             } else {
+                 widgetNameError.textContent = 'الرجاء إدخال اسمك.';
+             }
+         });
+         widgetNameInput.addEventListener('keypress', (e) => {
+             if (e.key === 'Enter') {
+                 widgetSubmitNameButton.click(); // محاكاة النقر على الزر
+             }
+         });
+
+
+        // إرسال رسالة الشات
+        sendButton.addEventListener('click', handleSend);
+        userInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') handleSend();
+        });
+
+    }); // نهاية DOMContentLoaded
+</script>
