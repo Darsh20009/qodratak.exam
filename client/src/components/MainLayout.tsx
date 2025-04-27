@@ -1,11 +1,5 @@
-import { Switch, Route, Link, useLocation } from "wouter";
-import { queryClient } from "./lib/queryClient";
-import { QueryClientProvider } from "@tanstack/react-query";
-import { Toaster } from "@/components/ui/toaster";
-import { TooltipProvider } from "@/components/ui/tooltip";
-import NotFound from "@/pages/not-found";
-import Home from "@/pages/Home";
-import { ThemeProvider } from "next-themes";
+import React, { useState, useEffect } from "react";
+import { Link, useLocation } from "wouter";
 import { Separator } from "@/components/ui/separator";
 import { 
   BookOpenIcon, 
@@ -13,18 +7,15 @@ import {
   GraduationCapIcon,
   HelpCircleIcon, 
   HomeIcon, 
-  UserIcon
+  UserIcon,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { useState, useEffect } from "react";
 
-// Create new page components (these will be implemented soon)
-const QiyasTests = () => <div className="container py-8"><h1 className="text-3xl font-bold mb-4">اختبارات قياس</h1><p>سيتم تنفيذ هذه الصفحة قريباً</p></div>
-const AbilitiesTest = () => <div className="container py-8"><h1 className="text-3xl font-bold mb-4">اختبر قدراتك</h1><p>سيتم تنفيذ هذه الصفحة قريباً</p></div>
-const AskQuestion = () => <div className="container py-8"><h1 className="text-3xl font-bold mb-4">اسأل سؤال</h1><p>سيتم تنفيذ هذه الصفحة قريباً</p></div>
-const Profile = () => <div className="container py-8"><h1 className="text-3xl font-bold mb-4">الملف الشخصي</h1><p>سيتم تنفيذ هذه الصفحة قريباً</p></div>
+export interface MainLayoutProps {
+  children: React.ReactNode;
+}
 
-function MainLayout({ children }: { children: React.ReactNode }) {
+export const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
   const [location] = useLocation();
   const [userName, setUserName] = useState<string | null>(null);
 
@@ -62,15 +53,15 @@ function MainLayout({ children }: { children: React.ReactNode }) {
             {navItems.map((item) => (
               <li key={item.href}>
                 <Link href={item.href}>
-                  <a className={cn(
-                    "flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium",
+                  <div className={cn(
+                    "flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium cursor-pointer",
                     location === item.href 
                       ? "bg-primary text-primary-foreground" 
                       : "hover:bg-muted/50"
                   )}>
                     <item.icon className="h-5 w-5" />
                     <span>{item.name}</span>
-                  </a>
+                  </div>
                 </Link>
               </li>
             ))}
@@ -79,10 +70,10 @@ function MainLayout({ children }: { children: React.ReactNode }) {
         <Separator />
         <div className="p-4">
           <Link href="/profile">
-            <a className="flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium hover:bg-muted/50">
+            <div className="flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium hover:bg-muted/50 cursor-pointer">
               <UserIcon className="h-5 w-5" />
               <span>{userName || "تسجيل الدخول"}</span>
-            </a>
+            </div>
           </Link>
         </div>
       </div>
@@ -92,15 +83,15 @@ function MainLayout({ children }: { children: React.ReactNode }) {
         <nav className="flex justify-around items-center h-16">
           {navItems.map((item) => (
             <Link key={item.href} href={item.href}>
-              <a className={cn(
-                "flex flex-col items-center justify-center p-2 rounded-md",
+              <div className={cn(
+                "flex flex-col items-center justify-center p-2 rounded-md cursor-pointer",
                 location === item.href 
                   ? "text-primary" 
                   : "text-muted-foreground"
               )}>
                 <item.icon className="h-5 w-5" />
                 <span className="text-xs">{item.name}</span>
-              </a>
+              </div>
             </Link>
           ))}
         </nav>
@@ -127,49 +118,4 @@ function MainLayout({ children }: { children: React.ReactNode }) {
       </div>
     </div>
   );
-}
-
-function Router() {
-  return (
-    <Switch>
-      {/* Main pages */}
-      <Route path="/">
-        {() => <Home />}
-      </Route>
-      <Route path="/qiyas">
-        {() => <MainLayout><QiyasTests /></MainLayout>}
-      </Route>
-      <Route path="/abilities">
-        {() => <MainLayout><AbilitiesTest /></MainLayout>}
-      </Route>
-      <Route path="/ask">
-        {() => <MainLayout><AskQuestion /></MainLayout>}
-      </Route>
-      <Route path="/library">
-        {() => <MainLayout><div className="container py-8"><h1 className="text-3xl font-bold mb-4">المكتبة</h1><p>سيتم تنفيذ هذه الصفحة قريباً</p></div></MainLayout>}
-      </Route>
-      <Route path="/profile">
-        {() => <MainLayout><Profile /></MainLayout>}
-      </Route>
-      {/* Fallback to 404 */}
-      <Route>
-        {() => <MainLayout><NotFound /></MainLayout>}
-      </Route>
-    </Switch>
-  );
-}
-
-function App() {
-  return (
-    <QueryClientProvider client={queryClient}>
-      <ThemeProvider attribute="class">
-        <TooltipProvider>
-          <Toaster />
-          <Router />
-        </TooltipProvider>
-      </ThemeProvider>
-    </QueryClientProvider>
-  );
-}
-
-export default App;
+};
