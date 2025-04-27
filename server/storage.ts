@@ -160,6 +160,17 @@ export interface IStorage {
   createSynonym(synonym: InsertSynonym): Promise<Synonym>;
   getSynonymsByWord(word: string, dialect?: string): Promise<Synonym[]>;
   
+  // Folder operations
+  createFolder(folder: InsertFolder): Promise<Folder>;
+  getFoldersByUser(userId: number): Promise<Folder[]>;
+  getFolderById(id: number): Promise<Folder | undefined>;
+  deleteFolder(id: number): Promise<boolean>;
+  
+  // Folder questions operations
+  addQuestionToFolder(folderQuestion: InsertFolderQuestion): Promise<FolderQuestion>;
+  getQuestionsInFolder(folderId: number): Promise<Question[]>;
+  removeQuestionFromFolder(folderId: number, questionId: number): Promise<boolean>;
+  
   // Initialize with seed data
   seedData(): Promise<void>;
 }

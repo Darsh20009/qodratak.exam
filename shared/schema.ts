@@ -1,4 +1,5 @@
 import { pgTable, text, serial, integer, boolean, jsonb, timestamp, varchar } from "drizzle-orm/pg-core";
+import { relations } from "drizzle-orm";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
@@ -86,6 +87,25 @@ export const synonyms = pgTable("synonyms", {
   dialect: text("dialect").default("standard"),
 });
 
+export const folders = pgTable("folders", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").notNull(),
+  name: text("name").notNull(),
+  description: text("description"),
+  color: text("color").default("#4f46e5"), // Folder color for UI
+  icon: text("icon").default("folder"), // Icon name
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  isDefault: boolean("is_default").default(false), // Whether this is a default folder
+});
+
+export const folderQuestions = pgTable("folder_questions", {
+  id: serial("id").primaryKey(),
+  folderId: integer("folder_id").notNull(),
+  questionId: integer("question_id").notNull(),
+  addedAt: timestamp("added_at").defaultNow().notNull(),
+  notes: text("notes"), // User notes about this question
+});
+
 // Insert schemas
 export const insertUserSchema = createInsertSchema(users).omit({
   id: true,
@@ -126,6 +146,16 @@ export const insertSynonymSchema = createInsertSchema(synonyms).omit({
   id: true,
 });
 
+export const insertFolderSchema = createInsertSchema(folders).omit({
+  id: true,
+  createdAt: true,
+});
+
+export const insertFolderQuestionSchema = createInsertSchema(folderQuestions).omit({
+  id: true,
+  addedAt: true,
+});
+
 // Type definitions
 export type InsertUser = z.infer<typeof insertUserSchema>;
 export type User = typeof users.$inferSelect;
@@ -150,3 +180,35 @@ export type InsertDialect = z.infer<typeof insertDialectSchema>;
 
 export type Synonym = typeof synonyms.$inferSelect;
 export type InsertSynonym = z.infer<typeof insertSynonymSchema>;
+
+export type Folder = typeof folders.$inferSelect;
+export type InsertFolder = z.infer<typeof insertFolderSchema>;
+
+export type FolderQuestion = typeof folderQuestions.$inferSelect;
+export type InsertFolderQuestion = z.infer<typeof insertFolderQuestionSchema>;
+
+// Define relations
+export const usersRelations = relations(users, ({ many }) => ({
+  folders: many(folders),
+  testResults: many(userTestResults),
+  customExams: many(userCustomExams),
+}));
+
+export const foldersRelations = relations(folders, ({ one, many }) => ({
+  user: one(users, {
+    fields: [folders.userId],
+    references: [users.id],
+  }),
+  questions: many(folderQuestions),
+}));
+
+export const folderQuestionsRelations = relations(folderQuestions, ({ one }) => ({
+  folder: one(folders, {
+    fields: [folderQuestions.folderId],
+    references: [folders.id],
+  }),
+  question: one(questions, {
+    fields: [folderQuestions.questionId],
+    references: [questions.id],
+  }),
+}));
