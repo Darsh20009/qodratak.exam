@@ -20,9 +20,8 @@ import { useState, useEffect } from "react";
 import AskQuestionPage from "@/pages/AskQuestionPage";
 import ProfilePage from "@/pages/ProfilePage";
 import AbilitiesTestPage from "@/pages/AbilitiesTestPage";
-
-// Create new page components (these will be implemented soon)
-const QiyasTests = () => <div className="container py-8"><h1 className="text-3xl font-bold mb-4">اختبارات قياس</h1><p>سيتم تنفيذ هذه الصفحة قريباً</p></div>
+import QiyasExamPage from "@/pages/QiyasExamPage";
+import LibraryPage from "@/pages/LibraryPage";
 
 function MainLayout({ children }: { children: React.ReactNode }) {
   const [location] = useLocation();
@@ -137,7 +136,7 @@ function Router() {
         {() => <Home />}
       </Route>
       <Route path="/qiyas">
-        {() => <MainLayout><QiyasTests /></MainLayout>}
+        {() => <MainLayout><QiyasExamPage /></MainLayout>}
       </Route>
       <Route path="/abilities">
         {() => <MainLayout><AbilitiesTestPage /></MainLayout>}
@@ -146,7 +145,7 @@ function Router() {
         {() => <MainLayout><AskQuestionPage /></MainLayout>}
       </Route>
       <Route path="/library">
-        {() => <MainLayout><div className="container py-8"><h1 className="text-3xl font-bold mb-4">المكتبة</h1><p>سيتم تنفيذ هذه الصفحة قريباً</p></div></MainLayout>}
+        {() => <MainLayout><LibraryPage /></MainLayout>}
       </Route>
       <Route path="/profile">
         {() => <MainLayout><ProfilePage /></MainLayout>}

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { Link, useLocation } from "wouter";
+import { useLocation, Link } from "wouter";
 import { Separator } from "@/components/ui/separator";
 import { 
   BookOpenIcon, 
@@ -52,7 +52,6 @@ export const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
           <ul className="space-y-2">
             {navItems.map((item) => (
               <li key={item.href}>
-                {/* Use the div as a clickable element with onClick to navigate */}
                 <div 
                   onClick={() => window.location.href = item.href}
                   className={cn(
