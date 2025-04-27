@@ -387,9 +387,15 @@ export class MemStorage implements IStorage {
 
   // Helper function to extract keywords from text
   private extractKeywords(text: string): string[] {
+    // Check if text is defined and is a string
+    if (!text || typeof text !== 'string') {
+      return []; // Return empty array if text is undefined or not a string
+    }
+    
     // Basic keyword extraction - remove common words and keep meaningful ones
     const stopWords = ["من", "إلى", "على", "في", "هو", "هي", "هم", "أن", "لا", "ما", "مع", "عن", "لم"];
-    const words = text.replace(/[^\u0600-\u06FF\s]/g, '').split(/\s+/);
+    // Use a more flexible regex that handles both Arabic and English text
+    const words = text.replace(/[^\u0600-\u06FF\w\s]/g, '').split(/\s+/);
     const keywords = words
       .filter(word => word.length > 2 && !stopWords.includes(word))
       .map(word => word.trim());
