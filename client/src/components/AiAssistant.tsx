@@ -144,7 +144,12 @@ const AiAssistant: React.FC<AiAssistantProps> = ({
   useEffect(() => {
     const welcomeMessage: MessageType = {
       id: "welcome",
-      text: "مرحبًا بك في مساعد قدراتي! أنا هنا لمساعدتك في العثور على أسئلة مشابهة والإجابة على استفساراتك. كيف يمكنني مساعدتك اليوم؟",
+      text: "أهلاً يا يوسف! أنا مساعد قدراتك. يمكنني مساعدتك في:\n\n" +
+      "• أسئلة القدرات اللفظية (التناظر اللفظي، إكمال الجمل، المتضادات)\n" + 
+      "• أسئلة القدرات الكمية (النسب، المتواليات، الاحتمالات، الهندسة)\n" +
+      "• استراتيجيات المذاكرة والتحضير لاختبار قياس\n" +
+      "• شرح أمثلة محلولة من اختبارات سابقة\n\n" + 
+      "جرب سؤالي عن 'كيفية حل أسئلة التناظر اللفظي' أو 'مثال سؤال قدرات كمي'",
       sender: "assistant",
       timestamp: new Date(),
     };
@@ -168,6 +173,15 @@ const AiAssistant: React.FC<AiAssistantProps> = ({
     try {
       // Check for predefined responses
       let response = checkPredefinedResponses(input);
+      let additionalInfo = "";
+
+      // For all queries related to capabilities or tests, add extra information
+      if (input.includes("قدرات") || /اختبار|امتحان|قياس|كيف|ماذا|مساعد/.test(input)) {
+        additionalInfo = "\n\nإليك بعض المعلومات الإضافية التي قد تفيدك:\n" +
+          "• يمكنني مساعدتك في أسئلة القدرات اللفظية (مثل التناظر اللفظي، إكمال الجمل، المترادفات والمتضادات)\n" +
+          "• يمكنني مساعدتك في أسئلة القدرات الكمية (مثل النسبة والتناسب، المتواليات، نظرية فيثاغورس، الاحتمالات)\n" +
+          "• جرب أن تسألني: 'كيفية حل أسئلة التناظر اللفظي' أو 'نموذج سؤال قدرات كمي'";
+      }
 
       // No predefined response, try to search for related questions
       if (!response) {
@@ -201,6 +215,11 @@ const AiAssistant: React.FC<AiAssistantProps> = ({
         response = generateGenericResponse(input);
       }
 
+      // Add additional info if available
+      if (additionalInfo && !response.includes(additionalInfo)) {
+        response += additionalInfo;
+      }
+
       // Send assistant response
       const assistantMessage: MessageType = {
         id: Date.now().toString(),
@@ -213,10 +232,10 @@ const AiAssistant: React.FC<AiAssistantProps> = ({
     } catch (error) {
       console.error('Error in AI response:', error);
       
-      // Error message
+      // Error message with suggestions
       const errorMessage: MessageType = {
         id: Date.now().toString(),
-        text: "عذرًا، حدث خطأ ما. يرجى المحاولة مرة أخرى.",
+        text: "عذرًا، حدث خطأ ما. يرجى المحاولة مرة أخرى.\n\nيمكنني مساعدتك في العديد من المواضيع المتعلقة باختبار القدرات، مثل أسئلة التناظر اللفظي، إكمال الجمل، المتواليات العددية، النسبة والتناسب، وغيرها. جرب أن تسألني عن 'نموذج سؤال قدرات كمي' أو 'كيفية حل أسئلة التناظر اللفظي'.",
         sender: "assistant",
         timestamp: new Date(),
       };
