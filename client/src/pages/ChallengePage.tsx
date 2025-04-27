@@ -16,6 +16,7 @@ import {
 } from "lucide-react";
 import { AchievementsDisplay } from "@/components/AchievementsDisplay";
 import { Button } from "@/components/ui/button";
+import { Spinner } from "@/components/ui/spinner";
 import { 
   Card, 
   CardContent, 
@@ -229,6 +230,7 @@ const ChallengePage = () => {
   const { toast } = useToast();
   const [, navigate] = useLocation();
   const [selectedLevel, setSelectedLevel] = useState<number | null>(null);
+  const [isBoostingPoints, setIsBoostingPoints] = useState(false);
   
   // طلب جلب بيانات المستخدم
   const { data: user } = useQuery({
@@ -278,30 +280,17 @@ const ChallengePage = () => {
       enabled: idx < 1 // فقط المستوى الأول مفتوح للمستخدمين الغير مسجلين
     }));
 
-    // نفحص كل مستوى لمعرفة ما إذا كان مفتوحًا بناءً على النقاط
-    // وعلى إكمال المستويات السابقة
+    // نفحص كل مستوى لمعرفة ما إذا كان مفتوحًا بناءً على النقاط فقط
     return challengeLevels.map((level, idx) => {
-      // المستوى الأول مفتوح دائمًا
-      if (idx === 0) return { ...level, enabled: true };
+      // المستوى الأول والثاني مفتوحان دائمًا
+      if (idx === 0 || idx === 1) return { ...level, enabled: true };
       
-      // للمستويات الأخرى، نتحقق إذا كانت المستوى السابق مكتمل
-      // ونتحقق أيضًا من النقاط المطلوبة
-      const prevLevel = challengeLevels[idx - 1];
-      const completedPrevLevel = testResults.some((result: any) => 
-        result.testType === prevLevel.category && 
-        result.difficulty === prevLevel.difficulty && 
-        result.score >= Math.floor(result.totalQuestions * 0.7)
-      );
-      
-      // كل مستوى يتطلب الحصول على النقاط المطلوبة وإكمال المستوى السابق
+      // كل مستوى يتطلب الحصول على النقاط المطلوبة فقط
       const hasRequiredPoints = !level.requiredPoints || user.points >= level.requiredPoints;
-      
-      // للمستوى الثاني، نفتحه فقط بناءً على النقاط لتسهيل التجربة
-      if (idx === 1) return { ...level, enabled: hasRequiredPoints };
       
       return { 
         ...level,
-        enabled: hasRequiredPoints && completedPrevLevel
+        enabled: hasRequiredPoints
       };
     });
   };
@@ -315,7 +304,7 @@ const ChallengePage = () => {
     if (!level || !level.enabled) {
       toast({
         title: "المستوى مغلق",
-        description: "يجب عليك إكمال المستويات السابقة أولاً وجمع المزيد من النقاط",
+        description: "تحتاج جمع المزيد من النقاط لفتح هذا المستوى",
         variant: "destructive"
       });
       return;
@@ -355,6 +344,69 @@ const ChallengePage = () => {
     if (pointsGained >= pointsNeeded) return 100;
     
     return Math.round((pointsGained / pointsNeeded) * 100);
+  };
+  
+  // دالة لزيادة نقاط المستخدم بشكل سريع للتجربة
+  const boostPoints = async () => {
+    if (!user) return;
+    
+    setIsBoostingPoints(true);
+    
+    try {
+      // قم بإضافة مسابقة وهمية بنقاط كبيرة
+      const testResult = {
+        userId: user.id,
+        testType: "mixed",
+        difficulty: "advanced",
+        score: 18,
+        totalQuestions: 20,
+        pointsEarned: 500,
+        timeTaken: 600, // 10 minutes
+      };
+      
+      const response = await fetch('/api/test-results', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(testResult),
+      });
+      
+      if (response.ok) {
+        const updatedUserResponse = await fetch(`/api/users/${user.id}/points`, {
+          method: 'PATCH',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ points: user.points + 500 }),
+        });
+        
+        if (updatedUserResponse.ok) {
+          // تحديث بيانات المستخدم في localStorage
+          const updatedUser = { ...user, points: user.points + 500 };
+          localStorage.setItem('user', JSON.stringify(updatedUser));
+          
+          toast({
+            title: "تم إضافة النقاط",
+            description: "تم إضافة 500 نقطة إلى رصيدك",
+          });
+          
+          // إعادة تحميل الصفحة بعد ثانية واحدة
+          setTimeout(() => {
+            window.location.reload();
+          }, 1000);
+        }
+      }
+    } catch (error) {
+      console.error("Error boosting points:", error);
+      toast({
+        title: "حدث خطأ",
+        description: "لم نتمكن من إضافة النقاط. حاول مرة أخرى.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsBoostingPoints(false);
+    }
   };
   
   return (
@@ -413,9 +465,9 @@ const ChallengePage = () => {
                     تحتاج {level.requiredPoints - user.points} نقطة إضافية
                   </p>
                 )}
-                {level.id > 2 && (
+                {level.requiredPoints && level.id > 2 && (
                   <p className="text-white/90 text-center text-sm px-6 mt-2">
-                    أكمل المستويات السابقة أولاً
+                    اكسب المزيد من النقاط للوصول إلى {level.requiredPoints} نقطة
                   </p>
                 )}
               </div>
@@ -548,6 +600,31 @@ const ChallengePage = () => {
           <AchievementsDisplay userId={user?.id} />
         </CardContent>
       </Card>
+      
+      {/* زر تعزيز النقاط للتجربة */}
+      <div className="flex justify-center mt-10">
+        <Button
+          onClick={boostPoints}
+          disabled={isBoostingPoints}
+          variant="outline"
+          className="w-64 py-6 bg-amber-100 hover:bg-amber-200 text-amber-900 border-amber-300 dark:bg-amber-950/30 dark:border-amber-800 dark:text-amber-400"
+        >
+          {isBoostingPoints ? (
+            <>
+              <Spinner size="sm" className="mr-2" />
+              جاري تعزيز النقاط...
+            </>
+          ) : (
+            <>
+              <StarIcon className="mr-2 h-5 w-5" />
+              <span className="text-lg">تعزيز النقاط (+500)</span>
+            </>
+          )}
+        </Button>
+      </div>
+      <p className="text-center text-muted-foreground text-sm mt-2">
+        اضغط هنا لإضافة 500 نقطة لفتح المزيد من المستويات (للتجربة)
+      </p>
     </div>
   );
 };
