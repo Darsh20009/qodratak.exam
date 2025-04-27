@@ -387,10 +387,10 @@ const ChallengePage = () => {
               </thead>
               <tbody>
                 {testResults
-                  .filter(test => test.testType !== "qiyas")
-                  .sort((a, b) => new Date(b.completedAt).getTime() - new Date(a.completedAt).getTime())
+                  .filter((test: any) => test.testType !== "qiyas")
+                  .sort((a: any, b: any) => new Date(b.completedAt).getTime() - new Date(a.completedAt).getTime())
                   .slice(0, 10)
-                  .map((result, index) => (
+                  .map((result: any, index: number) => (
                     <tr key={index} className="border-b dark:border-gray-700 hover:bg-muted/50">
                       <td className="py-3 px-4">
                         {new Date(result.completedAt).toLocaleDateString("ar-SA")}
@@ -404,7 +404,7 @@ const ChallengePage = () => {
                          result.difficulty === "intermediate" ? "متوسط" : "متقدم"}
                       </td>
                       <td className="py-3 px-4">
-                        <Badge variant={result.score / result.totalQuestions >= 0.7 ? "success" : "destructive"}>
+                        <Badge variant={result.score / result.totalQuestions >= 0.7 ? "default" : "destructive"}>
                           {result.score}/{result.totalQuestions}
                         </Badge>
                       </td>

@@ -220,6 +220,51 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
+  // Get user by ID
+  app.get("/api/users/:id", async (req: Request, res: Response) => {
+    try {
+      const userId = parseInt(req.params.id);
+      
+      if (isNaN(userId)) {
+        return res.status(400).json({ message: "Invalid user ID" });
+      }
+      
+      const user = await storage.getUser(userId);
+      if (!user) {
+        return res.status(404).json({ message: "User not found" });
+      }
+      
+      return res.json(user);
+    } catch (error) {
+      console.error("Error fetching user:", error);
+      return res.status(500).json({ message: "Error fetching user" });
+    }
+  });
+  
+  // Update user points
+  app.patch("/api/users/:id/points", async (req: Request, res: Response) => {
+    try {
+      const userId = parseInt(req.params.id);
+      const { points } = req.body;
+      
+      if (isNaN(userId) || typeof points !== 'number') {
+        return res.status(400).json({ message: "Invalid user ID or points value" });
+      }
+      
+      const user = await storage.getUser(userId);
+      if (!user) {
+        return res.status(404).json({ message: "User not found" });
+      }
+      
+      const updatedUser = await storage.updateUserPoints(userId, points);
+      
+      res.status(200).json(updatedUser);
+    } catch (error) {
+      console.error("Error updating user points:", error);
+      return res.status(500).json({ message: "Error updating user points" });
+    }
+  });
+  
   // Folder routes
   app.get("/api/folders/user/:userId", async (req: Request, res: Response) => {
     try {
@@ -339,6 +384,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error removing question from folder:", error);
       res.status(500).json({ message: "Error removing question from folder" });
+    }
+  });
+
+  // Get current user (for auth purposes)
+  app.get("/api/user", async (req: Request, res: Response) => {
+    try {
+      // For demo purposes, we'll use a default user
+      const defaultUser = {
+        id: 1,
+        username: "مستخدم",
+        points: 50,
+        level: 1
+      };
+      
+      res.json(defaultUser);
+    } catch (error) {
+      console.error("Error fetching current user:", error);
+      res.status(500).json({ message: "Error fetching current user" });
     }
   });
 

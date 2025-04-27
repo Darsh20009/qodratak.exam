@@ -50,6 +50,7 @@ function MainLayout({ children }: { children: React.ReactNode }) {
     { name: "الرئيسية", href: "/", icon: HomeIcon },
     { name: "اختبارات قياس", href: "/qiyas", icon: GraduationCapIcon },
     { name: "اختبر قدراتك", href: "/abilities", icon: BrainCircuitIcon },
+    { name: "التحديات", href: "/challenges", icon: GamepadIcon },
     { name: "اسأل سؤال", href: "/ask", icon: HelpCircleIcon },
     { name: "المكتبة", href: "/library", icon: BookOpenIcon },
     { name: "مجلداتي", href: "/folders", icon: FolderIcon },
@@ -167,6 +168,9 @@ function Router() {
       </Route>
       <Route path="/folders">
         {() => <MainLayout><FoldersPage /></MainLayout>}
+      </Route>
+      <Route path="/challenges">
+        {() => <MainLayout><ChallengePage /></MainLayout>}
       </Route>
       {/* Fallback to 404 */}
       <Route>
