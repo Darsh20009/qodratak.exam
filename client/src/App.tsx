@@ -22,6 +22,7 @@ import ProfilePage from "@/pages/ProfilePage";
 import AbilitiesTestPage from "@/pages/AbilitiesTestPage";
 import QiyasExamPage from "@/pages/QiyasExamPage";
 import LibraryPage from "@/pages/LibraryPage";
+import CustomExamPage from "@/pages/CustomExamPage";
 
 function MainLayout({ children }: { children: React.ReactNode }) {
   const [location] = useLocation();
@@ -142,6 +143,9 @@ function Router() {
       </Route>
       <Route path="/qiyas">
         {() => <MainLayout><QiyasExamPage /></MainLayout>}
+      </Route>
+      <Route path="/custom-exam">
+        {() => <MainLayout><CustomExamPage /></MainLayout>}
       </Route>
       <Route path="/abilities">
         {() => <MainLayout><AbilitiesTestPage /></MainLayout>}

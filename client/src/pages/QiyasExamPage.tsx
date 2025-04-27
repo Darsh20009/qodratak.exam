@@ -106,7 +106,7 @@ const qiyasExams: QiyasExam[] = [
 
 // Main component
 const QiyasExamPage: React.FC = () => {
-  const [, setLocation] = useLocation();
+  const [location, setLocation] = useLocation();
   const { toast } = useToast();
   
   // States for exam selection and progress
@@ -420,8 +420,15 @@ const QiyasExamPage: React.FC = () => {
   const renderExamSelection = () => (
     <div className="p-6 space-y-8">
       <div className="max-w-4xl mx-auto">
-        <h1 className="text-3xl font-bold mb-2">اختبارات قياس</h1>
-        <p className="text-muted-foreground mb-8">اختبارات تحاكي اختبار القدرات العامة (قياس) الرسمي</p>
+        <div className="flex justify-between items-center mb-8">
+          <div>
+            <h1 className="text-3xl font-bold mb-2">اختبارات قياس</h1>
+            <p className="text-muted-foreground">اختبارات تحاكي اختبار القدرات العامة (قياس) الرسمي</p>
+          </div>
+          <Button onClick={() => setLocation("/custom-exam")}>
+            إنشاء اختبار مخصص
+          </Button>
+        </div>
         
         <div className="grid md:grid-cols-2 gap-6">
           {qiyasExams.map(exam => (
