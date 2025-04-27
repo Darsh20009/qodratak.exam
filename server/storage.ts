@@ -1,37 +1,110 @@
-import {
-  users,
-  questions,
-  userTestResults,
-  examTemplates,
-  examSections,
-  userCustomExams,
-  dialects,
-  synonyms,
-  type User,
-  type InsertUser,
-  type Question,
-  type InsertQuestion,
-  type UserTestResult,
-  type InsertUserTestResult,
-  type ExamTemplate,
-  type InsertExamTemplate,
-  type ExamSection,
-  type InsertExamSection,
-  type UserCustomExam,
-  type InsertUserCustomExam,
-  type Dialect,
-  type InsertDialect,
-  type Synonym,
-  type InsertSynonym,
-} from "@shared/schema";
-import { eq, and, like, sql, desc, asc, not, or } from 'drizzle-orm';
-import { db } from './db';
-import { TestType, TestDifficulty, DialectType, SearchResult } from "@shared/types";
 import fs from "fs";
 import path from "path";
+import {
+  TestType,
+  TestDifficulty,
+  DialectType,
+  TestQuestion,
+  SearchResult,
+} from "@shared/types";
 import { stringSimilarity, findSimilarQuestions } from "../client/src/lib/fuzzySearch";
 
-// Interface for storage operations
+// Type definitions 
+export interface User {
+  id: number;
+  username: string;
+  password: string;
+  points: number;
+  level: number;
+  createdAt: Date;
+  lastLogin: Date;
+}
+
+export interface Question {
+  id: number;
+  category: string;
+  text: string;
+  options: string[];
+  correctOptionIndex: number;
+  difficulty: string;
+  topic?: string;
+  dialect?: string;
+  keywords?: string[];
+  section?: number;
+  explanation?: string;
+}
+
+export interface UserTestResult {
+  id: number;
+  userId: number;
+  testType: string;
+  difficulty: string;
+  score: number;
+  totalQuestions: number;
+  completedAt: Date;
+  pointsEarned: number;
+  timeTaken?: number;
+  isOfficial?: boolean;
+}
+
+export interface ExamTemplate {
+  id: number;
+  name: string;
+  description?: string;
+  totalSections: number;
+  totalQuestions: number;
+  totalTime: number;
+  isQiyas: boolean;
+  createdAt: Date;
+}
+
+export interface ExamSection {
+  id: number;
+  examId: number;
+  name: string;
+  sectionNumber: number;
+  category: string;
+  questionCount: number;
+  timeLimit: number;
+}
+
+export interface UserCustomExam {
+  id: number;
+  userId: number;
+  name: string;
+  description?: string;
+  questionCount: number;
+  timeLimit: number;
+  categories: string[];
+  difficulty: string;
+  createdAt: Date;
+}
+
+export interface Dialect {
+  id: number;
+  name: string;
+  description?: string;
+  examples: string[];
+}
+
+export interface Synonym {
+  id: number;
+  word: string;
+  synonyms: string[];
+  dialect: string;
+}
+
+// Insert types (simplified for in-memory usage)
+export type InsertUser = Omit<User, "id" | "createdAt" | "lastLogin">;
+export type InsertQuestion = Omit<Question, "id">;
+export type InsertUserTestResult = Omit<UserTestResult, "id" | "completedAt">;
+export type InsertExamTemplate = Omit<ExamTemplate, "id" | "createdAt">;
+export type InsertExamSection = Omit<ExamSection, "id">;
+export type InsertUserCustomExam = Omit<UserCustomExam, "id" | "createdAt">;
+export type InsertDialect = Omit<Dialect, "id">;
+export type InsertSynonym = Omit<Synonym, "id">;
+
+// Storage interface definition
 export interface IStorage {
   // User operations
   getUser(id: number): Promise<User | undefined>;
@@ -91,8 +164,17 @@ export interface IStorage {
   seedData(): Promise<void>;
 }
 
-// Database storage implementation
-export class DatabaseStorage implements IStorage {
+// In-memory storage implementation
+export class MemStorage implements IStorage {
+  private users: User[] = [];
+  private questions: Question[] = [];
+  private userTestResults: UserTestResult[] = [];
+  private examTemplates: ExamTemplate[] = [];
+  private examSections: ExamSection[] = [];
+  private userCustomExams: UserCustomExam[] = [];
+  private dialects: Dialect[] = [];
+  private synonyms: Synonym[] = [];
+
   constructor() {
     // Initialize with default data
     this.seedData();
@@ -100,17 +182,10 @@ export class DatabaseStorage implements IStorage {
 
   async seedData(): Promise<void> {
     try {
-      // Check if we already have questions in the database
-      const questionCount = await db.select({ count: sql<number>`count(*)` }).from(questions);
-      
-      if (questionCount[0].count === 0) {
-        console.log("Seeding initial data...");
-        await this.seedQiyasExamTemplates();
-        await this.seedDialects();
-        await this.seedQuestionsFromFile();
-      } else {
-        console.log(`Database already contains ${questionCount[0].count} questions. Skipping seed.`);
-      }
+      console.log("Seeding initial data...");
+      await this.seedQiyasExamTemplates();
+      await this.seedDialects();
+      await this.seedQuestionsFromFile();
     } catch (error) {
       console.error("Error seeding data:", error);
     }
@@ -301,12 +376,12 @@ export class DatabaseStorage implements IStorage {
             }
           }
         }
-        console.log("Questions loaded successfully");
+        console.log("Questions loaded successfully from file");
       } else {
         console.error("Questions file not found at:", questionsPath);
       }
     } catch (error) {
-      console.error("Error loading questions:", error);
+      console.error("Error loading questions from file:", error);
     }
   }
 
@@ -324,83 +399,90 @@ export class DatabaseStorage implements IStorage {
 
   // User operations
   async getUser(id: number): Promise<User | undefined> {
-    const [user] = await db.select().from(users).where(eq(users.id, id));
-    return user;
+    return this.users.find(user => user.id === id);
   }
 
   async getUserByUsername(username: string): Promise<User | undefined> {
-    const [user] = await db.select().from(users).where(eq(users.username, username));
-    return user;
+    return this.users.find(user => user.username === username);
   }
 
   async createUser(insertUser: InsertUser): Promise<User> {
-    const [user] = await db.insert(users).values(insertUser).returning();
+    const id = this.users.length > 0 ? Math.max(...this.users.map(u => u.id)) + 1 : 1;
+    const now = new Date();
+    const user: User = {
+      id,
+      ...insertUser,
+      createdAt: now,
+      lastLogin: now
+    };
+    this.users.push(user);
     return user;
   }
 
   async updateUserPoints(userId: number, points: number): Promise<User> {
-    const [user] = await db
-      .update(users)
-      .set({ 
-        points: sql`${users.points} + ${points}`,
-        level: sql`CASE WHEN ${users.points} + ${points} >= 1000 THEN 2
-                      WHEN ${users.points} + ${points} >= 3000 THEN 3
-                      WHEN ${users.points} + ${points} >= 6000 THEN 4
-                      WHEN ${users.points} + ${points} >= 10000 THEN 5
-                      ELSE ${users.level} END`
-      })
-      .where(eq(users.id, userId))
-      .returning();
-    return user;
+    const userIndex = this.users.findIndex(user => user.id === userId);
+    if (userIndex === -1) {
+      throw new Error(`User with ID ${userId} not found`);
+    }
+    
+    const user = this.users[userIndex];
+    const updatedPoints = user.points + points;
+    
+    // Calculate new level based on points
+    let newLevel = user.level;
+    if (updatedPoints >= 10000) newLevel = 5;
+    else if (updatedPoints >= 6000) newLevel = 4;
+    else if (updatedPoints >= 3000) newLevel = 3;
+    else if (updatedPoints >= 1000) newLevel = 2;
+    
+    const updatedUser: User = {
+      ...user,
+      points: updatedPoints,
+      level: newLevel
+    };
+    
+    this.users[userIndex] = updatedUser;
+    return updatedUser;
   }
 
   // Question operations
   async getAllQuestions(): Promise<Question[]> {
-    return db.select().from(questions);
+    return this.questions;
   }
 
   async getQuestionsByCategory(category: string): Promise<Question[]> {
-    return db.select().from(questions).where(eq(questions.category, category));
+    return this.questions.filter(q => q.category === category);
   }
 
   async getQuestionsByCategoryAndDifficulty(
     category: string,
     difficulty: string
   ): Promise<Question[]> {
-    return db
-      .select()
-      .from(questions)
-      .where(
-        and(
-          eq(questions.category, category),
-          eq(questions.difficulty, difficulty)
-        )
-      );
+    return this.questions.filter(
+      q => q.category === category && q.difficulty === difficulty
+    );
   }
 
   async getQuestionsById(id: number): Promise<Question | undefined> {
-    const [question] = await db.select().from(questions).where(eq(questions.id, id));
-    return question;
+    return this.questions.find(q => q.id === id);
   }
 
   async createQuestion(question: InsertQuestion): Promise<Question> {
-    const [newQuestion] = await db.insert(questions).values(question).returning();
+    const id = this.questions.length > 0 ? Math.max(...this.questions.map(q => q.id)) + 1 : 1;
+    const newQuestion: Question = { id, ...question };
+    this.questions.push(newQuestion);
     return newQuestion;
   }
 
   async searchQuestions(query: string): Promise<Question[]> {
     if (!query) return [];
     
-    return db
-      .select()
-      .from(questions)
-      .where(
-        or(
-          like(questions.text, `%${query}%`),
-          sql`${questions.keywords} ? ${query}`
-        )
-      )
-      .limit(20);
+    const exactMatches = this.questions.filter(q => 
+      q.text.includes(query) || 
+      (q.keywords && q.keywords.some(kw => kw.includes(query)))
+    );
+    
+    return exactMatches.slice(0, 20);
   }
 
   async searchQuestionsAdvanced(query: string, options?: {
@@ -412,34 +494,21 @@ export class DatabaseStorage implements IStorage {
     if (!query) return [];
     
     const limit = options?.limit || 10;
+    let filteredQuestions = [...this.questions];
     
-    // First, try exact match
-    const exactConditions = [];
+    // Apply filters
     if (options?.category) {
-      exactConditions.push(eq(questions.category, options.category));
+      filteredQuestions = filteredQuestions.filter(q => q.category === options.category);
     }
     if (options?.difficulty) {
-      exactConditions.push(eq(questions.difficulty, options.difficulty));
+      filteredQuestions = filteredQuestions.filter(q => q.difficulty === options.difficulty);
     }
     if (options?.dialect) {
-      exactConditions.push(eq(questions.dialect, options.dialect));
+      filteredQuestions = filteredQuestions.filter(q => q.dialect === options.dialect);
     }
     
-    // Base WHERE condition with the exact text match
-    const baseCondition = like(questions.text, `%${query}%`);
-    
-    // Combine conditions
-    const whereCondition = exactConditions.length > 0
-      ? and(baseCondition, ...exactConditions)
-      : baseCondition;
-    
-    // First query: exact matches
-    const exactMatches = await db
-      .select()
-      .from(questions)
-      .where(whereCondition)
-      .limit(limit);
-    
+    // First, get exact text matches
+    const exactMatches = filteredQuestions.filter(q => q.text.includes(query));
     const exactResults: SearchResult[] = exactMatches.map(q => ({
       question: q,
       matchType: 'exact'
@@ -447,27 +516,20 @@ export class DatabaseStorage implements IStorage {
     
     // If we have enough exact matches, just return them
     if (exactResults.length >= limit) {
-      return exactResults;
+      return exactResults.slice(0, limit);
     }
     
-    // Second query: keyword matches
-    const remainingLimit = limit - exactResults.length;
-    const keywordMatches = await db
-      .select()
-      .from(questions)
-      .where(
-        and(
-          not(like(questions.text, `%${query}%`)), // Exclude exact matches
-          sql`${questions.keywords} ? ${query}`,
-          ...exactConditions
-        )
-      )
-      .limit(remainingLimit);
+    // Second, get keyword matches
+    const keywordMatches = filteredQuestions.filter(q => 
+      !q.text.includes(query) && // Exclude exact matches
+      q.keywords && 
+      q.keywords.some(kw => kw.includes(query) || query.includes(kw))
+    );
     
     const keywordResults: SearchResult[] = keywordMatches.map(q => ({
       question: q,
       matchType: 'keyword',
-      matchedKeywords: (q.keywords as string[]).filter(k => 
+      matchedKeywords: q.keywords?.filter(k => 
         k.includes(query) || query.includes(k)
       )
     }));
@@ -477,21 +539,14 @@ export class DatabaseStorage implements IStorage {
     
     // If we still need more, do fuzzy matching
     if (results.length < limit) {
-      // Get more questions for fuzzy matching
-      const potentialMatches = await db
-        .select()
-        .from(questions)
-        .where(
-          and(
-            not(like(questions.text, `%${query}%`)), // Exclude exact matches
-            not(sql`${questions.keywords} ? ${query}`), // Exclude keyword matches
-            ...exactConditions
-          )
-        )
-        .limit(100); // Get a larger set to find fuzzy matches
+      // Get remaining questions for fuzzy matching (that weren't already matched)
+      const remainingQuestions = filteredQuestions.filter(q => 
+        !q.text.includes(query) && 
+        !(q.keywords && q.keywords.some(kw => kw.includes(query) || query.includes(kw)))
+      );
       
       // Calculate similarity
-      const fuzzyMatches = potentialMatches.map(q => ({
+      const fuzzyMatches = remainingQuestions.map(q => ({
         question: q,
         similarity: stringSimilarity(query, q.text)
       }))
@@ -508,126 +563,157 @@ export class DatabaseStorage implements IStorage {
       results = [...results, ...fuzzyResults];
     }
     
-    return results;
+    return results.slice(0, limit);
   }
 
   // Test results operations
   async createTestResult(result: InsertUserTestResult): Promise<UserTestResult> {
-    const [testResult] = await db.insert(userTestResults).values(result).returning();
+    const id = this.userTestResults.length > 0 
+      ? Math.max(...this.userTestResults.map(r => r.id)) + 1
+      : 1;
+    
+    const testResult: UserTestResult = {
+      id,
+      ...result,
+      completedAt: new Date()
+    };
+    
+    this.userTestResults.push(testResult);
     return testResult;
   }
 
   async getTestResultsByUser(userId: number): Promise<UserTestResult[]> {
-    return db
-      .select()
-      .from(userTestResults)
-      .where(eq(userTestResults.userId, userId))
-      .orderBy(desc(userTestResults.completedAt));
+    return this.userTestResults
+      .filter(r => r.userId === userId)
+      .sort((a, b) => b.completedAt.getTime() - a.completedAt.getTime());
   }
 
   async getTestResultsByUserAndType(
     userId: number,
     testType: string
   ): Promise<UserTestResult[]> {
-    return db
-      .select()
-      .from(userTestResults)
-      .where(
-        and(
-          eq(userTestResults.userId, userId),
-          eq(userTestResults.testType, testType)
-        )
-      )
-      .orderBy(desc(userTestResults.completedAt));
+    return this.userTestResults
+      .filter(r => r.userId === userId && r.testType === testType)
+      .sort((a, b) => b.completedAt.getTime() - a.completedAt.getTime());
   }
 
   // Exam template operations
   async createExamTemplate(template: InsertExamTemplate): Promise<ExamTemplate> {
-    const [newTemplate] = await db.insert(examTemplates).values(template).returning();
-    return newTemplate;
+    const id = this.examTemplates.length > 0 
+      ? Math.max(...this.examTemplates.map(t => t.id)) + 1
+      : 1;
+    
+    const examTemplate: ExamTemplate = {
+      id,
+      ...template,
+      createdAt: new Date()
+    };
+    
+    this.examTemplates.push(examTemplate);
+    return examTemplate;
   }
 
   async getExamTemplates(): Promise<ExamTemplate[]> {
-    return db.select().from(examTemplates);
+    return this.examTemplates;
   }
 
   async getExamTemplateById(id: number): Promise<ExamTemplate | undefined> {
-    const [template] = await db.select().from(examTemplates).where(eq(examTemplates.id, id));
-    return template;
+    return this.examTemplates.find(t => t.id === id);
   }
 
   async getQiyasExamTemplates(): Promise<ExamTemplate[]> {
-    return db.select().from(examTemplates).where(eq(examTemplates.isQiyas, true));
+    return this.examTemplates.filter(t => t.isQiyas);
   }
 
   // Exam section operations
   async createExamSection(section: InsertExamSection): Promise<ExamSection> {
-    const [newSection] = await db.insert(examSections).values(section).returning();
-    return newSection;
+    const id = this.examSections.length > 0 
+      ? Math.max(...this.examSections.map(s => s.id)) + 1
+      : 1;
+    
+    const examSection: ExamSection = {
+      id,
+      ...section
+    };
+    
+    this.examSections.push(examSection);
+    return examSection;
   }
 
   async getExamSectionsByExamId(examId: number): Promise<ExamSection[]> {
-    return db
-      .select()
-      .from(examSections)
-      .where(eq(examSections.examId, examId))
-      .orderBy(asc(examSections.sectionNumber));
+    return this.examSections
+      .filter(s => s.examId === examId)
+      .sort((a, b) => a.sectionNumber - b.sectionNumber);
   }
 
   // User custom exam operations
   async createUserCustomExam(exam: InsertUserCustomExam): Promise<UserCustomExam> {
-    const [newExam] = await db.insert(userCustomExams).values(exam).returning();
-    return newExam;
+    const id = this.userCustomExams.length > 0 
+      ? Math.max(...this.userCustomExams.map(e => e.id)) + 1
+      : 1;
+    
+    const userCustomExam: UserCustomExam = {
+      id,
+      ...exam,
+      createdAt: new Date()
+    };
+    
+    this.userCustomExams.push(userCustomExam);
+    return userCustomExam;
   }
 
   async getUserCustomExams(userId: number): Promise<UserCustomExam[]> {
-    return db
-      .select()
-      .from(userCustomExams)
-      .where(eq(userCustomExams.userId, userId))
-      .orderBy(desc(userCustomExams.createdAt));
+    return this.userCustomExams
+      .filter(e => e.userId === userId)
+      .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
   }
 
   // Dialect operations
   async createDialect(dialect: InsertDialect): Promise<Dialect> {
-    const [newDialect] = await db.insert(dialects).values(dialect).returning();
+    const id = this.dialects.length > 0 
+      ? Math.max(...this.dialects.map(d => d.id)) + 1
+      : 1;
+    
+    const newDialect: Dialect = {
+      id,
+      ...dialect
+    };
+    
+    this.dialects.push(newDialect);
     return newDialect;
   }
 
   async getDialects(): Promise<Dialect[]> {
-    return db.select().from(dialects);
+    return this.dialects;
   }
 
   async getDialectByName(name: string): Promise<Dialect | undefined> {
-    const [dialect] = await db.select().from(dialects).where(eq(dialects.name, name));
-    return dialect;
+    return this.dialects.find(d => d.name === name);
   }
 
   // Synonym operations
   async createSynonym(synonym: InsertSynonym): Promise<Synonym> {
-    const [newSynonym] = await db.insert(synonyms).values(synonym).returning();
+    const id = this.synonyms.length > 0 
+      ? Math.max(...this.synonyms.map(s => s.id)) + 1
+      : 1;
+    
+    const newSynonym: Synonym = {
+      id,
+      ...synonym
+    };
+    
+    this.synonyms.push(newSynonym);
     return newSynonym;
   }
 
   async getSynonymsByWord(word: string, dialect?: string): Promise<Synonym[]> {
     if (dialect) {
-      return db
-        .select()
-        .from(synonyms)
-        .where(
-          and(
-            eq(synonyms.word, word),
-            eq(synonyms.dialect, dialect)
-          )
-        );
+      return this.synonyms.filter(s => s.word === word && s.dialect === dialect);
     } else {
-      return db
-        .select()
-        .from(synonyms)
-        .where(eq(synonyms.word, word));
+      return this.synonyms.filter(s => s.word === word);
     }
   }
 }
 
 // Export storage instance
-export const storage = new DatabaseStorage();
+export const storage = new MemStorage();
