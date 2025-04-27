@@ -37,6 +37,7 @@ import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Separator } from "@/components/ui/separator";
 import { TestQuestion } from "@shared/types";
+import { SaveToFolderButton } from "@/components/SaveToFolderButton";
 
 const LibraryPage: React.FC = () => {
   const [search, setSearch] = useState<string>("");
@@ -415,6 +416,15 @@ const QuestionsList: React.FC<QuestionsListProps> = ({
                     <p className="p-2">{question.explanation}</p>
                   </div>
                 )}
+                
+                <div className="flex justify-end pt-2">
+                  <SaveToFolderButton 
+                    questionId={question.id} 
+                    buttonText="حفظ في مجلد"
+                    variant="outline"
+                    size="sm"
+                  />
+                </div>
               </div>
             </CardContent>
           )}

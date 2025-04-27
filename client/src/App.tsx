@@ -12,6 +12,7 @@ import {
   BookOpenIcon, 
   BrainCircuitIcon, 
   FolderIcon,
+  GamepadIcon,
   GraduationCapIcon,
   HelpCircleIcon, 
   HomeIcon, 
@@ -26,6 +27,7 @@ import QiyasExamPage from "@/pages/QiyasExamPage";
 import LibraryPage from "@/pages/LibraryPage";
 import CustomExamPage from "@/pages/CustomExamPage";
 import FoldersPage from "@/pages/FoldersPage";
+import ChallengePage from "@/pages/ChallengePage";
 
 function MainLayout({ children }: { children: React.ReactNode }) {
   const [location] = useLocation();
