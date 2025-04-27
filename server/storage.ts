@@ -94,6 +94,25 @@ export interface Synonym {
   dialect: string;
 }
 
+export interface Folder {
+  id: number;
+  userId: number;
+  name: string;
+  description?: string;
+  color: string;
+  icon: string;
+  createdAt: Date;
+  isDefault: boolean;
+}
+
+export interface FolderQuestion {
+  id: number;
+  folderId: number;
+  questionId: number;
+  addedAt: Date;
+  notes?: string;
+}
+
 // Insert types (simplified for in-memory usage)
 export type InsertUser = Omit<User, "id" | "createdAt" | "lastLogin">;
 export type InsertQuestion = Omit<Question, "id">;
@@ -103,6 +122,8 @@ export type InsertExamSection = Omit<ExamSection, "id">;
 export type InsertUserCustomExam = Omit<UserCustomExam, "id" | "createdAt">;
 export type InsertDialect = Omit<Dialect, "id">;
 export type InsertSynonym = Omit<Synonym, "id">;
+export type InsertFolder = Omit<Folder, "id" | "createdAt">;
+export type InsertFolderQuestion = Omit<FolderQuestion, "id" | "addedAt">;
 
 // Storage interface definition
 export interface IStorage {
@@ -185,6 +206,8 @@ export class MemStorage implements IStorage {
   private userCustomExams: UserCustomExam[] = [];
   private dialects: Dialect[] = [];
   private synonyms: Synonym[] = [];
+  private folders: Folder[] = [];
+  private folderQuestions: FolderQuestion[] = [];
 
   constructor() {
     // Initialize with default data
