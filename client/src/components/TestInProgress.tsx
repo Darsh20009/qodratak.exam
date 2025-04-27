@@ -98,15 +98,34 @@ const TestInProgress: React.FC<TestInProgressProps> = ({
                 key={index}
                 onClick={() => !isAnswerLocked && onSelectAnswer(index)}
                 disabled={isAnswerLocked}
-                className={`w-full text-right py-3 px-4 border-2 rounded-lg font-medium transition-colors ${
-                  isAnswerLocked && index === question.correctOptionIndex
+                className={`w-full text-right py-3 px-4 border-2 rounded-lg font-medium transition-colors relative ${
+                  selectedAnswerIndex === index && !isAnswerLocked
+                    ? "border-blue-500 bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300"
+                    : isAnswerLocked && index === question.correctOptionIndex
                     ? "border-green-500 bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-300"
-                    : isAnswerLocked && index === selectedAnswerIndex
+                    : isAnswerLocked && index === selectedAnswerIndex && index !== question.correctOptionIndex
                     ? "border-red-500 bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-300"
                     : "border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700"
                 }`}
               >
-                {option}
+                <div className="flex items-center">
+                  {isAnswerLocked && index === question.correctOptionIndex && (
+                    <div className="absolute left-3 text-green-600 dark:text-green-400">
+                      <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="M20 6L9 17l-5-5" />
+                      </svg>
+                    </div>
+                  )}
+                  {isAnswerLocked && index === selectedAnswerIndex && index !== question.correctOptionIndex && (
+                    <div className="absolute left-3 text-red-600 dark:text-red-400">
+                      <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <line x1="18" y1="6" x2="6" y2="18"></line>
+                        <line x1="6" y1="6" x2="18" y2="18"></line>
+                      </svg>
+                    </div>
+                  )}
+                  <span className="w-full text-right">{option}</span>
+                </div>
               </button>
             ))}
           </div>

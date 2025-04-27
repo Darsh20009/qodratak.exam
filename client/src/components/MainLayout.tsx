@@ -18,6 +18,9 @@ export interface MainLayoutProps {
 export const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
   const [location] = useLocation();
   const [userName, setUserName] = useState<string | null>(null);
+  const [userPoints, setUserPoints] = useState<number>(0);
+  const [userLevel, setUserLevel] = useState<number>(0);
+  const [isLoggedIn, setIsLoggedIn] = useState<boolean>(false);
 
   useEffect(() => {
     // Check if we have a user stored in localStorage
@@ -26,6 +29,9 @@ export const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
       try {
         const user = JSON.parse(storedUser);
         setUserName(user.username);
+        setUserPoints(user.points || 0);
+        setUserLevel(user.level || 0);
+        setIsLoggedIn(true);
       } catch (e) {
         console.error("Error parsing stored user:", e);
       }
@@ -69,15 +75,49 @@ export const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
           </ul>
         </nav>
         <Separator />
-        <div className="p-4">
-          <div 
-            onClick={() => window.location.href = "/profile"}
-            className="flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium hover:bg-muted/50 cursor-pointer"
-          >
-            <UserIcon className="h-5 w-5" />
-            <span>{userName || "تسجيل الدخول"}</span>
+        {isLoggedIn ? (
+          <div className="p-4 space-y-3">
+            {/* User Info with Points and Level */}
+            <div 
+              onClick={() => window.location.href = "/profile"}
+              className="flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium hover:bg-muted/50 cursor-pointer"
+            >
+              <UserIcon className="h-5 w-5" />
+              <span>أهلاً، {userName}</span>
+            </div>
+            
+            {/* Points Display */}
+            <div className="rounded-md bg-primary-foreground p-3">
+              <div className="flex justify-between items-center mb-1">
+                <div className="text-xs font-medium text-primary">النقاط</div>
+                <div className="text-xs font-bold">{userPoints}</div>
+              </div>
+              <div className="h-1.5 bg-muted rounded-full overflow-hidden">
+                <div 
+                  className="h-full bg-primary"
+                  style={{ width: `${Math.min(100, (userPoints % 100))}%` }}
+                ></div>
+              </div>
+              <div className="flex justify-between items-center mt-2">
+                <div className="text-xs font-medium text-primary">المستوى</div>
+                <div className="text-xs font-bold">{userLevel}</div>
+              </div>
+              <div className="mt-2 text-[10px] text-muted-foreground">
+                المزيد من النقاط = اختبارات أكثر صعوبة
+              </div>
+            </div>
           </div>
-        </div>
+        ) : (
+          <div className="p-4">
+            <div 
+              onClick={() => window.location.href = "/profile"}
+              className="flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium hover:bg-muted/50 cursor-pointer"
+            >
+              <UserIcon className="h-5 w-5" />
+              <span>تسجيل الدخول</span>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Mobile navigation */}
