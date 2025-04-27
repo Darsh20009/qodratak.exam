@@ -10,6 +10,8 @@ import {
   type InsertUserTestResult,
 } from "@shared/schema";
 import { TestType, TestDifficulty } from "@shared/types";
+import fs from "fs";
+import path from "path";
 
 // Interface for storage operations
 export interface IStorage {
@@ -61,12 +63,71 @@ export class MemStorage implements IStorage {
 
   private async initializeWithDefaultQuestions() {
     try {
-      const response = await fetch("/api/seed-questions");
-      if (response.ok) {
-        console.log("Questions seeded successfully");
+      // Load questions directly from the file instead of making a fetch request
+      const questionsPath = path.resolve(
+        process.cwd(),
+        "attached_assets/questions_all.json"
+      );
+      
+      if (fs.existsSync(questionsPath)) {
+        const fileContent = fs.readFileSync(questionsPath, "utf-8");
+        const questionsData = JSON.parse(fileContent);
+        
+        // Process verbal questions
+        let count = 0;
+        if (questionsData.verbal && Array.isArray(questionsData.verbal)) {
+          for (const question of questionsData.verbal) {
+            try {
+              // Distribute difficulty levels
+              let difficulty: TestDifficulty = "beginner";
+              if (count % 3 === 1) difficulty = "intermediate";
+              if (count % 3 === 2) difficulty = "advanced";
+              
+              // Add the question
+              await this.createQuestion({
+                category: "verbal",
+                text: question.text,
+                options: question.options,
+                correctOptionIndex: question.correctOptionIndex,
+                difficulty: difficulty
+              });
+              count++;
+            } catch (error) {
+              console.error("Error adding verbal question:", error);
+            }
+          }
+        }
+        
+        // Process quantitative questions
+        count = 0;
+        if (questionsData.quantitative && Array.isArray(questionsData.quantitative)) {
+          for (const question of questionsData.quantitative) {
+            try {
+              // Distribute difficulty levels
+              let difficulty: TestDifficulty = "beginner";
+              if (count % 3 === 1) difficulty = "intermediate";
+              if (count % 3 === 2) difficulty = "advanced";
+              
+              // Add the question
+              await this.createQuestion({
+                category: "quantitative",
+                text: question.text,
+                options: question.options,
+                correctOptionIndex: question.correctOptionIndex,
+                difficulty: difficulty
+              });
+              count++;
+            } catch (error) {
+              console.error("Error adding quantitative question:", error);
+            }
+          }
+        }
+        console.log("Questions loaded successfully");
+      } else {
+        console.error("Questions file not found at:", questionsPath);
       }
     } catch (error) {
-      console.error("Error seeding questions:", error);
+      console.error("Error loading questions:", error);
     }
   }
 
