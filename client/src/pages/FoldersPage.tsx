@@ -56,7 +56,17 @@ const folderSchema = z.object({
 type FormValues = z.infer<typeof folderSchema>;
 
 // Mock data for folders
-const mockFolders = [
+// تعريف نوع المجلدات
+type FolderType = {
+  id: number;
+  name: string;
+  description?: string;
+  color: string;
+  icon: string;
+  itemCount: number;
+};
+
+const mockFolders: FolderType[] = [
   {
     id: 1,
     name: "الأسئلة الصعبة",
@@ -83,8 +93,18 @@ const mockFolders = [
   }
 ];
 
+// تعريف نوع عناصر المجلد
+type FolderItemType = {
+  id: number;
+  text: string;
+  category: string;
+  difficulty: string;
+  addedAt: string;
+  folderId: number;
+};
+
 // Mock data for folder items (questions)
-const mockFolderItems = [
+const mockFolderItems: FolderItemType[] = [
   {
     id: 1,
     text: "ما هو معنى كلمة 'استقصاء'؟",
@@ -114,7 +134,7 @@ const mockFolderItems = [
 const FoldersPage = () => {
   const { toast } = useToast();
   const [folders, setFolders] = useState(mockFolders);
-  const [selectedFolder, setSelectedFolder] = useState<typeof mockFolders[0] | null>(null);
+  const [selectedFolder, setSelectedFolder] = useState<FolderType | null>(null);
   const [folderItems, setFolderItems] = useState<typeof mockFolderItems>([]);
   const [isCreatingFolder, setIsCreatingFolder] = useState(false);
   const [view, setView] = useState<"grid" | "list">("grid");
@@ -131,7 +151,7 @@ const FoldersPage = () => {
   });
   
   // Handle folder selection
-  const handleFolderSelect = (folder: typeof mockFolders[0]) => {
+  const handleFolderSelect = (folder: FolderType) => {
     setSelectedFolder(folder);
     // In a real app, this would fetch items from API
     setFolderItems(mockFolderItems.filter(item => item.folderId === folder.id));

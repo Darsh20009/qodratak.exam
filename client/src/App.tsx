@@ -11,6 +11,7 @@ import { Separator } from "@/components/ui/separator";
 import { 
   BookOpenIcon, 
   BrainCircuitIcon, 
+  FolderIcon,
   GraduationCapIcon,
   HelpCircleIcon, 
   HomeIcon, 
@@ -24,6 +25,7 @@ import AbilitiesTestPage from "@/pages/AbilitiesTestPage";
 import QiyasExamPage from "@/pages/QiyasExamPage";
 import LibraryPage from "@/pages/LibraryPage";
 import CustomExamPage from "@/pages/CustomExamPage";
+import FoldersPage from "@/pages/FoldersPage";
 
 function MainLayout({ children }: { children: React.ReactNode }) {
   const [location] = useLocation();
@@ -48,6 +50,7 @@ function MainLayout({ children }: { children: React.ReactNode }) {
     { name: "اختبر قدراتك", href: "/abilities", icon: BrainCircuitIcon },
     { name: "اسأل سؤال", href: "/ask", icon: HelpCircleIcon },
     { name: "المكتبة", href: "/library", icon: BookOpenIcon },
+    { name: "مجلداتي", href: "/folders", icon: FolderIcon },
   ];
 
   return (
@@ -159,6 +162,9 @@ function Router() {
       </Route>
       <Route path="/profile">
         {() => <MainLayout><ProfilePage /></MainLayout>}
+      </Route>
+      <Route path="/folders">
+        {() => <MainLayout><FoldersPage /></MainLayout>}
       </Route>
       {/* Fallback to 404 */}
       <Route>
