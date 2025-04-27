@@ -11,7 +11,8 @@ import {
   StarIcon,
   LockIcon,
   TrendingUpIcon,
-  Users2Icon
+  Users2Icon,
+  BookOpenIcon
 } from "lucide-react";
 import { AchievementsDisplay } from "@/components/AchievementsDisplay";
 import { Button } from "@/components/ui/button";
@@ -31,66 +32,141 @@ import { Separator } from "@/components/ui/separator";
 const challengeLevels = [
   {
     id: 1,
-    name: "المستوى الأول: المبتدئ",
-    description: "اختبر معلوماتك الأساسية في اللغة العربية",
-    points: 100,
-    timeLimit: 5,
-    questionsCount: 10,
+    name: "المبتدئ: التعرف على الكلمات",
+    description: "اختبر معلوماتك الأساسية في المفردات العربية",
+    points: 50,
+    timeLimit: 3,
+    questionsCount: 5,
     difficulty: "beginner",
     category: "verbal",
-    icon: <LightbulbIcon className="w-10 h-10 text-yellow-500" />,
-    color: "bg-yellow-100 border-yellow-300",
+    icon: <LightbulbIcon className="w-10 h-10 text-primary" />,
+    color: "border-primary/20 bg-primary/5",
     enabled: true,
     nextLevel: 2,
   },
   {
     id: 2,
-    name: "المستوى الثاني: المتقدم",
-    description: "تحدي أكبر وأسئلة أكثر تعقيدًا",
-    points: 250,
-    timeLimit: 8,
-    questionsCount: 15,
-    difficulty: "intermediate",
+    name: "التحدي الأول: المعاني",
+    description: "اختبر فهمك للمعاني المختلفة للكلمات",
+    points: 100,
+    timeLimit: 5,
+    questionsCount: 10,
+    difficulty: "beginner",
     category: "verbal",
-    icon: <TrophyIcon className="w-10 h-10 text-blue-500" />,
-    color: "bg-blue-100 border-blue-300",
-    enabled: true,
+    icon: <BookOpenIcon className="w-10 h-10 text-indigo-500" />,
+    color: "border-indigo-300 bg-indigo-50 dark:border-indigo-800 dark:bg-indigo-950/30",
+    enabled: false,
     nextLevel: 3,
-    requiredPoints: 100
+    requiredPoints: 50
   },
   {
     id: 3,
-    name: "المستوى الثالث: الخبير",
-    description: "اختبر قدراتك اللغوية المتقدمة",
-    points: 500,
-    timeLimit: 10,
-    questionsCount: 20,
-    difficulty: "advanced",
+    name: "المتقدم: التراكيب اللغوية",
+    description: "تحدي في فهم تراكيب اللغة العربية",
+    points: 150,
+    timeLimit: 8,
+    questionsCount: 12,
+    difficulty: "intermediate",
     category: "verbal",
-    icon: <StarIcon className="w-10 h-10 text-purple-500" />,
-    color: "bg-purple-100 border-purple-300",
+    icon: <TrophyIcon className="w-10 h-10 text-blue-500" />,
+    color: "border-blue-300 bg-blue-50 dark:border-blue-800 dark:bg-blue-950/30",
     enabled: false,
     nextLevel: 4,
-    requiredPoints: 350
+    requiredPoints: 150
   },
   {
     id: 4,
-    name: "مستوى التفوق: الرياضيات",
-    description: "اختبر مهاراتك في الأسئلة الكمية",
-    points: 800,
-    timeLimit: 15,
-    questionsCount: 20,
-    difficulty: "beginner",
-    category: "quantitative",
-    icon: <TrendingUpIcon className="w-10 h-10 text-green-500" />,
-    color: "bg-green-100 border-green-300",
+    name: "تحدي الأمثال والحكم",
+    description: "اختبر معرفتك بالأمثال والحكم العربية",
+    points: 200,
+    timeLimit: 10,
+    questionsCount: 15,
+    difficulty: "intermediate",
+    category: "verbal",
+    icon: <StarIcon className="w-10 h-10 text-emerald-500" />,
+    color: "border-emerald-300 bg-emerald-50 dark:border-emerald-800 dark:bg-emerald-950/30",
     enabled: false,
     nextLevel: 5,
-    requiredPoints: 850
+    requiredPoints: 300
   },
   {
     id: 5,
-    name: "تحدي السرعة",
+    name: "تحدي الأرقام: المستوى الأول",
+    description: "اختبر مهاراتك في الأسئلة الكمية البسيطة",
+    points: 250,
+    timeLimit: 8,
+    questionsCount: 10,
+    difficulty: "beginner",
+    category: "quantitative",
+    icon: <TrendingUpIcon className="w-10 h-10 text-green-500" />,
+    color: "border-green-300 bg-green-50 dark:border-green-800 dark:bg-green-950/30",
+    enabled: false,
+    nextLevel: 6,
+    requiredPoints: 500
+  },
+  {
+    id: 6,
+    name: "تحدي الأرقام: المستوى المتقدم",
+    description: "أسئلة كمية متقدمة تحتاج تفكير دقيق",
+    points: 350,
+    timeLimit: 12,
+    questionsCount: 15,
+    difficulty: "intermediate",
+    category: "quantitative",
+    icon: <ClockIcon className="w-10 h-10 text-cyan-500" />,
+    color: "border-cyan-300 bg-cyan-50 dark:border-cyan-800 dark:bg-cyan-950/30",
+    enabled: false,
+    nextLevel: 7,
+    requiredPoints: 750
+  },
+  {
+    id: 7,
+    name: "تحدي المزج: اللفظي والكمي",
+    description: "اختبار متنوع يجمع بين الأسئلة اللفظية والكمية",
+    points: 500,
+    timeLimit: 15,
+    questionsCount: 20,
+    difficulty: "intermediate",
+    category: "mixed",
+    icon: <HeartIcon className="w-10 h-10 text-purple-500" />,
+    color: "border-purple-300 bg-purple-50 dark:border-purple-800 dark:bg-purple-950/30",
+    enabled: false,
+    nextLevel: 8,
+    requiredPoints: 1100
+  },
+  {
+    id: 8,
+    name: "تحدي الخبراء: مفردات متقدمة",
+    description: "مفردات عربية متقدمة ونادرة الاستخدام",
+    points: 650,
+    timeLimit: 20,
+    questionsCount: 20,
+    difficulty: "advanced",
+    category: "verbal",
+    icon: <Users2Icon className="w-10 h-10 text-yellow-500" />,
+    color: "border-yellow-300 bg-yellow-50 dark:border-yellow-800 dark:bg-yellow-950/30",
+    enabled: false,
+    nextLevel: 9,
+    requiredPoints: 1600
+  },
+  {
+    id: 9,
+    name: "تحدي الخبراء: المسائل الرياضية",
+    description: "مسائل رياضية متقدمة تتطلب مهارات عالية",
+    points: 800,
+    timeLimit: 25,
+    questionsCount: 15,
+    difficulty: "advanced",
+    category: "quantitative",
+    icon: <TrophyIcon className="w-10 h-10 text-orange-500" />,
+    color: "border-orange-300 bg-orange-50 dark:border-orange-800 dark:bg-orange-950/30",
+    enabled: false,
+    nextLevel: 10,
+    requiredPoints: 2250
+  },
+  {
+    id: 10,
+    name: "تحدي السرعة: اختبار الوقت",
     description: "أجب على أكبر عدد من الأسئلة في وقت محدود",
     points: 1000,
     timeLimit: 5,
@@ -98,52 +174,54 @@ const challengeLevels = [
     difficulty: "intermediate",
     category: "mixed",
     icon: <ClockIcon className="w-10 h-10 text-red-500" />,
-    color: "bg-red-100 border-red-300",
+    color: "border-red-300 bg-red-50 dark:border-red-800 dark:bg-red-950/30",
     enabled: false,
-    nextLevel: 6,
-    requiredPoints: 1650
+    nextLevel: 11,
+    requiredPoints: 3050
   },
   {
-    id: 6,
-    name: "التحدي النهائي",
-    description: "اختبار شامل لجميع المهارات",
-    points: 2000,
+    id: 11,
+    name: "التحدي النهائي: شامل",
+    description: "اختبار شامل لجميع المهارات والمستويات",
+    points: 1500,
     timeLimit: 30,
     questionsCount: 50,
     difficulty: "advanced",
     category: "mixed",
     icon: <HeartIcon className="w-10 h-10 text-pink-500" />,
-    color: "bg-pink-100 border-pink-300",
+    color: "border-pink-300 bg-pink-50 dark:border-pink-800 dark:bg-pink-950/30",
     enabled: false,
-    requiredPoints: 2650
+    nextLevel: 12,
+    requiredPoints: 4050
   },
   {
-    id: 7,
+    id: 12,
     name: "تحدي الأبطال",
     description: "نافس أفضل المتسابقين في تحدي مباشر",
-    points: 5000,
-    timeLimit: 20,
-    questionsCount: 30,
+    points: 2000,
+    timeLimit: 40,
+    questionsCount: 60,
     difficulty: "advanced",
     category: "mixed",
     icon: <Users2Icon className="w-10 h-10 text-indigo-500" />,
-    color: "bg-indigo-100 border-indigo-300",
+    color: "border-indigo-300 bg-indigo-50 dark:border-indigo-800 dark:bg-indigo-950/30",
     enabled: false,
-    requiredPoints: 4650
+    nextLevel: 13,
+    requiredPoints: 5550
   },
   {
-    id: 8,
+    id: 13,
     name: "تحدي الأساتذة",
     description: "المستوى الأخير والأصعب للمتفوقين",
-    points: 10000,
-    timeLimit: 45,
+    points: 3000,
+    timeLimit: 60,
     questionsCount: 100,
     difficulty: "advanced",
     category: "mixed",
     icon: <TrophyIcon className="w-10 h-10 text-amber-500" />,
-    color: "bg-amber-100 border-amber-300",
+    color: "border-amber-300 bg-amber-50 dark:border-amber-800 dark:bg-amber-950/30",
     enabled: false,
-    requiredPoints: 9650
+    requiredPoints: 7550
   }
 ];
 
@@ -195,12 +273,37 @@ const ChallengePage = () => {
   
   // التحقق من المستويات المفتوحة بناءً على نقاط المستخدم
   const getEnabledLevels = () => {
-    if (!user) return challengeLevels.slice(0, 2); // إذا لم يكن هناك مستخدم، اعرض المستويين الأوليين فقط
-    
-    return challengeLevels.map(level => ({
+    if (!user) return challengeLevels.map((level, idx) => ({
       ...level,
-      enabled: level.id === 1 || level.id === 2 || (level.requiredPoints && user.points >= level.requiredPoints)
+      enabled: idx < 1 // فقط المستوى الأول مفتوح للمستخدمين الغير مسجلين
     }));
+
+    // نفحص كل مستوى لمعرفة ما إذا كان مفتوحًا بناءً على النقاط
+    // وعلى إكمال المستويات السابقة
+    return challengeLevels.map((level, idx) => {
+      // المستوى الأول مفتوح دائمًا
+      if (idx === 0) return { ...level, enabled: true };
+      
+      // للمستويات الأخرى، نتحقق إذا كانت المستوى السابق مكتمل
+      // ونتحقق أيضًا من النقاط المطلوبة
+      const prevLevel = challengeLevels[idx - 1];
+      const completedPrevLevel = testResults.some((result: any) => 
+        result.testType === prevLevel.category && 
+        result.difficulty === prevLevel.difficulty && 
+        result.score >= Math.floor(result.totalQuestions * 0.7)
+      );
+      
+      // كل مستوى يتطلب الحصول على النقاط المطلوبة وإكمال المستوى السابق
+      const hasRequiredPoints = !level.requiredPoints || user.points >= level.requiredPoints;
+      
+      // للمستوى الثاني، نفتحه فقط بناءً على النقاط لتسهيل التجربة
+      if (idx === 1) return { ...level, enabled: hasRequiredPoints };
+      
+      return { 
+        ...level,
+        enabled: hasRequiredPoints && completedPrevLevel
+      };
+    });
   };
   
   const enabledLevels = getEnabledLevels();
@@ -300,11 +403,21 @@ const ChallengePage = () => {
             }`}
           >
             {!level.enabled && (
-              <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/40 z-10">
+              <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/50 z-10">
                 <LockIcon className="w-10 h-10 text-white mb-2" />
-                <p className="text-white font-medium text-center px-4">
-                  مغلق - تحتاج {level.requiredPoints} نقطة لفتح هذا المستوى
+                <p className="text-white font-semibold text-center px-4 mb-1 text-lg">
+                  مستوى مغلق
                 </p>
+                {level.requiredPoints && user && user.points < level.requiredPoints && (
+                  <p className="text-white/90 text-center text-sm px-6">
+                    تحتاج {level.requiredPoints - user.points} نقطة إضافية
+                  </p>
+                )}
+                {level.id > 2 && (
+                  <p className="text-white/90 text-center text-sm px-6 mt-2">
+                    أكمل المستويات السابقة أولاً
+                  </p>
+                )}
               </div>
             )}
             
