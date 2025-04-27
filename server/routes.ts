@@ -217,6 +217,128 @@ export async function registerRoutes(app: Express): Promise<Server> {
       return res.status(500).json({ message: "Error creating user" });
     }
   });
+  
+  // Folder routes
+  app.get("/api/folders/user/:userId", async (req: Request, res: Response) => {
+    try {
+      const userId = parseInt(req.params.userId);
+      if (isNaN(userId)) {
+        return res.status(400).json({ message: "Invalid user ID" });
+      }
+      
+      const folders = await storage.getFoldersByUser(userId);
+      res.json(folders);
+    } catch (error) {
+      console.error("Error getting user folders:", error);
+      res.status(500).json({ message: "Error getting user folders" });
+    }
+  });
+  
+  app.post("/api/folders", async (req: Request, res: Response) => {
+    try {
+      const folder = req.body;
+      
+      if (!folder.userId || !folder.name) {
+        return res.status(400).json({ message: "User ID and folder name are required" });
+      }
+      
+      const newFolder = await storage.createFolder({
+        userId: folder.userId,
+        name: folder.name,
+        description: folder.description,
+        color: folder.color || "#4f46e5",
+        icon: folder.icon || "folder",
+        isDefault: folder.isDefault || false
+      });
+      
+      res.status(201).json(newFolder);
+    } catch (error) {
+      console.error("Error creating folder:", error);
+      res.status(500).json({ message: "Error creating folder" });
+    }
+  });
+  
+  app.delete("/api/folders/:id", async (req: Request, res: Response) => {
+    try {
+      const folderId = parseInt(req.params.id);
+      if (isNaN(folderId)) {
+        return res.status(400).json({ message: "Invalid folder ID" });
+      }
+      
+      const deleted = await storage.deleteFolder(folderId);
+      if (deleted) {
+        res.status(204).send();
+      } else {
+        res.status(404).json({ message: "Folder not found" });
+      }
+    } catch (error) {
+      console.error("Error deleting folder:", error);
+      res.status(500).json({ message: "Error deleting folder" });
+    }
+  });
+  
+  // Folder questions routes
+  app.get("/api/folders/:folderId/questions", async (req: Request, res: Response) => {
+    try {
+      const folderId = parseInt(req.params.folderId);
+      if (isNaN(folderId)) {
+        return res.status(400).json({ message: "Invalid folder ID" });
+      }
+      
+      const questions = await storage.getQuestionsInFolder(folderId);
+      res.json(questions);
+    } catch (error) {
+      console.error("Error getting folder questions:", error);
+      res.status(500).json({ message: "Error getting folder questions" });
+    }
+  });
+  
+  app.post("/api/folders/:folderId/questions", async (req: Request, res: Response) => {
+    try {
+      const folderId = parseInt(req.params.folderId);
+      if (isNaN(folderId)) {
+        return res.status(400).json({ message: "Invalid folder ID" });
+      }
+      
+      const { questionId } = req.body;
+      if (!questionId) {
+        return res.status(400).json({ message: "Question ID is required" });
+      }
+      
+      const folderQuestion = {
+        folderId,
+        questionId,
+        notes: req.body.notes
+      };
+      
+      const newFolderQuestion = await storage.addQuestionToFolder(folderQuestion);
+      res.status(201).json(newFolderQuestion);
+    } catch (error) {
+      console.error("Error adding question to folder:", error);
+      res.status(500).json({ message: "Error adding question to folder" });
+    }
+  });
+  
+  app.delete("/api/folders/:folderId/questions/:questionId", async (req: Request, res: Response) => {
+    try {
+      const folderId = parseInt(req.params.folderId);
+      const questionId = parseInt(req.params.questionId);
+      
+      if (isNaN(folderId) || isNaN(questionId)) {
+        return res.status(400).json({ message: "Invalid folder or question ID" });
+      }
+      
+      const deleted = await storage.removeQuestionFromFolder(folderId, questionId);
+      if (deleted) {
+        res.status(204).send();
+      } else {
+        res.status(404).json({ message: "Question not found in folder" });
+      }
+    } catch (error) {
+      console.error("Error removing question from folder:", error);
+      res.status(500).json({ message: "Error removing question from folder" });
+    }
+  });
 
   const httpServer = createServer(app);
   return httpServer;

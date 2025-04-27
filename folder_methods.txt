@@ -1,0 +1,63 @@
+
+  // Folder operations
+  async createFolder(folder: InsertFolder): Promise<Folder> {
+    const id = this.folders.length > 0 ? Math.max(...this.folders.map(f => f.id)) + 1 : 1;
+    const newFolder: Folder = {
+      id,
+      ...folder,
+      createdAt: new Date(),
+      isDefault: folder.isDefault || false
+    };
+    this.folders.push(newFolder);
+    return newFolder;
+  }
+
+  async getFoldersByUser(userId: number): Promise<Folder[]> {
+    return this.folders.filter(f => f.userId === userId);
+  }
+
+  async getFolderById(id: number): Promise<Folder | undefined> {
+    return this.folders.find(f => f.id === id);
+  }
+
+  async deleteFolder(id: number): Promise<boolean> {
+    const initialLength = this.folders.length;
+    this.folders = this.folders.filter(f => f.id !== id);
+    
+    // Also delete any questions in this folder
+    this.folderQuestions = this.folderQuestions.filter(fq => fq.folderId !== id);
+    
+    return initialLength > this.folders.length;
+  }
+
+  // Folder questions operations
+  async addQuestionToFolder(folderQuestion: InsertFolderQuestion): Promise<FolderQuestion> {
+    const id = this.folderQuestions.length > 0 ? 
+      Math.max(...this.folderQuestions.map(fq => fq.id)) + 1 : 1;
+    
+    const newFolderQuestion: FolderQuestion = {
+      id,
+      ...folderQuestion,
+      addedAt: new Date()
+    };
+    
+    this.folderQuestions.push(newFolderQuestion);
+    return newFolderQuestion;
+  }
+
+  async getQuestionsInFolder(folderId: number): Promise<Question[]> {
+    const questionIds = this.folderQuestions
+      .filter(fq => fq.folderId === folderId)
+      .map(fq => fq.questionId);
+    
+    return this.questions.filter(q => questionIds.includes(q.id));
+  }
+
+  async removeQuestionFromFolder(folderId: number, questionId: number): Promise<boolean> {
+    const initialLength = this.folderQuestions.length;
+    this.folderQuestions = this.folderQuestions.filter(
+      fq => !(fq.folderId === folderId && fq.questionId === questionId)
+    );
+    return initialLength > this.folderQuestions.length;
+  }
+}
