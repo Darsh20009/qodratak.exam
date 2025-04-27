@@ -13,6 +13,7 @@ import {
   TrendingUpIcon,
   Users2Icon
 } from "lucide-react";
+import { AchievementsDisplay } from "@/components/AchievementsDisplay";
 import { Button } from "@/components/ui/button";
 import { 
   Card, 
@@ -421,6 +422,19 @@ const ChallengePage = () => {
           </div>
         </div>
       )}
+      
+      {/* قسم الإنجازات */}
+      <Card className="mt-12">
+        <CardHeader>
+          <CardTitle className="text-2xl font-bold">إنجازاتك</CardTitle>
+          <CardDescription>
+            أكمل التحديات والمستويات لفتح المزيد من الإنجازات وزيادة نقاطك
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <AchievementsDisplay userId={user?.id} />
+        </CardContent>
+      </Card>
     </div>
   );
 };
