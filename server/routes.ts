@@ -158,7 +158,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         difficulty,
         score,
         totalQuestions,
-        completedAt: new Date().toISOString()
+        pointsEarned: Math.round(score * 10)
       });
       
       return res.status(201).json(result);
@@ -208,7 +208,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Create a simple user with username as password (for demo)
       const user = await storage.createUser({
         username,
-        password: username
+        password: username,
+        points: 0,
+        level: 1
       });
       
       return res.status(201).json(user);
