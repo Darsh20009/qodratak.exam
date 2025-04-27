@@ -92,17 +92,34 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Search questions by text
+  // Search questions by text with advanced options
   app.get("/api/questions/search", async (req: Request, res: Response) => {
     try {
-      const { query } = req.query;
+      const { query, category, difficulty, dialect, limit } = req.query;
       
       if (!query || typeof query !== 'string') {
         return res.status(400).json({ message: "Query parameter is required" });
       }
       
-      const questions = await storage.searchQuestions(query);
-      return res.json(questions);
+      // Use advanced search if any filter is specified
+      if (category || difficulty || dialect || limit) {
+        const options = {
+          category: typeof category === 'string' ? category : undefined,
+          difficulty: typeof difficulty === 'string' ? difficulty : undefined,
+          dialect: typeof dialect === 'string' ? dialect : undefined,
+          limit: typeof limit === 'string' ? parseInt(limit) : undefined
+        };
+        
+        const results = await storage.searchQuestionsAdvanced(query, options);
+        return res.json(results);
+      } else {
+        // Fallback to simple search
+        const questions = await storage.searchQuestions(query);
+        return res.json(questions.map(q => ({
+          question: q,
+          matchType: 'exact'
+        })));
+      }
     } catch (error) {
       console.error("Error searching questions:", error);
       return res.status(500).json({ message: "Error searching questions" });

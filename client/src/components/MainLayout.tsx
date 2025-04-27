@@ -104,9 +104,9 @@ export const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
           <div className="flex items-center justify-between p-4">
             <h1 className="text-xl font-bold text-primary">قدراتي</h1>
             <Link href="/profile">
-              <a className="p-2">
+              <div className="p-2 cursor-pointer">
                 <UserIcon className="h-5 w-5" />
-              </a>
+              </div>
             </Link>
           </div>
         </header>

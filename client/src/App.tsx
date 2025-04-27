@@ -17,11 +17,11 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useState, useEffect } from "react";
+import AskQuestionPage from "@/pages/AskQuestionPage";
 
 // Create new page components (these will be implemented soon)
 const QiyasTests = () => <div className="container py-8"><h1 className="text-3xl font-bold mb-4">اختبارات قياس</h1><p>سيتم تنفيذ هذه الصفحة قريباً</p></div>
 const AbilitiesTest = () => <div className="container py-8"><h1 className="text-3xl font-bold mb-4">اختبر قدراتك</h1><p>سيتم تنفيذ هذه الصفحة قريباً</p></div>
-const AskQuestion = () => <div className="container py-8"><h1 className="text-3xl font-bold mb-4">اسأل سؤال</h1><p>سيتم تنفيذ هذه الصفحة قريباً</p></div>
 const Profile = () => <div className="container py-8"><h1 className="text-3xl font-bold mb-4">الملف الشخصي</h1><p>سيتم تنفيذ هذه الصفحة قريباً</p></div>
 
 function MainLayout({ children }: { children: React.ReactNode }) {
@@ -143,7 +143,7 @@ function Router() {
         {() => <MainLayout><AbilitiesTest /></MainLayout>}
       </Route>
       <Route path="/ask">
-        {() => <MainLayout><AskQuestion /></MainLayout>}
+        {() => <MainLayout><AskQuestionPage /></MainLayout>}
       </Route>
       <Route path="/library">
         {() => <MainLayout><div className="container py-8"><h1 className="text-3xl font-bold mb-4">المكتبة</h1><p>سيتم تنفيذ هذه الصفحة قريباً</p></div></MainLayout>}
