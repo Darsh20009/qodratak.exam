@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
@@ -19,6 +19,54 @@ import { TestQuestion } from "@shared/types";
 import { cn } from "@/lib/utils";
 import { smartSearch, findRelatedQuestions } from "@/lib/smartSearch";
 
+// TypingEffect component for animated typing
+const TypingEffect = ({ text }: { text: string }) => {
+  const [displayedText, setDisplayedText] = useState("");
+  const [currentIndex, setCurrentIndex] = useState(0);
+  const [isThinking, setIsThinking] = useState(true);
+  
+  useEffect(() => {
+    // Reset when text changes
+    setDisplayedText("");
+    setCurrentIndex(0);
+    setIsThinking(true);
+    
+    // Simulate thinking for a short time
+    const thinkingTimeout = setTimeout(() => {
+      setIsThinking(false);
+    }, 800 + Math.random() * 1200); // Random thinking time between 0.8-2 seconds
+    
+    return () => clearTimeout(thinkingTimeout);
+  }, [text]);
+  
+  useEffect(() => {
+    if (isThinking) return;
+    
+    if (currentIndex < text.length) {
+      const timer = setTimeout(() => {
+        // Add the next character
+        setDisplayedText(prev => prev + text[currentIndex]);
+        setCurrentIndex(prev => prev + 1);
+      }, 20 + Math.random() * 30); // Random typing speed
+      
+      return () => clearTimeout(timer);
+    }
+  }, [currentIndex, text, isThinking]);
+  
+  return (
+    <>
+      {isThinking ? (
+        <span className="inline-block animated-dots">جاري التفكير</span>
+      ) : (
+        <span>{displayedText}</span>
+      )}
+      {currentIndex < text.length && !isThinking && (
+        <span className="cursor animate-pulse">|</span>
+      )}
+    </>
+  );
+};
+
 interface AiAssistantProps {
   questions: TestQuestion[];
   userLevel?: number;
@@ -32,6 +80,7 @@ type MessageType = {
   sender: "user" | "assistant";
   timestamp: Date;
   relatedQuestions?: TestQuestion[];
+  isTyping?: boolean;
 };
 
 // Predefined responses for common questions
@@ -152,6 +201,7 @@ const AiAssistant: React.FC<AiAssistantProps> = ({
       "جرب سؤالي عن 'كيفية حل أسئلة التناظر اللفظي' أو 'مثال سؤال قدرات كمي'",
       sender: "assistant",
       timestamp: new Date(),
+      isTyping: true
     };
     setMessages([welcomeMessage]);
   }, []);
@@ -417,7 +467,13 @@ ${question.explanation ? `الشرح: ${question.explanation}` : ''}
                 : "bg-muted ml-auto"
             )}
           >
-            <div className="whitespace-pre-wrap text-sm">{message.text}</div>
+            <div className="whitespace-pre-wrap text-sm">
+              {message.isTyping ? (
+                <TypingEffect text={message.text} />
+              ) : (
+                message.text
+              )}
+            </div>
             
             {/* Related questions */}
             {message.relatedQuestions && message.relatedQuestions.length > 0 && (

@@ -2,6 +2,32 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Typing effect animations */
+.animated-dots::after {
+  content: "...";
+  display: inline-block;
+  animation: dotAnimation 1.5s infinite;
+  overflow: hidden;
+  vertical-align: bottom;
+  margin-right: 2px;
+}
+
+@keyframes dotAnimation {
+  0% { width: 0; }
+  25% { width: 0.5em; }
+  50% { width: 1em; }
+  75% { width: 1.5em; }
+  100% { width: 0; }
+}
+
+.cursor {
+  display: inline-block;
+  width: 2px;
+  height: 1em;
+  margin-right: 2px;
+  vertical-align: middle;
+}
+
 :root {
       --background: 0 0% 100%;
 --foreground: 20 14.3% 4.1%;
