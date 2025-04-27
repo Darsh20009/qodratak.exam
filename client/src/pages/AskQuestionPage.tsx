@@ -1,6 +1,6 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { SearchIcon, SendIcon, LoaderCircleIcon } from "lucide-react";
+import { SearchIcon, SendIcon, LoaderCircleIcon, BrainCircuitIcon } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
@@ -8,6 +8,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
 import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
+import AiAssistant from "@/components/AiAssistant";
 
 const dialects = [
   { value: "standard", label: "الفصحى" },
@@ -100,6 +101,27 @@ const AskQuestionPage: React.FC = () => {
   const handleHistoryClick = (historyItem: string) => {
     setQuery(historyItem);
     // Wait for state update and then search
+    setTimeout(() => {
+      refetch();
+    }, 0);
+  };
+
+  // Get all the questions for the AI assistant
+  const { data: allQuestions } = useQuery({
+    queryKey: ['/api/questions'],
+    queryFn: async () => {
+      const response = await fetch('/api/questions');
+      if (!response.ok) {
+        throw new Error('Failed to get all questions');
+      }
+      return response.json();
+    },
+  });
+
+  // Handle question selection from AI assistant
+  const handleQuestionSelect = (question: any) => {
+    // Search for this question
+    setQuery(question.text);
     setTimeout(() => {
       refetch();
     }, 0);
@@ -239,6 +261,17 @@ const AskQuestionPage: React.FC = () => {
               </div>
             </CardContent>
           </Card>
+
+          {/* AI Assistant */}
+          <div className="mb-8">
+            {allQuestions && (
+              <AiAssistant
+                questions={allQuestions}
+                onQuestionSelect={handleQuestionSelect}
+                className="h-[400px]"
+              />
+            )}
+          </div>
 
           {isLoading ? (
             <div className="flex justify-center items-center p-12">
