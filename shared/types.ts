@@ -8,7 +8,7 @@ export interface QuestionItem {
 }
 
 export type TestDifficulty = 'beginner' | 'intermediate' | 'advanced' | 'expert';
-export type TestType = 'verbal' | 'quantitative' | 'qiyas' | 'custom';
+export type TestType = 'verbal' | 'quantitative' | 'qiyas' | 'custom' | 'mixed';
 export type DialectType = 'standard' | 'saudi' | 'egyptian' | 'gulf' | 'levantine' | 'maghrebi';
 
 export interface TestQuestion extends QuestionItem {

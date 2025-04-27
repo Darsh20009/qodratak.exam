@@ -76,18 +76,18 @@ const qiyasExams: QiyasExam[] = [
   {
     id: 1,
     name: "اختبار قياس عام 2025",
-    description: "اختبار محاكاة كامل يتبع النموذج الرسمي لاختبار قياس: 74 سؤال لفظي و 46 سؤال كمي",
+    description: "اختبار محاكاة كامل يتبع النموذج الرسمي لاختبار قياس: 65 سؤال لفظي و 55 سؤال كمي",
     totalSections: 7,
     totalQuestions: 120,
     totalTime: 120,
     sections: [
-      { sectionNumber: 1, name: "قدرات لفظية 1", category: "verbal", questionCount: 24, timeLimit: 24 },
-      { sectionNumber: 2, name: "قدرات لفظية 2", category: "verbal", questionCount: 13, timeLimit: 13 },
-      { sectionNumber: 3, name: "قدرات كمية 1", category: "quantitative", questionCount: 11, timeLimit: 11 },
-      { sectionNumber: 4, name: "قدرات كمية 2", category: "quantitative", questionCount: 24, timeLimit: 24 },
-      { sectionNumber: 5, name: "قدرات لفظية 3", category: "verbal", questionCount: 13, timeLimit: 13 },
-      { sectionNumber: 6, name: "قدرات كمية 3", category: "quantitative", questionCount: 11, timeLimit: 11 },
-      { sectionNumber: 7, name: "قدرات لفظية 4", category: "verbal", questionCount: 24, timeLimit: 24 },
+      { sectionNumber: 1, name: "القسم الأول", category: "mixed", questionCount: 24, timeLimit: 24 },
+      { sectionNumber: 2, name: "القسم الثاني", category: "mixed", questionCount: 24, timeLimit: 24 },
+      { sectionNumber: 3, name: "القسم الثالث", category: "mixed", questionCount: 24, timeLimit: 24 },
+      { sectionNumber: 4, name: "قدرات لفظية", category: "verbal", questionCount: 13, timeLimit: 13 },
+      { sectionNumber: 5, name: "قدرات كمية", category: "quantitative", questionCount: 11, timeLimit: 11 },
+      { sectionNumber: 6, name: "قدرات لفظية", category: "verbal", questionCount: 13, timeLimit: 13 },
+      { sectionNumber: 7, name: "قدرات كمية", category: "quantitative", questionCount: 11, timeLimit: 11 },
     ]
   },
   {
@@ -194,20 +194,54 @@ const QiyasExamPage: React.FC = () => {
     return new Promise((resolve) => {
       setTimeout(() => {
         const questions: ExamQuestion[] = [];
-        for (let i = 0; i < section.questionCount; i++) {
-          questions.push({
-            id: i + 1,
-            text: section.category === "verbal" 
-              ? `سؤال لفظي ${i + 1}: ما مرادف كلمة "استقصى"؟`
-              : `سؤال كمي ${i + 1}: إذا كان عدد طلاب صف ما 25 طالباً، ونسبة الناجحين 80%، فكم عدد الطلاب الناجحين؟`,
-            options: section.category === "verbal"
-              ? ["بحث", "استفهم", "تحرى", "جميع ما سبق"]
-              : ["15", "20", "22", "25"],
-            correctOptionIndex: section.category === "verbal" ? 2 : 1,
-            category: section.category,
-            section: section.sectionNumber
-          });
+        
+        if (section.category === "mixed") {
+          // For mixed sections, we need to create both verbal and quantitative questions
+          // First part: verbal questions (13 questions)
+          const verbalCount = section.name === "القسم الأول" ? 13 : 13;
+          
+          for (let i = 0; i < verbalCount; i++) {
+            questions.push({
+              id: i + 1,
+              text: `سؤال لفظي ${i + 1}: ما مرادف كلمة "استقصى"؟`,
+              options: ["بحث", "استفهم", "تحرى", "جميع ما سبق"],
+              correctOptionIndex: 2,
+              category: "verbal",
+              section: section.sectionNumber
+            });
+          }
+          
+          // Second part: quantitative questions (11 questions)
+          const quantitativeCount = section.questionCount - verbalCount;
+          
+          for (let i = 0; i < quantitativeCount; i++) {
+            questions.push({
+              id: verbalCount + i + 1,
+              text: `سؤال كمي ${i + 1}: إذا كان عدد طلاب صف ما 25 طالباً، ونسبة الناجحين 80%، فكم عدد الطلاب الناجحين؟`,
+              options: ["15", "20", "22", "25"],
+              correctOptionIndex: 1,
+              category: "quantitative",
+              section: section.sectionNumber
+            });
+          }
+        } else {
+          // Normal sections (verbal or quantitative only)
+          for (let i = 0; i < section.questionCount; i++) {
+            questions.push({
+              id: i + 1,
+              text: section.category === "verbal" 
+                ? `سؤال لفظي ${i + 1}: ما مرادف كلمة "استقصى"؟`
+                : `سؤال كمي ${i + 1}: إذا كان عدد طلاب صف ما 25 طالباً، ونسبة الناجحين 80%، فكم عدد الطلاب الناجحين؟`,
+              options: section.category === "verbal"
+                ? ["بحث", "استفهم", "تحرى", "جميع ما سبق"]
+                : ["15", "20", "22", "25"],
+              correctOptionIndex: section.category === "verbal" ? 2 : 1,
+              category: section.category,
+              section: section.sectionNumber
+            });
+          }
         }
+        
         resolve(questions);
       }, 500);
     });
@@ -334,7 +368,23 @@ const QiyasExamPage: React.FC = () => {
       totalCorrect += sectionScore;
       totalQuestions += section.questionCount;
       
-      if (section.category === "verbal") {
+      if (section.category === "mixed") {
+        // For mixed sections, we have 13 verbal questions and 11 quantitative questions
+        const verbalCount = 13;
+        const quantitativeCount = section.questionCount - verbalCount;
+        
+        // For mixed sections, we can't know exactly how many verbal vs quantitative 
+        // questions were answered correctly, so we distribute proportionally
+        const verbalProportion = verbalCount / section.questionCount;
+        const verbalScoreEstimate = Math.round(sectionScore * verbalProportion);
+        const quantitativeScoreEstimate = sectionScore - verbalScoreEstimate;
+        
+        verbalCorrect += verbalScoreEstimate;
+        verbalTotal += verbalCount;
+        
+        quantitativeCorrect += quantitativeScoreEstimate;
+        quantitativeTotal += quantitativeCount;
+      } else if (section.category === "verbal") {
         verbalCorrect += sectionScore;
         verbalTotal += section.questionCount;
       } else {
@@ -485,7 +535,9 @@ const QiyasExamPage: React.FC = () => {
                       <tr key={section.sectionNumber} className={index % 2 === 0 ? "bg-white" : "bg-muted/20"}>
                         <td className="border-t px-4 py-2">{section.name}</td>
                         <td className="border-t px-4 py-2">
-                          {section.category === "verbal" ? "لفظي" : "كمي"}
+                          {section.category === "verbal" ? "لفظي" : 
+                           section.category === "quantitative" ? "كمي" : 
+                           "مختلط (لفظي وكمي)"}
                         </td>
                         <td className="border-t px-4 py-2">{section.questionCount}</td>
                         <td className="border-t px-4 py-2">{section.timeLimit}</td>
@@ -540,7 +592,9 @@ const QiyasExamPage: React.FC = () => {
               القسم {currentSectionData.sectionNumber}: {currentSectionData.name}
             </h2>
             <div className="text-sm text-muted-foreground">
-              {currentSectionData.category === "verbal" ? "قدرات لفظية" : "قدرات كمية"}
+              {currentSectionData.category === "verbal" ? "قدرات لفظية" : 
+               currentSectionData.category === "quantitative" ? "قدرات كمية" : 
+               "قدرات مختلطة (لفظية وكمية)"}
             </div>
           </div>
           
@@ -732,7 +786,9 @@ const QiyasExamPage: React.FC = () => {
                         <tr key={section.sectionNumber} className={index % 2 === 0 ? "bg-white" : "bg-muted/20"}>
                           <td className="border-t px-4 py-2">{section.name}</td>
                           <td className="border-t px-4 py-2">
-                            {section.category === "verbal" ? "لفظي" : "كمي"}
+                            {section.category === "verbal" ? "لفظي" : 
+                             section.category === "quantitative" ? "كمي" : 
+                             "مختلط (لفظي وكمي)"}
                           </td>
                           <td className="border-t px-4 py-2">{sectionScore}/{section.questionCount}</td>
                           <td className="border-t px-4 py-2">{sectionPercentage.toFixed(1)}%</td>
