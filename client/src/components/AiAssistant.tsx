@@ -270,12 +270,13 @@ const AiAssistant: React.FC<AiAssistantProps> = ({
         response += additionalInfo;
       }
 
-      // Send assistant response
+      // Send assistant response with typing effect
       const assistantMessage: MessageType = {
         id: Date.now().toString(),
         text: response,
         sender: "assistant",
         timestamp: new Date(),
+        isTyping: true
       };
 
       setMessages(prev => [...prev, assistantMessage]);
@@ -288,6 +289,7 @@ const AiAssistant: React.FC<AiAssistantProps> = ({
         text: "عذرًا، حدث خطأ ما. يرجى المحاولة مرة أخرى.\n\nيمكنني مساعدتك في العديد من المواضيع المتعلقة باختبار القدرات، مثل أسئلة التناظر اللفظي، إكمال الجمل، المتواليات العددية، النسبة والتناسب، وغيرها. جرب أن تسألني عن 'نموذج سؤال قدرات كمي' أو 'كيفية حل أسئلة التناظر اللفظي'.",
         sender: "assistant",
         timestamp: new Date(),
+        isTyping: true
       };
       
       setMessages(prev => [...prev, errorMessage]);
@@ -406,6 +408,7 @@ ${question.explanation ? `الشرح: ${question.explanation}` : ''}
         text: details,
         sender: "assistant",
         timestamp: new Date(),
+        isTyping: true
       };
 
       setMessages(prev => [...prev, detailsMessage]);
@@ -436,6 +439,7 @@ ${question.explanation ? `الشرح: ${question.explanation}` : ''}
       text: "تم مسح المحادثة. كيف يمكنني مساعدتك اليوم؟",
       sender: "assistant",
       timestamp: new Date(),
+      isTyping: true
     };
     setMessages([welcomeMessage]);
   };
