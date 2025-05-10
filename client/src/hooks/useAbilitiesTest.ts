@@ -22,50 +22,40 @@ export function useAbilitiesTest(userId: number | null) {
   const [isAnswerLocked, setIsAnswerLocked] = useState(false);
   
   // Fetch questions for the current test
-  const fetchQuestions = useCallback(async (type: TestType, difficulty: TestDifficulty) => {
+  const fetchQuestions = useCallback(async (type: TestType, difficulty: TestDifficulty, isQiyasExam: boolean = false) => {
     try {
-      // Fetch all questions for this type and difficulty
       const response = await fetch(`/api/questions?category=${type}&difficulty=${difficulty}`);
       if (response.ok) {
         const allQuestions = await response.json();
         
-        // Group questions by section
-        const questionsBySection = allQuestions.reduce((acc: any, q: any) => {
-          const section = q.section || 1;
-          if (!acc[section]) acc[section] = [];
-          acc[section].push(q);
-          return acc;
-        }, {});
-        
-        // Select one random question from each section until we have 10
-        const selectedQuestions = [];
-        const sections = Object.keys(questionsBySection);
-        
-        while (selectedQuestions.length < 10 && sections.length > 0) {
-          // Get random section
-          const randomSectionIndex = Math.floor(Math.random() * sections.length);
-          const sectionQuestions = questionsBySection[sections[randomSectionIndex]];
+        if (isQiyasExam) {
+          // For Qiyas exams, group by section and select randomly
+          const questionsBySection = allQuestions.reduce((acc: any, q: any) => {
+            const section = q.section || 1;
+            if (!acc[section]) acc[section] = [];
+            acc[section].push(q);
+            return acc;
+          }, {});
           
-          // Get random question from section
-          if (sectionQuestions.length > 0) {
-            const randomIndex = Math.floor(Math.random() * sectionQuestions.length);
-            selectedQuestions.push(sectionQuestions[randomIndex]);
-            // Remove used question
-            sectionQuestions.splice(randomIndex, 1);
-          }
+          // Select random questions from each section to match section requirements
+          const selectedQuestions = [];
+          const sections = Object.keys(questionsBySection);
           
-          // If section is empty, remove it
-          if (sectionQuestions.length === 0) {
-            sections.splice(randomSectionIndex, 1);
-          }
+          sections.forEach(section => {
+            const sectionQuestions = questionsBySection[section];
+            // Shuffle section questions
+            const shuffled = [...sectionQuestions].sort(() => 0.5 - Math.random());
+            // Take required number of questions for this section
+            const questionsNeeded = section === "verbal" ? 13 : 11; // Based on Qiyas format
+            selectedQuestions.push(...shuffled.slice(0, questionsNeeded));
+          });
           
-          // If we've used all sections but need more questions, reset sections
-          if (sections.length === 0 && selectedQuestions.length < 10) {
-            sections.push(...Object.keys(questionsBySection));
-          }
+          setQuestions(selectedQuestions);
+        } else {
+          // For regular tests, just shuffle and take 10
+          const shuffled = [...allQuestions].sort(() => 0.5 - Math.random());
+          setQuestions(shuffled.slice(0, 10));
         }
-        
-        setQuestions(selectedQuestions);
       }
     } catch (error) {
       console.error("Error fetching questions:", error);
