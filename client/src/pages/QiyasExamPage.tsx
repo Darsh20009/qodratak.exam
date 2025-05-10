@@ -108,7 +108,7 @@ const qiyasExams: QiyasExam[] = [
 const QiyasExamPage: React.FC = () => {
   const [location, setLocation] = useLocation();
   const { toast } = useToast();
-  
+
   // States for exam selection and progress
   const [selectedExam, setSelectedExam] = useState<QiyasExam | null>(null);
   const [currentView, setCurrentView] = useState<"selection" | "instructions" | "inProgress" | "results">("selection");
@@ -116,67 +116,67 @@ const QiyasExamPage: React.FC = () => {
   const [currentQuestion, setCurrentQuestion] = useState(0);
   const [timeLeft, setTimeLeft] = useState(0);
   const [showExamResults, setShowExamResults] = useState(false);
-  
+
   // States for question answers
   const [questions, setQuestions] = useState<ExamQuestion[]>([]);
   const [answers, setAnswers] = useState<{[questionId: number]: number}>({});
   const [selectedAnswer, setSelectedAnswer] = useState<number | null>(null);
-  
+
   // Stats for results
   const [sectionScores, setSectionScores] = useState<{[sectionNumber: number]: number}>({});
   const [examStartTime, setExamStartTime] = useState<Date | null>(null);
   const [examEndTime, setExamEndTime] = useState<Date | null>(null);
-  
+
   // Timer for the test
   useEffect(() => {
     if (currentView === "inProgress" && timeLeft > 0) {
       const timer = setTimeout(() => {
         setTimeLeft(prev => prev - 1);
       }, 1000);
-      
+
       return () => clearTimeout(timer);
     } else if (timeLeft === 0 && currentView === "inProgress") {
       // Move to the next section or finish the exam if time is up
       moveToNextSection();
     }
   }, [timeLeft, currentView]);
-  
+
   // Format time from seconds to MM:SS
   const formatTime = (seconds: number): string => {
     const minutes = Math.floor(seconds / 60);
     const remainingSeconds = seconds % 60;
     return `${minutes.toString().padStart(2, '0')}:${remainingSeconds.toString().padStart(2, '0')}`;
   };
-  
+
   // Load exam data
   const loadExam = (exam: QiyasExam) => {
     setSelectedExam(exam);
     setCurrentView("instructions");
   };
-  
+
   // Start the exam
   const startExam = async () => {
     if (!selectedExam) return;
-    
+
     // Clear previous state
     setCurrentSection(0);
     setCurrentQuestion(0);
     setAnswers({});
     setSectionScores({});
     setShowExamResults(false);
-    
+
     try {
       // In a real app, this would fetch questions from the API
       // For now, we'll simulate loading questions
       const examQuestions: ExamQuestion[] = await fetchQuestionsForSection(selectedExam.sections[0]);
       setQuestions(examQuestions);
-      
+
       // Set time limit for the first section
       setTimeLeft(selectedExam.sections[0].timeLimit * 60);
-      
+
       // Record exam start time
       setExamStartTime(new Date());
-      
+
       // Switch to exam view
       setCurrentView("inProgress");
     } catch (error) {
@@ -187,131 +187,35 @@ const QiyasExamPage: React.FC = () => {
       });
     }
   };
-  
+
   // Fetch questions for a section (simulated)
   const fetchQuestionsForSection = async (section: QiyasSection): Promise<ExamQuestion[]> => {
-    // In a real app, this would be an API call
-    return new Promise((resolve) => {
-      setTimeout(() => {
-        const questions: ExamQuestion[] = [];
-        
-        if (section.category === "mixed") {
-          // For mixed sections (1-3), we need both verbal and quantitative questions
-          const verbalCount = 13; // Fixed 13 verbal questions per mixed section
-          const quantitativeCount = 11; // Fixed 11 quantitative questions per mixed section
-          
-          // Add verbal questions
-          for (let i = 0; i < verbalCount; i++) {
-            questions.push({
-              id: i + 1,
-              text: `سؤال لفظي ${i + 1} - القسم ${section.sectionNumber}: ${getRandomVerbalQuestion()}`,
-              options: getRandomOptions(),
-              correctOptionIndex: Math.floor(Math.random() * 4),
-              category: "verbal",
-              section: section.sectionNumber
-            });
-          }
-          
-          // Add quantitative questions
-          for (let i = 0; i < quantitativeCount; i++) {
-            questions.push({
-              id: verbalCount + i + 1,
-              text: `سؤال كمي ${i + 1} - القسم ${section.sectionNumber}: ${getRandomQuantitativeQuestion()}`,
-              options: getRandomQuantitativeOptions(),
-              correctOptionIndex: Math.floor(Math.random() * 4),
-              category: "quantitative",
-              section: section.sectionNumber
-            });
-          }
-          
-          // Helper functions for generating random questions
-          function getRandomVerbalQuestion() {
-            const verbalQuestions = [
-              "ما مرادف كلمة 'استقصى'؟",
-              "ما معنى كلمة 'تواتر'؟",
-              "ما المقصود بـ 'الإسهاب'؟",
-              "اختر المعنى الصحيح لكلمة 'استنبط'؟",
-              "ما ضد كلمة 'إخفاق'؟",
-              "ما جمع كلمة 'مِنهاج'؟",
-              "ما مفرد كلمة 'أساطير'؟",
-              "ما معنى 'التواضع'؟",
-              "ما المقصود بـ 'الحصافة'؟",
-              "ما مرادف 'الإيثار'؟"
-            ];
-            return verbalQuestions[Math.floor(Math.random() * verbalQuestions.length)];
-          }
-          
-          function getRandomOptions() {
-            const optionSets = [
-              ["بحث", "استفهم", "تحرى", "جميع ما سبق"],
-              ["تكرر", "تتابع", "استمر", "كل ما سبق"],
-              ["الإطناب", "الإطالة", "التفصيل", "جميع ما سبق"],
-              ["استخرج", "استنتج", "اكتشف", "كل ما ذكر"],
-              ["نجاح", "تفوق", "إنجاز", "تميز"]
-            ];
-            return optionSets[Math.floor(Math.random() * optionSets.length)];
-          }
-          
-          function getRandomQuantitativeQuestion() {
-            const quantitativeQuestions = [
-              "إذا كان عدد طلاب صف ما 25 طالباً، ونسبة الناجحين 80%، فكم عدد الطلاب الناجحين؟",
-              "ما ناتج ضرب 13 × 14؟",
-              "إذا كان محيط مربع 24 سم، فما مساحته؟",
-              "ما العدد الذي إذا ضرب في نفسه كان الناتج 144؟",
-              "إذا كان ثمن القلم 5 ريال، فكم ثمن 15 قلماً؟",
-              "ما العدد الذي يقع بين 15 و 25 ويقبل القسمة على 3 و 4؟",
-              "كم عدد الأوجه في المكعب؟",
-              "ما مجموع زوايا المثلث؟",
-              "كم ضعف العدد 8 يساوي ثلاثة أرباع العدد 32؟",
-              "إذا كان عمر أحمد 15 سنة وعمر محمد ضعف عمر أحمد، فكم عمر محمد؟"
-            ];
-            return quantitativeQuestions[Math.floor(Math.random() * quantitativeQuestions.length)];
-          }
-          
-          function getRandomQuantitativeOptions() {
-            const optionSets = [
-              ["15", "20", "22", "25"],
-              ["156", "172", "182", "192"],
-              ["36", "48", "56", "64"],
-              ["10", "12", "14", "16"],
-              ["45", "60", "75", "90"]
-            ];
-            return optionSets[Math.floor(Math.random() * optionSets.length)];
-          }
-        } else {
-          // Normal sections (verbal or quantitative only)
-          for (let i = 0; i < section.questionCount; i++) {
-            questions.push({
-              id: i + 1,
-              text: section.category === "verbal" 
-                ? `سؤال لفظي ${i + 1}: ما مرادف كلمة "استقصى"؟`
-                : `سؤال كمي ${i + 1}: إذا كان عدد طلاب صف ما 25 طالباً، ونسبة الناجحين 80%، فكم عدد الطلاب الناجحين؟`,
-              options: section.category === "verbal"
-                ? ["بحث", "استفهم", "تحرى", "جميع ما سبق"]
-                : ["15", "20", "22", "25"],
-              correctOptionIndex: section.category === "verbal" ? 2 : 1,
-              category: section.category,
-              section: section.sectionNumber
-            });
-          }
-        }
-        
-        resolve(questions);
-      }, 500);
-    });
+    try {
+      const response = await fetch('/questions_all.json');
+      if (!response.ok) {
+        throw new Error(`Failed to fetch questions. Status: ${response.status}`);
+      }
+      const questions: ExamQuestion[] = await response.json();
+      // Filter questions based on the section
+      const filteredQuestions = questions.filter(question => question.section === section.sectionNumber && question.category === section.category);
+      return filteredQuestions;
+    } catch (error) {
+      console.error('Error fetching questions:', error);
+      throw error;
+    }
   };
-  
+
   // Select an answer for the current question
   const selectAnswer = (index: number) => {
     setSelectedAnswer(index);
-    
+
     // Store the answer
     if (questions[currentQuestion]) {
       const questionId = questions[currentQuestion].id;
       setAnswers(prev => ({ ...prev, [questionId]: index }));
     }
   };
-  
+
   // Move to the next question
   const goToNextQuestion = () => {
     if (currentQuestion < questions.length - 1) {
@@ -322,7 +226,7 @@ const QiyasExamPage: React.FC = () => {
       moveToNextSection();
     }
   };
-  
+
   // Move to previous question
   const goToPreviousQuestion = () => {
     if (currentQuestion > 0) {
@@ -332,31 +236,31 @@ const QiyasExamPage: React.FC = () => {
       setSelectedAnswer(answers[questionId] ?? null);
     }
   };
-  
+
   // Move to the next section or finish the exam
   const moveToNextSection = async () => {
     if (!selectedExam) return;
-    
+
     // Calculate score for current section
     calculateSectionScore();
-    
+
     // Check if this was the last section
     if (currentSection >= selectedExam.sections.length - 1) {
       finishExam();
       return;
     }
-    
+
     // Move to the next section
     const nextSection = currentSection + 1;
     setCurrentSection(nextSection);
     setCurrentQuestion(0);
     setSelectedAnswer(null);
-    
+
     // Load questions for the next section
     try {
       const nextSectionQuestions = await fetchQuestionsForSection(selectedExam.sections[nextSection]);
       setQuestions(nextSectionQuestions);
-      
+
       // Set time limit for the next section
       setTimeLeft(selectedExam.sections[nextSection].timeLimit * 60);
     } catch (error) {
@@ -367,14 +271,14 @@ const QiyasExamPage: React.FC = () => {
       });
     }
   };
-  
+
   // Calculate score for the current section
   const calculateSectionScore = () => {
     if (!selectedExam) return;
-    
+
     const sectionNumber = selectedExam.sections[currentSection].sectionNumber;
     let correctCount = 0;
-    
+
     // Count correct answers for this section
     questions.forEach(q => {
       const userAnswer = answers[q.id];
@@ -382,20 +286,20 @@ const QiyasExamPage: React.FC = () => {
         correctCount++;
       }
     });
-    
+
     // Store section score
     setSectionScores(prev => ({
       ...prev,
       [sectionNumber]: correctCount
     }));
   };
-  
+
   // Finish the exam and calculate overall results
   const finishExam = () => {
     setExamEndTime(new Date());
     setCurrentView("results");
   };
-  
+
   // Calculate exam statistics for results page
   const calculateExamStats = () => {
     if (!selectedExam || !examStartTime || !examEndTime) return {
@@ -407,7 +311,7 @@ const QiyasExamPage: React.FC = () => {
       timeTaken: 0,
       percentage: 0
     };
-    
+
     // Calculate total score
     let totalCorrect = 0;
     let totalQuestions = 0;
@@ -415,27 +319,27 @@ const QiyasExamPage: React.FC = () => {
     let quantitativeCorrect = 0;
     let verbalTotal = 0;
     let quantitativeTotal = 0;
-    
+
     selectedExam.sections.forEach(section => {
       const sectionScore = sectionScores[section.sectionNumber] || 0;
-      
+
       totalCorrect += sectionScore;
       totalQuestions += section.questionCount;
-      
+
       if (section.category === "mixed") {
         // For mixed sections, we have 13 verbal questions and 11 quantitative questions
         const verbalCount = 13;
         const quantitativeCount = section.questionCount - verbalCount;
-        
+
         // For mixed sections, we can't know exactly how many verbal vs quantitative 
         // questions were answered correctly, so we distribute proportionally
         const verbalProportion = verbalCount / section.questionCount;
         const verbalScoreEstimate = Math.round(sectionScore * verbalProportion);
         const quantitativeScoreEstimate = sectionScore - verbalScoreEstimate;
-        
+
         verbalCorrect += verbalScoreEstimate;
         verbalTotal += verbalCount;
-        
+
         quantitativeCorrect += quantitativeScoreEstimate;
         quantitativeTotal += quantitativeCount;
       } else if (section.category === "verbal") {
@@ -446,15 +350,15 @@ const QiyasExamPage: React.FC = () => {
         quantitativeTotal += section.questionCount;
       }
     });
-    
+
     // Calculate time taken
     const timeTaken = Math.floor((examEndTime.getTime() - examStartTime.getTime()) / 1000 / 60); // in minutes
-    
+
     // Calculate percentages
     const percentage = (totalCorrect / totalQuestions) * 100;
     const verbalPercentage = verbalTotal > 0 ? (verbalCorrect / verbalTotal) * 100 : 0;
     const quantitativePercentage = quantitativeTotal > 0 ? (quantitativeCorrect / quantitativeTotal) * 100 : 0;
-    
+
     return {
       totalScore: totalCorrect,
       totalCorrect,
@@ -469,7 +373,7 @@ const QiyasExamPage: React.FC = () => {
       percentage
     };
   };
-  
+
   // Render the exam selection view
   const renderExamSelection = () => (
     <div className="p-6 space-y-8">
@@ -483,7 +387,7 @@ const QiyasExamPage: React.FC = () => {
             إنشاء اختبار مخصص
           </Button>
         </div>
-        
+
         <div className="grid md:grid-cols-2 gap-6">
           {qiyasExams.map(exam => (
             <Card key={exam.id} className="overflow-hidden">
@@ -514,7 +418,7 @@ const QiyasExamPage: React.FC = () => {
                     <div className="font-bold">{exam.totalQuestions >= 100 ? "رسمي" : "تدريبي"}</div>
                   </div>
                 </div>
-                
+
                 <div className="text-sm mb-2">أقسام الاختبار:</div>
                 <div className="space-y-2">
                   {exam.sections.map(section => (
@@ -538,11 +442,11 @@ const QiyasExamPage: React.FC = () => {
       </div>
     </div>
   );
-  
+
   // Render the exam instructions view
   const renderExamInstructions = () => {
     if (!selectedExam) return null;
-    
+
     return (
       <div className="container max-w-4xl py-8">
         <Card>
@@ -560,7 +464,7 @@ const QiyasExamPage: React.FC = () => {
                 </p>
               </div>
             </div>
-            
+
             <div>
               <h3 className="font-medium mb-2">معلومات الاختبار:</h3>
               <ul className="space-y-2">
@@ -578,7 +482,7 @@ const QiyasExamPage: React.FC = () => {
                 </li>
               </ul>
             </div>
-            
+
             <div>
               <h3 className="font-medium mb-2">تفاصيل الأقسام:</h3>
               <div className="border rounded-lg overflow-hidden">
@@ -608,7 +512,7 @@ const QiyasExamPage: React.FC = () => {
                 </table>
               </div>
             </div>
-            
+
             <div>
               <h3 className="font-medium mb-2">إرشادات:</h3>
               <ul className="space-y-1 text-sm list-disc list-inside">
@@ -632,7 +536,7 @@ const QiyasExamPage: React.FC = () => {
       </div>
     );
   };
-  
+
   // Render the exam in progress view
   const renderExamInProgress = () => {
     if (!selectedExam || questions.length === 0) return (
@@ -640,10 +544,10 @@ const QiyasExamPage: React.FC = () => {
         <div className="animate-pulse">جاري تحميل الأسئلة...</div>
       </div>
     );
-    
+
     const currentSectionData = selectedExam.sections[currentSection];
     const currentQuestionData = questions[currentQuestion];
-    
+
     return (
       <div className="container py-6 max-w-4xl">
         {/* Header with progress & timer */}
@@ -658,7 +562,7 @@ const QiyasExamPage: React.FC = () => {
                "قدرات مختلطة (لفظية وكمية)"}
             </div>
           </div>
-          
+
           <div className="flex items-center gap-3">
             <div className="flex items-center gap-1">
               <Clock3 className="h-4 w-4" />
@@ -671,14 +575,14 @@ const QiyasExamPage: React.FC = () => {
             </div>
           </div>
         </div>
-        
+
         {/* Progress bar */}
         <div className="flex justify-between text-sm mb-1">
           <span>السؤال {currentQuestion + 1} من {questions.length}</span>
           <span>القسم {currentSection + 1} من {selectedExam.sections.length}</span>
         </div>
         <Progress value={(currentQuestion + 1) / questions.length * 100} className="mb-6" />
-        
+
         {/* Question */}
         <Card className="mb-6">
           <CardHeader>
@@ -690,7 +594,7 @@ const QiyasExamPage: React.FC = () => {
             </CardDescription>
           </CardHeader>
         </Card>
-        
+
         {/* Options */}
         <div className="space-y-3 mb-8">
           {currentQuestionData.options.map((option, index) => (
@@ -714,7 +618,7 @@ const QiyasExamPage: React.FC = () => {
             </div>
           ))}
         </div>
-        
+
         {/* Navigation */}
         <div className="flex justify-between">
           <Button 
@@ -725,7 +629,7 @@ const QiyasExamPage: React.FC = () => {
             <ArrowRightIcon className="h-4 w-4 ml-2" />
             السؤال السابق
           </Button>
-          
+
           <Dialog>
             <DialogTrigger asChild>
               <Button variant="outline" className="mx-2">
@@ -744,7 +648,7 @@ const QiyasExamPage: React.FC = () => {
               </DialogFooter>
             </DialogContent>
           </Dialog>
-          
+
           <Button 
             onClick={goToNextQuestion}
             disabled={selectedAnswer === null}
@@ -762,18 +666,18 @@ const QiyasExamPage: React.FC = () => {
       </div>
     );
   };
-  
+
   // Render the exam results view
   const renderExamResults = () => {
     if (!selectedExam) return null;
-    
+
     const stats = calculateExamStats();
     const performance = 
       stats.percentage >= 90 ? { label: "ممتاز", color: "text-green-500" } :
       stats.percentage >= 70 ? { label: "جيد جداً", color: "text-blue-500" } :
       stats.percentage >= 50 ? { label: "جيد", color: "text-yellow-500" } :
       { label: "بحاجة للتحسين", color: "text-red-500" };
-    
+
     return (
       <div className="container py-8 max-w-4xl">
         <Card className="mb-8 overflow-hidden">
@@ -792,7 +696,7 @@ const QiyasExamPage: React.FC = () => {
                 {performance.label} ({stats.percentage.toFixed(1)}%)
               </div>
             </div>
-            
+
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
               <div className="bg-muted/30 p-4 rounded-lg text-center">
                 <div className="text-sm text-muted-foreground mb-1">القدرات اللفظية</div>
@@ -823,9 +727,9 @@ const QiyasExamPage: React.FC = () => {
                 </div>
               </div>
             </div>
-            
+
             <Separator className="my-6" />
-            
+
             <div>
               <h3 className="font-medium mb-4">النتائج حسب القسم:</h3>
               <div className="border rounded-lg overflow-hidden">
@@ -842,7 +746,7 @@ const QiyasExamPage: React.FC = () => {
                     {selectedExam.sections.map((section, index) => {
                       const sectionScore = sectionScores[section.sectionNumber] || 0;
                       const sectionPercentage = (sectionScore / section.questionCount) * 100;
-                      
+
                       return (
                         <tr key={section.sectionNumber} className={index % 2 === 0 ? "bg-white" : "bg-muted/20"}>
                           <td className="border-t px-4 py-2">{section.name}</td>
@@ -881,7 +785,7 @@ const QiyasExamPage: React.FC = () => {
             )}
           </CardFooter>
         </Card>
-        
+
         {/* More detailed analysis and recommendations would go here */}
         <Card>
           <CardHeader>
@@ -896,7 +800,7 @@ const QiyasExamPage: React.FC = () => {
                 <TabsTrigger value="verbal">القدرات اللفظية</TabsTrigger>
                 <TabsTrigger value="quantitative">القدرات الكمية</TabsTrigger>
               </TabsList>
-              
+
               <TabsContent value="verbal" className="space-y-4">
                 <div className="p-4 border rounded-lg">
                   <h4 className="font-medium mb-2">نقاط القوة</h4>
@@ -905,7 +809,7 @@ const QiyasExamPage: React.FC = () => {
                     <li>معرفة مناسبة بالمترادفات والمتضادات</li>
                   </ul>
                 </div>
-                
+
                 <div className="p-4 border rounded-lg">
                   <h4 className="font-medium mb-2">مجالات التحسين</h4>
                   <ul className="text-sm space-y-1 list-disc list-inside">
@@ -913,7 +817,7 @@ const QiyasExamPage: React.FC = () => {
                     <li>تدرب على التمييز بين العلاقات اللفظية المتشابهة</li>
                   </ul>
                 </div>
-                
+
                 <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
                   <h4 className="font-medium mb-2">التوصيات</h4>
                   <p className="text-sm mb-2">
@@ -926,7 +830,7 @@ const QiyasExamPage: React.FC = () => {
                   </ul>
                 </div>
               </TabsContent>
-              
+
               <TabsContent value="quantitative" className="space-y-4">
                 <div className="p-4 border rounded-lg">
                   <h4 className="font-medium mb-2">نقاط القوة</h4>
@@ -935,7 +839,7 @@ const QiyasExamPage: React.FC = () => {
                     <li>فهم جيد للنسب المئوية</li>
                   </ul>
                 </div>
-                
+
                 <div className="p-4 border rounded-lg">
                   <h4 className="font-medium mb-2">مجالات التحسين</h4>
                   <ul className="text-sm space-y-1 list-disc list-inside">
@@ -943,7 +847,7 @@ const QiyasExamPage: React.FC = () => {
                     <li>تقوية التعامل مع الاحتمالات والإحصاء</li>
                   </ul>
                 </div>
-                
+
                 <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
                   <h4 className="font-medium mb-2">التوصيات</h4>
                   <p className="text-sm mb-2">
@@ -962,7 +866,7 @@ const QiyasExamPage: React.FC = () => {
       </div>
     );
   };
-  
+
   return (
     <>
       {currentView === "selection" && renderExamSelection()}
