@@ -191,14 +191,19 @@ const QiyasExamPage: React.FC = () => {
   // Fetch questions for a section (simulated)
   const fetchQuestionsForSection = async (section: QiyasSection): Promise<ExamQuestion[]> => {
     try {
-      const response = await fetch('/questions_all.json');
+      const response = await fetch('/api/questions');
       if (!response.ok) {
         throw new Error(`Failed to fetch questions. Status: ${response.status}`);
       }
-      const questions: ExamQuestion[] = await response.json();
-      // Filter questions based on the section
-      const filteredQuestions = questions.filter(question => question.section === section.sectionNumber && question.category === section.category);
-      return filteredQuestions;
+      const allQuestions = await response.json();
+      // Filter questions based on the section and category
+      const filteredQuestions = allQuestions.filter(question => 
+        (section.category === "mixed" || question.category === section.category)
+      );
+      // Shuffle and take required number
+      const shuffled = [...filteredQuestions].sort(() => 0.5 - Math.random());
+      const count = section.questionCount;
+      return shuffled.slice(0, count);
     } catch (error) {
       console.error('Error fetching questions:', error);
       throw error;
