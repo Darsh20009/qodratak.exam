@@ -278,8 +278,6 @@ const QiyasExamPage: React.FC = () => {
             ];
             return optionSets[Math.floor(Math.random() * optionSets.length)];
           }
-            });
-          }
         } else {
           // Normal sections (verbal or quantitative only)
           for (let i = 0; i < section.questionCount; i++) {
