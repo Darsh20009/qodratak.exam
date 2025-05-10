@@ -24,12 +24,48 @@ export function useAbilitiesTest(userId: number | null) {
   // Fetch questions for the current test
   const fetchQuestions = useCallback(async (type: TestType, difficulty: TestDifficulty) => {
     try {
+      // Fetch all questions for this type and difficulty
       const response = await fetch(`/api/questions?category=${type}&difficulty=${difficulty}`);
       if (response.ok) {
-        const data = await response.json();
-        // Shuffle and limit to 10 questions
-        const shuffled = [...data].sort(() => 0.5 - Math.random());
-        setQuestions(shuffled.slice(0, 10));
+        const allQuestions = await response.json();
+        
+        // Group questions by section
+        const questionsBySection = allQuestions.reduce((acc: any, q: any) => {
+          const section = q.section || 1;
+          if (!acc[section]) acc[section] = [];
+          acc[section].push(q);
+          return acc;
+        }, {});
+        
+        // Select one random question from each section until we have 10
+        const selectedQuestions = [];
+        const sections = Object.keys(questionsBySection);
+        
+        while (selectedQuestions.length < 10 && sections.length > 0) {
+          // Get random section
+          const randomSectionIndex = Math.floor(Math.random() * sections.length);
+          const sectionQuestions = questionsBySection[sections[randomSectionIndex]];
+          
+          // Get random question from section
+          if (sectionQuestions.length > 0) {
+            const randomIndex = Math.floor(Math.random() * sectionQuestions.length);
+            selectedQuestions.push(sectionQuestions[randomIndex]);
+            // Remove used question
+            sectionQuestions.splice(randomIndex, 1);
+          }
+          
+          // If section is empty, remove it
+          if (sectionQuestions.length === 0) {
+            sections.splice(randomSectionIndex, 1);
+          }
+          
+          // If we've used all sections but need more questions, reset sections
+          if (sections.length === 0 && selectedQuestions.length < 10) {
+            sections.push(...Object.keys(questionsBySection));
+          }
+        }
+        
+        setQuestions(selectedQuestions);
       }
     } catch (error) {
       console.error("Error fetching questions:", error);
