@@ -196,14 +196,30 @@ const QiyasExamPage: React.FC = () => {
         throw new Error(`Failed to fetch questions. Status: ${response.status}`);
       }
       const allQuestions = await response.json();
-      // Filter questions based on the section and category
-      const filteredQuestions = allQuestions.filter(question => 
-        (section.category === "mixed" || question.category === section.category)
-      );
-      // Shuffle and take required number
-      const shuffled = [...filteredQuestions].sort(() => 0.5 - Math.random());
-      const count = section.questionCount;
-      return shuffled.slice(0, count);
+      
+      if (section.category === "mixed") {
+        // For mixed sections, get 13 verbal and 11 quantitative questions
+        const verbalQuestions = allQuestions
+          .filter(q => q.category === "verbal")
+          .sort(() => 0.5 - Math.random())
+          .slice(0, 13);
+          
+        const quantitativeQuestions = allQuestions
+          .filter(q => q.category === "quantitative")
+          .sort(() => 0.5 - Math.random())
+          .slice(0, 11);
+          
+        // Return verbal questions first, then quantitative
+        return [...verbalQuestions, ...quantitativeQuestions];
+      } else {
+        // For regular sections (verbal or quantitative)
+        const sectionQuestions = allQuestions
+          .filter(q => q.category === section.category)
+          .sort(() => 0.5 - Math.random())
+          .slice(0, section.questionCount);
+          
+        return sectionQuestions;
+      }
     } catch (error) {
       console.error('Error fetching questions:', error);
       throw error;
