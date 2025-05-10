@@ -196,23 +196,33 @@ const QiyasExamPage: React.FC = () => {
         const questions: ExamQuestion[] = [];
         
         if (section.category === "mixed") {
-          // For mixed sections, we need to create both verbal and quantitative questions
-          // First part: verbal questions (13 questions)
-          const verbalCount = section.name === "القسم الأول" ? 13 : 13;
+          // For mixed sections (1-3), we need both verbal and quantitative questions
+          const verbalCount = 13; // Fixed 13 verbal questions per mixed section
+          const quantitativeCount = 11; // Fixed 11 quantitative questions per mixed section
           
+          // Add verbal questions
           for (let i = 0; i < verbalCount; i++) {
             questions.push({
               id: i + 1,
-              text: `سؤال لفظي ${i + 1}: ما مرادف كلمة "استقصى"؟`,
+              text: `سؤال لفظي ${i + 1} - القسم ${section.sectionNumber}: ما مرادف كلمة "استقصى"؟`,
               options: ["بحث", "استفهم", "تحرى", "جميع ما سبق"],
-              correctOptionIndex: 2,
+              correctOptionIndex: Math.floor(Math.random() * 4),
               category: "verbal",
               section: section.sectionNumber
             });
           }
           
-          // Second part: quantitative questions (11 questions)
-          const quantitativeCount = section.questionCount - verbalCount;
+          // Add quantitative questions
+          for (let i = 0; i < quantitativeCount; i++) {
+            questions.push({
+              id: verbalCount + i + 1,
+              text: `سؤال كمي ${i + 1} - القسم ${section.sectionNumber}: حل المعادلة التالية`,
+              options: ["15", "20", "25", "30"],
+              correctOptionIndex: Math.floor(Math.random() * 4),
+              category: "quantitative",
+              section: section.sectionNumber
+            });
+          }
           
           for (let i = 0; i < quantitativeCount; i++) {
             questions.push({
