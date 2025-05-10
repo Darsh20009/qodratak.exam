@@ -204,8 +204,8 @@ const QiyasExamPage: React.FC = () => {
           for (let i = 0; i < verbalCount; i++) {
             questions.push({
               id: i + 1,
-              text: `سؤال لفظي ${i + 1} - القسم ${section.sectionNumber}: ما مرادف كلمة "استقصى"؟`,
-              options: ["بحث", "استفهم", "تحرى", "جميع ما سبق"],
+              text: `سؤال لفظي ${i + 1} - القسم ${section.sectionNumber}: ${getRandomVerbalQuestion()}`,
+              options: getRandomOptions(),
               correctOptionIndex: Math.floor(Math.random() * 4),
               category: "verbal",
               section: section.sectionNumber
@@ -216,22 +216,68 @@ const QiyasExamPage: React.FC = () => {
           for (let i = 0; i < quantitativeCount; i++) {
             questions.push({
               id: verbalCount + i + 1,
-              text: `سؤال كمي ${i + 1} - القسم ${section.sectionNumber}: حل المعادلة التالية`,
-              options: ["15", "20", "25", "30"],
+              text: `سؤال كمي ${i + 1} - القسم ${section.sectionNumber}: ${getRandomQuantitativeQuestion()}`,
+              options: getRandomQuantitativeOptions(),
               correctOptionIndex: Math.floor(Math.random() * 4),
               category: "quantitative",
               section: section.sectionNumber
             });
           }
           
-          for (let i = 0; i < quantitativeCount; i++) {
-            questions.push({
-              id: verbalCount + i + 1,
-              text: `سؤال كمي ${i + 1}: إذا كان عدد طلاب صف ما 25 طالباً، ونسبة الناجحين 80%، فكم عدد الطلاب الناجحين؟`,
-              options: ["15", "20", "22", "25"],
-              correctOptionIndex: 1,
-              category: "quantitative",
-              section: section.sectionNumber
+          // Helper functions for generating random questions
+          function getRandomVerbalQuestion() {
+            const verbalQuestions = [
+              "ما مرادف كلمة 'استقصى'؟",
+              "ما معنى كلمة 'تواتر'؟",
+              "ما المقصود بـ 'الإسهاب'؟",
+              "اختر المعنى الصحيح لكلمة 'استنبط'؟",
+              "ما ضد كلمة 'إخفاق'؟",
+              "ما جمع كلمة 'مِنهاج'؟",
+              "ما مفرد كلمة 'أساطير'؟",
+              "ما معنى 'التواضع'؟",
+              "ما المقصود بـ 'الحصافة'؟",
+              "ما مرادف 'الإيثار'؟"
+            ];
+            return verbalQuestions[Math.floor(Math.random() * verbalQuestions.length)];
+          }
+          
+          function getRandomOptions() {
+            const optionSets = [
+              ["بحث", "استفهم", "تحرى", "جميع ما سبق"],
+              ["تكرر", "تتابع", "استمر", "كل ما سبق"],
+              ["الإطناب", "الإطالة", "التفصيل", "جميع ما سبق"],
+              ["استخرج", "استنتج", "اكتشف", "كل ما ذكر"],
+              ["نجاح", "تفوق", "إنجاز", "تميز"]
+            ];
+            return optionSets[Math.floor(Math.random() * optionSets.length)];
+          }
+          
+          function getRandomQuantitativeQuestion() {
+            const quantitativeQuestions = [
+              "إذا كان عدد طلاب صف ما 25 طالباً، ونسبة الناجحين 80%، فكم عدد الطلاب الناجحين؟",
+              "ما ناتج ضرب 13 × 14؟",
+              "إذا كان محيط مربع 24 سم، فما مساحته؟",
+              "ما العدد الذي إذا ضرب في نفسه كان الناتج 144؟",
+              "إذا كان ثمن القلم 5 ريال، فكم ثمن 15 قلماً؟",
+              "ما العدد الذي يقع بين 15 و 25 ويقبل القسمة على 3 و 4؟",
+              "كم عدد الأوجه في المكعب؟",
+              "ما مجموع زوايا المثلث؟",
+              "كم ضعف العدد 8 يساوي ثلاثة أرباع العدد 32؟",
+              "إذا كان عمر أحمد 15 سنة وعمر محمد ضعف عمر أحمد، فكم عمر محمد؟"
+            ];
+            return quantitativeQuestions[Math.floor(Math.random() * quantitativeQuestions.length)];
+          }
+          
+          function getRandomQuantitativeOptions() {
+            const optionSets = [
+              ["15", "20", "22", "25"],
+              ["156", "172", "182", "192"],
+              ["36", "48", "56", "64"],
+              ["10", "12", "14", "16"],
+              ["45", "60", "75", "90"]
+            ];
+            return optionSets[Math.floor(Math.random() * optionSets.length)];
+          }
             });
           }
         } else {
