@@ -329,7 +329,8 @@ const ProfilePage: React.FC = () => {
   // If not logged in, show login/register forms
   return (
     <div className="container max-w-md py-8">
-      <h1 className="text-3xl font-bold mb-8 text-center">الملف الشخصي</h1>
+      <h1 className="text-3xl font-bold mb-8 text-center">تسجيل الدخول</h1>
+      <p className="text-center mb-8 text-muted-foreground">يجب تسجيل الدخول للوصول إلى المحتوى</p>
       
       <Tabs defaultValue="login">
         <TabsList className="w-full mb-6">

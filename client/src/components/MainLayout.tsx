@@ -16,7 +16,7 @@ export interface MainLayoutProps {
 }
 
 export const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
-  const [location] = useLocation();
+  const [location, setLocation] = useLocation();
   const [userName, setUserName] = useState<string | null>(null);
   const [userPoints, setUserPoints] = useState<number>(0);
   const [userLevel, setUserLevel] = useState<number>(0);
@@ -35,8 +35,11 @@ export const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
       } catch (e) {
         console.error("Error parsing stored user:", e);
       }
+    } else if (location !== '/profile') {
+      // Redirect to login if not authenticated
+      setLocation('/profile');
     }
-  }, []);
+  }, [location, setLocation]);
 
   const navItems = [
     { name: "الرئيسية", href: "/", icon: HomeIcon },
@@ -85,7 +88,7 @@ export const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
               <UserIcon className="h-5 w-5" />
               <span>أهلاً، {userName}</span>
             </div>
-            
+
             {/* Points Display */}
             <div className="rounded-md bg-primary-foreground p-3">
               <div className="flex justify-between items-center mb-1">
