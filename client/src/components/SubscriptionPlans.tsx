@@ -116,10 +116,36 @@ export function SubscriptionPlans() {
           <DialogHeader>
             <DialogTitle>تفاصيل الدفع</DialogTitle>
             <DialogDescription>
-              يرجى اختيار طريقة الدفع المناسبة لك
+              يرجى إدخال بياناتك واختيار طريقة الدفع المناسبة
             </DialogDescription>
           </DialogHeader>
-          <div className="space-y-6">
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <h3 className="font-medium">البيانات الشخصية:</h3>
+              <Input
+                type="text"
+                placeholder="الاسم الكامل"
+                className="w-full"
+              />
+              <Input
+                type="tel"
+                placeholder="رقم الهاتف"
+                className="w-full"
+                dir="ltr"
+              />
+              <Input
+                type="email"
+                placeholder="البريد الإلكتروني"
+                className="w-full"
+                dir="ltr"
+              />
+              <Input
+                type="password"
+                placeholder="كلمة المرور"
+                className="w-full"
+              />
+            </div>
+            <Separator className="my-4" />
             <div className="space-y-2">
               <h3 className="font-medium">الراجحي (تحويل بنكي):</h3>
               <div className="flex items-center justify-between p-2 bg-muted rounded-md">
