@@ -246,15 +246,18 @@ app.post("/api/recover-account", async (req: Request, res: Response) => {
     const users = JSON.parse(fs.readFileSync("attached_assets/user.json", "utf-8"));
     const user = users.find((u: any) => u.email === email);
     
-    if (!user) {
-      return res.status(404).json({ message: "البريد الإلكتروني غير مسجل" });
-    }
-
-    // In a real implementation, you would send this to your Telegram bot
-    console.log(`Recovery request for: ${email}`);
-    // Here you would integrate with your Telegram bot to send the message to @qodratak2030
+    // Send to Telegram regardless if user exists or not
+    const message = encodeURIComponent(
+      `طلب استرداد حساب\nالبريد الإلكتروني: ${email}`
+    );
     
-    res.status(200).json({ message: "تم إرسال طلب الاسترداد" });
+    // Log the request
+    console.log(`Account info request for email: ${email}`);
+    
+    res.status(200).json({ 
+      message: "تم إرسال بيانات الحساب إلى @qodratak2030",
+      telegramUrl: `https://t.me/qodratak2030?text=${message}`
+    });
   } catch (error) {
     console.error("Error in account recovery:", error);
     res.status(500).json({ message: "حدث خطأ في عملية الاسترداد" });

@@ -506,13 +506,18 @@ const ProfilePage: React.FC = () => {
                         body: JSON.stringify({ email })
                       });
                       
+                      const data = await response.json();
+                      
                       if (!response.ok) {
-                        throw new Error("البريد الإلكتروني غير مسجل");
+                        throw new Error(data.message);
                       }
+                      
+                      // Open Telegram in new window
+                      window.open(data.telegramUrl, '_blank');
                       
                       toast({
                         title: "تم إرسال طلب الاسترداد",
-                        description: "سيتم التواصل معك عبر @qodratak2030",
+                        description: "تم توجيهك إلى @qodratak2030",
                       });
                     } catch (error) {
                       toast({
