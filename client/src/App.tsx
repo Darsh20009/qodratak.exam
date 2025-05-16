@@ -12,6 +12,7 @@ import { Separator } from "@/components/ui/separator";
 import { 
   BookOpenIcon, 
   BrainCircuitIcon, 
+  ClipboardList,
   FolderIcon,
   GamepadIcon,
   GraduationCapIcon,

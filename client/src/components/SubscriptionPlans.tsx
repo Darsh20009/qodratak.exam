@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import {
   Card,
@@ -40,7 +39,7 @@ export function SubscriptionPlans() {
     const user = localStorage.getItem('user');
     const userData = user ? JSON.parse(user) : null;
     const planPrice = selectedPlan === 'pro' ? '180' : '500';
-    
+
     const message = encodeURIComponent(
       `طلب اشتراك جديد:\n` +
       `الاسم: ${userData?.name || ''}\n` +
@@ -48,7 +47,7 @@ export function SubscriptionPlans() {
       `نوع الباقة: ${selectedPlan === 'pro' ? 'Pro - 180 SR' : 'Pro Life - 500 SR'}\n` +
       `يرجى إرفاق سند التحويل`
     );
-    
+
     window.open(`https://t.me/qodratak2030?text=${message}`, '_blank');
   };
 
@@ -165,7 +164,7 @@ export function SubscriptionPlans() {
                 </Button>
               </div>
             </div>
-            
+
             <div className="space-y-2">
               <h3 className="font-medium">STC Pay (تحويل مباشر):</h3>
               <div className="flex items-center justify-between p-2 bg-muted rounded-md">
