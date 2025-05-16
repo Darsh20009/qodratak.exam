@@ -29,8 +29,6 @@ import LibraryPage from "@/pages/LibraryPage";
 import CustomExamPage from "@/pages/CustomExamPage";
 import FoldersPage from "@/pages/FoldersPage";
 import ChallengePage from "@/pages/ChallengePage";
-import SubscriptionPage from "@/pages/SubscriptionPage";
-import { Button } from "@/components/ui/button";
 
 function MainLayout({ children }: { children: React.ReactNode }) {
   const [location] = useLocation();
@@ -184,22 +182,7 @@ function Router() {
         {() => <MainLayout><ProfilePage /></MainLayout>}
       </Route>
       <Route path="/folders">
-        {() => <MainLayout>{isPremium ? <FoldersPage /> : <SubscriptionPage />}
-        </MainLayout>}
-      </Route>
-      <Route path="/subscribe">
-        {() => <MainLayout><SubscriptionPage /></MainLayout>}
-      </Route>
-      <Route path="/subscription-expired">
-        {() => <MainLayout>
-          <div className="container py-8 text-center">
-            <h2 className="text-2xl font-bold mb-4">انتهى اشتراكك</h2>
-            <p className="text-muted-foreground mb-6">لمواصلة الاستفادة من جميع المميزات، يرجى تجديد اشتراكك</p>
-            <Button asChild>
-              <Link href="/subscribe">تجديد الاشتراك</Link>
-            </Button>
-          </div>
-        </MainLayout>}
+        {() => <MainLayout><FoldersPage /></MainLayout>}
       </Route>
       <Route path="/challenges">
         {() => <MainLayout><ChallengePage /></MainLayout>}
