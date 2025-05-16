@@ -1,7 +1,5 @@
 import React from 'react';
-import { Route, Switch } from "wouter";
-import { ClipboardIcon } from "lucide-react";
-import ExamRecordsPage from "@/pages/ExamRecordsPage";
+import { Switch, Route, Link, useLocation } from "wouter";
 import { queryClient } from "./lib/queryClient";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
@@ -9,6 +7,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { Assistant } from "@/components/ui/assistant";
 import NotFound from "@/pages/not-found";
 import Home from "@/pages/Home";
+import ExamRecordsPage from "@/pages/ExamRecordsPage";
 import { ThemeProvider } from "next-themes";
 import { Separator } from "@/components/ui/separator";
 import { 
@@ -54,7 +53,6 @@ function MainLayout({ children }: { children: React.ReactNode }) {
   const navItems = [
     { name: "الرئيسية", href: "/", icon: HomeIcon },
     { name: "اختبارات قياس", href: "/qiyas", icon: GraduationCapIcon },
-    { name: "الاختبارات المحاكية", href: "/mock-exams", icon: GraduationCapIcon },
     { name: "اختبر قدراتك", href: "/abilities", icon: BrainCircuitIcon },
     { name: "التحديات", href: "/challenges", icon: GamepadIcon },
     { name: "اسأل سؤال", href: "/ask", icon: HelpCircleIcon },
@@ -182,9 +180,6 @@ function Router() {
         {() => <ProtectedRoute><Home /></ProtectedRoute>}
       </Route>
       <Route path="/qiyas">
-        {() => <ProtectedRoute><MainLayout><QiyasExamPage /></MainLayout></ProtectedRoute>}
-      </Route>
-      <Route path="/mock-exams">
         {() => <ProtectedRoute><MainLayout><QiyasExamPage /></MainLayout></ProtectedRoute>}
       </Route>
       <Route path="/custom-exam">
