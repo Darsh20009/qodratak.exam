@@ -76,6 +76,24 @@ interface ExamQuestion {
 const qiyasExams: QiyasExam[] = [
   {
     id: 1,
+    name: "الاختبار التأهيلي",
+    description: "اختبار تأهيلي شامل يتكون من سبعة أقسام متنوعة بين اللفظي والكمي",
+    totalSections: 7,
+    totalQuestions: 120,
+    totalTime: 120,
+    requiresSubscription: true,
+    sections: [
+      { sectionNumber: 1, name: "القسم الأول", category: "mixed", questionCount: 24, timeLimit: 24 },
+      { sectionNumber: 2, name: "القسم الثاني", category: "mixed", questionCount: 24, timeLimit: 24 },
+      { sectionNumber: 3, name: "القسم الثالث", category: "mixed", questionCount: 24, timeLimit: 24 },
+      { sectionNumber: 4, name: "قدرات كمية", category: "quantitative", questionCount: 11, timeLimit: 11 },
+      { sectionNumber: 5, name: "قدرات لفظية", category: "verbal", questionCount: 13, timeLimit: 13 },
+      { sectionNumber: 6, name: "قدرات كمية", category: "quantitative", questionCount: 11, timeLimit: 11 },
+      { sectionNumber: 7, name: "قدرات لفظية", category: "verbal", questionCount: 13, timeLimit: 13 }
+    ]
+  },
+  {
+    id: 2,
     name: "اختبار كمي احترافي - 55 سؤال",
     description: "اختبار قدرات كمية شامل للمشتركين: 55 سؤال في 55 دقيقة مع عرض الإجابات والشرح المفصل",
     totalSections: 1,
@@ -295,6 +313,24 @@ const QiyasExamPage: React.FC = () => {
     if (currentSection >= selectedExam.sections.length - 1) {
       finishExam();
       return;
+    }
+
+    // Accumulate results without showing them yet
+    setCurrentSection(nextSection => nextSection + 1);
+    setCurrentQuestion(0);
+    setSelectedAnswer(null);
+
+    // Load questions for the next section
+    try {
+      const nextSectionQuestions = await fetchQuestionsForSection(selectedExam.sections[currentSection + 1]);
+      setQuestions(nextSectionQuestions);
+      setTimeLeft(selectedExam.sections[currentSection + 1].timeLimit * 60);
+    } catch (error) {
+      toast({
+        title: "خطأ",
+        description: "فشل في تحميل أسئلة القسم التالي",
+        variant: "destructive",
+      });
     }
 
     // Move to the next section
