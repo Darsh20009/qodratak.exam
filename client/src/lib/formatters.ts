@@ -66,7 +66,7 @@ export function getNextDifficulty(difficulty: TestDifficulty): TestDifficulty {
 export function formatTimestamp(timestamp: string): string {
   try {
     const date = new Date(timestamp);
-    
+
     // Options for Arabic-friendly date formatting
     const options: Intl.DateTimeFormatOptions = {
       year: 'numeric',
@@ -75,9 +75,22 @@ export function formatTimestamp(timestamp: string): string {
       hour: '2-digit',
       minute: '2-digit'
     };
-    
+
     return new Intl.DateTimeFormat('ar-SA', options).format(date);
   } catch (error) {
     return timestamp;
   }
+}
+
+import { cn } from "@/lib/utils";
+
+export function formatDate(dateString: string) {
+  const date = new Date(dateString);
+  return date.toLocaleDateString('ar-SA', {
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit'
+  });
 }
