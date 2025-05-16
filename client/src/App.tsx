@@ -56,6 +56,7 @@ function MainLayout({ children }: { children: React.ReactNode }) {
     { name: "اسأل سؤال", href: "/ask", icon: HelpCircleIcon },
     { name: "المكتبة", href: "/library", icon: BookOpenIcon },
     { name: "مجلداتي", href: "/folders", icon: FolderIcon },
+    { name: "سجل الاختبارات", href: "/records", icon: ClipboardList },
   ];
 
   return (
@@ -206,6 +207,11 @@ function Router() {
       <Route path="/challenges">
         {() => <ProtectedRoute><MainLayout>
           {isPremium ? <ChallengePage /> : <SubscriptionPlans />}
+        </MainLayout></ProtectedRoute>}
+      </Route>
+      <Route path="/records">
+        {() => <ProtectedRoute><MainLayout>
+          {isPremium ? <ExamRecordsPage /> : <SubscriptionPlans />}
         </MainLayout></ProtectedRoute>}
       </Route>
       {/* Fallback to 404 */}

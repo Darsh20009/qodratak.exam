@@ -318,7 +318,20 @@ const QiyasExamPage: React.FC = () => {
 
   // Finish the exam and calculate overall results
   const finishExam = () => {
-    setExamEndTime(new Date());
+    const stats = calculateExamStats();
+    // Save to local storage
+    const storedRecords = localStorage.getItem('examRecords') || '[]';
+    const records = JSON.parse(storedRecords);
+    records.push({
+      date: new Date().toISOString(),
+      examType: selectedExam?.name || "اختبار قياس",
+      score: stats.totalCorrect,
+      totalQuestions: stats.totalQuestions,
+      timeTaken: stats.timeTaken
+    });
+    localStorage.setItem('examRecords', JSON.stringify(records));
+
+    setShowExamResults(true);
     setCurrentView("results");
   };
 
