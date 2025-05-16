@@ -30,7 +30,6 @@ import QiyasExamPage from "@/pages/QiyasExamPage";
 import CustomExamPage from "@/pages/CustomExamPage";
 import MockExamPage from "@/pages/MockExamPage";
 import LibraryPage from "@/pages/LibraryPage";
-import CustomExamPage from "@/pages/CustomExamPage";
 import FoldersPage from "@/pages/FoldersPage";
 import ChallengePage from "@/pages/ChallengePage";
 import { SubscriptionPlans } from "@/components/SubscriptionPlans";

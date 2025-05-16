@@ -18,6 +18,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { CopyIcon, CheckIcon } from "lucide-react";
+import { ClipboardList } from "lucide-react";
 
 export function SubscriptionPlans() {
   const [isPaymentDialogOpen, setIsPaymentDialogOpen] = useState(false);
