@@ -53,5 +53,15 @@
     "id": 7,
     "name": "youssefdarwish20009@gmail.com",
     "subscription": "free"
+  },
+  {
+    "name": "fg@gmail.com",
+    "email": "fg@gmail.com",
+    "password": "182009",
+    "subscription": {
+      "type": "free",
+      "startDate": "2025-05-16",
+      "endDate": "2025-06-15"
+    }
   }
 ]
