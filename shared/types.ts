@@ -74,6 +74,12 @@ export interface ExamConfig {
   isMockExam?: boolean;
   requiresSubscription?: boolean;
   sections: ExamSectionConfig[];
+  accumulateResults?: boolean; // Whether to show results after each section or at the end
+}
+
+export interface QualificationExamConfig extends ExamConfig {
+  requiresSubscription: true;
+  accumulateResults: true;
 }
 
 export interface MockExamConfig extends ExamConfig {

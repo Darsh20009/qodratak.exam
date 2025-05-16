@@ -289,6 +289,87 @@ export class MemStorage implements IStorage {
         timeLimit: 13
       });
 
+      // Add qualification exam template
+      const qualificationTemplate = await this.createExamTemplate({
+        name: "الاختبار التأهيلي الشامل",
+        description: "اختبار تأهيلي شامل يتكون من سبعة أقسام للمشتركين فقط",
+        totalSections: 7,
+        totalQuestions: 120,
+        totalTime: 120,
+        isQiyas: true,
+        requiresSubscription: true
+      });
+
+      // Add the 7 sections
+      await this.createExamSection({
+        examId: qualificationTemplate.id,
+        name: "القسم الأول",
+        sectionNumber: 1,
+        category: "mixed",
+        questionCount: 24,
+        timeLimit: 24,
+        verbalCount: 13,
+        quantitativeCount: 11
+      });
+
+      await this.createExamSection({
+        examId: qualificationTemplate.id,
+        name: "القسم الثاني",
+        sectionNumber: 2,
+        category: "mixed",
+        questionCount: 24,
+        timeLimit: 24,
+        verbalCount: 13,
+        quantitativeCount: 11
+      });
+
+      await this.createExamSection({
+        examId: qualificationTemplate.id,
+        name: "القسم الثالث",
+        sectionNumber: 3,
+        category: "mixed",
+        questionCount: 24,
+        timeLimit: 24,
+        verbalCount: 13,
+        quantitativeCount: 11
+      });
+
+      await this.createExamSection({
+        examId: qualificationTemplate.id,
+        name: "القسم الرابع",
+        sectionNumber: 4,
+        category: "quantitative",
+        questionCount: 11,
+        timeLimit: 11
+      });
+
+      await this.createExamSection({
+        examId: qualificationTemplate.id,
+        name: "القسم الخامس",
+        sectionNumber: 5,
+        category: "verbal",
+        questionCount: 13,
+        timeLimit: 13
+      });
+
+      await this.createExamSection({
+        examId: qualificationTemplate.id,
+        name: "القسم السادس",
+        sectionNumber: 6,
+        category: "quantitative",
+        questionCount: 11,
+        timeLimit: 11
+      });
+
+      await this.createExamSection({
+        examId: qualificationTemplate.id,
+        name: "القسم السابع",
+        sectionNumber: 7,
+        category: "verbal",
+        questionCount: 13,
+        timeLimit: 13
+      });
+
       console.log("Qiyas exam templates seeded successfully");
     } catch (error) {
       console.error("Error seeding Qiyas exam templates:", error);
