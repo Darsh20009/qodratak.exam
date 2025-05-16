@@ -63,6 +63,17 @@ export function getNextDifficulty(difficulty: TestDifficulty): TestDifficulty {
 }
 
 // Format timestamp to Arabic friendly date format
+export function formatDate(dateString: string) {
+  const date = new Date(dateString);
+  return date.toLocaleDateString('ar-SA', {
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit'
+  });
+}
+
 export function formatTimestamp(timestamp: string): string {
   try {
     const date = new Date(timestamp);
@@ -83,14 +94,3 @@ export function formatTimestamp(timestamp: string): string {
 }
 
 import { cn } from "@/lib/utils";
-
-export function formatDate(dateString: string) {
-  const date = new Date(dateString);
-  return date.toLocaleDateString('ar-SA', {
-    year: 'numeric',
-    month: 'long',
-    day: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit'
-  });
-}

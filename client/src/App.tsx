@@ -13,7 +13,7 @@ import { Separator } from "@/components/ui/separator";
 import { 
   BookOpenIcon, 
   BrainCircuitIcon, 
-  ClipboardListIcon,
+  ClipboardIcon,
   FolderIcon,
   GamepadIcon,
   GraduationCapIcon,
@@ -58,7 +58,7 @@ function MainLayout({ children }: { children: React.ReactNode }) {
     { name: "اسأل سؤال", href: "/ask", icon: HelpCircleIcon },
     { name: "المكتبة", href: "/library", icon: BookOpenIcon },
     { name: "مجلداتي", href: "/folders", icon: FolderIcon },
-    { name: "سجل الاختبارات", href: "/records", icon: ClipboardListIcon },
+    { name: "سجل الاختبارات", href: "/records", icon: ClipboardIcon },
   ];
 
   return (
