@@ -148,6 +148,13 @@ function Router() {
   const user = storedUser ? JSON.parse(storedUser) : null;
   const isPremium = user?.subscription?.type !== 'free';
 
+  const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
+    if (!user) {
+      return <MainLayout><ProfilePage /></MainLayout>;
+    }
+    return <>{children}</>;
+  };
+
   const RestrictedRoute = ({ children }: { children: React.ReactNode }) => {
     if (!isPremium) {
       return <MainLayout><div className="container py-8 text-center">
@@ -158,43 +165,48 @@ function Router() {
     return <>{children}</>;
   };
 
+  // If not logged in, only show login page
+  if (!user && window.location.pathname !== '/profile') {
+    return <MainLayout><ProfilePage /></MainLayout>;
+  }
+
   return (
     <Switch>
       {/* Main pages */}
       <Route path="/">
-        {() => <Home />}
+        {() => <ProtectedRoute><Home /></ProtectedRoute>}
       </Route>
       <Route path="/qiyas">
-        {() => <MainLayout><QiyasExamPage /></MainLayout>}
+        {() => <ProtectedRoute><MainLayout><QiyasExamPage /></MainLayout></ProtectedRoute>}
       </Route>
       <Route path="/custom-exam">
-        {() => <RestrictedRoute><MainLayout><CustomExamPage /></MainLayout></RestrictedRoute>}
+        {() => <ProtectedRoute><RestrictedRoute><MainLayout><CustomExamPage /></MainLayout></RestrictedRoute></ProtectedRoute>}
       </Route>
       <Route path="/abilities">
-        {() => <RestrictedRoute><MainLayout><AbilitiesTestPage /></MainLayout></RestrictedRoute>}
+        {() => <ProtectedRoute><RestrictedRoute><MainLayout><AbilitiesTestPage /></MainLayout></RestrictedRoute></ProtectedRoute>}
       </Route>
       <Route path="/ask">
-        {() => <MainLayout>
+        {() => <ProtectedRoute><MainLayout>
           {isPremium ? <AskQuestionPage /> : <SubscriptionPlans />}
-        </MainLayout>}
+        </MainLayout></ProtectedRoute>}
       </Route>
       <Route path="/library">
-        {() => <MainLayout>
+        {() => <ProtectedRoute><MainLayout>
           {isPremium ? <LibraryPage /> : <SubscriptionPlans />}
-        </MainLayout>}
+        </MainLayout></ProtectedRoute>}
       </Route>
       <Route path="/profile">
         {() => <MainLayout><ProfilePage /></MainLayout>}
       </Route>
       <Route path="/folders">
-        {() => <MainLayout>
+        {() => <ProtectedRoute><MainLayout>
           {isPremium ? <FoldersPage /> : <SubscriptionPlans />}
-        </MainLayout>}
+        </MainLayout></ProtectedRoute>}
       </Route>
       <Route path="/challenges">
-        {() => <MainLayout>
+        {() => <ProtectedRoute><MainLayout>
           {isPremium ? <ChallengePage /> : <SubscriptionPlans />}
-        </MainLayout>}
+        </MainLayout></ProtectedRoute>}
       </Route>
       {/* Fallback to 404 */}
       <Route>
