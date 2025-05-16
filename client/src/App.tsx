@@ -174,10 +174,14 @@ function Router() {
         {() => <RestrictedRoute><MainLayout><AbilitiesTestPage /></MainLayout></RestrictedRoute>}
       </Route>
       <Route path="/ask">
-        {() => <RestrictedRoute><MainLayout><AskQuestionPage /></MainLayout></RestrictedRoute>}
+        {() => <MainLayout>
+          {isPremium ? <AskQuestionPage /> : <SubscriptionPlans />}
+        </MainLayout>}
       </Route>
       <Route path="/library">
-        {() => <RestrictedRoute><MainLayout><LibraryPage /></MainLayout></RestrictedRoute>}
+        {() => <MainLayout>
+          {isPremium ? <LibraryPage /> : <SubscriptionPlans />}
+        </MainLayout>}
       </Route>
       <Route path="/profile">
         {() => <MainLayout><ProfilePage /></MainLayout>}
