@@ -29,6 +29,22 @@
 }
 
 :root {
+
+@keyframes fade-in-down {
+  0% {
+    opacity: 0;
+    transform: translateY(-20px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-fade-in-down {
+  animation: fade-in-down 1s ease-out;
+}
+
       --background: 0 0% 100%;
 --foreground: 20 14.3% 4.1%;
 --muted: 60 4.8% 95.9%;

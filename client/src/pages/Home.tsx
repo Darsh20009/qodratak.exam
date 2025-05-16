@@ -54,13 +54,18 @@ const Home: React.FC = () => {
       {/* Hero Section */}
       <section className="bg-gradient-to-b from-primary/10 to-primary/5 dark:from-primary/20 dark:to-gray-900 py-12 text-center">
         <div className="container px-4 md:px-6">
-          <div className="flex flex-col items-center space-y-4 text-center">
-            <h1 className="text-4xl font-bold tracking-tighter sm:text-5xl md:text-6xl lg:text-7xl text-primary dark:text-primary-foreground">
-              قدراتي
-            </h1>
-            <p className="mx-auto max-w-[700px] text-gray-600 dark:text-gray-400 md:text-xl">
-              المنصة الشاملة للتحضير لاختبارات قياس وتطوير قدراتك اللفظية والكمية
-            </p>
+          <div className="flex flex-col items-center space-y-6 text-center">
+            <div className="animate-fade-in-down bg-gradient-to-r from-primary/10 to-primary/5 p-8 rounded-2xl w-full max-w-3xl">
+              <h1 className="text-5xl font-bold tracking-tighter sm:text-6xl md:text-7xl lg:text-8xl text-primary dark:text-primary-foreground mb-6">
+                قدراتك
+              </h1>
+              <p className="text-2xl font-semibold text-primary/80 dark:text-primary-foreground/80 mb-4">
+                طريقك للوصول إلى 100% بإذن الله
+              </p>
+              <p className="mx-auto max-w-[700px] text-gray-600 dark:text-gray-400 md:text-xl">
+                المنصة الشاملة للتحضير لاختبارات قياس وتطوير قدراتك اللفظية والكمية
+              </p>
+            </div>
             <div className="flex flex-col sm:flex-row gap-4 mt-8">
               <Button asChild size="lg">
                 <Link href="/qiyas">
