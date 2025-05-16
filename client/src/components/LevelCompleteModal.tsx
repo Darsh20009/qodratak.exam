@@ -37,14 +37,42 @@ const LevelCompleteModal: React.FC<LevelCompleteModalProps> = ({
     `;
     document.head.appendChild(style);
 
-    // Trigger confetti
-    confetti({
-      particleCount: 100,
-      spread: 70,
-      origin: { y: 0.6 }
-    });
+    // Trigger multiple confetti bursts
+    const triggerConfetti = () => {
+      // Center burst
+      confetti({
+        particleCount: 100,
+        spread: 70,
+        origin: { y: 0.6 }
+      });
+
+      // Left side burst
+      confetti({
+        particleCount: 50,
+        angle: 60,
+        spread: 55,
+        origin: { x: 0, y: 0.6 }
+      });
+
+      // Right side burst
+      confetti({
+        particleCount: 50,
+        angle: 120,
+        spread: 55,
+        origin: { x: 1, y: 0.6 }
+      });
+    };
+
+    // Initial burst
+    triggerConfetti();
+
+    // Secondary bursts
+    const timer1 = setTimeout(() => triggerConfetti(), 300);
+    const timer2 = setTimeout(() => triggerConfetti(), 600);
 
     return () => {
+      clearTimeout(timer1);
+      clearTimeout(timer2);
       document.head.removeChild(style);
     };
   }, []);
