@@ -143,6 +143,20 @@ function MainLayout({ children }: { children: React.ReactNode }) {
 }
 
 function Router() {
+  const storedUser = localStorage.getItem("user");
+  const user = storedUser ? JSON.parse(storedUser) : null;
+  const isPremium = user?.subscription?.type !== 'free';
+
+  const RestrictedRoute = ({ children }: { children: React.ReactNode }) => {
+    if (!isPremium) {
+      return <MainLayout><div className="container py-8 text-center">
+        <h2 className="text-2xl font-bold mb-4">هذه الميزة متاحة للمشتركين فقط</h2>
+        <p className="text-muted-foreground">يرجى الاشتراك للوصول إلى جميع الميزات</p>
+      </div></MainLayout>;
+    }
+    return <>{children}</>;
+  };
+
   return (
     <Switch>
       {/* Main pages */}
@@ -153,16 +167,16 @@ function Router() {
         {() => <MainLayout><QiyasExamPage /></MainLayout>}
       </Route>
       <Route path="/custom-exam">
-        {() => <MainLayout><CustomExamPage /></MainLayout>}
+        {() => <RestrictedRoute><MainLayout><CustomExamPage /></MainLayout></RestrictedRoute>}
       </Route>
       <Route path="/abilities">
-        {() => <MainLayout><AbilitiesTestPage /></MainLayout>}
+        {() => <RestrictedRoute><MainLayout><AbilitiesTestPage /></MainLayout></RestrictedRoute>}
       </Route>
       <Route path="/ask">
-        {() => <MainLayout><AskQuestionPage /></MainLayout>}
+        {() => <RestrictedRoute><MainLayout><AskQuestionPage /></MainLayout></RestrictedRoute>}
       </Route>
       <Route path="/library">
-        {() => <MainLayout><LibraryPage /></MainLayout>}
+        {() => <RestrictedRoute><MainLayout><LibraryPage /></MainLayout></RestrictedRoute>}
       </Route>
       <Route path="/profile">
         {() => <MainLayout><ProfilePage /></MainLayout>}

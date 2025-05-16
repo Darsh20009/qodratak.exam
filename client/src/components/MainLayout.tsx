@@ -21,6 +21,7 @@ export const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
   const [userPoints, setUserPoints] = useState<number>(0);
   const [userLevel, setUserLevel] = useState<number>(0);
   const [isLoggedIn, setIsLoggedIn] = useState<boolean>(false);
+  const [user, setUser] = useState<any>(null);
 
   useEffect(() => {
     // Check if we have a user stored in localStorage
@@ -28,12 +29,12 @@ export const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
     if (storedUser) {
       try {
         const user = JSON.parse(storedUser);
-        
+
         // Check subscription status
         const today = new Date();
         const endDate = new Date(user.subscription?.endDate);
         const isSubscriptionExpired = user.subscription?.type !== 'Pro Live' && endDate < today;
-        
+
         if (isSubscriptionExpired) {
           localStorage.removeItem('user');
           setLocation('/profile');
@@ -44,20 +45,21 @@ export const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
         setUserPoints(user.points || 0);
         setUserLevel(user.level || 0);
         setIsLoggedIn(true);
-        
+        setUser(user);
+
         // Broadcast login state
         window.dispatchEvent(new CustomEvent('userLoggedIn', { detail: user }));
-        
+
         // Update all auth states
         document.cookie = `isLoggedIn=true; path=/; max-age=86400`;
         document.cookie = `userName=${user.name}; path=/; max-age=86400`;
         document.cookie = `userSubscription=${user.subscription.type}; path=/; max-age=86400`;
         document.cookie = `userPoints=${user.points || 0}; path=/; max-age=86400`;
         document.cookie = `userLevel=${user.level || 0}; path=/; max-age=86400`;
-        
+
         // Update session storage for quicker access
         sessionStorage.setItem('currentUser', JSON.stringify(user));
-        
+
       } catch (e) {
         console.error("Error parsing stored user:", e);
         localStorage.removeItem('user');
@@ -70,13 +72,23 @@ export const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
     }
   }, [location, setLocation]);
 
-  const navItems = [
-    { name: "الرئيسية", href: "/", icon: HomeIcon },
-    { name: "اختبارات قياس", href: "/qiyas", icon: GraduationCapIcon },
-    { name: "اختبر قدراتك", href: "/abilities", icon: BrainCircuitIcon },
-    { name: "اسأل سؤال", href: "/ask", icon: HelpCircleIcon },
-    { name: "المكتبة", href: "/library", icon: BookOpenIcon },
-  ];
+  const getNavItems = (subscription: string = 'free') => {
+    const baseItems = [
+      { name: "الرئيسية", href: "/", icon: HomeIcon },
+      { name: "اختبارات قياس", href: "/qiyas", icon: GraduationCapIcon },
+      { name: "الملف الشخصي", href: "/profile", icon: UserIcon },
+    ];
+  
+    const premiumItems = [
+      { name: "اختبر قدراتك", href: "/abilities", icon: BrainCircuitIcon },
+      { name: "اسأل سؤال", href: "/ask", icon: HelpCircleIcon },
+      { name: "المكتبة", href: "/library", icon: BookOpenIcon },
+    ];
+  
+    return subscription !== 'free' ? [...baseItems, ...premiumItems] : baseItems;
+  };
+  
+  const navItems = getNavItems(user?.subscription?.type);
 
   return (
     <div className="flex min-h-screen bg-gray-100 dark:bg-gray-900">
