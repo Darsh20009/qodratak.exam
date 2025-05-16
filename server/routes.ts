@@ -216,29 +216,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
           // Pro Live users don't need expiry check
           user.subscription.competitionEndDate = new Date(today.getTime() + 365 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
         } else if (endDate < today) {
-          // Reset user to free trial if subscription expired
-          users = users.map((u: any) => {
-            if (u.email === email) {
-              return {
-                ...u,
-                isTrialExpired: true,
-                subscription: {
-                  type: "free",
-                  startDate: today.toISOString().split('T')[0],
-                  endDate: new Date(today.getTime() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]
-                }
-              };
-            }
-            return u;
-          });
+          // Convert expired subscription to free
+          user.subscription.type = "free";
+          user.subscription.startDate = today.toISOString().split('T')[0];
+          user.subscription.endDate = new Date(today.getTime() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
           
-          fs.writeFileSync("attached_assets/user.json", JSON.stringify(users, null, 2));
+          // Update user in JSON file
+          const updatedUsers = users.map((u: any) => 
+            u.email === email ? user : u
+          );
           
-          return res.status(403).json({ 
-            message: "الاشتراك منتهي، يرجى تجديد الاشتراك",
-            isSubscriptionExpired: true,
-            clearData: true
-          });
+          fs.writeFileSync("attached_assets/user.json", JSON.stringify(updatedUsers, null, 2));
         }
       }
       
