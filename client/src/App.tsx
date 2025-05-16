@@ -104,43 +104,23 @@ function MainLayout({ children }: { children: React.ReactNode }) {
 
       {/* Mobile navigation */}
       <div className="fixed bottom-0 left-0 right-0 z-50 bg-white dark:bg-gray-800 border-t dark:border-gray-700 md:hidden">
-        <nav className="relative overflow-x-auto touch-pan-x">
-          <div className="flex items-center h-16 px-4">
-            <button 
-              className="absolute left-0 z-10 h-full px-2 bg-gradient-to-r from-white dark:from-gray-800"
-              onClick={() => {
-                const nav = document.querySelector('nav');
-                if (nav) nav.scrollBy({ left: -100, behavior: 'smooth' });
-              }}
-            >
-              ◀️
-            </button>
-            <div className="flex items-center gap-1 px-6">
-              {navItems.map((item) => (
-                <Link 
-                  key={item.href} 
-                  href={item.href}
-                  className={cn(
-                    "flex flex-col items-center justify-center p-2 rounded-md min-w-[4.5rem] transition-all",
-                    location === item.href 
-                      ? "text-primary scale-110" 
-                      : "text-muted-foreground hover:text-primary"
-                  )}
-                >
-                  <item.icon className="h-5 w-5" />
-                  <span className="text-xs whitespace-nowrap">{item.name}</span>
-                </Link>
-              ))}
-            </div>
-            <button 
-              className="absolute right-0 z-10 h-full px-2 bg-gradient-to-l from-white dark:from-gray-800"
-              onClick={() => {
-                const nav = document.querySelector('nav');
-                if (nav) nav.scrollBy({ left: 100, behavior: 'smooth' });
-              }}
-            >
-              ▶️
-            </button>
+        <nav className="relative overflow-x-auto scrollbar-hide">
+          <div className="flex items-center h-16 px-4 animate-scroll">
+            {navItems.map((item) => (
+              <Link 
+                key={item.href} 
+                href={item.href}
+                className={cn(
+                  "flex flex-col items-center justify-center p-2 rounded-md min-w-[4.5rem] mx-1",
+                  location === item.href 
+                    ? "text-primary" 
+                    : "text-muted-foreground"
+                )}
+              >
+                <item.icon className="h-5 w-5" />
+                <span className="text-xs whitespace-nowrap">{item.name}</span>
+              </Link>
+            ))}
           </div>
         </nav>
       </div>

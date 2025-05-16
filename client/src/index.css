@@ -1,15 +1,21 @@
 
-/* Touch scrolling */
-.touch-pan-x {
-  touch-action: pan-x;
-  scroll-behavior: smooth;
-  -webkit-overflow-scrolling: touch;
-  scrollbar-width: none;
+/* Hide scrollbar */
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
+.scrollbar-hide {
   -ms-overflow-style: none;
+  scrollbar-width: none;
 }
 
-.touch-pan-x::-webkit-scrollbar {
-  display: none;
+/* Animation for scroll indication */
+@keyframes gentle-bounce {
+  0%, 100% { transform: translateX(0); }
+  50% { transform: translateX(-10px); }
+}
+
+.animate-scroll {
+  animation: gentle-bounce 2s infinite;
 }
 
 @tailwind base;
