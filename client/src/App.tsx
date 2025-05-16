@@ -27,6 +27,8 @@ import AskQuestionPage from "@/pages/AskQuestionPage";
 import ProfilePage from "@/pages/ProfilePage";
 import AbilitiesTestPage from "@/pages/AbilitiesTestPage";
 import QiyasExamPage from "@/pages/QiyasExamPage";
+import CustomExamPage from "@/pages/CustomExamPage";
+import MockExamPage from "@/pages/MockExamPage";
 import LibraryPage from "@/pages/LibraryPage";
 import CustomExamPage from "@/pages/CustomExamPage";
 import FoldersPage from "@/pages/FoldersPage";
@@ -215,6 +217,9 @@ function Router() {
         {() => <ProtectedRoute><MainLayout>
           {isPremium ? <ExamRecordsPage /> : <SubscriptionPlans />}
         </MainLayout></ProtectedRoute>}
+      </Route>
+      <Route path="/mock-exams">
+        {() => <ProtectedRoute><RestrictedRoute><MainLayout><MockExamPage /></MainLayout></RestrictedRoute></ProtectedRoute>}
       </Route>
       {/* Fallback to 404 */}
       <Route>

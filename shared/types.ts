@@ -71,7 +71,15 @@ export interface ExamConfig {
   totalQuestions: number;
   totalTime: number; // in minutes
   isQiyas: boolean;
+  isMockExam?: boolean;
+  requiresSubscription?: boolean;
   sections: ExamSectionConfig[];
+}
+
+export interface MockExamConfig extends ExamConfig {
+  isMockExam: true;
+  requiresSubscription: true;
+  type: 'verbal' | 'quantitative' | 'comprehensive';
 }
 
 export interface QiyasExamConfig extends ExamConfig {
