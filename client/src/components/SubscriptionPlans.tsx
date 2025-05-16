@@ -24,6 +24,7 @@ export function SubscriptionPlans() {
   const [isPaymentDialogOpen, setIsPaymentDialogOpen] = useState(false);
   const [selectedPlan, setSelectedPlan] = useState<'pro' | 'proLife' | null>(null);
   const [copySuccess, setCopySuccess] = useState<'bank' | 'stc' | null>(null);
+  const discountPercentage = 20;
 
   const handleCopy = async (text: string, type: 'bank' | 'stc') => {
     await navigator.clipboard.writeText(text);
@@ -121,7 +122,10 @@ export function SubscriptionPlans() {
               يرجى إدخال بياناتك واختيار طريقة الدفع المناسبة
             </DialogDescription>
           </DialogHeader>
-          <div className="space-y-4">
+          <div className="flex flex-col space-y-4">
+        <div className="absolute top-4 right-4">
+          <span className="bg-primary text-white px-2 py-1 rounded-full text-sm">خصم {discountPercentage}%</span>
+        </div>
             <div className="space-y-2">
               <h3 className="font-medium">البيانات الشخصية:</h3>
               <Input
