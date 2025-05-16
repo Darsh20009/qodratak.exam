@@ -148,8 +148,21 @@ function MainLayout({ children }: { children: React.ReactNode }) {
 }
 
 function Router() {
-  const storedUser = localStorage.getItem("user");
-  const user = storedUser ? JSON.parse(storedUser) : null;
+  const [user, setUser] = React.useState(() => {
+    const storedUser = localStorage.getItem("user");
+    return storedUser ? JSON.parse(storedUser) : null;
+  });
+  
+  React.useEffect(() => {
+    const handleStorageChange = () => {
+      const storedUser = localStorage.getItem("user");
+      setUser(storedUser ? JSON.parse(storedUser) : null);
+    };
+    
+    window.addEventListener('storage', handleStorageChange);
+    return () => window.removeEventListener('storage', handleStorageChange);
+  }, []);
+
   const isPremium = user?.subscription?.type !== 'free';
 
   const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
