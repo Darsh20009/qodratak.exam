@@ -181,6 +181,24 @@ function Router() {
 }
 
 function App() {
+  const [showSplash, setShowSplash] = React.useState(true);
+
+  React.useEffect(() => {
+    const timer = setTimeout(() => {
+      setShowSplash(false);
+    }, 2000);
+    return () => clearTimeout(timer);
+  }, []);
+
+  if (showSplash) {
+    return (
+      <div className="h-screen w-screen flex flex-col items-center justify-center bg-gradient-to-b from-primary/10 to-primary/5">
+        <h1 className="text-6xl font-bold text-primary mb-4 animate-fade-in">قدراتك</h1>
+        <p className="text-2xl text-primary/80 animate-fade-in-delay">طريقك للوصول إلى 100% بإذن الله</p>
+      </div>
+    );
+  }
+
   return (
     <QueryClientProvider client={queryClient}>
       <ThemeProvider attribute="class">
