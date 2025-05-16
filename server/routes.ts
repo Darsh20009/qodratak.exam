@@ -212,9 +212,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const today = new Date();
         
         if (endDate < today) {
+          // Clear existing user data if subscription expired
+          users = users.map((u: any) => {
+            if (u.email === email) {
+              return {
+                ...u,
+                subscription: {
+                  type: "free",
+                  startDate: today.toISOString().split('T')[0],
+                  endDate: new Date(today.getTime() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]
+                }
+              };
+            }
+            return u;
+          });
+          
+          fs.writeFileSync("attached_assets/user.json", JSON.stringify(users, null, 2));
+          
           return res.status(403).json({ 
             message: "الاشتراك منتهي، يرجى تجديد الاشتراك",
-            isSubscriptionExpired: true 
+            isSubscriptionExpired: true,
+            clearData: true
           });
         }
       }

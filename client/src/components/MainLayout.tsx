@@ -47,13 +47,20 @@ export const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
         
         // Broadcast login state
         window.dispatchEvent(new CustomEvent('userLoggedIn', { detail: user }));
+        
+        // Update all auth states
+        document.cookie = `isLoggedIn=true; path=/`;
+        document.cookie = `userName=${user.name}; path=/`;
+        document.cookie = `userSubscription=${user.subscription.type}; path=/`;
+        
       } catch (e) {
         console.error("Error parsing stored user:", e);
         localStorage.removeItem('user');
+        document.cookie = 'isLoggedIn=false; path=/';
         setLocation('/profile');
       }
-    } else if (location !== '/profile') {
-      // Redirect to login if not authenticated
+    } else if (location !== '/profile' && location !== '/') {
+      // Redirect to login if not authenticated and not on home page
       setLocation('/profile');
     }
   }, [location, setLocation]);
