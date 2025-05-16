@@ -237,6 +237,30 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
 });
 
+// Account recovery endpoint
+app.post("/api/recover-account", async (req: Request, res: Response) => {
+  try {
+    const { email } = req.body;
+    
+    // Find user with this email
+    const users = JSON.parse(fs.readFileSync("attached_assets/user.json", "utf-8"));
+    const user = users.find((u: any) => u.email === email);
+    
+    if (!user) {
+      return res.status(404).json({ message: "البريد الإلكتروني غير مسجل" });
+    }
+
+    // In a real implementation, you would send this to your Telegram bot
+    console.log(`Recovery request for: ${email}`);
+    // Here you would integrate with your Telegram bot to send the message to @qodratak2030
+    
+    res.status(200).json({ message: "تم إرسال طلب الاسترداد" });
+  } catch (error) {
+    console.error("Error in account recovery:", error);
+    res.status(500).json({ message: "حدث خطأ في عملية الاسترداد" });
+  }
+});
+
 app.post("/api/auth/register", async (req: Request, res: Response) => {
     try {
       const { name, email, password } = req.body;

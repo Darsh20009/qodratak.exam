@@ -356,6 +356,7 @@ const ProfilePage: React.FC = () => {
         <TabsList className="w-full mb-6">
           <TabsTrigger value="login" className="flex-1">تسجيل الدخول</TabsTrigger>
           <TabsTrigger value="register" className="flex-1">إنشاء حساب</TabsTrigger>
+          <TabsTrigger value="recover" className="flex-1">استرداد الحساب</TabsTrigger>
         </TabsList>
         
         <TabsContent value="login">
@@ -459,6 +460,55 @@ const ProfilePage: React.FC = () => {
                   </Button>
                 </form>
               </Form>
+            </CardContent>
+          </Card>
+        </TabsContent>
+        
+        <TabsContent value="recover">
+          <Card>
+            <CardHeader>
+              <CardTitle>استرداد الحساب</CardTitle>
+              <CardDescription>
+                أدخل بريدك الإلكتروني لاسترداد بيانات حسابك
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <form onSubmit={(e) => {
+                e.preventDefault();
+                const email = (e.target as any).email.value;
+                
+                // Send recovery request to Telegram bot
+                fetch("/api/recover-account", {
+                  method: "POST",
+                  headers: {
+                    "Content-Type": "application/json",
+                  },
+                  body: JSON.stringify({ email })
+                })
+                .then(() => {
+                  toast({
+                    title: "تم إرسال طلب الاسترداد",
+                    description: "سيتم التواصل معك عبر @qodratak2030",
+                  });
+                })
+                .catch(() => {
+                  toast({
+                    title: "حدث خطأ",
+                    description: "يرجى المحاولة مرة أخرى",
+                    variant: "destructive",
+                  });
+                });
+              }} className="space-y-4">
+                <FormItem>
+                  <FormLabel>البريد الإلكتروني</FormLabel>
+                  <FormControl>
+                    <Input name="email" type="email" placeholder="أدخل بريدك الإلكتروني" required />
+                  </FormControl>
+                </FormItem>
+                <Button type="submit" className="w-full">
+                  استرداد الحساب
+                </Button>
+              </form>
             </CardContent>
           </Card>
         </TabsContent>
