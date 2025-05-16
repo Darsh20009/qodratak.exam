@@ -273,24 +273,29 @@ const ChallengePage = () => {
     enabled: !!user?.id
   });
   
-  // التحقق من المستويات المفتوحة بناءً على نقاط المستخدم
+  // التحقق من المستويات المفتوحة بناءً على نتائج الاختبارات السابقة
   const getEnabledLevels = () => {
     if (!user) return challengeLevels.map((level, idx) => ({
       ...level,
-      enabled: idx < 1 // فقط المستوى الأول مفتوح للمستخدمين الغير مسجلين
+      enabled: idx === 0 // فقط المستوى الأول مفتوح للمستخدمين الغير مسجلين
     }));
 
-    // نفحص كل مستوى لمعرفة ما إذا كان مفتوحًا بناءً على النقاط فقط
     return challengeLevels.map((level, idx) => {
-      // المستوى الأول والثاني مفتوحان دائمًا
-      if (idx === 0 || idx === 1) return { ...level, enabled: true };
+      // المستوى الأول مفتوح دائمًا
+      if (idx === 0) return { ...level, enabled: true };
       
-      // كل مستوى يتطلب الحصول على النقاط المطلوبة فقط
-      const hasRequiredPoints = !level.requiredPoints || user.points >= level.requiredPoints;
+      // للمستويات الأخرى، نتحقق من اكتمال المستوى السابق بنجاح
+      const previousLevelResults = testResults.filter(
+        (result: any) => result.levelId === idx
+      );
+      
+      const previousLevelCompleted = previousLevelResults.some(
+        (result: any) => (result.score / result.totalQuestions) >= 1.0 // يتطلب 100% لفتح المستوى التالي
+      );
       
       return { 
         ...level,
-        enabled: hasRequiredPoints
+        enabled: previousLevelCompleted
       };
     });
   };
@@ -304,7 +309,7 @@ const ChallengePage = () => {
     if (!level || !level.enabled) {
       toast({
         title: "المستوى مغلق",
-        description: "تحتاج جمع المزيد من النقاط لفتح هذا المستوى",
+        description: "يجب إكمال المستوى السابق بنتيجة 100% لفتح هذا المستوى",
         variant: "destructive"
       });
       return;
