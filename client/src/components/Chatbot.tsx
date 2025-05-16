@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useChatbot } from "@/hooks/useChatbot";
 import { useAbilitiesTest } from "@/hooks/useAbilitiesTest";
 import ChatbotHeader from "./ChatbotHeader";
@@ -6,6 +6,7 @@ import NameEntry from "./NameEntry";
 import ChatMessages from "./ChatMessages";
 import ChatInput from "./ChatInput";
 import AbilitiesTest from "./AbilitiesTest";
+import { ChatMessage } from "@/types/chatbot";
 
 const Chatbot = () => {
   const {
@@ -28,6 +29,7 @@ const Chatbot = () => {
     handleStartChat,
     setInputMessage,
     handleSendMessage,
+    setMessages,
     handleSuggestedQuestionClick
   } = useChatbot();
 
