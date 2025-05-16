@@ -146,14 +146,13 @@ function Router() {
   const storedUser = localStorage.getItem("user");
   const user = storedUser ? JSON.parse(storedUser) : null;
   const isPremium = user?.subscription?.type !== 'free';
-  const isExpired = user?.subscription?.endDate && new Date(user.subscription.endDate) < new Date();
 
   const RestrictedRoute = ({ children }: { children: React.ReactNode }) => {
     if (!isPremium) {
-      return <MainLayout><SubscriptionRequired /></MainLayout>;
-    }
-    if (isExpired) {
-      return <MainLayout><SubscriptionExpired /></MainLayout>;
+      return <MainLayout><div className="container py-8 text-center">
+        <h2 className="text-2xl font-bold mb-4">هذه الميزة متاحة للمشتركين فقط</h2>
+        <p className="text-muted-foreground">يرجى الاشتراك للوصول إلى جميع الميزات</p>
+      </div></MainLayout>;
     }
     return <>{children}</>;
   };
