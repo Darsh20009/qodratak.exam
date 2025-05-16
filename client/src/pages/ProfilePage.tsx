@@ -136,14 +136,26 @@ const ProfilePage: React.FC = () => {
 
       const userData = await response.json();
       
+      if (response.status === 403) {
+        toast({
+          title: "الاشتراك منتهي",
+          description: "يرجى تجديد الاشتراك للمتابعة",
+          variant: "destructive",
+        });
+        return;
+      }
+      
       // Store user in localStorage
       localStorage.setItem("user", JSON.stringify(userData));
       setUser(userData);
       setIsLoggedIn(true);
       
+      // Broadcast login state
+      window.dispatchEvent(new CustomEvent('userLoggedIn', { detail: userData }));
+      
       toast({
         title: "تم تسجيل الدخول بنجاح",
-        description: `مرحباً، ${userData.username}!`,
+        description: `مرحباً، ${userData.name}!`,
       });
     } catch (error) {
       toast({

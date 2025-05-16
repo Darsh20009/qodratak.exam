@@ -205,6 +205,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (!user) {
         return res.status(401).json({ message: "Invalid credentials" });
       }
+
+      // Check subscription status
+      if (user.subscription.type !== 'Pro Live') {
+        const endDate = new Date(user.subscription.endDate);
+        const today = new Date();
+        
+        if (endDate < today) {
+          return res.status(403).json({ 
+            message: "الاشتراك منتهي، يرجى تجديد الاشتراك",
+            isSubscriptionExpired: true 
+          });
+        }
+      }
       
       return res.json(user);
     } catch (error) {

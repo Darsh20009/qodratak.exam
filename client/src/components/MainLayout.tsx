@@ -28,12 +28,29 @@ export const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
     if (storedUser) {
       try {
         const user = JSON.parse(storedUser);
-        setUserName(user.username);
+        
+        // Check subscription status
+        const today = new Date();
+        const endDate = new Date(user.subscription?.endDate);
+        const isSubscriptionExpired = user.subscription?.type !== 'Pro Live' && endDate < today;
+        
+        if (isSubscriptionExpired) {
+          localStorage.removeItem('user');
+          setLocation('/profile');
+          return;
+        }
+
+        setUserName(user.name);
         setUserPoints(user.points || 0);
         setUserLevel(user.level || 0);
         setIsLoggedIn(true);
+        
+        // Broadcast login state
+        window.dispatchEvent(new CustomEvent('userLoggedIn', { detail: user }));
       } catch (e) {
         console.error("Error parsing stored user:", e);
+        localStorage.removeItem('user');
+        setLocation('/profile');
       }
     } else if (location !== '/profile') {
       // Redirect to login if not authenticated
