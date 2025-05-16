@@ -69,6 +69,7 @@ interface ExamQuestion {
   correctOptionIndex: number;
   category: TestType;
   section: number;
+  explanation?: string; // Added explanation field
 }
 
 // Mock data for Qiyas exams
@@ -196,19 +197,19 @@ const QiyasExamPage: React.FC = () => {
         throw new Error(`Failed to fetch questions. Status: ${response.status}`);
       }
       const allQuestions = await response.json();
-      
+
       if (section.category === "mixed") {
         // For mixed sections, get 13 verbal and 11 quantitative questions
         const verbalQuestions = allQuestions
           .filter(q => q.category === "verbal")
           .sort(() => 0.5 - Math.random())
           .slice(0, 13);
-          
+
         const quantitativeQuestions = allQuestions
           .filter(q => q.category === "quantitative")
           .sort(() => 0.5 - Math.random())
           .slice(0, 11);
-          
+
         // Return verbal questions first, then quantitative
         return [...verbalQuestions, ...quantitativeQuestions];
       } else {
@@ -217,7 +218,7 @@ const QiyasExamPage: React.FC = () => {
           .filter(q => q.category === section.category)
           .sort(() => 0.5 - Math.random())
           .slice(0, section.questionCount);
-          
+
         return sectionQuestions;
       }
     } catch (error) {
@@ -690,7 +691,7 @@ const QiyasExamPage: React.FC = () => {
 
   // Render the exam results view
   const renderExamResults = () => {
-    if (!selectedExam) return null;
+    if (!selectedExam || questions.length === 0) return null;
 
     const stats = calculateExamStats();
     const performance = 
@@ -806,6 +807,191 @@ const QiyasExamPage: React.FC = () => {
             )}
           </CardFooter>
         </Card>
+
+        {/* Questions Review */}
+      <Card className="mb-6">
+        <CardHeader>
+          <CardTitle>مراجعة الأسئلة والإجابات</CardTitle>
+          <CardDescription>
+            راجع إجاباتك وتعلم من أخطائك
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <Tabs defaultValue="all" className="w-full">
+            <TabsList className="w-full mb-4">
+              <TabsTrigger value="all">جميع الأسئلة</TabsTrigger>
+              <TabsTrigger value="correct">الإجابات الصحيحة</TabsTrigger>
+              <TabsTrigger value="incorrect">الإجابات الخاطئة</TabsTrigger>
+            </TabsList>
+
+            <TabsContent value="all">
+              <div className="space-y-4">
+                {questions.map((question, index) => {
+                  const userAnswer = answers[question.id];
+                  const isCorrect = userAnswer === question.correctOptionIndex;
+
+                  return (
+                    <div key={question.id} className={cn(
+                      "p-4 rounded-lg border",
+                      isCorrect ? "bg-green-50 dark:bg-green-900/20 border-green-200" : "bg-red-50 dark:bg-red-900/20 border-red-200"
+                    )}>
+                      <div className="flex items-start gap-3">
+                        <div className={cn(
+                          "w-8 h-8 rounded-full flex items-center justify-center text-white",
+                          isCorrect ? "bg-green-500" : "bg-red-500"
+                        )}>
+                          {isCorrect ? "✓" : "✗"}
+                        </div>
+                        <div>
+                          <h4 className="font-medium mb-2">سؤال {index + 1}</h4>
+                          <p className="text-gray-800 dark:text-gray-200 mb-4">{question.text}</p>
+
+                          <div className="space-y-2">
+                            {question.options.map((option, optIndex) => (
+                              <div key={optIndex} className={cn(
+                                "p-3 rounded-lg border",
+                                optIndex === question.correctOptionIndex ? "bg-green-50 dark:bg-green-900/20 border-green-200" :
+                                optIndex === userAnswer ? "bg-red-50 dark:bg-red-900/20 border-red-200" :
+                                "bg-gray-50 dark:bg-gray-800"
+                              )}>
+                                <div className="flex items-center">
+                                  <span className="mr-2">{option}</span>
+                                  {optIndex === question.correctOptionIndex && (
+                                    <span className="text-green-600 dark:text-green-400 text-sm mr-auto">
+                                      (الإجابة الصحيحة)
+                                    </span>
+                                  )}
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+
+                          {question.explanation && (
+                            <div className="mt-4 p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200">
+                              <h5 className="font-medium mb-1 text-blue-800 dark:text-blue-200">الشرح:</h5>
+                              <p className="text-sm">{question.explanation}</p>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </TabsContent>
+
+            <TabsContent value="correct">
+              <div className="space-y-4">
+                {questions.filter(q => answers[q.id] === q.correctOptionIndex).map((question, index) => {
+                  const userAnswer = answers[question.id];
+                  const isCorrect = userAnswer === question.correctOptionIndex;
+                   return (
+                    <div key={question.id} className={cn(
+                      "p-4 rounded-lg border",
+                      isCorrect ? "bg-green-50 dark:bg-green-900/20 border-green-200" : "bg-red-50 dark:bg-red-900/20 border-red-200"
+                    )}>
+                      <div className="flex items-start gap-3">
+                        <div className={cn(
+                          "w-8 h-8 rounded-full flex items-center justify-center text-white",
+                          isCorrect ? "bg-green-500" : "bg-red-500"
+                        )}>
+                          {isCorrect ? "✓" : "✗"}
+                        </div>
+                        <div>
+                          <h4 className="font-medium mb-2">سؤال {index + 1}</h4>
+                          <p className="text-gray-800 dark:text-gray-200 mb-4">{question.text}</p>
+
+                          <div className="space-y-2">
+                            {question.options.map((option, optIndex) => (
+                              <div key={optIndex} className={cn(
+                                "p-3 rounded-lg border",
+                                optIndex === question.correctOptionIndex ? "bg-green-50 dark:bg-green-900/20 border-green-200" :
+                                optIndex === userAnswer ? "bg-red-50 dark:bg-red-900/20 border-red-200" :
+                                "bg-gray-50 dark:bg-gray-800"
+                              )}>
+                                <div className="flex items-center">
+                                  <span className="mr-2">{option}</span>
+                                  {optIndex === question.correctOptionIndex && (
+                                    <span className="text-green-600 dark:text-green-400 text-sm mr-auto">
+                                      (الإجابة الصحيحة)
+                                    </span>
+                                  )}
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+
+                          {question.explanation && (
+                            <div className="mt-4 p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200">
+                              <h5 className="font-medium mb-1 text-blue-800 dark:text-blue-200">الشرح:</h5>
+                              <p className="text-sm">{question.explanation}</p>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </TabsContent>
+
+            <TabsContent value="incorrect">
+              <div className="space-y-4">
+                {questions.filter(q => answers[q.id] !== q.correctOptionIndex).map((question, index) => {
+                  const userAnswer = answers[question.id];
+                  const isCorrect = userAnswer === question.correctOptionIndex;
+                   return (
+                    <div key={question.id} className={cn(
+                      "p-4 rounded-lg border",
+                      isCorrect ? "bg-green-50 dark:bg-green-900/20 border-green-200" : "bg-red-50 dark:bg-red-900/20 border-red-200"
+                    )}>
+                      <div className="flex items-start gap-3">
+                        <div className={cn(
+                          "w-8 h-8 rounded-full flex items-center justify-center text-white",
+                          isCorrect ? "bg-green-500" : "bg-red-500"
+                        )}>
+                          {isCorrect ? "✓" : "✗"}
+                        </div>
+                        <div>
+                          <h4 className="font-medium mb-2">سؤال {index + 1}</h4>
+                          <p className="text-gray-800 dark:text-gray-200 mb-4">{question.text}</p>
+
+                          <div className="space-y-2">
+                            {question.options.map((option, optIndex) => (
+                              <div key={optIndex} className={cn(
+                                "p-3 rounded-lg border",
+                                optIndex === question.correctOptionIndex ? "bg-green-50 dark:bg-green-900/20 border-green-200" :
+                                optIndex === userAnswer ? "bg-red-50 dark:bg-red-900/20 border-red-200" :
+                                "bg-gray-50 dark:bg-gray-800"
+                              )}>
+                                <div className="flex items-center">
+                                  <span className="mr-2">{option}</span>
+                                  {optIndex === question.correctOptionIndex && (
+                                    <span className="text-green-600 dark:text-green-400 text-sm mr-auto">
+                                      (الإجابة الصحيحة)
+                                    </span>
+                                  )}
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+
+                          {question.explanation && (
+                            <div className="mt-4 p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200">
+                              <h5 className="font-medium mb-1 text-blue-800 dark:text-blue-200">الشرح:</h5>
+                              <p className="text-sm">{question.explanation}</p>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </TabsContent>
+          </Tabs>
+        </CardContent>
+      </Card>
 
         {/* More detailed analysis and recommendations would go here */}
         <Card>
