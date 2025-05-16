@@ -193,15 +193,9 @@ function App() {
 
   if (showSplash) {
     return (
-      <div className="h-screen w-screen flex flex-col items-center justify-center bg-gradient-to-b from-primary/20 to-primary/5 dark:from-primary/30 dark:to-gray-900">
-        <div className="relative">
-          <div className="absolute -inset-1 bg-gradient-to-r from-primary/50 to-primary/30 rounded-lg blur-lg animate-pulse"></div>
-          <div className="relative bg-background/80 backdrop-blur-sm rounded-lg p-8 shadow-2xl">
-            <h1 className="text-7xl font-bold bg-gradient-to-r from 
--primary to-primary/80 bg-clip-text text-transparent mb-6 animate-fade-in">قدراتك</h1>
-            <p className="text-2xl text-center text-primary/90 animate-fade-in-delay">طريقك للوصول إلى 100% بإذن الله</p>
-          </div>
-        </div>
+      <div className="h-screen w-screen flex flex-col items-center justify-center bg-gradient-to-b from-primary/10 to-primary/5">
+        <h1 className="text-6xl font-bold text-primary mb-4 animate-fade-in">قدراتك</h1>
+        <p className="text-2xl text-primary/80 animate-fade-in-delay">طريقك للوصول إلى 100% بإذن الله</p>
       </div>
     );
   }
