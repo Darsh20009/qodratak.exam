@@ -76,6 +76,28 @@ interface ExamQuestion {
 const qiyasExams: QiyasExam[] = [
   {
     id: 1,
+    name: "اختبار كمي مكثف - 55 سؤال",
+    description: "اختبار قدرات كمية شامل: 55 سؤال في 55 دقيقة مع عرض الإجابات والشرح بعد الانتهاء",
+    totalSections: 1,
+    totalQuestions: 55,
+    totalTime: 55,
+    sections: [
+      { sectionNumber: 1, name: "قدرات كمية", category: "quantitative", questionCount: 55, timeLimit: 55 }
+    ]
+  },
+  {
+    id: 2,
+    name: "اختبار كمي موسع - 65 سؤال",
+    description: "اختبار قدرات كمية متقدم: 65 سؤال في 65 دقيقة مع عرض الإجابات والشرح بعد الانتهاء",
+    totalSections: 1,
+    totalQuestions: 65,
+    totalTime: 65,
+    sections: [
+      { sectionNumber: 1, name: "قدرات كمية", category: "quantitative", questionCount: 65, timeLimit: 65 }
+    ]
+  },
+  {
+    id: 3,
     name: "اختبار قياس عام 2025",
     description: "اختبار محاكاة كامل يتبع النموذج الرسمي لاختبار قياس: 65 سؤال لفظي و 55 سؤال كمي",
     totalSections: 7,
