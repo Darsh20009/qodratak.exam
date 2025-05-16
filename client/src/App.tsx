@@ -1,6 +1,6 @@
 import React from 'react';
 import { Route, Switch, Link } from "wouter";
-import { ClipboardIcon, UserIcon } from "lucide-react";
+import { ClipboardListIcon, UserIcon } from "lucide-react";
 import { queryClient } from "./lib/queryClient";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
@@ -57,7 +57,7 @@ function MainLayout({ children }: { children: React.ReactNode }) {
     { name: "اسأل سؤال", href: "/ask", icon: HelpCircleIcon },
     { name: "المكتبة", href: "/library", icon: BookOpenIcon },
     { name: "مجلداتي", href: "/folders", icon: FolderIcon },
-    { name: "سجل الاختبارات", href: "/records", icon: ClipboardIcon },
+    { name: "سجل الاختبارات", href: "/records", icon: ClipboardListIcon },
   ];
 
   return (
