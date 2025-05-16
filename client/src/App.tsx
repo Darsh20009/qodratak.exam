@@ -54,6 +54,7 @@ function MainLayout({ children }: { children: React.ReactNode }) {
   const navItems = [
     { name: "الرئيسية", href: "/", icon: HomeIcon },
     { name: "اختبارات قياس", href: "/qiyas", icon: GraduationCapIcon },
+    { name: "الاختبارات التأهيلية", href: "/qualification", icon: GraduationCapIcon },
     { name: "اختبر قدراتك", href: "/abilities", icon: BrainCircuitIcon },
     { name: "التحديات", href: "/challenges", icon: GamepadIcon },
     { name: "اسأل سؤال", href: "/ask", icon: HelpCircleIcon },
@@ -234,6 +235,9 @@ function Router() {
       </Route>
       <Route path="/mock-exams">
         {() => <ProtectedRoute><RestrictedRoute><MainLayout><MockExamPage /></MainLayout></RestrictedRoute></ProtectedRoute>}
+      </Route>
+      <Route path="/qualification">
+        {() => <ProtectedRoute><RestrictedRoute><MainLayout><QualificationExamPage /></MainLayout></RestrictedRoute></ProtectedRoute>}
       </Route>
       {/* Fallback to 404 */}
       <Route>
