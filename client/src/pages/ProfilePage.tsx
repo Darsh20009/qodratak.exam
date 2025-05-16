@@ -135,12 +135,12 @@ const ProfilePage: React.FC = () => {
       }
 
       const userData = await response.json();
-      
+
       // Store user in localStorage
       localStorage.setItem("user", JSON.stringify(userData));
       setUser(userData);
       setIsLoggedIn(true);
-      
+
       toast({
         title: "تم تسجيل الدخول بنجاح",
         description: `مرحباً، ${userData.username}!`,
@@ -176,12 +176,12 @@ const ProfilePage: React.FC = () => {
       }
 
       const userData = await response.json();
-      
+
       // Store user in localStorage
       localStorage.setItem("user", JSON.stringify(userData));
       setUser(userData);
       setIsLoggedIn(true);
-      
+
       toast({
         title: "تم إنشاء الحساب بنجاح",
         description: `مرحباً، ${userData.username}!`,
@@ -201,7 +201,7 @@ const ProfilePage: React.FC = () => {
     localStorage.removeItem("user");
     setUser(null);
     setIsLoggedIn(false);
-    
+
     toast({
       title: "تم تسجيل الخروج بنجاح",
     });
@@ -235,7 +235,7 @@ const ProfilePage: React.FC = () => {
                     style={{ width: `${(achievements.length / 10) * 100}%` }}
                   ></div>
                 </div>
-                
+
                 <div className="pt-4">
                   <h4 className="font-medium mb-2">الإحصائيات</h4>
                   <div className="grid grid-cols-2 gap-y-2">
@@ -257,7 +257,7 @@ const ProfilePage: React.FC = () => {
               </Button>
             </CardFooter>
           </Card>
-          
+
           {/* Activity and Achievements */}
           <div className="md:col-span-2 space-y-6">
             {/* Recent Activity */}
@@ -295,7 +295,7 @@ const ProfilePage: React.FC = () => {
                 </Button>
               </CardFooter>
             </Card>
-            
+
             {/* Achievements */}
             <Card>
               <CardHeader>
@@ -331,13 +331,13 @@ const ProfilePage: React.FC = () => {
     <div className="container max-w-md py-8">
       <h1 className="text-3xl font-bold mb-8 text-center">تسجيل الدخول</h1>
       <p className="text-center mb-8 text-muted-foreground">يجب تسجيل الدخول للوصول إلى المحتوى</p>
-      
+
       <Tabs defaultValue="login">
         <TabsList className="w-full mb-6">
           <TabsTrigger value="login" className="flex-1">تسجيل الدخول</TabsTrigger>
           <TabsTrigger value="register" className="flex-1">إنشاء حساب</TabsTrigger>
         </TabsList>
-        
+
         <TabsContent value="login">
           <Card>
             <CardHeader>
@@ -383,7 +383,7 @@ const ProfilePage: React.FC = () => {
             </CardContent>
           </Card>
         </TabsContent>
-        
+
         <TabsContent value="register">
           <Card>
             <CardHeader>
