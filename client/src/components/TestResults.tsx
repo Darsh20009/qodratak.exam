@@ -28,8 +28,13 @@ const TestResults: React.FC<TestResultsProps> = ({
   return (
     <div className="p-6 overflow-y-auto custom-scrollbar">
       <div className="text-center mb-8">
-        <div className="inline-block p-4 mb-4 rounded-full bg-primary/10 dark:bg-blue-400/10">
-          <i className="fas fa-trophy text-4xl text-primary dark:text-blue-400"></i>
+        <div className="inline-block p-4 mb-4 rounded-full bg-gradient-to-r from-primary/20 to-secondary/20 dark:from-blue-400/20 dark:to-purple-400/20 animate-bounce-slow">
+          <div className="relative">
+            <i className="fas fa-trophy text-4xl text-primary dark:text-blue-400 animate-spin-slow"></i>
+            <div className="absolute -top-2 -right-2 w-6 h-6 rounded-full bg-yellow-400 flex items-center justify-center text-white text-sm animate-ping-slow">
+              <i className="fas fa-star"></i>
+            </div>
+          </div>
         </div>
         <h3 className="text-2xl font-bold text-gray-800 dark:text-gray-200 mb-2">
           اكتملت الاختبار!

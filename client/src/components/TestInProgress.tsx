@@ -46,7 +46,7 @@ const TestInProgress: React.FC<TestInProgressProps> = ({
   }
 
   return (
-    <div className="flex flex-col h-full">
+    <div className="flex flex-col h-full animate-fade-in">
       <div className="border-b border-gray-200 dark:border-gray-800 py-3 px-6 flex justify-between items-center">
         <div className="flex items-center gap-2">
           <button
@@ -88,8 +88,11 @@ const TestInProgress: React.FC<TestInProgressProps> = ({
             </span>
           </div>
 
-          <h4 className="text-lg font-semibold text-gray-800 dark:text-gray-200 mb-6">
-            {question.text}
+          <h4 className="text-lg font-semibold text-gray-800 dark:text-gray-200 mb-6 animate-fade-in-down">
+            <div className="flex items-center gap-2">
+              <span className="text-primary dark:text-blue-400">Q{currentQuestionIndex + 1}.</span>
+              {question.text}
+            </div>
           </h4>
 
           <div className="space-y-3">

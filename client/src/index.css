@@ -32,6 +32,55 @@
   animation: spin-slow 3s linear infinite;
 }
 
+.animate-bounce-slow {
+  animation: bounce-slow 2s ease-in-out infinite;
+}
+
+.animate-ping-slow {
+  animation: ping-slow 1.5s cubic-bezier(0, 0, 0.2, 1) infinite;
+}
+
+@keyframes bounce-slow {
+  0%, 100% {
+    transform: translateY(-5%);
+    animation-timing-function: cubic-bezier(0.8, 0, 1, 1);
+  }
+  50% {
+    transform: translateY(0);
+    animation-timing-function: cubic-bezier(0, 0, 0.2, 1);
+  }
+}
+
+@keyframes ping-slow {
+  75%, 100% {
+    transform: scale(1.2);
+    opacity: 0;
+  }
+}
+
+.achievement-card {
+  background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
+  transition: all 0.3s ease;
+}
+
+.achievement-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 10px 20px rgba(0, 0, 0, 0.2);
+}
+
+.pulse-effect {
+  animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: .7;
+  }
+}
+
 .hover\:scale-105:hover {
   transform: scale(1.05);
 }

@@ -1,4 +1,5 @@
 import React, { useEffect } from "react";
+import confetti from 'canvas-confetti';
 import { TestDifficulty } from "@shared/types";
 import { formatDifficulty } from "@/lib/formatters";
 
@@ -35,6 +36,13 @@ const LevelCompleteModal: React.FC<LevelCompleteModalProps> = ({
       }
     `;
     document.head.appendChild(style);
+
+    // Trigger confetti
+    confetti({
+      particleCount: 100,
+      spread: 70,
+      origin: { y: 0.6 }
+    });
 
     return () => {
       document.head.removeChild(style);
