@@ -28,7 +28,8 @@ const Chatbot = () => {
     handleStartChat,
     setInputMessage,
     handleSendMessage,
-    handleSuggestedQuestionClick
+    handleSuggestedQuestionClick,
+    setLocation
   } = useChatbot();
 
   const abilitiesTest = useAbilitiesTest(currentUserId);
