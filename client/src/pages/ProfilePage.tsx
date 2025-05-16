@@ -137,11 +137,19 @@ const ProfilePage: React.FC = () => {
       const userData = await response.json();
       
       if (response.status === 403) {
-        toast({
-          title: "الاشتراك منتهي",
-          description: "يرجى تجديد الاشتراك للمتابعة",
-          variant: "destructive",
-        });
+        if (userData.isTrialExpired) {
+          toast({
+            title: "انتهت الفترة التجريبية",
+            description: "يرجى الاشتراك للمتابعة واستخدام كامل المميزات",
+            variant: "destructive",
+          });
+        } else {
+          toast({
+            title: "الاشتراك منتهي",
+            description: "يرجى تجديد الاشتراك للمتابعة",
+            variant: "destructive",
+          });
+        }
         return;
       }
       

@@ -49,9 +49,14 @@ export const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
         window.dispatchEvent(new CustomEvent('userLoggedIn', { detail: user }));
         
         // Update all auth states
-        document.cookie = `isLoggedIn=true; path=/`;
-        document.cookie = `userName=${user.name}; path=/`;
-        document.cookie = `userSubscription=${user.subscription.type}; path=/`;
+        document.cookie = `isLoggedIn=true; path=/; max-age=86400`;
+        document.cookie = `userName=${user.name}; path=/; max-age=86400`;
+        document.cookie = `userSubscription=${user.subscription.type}; path=/; max-age=86400`;
+        document.cookie = `userPoints=${user.points || 0}; path=/; max-age=86400`;
+        document.cookie = `userLevel=${user.level || 0}; path=/; max-age=86400`;
+        
+        // Update session storage for quicker access
+        sessionStorage.setItem('currentUser', JSON.stringify(user));
         
       } catch (e) {
         console.error("Error parsing stored user:", e);
