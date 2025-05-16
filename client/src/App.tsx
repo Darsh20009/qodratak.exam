@@ -30,7 +30,7 @@ import QiyasExamPage from "@/pages/QiyasExamPage";
 import CustomExamPage from "@/pages/CustomExamPage";
 import MockExamPage from "@/pages/MockExamPage";
 import LibraryPage from "@/pages/LibraryPage";
-import QualificationExamPage from "@/pages/QualificationExamPage";
+import { default as QualificationExamPage } from "@/pages/QualificationExamPage";
 import FoldersPage from "@/pages/FoldersPage";
 import ChallengePage from "@/pages/ChallengePage";
 import { SubscriptionPlans } from "@/components/SubscriptionPlans";
@@ -238,7 +238,9 @@ function Router() {
         {() => <ProtectedRoute><RestrictedRoute><MainLayout><MockExamPage /></MainLayout></RestrictedRoute></ProtectedRoute>}
       </Route>
       <Route path="/qualification">
-        {() => <ProtectedRoute><RestrictedRoute><MainLayout><QualificationExamPage /></MainLayout></RestrictedRoute></ProtectedRoute>}
+        {() => <ProtectedRoute><MainLayout>
+          {isPremium ? <QualificationExamPage /> : <SubscriptionPlans />}
+        </MainLayout></ProtectedRoute>}
       </Route>
       {/* Fallback to 404 */}
       <Route>
