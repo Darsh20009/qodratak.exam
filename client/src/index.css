@@ -28,7 +28,8 @@
   vertical-align: middle;
 }
 
-/* Fade In Animations */
+:root {
+
 @keyframes fade-in {
   0% { opacity: 0; }
   100% { opacity: 1; }
@@ -38,6 +39,14 @@
   0% { opacity: 0; }
   50% { opacity: 0; }
   100% { opacity: 1; }
+}
+
+.animate-fade-in {
+  animation: fade-in 1s ease-out;
+}
+
+.animate-fade-in-delay {
+  animation: fade-in-delay 2s ease-out;
 }
 
 @keyframes fade-in-down {
@@ -51,67 +60,54 @@
   }
 }
 
-/* Animation Classes */
-.animate-fade-in {
-  animation: fade-in 1s ease-out;
-}
-
-.animate-fade-in-delay {
-  animation: fade-in-delay 2s ease-out;
-}
-
 .animate-fade-in-down {
   animation: fade-in-down 1s ease-out;
 }
 
-/* Dark Mode Theme */
-:root {
-  --background: 220 100% 10%; /* Deep, rich blue */
-  --foreground: 220 100% 95%; /* Light text on dark blue */
-  --muted: 220 50% 25%; /* Muted blue */
-  --muted-foreground: 220 70% 50%; /* Muted lighter text */
-  --popover: 220 80% 15%; /* Deep blue popups */
-  --popover-foreground: 220 100% 95%; /* Lighter popup text */
-  --card: 220 80% 20%; /* Strong blue card background */
-  --card-foreground: 220 100% 95%; /* Light card text */
-  --border: 220 80% 30%; /* Dark border */
-  --input: 220 70% 30%; /* Dark input */
-  --primary: 210 100% 50%; /* Vivid accent blue */
-  --primary-foreground: 220 100% 98%; /* Lighter text on primary elements */
-  --secondary: 220 60% 35%; /* Secondary blue */
-  --secondary-foreground: 220 100% 90%; /* Lighter secondary text */
-  --accent: 220 100% 25%; /* Rich accent blue */
-  --accent-foreground: 220 100% 95%; /* Accent text */
-  --destructive: 0 80% 50%; /* Destructive color */
-  --destructive-foreground: 60 10% 90%; /* Lighter destructive text */
-  --ring: 220 90% 55%; /* Ring around elements */
-  --radius: 0.5rem;
-}
+      --background: 0 0% 100%;
+--foreground: 20 14.3% 4.1%;
+--muted: 60 4.8% 95.9%;
+--muted-foreground: 25 5.3% 44.7%;
+--popover: 0 0% 100%;
+--popover-foreground: 20 14.3% 4.1%;
+--card: 0 0% 100%;
+--card-foreground: 20 14.3% 4.1%;
+--border: 20 5.9% 90%;
+--input: 20 5.9% 90%;
+--primary: 207 90% 54%;
+--primary-foreground: 211 100% 99%;
+--secondary: 60 4.8% 95.9%;
+--secondary-foreground: 24 9.8% 10%;
+--accent: 60 4.8% 95.9%;
+--accent-foreground: 24 9.8% 10%;
+--destructive: 0 84.2% 60.2%;
+--destructive-foreground: 60 9.1% 97.8%;
+--ring: 20 14.3% 4.1%;
+--radius: 0.5rem;
+  }
+  .dark {
+      --background: 240 10% 3.9%;
+--foreground: 0 0% 98%;
+--muted: 240 3.7% 15.9%;
+--muted-foreground: 240 5% 64.9%;
+--popover: 240 10% 3.9%;
+--popover-foreground: 0 0% 98%;
+--card: 240 10% 3.9%;
+--card-foreground: 0 0% 98%;
+--border: 240 3.7% 15.9%;
+--input: 240 3.7% 15.9%;
+--primary: 207 90% 54%;
+--primary-foreground: 211 100% 99%;
+--secondary: 240 3.7% 15.9%;
+--secondary-foreground: 0 0% 98%;
+--accent: 240 3.7% 15.9%;
+--accent-foreground: 0 0% 98%;
+--destructive: 0 62.8% 30.6%;
+--destructive-foreground: 0 0% 98%;
+--ring: 240 4.9% 83.9%;
+--radius: 0.5rem;
+  }
 
-.dark {
-  --background: 220 100% 5%; /* Very dark, almost navy blue for dark mode */
-  --foreground: 220 100% 90%; /* Light text */
-  --muted: 220 50% 20%; /* Very muted dark blue */
-  --muted-foreground: 220 70% 60%; /* Muted light text */
-  --popover: 220 80% 5%; /* Deeper blue popups */
-  --popover-foreground: 220 100% 90%; /* Light text for popups */
-  --card: 220 80% 5%; /* Deep blue cards */
-  --card-foreground: 220 100% 90%; /* Lighter text in cards */
-  --border: 220 80% 25%; /* Dark border */
-  --input: 220 70% 20%; /* Very dark blue input */
-  --primary: 210 100% 50%; /* Bright accent blue */
-  --primary-foreground: 220 100% 98%; /* Light primary text */
-  --secondary: 220 60% 30%; /* Dark secondary blue */
-  --secondary-foreground: 220 100% 90%; /* Light secondary text */
-  --accent: 220 100% 15%; /* Deep accent blue */
-  --accent-foreground: 220 100% 95%; /* Accent text */
-  --destructive: 0 70% 50%; /* Dark destructive color */
-  --destructive-foreground: 60 10% 90%; /* Lighter destructive text */
-  --ring: 220 90% 60%; /* Lighter ring */
-  --radius: 0.5rem;
-}
-
-/* Apply Tailwind Defaults */
 @layer base {
   * {
     @apply border-border;
@@ -121,3 +117,4 @@
     @apply font-sans antialiased bg-background text-foreground;
   }
 }
+

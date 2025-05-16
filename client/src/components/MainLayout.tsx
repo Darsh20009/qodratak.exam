@@ -35,13 +35,8 @@ export const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
       } catch (e) {
         console.error("Error parsing stored user:", e);
       }
-    } else if (location === '/') {
-      // After showing home page, redirect to login
-      setTimeout(() => {
-        setLocation('/profile');
-      }, 3000); // Redirect after 3 seconds
     } else if (location !== '/profile') {
-      // Redirect to login for all other pages if not authenticated
+      // Redirect to login if not authenticated
       setLocation('/profile');
     }
   }, [location, setLocation]);
