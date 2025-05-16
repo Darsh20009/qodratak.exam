@@ -119,25 +119,22 @@ const ProfilePage: React.FC = () => {
   const onLoginSubmit = async (data: LoginFormValues) => {
     setIsLoading(true);
     try {
-      // In a real app, this would be an API call
-      const response = await fetch("/api/users", {
+      const response = await fetch("/api/auth/login", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ username: data.username }),
+        body: JSON.stringify({ 
+          email: data.username, 
+          password: data.password 
+        }),
       });
 
       if (!response.ok) {
-        throw new Error("فشل تسجيل الدخول");
+        throw new Error("بيانات الدخول غير صحيحة");
       }
 
       const userData = await response.json();
-      
-      // In this simple demo, we just check if the username matches the password
-      if (data.password !== userData.password) {
-        throw new Error("كلمة المرور غير صحيحة");
-      }
       
       // Store user in localStorage
       localStorage.setItem("user", JSON.stringify(userData));
@@ -162,13 +159,16 @@ const ProfilePage: React.FC = () => {
   const onRegisterSubmit = async (data: RegisterFormValues) => {
     setIsLoading(true);
     try {
-      // In a real app, this would be an API call
-      const response = await fetch("/api/users", {
+      const response = await fetch("/api/auth/register", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ username: data.username, password: data.password }),
+        body: JSON.stringify({
+          name: data.username,
+          email: data.username,
+          password: data.password
+        }),
       });
 
       if (!response.ok) {
@@ -218,9 +218,9 @@ const ProfilePage: React.FC = () => {
               <div className="w-24 h-24 rounded-full bg-primary/10 mx-auto flex items-center justify-center mb-4">
                 <User className="h-12 w-12 text-primary" />
               </div>
-              <CardTitle className="text-2xl">{user.username}</CardTitle>
+              <CardTitle className="text-2xl">{user.name}</CardTitle>
               <CardDescription>
-                المستوى {user.level} • {user.points} نقطة
+                {user.subscription.type} • تنتهي في {user.subscription.endDate}
               </CardDescription>
             </CardHeader>
             <CardContent>

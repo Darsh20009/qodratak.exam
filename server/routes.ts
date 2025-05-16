@@ -191,29 +191,57 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Create a new user (simple for demo purposes)
-  app.post("/api/users", async (req: Request, res: Response) => {
+  app.post("/api/auth/login", async (req: Request, res: Response) => {
     try {
-      const { username } = req.body;
+      const { email, password } = req.body;
       
-      if (!username) {
-        return res.status(400).json({ message: "Username is required" });
+      if (!email || !password) {
+        return res.status(400).json({ message: "Email and password are required" });
+      }
+
+      const users = JSON.parse(fs.readFileSync("attached_assets/user.json", "utf-8"));
+      const user = users.find((u: any) => u.email === email && u.password === password);
+      
+      if (!user) {
+        return res.status(401).json({ message: "Invalid credentials" });
       }
       
-      const existingUser = await storage.getUserByUsername(username);
+      return res.json(user);
+    } catch (error) {
+      console.error("Error during login:", error);
+      return res.status(500).json({ message: "Error during login" });
+    }
+});
+
+app.post("/api/auth/register", async (req: Request, res: Response) => {
+    try {
+      const { name, email, password } = req.body;
       
-      if (existingUser) {
-        return res.json(existingUser);
+      if (!name || !email || !password) {
+        return res.status(400).json({ message: "Name, email and password are required" });
       }
       
-      // Create a simple user with username as password (for demo)
-      const user = await storage.createUser({
-        username,
-        password: username,
-        points: 0,
-        level: 1
-      });
+      const users = JSON.parse(fs.readFileSync("attached_assets/user.json", "utf-8"));
       
-      return res.status(201).json(user);
+      if (users.some((u: any) => u.email === email)) {
+        return res.status(400).json({ message: "Email already exists" });
+      }
+      
+      const newUser = {
+        name,
+        email,
+        password,
+        subscription: {
+          type: "free",
+          startDate: new Date().toISOString().split('T')[0],
+          endDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]
+        }
+      };
+      
+      users.push(newUser);
+      fs.writeFileSync("attached_assets/user.json", JSON.stringify(users, null, 2));
+      
+      return res.status(201).json(newUser);
     } catch (error) {
       console.error("Error creating user:", error);
       return res.status(500).json({ message: "Error creating user" });
