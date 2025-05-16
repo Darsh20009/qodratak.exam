@@ -7,12 +7,13 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { Assistant } from "@/components/ui/assistant";
 import NotFound from "@/pages/not-found";
 import Home from "@/pages/Home";
+import ExamRecordsPage from "@/pages/ExamRecordsPage";
 import { ThemeProvider } from "next-themes";
 import { Separator } from "@/components/ui/separator";
 import { 
   BookOpenIcon, 
   BrainCircuitIcon, 
-  ClipboardList,
+  ClipboardListIcon,
   FolderIcon,
   GamepadIcon,
   GraduationCapIcon,
@@ -57,7 +58,7 @@ function MainLayout({ children }: { children: React.ReactNode }) {
     { name: "اسأل سؤال", href: "/ask", icon: HelpCircleIcon },
     { name: "المكتبة", href: "/library", icon: BookOpenIcon },
     { name: "مجلداتي", href: "/folders", icon: FolderIcon },
-    { name: "سجل الاختبارات", href: "/records", icon: ClipboardList },
+    { name: "سجل الاختبارات", href: "/records", icon: ClipboardListIcon },
   ];
 
   return (
