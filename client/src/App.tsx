@@ -29,6 +29,7 @@ import LibraryPage from "@/pages/LibraryPage";
 import CustomExamPage from "@/pages/CustomExamPage";
 import FoldersPage from "@/pages/FoldersPage";
 import ChallengePage from "@/pages/ChallengePage";
+import { SubscriptionPlans } from "@/components/SubscriptionPlans";
 
 function MainLayout({ children }: { children: React.ReactNode }) {
   const [location] = useLocation();
@@ -182,10 +183,14 @@ function Router() {
         {() => <MainLayout><ProfilePage /></MainLayout>}
       </Route>
       <Route path="/folders">
-        {() => <MainLayout><FoldersPage /></MainLayout>}
+        {() => <MainLayout>
+          {isPremium ? <FoldersPage /> : <SubscriptionPlans />}
+        </MainLayout>}
       </Route>
       <Route path="/challenges">
-        {() => <MainLayout><ChallengePage /></MainLayout>}
+        {() => <MainLayout>
+          {isPremium ? <ChallengePage /> : <SubscriptionPlans />}
+        </MainLayout>}
       </Route>
       {/* Fallback to 404 */}
       <Route>
