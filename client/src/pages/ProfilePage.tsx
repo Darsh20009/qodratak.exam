@@ -473,42 +473,59 @@ const ProfilePage: React.FC = () => {
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <form onSubmit={(e) => {
-                e.preventDefault();
-                const email = (e.target as any).email.value;
-                
-                // Send recovery request to Telegram bot
-                fetch("/api/recover-account", {
-                  method: "POST",
-                  headers: {
-                    "Content-Type": "application/json",
-                  },
-                  body: JSON.stringify({ email })
-                })
-                .then(() => {
-                  toast({
-                    title: "تم إرسال طلب الاسترداد",
-                    description: "سيتم التواصل معك عبر @qodratak2030",
-                  });
-                })
-                .catch(() => {
-                  toast({
-                    title: "حدث خطأ",
-                    description: "يرجى المحاولة مرة أخرى",
-                    variant: "destructive",
-                  });
-                });
-              }} className="space-y-4">
-                <FormItem>
-                  <FormLabel>البريد الإلكتروني</FormLabel>
-                  <FormControl>
-                    <Input name="email" type="email" placeholder="أدخل بريدك الإلكتروني" required />
-                  </FormControl>
-                </FormItem>
-                <Button type="submit" className="w-full">
+              <div className="space-y-4">
+                <div className="space-y-2">
+                  <label htmlFor="email" className="text-sm font-medium">البريد الإلكتروني</label>
+                  <Input 
+                    id="email"
+                    name="email" 
+                    type="email" 
+                    placeholder="أدخل بريدك الإلكتروني" 
+                    required 
+                  />
+                </div>
+                <Button 
+                  className="w-full"
+                  onClick={async () => {
+                    const email = (document.getElementById('email') as HTMLInputElement).value;
+                    if (!email) {
+                      toast({
+                        title: "خطأ",
+                        description: "يرجى إدخال البريد الإلكتروني",
+                        variant: "destructive",
+                      });
+                      return;
+                    }
+                    
+                    try {
+                      const response = await fetch("/api/recover-account", {
+                        method: "POST",
+                        headers: {
+                          "Content-Type": "application/json",
+                        },
+                        body: JSON.stringify({ email })
+                      });
+                      
+                      if (!response.ok) {
+                        throw new Error("البريد الإلكتروني غير مسجل");
+                      }
+                      
+                      toast({
+                        title: "تم إرسال طلب الاسترداد",
+                        description: "سيتم التواصل معك عبر @qodratak2030",
+                      });
+                    } catch (error) {
+                      toast({
+                        title: "حدث خطأ",
+                        description: error instanceof Error ? error.message : "يرجى المحاولة مرة أخرى",
+                        variant: "destructive",
+                      });
+                    }
+                  }}
+                >
                   استرداد الحساب
                 </Button>
-              </form>
+              </div>
             </CardContent>
           </Card>
         </TabsContent>
