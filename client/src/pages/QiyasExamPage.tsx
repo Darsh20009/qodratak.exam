@@ -116,7 +116,7 @@ const qiyasExams: QiyasExam[] = [
       { sectionNumber: 1, name: "قدرات لفظية", category: "verbal", questionCount: 65, timeLimit: 65 }
     ]
   },
-  
+
   {
     id: 3,
     name: "اختبار قياس عام 2025",
@@ -171,6 +171,9 @@ const QiyasExamPage: React.FC = () => {
   const [examStartTime, setExamStartTime] = useState<Date | null>(null);
   const [examEndTime, setExamEndTime] = useState<Date | null>(null);
 
+  // Store questions for all sections to show in results
+  const [allSectionsQuestions, setAllSectionsQuestions] = useState<{[sectionNumber: number]: ExamQuestion[]}>({});
+
   // Timer for the test
   useEffect(() => {
     if (currentView === "inProgress" && timeLeft > 0) {
@@ -208,12 +211,17 @@ const QiyasExamPage: React.FC = () => {
     setAnswers({});
     setSectionScores({});
     setShowExamResults(false);
+    setAllSectionsQuestions({});
 
     try {
       // In a real app, this would fetch questions from the API
       // For now, we'll simulate loading questions
-      const examQuestions: ExamQuestion[] = await fetchQuestionsForSection(selectedExam.sections[0]);
+      const firstSection = selectedExam.sections[0];
+      const examQuestions: ExamQuestion[] = await fetchQuestionsForSection(firstSection);
       setQuestions(examQuestions);
+
+      // Store questions for the first section
+      setAllSectionsQuestions({ [firstSection.sectionNumber]: examQuestions });
 
       // Set time limit for the first section
       setTimeLeft(selectedExam.sections[0].timeLimit * 60);
@@ -322,9 +330,16 @@ const QiyasExamPage: React.FC = () => {
 
     // Load questions for the next section
     try {
-      const nextSectionQuestions = await fetchQuestionsForSection(selectedExam.sections[currentSection + 1]);
+      const nextSection = currentSection + 1;
+      const nextSectionQuestions = await fetchQuestionsForSection(selectedExam.sections[nextSection]);
       setQuestions(nextSectionQuestions);
-      setTimeLeft(selectedExam.sections[currentSection + 1].timeLimit * 60);
+      setTimeLeft(selectedExam.sections[nextSection].timeLimit * 60);
+
+      // Store the questions for the next section
+      setAllSectionsQuestions(prev => ({
+        ...prev,
+        [selectedExam.sections[nextSection].sectionNumber]: nextSectionQuestions
+      }));
     } catch (error) {
       toast({
         title: "خطأ",
@@ -334,25 +349,25 @@ const QiyasExamPage: React.FC = () => {
     }
 
     // Move to the next section
-    const nextSection = currentSection + 1;
-    setCurrentSection(nextSection);
-    setCurrentQuestion(0);
-    setSelectedAnswer(null);
+    // const nextSection = currentSection + 1;
+    // setCurrentSection(nextSection);
+    // setCurrentQuestion(0);
+    // setSelectedAnswer(null);
 
-    // Load questions for the next section
-    try {
-      const nextSectionQuestions = await fetchQuestionsForSection(selectedExam.sections[nextSection]);
-      setQuestions(nextSectionQuestions);
+    // // Load questions for the next section
+    // try {
+    //   const nextSectionQuestions = await fetchQuestionsForSection(selectedExam.sections[nextSection]);
+    //   setQuestions(nextSectionQuestions);
 
-      // Set time limit for the next section
-      setTimeLeft(selectedExam.sections[nextSection].timeLimit * 60);
-    } catch (error) {
-      toast({
-        title: "خطأ",
-        description: "فشل في تحميل أسئلة القسم التالي",
-        variant: "destructive",
-      });
-    }
+    //   // Set time limit for the next section
+    //   setTimeLeft(selectedExam.sections[nextSection].timeLimit * 60);
+    // } catch (error) {
+    //   toast({
+    //     title: "خطأ",
+    //     description: "فشل في تحميل أسئلة القسم التالي",
+    //     variant: "destructive",
+    //   });
+    // }
   };
 
   // Calculate score for the current section
@@ -816,7 +831,8 @@ const QiyasExamPage: React.FC = () => {
                 </div>
               </div>
               <div className="bg-muted/30 p-4 rounded-lg text-center">
-                <div className="text-sm text-muted-foreground mb-1">التقدير</div>
+                ```tool_code
+        <div className="text-sm text-muted-foreground mb-1">التقدير</div>
                 <div className={cn("font-bold", performance.color)}>{performance.label}</div>
                 <div className="text-xs text-muted-foreground">
                   المستوى العام
@@ -900,9 +916,10 @@ const QiyasExamPage: React.FC = () => {
 
             <TabsContent value="all">
               <div className="space-y-4">
-                {questions.map((question, index) => {
-                  const userAnswer = answers[question.id];
-                  const isCorrect = userAnswer === question.correctOptionIndex;
+                {Object.entries(allSectionsQuestions).flatMap(([sectionNum, sectionQuestions]) => 
+              sectionQuestions.map((question, index) => {
+                const isCorrect = answers[question.id] === question.correctOptionIndex;
+                const sectionName = selectedExam?.sections[parseInt(sectionNum) - 1]?.name || `القسم ${sectionNum}`;
 
                   return (
                     <div key={question.id} className={cn(
@@ -917,7 +934,7 @@ const QiyasExamPage: React.FC = () => {
                           {isCorrect ? "✓" : "✗"}
                         </div>
                         <div>
-                          <h4 className="font-medium mb-2">سؤال {index + 1}</h4>
+                          <h4 className="font-medium mb-2">{sectionName} - سؤال {index + 1}</h4>
                           <p className="text-gray-800 dark:text-gray-200 mb-4">{question.text}</p>
 
                           <div className="space-y-2">
@@ -950,15 +967,16 @@ const QiyasExamPage: React.FC = () => {
                       </div>
                     </div>
                   );
-                })}
+                }))}
               </div>
             </TabsContent>
 
             <TabsContent value="correct">
               <div className="space-y-4">
-                {questions.filter(q => answers[q.id] === q.correctOptionIndex).map((question, index) => {
-                  const userAnswer = answers[question.id];
-                  const isCorrect = userAnswer === question.correctOptionIndex;
+                {Object.entries(allSectionsQuestions).flatMap(([sectionNum, sectionQuestions]) => 
+              sectionQuestions.filter(q => answers[q.id] === q.correctOptionIndex).map((question, index) => {
+                  const isCorrect = answers[question.id] === question.correctOptionIndex;
+                  const sectionName = selectedExam?.sections[parseInt(sectionNum) - 1]?.name || `القسم ${sectionNum}`;
                    return (
                     <div key={question.id} className={cn(
                       "p-4 rounded-lg border",
@@ -972,7 +990,7 @@ const QiyasExamPage: React.FC = () => {
                           {isCorrect ? "✓" : "✗"}
                         </div>
                         <div>
-                          <h4 className="font-medium mb-2">سؤال {index + 1}</h4>
+                          <h4 className="font-medium mb-2">{sectionName} - سؤال {index + 1}</h4>
                           <p className="text-gray-800 dark:text-gray-200 mb-4">{question.text}</p>
 
                           <div className="space-y-2">
@@ -1005,15 +1023,16 @@ const QiyasExamPage: React.FC = () => {
                       </div>
                     </div>
                   );
-                })}
+                }))}
               </div>
             </TabsContent>
 
             <TabsContent value="incorrect">
               <div className="space-y-4">
-                {questions.filter(q => answers[q.id] !== q.correctOptionIndex).map((question, index) => {
-                  const userAnswer = answers[question.id];
-                  const isCorrect = userAnswer === question.correctOptionIndex;
+                {Object.entries(allSectionsQuestions).flatMap(([sectionNum, sectionQuestions]) => 
+              sectionQuestions.filter(q => answers[q.id] !== q.correctOptionIndex).map((question, index) => {
+                  const isCorrect = answers[question.id] === question.correctOptionIndex;
+                  const sectionName = selectedExam?.sections[parseInt(sectionNum) - 1]?.name || `القسم ${sectionNum}`;
                    return (
                     <div key={question.id} className={cn(
                       "p-4 rounded-lg border",
@@ -1027,7 +1046,7 @@ const QiyasExamPage: React.FC = () => {
                           {isCorrect ? "✓" : "✗"}
                         </div>
                         <div>
-                          <h4 className="font-medium mb-2">سؤال {index + 1}</h4>
+                          <h4 className="font-medium mb-2">{sectionName} - سؤال {index + 1}</h4>
                           <p className="text-gray-800 dark:text-gray-200 mb-4">{question.text}</p>
 
                           <div className="space-y-2">
@@ -1060,7 +1079,7 @@ const QiyasExamPage: React.FC = () => {
                       </div>
                     </div>
                   );
-                })}
+                }))}
               </div>
             </TabsContent>
           </Tabs>
