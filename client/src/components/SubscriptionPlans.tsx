@@ -46,7 +46,7 @@ export function SubscriptionPlans() {
       `طلب اشتراك جديد:\n` +
       `الاسم: ${userData?.name || ''}\n` +
       `البريد الإلكتروني: ${userData?.email || ''}\n` +
-      `نوع الباقة: ${selectedPlan === 'pro' ? 'Pro - 180 SR' : 'Pro Life - 500 SR'}\n` +
+      `نوع الباقة: ${selectedPlan === 'pro' ? 'Pro - 180 SR' : 'Pro Life - 400 SR (خصم 20%)'}\n` +
       `يرجى إرفاق سند التحويل`
     );
 
@@ -94,7 +94,15 @@ export function SubscriptionPlans() {
             <CardDescription>اشتراك مدى الحياة</CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="text-3xl font-bold mb-4">500 ريال</div>
+            <div className="relative">
+              <div className="text-3xl font-bold mb-4">
+                <span className="line-through text-muted-foreground">500 ريال</span>
+                <span className="mr-2 text-primary">400 ريال</span>
+              </div>
+              <div className="absolute -top-6 -right-2 bg-primary text-primary-foreground text-sm px-2 py-1 rounded-full">
+                خصم 20%
+              </div>
+            </div>
             <ul className="space-y-2 mb-6">
               <li>✓ جميع مميزات Pro</li>
               <li>✓ تحديثات مجانية مدى الحياة</li>
