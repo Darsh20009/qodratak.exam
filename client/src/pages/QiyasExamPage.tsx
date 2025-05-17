@@ -76,11 +76,12 @@ interface ExamQuestion {
 const qiyasExams: QiyasExam[] = [
   {
     id: 1,
-    name: "الاختبار التأهيلي",
+    name: "اختبار قدراتك التأهيلي",
     description: "اختبار تأهيلي شامل يتكون من سبعة أقسام متنوعة بين اللفظي والكمي",
     totalSections: 7,
     totalQuestions: 120,
     totalTime: 120,
+    isQiyas: true,
     requiresSubscription: true,
     sections: [
       { sectionNumber: 1, name: "القسم الأول", category: "mixed", questionCount: 24, timeLimit: 24 },
@@ -90,6 +91,46 @@ const qiyasExams: QiyasExam[] = [
       { sectionNumber: 5, name: "قدرات لفظية", category: "verbal", questionCount: 13, timeLimit: 13 },
       { sectionNumber: 6, name: "قدرات كمية", category: "quantitative", questionCount: 11, timeLimit: 11 },
       { sectionNumber: 7, name: "قدرات لفظية", category: "verbal", questionCount: 13, timeLimit: 13 }
+    ]
+  },
+  {
+    id: 2,
+    name: "اختبار لفظي محاكي - 65 سؤال",
+    description: "اختبار قدرات لفظي شامل للمشتركين: 65 سؤال في 65 دقيقة مع عرض الإجابات والشرح المفصل",
+    type: "verbal",
+    totalSections: 1,
+    totalQuestions: 65,
+    totalTime: 65,
+    isMockExam: true,
+    requiresSubscription: true,
+    sections: [
+      {
+        sectionNumber: 1,
+        name: "القسم اللفظي",
+        category: "verbal",
+        questionCount: 65,
+        timeLimit: 65
+      }
+    ]
+  },
+  {
+    id: 3,
+    name: "اختبار كمي محاكي - 55 سؤال",
+    description: "اختبار قدرات كمي شامل للمشتركين: 55 سؤال في 55 دقيقة مع عرض الإجابات والشرح المفصل",
+    type: "quantitative",
+    totalSections: 1,
+    totalQuestions: 55,
+    totalTime: 55,
+    isMockExam: true,
+    requiresSubscription: true,
+    sections: [
+      {
+        sectionNumber: 1,
+        name: "القسم الكمي",
+        category: "quantitative",
+        questionCount: 55,
+        timeLimit: 55
+      }
     ]
   },
   {
