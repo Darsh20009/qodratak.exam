@@ -437,13 +437,17 @@ const QiyasExamPage: React.FC = () => {
 
   // Calculate exam statistics for results page
   const calculateExamStats = () => {
-    if (!selectedExam || !examStartTime || !examEndTime) return {
+    if (!selectedExam || !examStartTime) return {
       totalScore: 0,
       totalCorrect: 0,
       totalQuestions: 0,
       verbalScore: 0,
+      verbalTotal: 0,
+      verbalPercentage: 0,
       quantitativeScore: 0,
-      timeTaken: 0,
+      quantitativeTotal: 0,
+      quantitativePercentage: 0,
+      timeTaken: selectedExam?.totalTime || 0,
       percentage: 0
     };
 
@@ -486,8 +490,8 @@ const QiyasExamPage: React.FC = () => {
       }
     });
 
-    // Calculate time taken
-    const timeTaken = Math.floor((examEndTime.getTime() - examStartTime.getTime()) / 1000 / 60); // in minutes
+    // Calculate time taken 
+    const timeTaken = selectedExam.totalTime || 120; // Default to total exam time
 
     // Calculate percentages
     const percentage = (totalCorrect / totalQuestions) * 100;
