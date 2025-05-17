@@ -38,7 +38,8 @@ import {
   Timer,
   ArrowLeftIcon,
   ArrowRightIcon,
-  CheckCircle
+  CheckCircle,
+  LockIcon
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { TestType } from "@shared/types";
@@ -60,6 +61,10 @@ interface QiyasExam {
   totalQuestions: number;
   totalTime: number; // in minutes
   sections: QiyasSection[];
+  isQiyas?: boolean;
+  requiresSubscription?: boolean;
+  isMockExam?: boolean;
+  hideQuestionReview?: boolean;
 }
 
 interface ExamQuestion {
@@ -135,7 +140,7 @@ const qiyasExams: QiyasExam[] = [
   },
 
   {
-    id: 3,
+    id: 4,
     name: "اختبار قياس عام 2025",
     description: "اختبار محاكاة كامل يتبع النموذج الرسمي لاختبار قياس: 65 سؤال لفظي و 55 سؤال كمي",
     totalSections: 7,
@@ -154,7 +159,7 @@ const qiyasExams: QiyasExam[] = [
     ]
   },
   {
-    id: 2,
+    id: 5,
     name: "اختبار قياس تجريبي",
     description: "اختبار تدريبي يحاكي بنية اختبار القدرات العامة",
     totalSections: 2,
@@ -570,7 +575,8 @@ const QiyasExamPage: React.FC = () => {
                   <Button 
                     className="w-full" 
                     onClick={() => {
-                      const isSubscribed = true; // TODO: Replace with actual subscription check
+                      // TODO: Replace with actual subscription check
+                      const isSubscribed = true;
                       if (isSubscribed) {
                         loadExam(exam);
                       } else {
@@ -1213,6 +1219,8 @@ const QiyasExamPage: React.FC = () => {
       </div>
     );
   };
+
+  const isSubscribed = true; // Replace with actual subscription check
 
   return (
     <>
