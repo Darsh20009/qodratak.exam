@@ -571,33 +571,41 @@ const QiyasExamPage: React.FC = () => {
                 )}
               </CardContent>
               <CardFooter>
-                {exam.requiresSubscription ? (
-                  <Button 
+                <Button 
                     className="w-full" 
                     onClick={() => {
                       // TODO: Replace with actual subscription check
-                      const isSubscribed = true;
-                      if (isSubscribed) {
-                        loadExam(exam);
-                      } else {
+                      const isSubscribed = false; // This should come from your auth context
+                      
+                      // Special handling for specific exams
+                      const isSpecialExam = (
+                        exam.name === "اختبار قدراتك التأهيلي" ||
+                        exam.name === "اختبار لفظي - 65 سؤال" ||
+                        exam.name === "اختبار كمي - 55 سؤال"
+                      );
+                      
+                      if (isSpecialExam && !isSubscribed) {
                         setLocation("/subscription");
+                      } else {
+                        loadExam(exam);
                       }
                     }}
                   >
-                    {isSubscribed ? (
-                      "ابدأ الاختبار"
+                    {exam.name === "اختبار قدراتك التأهيلي" ||
+                     exam.name === "اختبار لفظي - 65 سؤال" ||
+                     exam.name === "اختبار كمي - 55 سؤال" ? (
+                      isSubscribed ? (
+                        "ابدأ الاختبار"
+                      ) : (
+                        <>
+                          <LockIcon className="h-4 w-4 ml-2" />
+                          متاح للمشتركين فقط
+                        </>
+                      )
                     ) : (
-                      <>
-                        <LockIcon className="h-4 w-4 ml-2" />
-                        متاح للمشتركين فقط
-                      </>
+                      "ابدأ الاختبار"
                     )}
                   </Button>
-                ) : (
-                  <Button className="w-full" onClick={() => loadExam(exam)}>
-                    ابدأ الاختبار
-                  </Button>
-                )}
               </CardFooter>
             </Card>
           ))}
