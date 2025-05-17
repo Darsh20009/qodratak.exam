@@ -831,7 +831,6 @@ const QiyasExamPage: React.FC = () => {
                 </div>
               </div>
               <div className="bg-muted/30 p-4 rounded-lg text-center">
-                ```tool_code
         <div className="text-sm text-muted-foreground mb-1">التقدير</div>
                 <div className={cn("font-bold", performance.color)}>{performance.label}</div>
                 <div className="text-xs text-muted-foreground">
@@ -942,7 +941,7 @@ const QiyasExamPage: React.FC = () => {
                               <div key={optIndex} className={cn(
                                 "p-3 rounded-lg border",
                                 optIndex === question.correctOptionIndex ? "bg-green-50 dark:bg-green-900/20 border-green-200" :
-                                optIndex === userAnswer ? "bg-red-50 dark:bg-red-900/20 border-red-200" :
+                                optIndex === answers[question.id] ? "bg-red-50 dark:bg-red-900/20 border-red-200" :
                                 "bg-gray-50 dark:bg-gray-800"
                               )}>
                                 <div className="flex items-center">
@@ -998,7 +997,7 @@ const QiyasExamPage: React.FC = () => {
                               <div key={optIndex} className={cn(
                                 "p-3 rounded-lg border",
                                 optIndex === question.correctOptionIndex ? "bg-green-50 dark:bg-green-900/20 border-green-200" :
-                                optIndex === userAnswer ? "bg-red-50 dark:bg-red-900/20 border-red-200" :
+                                optIndex === answers[question.id] ? "bg-red-50 dark:bg-red-900/20 border-red-200" :
                                 "bg-gray-50 dark:bg-gray-800"
                               )}>
                                 <div className="flex items-center">
@@ -1054,7 +1053,7 @@ const QiyasExamPage: React.FC = () => {
                               <div key={optIndex} className={cn(
                                 "p-3 rounded-lg border",
                                 optIndex === question.correctOptionIndex ? "bg-green-50 dark:bg-green-900/20 border-green-200" :
-                                optIndex === userAnswer ? "bg-red-50 dark:bg-red-900/20 border-red-200" :
+                                optIndex === answers[question.id] ? "bg-red-50 dark:bg-red-900/20 border-red-200" :
                                 "bg-gray-50 dark:bg-gray-800"
                               )}>
                                 <div className="flex items-center">
