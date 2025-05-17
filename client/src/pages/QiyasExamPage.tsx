@@ -573,7 +573,6 @@ const QiyasExamPage: React.FC = () => {
                   </div>
                 </div>
 
-                <div className="text-sm mb-2">أقسام الاختبار:</div>
                 <div className="space-y-2">
                   {exam.sections.map(section => (
                     <div key={section.sectionNumber} className="flex justify-between items-center text-sm">
@@ -584,6 +583,11 @@ const QiyasExamPage: React.FC = () => {
                     </div>
                   ))}
                 </div>
+                {exam.requiresSubscription && (
+                  <div className="mt-4 p-2 bg-muted/50 rounded-lg text-sm text-center text-muted-foreground">
+                    هذا الاختبار متاح للمشتركين فقط
+                  </div>
+                )}
               </CardContent>
               <CardFooter>
                 <Button className="w-full" onClick={() => loadExam(exam)}>
@@ -846,7 +850,7 @@ const QiyasExamPage: React.FC = () => {
           <CardContent>
             <div className="text-center mb-8">
               <div className="text-4xl font-bold mb-1">{stats.totalScore}/{stats.totalQuestions}</div>
-              <div className={cn("text-xl font-medium", performance.color)}>
+              <div className{cn("text-xl font-medium", performance.color)}>
                 {performance.label} ({stats.percentage.toFixed(1)}%)
               </div>
             </div>
