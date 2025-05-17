@@ -850,7 +850,7 @@ const QiyasExamPage: React.FC = () => {
           <CardContent>
             <div className="text-center mb-8">
               <div className="text-4xl font-bold mb-1">{stats.totalScore}/{stats.totalQuestions}</div>
-              <div className{cn("text-xl font-medium", performance.color)}>
+              <div className={cn("text-xl font-medium", performance.color)}>
                 {performance.label} ({stats.percentage.toFixed(1)}%)
               </div>
             </div>
