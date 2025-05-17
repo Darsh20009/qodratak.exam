@@ -232,8 +232,8 @@ const ProfilePage: React.FC = () => {
   // If logged in, show profile page
   if (isLoggedIn && user) {
     return (
-      <div className="container py-8">
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+      <div className="container py-4 px-4 sm:py-8">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 sm:gap-6">
           {/* Profile Summary */}
           <Card className="md:col-span-1">
             <CardHeader className="text-center">
@@ -258,9 +258,9 @@ const ProfilePage: React.FC = () => {
                   ></div>
                 </div>
 
-                <div className="pt-4">
-                  <h4 className="font-medium mb-2">الإحصائيات</h4>
-                  <div className="grid grid-cols-2 gap-y-2">
+                <div className="pt-3">
+                  <h4 className="font-medium mb-2 text-sm sm:text-base">الإحصائيات</h4>
+                  <div className="grid grid-cols-2 gap-x-2 gap-y-1.5 text-xs sm:text-sm">
                     <div className="text-sm text-muted-foreground">النقاط:</div>
                     <div className="text-sm text-right">{user.points}</div>
                     <div className="text-sm text-muted-foreground">المستوى:</div>
@@ -324,11 +324,11 @@ const ProfilePage: React.FC = () => {
                 <CardTitle>الإنجازات</CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
                   {achievements.map((achievement) => (
                     <div
                       key={achievement.id}
-                      className="border rounded-lg p-4 text-center"
+                      className="border rounded-lg p-3 text-center"
                     >
                       <div className="w-12 h-12 bg-primary/10 rounded-full mx-auto flex items-center justify-center mb-3">
                         {achievement.icon}
