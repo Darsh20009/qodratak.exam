@@ -226,10 +226,20 @@ const AbilitiesTestPage: React.FC = () => {
   
   // End the test and calculate results
   const endTest = async () => {
-    if (!user || !testStartTime || !currentTestType) return;
+    if (!user || !testStartTime || !currentTestType) {
+      toast({
+        title: "خطأ",
+        description: "حدث خطأ أثناء تسليم الاختبار. يرجى المحاولة مرة أخرى",
+        variant: "destructive",
+      });
+      return;
+    }
     
     const endTime = new Date();
     const timeTaken = Math.floor((endTime.getTime() - testStartTime.getTime()) / 1000);
+
+    try {
+      setCurrentView("results");
     
     // Calculate points based on score, difficulty and time
     let pointsEarned = score * 10; // Base points
@@ -262,8 +272,24 @@ const AbilitiesTestPage: React.FC = () => {
       const response = await apiRequest('POST', '/api/test-results', result);
       
       if (!response.ok) {
-        throw new Error('فشل في حفظ نتيجة الاختبار');
+        toast({
+          title: "خطأ في التسليم",
+          description: "فشل في حفظ نتيجة الاختبار. سيتم إعادة المحاولة تلقائياً",
+          variant: "destructive",
+        });
+        
+        // Retry submission once
+        const retryResponse = await apiRequest('POST', '/api/test-results', result);
+        if (!retryResponse.ok) {
+          throw new Error('فشل في حفظ نتيجة الاختبار');
+        }
       }
+      
+      toast({
+        title: "تم التسليم بنجاح",
+        description: "تم حفظ نتيجة الاختبار بنجاح",
+        variant: "success",
+      });
       
       // Update user's points in localStorage
       const updatedUser = { 
