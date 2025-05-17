@@ -572,10 +572,36 @@ const QiyasExamPage: React.FC = () => {
               </CardContent>
               <CardFooter>
                 <Button 
-                    className="w-full" 
-                    onClick={() => loadExam(exam)}
+                  className="w-full" 
+                  onClick={() => {
+                    const isSubscribed = true; // TODO: Replace with actual subscription check
+                    const isSpecialExam = (
+                      exam.name === "اختبار قدراتك التأهيلي" ||
+                      exam.name === "اختبار لفظي - 65 سؤال" ||
+                      exam.name === "اختبار كمي - 55 سؤال"
+                    );
+                    
+                    if (isSpecialExam && !isSubscribed) {
+                      setLocation("/subscription");
+                    } else {
+                      loadExam(exam);
+                    }
+                  }}
                 >
-                    ابدأ الاختبار
+                  {exam.name === "اختبار قدراتك التأهيلي" ||
+                   exam.name === "اختبار لفظي - 65 سؤال" ||
+                   exam.name === "اختبار كمي - 55 سؤال" ? (
+                    isSubscribed ? (
+                      "ابدأ الاختبار"
+                    ) : (
+                      <div className="flex items-center gap-2">
+                        <LockIcon className="h-4 w-4" />
+                        متاح للمشتركين فقط
+                      </div>
+                    )
+                  ) : (
+                    "ابدأ الاختبار"
+                  )}
                 </Button>
               </CardFooter>
             </Card>
