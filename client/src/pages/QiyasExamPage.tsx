@@ -95,8 +95,8 @@ const qiyasExams: QiyasExam[] = [
   },
   {
     id: 2,
-    name: "اختبار لفظي محاكي - 65 سؤال",
-    description: "اختبار قدرات لفظي شامل للمشتركين: 65 سؤال في 65 دقيقة مع عرض الإجابات والشرح المفصل",
+    name: "اختبار لفظي - 65 سؤال",
+    description: "اختبار قدرات لفظي شامل يحاكي نموذج قياس: 65 سؤال في 65 دقيقة مع الشرح المفصل",
     type: "verbal",
     totalSections: 1,
     totalQuestions: 65,
@@ -115,8 +115,8 @@ const qiyasExams: QiyasExam[] = [
   },
   {
     id: 3,
-    name: "اختبار كمي محاكي - 55 سؤال",
-    description: "اختبار قدرات كمي شامل للمشتركين: 55 سؤال في 55 دقيقة مع عرض الإجابات والشرح المفصل",
+    name: "اختبار كمي - 55 سؤال",
+    description: "اختبار قدرات كمي شامل يحاكي نموذج قياس: 55 سؤال في 55 دقيقة مع الشرح المفصل",
     type: "quantitative",
     totalSections: 1,
     totalQuestions: 55,
@@ -131,30 +131,6 @@ const qiyasExams: QiyasExam[] = [
         questionCount: 55,
         timeLimit: 55
       }
-    ]
-  },
-  {
-    id: 2,
-    name: "اختبار كمي احترافي - 55 سؤال",
-    description: "اختبار قدرات كمية شامل للمشتركين: 55 سؤال في 55 دقيقة مع عرض الإجابات والشرح المفصل",
-    totalSections: 1,
-    totalQuestions: 55,
-    totalTime: 55,
-    requiresSubscription: true,
-    sections: [
-      { sectionNumber: 1, name: "قدرات كمية", category: "quantitative", questionCount: 55, timeLimit: 55 }
-    ]
-  },
-  {
-    id: 2,
-    name: "اختبار لفظي احترافي - 65 سؤال",
-    description: "اختبار قدرات لفظي شامل للمشتركين: 65 سؤال في 65 دقيقة مع عرض الإجابات والشرح المفصل",
-    totalSections: 1,
-    totalQuestions: 65,
-    totalTime: 65,
-    requiresSubscription: true,
-    sections: [
-      { sectionNumber: 1, name: "قدرات لفظية", category: "verbal", questionCount: 65, timeLimit: 65 }
     ]
   },
 
@@ -590,9 +566,32 @@ const QiyasExamPage: React.FC = () => {
                 )}
               </CardContent>
               <CardFooter>
-                <Button className="w-full" onClick={() => loadExam(exam)}>
-                  ابدأ الاختبار
-                </Button>
+                {exam.requiresSubscription ? (
+                  <Button 
+                    className="w-full" 
+                    onClick={() => {
+                      const isSubscribed = true; // TODO: Replace with actual subscription check
+                      if (isSubscribed) {
+                        loadExam(exam);
+                      } else {
+                        setLocation("/subscription");
+                      }
+                    }}
+                  >
+                    {isSubscribed ? (
+                      "ابدأ الاختبار"
+                    ) : (
+                      <>
+                        <LockIcon className="h-4 w-4 ml-2" />
+                        متاح للمشتركين فقط
+                      </>
+                    )}
+                  </Button>
+                ) : (
+                  <Button className="w-full" onClick={() => loadExam(exam)}>
+                    ابدأ الاختبار
+                  </Button>
+                )}
               </CardFooter>
             </Card>
           ))}
