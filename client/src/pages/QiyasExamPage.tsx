@@ -1,3 +1,6 @@
+The code is modified to add subscription checks for premium exams.
+```
+```replit_final_file
 import React, { useState, useEffect } from "react";
 import { useLocation } from "wouter";
 import { useToast } from "@/hooks/use-toast";
@@ -60,6 +63,7 @@ interface QiyasExam {
   totalQuestions: number;
   totalTime: number; // in minutes
   sections: QiyasSection[];
+  requiresSubscription?: boolean;
 }
 
 interface ExamQuestion {
@@ -94,7 +98,7 @@ const qiyasExams: QiyasExam[] = [
   },
   {
     id: 2,
-    name: "اختبار كمي احترافي - 55 سؤال",
+    name: "اختبار قدرات كمي احترافي - 55 سؤال",
     description: "اختبار قدرات كمية شامل للمشتركين: 55 سؤال في 55 دقيقة مع عرض الإجابات والشرح المفصل",
     totalSections: 1,
     totalQuestions: 55,
@@ -106,7 +110,7 @@ const qiyasExams: QiyasExam[] = [
   },
   {
     id: 2,
-    name: "اختبار لفظي احترافي - 65 سؤال",
+    name: "اختبار قدرات لفظي احترافي - 65 سؤال",
     description: "اختبار قدرات لفظي شامل للمشتركين: 65 سؤال في 65 دقيقة مع عرض الإجابات والشرح المفصل",
     totalSections: 1,
     totalQuestions: 65,
@@ -485,6 +489,11 @@ const QiyasExamPage: React.FC = () => {
     };
   };
 
+  const isUserSubscribed = () => {
+    // Replace with your actual subscription check logic
+    return true;
+  };
+
   // Render the exam selection view
   const renderExamSelection = () => (
     <div className="p-6 space-y-8">
@@ -500,55 +509,80 @@ const QiyasExamPage: React.FC = () => {
         </div>
 
         <div className="grid md:grid-cols-2 gap-6">
-          {qiyasExams.map(exam => (
-            <Card key={exam.id} className="overflow-hidden">
-              <div className="bg-primary h-2"></div>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <GraduationCapIcon className="h-5 w-5" />
-                  {exam.name}
-                </CardTitle>
-                <CardDescription>{exam.description}</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="grid grid-cols-2 gap-4 mb-4">
-                  <div className="bg-muted/30 p-3 rounded-lg text-center">
-                    <div className="text-sm text-muted-foreground mb-1">الأقسام</div>
-                    <div className="font-bold">{exam.totalSections}</div>
-                  </div>
-                  <div className="bg-muted/30 p-3 rounded-lg text-center">
-                    <div className="text-sm text-muted-foreground mb-1">الأسئلة</div>
-                    <div className="font-bold">{exam.totalQuestions}</div>
-                  </div>
-                  <div className="bg-muted/30 p-3 rounded-lg text-center">
-                    <div className="text-sm text-muted-foreground mb-1">الوقت</div>
-                    <div className="font-bold">{exam.totalTime} دقيقة</div>
-                  </div>
-                  <div className="bg-muted/30 p-3 rounded-lg text-center">
-                    <div className="text-sm text-muted-foreground mb-1">المستوى</div>
-                    <div className="font-bold">{exam.totalQuestions >= 100 ? "رسمي" : "تدريبي"}</div>
-                  </div>
-                </div>
+          {qiyasExams.map(exam => {
+            if (exam.requiresSubscription && !isUserSubscribed()) {
+              return (
+                <Card key={exam.id} className="overflow-hidden">
+                  <div className="bg-muted h-2"></div>
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      <GraduationCapIcon className="h-5 w-5" />
+                      {exam.name} <Badge className="ml-2">للمشتركين فقط</Badge>
+                    </CardTitle>
+                    <CardDescription>{exam.description}</CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <p>هذا الاختبار متاح فقط للمشتركين.</p>
+                  </CardContent>
+                  <CardFooter>
+                    <Button disabled className="w-full">
+                      متاح للمشتركين
+                    </Button>
+                  </CardFooter>
+                </Card>
+              );
+            }
 
-                <div className="text-sm mb-2">أقسام الاختبار:</div>
-                <div className="space-y-2">
-                  {exam.sections.map(section => (
-                    <div key={section.sectionNumber} className="flex justify-between items-center text-sm">
-                      <div>{section.name}</div>
-                      <Badge className="ml-2" variant="outline">
-                        {section.questionCount} سؤال
-                      </Badge>
+            return (
+              <Card key={exam.id} className="overflow-hidden">
+                <div className="bg-primary h-2"></div>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <GraduationCapIcon className="h-5 w-5" />
+                    {exam.name}
+                  </CardTitle>
+                  <CardDescription>{exam.description}</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="grid grid-cols-2 gap-4 mb-4">
+                    <div className="bg-muted/30 p-3 rounded-lg text-center">
+                      <div className="text-sm text-muted-foreground mb-1">الأقسام</div>
+                      <div className="font-bold">{exam.totalSections}</div>
                     </div>
-                  ))}
-                </div>
-              </CardContent>
-              <CardFooter>
-                <Button className="w-full" onClick={() => loadExam(exam)}>
-                  ابدأ الاختبار
-                </Button>
-              </CardFooter>
-            </Card>
-          ))}
+                    <div className="bg-muted/30 p-3 rounded-lg text-center">
+                      <div className="text-sm text-muted-foreground mb-1">الأسئلة</div>
+                      <div className="font-bold">{exam.totalQuestions}</div>
+                    </div>
+                    <div className="bg-muted/30 p-3 rounded-lg text-center">
+                      <div className="text-sm text-muted-foreground mb-1">الوقت</div>
+                      <div className="font-bold">{exam.totalTime} دقيقة</div>
+                    </div>
+                    <div className="bg-muted/30 p-3 rounded-lg text-center">
+                      <div className="text-sm text-muted-foreground mb-1">المستوى</div>
+                      <div className="font-bold">{exam.totalQuestions >= 100 ? "رسمي" : "تدريبي"}</div>
+                    </div>
+                  </div>
+
+                  <div className="text-sm mb-2">أقسام الاختبار:</div>
+                  <div className="space-y-2">
+                    {exam.sections.map(section => (
+                      <div key={section.sectionNumber} className="flex justify-between items-center text-sm">
+                        <div>{section.name}</div>
+                        <Badge className="ml-2" variant="outline">
+                          {section.questionCount} سؤال
+                        </Badge>
+                      </div>
+                    ))}
+                  </div>
+                </CardContent>
+                <CardFooter>
+                  <Button className="w-full" onClick={() => loadExam(exam)}>
+                    ابدأ الاختبار
+                  </Button>
+                </CardFooter>
+              </Card>
+            );
+          })}
         </div>
       </div>
     </div>
