@@ -564,7 +564,7 @@ const QiyasExamPage: React.FC = () => {
                     </div>
                   ))}
                 </div>
-                {exam.requiresSubscription && (
+                {exam.requiresSubscription && exam.name !== "اختبار قياس عام 2025" && (
                   <div className="mt-4 p-2 bg-muted/50 rounded-lg text-sm text-center text-muted-foreground">
                     هذا الاختبار متاح للمشتركين فقط
                   </div>
