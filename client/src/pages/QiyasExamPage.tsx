@@ -574,8 +574,9 @@ const QiyasExamPage: React.FC = () => {
                 <Button 
                   className="w-full" 
                   onClick={() => {
-                    const isSubscribed = true; // TODO: Replace with actual subscription check
-                    const isSpecialExam = (
+                    const user = JSON.parse(localStorage.getItem('user') || '{}');
+                    const isSubscribed = user?.subscription?.type === 'Pro Live' || user?.subscription?.type === 'Pro';
+                    const isSpecialExam = exam.requiresSubscription && (
                       exam.name === "اختبار قدراتك التأهيلي" ||
                       exam.name === "اختبار لفظي - 65 سؤال" ||
                       exam.name === "اختبار كمي - 55 سؤال"
@@ -588,17 +589,15 @@ const QiyasExamPage: React.FC = () => {
                     }
                   }}
                 >
-                  {exam.name === "اختبار قدراتك التأهيلي" ||
-                   exam.name === "اختبار لفظي - 65 سؤال" ||
-                   exam.name === "اختبار كمي - 55 سؤال" ? (
-                    isSubscribed ? (
-                      "ابدأ الاختبار"
-                    ) : (
-                      <div className="flex items-center gap-2">
-                        <LockIcon className="h-4 w-4" />
-                        متاح للمشتركين فقط
-                      </div>
-                    )
+                  {exam.requiresSubscription && (
+                    exam.name === "اختبار قدراتك التأهيلي" ||
+                    exam.name === "اختبار لفظي - 65 سؤال" ||
+                    exam.name === "اختبار كمي - 55 سؤال"
+                  ) ? (
+                    <div className="flex items-center gap-2">
+                      <LockIcon className="h-4 w-4" />
+                      متاح للمشتركين فقط
+                    </div>
                   ) : (
                     "ابدأ الاختبار"
                   )}
