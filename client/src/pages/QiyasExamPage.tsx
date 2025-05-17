@@ -165,6 +165,8 @@ const qiyasExams: QiyasExam[] = [
     totalSections: 7,
     totalQuestions: 120,
     totalTime: 120,
+    requiresSubscription: true,
+    hideQuestionReview: true,
     sections: [
       { sectionNumber: 1, name: "القسم الأول", category: "mixed", questionCount: 24, timeLimit: 24 },
       { sectionNumber: 2, name: "القسم الثاني", category: "mixed", questionCount: 24, timeLimit: 24 },
@@ -939,13 +941,14 @@ const QiyasExamPage: React.FC = () => {
         </Card>
 
         {/* Questions Review */}
-      <Card className="mb-6">
-        <CardHeader>
-          <CardTitle>مراجعة الأسئلة والإجابات</CardTitle>
-          <CardDescription>
-            راجع إجاباتك وتعلم من أخطائك
-          </CardDescription>
-        </CardHeader>
+      {(!selectedExam?.hideQuestionReview) && (
+        <Card className="mb-6">
+          <CardHeader>
+            <CardTitle>مراجعة الأسئلة والإجابات</CardTitle>
+            <CardDescription>
+              راجع إجاباتك وتعلم من أخطائك
+            </CardDescription>
+          </CardHeader>
         <CardContent>
           <Tabs defaultValue="all" className="w-full">
             <TabsList className="w-full mb-4">
@@ -1125,6 +1128,7 @@ const QiyasExamPage: React.FC = () => {
           </Tabs>
         </CardContent>
       </Card>
+      )}
 
         {/* More detailed analysis and recommendations would go here */}
         <Card>
