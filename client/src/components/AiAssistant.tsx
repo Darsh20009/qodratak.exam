@@ -193,7 +193,7 @@ const AiAssistant: React.FC<AiAssistantProps> = ({
   useEffect(() => {
     const welcomeMessage: MessageType = {
       id: "welcome",
-      text: "أهلاً ! أنا مساعد قدراتك. يمكنني مساعدتك في:\n\n" +
+      text: "أهلاً يا يوسف! أنا مساعد قدراتك. يمكنني مساعدتك في:\n\n" +
       "• أسئلة القدرات اللفظية (التناظر اللفظي، إكمال الجمل، المتضادات)\n" + 
       "• أسئلة القدرات الكمية (النسب، المتواليات، الاحتمالات، الهندسة)\n" +
       "• استراتيجيات المذاكرة والتحضير لاختبار قياس\n" +
@@ -444,21 +444,8 @@ ${question.explanation ? `الشرح: ${question.explanation}` : ''}
     setMessages([welcomeMessage]);
   };
 
-  const [isVisible, setIsVisible] = useState(true);
-  
   return (
-    <div className={cn(
-      "fixed bottom-4 left-4 z-50 transition-all duration-500 ease-in-out",
-      isVisible ? "translate-x-0" : "translate-x-[-120%]",
-      className
-    )}>
-      <button 
-        onClick={() => setIsVisible(!isVisible)}
-        className="absolute right-[-40px] top-4 bg-primary text-primary-foreground p-2 rounded-r-lg shadow-lg hover:brightness-110 transition-all"
-      >
-        {isVisible ? "إخفاء" : "إظهار"}
-      </button>
-      <div className="flex flex-col h-[600px] w-[350px] rounded-lg border bg-card shadow animate-fade-in">
+    <div className={cn("flex flex-col h-full rounded-lg border bg-card shadow", className)}>
       {/* Header */}
       <div className="flex items-center justify-between border-b p-3">
         <div className="flex items-center gap-2">
@@ -582,7 +569,6 @@ ${question.explanation ? `الشرح: ${question.explanation}` : ''}
           مساعد محلي يستخدم نظام البحث الذكي - لا تتم مشاركة البيانات
         </div>
       </div>
-    </div>
     </div>
   );
 };

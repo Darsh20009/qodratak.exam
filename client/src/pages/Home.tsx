@@ -60,11 +60,7 @@ const Home: React.FC = () => {
       <section className="relative overflow-hidden py-20 sm:py-32">
         <div className="absolute inset-0 bg-grid-white/10 bg-[size:40px_40px] [mask-image:linear-gradient(0deg,transparent,white)]">
           <div className="absolute inset-0 bg-gradient-to-r from-primary/20 to-primary/5 animate-pulse" />
-          <div className="absolute inset-0 bg-[radial-gradient(circle_800px_at_50%_-100px,var(--primary-foreground),transparent)] animate-fade-in-delay" />
-          <div className="absolute inset-0 animate-float">
-            <div className="absolute inset-0 bg-[conic-gradient(from_0deg_at_50%_50%,var(--primary)/10_0%,transparent_60%)] animate-spin-slow" />
-            <div className="absolute inset-0 bg-[conic-gradient(from_90deg_at_50%_50%,var(--primary)/5_0%,transparent_60%)] animate-spin-reverse" />
-          </div>
+          <div className="absolute inset-0 bg-[radial-gradient(circle_500px_at_50%_200px,var(--primary-foreground),transparent)]" />
         </div>
         
         <div className="container relative px-4 md:px-6">
