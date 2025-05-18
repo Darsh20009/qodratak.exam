@@ -76,30 +76,30 @@ interface TestResult {
 const AbilitiesTestPage: React.FC = () => {
   const [, setLocation] = useLocation();
   const { toast } = useToast();
-  
+
   // User state
   const [user, setUser] = useState<User | null>(null);
-  
+
   // Test selection state
   const [currentView, setCurrentView] = useState<"selection" | "inProgress" | "results">("selection");
   const [currentTestType, setCurrentTestType] = useState<"verbal" | "quantitative" | null>(null);
   const [currentDifficulty, setCurrentDifficulty] = useState<TestDifficulty>("beginner");
-  
+
   // Questions state
   const [questions, setQuestions] = useState<AbilityQuestion[]>([]);
   const [loading, setLoading] = useState(false);
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
-  
+
   // Test progress state
   const [timeLeft, setTimeLeft] = useState(300); // 5 minutes in seconds
   const [score, setScore] = useState(0);
   const [selectedAnswerIndex, setSelectedAnswerIndex] = useState<number | null>(null);
   const [isAnswerLocked, setIsAnswerLocked] = useState(false);
   const [testStartTime, setTestStartTime] = useState<Date | null>(null);
-  
+
   // UI state
   const [showLevelCompleteModal, setShowLevelCompleteModal] = useState(false);
-  
+
   // Load user data
   useEffect(() => {
     const storedUser = localStorage.getItem("user");
@@ -111,51 +111,51 @@ const AbilitiesTestPage: React.FC = () => {
       }
     }
   }, []);
-  
+
   // Timer for the test
   useEffect(() => {
     if (currentView === "inProgress" && timeLeft > 0) {
       const timer = setTimeout(() => {
         setTimeLeft(prevTime => prevTime - 1);
       }, 1000);
-      
+
       return () => clearTimeout(timer);
     } else if (timeLeft === 0 && currentView === "inProgress") {
       endTest();
     }
   }, [timeLeft, currentView]);
-  
+
   // Format time from seconds to MM:SS
   const formatTime = (seconds: number): string => {
     const minutes = Math.floor(seconds / 60);
     const remainingSeconds = seconds % 60;
     return `${minutes.toString().padStart(2, '0')}:${remainingSeconds.toString().padStart(2, '0')}`;
   };
-  
+
   // Load questions for the selected test
   const loadQuestions = useCallback(async (type: "verbal" | "quantitative", difficulty: TestDifficulty) => {
     try {
       setLoading(true);
       // In a real app, we'd fetch from API with parameters
       const response = await fetch(`/api/questions?category=${type}&difficulty=${difficulty}`);
-      
+
       if (!response.ok) {
         throw new Error('فشل في تحميل الأسئلة');
       }
-      
+
       const data = await response.json();
-      
+
       // Shuffle and limit to 10 questions for the test
       const shuffled = data.sort(() => 0.5 - Math.random());
       const selectedQuestions = shuffled.slice(0, 10);
-      
+
       setQuestions(selectedQuestions);
       setCurrentQuestionIndex(0);
       setScore(0);
       setSelectedAnswerIndex(null);
       setIsAnswerLocked(false);
       setTestStartTime(new Date());
-      
+
       // Set time based on difficulty
       if (difficulty === "beginner") {
         setTimeLeft(300); // 5 minutes
@@ -164,7 +164,7 @@ const AbilitiesTestPage: React.FC = () => {
       } else {
         setTimeLeft(180); // 3 minutes
       }
-      
+
       setCurrentView("inProgress");
     } catch (error) {
       toast({
@@ -176,37 +176,37 @@ const AbilitiesTestPage: React.FC = () => {
       setLoading(false);
     }
   }, [toast]);
-  
+
   // Select difficulty level
   const selectLevel = (level: TestDifficulty) => {
     setCurrentDifficulty(level);
   };
-  
+
   // Start the test
   const startTest = (type: "verbal" | "quantitative") => {
     setCurrentTestType(type);
     loadQuestions(type, currentDifficulty);
   };
-  
+
   // Select an answer
   const selectAnswer = (index: number) => {
     if (!isAnswerLocked) {
       setSelectedAnswerIndex(index);
     }
   };
-  
+
   // Lock in answer and check if correct
   const confirmAnswer = () => {
     if (selectedAnswerIndex === null) return;
-    
+
     setIsAnswerLocked(true);
-    
+
     // Check if answer is correct
     if (selectedAnswerIndex === questions[currentQuestionIndex].correctOptionIndex) {
       setScore(prevScore => prevScore + 1);
     }
   };
-  
+
   // Go to next question
   const goToNextQuestion = () => {
     if (currentQuestionIndex < questions.length - 1) {
@@ -218,15 +218,45 @@ const AbilitiesTestPage: React.FC = () => {
       endTest();
     }
   };
-  
+
   // Calculate progress percentage
   const calculateProgress = () => {
     return ((currentQuestionIndex + 1) / questions.length) * 100;
   };
-  
-  // End the test and calculate results
+
+  // End test and calculate results
   const endTest = async () => {
     if (!user || !testStartTime || !currentTestType) {
+      // Handle challenge mode completion
+      const urlParams = new URLSearchParams(window.location.search);
+      const isChallengeMode = urlParams.get('mode') === 'challenge';
+      const challengeLevel = urlParams.get('level');
+
+      if (isChallengeMode && challengeLevel) {
+        const levelId = parseInt(challengeLevel);
+        const percentage = (score / questions.length) * 100;
+
+        // Update challenge progress if score meets requirement
+        if (percentage >= 80) {
+          const currentScore = parseInt(localStorage.getItem('challengeScore') || '0');
+          const completedLevels = JSON.parse(localStorage.getItem('completedChallengeLevels') || '[]');
+
+          // Update score and completed levels
+          const newScore = currentScore + (score * 10);
+          localStorage.setItem('challengeScore', newScore.toString());
+
+          if (!completedLevels.includes(levelId)) {
+            completedLevels.push(levelId);
+            localStorage.setItem('completedChallengeLevels', JSON.stringify(completedLevels));
+          }
+
+          toast({
+            title: "تهانينا!",
+            description: "لقد اجتزت هذا المستوى بنجاح",
+            variant: "success"
+          });
+        }
+      }
       toast({
         title: "خطأ",
         description: "حدث خطأ أثناء تسليم الاختبار. يرجى المحاولة مرة أخرى",
@@ -234,23 +264,23 @@ const AbilitiesTestPage: React.FC = () => {
       });
       return;
     }
-    
+
     const endTime = new Date();
     const timeTaken = Math.floor((endTime.getTime() - testStartTime.getTime()) / 1000);
     let pointsEarned = score * 10; // Base points
-    
+
     // Bonus for difficulty
     if (currentDifficulty === "intermediate") pointsEarned *= 1.5;
     if (currentDifficulty === "advanced") pointsEarned *= 2;
-    
+
     // Bonus for time efficiency (if completed before time runs out)
     if (timeLeft > 0) {
       const timeLeftPercentage = timeLeft / (currentDifficulty === "beginner" ? 300 : currentDifficulty === "intermediate" ? 240 : 180);
       pointsEarned += Math.floor(pointsEarned * timeLeftPercentage * 0.5); // Up to 50% bonus for being fast
     }
-    
+
     pointsEarned = Math.floor(pointsEarned);
-    
+
     try {
       const result = {
         userId: user?.id || 1,
@@ -262,29 +292,29 @@ const AbilitiesTestPage: React.FC = () => {
         timeTaken: Math.floor((300 - timeLeft)), // Calculate time taken
         isOfficial: false
       };
-      
+
       const response = await apiRequest('POST', '/api/test-results', result);
-      
+
       if (!response.ok) {
         toast({
           title: "خطأ في التسليم",
           description: "فشل في حفظ نتيجة الاختبار. سيتم إعادة المحاولة تلقائياً",
           variant: "destructive",
         });
-        
+
         // Retry submission once
         const retryResponse = await apiRequest('POST', '/api/test-results', result);
         if (!retryResponse.ok) {
           throw new Error('فشل في حفظ نتيجة الاختبار');
         }
       }
-      
+
       toast({
         title: "تم التسليم بنجاح",
         description: "تم حفظ نتيجة الاختبار بنجاح",
         variant: "success",
       });
-      
+
       // Update user's points in localStorage
       const updatedUser = { 
         ...user, 
@@ -295,19 +325,19 @@ const AbilitiesTestPage: React.FC = () => {
               user.points + pointsEarned >= 3000 ? 3 :
               user.points + pointsEarned >= 1000 ? 2 : 1
       };
-      
+
       setUser(updatedUser);
       localStorage.setItem('user', JSON.stringify(updatedUser));
-      
+
       // Show completion modal if player performed well
       const percentage = (score / questions.length) * 100;
       if (percentage >= 80 && currentDifficulty !== "advanced") {
         setShowLevelCompleteModal(true);
       }
-      
+
       // Display test result
       setCurrentView("results");
-      
+
     } catch (error) {
       toast({
         title: "خطأ",
@@ -316,39 +346,39 @@ const AbilitiesTestPage: React.FC = () => {
       });
     }
   };
-  
+
   // Return to test selection
   const returnToTestSelection = () => {
     setCurrentView("selection");
     setCurrentTestType(null);
   };
-  
+
   // Retry the same test
   const retryTest = () => {
     if (currentTestType) {
       loadQuestions(currentTestType, currentDifficulty);
     }
   };
-  
+
   // Go to the next level of difficulty
   const goToNextLevel = () => {
     let nextLevel: TestDifficulty = "intermediate";
     if (currentDifficulty === "intermediate") nextLevel = "advanced";
-    
+
     setCurrentDifficulty(nextLevel);
     setShowLevelCompleteModal(false);
-    
+
     if (currentTestType) {
       loadQuestions(currentTestType, nextLevel);
     }
   };
-  
+
   // Calculate performance data for results view
   const getPerformanceData = () => {
     const percentage = (score / questions.length) * 100;
     let message = "";
     let canLevelUp = false;
-    
+
     if (percentage >= 90) {
       message = "ممتاز! أداء رائع";
       canLevelUp = currentDifficulty !== "advanced";
@@ -362,10 +392,10 @@ const AbilitiesTestPage: React.FC = () => {
       message = "تحتاج إلى مزيد من التدريب";
       canLevelUp = false;
     }
-    
+
     return { percentage, message, canLevelUp };
   };
-  
+
   // Get difficulty badge color
   const getDifficultyColor = (difficulty: TestDifficulty) => {
     switch (difficulty) {
@@ -375,14 +405,14 @@ const AbilitiesTestPage: React.FC = () => {
       default: return "bg-blue-500 hover:bg-blue-600";
     }
   };
-  
+
   // Render for Test Selection View
   const renderTestSelection = () => (
     <div className="p-6 space-y-8">
       <div className="max-w-4xl mx-auto">
         <h1 className="text-3xl font-bold mb-2">اختبر قدراتك</h1>
         <p className="text-muted-foreground mb-6">اختر نوع الاختبار والمستوى لتحسين مهاراتك واكتساب النقاط</p>
-        
+
         {user && (
           <Card className="mb-8">
             <CardContent className="pt-6">
@@ -403,7 +433,7 @@ const AbilitiesTestPage: React.FC = () => {
             </CardContent>
           </Card>
         )}
-        
+
         <div className="mb-8">
           <h2 className="text-xl font-semibold mb-4">اختر المستوى</h2>
           <div className="flex flex-wrap gap-2">
@@ -430,7 +460,7 @@ const AbilitiesTestPage: React.FC = () => {
             </Button>
           </div>
         </div>
-        
+
         <div className="grid md:grid-cols-2 gap-6">
           <Card className="overflow-hidden">
             <div className="bg-blue-600 h-2"></div>
@@ -458,12 +488,12 @@ const AbilitiesTestPage: React.FC = () => {
                   <span>القياس اللفظي والمنطق</span>
                 </li>
               </ul>
-              
+
               <Badge className={cn("mb-2", getDifficultyColor(currentDifficulty))}>
                 {currentDifficulty === "beginner" ? "مستوى مبتدئ" : 
                  currentDifficulty === "intermediate" ? "مستوى متوسط" : "مستوى متقدم"}
               </Badge>
-              
+
               <div className="text-sm text-muted-foreground">
                 10 أسئلة | {currentDifficulty === "beginner" ? "5 دقائق" : 
                            currentDifficulty === "intermediate" ? "4 دقائق" : "3 دقائق"}
@@ -479,7 +509,7 @@ const AbilitiesTestPage: React.FC = () => {
               </Button>
             </CardFooter>
           </Card>
-          
+
           <Card className="overflow-hidden">
             <div className="bg-purple-600 h-2"></div>
             <CardHeader>
@@ -506,12 +536,12 @@ const AbilitiesTestPage: React.FC = () => {
                   <span>فهم الرسوم البيانية والإحصاءات</span>
                 </li>
               </ul>
-              
+
               <Badge className={cn("mb-2", getDifficultyColor(currentDifficulty))}>
                 {currentDifficulty === "beginner" ? "مستوى مبتدئ" : 
                  currentDifficulty === "intermediate" ? "مستوى متوسط" : "مستوى متقدم"}
               </Badge>
-              
+
               <div className="text-sm text-muted-foreground">
                 10 أسئلة | {currentDifficulty === "beginner" ? "5 دقائق" : 
                            currentDifficulty === "intermediate" ? "4 دقائق" : "3 دقائق"}
@@ -531,11 +561,11 @@ const AbilitiesTestPage: React.FC = () => {
       </div>
     </div>
   );
-  
+
   // Render for Test In Progress View
   const renderTestInProgress = () => {
     if (questions.length === 0) return <div className="p-6 text-center">جاري تحميل الأسئلة...</div>;
-    
+
     const currentQuestion = questions[currentQuestionIndex];
     return (
       <div className="container py-6 max-w-4xl">
@@ -555,7 +585,7 @@ const AbilitiesTestPage: React.FC = () => {
                currentDifficulty === "intermediate" ? "متوسط" : "متقدم"}
             </Badge>
           </div>
-          
+
           <div className="flex items-center gap-3">
             <div className="flex items-center gap-1 text-sm">
               <Clock className="h-4 w-4" />
@@ -563,7 +593,7 @@ const AbilitiesTestPage: React.FC = () => {
                 {formatTime(timeLeft)}
               </span>
             </div>
-            
+
             <div>
               <span className="text-sm font-medium">
                 {currentQuestionIndex + 1}/{questions.length}
@@ -571,9 +601,9 @@ const AbilitiesTestPage: React.FC = () => {
             </div>
           </div>
         </div>
-        
+
         <Progress value={calculateProgress()} className="mb-6" />
-        
+
         {/* Question */}
         <Card className="mb-6">
           <CardHeader>
@@ -585,7 +615,7 @@ const AbilitiesTestPage: React.FC = () => {
             </CardDescription>
           </CardHeader>
         </Card>
-        
+
         {/* Options */}
         <div className="space-y-3 mb-6">
           {currentQuestion.options.map((option, index) => (
@@ -613,7 +643,7 @@ const AbilitiesTestPage: React.FC = () => {
             </div>
           ))}
         </div>
-        
+
         {/* Explanation if answer is locked */}
         {isAnswerLocked && currentQuestion.explanation && (
           <Card className="mb-6 bg-muted/30">
@@ -625,14 +655,14 @@ const AbilitiesTestPage: React.FC = () => {
             </CardContent>
           </Card>
         )}
-        
+
         {/* Navigation buttons */}
         <div className="flex justify-between">
           <Button variant="outline" onClick={returnToTestSelection}>
             <ChevronRight className="h-4 w-4 ml-2" />
             إلغاء الاختبار
           </Button>
-          
+
           {isAnswerLocked ? (
             <Button onClick={goToNextQuestion}>
               {currentQuestionIndex < questions.length - 1 ? (
@@ -656,13 +686,13 @@ const AbilitiesTestPage: React.FC = () => {
       </div>
     );
   };
-  
+
   // Render for Test Results View
   const renderTestResults = () => {
     if (questions.length === 0) return <div className="p-6 text-center">لا توجد نتائج</div>;
-    
+
     const performance = getPerformanceData();
-    
+
     return (
       <div className="container py-6 max-w-4xl">
         <Card className="mb-6 overflow-hidden">
@@ -692,7 +722,7 @@ const AbilitiesTestPage: React.FC = () => {
               <div className="text-5xl font-bold mb-2">{score}/{questions.length}</div>
               <div className="text-xl text-muted-foreground">{performance.message}</div>
             </div>
-            
+
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
               <div className="bg-muted/30 p-4 rounded-lg text-center">
                 <div className="text-sm text-muted-foreground mb-1">النسبة المئوية</div>
@@ -717,9 +747,9 @@ const AbilitiesTestPage: React.FC = () => {
                 <div className="font-bold">{user?.level || 1}</div>
               </div>
             </div>
-            
+
             <Separator className="my-6" />
-            
+
             <div className="space-y-4">
               <h3 className="font-medium">تحليل الأداء</h3>
               <div className="space-y-2">
@@ -763,7 +793,7 @@ const AbilitiesTestPage: React.FC = () => {
             )}
           </CardFooter>
         </Card>
-        
+
         <Card>
           <CardHeader>
             <CardTitle>مراجعة الأسئلة</CardTitle>
@@ -780,7 +810,7 @@ const AbilitiesTestPage: React.FC = () => {
                   <TabsTrigger value="incorrect">الإجابات الخاطئة ({questions.length - score})</TabsTrigger>
                 </TabsList>
               </div>
-              
+
               <TabsContent value="all" className="mt-0">
                 <div className="space-y-1">
                   {questions.map((question, index) => (
@@ -809,7 +839,7 @@ const AbilitiesTestPage: React.FC = () => {
                   ))}
                 </div>
               </TabsContent>
-              
+
               <TabsContent value="correct" className="mt-0">
                 <div className="space-y-1">
                   {questions.filter((_, index) => true).map((question, index) => (
@@ -835,7 +865,7 @@ const AbilitiesTestPage: React.FC = () => {
                   ))}
                 </div>
               </TabsContent>
-              
+
               <TabsContent value="incorrect" className="mt-0">
                 <div className="space-y-1">
                   {questions.filter((_, index) => false).map((question, index) => (
@@ -867,13 +897,13 @@ const AbilitiesTestPage: React.FC = () => {
       </div>
     );
   };
-  
+
   return (
     <>
       {currentView === "selection" && renderTestSelection()}
       {currentView === "inProgress" && renderTestInProgress()}
       {currentView === "results" && renderTestResults()}
-      
+
       {/* Level Complete Modal */}
       <AlertDialog open={showLevelCompleteModal} onOpenChange={setShowLevelCompleteModal}>
         <AlertDialogContent className="text-center">
