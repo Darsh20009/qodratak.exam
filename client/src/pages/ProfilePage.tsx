@@ -529,48 +529,6 @@ const ProfilePage: React.FC = () => {
                 >
                   عرض بيانات الحساب
                 </Button>
-                    if (!email) {
-                      toast({
-                        title: "خطأ",
-                        description: "يرجى إدخال البريد الإلكتروني",
-                        variant: "destructive",
-                      });
-                      return;
-                    }
-
-                    try {
-                      const response = await fetch("/api/recover-account", {
-                        method: "POST",
-                        headers: {
-                          "Content-Type": "application/json",
-                        },
-                        body: JSON.stringify({ email })
-                      });
-
-                      const data = await response.json();
-
-                      if (!response.ok) {
-                        throw new Error(data.message);
-                      }
-
-                      // Open Telegram in new window
-                      window.open(data.telegramUrl, '_blank');
-
-                      toast({
-                        title: "تم إرسال طلب الاسترداد",
-                        description: "تم توجيهك إلى @qodratak2030",
-                      });
-                    } catch (error) {
-                      toast({
-                        title: "حدث خطأ",
-                        description: error instanceof Error ? error.message : "يرجى المحاولة مرة أخرى",
-                        variant: "destructive",
-                      });
-                    }
-                  }}
-                >
-                  استرداد الحساب
-                </Button>
               </div>
             </CardContent>
           </Card>
