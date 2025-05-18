@@ -92,29 +92,29 @@ const Home: React.FC = () => {
           <div className="flex flex-col items-center space-y-8 text-center">
             <div className="space-y-4 animate-fade-in-down">
               <div className="inline-flex items-center gap-4 justify-center">
-                <Rocket className="h-8 w-8 text-primary animate-bounce" />
-                <h1 className="text-5xl font-bold tracking-tighter sm:text-6xl md:text-7xl bg-gradient-to-r from-primary via-primary-foreground to-primary bg-clip-text text-transparent">
-                  طور قدراتك
+                <Rocket className="h-12 w-12 text-primary animate-bounce" />
+                <h1 className="text-6xl font-bold tracking-tighter sm:text-7xl md:text-8xl bg-gradient-to-r from-primary via-primary-foreground to-primary bg-clip-text text-transparent">
+                  طور مهاراتك
                 </h1>
-                <Stars className="h-8 w-8 text-primary animate-spin-slow" />
+                <Stars className="h-12 w-12 text-primary animate-spin-slow" />
               </div>
-              <p className="mx-auto max-w-[700px] text-gray-500 dark:text-gray-400 md:text-xl leading-relaxed">
+              <p className="mx-auto max-w-[800px] text-gray-500 dark:text-gray-400 text-xl md:text-2xl leading-relaxed">
                 منصتك الشاملة للتحضير لاختبارات قياس وتطوير مهاراتك اللفظية والكمية
                 <br />
                 بأسلوب تفاعلي ومتطور
               </p>
             </div>
 
-            <div className="flex flex-col sm:flex-row gap-4 animate-fade-in">
-              <Button asChild size="lg" className="group bg-gradient-to-r from-primary to-primary/80 hover:scale-105 transition-transform">
+            <div className="flex flex-col sm:flex-row gap-6 animate-fade-in">
+              <Button asChild size="lg" className="group bg-gradient-to-r from-primary to-primary/80 hover:scale-105 transition-transform text-lg px-8 py-6">
                 <Link href="/qiyas">
-                  <GraduationCapIcon className="ml-2 h-5 w-5 group-hover:rotate-12 transition-transform" />
+                  <GraduationCapIcon className="ml-3 h-6 w-6 group-hover:rotate-12 transition-transform" />
                   ابدأ اختبار قياس
                 </Link>
               </Button>
-              <Button asChild variant="outline" size="lg" className="group hover:scale-105 transition-transform">
+              <Button asChild variant="outline" size="lg" className="group hover:scale-105 transition-transform text-lg px-8 py-6">
                 <Link href="/abilities">
-                  <BrainCircuitIcon className="ml-2 h-5 w-5 group-hover:rotate-12 transition-transform" />
+                  <BrainCircuitIcon className="ml-3 h-6 w-6 group-hover:rotate-12 transition-transform" />
                   اختبر قدراتك
                 </Link>
               </Button>
@@ -124,18 +124,18 @@ const Home: React.FC = () => {
       </section>
 
       {/* Enhanced Statistics Section */}
-      <section className="py-16 bg-primary/5 relative overflow-hidden">
+      <section className="py-16 bg-primary/5 backdrop-blur-lg relative overflow-hidden">
         <div className="absolute inset-0 bg-grid-white/5 bg-[size:20px_20px]" />
         <div className="container px-4 md:px-6 relative">
           <div className="grid grid-cols-2 md:grid-cols-4 gap-8 animate-fade-in">
             {statisticsData.map((stat, index) => (
               <div key={index} 
-                className="group flex flex-col items-center justify-center p-6 bg-gradient-to-br from-card/90 to-card rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 hover:-translate-y-1"
+                className="group flex flex-col items-center justify-center p-8 bg-gradient-to-br from-card/90 to-card rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 hover:-translate-y-2"
                 style={{animationDelay: `${index * 0.2}s`}}
               >
-                <stat.icon className="h-8 w-8 mb-3 text-primary group-hover:scale-110 transition-transform" />
-                <h3 className="text-3xl font-bold text-primary mb-1 group-hover:scale-110 transition-transform">{stat.value}</h3>
-                <p className="text-muted-foreground text-sm group-hover:text-primary transition-colors">{stat.label}</p>
+                <stat.icon className="h-12 w-12 mb-4 text-primary group-hover:scale-110 transition-transform" />
+                <h3 className="text-4xl font-bold text-primary mb-2 group-hover:scale-110 transition-transform">{stat.value}</h3>
+                <p className="text-muted-foreground text-lg group-hover:text-primary transition-colors">{stat.label}</p>
               </div>
             ))}
           </div>
@@ -143,13 +143,16 @@ const Home: React.FC = () => {
       </section>
 
       {/* Enhanced Features Section */}
-      <section className="py-16">
+      <section className="py-20">
         <div className="container px-4 md:px-6">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 animate-fade-in">
+          <h2 className="text-4xl md:text-5xl font-bold text-center mb-12 bg-gradient-to-r from-primary via-primary-foreground to-primary bg-clip-text text-transparent">
+            خدماتنا المميزة
+          </h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 animate-fade-in">
             {features.map((feature, index) => (
               <Card 
                 key={index} 
-                className="group hover:shadow-2xl transition-all duration-300 border-0 bg-gradient-to-br from-background/80 to-background/90 relative overflow-hidden backdrop-blur-sm hover:-translate-y-1"
+                className="group hover:shadow-2xl transition-all duration-300 border-0 bg-gradient-to-br from-background/80 to-background/90 relative overflow-hidden backdrop-blur-sm hover:-translate-y-2"
                 style={{
                   animation: `floating-3d ${3 + index * 0.5}s ease-in-out infinite`,
                   animationDelay: `${index * 0.2}s`,
@@ -157,21 +160,21 @@ const Home: React.FC = () => {
               >
                 <div className={`absolute inset-0 bg-gradient-to-r ${feature.gradient} opacity-0 group-hover:opacity-5 transition-opacity`} />
                 <CardHeader>
-                  <div className={`p-3 w-12 h-12 rounded-lg ${feature.color} flex items-center justify-center mb-4 group-hover:scale-110 transition-transform`}>
-                    <feature.icon className="h-6 w-6 text-foreground" />
+                  <div className={`p-4 w-16 h-16 rounded-2xl ${feature.color} flex items-center justify-center mb-6 group-hover:scale-110 transition-transform`}>
+                    <feature.icon className="h-8 w-8 text-foreground" />
                   </div>
-                  <CardTitle className="text-xl group-hover:text-primary transition-colors">{feature.title}</CardTitle>
+                  <CardTitle className="text-2xl group-hover:text-primary transition-colors">{feature.title}</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <CardDescription className="text-sm text-muted-foreground group-hover:text-muted-foreground/80 transition-colors">
+                  <CardDescription className="text-lg text-muted-foreground group-hover:text-muted-foreground/80 transition-colors">
                     {feature.description}
                   </CardDescription>
                 </CardContent>
                 <CardFooter>
-                  <Button asChild variant="ghost" className="w-full justify-between group/btn hover:bg-primary/10">
+                  <Button asChild variant="ghost" className="w-full justify-between group/btn hover:bg-primary/10 text-lg py-6">
                     <Link href={feature.href}>
-                      استكشف
-                      <ArrowRightIcon className="h-4 w-4 mr-1 transition-transform group-hover/btn:translate-x-1" />
+                      استكشف المزيد
+                      <ArrowRightIcon className="h-5 w-5 mr-2 transition-transform group-hover/btn:translate-x-1" />
                     </Link>
                   </Button>
                 </CardFooter>
@@ -182,17 +185,17 @@ const Home: React.FC = () => {
       </section>
 
       {/* Enhanced CTA Section */}
-      <section className="py-16 bg-gradient-to-r from-primary/90 to-primary text-primary-foreground relative overflow-hidden">
+      <section className="py-20 bg-gradient-to-r from-primary/90 to-primary text-primary-foreground relative overflow-hidden">
         <div className="absolute inset-0 bg-[radial-gradient(circle_800px_at_50%_-100px,var(--primary-foreground),transparent)] opacity-20" />
         <div className="container px-4 md:px-6 text-center relative">
-          <Zap className="h-12 w-12 mx-auto mb-6 animate-pulse text-primary-foreground/90" />
-          <h2 className="text-3xl font-bold mb-4">ابدأ رحلتك نحو التميز</h2>
-          <p className="mb-8 max-w-[600px] mx-auto opacity-90">
+          <Zap className="h-16 w-16 mx-auto mb-8 animate-pulse text-primary-foreground/90" />
+          <h2 className="text-4xl md:text-5xl font-bold mb-6">ابدأ رحلتك نحو التميز</h2>
+          <p className="mb-10 max-w-[800px] mx-auto opacity-90 text-xl">
             سجل حساب مجاني الآن واحصل على تجربة تعليمية متكاملة مع متابعة تقدمك وتحسين مستواك
           </p>
-          <Button asChild size="lg" variant="secondary" className="min-w-[200px] hover:scale-105 transition-transform">
+          <Button asChild size="lg" variant="secondary" className="min-w-[250px] hover:scale-105 transition-transform text-xl px-8 py-6">
             <Link href="/profile">
-              سجل الآن
+              سجل الآن مجاناً
             </Link>
           </Button>
         </div>
