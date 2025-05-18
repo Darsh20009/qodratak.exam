@@ -6,7 +6,8 @@ import {
   Filter, 
   Search, 
   ChevronDown,
-  Loader2
+  Loader2,
+  X
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
