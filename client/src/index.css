@@ -478,6 +478,40 @@
   background-size: 1000px 100%;
 }
 
+@keyframes float-shadow {
+  0%, 100% { box-shadow: 0 10px 30px -10px var(--primary); }
+  50% { box-shadow: 0 20px 40px -20px var(--primary); }
+}
+
+.animate-float-shadow {
+  animation: float-shadow 3s ease-in-out infinite;
+}
+
+@keyframes gradient-pulse {
+  0%, 100% { background-position: 0% 50%; opacity: 0.5; }
+  50% { background-position: 100% 50%; opacity: 0.8; }
+}
+
+.gradient-pulse {
+  background: linear-gradient(-45deg, var(--primary)/10, var(--secondary)/10, var(--primary)/10);
+  background-size: 200% 200%;
+  animation: gradient-pulse 3s ease infinite;
+}
+
+.card-hover-effect {
+  transition: all 0.3s ease;
+}
+
+.card-hover-effect:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 10px 30px -10px var(--primary);
+}
+
+.bg-blur-effect {
+  backdrop-filter: blur(10px);
+  background: rgba(255, 255, 255, 0.1);
+}
+
 .perspective-1000 {
   perspective: 1000px;
 }

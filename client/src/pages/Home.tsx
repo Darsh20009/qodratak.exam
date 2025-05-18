@@ -146,7 +146,7 @@ const Home: React.FC = () => {
             {features.map((feature, index) => (
               <Card 
                 key={index} 
-                className="group border-0 card-animated hover-glow hover-scale bg-gradient-to-br from-background/80 to-background relative overflow-hidden backdrop-blur-sm"
+                className="group border-0 card-animated hover-glow hover-scale bg-gradient-to-br from-background/80 to-background/90 relative overflow-hidden backdrop-blur-sm"
                 style={{
                   animation: `floating-3d ${3 + index * 0.5}s ease-in-out infinite`,
                   animationDelay: `${index * 0.2}s`,
@@ -154,7 +154,7 @@ const Home: React.FC = () => {
                   transition: 'all 0.5s ease'
                 }}
               >
-                <div className="absolute inset-0 bg-gradient-to-r from-transparent via-primary/10 to-transparent animate-shimmer" 
+                <div className="absolute inset-0 bg-gradient-to-r from-transparent via-primary/20 to-transparent animate-shimmer" 
                   style={{
                     backgroundSize: '1000px 100%',
                     animationDuration: '2s',
