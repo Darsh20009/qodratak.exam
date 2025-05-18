@@ -1,4 +1,3 @@
-
 import React from "react";
 import { Link } from "wouter";
 import { 
@@ -66,7 +65,7 @@ const Home: React.FC = () => {
             <div className="absolute inset-0 bg-[conic-gradient(from_90deg_at_50%_50%,var(--primary)/5_0%,transparent_60%)] animate-spin-reverse" />
           </div>
         </div>
-        
+
         <div className="container relative px-4 md:px-6">
           <div className="flex flex-col items-center space-y-8 text-center">
             <div className="animate-fade-in-down space-y-4">
