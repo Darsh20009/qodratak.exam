@@ -77,9 +77,20 @@ const LibraryPage: React.FC = () => {
       match = false;
     }
     
-    // Search text
-    if (search && !q.text.includes(search)) {
-      match = false;
+    // Search text - improved to handle Arabic text better
+    if (search) {
+      const searchLower = search.toLowerCase();
+      const textLower = q.text.toLowerCase();
+      const searchTerms = searchLower.split(/\s+/);
+      
+      // Check if all search terms are found in the question text
+      const allTermsFound = searchTerms.every(term => 
+        textLower.includes(term)
+      );
+      
+      if (!allTermsFound) {
+        match = false;
+      }
     }
     
     return match;
