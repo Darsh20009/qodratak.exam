@@ -350,22 +350,40 @@ const ProfilePage: React.FC = () => {
 
   // If not logged in, show login/register forms
   return (
-    <div className="container max-w-md py-8">
-      <h1 className="text-3xl font-bold mb-8 text-center">تسجيل الدخول</h1>
-      <p className="text-center mb-8 text-muted-foreground">يجب تسجيل الدخول للوصول إلى المحتوى</p>
+    <div className="min-h-screen bg-gradient-to-br from-background via-primary/5 to-background relative overflow-hidden">
+      {/* Animated background effects */}
+      <div className="absolute inset-0">
+        <div className="absolute inset-0 bg-[radial-gradient(circle_800px_at_100%_200px,var(--primary)/10%,transparent_100%)]" />
+        <div className="absolute inset-0 bg-[radial-gradient(circle_800px_at_0%_800px,var(--primary)/10%,transparent_100%)]" />
+        <div className="absolute inset-0 bg-grid-white/10 bg-[size:20px_20px] [mask-image:radial-gradient(black,transparent_70%)]" />
+      </div>
+      
+      <div className="container max-w-md py-16 relative">
+        <div className="space-y-6 text-center">
+          <div className="relative inline-block">
+            <h1 className="text-4xl font-bold bg-gradient-to-r from-primary via-primary/80 to-primary bg-clip-text text-transparent">
+              مرحباً بك في قدراتك
+            </h1>
+            <div className="absolute -right-8 -top-8 text-4xl animate-bounce-slow">✨</div>
+            <div className="absolute -left-8 -bottom-4 text-4xl animate-bounce-slow" style={{animationDelay: '0.5s'}}>✨</div>
+          </div>
+          <p className="text-lg text-muted-foreground">منصتك الشخصية للتطور والنجاح</p>
+        </div>
 
-      <Tabs defaultValue="login">
-        <TabsList className="w-full mb-6">
-          <TabsTrigger value="login" className="flex-1">تسجيل الدخول</TabsTrigger>
-          <TabsTrigger value="register" className="flex-1">إنشاء حساب</TabsTrigger>
-          <TabsTrigger value="recover" className="flex-1">استرداد الحساب</TabsTrigger>
+      <Tabs defaultValue="login" className="animate-fade-in-up">
+        <TabsList className="w-full mb-6 p-1 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+          <TabsTrigger value="login" className="flex-1 transition-all duration-300">تسجيل الدخول</TabsTrigger>
+          <TabsTrigger value="register" className="flex-1 transition-all duration-300">إنشاء حساب</TabsTrigger>
+          <TabsTrigger value="recover" className="flex-1 transition-all duration-300">استرداد الحساب</TabsTrigger>
         </TabsList>
 
         <TabsContent value="login">
-          <Card>
+          <Card className="border-0 shadow-lg bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
             <CardHeader>
-              <CardTitle>تسجيل الدخول</CardTitle>
-              <CardDescription>
+              <CardTitle className="text-2xl font-bold bg-gradient-to-r from-primary to-primary/80 bg-clip-text text-transparent">
+                تسجيل الدخول
+              </CardTitle>
+              <CardDescription className="text-base">
                 قم بتسجيل الدخول للوصول إلى حسابك واختباراتك
               </CardDescription>
             </CardHeader>
@@ -507,8 +525,12 @@ const ProfilePage: React.FC = () => {
                         }
 
                         try {
-                          const users = await fetch('/attached_assets/user.json').then(res => res.json());
-                          const user = users.find((u: any) => u.email === email);
+                          const response = await fetch('/attached_assets/user.json');
+                          if (!response.ok) {
+                            throw new Error('فشل في تحميل بيانات المستخدمين');
+                          }
+                          const users = await response.json();
+                          const user = users.find((u: any) => u.email && u.email.toLowerCase() === email.toLowerCase());
 
                           if (!user) {
                             toast({
