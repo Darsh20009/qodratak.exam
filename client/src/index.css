@@ -374,11 +374,24 @@
 }
 
 @keyframes floating-3d {
-  0% { transform: translateY(0) translateX(0) rotate(0) scale(1); }
-  25% { transform: translateY(-15px) translateX(15px) rotate(5deg) scale(1.05); }
-  50% { transform: translateY(0) translateX(0) rotate(0) scale(1); }
-  75% { transform: translateY(15px) translateX(-15px) rotate(-5deg) scale(0.95); }
-  100% { transform: translateY(0) translateX(0) rotate(0) scale(1); }
+  0% { transform: translateY(0) translateX(0) rotate(0) scale(1); filter: brightness(1); }
+  25% { transform: translateY(-15px) translateX(15px) rotate(5deg) scale(1.05); filter: brightness(1.2); }
+  50% { transform: translateY(0) translateX(0) rotate(0) scale(1); filter: brightness(1); }
+  75% { transform: translateY(15px) translateX(-15px) rotate(-5deg) scale(0.95); filter: brightness(0.9); }
+  100% { transform: translateY(0) translateX(0) rotate(0) scale(1); filter: brightness(1); }
+}
+
+@keyframes card-glow {
+  0%, 100% { box-shadow: 0 0 20px var(--primary), 0 0 30px var(--primary-foreground); }
+  50% { box-shadow: 0 0 40px var(--primary), 0 0 60px var(--primary-foreground); }
+}
+
+.card-glow {
+  animation: card-glow 3s ease-in-out infinite;
+}
+
+.hover-glow:hover {
+  animation: card-glow 2s ease-in-out infinite;
 }
 
 @keyframes glow-ring {

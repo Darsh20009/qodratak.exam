@@ -64,15 +64,18 @@ const Home: React.FC = () => {
             <div className="absolute inset-0 bg-[conic-gradient(from_0deg_at_50%_50%,var(--primary)/20_0%,transparent_60%)] animate-spin-slow" />
             <div className="absolute inset-0 bg-[conic-gradient(from_90deg_at_50%_50%,var(--primary)/10_0%,transparent_60%)] animate-spin-reverse" />
           </div>
-          {[...Array(30)].map((_, i) => (
+          {[...Array(50)].map((_, i) => (
             <div
               key={i}
-              className="absolute h-1 w-1 bg-primary/30 rounded-full animate-float-particle"
+              className="absolute h-1 w-1 bg-primary/40 rounded-full animate-float-particle backdrop-blur-sm"
               style={{
                 top: `${Math.random() * 100}%`,
                 left: `${Math.random() * 100}%`,
                 animationDelay: `${Math.random() * 7}s`,
-                animationDuration: `${5 + Math.random() * 5}s`
+                animationDuration: `${5 + Math.random() * 5}s`,
+                filter: `blur(${Math.random() * 2}px)`,
+                transform: `scale(${1 + Math.random()})`,
+                opacity: 0.3 + Math.random() * 0.7
               }}
             />
           ))}
@@ -143,10 +146,12 @@ const Home: React.FC = () => {
             {features.map((feature, index) => (
               <Card 
                 key={index} 
-                className="group border-0 card-animated hover-glow hover-scale bg-gradient-to-br from-background/80 to-background relative overflow-hidden"
+                className="group border-0 card-animated hover-glow hover-scale bg-gradient-to-br from-background/80 to-background relative overflow-hidden backdrop-blur-sm"
                 style={{
                   animation: `floating-3d ${3 + index * 0.5}s ease-in-out infinite`,
-                  animationDelay: `${index * 0.2}s`
+                  animationDelay: `${index * 0.2}s`,
+                  transform: 'perspective(1000px) rotateX(5deg)',
+                  transition: 'all 0.5s ease'
                 }}
               >
                 <div className="absolute inset-0 bg-gradient-to-r from-transparent via-primary/10 to-transparent animate-shimmer" 
