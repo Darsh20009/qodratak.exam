@@ -254,7 +254,6 @@ const AbilitiesTestPage: React.FC = () => {
     
     pointsEarned = Math.floor(pointsEarned);
     
-    // Save test result
     try {
       const result = {
         userId: user.id,
@@ -311,7 +310,7 @@ const AbilitiesTestPage: React.FC = () => {
       
       // Display test result
       setCurrentView("results");
-    }
+      
     } catch (error) {
       toast({
         title: "خطأ",
