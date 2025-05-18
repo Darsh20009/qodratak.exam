@@ -232,17 +232,29 @@ const ProfilePage: React.FC = () => {
   // If logged in, show profile page
   if (isLoggedIn && user) {
     return (
-      <div className="container py-4 px-4 sm:py-8">
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 sm:gap-6">
+      <div className="container py-8 px-4">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           {/* Profile Summary */}
-          <Card className="md:col-span-1">
-            <CardHeader className="text-center">
-              <div className="w-24 h-24 rounded-full bg-primary/10 mx-auto flex items-center justify-center mb-4">
-                <User className="h-12 w-12 text-primary" />
+          <Card className="md:col-span-1 overflow-hidden">
+            <div className="absolute top-0 left-0 w-full h-32 bg-gradient-to-r from-primary/20 to-primary/5" />
+            <CardHeader className="text-center relative z-10 pt-8">
+              <div className="relative">
+                <div className="w-28 h-28 rounded-full bg-gradient-to-br from-primary to-primary/60 mx-auto flex items-center justify-center mb-4 ring-4 ring-background">
+                  <User className="h-14 w-14 text-primary-foreground" />
+                </div>
+                <div className="absolute -bottom-2 right-1/2 transform translate-x-1/2">
+                  <Badge className="bg-gradient-to-r from-yellow-500 to-amber-500 text-white">
+                    مستوى {user.level}
+                  </Badge>
+                </div>
               </div>
-              <CardTitle className="text-2xl">{user.name}</CardTitle>
-              <CardDescription>
-                {user.subscription.type} • تنتهي في {user.subscription.endDate}
+              <CardTitle className="text-2xl mt-4">{user.name}</CardTitle>
+              <CardDescription className="flex items-center justify-center gap-2 mt-2">
+                <Badge variant="outline" className="bg-primary/5">
+                  {user.subscription.type}
+                </Badge>
+                <span>•</span>
+                <span className="text-sm">تنتهي في {user.subscription.endDate}</span>
               </CardDescription>
             </CardHeader>
             <CardContent>
@@ -258,17 +270,25 @@ const ProfilePage: React.FC = () => {
                   ></div>
                 </div>
 
-                <div className="pt-3">
-                  <h4 className="font-medium mb-2 text-sm sm:text-base">الإحصائيات</h4>
-                  <div className="grid grid-cols-2 gap-x-2 gap-y-1.5 text-xs sm:text-sm">
-                    <div className="text-sm text-muted-foreground">النقاط:</div>
-                    <div className="text-sm text-right">{user.points}</div>
-                    <div className="text-sm text-muted-foreground">المستوى:</div>
-                    <div className="text-sm text-right">{user.level}</div>
-                    <div className="text-sm text-muted-foreground">عدد الاختبارات:</div>
-                    <div className="text-sm text-right">8</div>
-                    <div className="text-sm text-muted-foreground">متوسط العلامات:</div>
-                    <div className="text-sm text-right">78%</div>
+                <div className="pt-6">
+                  <h4 className="font-semibold text-lg mb-4">الإحصائيات</h4>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="bg-primary/5 rounded-xl p-4 text-center transform hover:scale-105 transition-transform duration-300">
+                      <div className="text-2xl font-bold text-primary mb-1">{user.points}</div>
+                      <div className="text-sm text-muted-foreground">النقاط</div>
+                    </div>
+                    <div className="bg-primary/5 rounded-xl p-4 text-center transform hover:scale-105 transition-transform duration-300">
+                      <div className="text-2xl font-bold text-primary mb-1">8</div>
+                      <div className="text-sm text-muted-foreground">الاختبارات</div>
+                    </div>
+                    <div className="bg-primary/5 rounded-xl p-4 text-center transform hover:scale-105 transition-transform duration-300">
+                      <div className="text-2xl font-bold text-primary mb-1">78%</div>
+                      <div className="text-sm text-muted-foreground">المتوسط</div>
+                    </div>
+                    <div className="bg-primary/5 rounded-xl p-4 text-center transform hover:scale-105 transition-transform duration-300">
+                      <div className="text-2xl font-bold text-primary mb-1">3</div>
+                      <div className="text-sm text-muted-foreground">التحديات</div>
+                    </div>
                   </div>
                 </div>
               </div>
