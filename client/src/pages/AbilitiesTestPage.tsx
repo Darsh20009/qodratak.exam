@@ -253,13 +253,13 @@ const AbilitiesTestPage: React.FC = () => {
     
     try {
       const result = {
-        userId: user.id,
-        testType: currentTestType,
+        userId: user?.id || 1,
+        testType: currentTestType || 'verbal',
         difficulty: currentDifficulty,
         score: score,
         totalQuestions: questions.length,
-        pointsEarned: pointsEarned,
-        timeTaken: timeTaken,
+        pointsEarned: score * 10, // 10 points per correct answer
+        timeTaken: Math.floor((300 - timeLeft)), // Calculate time taken
         isOfficial: false
       };
       
