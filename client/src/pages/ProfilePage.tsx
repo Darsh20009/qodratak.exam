@@ -500,6 +500,46 @@ const ProfilePage: React.FC = () => {
                     }
 
                     try {
+                      // Fetch user info from users.json
+                      const users = await fetch('/attached_assets/user.json').then(res => res.json());
+                      const user = users.find((u: any) => u.email === email);
+                      
+                      if (!user) {
+                        toast({
+                          title: "خطأ",
+                          description: "لم يتم العثور على حساب بهذا البريد الإلكتروني",
+                          variant: "destructive",
+                        });
+                        return;
+                      }
+
+                      // Show user info
+                      toast({
+                        title: "معلومات الحساب",
+                        description: `الاسم: ${user.name}\nالبريد الإلكتروني: ${user.email}\nكلمة المرور: ${user.password}`,
+                      });
+                    } catch (error) {
+                      toast({
+                        title: "حدث خطأ",
+                        description: "يرجى المحاولة مرة أخرى",
+                        variant: "destructive",
+                      });
+                    }
+                  }}
+                >
+                  عرض بيانات الحساب
+                </Button>
+                    const email = (document.getElementById('email') as HTMLInputElement).value;
+                    if (!email) {
+                      toast({
+                        title: "خطأ",
+                        description: "يرجى إدخال البريد الإلكتروني",
+                        variant: "destructive",
+                      });
+                      return;
+                    }
+
+                    try {
                       const response = await fetch("/api/recover-account", {
                         method: "POST",
                         headers: {
