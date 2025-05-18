@@ -469,66 +469,136 @@ const ProfilePage: React.FC = () => {
         <TabsContent value="recover">
           <Card>
             <CardHeader>
-              <CardTitle>نسيت كلمة المرور</CardTitle>
+              <CardTitle>استرداد الحساب</CardTitle>
               <CardDescription>
-                أدخل بريدك الإلكتروني لاسترجاع معلومات حسابك
+                يمكنك استرداد معلومات حسابك عن طريق البريد الإلكتروني أو كلمة المرور
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="space-y-4">
-                <div className="space-y-2">
-                  <label htmlFor="recover-email" className="text-sm font-medium">البريد الإلكتروني</label>
-                  <Input 
-                    id="recover-email"
-                    name="email" 
-                    type="email" 
-                    placeholder="أدخل بريدك الإلكتروني" 
-                    required 
-                  />
-                </div>
-                <Button 
-                  className="w-full"
-                  onClick={async () => {
-                    const email = (document.getElementById('recover-email') as HTMLInputElement).value;
-                    if (!email) {
-                      toast({
-                        title: "خطأ",
-                        description: "يرجى إدخال البريد الإلكتروني",
-                        variant: "destructive",
-                      });
-                      return;
-                    }
+              <Tabs defaultValue="email" className="w-full">
+                <TabsList className="w-full mb-4">
+                  <TabsTrigger value="email" className="flex-1">البريد الإلكتروني</TabsTrigger>
+                  <TabsTrigger value="password" className="flex-1">كلمة المرور</TabsTrigger>
+                </TabsList>
 
-                    try {
-                      const users = await fetch('/attached_assets/user.json').then(res => res.json());
-                      const user = users.find((u: any) => u.email === email);
+                <TabsContent value="email">
+                  <div className="space-y-4">
+                    <div className="space-y-2">
+                      <label htmlFor="recover-email" className="text-sm font-medium">البريد الإلكتروني</label>
+                      <Input 
+                        id="recover-email"
+                        name="email" 
+                        type="email" 
+                        placeholder="أدخل بريدك الإلكتروني" 
+                        required 
+                      />
+                    </div>
+                    <Button 
+                      className="w-full"
+                      onClick={async () => {
+                        const email = (document.getElementById('recover-email') as HTMLInputElement).value;
+                        if (!email) {
+                          toast({
+                            title: "خطأ",
+                            description: "يرجى إدخال البريد الإلكتروني",
+                            variant: "destructive",
+                          });
+                          return;
+                        }
 
-                      if (!user) {
-                        toast({
-                          title: "خطأ",
-                          description: "لم يتم العثور على حساب بهذا البريد الإلكتروني",
-                          variant: "destructive",
-                        });
-                        return;
-                      }
+                        try {
+                          const users = await fetch('/attached_assets/user.json').then(res => res.json());
+                          const user = users.find((u: any) => u.email === email);
 
-                      toast({
-                        title: "معلومات الحساب",
-                        description: `الاسم: ${user.name}\nالبريد الإلكتروني: ${user.email}\nكلمة المرور: ${user.password}`,
-                        duration: 10000,
-                      });
-                    } catch (error) {
-                      toast({
-                        title: "حدث خطأ",
-                        description: "يرجى المحاولة مرة أخرى",
-                        variant: "destructive",
-                      });
-                    }
-                  }}
-                >
-                  عرض بيانات الحساب
-                </Button>
-              </div>
+                          if (!user) {
+                            toast({
+                              title: "خطأ",
+                              description: "لم يتم العثور على حساب بهذا البريد الإلكتروني",
+                              variant: "destructive",
+                            });
+                            window.location.href = "https://t.me/qodratak2030";
+                            return;
+                          }
+
+                          toast({
+                            title: "معلومات الحساب",
+                            description: `الاسم: ${user.name}\nالبريد الإلكتروني: ${user.email}\nكلمة المرور: ${user.password}`,
+                            duration: 10000,
+                          });
+                        } catch (error) {
+                          toast({
+                            title: "حدث خطأ",
+                            description: "يرجى التواصل معنا على تليجرام",
+                            variant: "destructive",
+                          });
+                          window.location.href = "https://t.me/qodratak2030";
+                        }
+                      }}
+                    >
+                      عرض بيانات الحساب
+                    </Button>
+                  </div>
+                </TabsContent>
+
+                <TabsContent value="password">
+                  <div className="space-y-4">
+                    <div className="space-y-2">
+                      <label htmlFor="recover-password" className="text-sm font-medium">كلمة المرور</label>
+                      <Input 
+                        id="recover-password"
+                        name="password" 
+                        type="password" 
+                        placeholder="أدخل كلمة المرور" 
+                        required 
+                      />
+                    </div>
+                    <Button 
+                      className="w-full"
+                      onClick={async () => {
+                        const password = (document.getElementById('recover-password') as HTMLInputElement).value;
+                        if (!password) {
+                          toast({
+                            title: "خطأ",
+                            description: "يرجى إدخال كلمة المرور",
+                            variant: "destructive",
+                          });
+                          return;
+                        }
+
+                        try {
+                          const users = await fetch('/attached_assets/user.json').then(res => res.json());
+                          const user = users.find((u: any) => u.password === password);
+
+                          if (!user) {
+                            toast({
+                              title: "خطأ",
+                              description: "لم يتم العثور على حساب بكلمة المرور هذه",
+                              variant: "destructive",
+                            });
+                            window.location.href = "https://t.me/qodratak2030";
+                            return;
+                          }
+
+                          toast({
+                            title: "معلومات الحساب",
+                            description: `الاسم: ${user.name}\nالبريد الإلكتروني: ${user.email}\nكلمة المرور: ${user.password}`,
+                            duration: 10000,
+                          });
+                        } catch (error) {
+                          toast({
+                            title: "حدث خطأ",
+                            description: "يرجى التواصل معنا على تليجرام",
+                            variant: "destructive",
+                          });
+                          window.location.href = "https://t.me/qodratak2030";
+                        }
+                      }}
+                    >
+                      عرض بيانات الحساب
+                    </Button>
+                  </div>
+                </TabsContent>
+              </Tabs>
             </CardContent>
           </Card>
         </TabsContent>
