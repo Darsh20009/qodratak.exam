@@ -529,7 +529,6 @@ const ProfilePage: React.FC = () => {
                 >
                   عرض بيانات الحساب
                 </Button>
-                    const email = (document.getElementById('email') as HTMLInputElement).value;
                     if (!email) {
                       toast({
                         title: "خطأ",
