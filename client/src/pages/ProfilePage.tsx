@@ -219,15 +219,58 @@ const ProfilePage: React.FC = () => {
     }
   };
 
-  const handleLogout = () => {
-    localStorage.removeItem("user");
-    setUser(null);
-    setIsLoggedIn(false);
+  // Handle forgot password submission
+const handleForgotPassword = async (type: 'password' | 'email') => {
+  const email = (document.getElementById(type === 'password' ? 'reset-email' : 'recover-email') as HTMLInputElement).value;
+  if (!email) {
+    toast({
+      title: "خطأ",
+      description: "يرجى إدخال البريد الإلكتروني",
+      variant: "destructive",
+    });
+    return;
+  }
+
+  try {
+    const response = await fetch("/api/recover-account", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ email, type })
+    });
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      throw new Error(data.message);
+    }
+
+    // Open Telegram in new window
+    window.open(data.telegramUrl, '_blank');
 
     toast({
-      title: "تم تسجيل الخروج بنجاح",
+      title: "تم إرسال طلب الاسترداد",
+      description: "تم توجيهك إلى @qodratak2030",
     });
-  };
+  } catch (error) {
+    toast({
+      title: "حدث خطأ",
+      description: error instanceof Error ? error.message : "يرجى المحاولة مرة أخرى",
+      variant: "destructive",
+    });
+  }
+};
+
+const handleLogout = () => {
+  localStorage.removeItem("user");
+  setUser(null);
+  setIsLoggedIn(false);
+
+  toast({
+    title: "تم تسجيل الخروج بنجاح",
+  });
+};
 
   // If logged in, show profile page
   if (isLoggedIn && user) {
@@ -358,7 +401,8 @@ const ProfilePage: React.FC = () => {
         <TabsList className="w-full mb-6">
           <TabsTrigger value="login" className="flex-1">تسجيل الدخول</TabsTrigger>
           <TabsTrigger value="register" className="flex-1">إنشاء حساب</TabsTrigger>
-          <TabsTrigger value="recover" className="flex-1">استرداد الحساب</TabsTrigger>
+          <TabsTrigger value="forgot-password" className="flex-1">نسيت كلمة المرور</TabsTrigger>
+          <TabsTrigger value="forgot-email" className="flex-1">نسيت البريد</TabsTrigger>
         </TabsList>
 
         <TabsContent value="login">
@@ -466,21 +510,21 @@ const ProfilePage: React.FC = () => {
           </Card>
         </TabsContent>
 
-        <TabsContent value="recover">
+        <TabsContent value="forgot-password">
           <Card>
             <CardHeader>
-              <CardTitle>استرداد الحساب</CardTitle>
+              <CardTitle>نسيت كلمة المرور</CardTitle>
               <CardDescription>
-                أدخل بريدك الإلكتروني لاسترداد بيانات حسابك
+                أدخل بريدك الإلكتروني لإعادة تعيين كلمة المرور
               </CardDescription>
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
                 <div className="space-y-2">
-                  <label htmlFor="email" className="text-sm font-medium">البريد الإلكتروني</label>
+                  <label htmlFor="reset-email" className="text-sm font-medium">البريد الإلكتروني</label>
                   <Input 
-                    id="email"
-                    name="email" 
+                    id="reset-email"
+                    name="reset-email" 
                     type="email" 
                     placeholder="أدخل بريدك الإلكتروني" 
                     required 
@@ -488,49 +532,40 @@ const ProfilePage: React.FC = () => {
                 </div>
                 <Button 
                   className="w-full"
-                  onClick={async () => {
-                    const email = (document.getElementById('email') as HTMLInputElement).value;
-                    if (!email) {
-                      toast({
-                        title: "خطأ",
-                        description: "يرجى إدخال البريد الإلكتروني",
-                        variant: "destructive",
-                      });
-                      return;
-                    }
-
-                    try {
-                      const response = await fetch("/api/recover-account", {
-                        method: "POST",
-                        headers: {
-                          "Content-Type": "application/json",
-                        },
-                        body: JSON.stringify({ email })
-                      });
-
-                      const data = await response.json();
-
-                      if (!response.ok) {
-                        throw new Error(data.message);
-                      }
-
-                      // Open Telegram in new window
-                      window.open(data.telegramUrl, '_blank');
-
-                      toast({
-                        title: "تم إرسال طلب الاسترداد",
-                        description: "تم توجيهك إلى @qodratak2030",
-                      });
-                    } catch (error) {
-                      toast({
-                        title: "حدث خطأ",
-                        description: error instanceof Error ? error.message : "يرجى المحاولة مرة أخرى",
-                        variant: "destructive",
-                      });
-                    }
-                  }}
+                  onClick={() => handleForgotPassword('password')}
                 >
-                  استرداد الحساب
+                  إرسال طلب إعادة تعيين كلمة المرور
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="forgot-email">
+          <Card>
+            <CardHeader>
+              <CardTitle>نسيت البريد الإلكتروني</CardTitle>
+              <CardDescription>
+                أدخل اسم المستخدم لاسترداد البريد الإلكتروني
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                <div className="space-y-2">
+                  <label htmlFor="recover-email" className="text-sm font-medium">اسم المستخدم</label>
+                  <Input 
+                    id="recover-email"
+                    name="recover-email" 
+                    type="text" 
+                    placeholder="أدخل اسم المستخدم" 
+                    required 
+                  />
+                </div>
+                <Button 
+                  className="w-full"
+                  onClick={() => handleForgotPassword('email')}
+                >
+                  استرداد البريد الإلكتروني
                 </Button>
               </div>
             </CardContent>
