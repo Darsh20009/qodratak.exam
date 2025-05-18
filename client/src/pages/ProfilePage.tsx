@@ -28,7 +28,7 @@ import {
   TabsList,
   TabsTrigger,
 } from "@/components/ui/tabs";
-import { Trophy, Star, User, Award, BookOpen, ChevronRight } from "lucide-react";
+import { Trophy, Star, User, Award, BookOpen, Target, ChevronRight } from "lucide-react";
 
 // Form schema for login
 const loginSchema = z.object({
@@ -238,7 +238,7 @@ const ProfilePage: React.FC = () => {
           <Card className="md:col-span-1 card-animated hover:shadow-glow relative overflow-hidden">
             <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-primary/5 animate-pulse-slow"></div>
             <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,var(--primary)/10,transparent_50%)] animate-pulse"></div>
-            
+
             <CardHeader className="text-center relative">
               <div className="w-28 h-28 rounded-full bg-gradient-to-br from-primary/20 to-primary/5 mx-auto flex items-center justify-center mb-4 animate-float-shadow relative group perspective-1000">
                 <div className="absolute inset-0 rounded-full bg-primary/10 animate-spin-slow"></div>
@@ -294,7 +294,7 @@ const ProfilePage: React.FC = () => {
                         <div className="h-full bg-primary rounded-full animate-pulse" style={{ width: `${(user.points / 1000) * 100}%` }}></div>
                       </div>
                     </div>
-                    
+
                     <div className="p-3 rounded-lg bg-gradient-to-r from-primary/5 to-transparent hover:from-primary/10 transition-colors">
                       <div className="flex justify-between items-center mb-2">
                         <span className="text-sm text-muted-foreground flex items-center gap-2">
@@ -314,7 +314,7 @@ const ProfilePage: React.FC = () => {
                         <div className="text-2xl font-bold text-primary">8</div>
                         <div className="text-xs text-muted-foreground">عدد الاختبارات</div>
                       </div>
-                      
+
                       <div className="p-3 rounded-lg bg-gradient-to-r from-primary/5 to-transparent hover:from-primary/10 transition-colors text-center">
                         <Target className="h-5 w-5 text-primary mx-auto mb-2 animate-spin-slow" />
                         <div className="text-2xl font-bold text-primary">78%</div>
@@ -409,7 +409,7 @@ const ProfilePage: React.FC = () => {
         <div className="absolute inset-0 bg-[radial-gradient(circle_800px_at_0%_800px,var(--primary)/10%,transparent_100%)]" />
         <div className="absolute inset-0 bg-grid-white/10 bg-[size:20px_20px] [mask-image:radial-gradient(black,transparent_70%)]" />
       </div>
-      
+
       <div className="container max-w-md py-16 relative">
         <div className="space-y-6 text-center">
           <div className="relative inline-block">
