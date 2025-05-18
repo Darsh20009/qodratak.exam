@@ -469,9 +469,9 @@ const ProfilePage: React.FC = () => {
         <TabsContent value="recover">
           <Card>
             <CardHeader>
-              <CardTitle>استرداد الحساب</CardTitle>
+              <CardTitle>نسيت كلمة المرور</CardTitle>
               <CardDescription>
-                أدخل بريدك الإلكتروني لاسترداد بيانات حسابك
+                أدخل بريدك الإلكتروني لاسترجاع معلومات حسابك
               </CardDescription>
             </CardHeader>
             <CardContent>
@@ -500,10 +500,10 @@ const ProfilePage: React.FC = () => {
                     }
 
                     try {
-                      // Fetch user info from users.json
+                      // جلب معلومات المستخدم من ملف المستخدمين
                       const users = await fetch('/attached_assets/user.json').then(res => res.json());
                       const user = users.find((u: any) => u.email === email);
-                      
+
                       if (!user) {
                         toast({
                           title: "خطأ",
@@ -513,7 +513,7 @@ const ProfilePage: React.FC = () => {
                         return;
                       }
 
-                      // Show user info
+                      // عرض معلومات المستخدم
                       toast({
                         title: "معلومات الحساب",
                         description: `الاسم: ${user.name}\nالبريد الإلكتروني: ${user.email}\nكلمة المرور: ${user.password}`,
