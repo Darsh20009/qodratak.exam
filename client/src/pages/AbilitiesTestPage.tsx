@@ -909,7 +909,6 @@ const AbilitiesTestPage: React.FC = () => {
           </CardContent>
         </Card>
         )}
-        </Card>
       </div>
     );
   };
