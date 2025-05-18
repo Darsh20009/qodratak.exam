@@ -60,7 +60,12 @@ const Home: React.FC = () => {
       <section className="relative overflow-hidden py-20 sm:py-32">
         <div className="absolute inset-0 bg-grid-white/10 bg-[size:40px_40px] [mask-image:linear-gradient(0deg,transparent,white)]">
           <div className="absolute inset-0 bg-gradient-to-r from-primary/20 to-primary/5 animate-pulse" />
-          <div className="absolute inset-0 bg-[radial-gradient(circle_500px_at_50%_200px,var(--primary-foreground),transparent)]" />
+          <div className="absolute inset-0 bg-[radial-gradient(circle_800px_at_50%_-100px,var(--primary-foreground),transparent)] animate-float" />
+          <div className="absolute inset-0 animate-glow">
+            <div className="absolute inset-0 bg-[conic-gradient(from_0deg_at_50%_50%,var(--primary)/20_0%,transparent_60%)] animate-spin-slow" />
+            <div className="absolute inset-0 bg-[conic-gradient(from_90deg_at_50%_50%,var(--primary)/10_0%,transparent_60%)] animate-spin-reverse" />
+          </div>
+          <div className="absolute inset-0 bg-[radial-gradient(circle_400px_at_50%_50%,var(--primary)/5,transparent)] animate-pulse" />
         </div>
         
         <div className="container relative px-4 md:px-6">
@@ -106,7 +111,7 @@ const Home: React.FC = () => {
           <div className="grid grid-cols-2 md:grid-cols-4 gap-8 animate-fade-in">
             {statisticsData.map((stat, index) => (
               <div key={index} 
-                className="group flex flex-col items-center justify-center p-6 bg-card rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 hover:-translate-y-1 hover:bg-primary/5">
+                className="group flex flex-col items-center justify-center p-6 bg-card rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 hover:-translate-y-1 hover:bg-primary/5 animate-shine card-shine">
                 <stat.icon className="h-8 w-8 mb-3 text-primary group-hover:scale-110 transition-transform" />
                 <h3 className="text-3xl font-bold text-primary mb-1 group-hover:scale-110 transition-transform">{stat.value}</h3>
                 <p className="text-muted-foreground text-sm group-hover:text-primary transition-colors">{stat.label}</p>
@@ -121,7 +126,7 @@ const Home: React.FC = () => {
         <div className="container px-4 md:px-6">
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 animate-fade-in">
             {features.map((feature, index) => (
-              <Card key={index} className="group border-0 shadow-lg hover:shadow-xl transition-all duration-300 hover:-translate-y-1">
+              <Card key={index} className="group border-0 shadow-lg hover:shadow-xl transition-all duration-300 hover:-translate-y-1 card-shine animate-float hover-scale">
                 <CardHeader>
                   <div className={`p-3 w-12 h-12 rounded-lg ${feature.color} flex items-center justify-center mb-4 group-hover:scale-110 transition-transform`}>
                     <feature.icon className="h-6 w-6 text-foreground" />
