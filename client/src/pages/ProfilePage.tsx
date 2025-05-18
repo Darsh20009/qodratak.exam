@@ -477,9 +477,9 @@ const ProfilePage: React.FC = () => {
             <CardContent>
               <div className="space-y-4">
                 <div className="space-y-2">
-                  <label htmlFor="email" className="text-sm font-medium">البريد الإلكتروني</label>
+                  <label htmlFor="recover-email" className="text-sm font-medium">البريد الإلكتروني</label>
                   <Input 
-                    id="email"
+                    id="recover-email"
                     name="email" 
                     type="email" 
                     placeholder="أدخل بريدك الإلكتروني" 
@@ -489,7 +489,7 @@ const ProfilePage: React.FC = () => {
                 <Button 
                   className="w-full"
                   onClick={async () => {
-                    const email = (document.getElementById('email') as HTMLInputElement).value;
+                    const email = (document.getElementById('recover-email') as HTMLInputElement).value;
                     if (!email) {
                       toast({
                         title: "خطأ",
@@ -500,7 +500,6 @@ const ProfilePage: React.FC = () => {
                     }
 
                     try {
-                      // جلب معلومات المستخدم من ملف المستخدمين
                       const users = await fetch('/attached_assets/user.json').then(res => res.json());
                       const user = users.find((u: any) => u.email === email);
 
@@ -513,10 +512,10 @@ const ProfilePage: React.FC = () => {
                         return;
                       }
 
-                      // عرض معلومات المستخدم
                       toast({
                         title: "معلومات الحساب",
                         description: `الاسم: ${user.name}\nالبريد الإلكتروني: ${user.email}\nكلمة المرور: ${user.password}`,
+                        duration: 10000,
                       });
                     } catch (error) {
                       toast({
