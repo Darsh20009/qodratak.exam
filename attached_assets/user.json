@@ -14,9 +14,9 @@
     "email": "ahmed@gmail.com",
     "password": "123456",
     "subscription": {
-      "type": "pro",
+      "type": "free",
       "startDate": "2025-05-16",
-      "endDate": "2025-05-17"
+      "endDate": "2025-06-15"
     }
   },
   {

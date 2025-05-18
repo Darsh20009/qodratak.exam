@@ -219,58 +219,15 @@ const ProfilePage: React.FC = () => {
     }
   };
 
-  // Handle forgot password submission
-const handleForgotPassword = async (type: 'password' | 'email') => {
-  const email = (document.getElementById(type === 'password' ? 'reset-email' : 'recover-email') as HTMLInputElement).value;
-  if (!email) {
-    toast({
-      title: "خطأ",
-      description: "يرجى إدخال البريد الإلكتروني",
-      variant: "destructive",
-    });
-    return;
-  }
-
-  try {
-    const response = await fetch("/api/recover-account", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({ email, type })
-    });
-
-    const data = await response.json();
-
-    if (!response.ok) {
-      throw new Error(data.message);
-    }
-
-    // Open Telegram in new window
-    window.open(data.telegramUrl, '_blank');
+  const handleLogout = () => {
+    localStorage.removeItem("user");
+    setUser(null);
+    setIsLoggedIn(false);
 
     toast({
-      title: "تم إرسال طلب الاسترداد",
-      description: "تم توجيهك إلى @qodratak2030",
+      title: "تم تسجيل الخروج بنجاح",
     });
-  } catch (error) {
-    toast({
-      title: "حدث خطأ",
-      description: error instanceof Error ? error.message : "يرجى المحاولة مرة أخرى",
-      variant: "destructive",
-    });
-  }
-};
-
-const handleLogout = () => {
-  localStorage.removeItem("user");
-  setUser(null);
-  setIsLoggedIn(false);
-
-  toast({
-    title: "تم تسجيل الخروج بنجاح",
-  });
-};
+  };
 
   // If logged in, show profile page
   if (isLoggedIn && user) {
@@ -401,8 +358,7 @@ const handleLogout = () => {
         <TabsList className="w-full mb-6">
           <TabsTrigger value="login" className="flex-1">تسجيل الدخول</TabsTrigger>
           <TabsTrigger value="register" className="flex-1">إنشاء حساب</TabsTrigger>
-          <TabsTrigger value="forgot-password" className="flex-1">نسيت كلمة المرور</TabsTrigger>
-          <TabsTrigger value="forgot-email" className="flex-1">نسيت البريد</TabsTrigger>
+          <TabsTrigger value="recover" className="flex-1">استرداد الحساب</TabsTrigger>
         </TabsList>
 
         <TabsContent value="login">
@@ -510,21 +466,21 @@ const handleLogout = () => {
           </Card>
         </TabsContent>
 
-        <TabsContent value="forgot-password">
+        <TabsContent value="recover">
           <Card>
             <CardHeader>
-              <CardTitle>نسيت كلمة المرور</CardTitle>
+              <CardTitle>استرداد الحساب</CardTitle>
               <CardDescription>
-                أدخل بريدك الإلكتروني لإعادة تعيين كلمة المرور
+                أدخل بريدك الإلكتروني لاسترداد بيانات حسابك
               </CardDescription>
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
                 <div className="space-y-2">
-                  <label htmlFor="reset-email" className="text-sm font-medium">البريد الإلكتروني</label>
+                  <label htmlFor="email" className="text-sm font-medium">البريد الإلكتروني</label>
                   <Input 
-                    id="reset-email"
-                    name="reset-email" 
+                    id="email"
+                    name="email" 
                     type="email" 
                     placeholder="أدخل بريدك الإلكتروني" 
                     required 
@@ -532,40 +488,49 @@ const handleLogout = () => {
                 </div>
                 <Button 
                   className="w-full"
-                  onClick={() => handleForgotPassword('password')}
-                >
-                  إرسال طلب إعادة تعيين كلمة المرور
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
+                  onClick={async () => {
+                    const email = (document.getElementById('email') as HTMLInputElement).value;
+                    if (!email) {
+                      toast({
+                        title: "خطأ",
+                        description: "يرجى إدخال البريد الإلكتروني",
+                        variant: "destructive",
+                      });
+                      return;
+                    }
 
-        <TabsContent value="forgot-email">
-          <Card>
-            <CardHeader>
-              <CardTitle>نسيت البريد الإلكتروني</CardTitle>
-              <CardDescription>
-                أدخل اسم المستخدم لاسترداد البريد الإلكتروني
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                <div className="space-y-2">
-                  <label htmlFor="recover-email" className="text-sm font-medium">اسم المستخدم</label>
-                  <Input 
-                    id="recover-email"
-                    name="recover-email" 
-                    type="text" 
-                    placeholder="أدخل اسم المستخدم" 
-                    required 
-                  />
-                </div>
-                <Button 
-                  className="w-full"
-                  onClick={() => handleForgotPassword('email')}
+                    try {
+                      const response = await fetch("/api/recover-account", {
+                        method: "POST",
+                        headers: {
+                          "Content-Type": "application/json",
+                        },
+                        body: JSON.stringify({ email })
+                      });
+
+                      const data = await response.json();
+
+                      if (!response.ok) {
+                        throw new Error(data.message);
+                      }
+
+                      // Open Telegram in new window
+                      window.open(data.telegramUrl, '_blank');
+
+                      toast({
+                        title: "تم إرسال طلب الاسترداد",
+                        description: "تم توجيهك إلى @qodratak2030",
+                      });
+                    } catch (error) {
+                      toast({
+                        title: "حدث خطأ",
+                        description: error instanceof Error ? error.message : "يرجى المحاولة مرة أخرى",
+                        variant: "destructive",
+                      });
+                    }
+                  }}
                 >
-                  استرداد البريد الإلكتروني
+                  استرداد الحساب
                 </Button>
               </div>
             </CardContent>

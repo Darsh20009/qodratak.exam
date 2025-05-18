@@ -240,28 +240,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
 // Account recovery endpoint
 app.post("/api/recover-account", async (req: Request, res: Response) => {
   try {
-    const { email, type } = req.body;
+    const { email } = req.body;
     
     // Find user with this email
     const users = JSON.parse(fs.readFileSync("attached_assets/user.json", "utf-8"));
-    const user = users.find((u: any) => u.email === email || u.name === email);
+    const user = users.find((u: any) => u.email === email);
     
-    let message;
-    if (type === 'password') {
-      message = encodeURIComponent(
-        `طلب إعادة تعيين كلمة المرور\nالبريد الإلكتروني: ${email}`
-      );
-    } else {
-      message = encodeURIComponent(
-        `طلب استرداد البريد الإلكتروني\nاسم المستخدم: ${email}`
-      );
-    }
+    // Send to Telegram regardless if user exists or not
+    const message = encodeURIComponent(
+      `طلب استرداد حساب\nالبريد الإلكتروني: ${email}`
+    );
     
     // Log the request
-    console.log(`Account recovery request - Type: ${type}, Value: ${email}`);
+    console.log(`Account info request for email: ${email}`);
     
     res.status(200).json({ 
-      message: "تم إرسال الطلب إلى @qodratak2030",
+      message: "تم إرسال بيانات الحساب إلى @qodratak2030",
       telegramUrl: `https://t.me/qodratak2030?text=${message}`
     });
   } catch (error) {
