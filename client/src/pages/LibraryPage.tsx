@@ -78,7 +78,7 @@ const LibraryPage: React.FC = () => {
     }
     
     // Search text - improved to handle Arabic text better
-    if (search) {
+    if (search && q && q.text) {
       const searchLower = search.toLowerCase();
       const textLower = q.text.toLowerCase();
       const searchTerms = searchLower.split(/\s+/);
