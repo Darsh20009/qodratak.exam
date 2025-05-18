@@ -147,17 +147,44 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post('/api/custom-exams', async (req, res) => {
     try {
       const examConfig = req.body;
-      // Validate exam config
-      if (!examConfig.name || !examConfig.questionCount || !examConfig.timeLimit || !examConfig.categories) {
-        return res.status(400).json({ message: 'بيانات الاختبار غير مكتملة' });
+      console.log('Received exam config:', examConfig);
+
+      // Validate exam config with detailed checks
+      if (!examConfig.name) {
+        return res.status(400).json({ message: 'اسم الاختبار مطلوب' });
+      }
+      if (!examConfig.questionCount || examConfig.questionCount < 5) {
+        return res.status(400).json({ message: 'عدد الأسئلة يجب أن يكون 5 على الأقل' });
+      }
+      if (!examConfig.timeLimit || examConfig.timeLimit < 5) {
+        return res.status(400).json({ message: 'الوقت المخصص يجب أن يكون 5 دقائق على الأقل' });
+      }
+      if (!examConfig.categories || examConfig.categories.length === 0) {
+        return res.status(400).json({ message: 'يجب اختيار نوع واحد على الأقل من الأسئلة' });
+      }
+      if (!examConfig.difficulty) {
+        return res.status(400).json({ message: 'مستوى الصعوبة مطلوب' });
       }
 
-      // Create exam in storage
-      const exam = await storage.createUserCustomExam(examConfig);
+      // Create exam with validated config
+      const exam = await storage.createUserCustomExam({
+        userId: examConfig.userId || 1, // Default to 1 if not provided
+        name: examConfig.name,
+        description: examConfig.description || '',
+        questionCount: examConfig.questionCount,
+        timeLimit: examConfig.timeLimit,
+        categories: examConfig.categories,
+        difficulty: examConfig.difficulty
+      });
+
+      console.log('Created exam:', exam);
       res.status(201).json(exam);
     } catch (error) {
       console.error('Error creating custom exam:', error);
-      res.status(500).json({ message: 'حدث خطأ في إنشاء الاختبار' });
+      res.status(500).json({ 
+        message: 'حدث خطأ في إنشاء الاختبار',
+        error: error.message 
+      });
     }
   });
 
