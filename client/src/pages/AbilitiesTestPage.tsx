@@ -240,8 +240,8 @@ const AbilitiesTestPage: React.FC = () => {
 
     try {
       setCurrentView("results");
-    
-    // Calculate points based on score, difficulty and time
+      
+      // Calculate points based on score, difficulty and time
     let pointsEarned = score * 10; // Base points
     
     // Bonus for difficulty
