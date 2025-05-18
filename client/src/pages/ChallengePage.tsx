@@ -94,7 +94,7 @@ const ChallengePage = () => {
     if (savedLevels) setCompletedLevels(JSON.parse(savedLevels));
   }, []);
 
-  const startChallenge = (level: typeof challengeLevels[0]) => {
+  const startChallenge = async (level: typeof challengeLevels[0]) => {
     if (userScore < level.requiredScore) {
       toast({
         title: "غير متاح",
@@ -104,8 +104,35 @@ const ChallengePage = () => {
       return;
     }
 
-    // Navigate to the challenge
-    navigate(`/abilities-test?mode=challenge&level=${level.id}`);
+    try {
+      // Fetch questions based on category and difficulty
+      const category = level.type === 'mixed' ? '' : level.type;
+      const response = await fetch(`/api/questions?category=${category}&difficulty=${level.difficulty}`);
+      
+      if (!response.ok) {
+        throw new Error('فشل في تحميل الأسئلة');
+      }
+
+      const questions = await response.json();
+      if (!questions || questions.length < level.questions) {
+        toast({
+          title: "خطأ",
+          description: "لم يتم العثور على أسئلة كافية لهذا المستوى",
+          variant: "destructive"
+        });
+        return;
+      }
+
+      // Navigate to the challenge with level parameters
+      navigate(`/abilities-test?mode=challenge&level=${level.id}&type=${level.type}&difficulty=${level.difficulty}&questions=${level.questions}&time=${level.timeLimit}`);
+      
+    } catch (error) {
+      toast({
+        title: "خطأ",
+        description: "حدث خطأ أثناء تحميل الأسئلة",
+        variant: "destructive"
+      });
+    }
   };
 
   return (

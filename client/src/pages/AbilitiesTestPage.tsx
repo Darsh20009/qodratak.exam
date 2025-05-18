@@ -232,6 +232,13 @@ const AbilitiesTestPage: React.FC = () => {
       const isChallengeMode = urlParams.get('mode') === 'challenge';
       const challengeLevel = urlParams.get('level');
 
+      // Handle challenge mode completion
+      const urlParams = new URLSearchParams(window.location.search);
+      const isChallengeMode = urlParams.get('mode') === 'challenge';
+      const challengeLevel = urlParams.get('level');
+      const challengeType = urlParams.get('type');
+      const challengeDifficulty = urlParams.get('difficulty');
+
       if (isChallengeMode && challengeLevel) {
         const levelId = parseInt(challengeLevel);
         const percentage = (score / questions.length) * 100;
@@ -241,8 +248,18 @@ const AbilitiesTestPage: React.FC = () => {
           const currentScore = parseInt(localStorage.getItem('challengeScore') || '0');
           const completedLevels = JSON.parse(localStorage.getItem('completedChallengeLevels') || '[]');
 
-          // Update score and completed levels
-          const newScore = currentScore + (score * 10);
+          // Calculate points based on difficulty and time
+          let points = score * 10;
+          if (challengeDifficulty === 'intermediate') points *= 1.5;
+          if (challengeDifficulty === 'advanced') points *= 2;
+          
+          // Time bonus
+          if (timeLeft > 0) {
+            const timeBonus = Math.floor(points * (timeLeft / 300) * 0.5);
+            points += timeBonus;
+          }
+
+          const newScore = currentScore + Math.floor(points);
           localStorage.setItem('challengeScore', newScore.toString());
 
           if (!completedLevels.includes(levelId)) {
@@ -255,6 +272,8 @@ const AbilitiesTestPage: React.FC = () => {
             description: "لقد اجتزت هذا المستوى بنجاح",
             variant: "success"
           });
+          
+          setUserScore(newScore); // Update displayed score
         }
       }
       toast({
