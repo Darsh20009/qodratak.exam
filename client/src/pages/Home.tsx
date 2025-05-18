@@ -58,8 +58,24 @@ const Home: React.FC = () => {
       {/* Hero Section with Animated Background */}
       <section className="relative overflow-hidden py-20 sm:py-32">
         <div className="absolute inset-0 bg-grid-white/10 bg-[size:40px_40px] [mask-image:linear-gradient(0deg,transparent,white)]">
-          <div className="absolute inset-0 bg-gradient-to-r from-primary/30 via-primary/20 to-primary/10 animate-gradient-x" />
+          <div className="absolute inset-0 bg-gradient-to-r from-primary/30 via-primary/20 to-primary/10 animate-gradient-shift" />
           <div className="absolute inset-0 bg-[radial-gradient(circle_800px_at_50%_-100px,var(--primary-foreground),transparent)] animate-pulse-slow" />
+          <div className="absolute inset-0 animate-glow">
+            <div className="absolute inset-0 bg-[conic-gradient(from_0deg_at_50%_50%,var(--primary)/20_0%,transparent_60%)] animate-spin-slow" />
+            <div className="absolute inset-0 bg-[conic-gradient(from_90deg_at_50%_50%,var(--primary)/10_0%,transparent_60%)] animate-spin-reverse" />
+          </div>
+          {[...Array(30)].map((_, i) => (
+            <div
+              key={i}
+              className="absolute h-1 w-1 bg-primary/30 rounded-full animate-float-particle"
+              style={{
+                top: `${Math.random() * 100}%`,
+                left: `${Math.random() * 100}%`,
+                animationDelay: `${Math.random() * 7}s`,
+                animationDuration: `${5 + Math.random() * 5}s`
+              }}
+            />
+          ))}
           <div className="absolute inset-0 animate-glow">
             <div className="absolute inset-0 bg-[conic-gradient(from_0deg_at_50%_50%,var(--primary)/20_0%,transparent_60%)] animate-spin-slow" />
             <div className="absolute inset-0 bg-[conic-gradient(from_90deg_at_50%_50%,var(--primary)/10_0%,transparent_60%)] animate-spin-reverse" />

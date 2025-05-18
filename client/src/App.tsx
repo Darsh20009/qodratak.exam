@@ -254,9 +254,43 @@ function App() {
 
   if (showSplash) {
     return (
-      <div className="h-screen w-screen flex flex-col items-center justify-center bg-gradient-to-b from-primary/10 to-primary/5">
-        <h1 className="text-6xl font-bold text-primary mb-4 animate-fade-in">قدراتك</h1>
-        <p className="text-2xl text-primary/80 animate-fade-in-delay">طريقك للوصول إلى 100% بإذن الله</p>
+      <div className="h-screen w-screen flex flex-col items-center justify-center relative overflow-hidden">
+        {/* Animated background layers */}
+        <div className="absolute inset-0 bg-gradient-to-br from-primary/30 via-background to-primary/20 animate-gradient-x"/>
+        <div className="absolute inset-0">
+          <div className="absolute inset-0 bg-[radial-gradient(circle_800px_at_50%_-100px,var(--primary-foreground),transparent)] animate-pulse-slow"/>
+          <div className="absolute inset-0 bg-[conic-gradient(from_0deg_at_50%_50%,var(--primary)/20_0%,transparent_60%)] animate-spin-slow"/>
+          <div className="absolute inset-0 bg-grid-white/5 bg-[size:20px_20px] [mask-image:radial-gradient(black,transparent_70%)]"/>
+        </div>
+        
+        {/* Floating particles */}
+        <div className="absolute inset-0 overflow-hidden">
+          {[...Array(20)].map((_, i) => (
+            <div
+              key={i}
+              className="absolute h-1 w-1 bg-primary/30 rounded-full animate-float"
+              style={{
+                top: `${Math.random() * 100}%`,
+                left: `${Math.random() * 100}%`,
+                animationDelay: `${Math.random() * 5}s`
+              }}
+            />
+          ))}
+        </div>
+
+        {/* Main content with enhanced animations */}
+        <div className="relative z-10 text-center space-y-6">
+          <div className="relative inline-block">
+            <h1 className="text-7xl font-bold bg-gradient-to-r from-primary via-primary-foreground to-primary bg-clip-text text-transparent animate-float">
+              قدراتك
+            </h1>
+            <div className="absolute -right-8 -top-8 text-4xl animate-bounce-slow">✨</div>
+            <div className="absolute -left-8 -bottom-4 text-4xl animate-bounce-slow" style={{animationDelay: '0.5s'}}>✨</div>
+          </div>
+          <p className="text-3xl text-primary/90 animate-fade-in-delay relative">
+            طريقك للوصول إلى 100% بإذن الله
+          </p>
+        </div>
       </div>
     );
   }
