@@ -183,9 +183,24 @@ const AbilitiesTestPage: React.FC = () => {
   };
   
   // Start the test
-  const startTest = (type: "verbal" | "quantitative") => {
-    setCurrentTestType(type);
-    loadQuestions(type, currentDifficulty);
+  const startTest = async (type: "verbal" | "quantitative") => {
+    try {
+      setLoading(true);
+      setCurrentTestType(type);
+      await loadQuestions(type, currentDifficulty);
+      toast({
+        title: "تم بدء الاختبار",
+        description: `اختبار ${type === "verbal" ? "لفظي" : "كمي"} - ${currentDifficulty}`,
+      });
+    } catch (error) {
+      toast({
+        title: "خطأ",
+        description: "حدث خطأ أثناء تحميل الأسئلة",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
   };
   
   // Select an answer
@@ -226,14 +241,14 @@ const AbilitiesTestPage: React.FC = () => {
   
   // End the test and calculate results
   const endTest = async () => {
-    if (!user || !testStartTime || !currentTestType) {
-      toast({
-        title: "خطأ",
-        description: "حدث خطأ أثناء تسليم الاختبار. يرجى المحاولة مرة أخرى",
-        variant: "destructive",
-      });
-      return;
-    }
+    try {
+      if (!user) {
+        throw new Error("يجب تسجيل الدخول لحفظ النتائج");
+      }
+      
+      if (!testStartTime || !currentTestType) {
+        throw new Error("بيانات الاختبار غير مكتملة");
+      }
     
     const endTime = new Date();
     const timeTaken = Math.floor((endTime.getTime() - testStartTime.getTime()) / 1000);
@@ -254,12 +269,13 @@ const AbilitiesTestPage: React.FC = () => {
     try {
       const result = {
         userId: user.id,
-        testType: currentTestType,
+        testType: currentTestType || 'custom',
         difficulty: currentDifficulty,
         score: score,
         totalQuestions: questions.length,
         pointsEarned: pointsEarned,
         timeTaken: timeTaken,
+        completedAt: new Date().toISOString(),
         isOfficial: false
       };
       
