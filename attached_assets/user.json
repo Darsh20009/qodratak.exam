@@ -15,8 +15,8 @@
     "password": "123456",
     "subscription": {
       "type": "free",
-      "startDate": "2025-05-16",
-      "endDate": "2025-06-15"
+      "startDate": "2025-05-18",
+      "endDate": "2025-06-17"
     }
   },
   {
@@ -36,7 +36,7 @@
     "subscription": {
       "type": "Pro",
       "startDate": "2025-01-01",
-      "endDate": "2026-01-01"
+      "endDate": "2025-05-10"
     }
   },
   {
