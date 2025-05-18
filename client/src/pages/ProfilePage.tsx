@@ -528,10 +528,13 @@ const ProfilePage: React.FC = () => {
                         } catch (error) {
                           toast({
                             title: "حدث خطأ",
-                            description: "يرجى التواصل معنا على تليجرام",
+                            description: "يرجى التواصل معنا على تليجرام للمساعدة",
                             variant: "destructive",
+                            duration: 5000,
                           });
-                          window.location.href = "https://t.me/qodratak2030";
+                          setTimeout(() => {
+                            window.open("https://t.me/qodratak2030", "_blank");
+                          }, 2000);
                         }
                       }}
                     >
@@ -587,10 +590,13 @@ const ProfilePage: React.FC = () => {
                         } catch (error) {
                           toast({
                             title: "حدث خطأ",
-                            description: "يرجى التواصل معنا على تليجرام",
+                            description: "يرجى التواصل معنا على تليجرام للمساعدة",
                             variant: "destructive",
+                            duration: 5000,
                           });
-                          window.location.href = "https://t.me/qodratak2030";
+                          setTimeout(() => {
+                            window.open("https://t.me/qodratak2030", "_blank");
+                          }, 2000);
                         }
                       }}
                     >
