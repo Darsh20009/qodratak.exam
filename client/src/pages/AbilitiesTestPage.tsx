@@ -243,9 +243,6 @@ const AbilitiesTestPage: React.FC = () => {
     if (currentDifficulty === "intermediate") pointsEarned *= 1.5;
     if (currentDifficulty === "advanced") pointsEarned *= 2;
     
-    try {
-      setCurrentView("results");
-    
     // Bonus for time efficiency (if completed before time runs out)
     if (timeLeft > 0) {
       const timeLeftPercentage = timeLeft / (currentDifficulty === "beginner" ? 300 : currentDifficulty === "intermediate" ? 240 : 180);
