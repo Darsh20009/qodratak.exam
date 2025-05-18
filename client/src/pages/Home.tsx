@@ -141,7 +141,22 @@ const Home: React.FC = () => {
         <div className="container px-4 md:px-6">
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 animate-fade-in">
             {features.map((feature, index) => (
-              <Card key={index} className="group border-0 card-animated hover-glow hover-scale bg-gradient-to-br from-background/80 to-background">
+              <Card 
+                key={index} 
+                className="group border-0 card-animated hover-glow hover-scale bg-gradient-to-br from-background/80 to-background relative overflow-hidden"
+                style={{
+                  animation: `floating-3d ${3 + index * 0.5}s ease-in-out infinite`,
+                  animationDelay: `${index * 0.2}s`
+                }}
+              >
+                <div className="absolute inset-0 bg-gradient-to-r from-transparent via-primary/10 to-transparent animate-shimmer" 
+                  style={{
+                    backgroundSize: '1000px 100%',
+                    animationDuration: '2s',
+                    animationTimingFunction: 'linear',
+                    animationIterationCount: 'infinite'
+                  }}
+                />
                 <CardHeader>
                   <div className={`p-3 w-12 h-12 rounded-lg ${feature.color} flex items-center justify-center mb-4 group-hover:scale-110 transition-transform`}>
                     <feature.icon className="h-6 w-6 text-foreground" />

@@ -254,9 +254,10 @@ function App() {
 
   if (showSplash) {
     return (
-      <div className="h-screen w-screen flex flex-col items-center justify-center relative overflow-hidden">
-        {/* Animated background layers */}
-        <div className="absolute inset-0 bg-gradient-to-br from-primary/30 via-background to-primary/20 animate-gradient-x"/>
+      <div className="h-screen w-screen flex flex-col items-center justify-center relative overflow-hidden perspective-1000">
+        {/* Enhanced animated background layers */}
+        <div className="absolute inset-0 bg-gradient-to-br from-primary/30 via-background to-primary/20 animate-gradient-x transform-style-3d"/>
+        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,var(--primary)/20,transparent_70%)] animate-pulse-slow"/>
         <div className="absolute inset-0">
           <div className="absolute inset-0 bg-[radial-gradient(circle_800px_at_50%_-100px,var(--primary-foreground),transparent)] animate-pulse-slow"/>
           <div className="absolute inset-0 bg-[conic-gradient(from_0deg_at_50%_50%,var(--primary)/20_0%,transparent_60%)] animate-spin-slow"/>

@@ -368,9 +368,28 @@
 }
 
 @keyframes gradient-x {
-  0% { background-position: 0% 50%; }
-  50% { background-position: 100% 50%; }
-  100% { background-position: 0% 50%; }
+  0% { background-position: 0% 50%; background-size: 200% 200%; }
+  50% { background-position: 100% 50%; background-size: 100% 100%; }
+  100% { background-position: 0% 50%; background-size: 200% 200%; }
+}
+
+@keyframes floating-3d {
+  0% { transform: translateY(0) translateX(0) rotate(0) scale(1); }
+  25% { transform: translateY(-15px) translateX(15px) rotate(5deg) scale(1.05); }
+  50% { transform: translateY(0) translateX(0) rotate(0) scale(1); }
+  75% { transform: translateY(15px) translateX(-15px) rotate(-5deg) scale(0.95); }
+  100% { transform: translateY(0) translateX(0) rotate(0) scale(1); }
+}
+
+@keyframes glow-ring {
+  0% { box-shadow: 0 0 20px var(--primary), inset 0 0 10px var(--primary-foreground); }
+  50% { box-shadow: 0 0 40px var(--primary), inset 0 0 20px var(--primary-foreground); }
+  100% { box-shadow: 0 0 20px var(--primary), inset 0 0 10px var(--primary-foreground); }
+}
+
+@keyframes shimmer {
+  0% { background-position: -1000px 0; }
+  100% { background-position: 1000px 0; }
 }
 
 @keyframes float {
@@ -435,6 +454,21 @@
 }
 
 .card-animated:hover {
-  transform: translateY(-10px) rotateX(10deg);
+  transform: translateY(-10px) rotateX(10deg) scale(1.02);
   box-shadow: 0 20px 40px -20px var(--primary);
+  animation: glow-ring 2s ease-in-out infinite;
+}
+
+.animate-shimmer {
+  animation: shimmer 2s linear infinite;
+  background: linear-gradient(to right, transparent 0%, var(--primary)/10 50%, transparent 100%);
+  background-size: 1000px 100%;
+}
+
+.perspective-1000 {
+  perspective: 1000px;
+}
+
+.transform-style-3d {
+  transform-style: preserve-3d;
 }
