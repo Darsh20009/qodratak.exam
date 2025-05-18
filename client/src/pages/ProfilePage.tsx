@@ -632,6 +632,11 @@ const ProfilePage: React.FC = () => {
         </TabsContent>
       </Tabs>
     </div>
+  </div>
+  );
+};
+
+export default ProfilePage;
   );
 };
 
