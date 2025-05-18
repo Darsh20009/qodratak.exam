@@ -662,6 +662,31 @@ const AbilitiesTestPage: React.FC = () => {
     if (questions.length === 0) return <div className="p-6 text-center">لا توجد نتائج</div>;
     
     const performance = getPerformanceData();
+    const [showQuestions, setShowQuestions] = useState(false);
+    
+    const handleShowQuestions = () => {
+      if (user && user.points >= 10) {
+        // Deduct 10 points
+        const updatedUser = {
+          ...user,
+          points: user.points - 10
+        };
+        setUser(updatedUser);
+        localStorage.setItem('user', JSON.stringify(updatedUser));
+        setShowQuestions(true);
+        toast({
+          title: "تم خصم 10 نقاط",
+          description: "يمكنك الآن عرض الأسئلة وإجاباتها",
+          variant: "default",
+        });
+      } else {
+        toast({
+          title: "نقاط غير كافية",
+          description: "تحتاج إلى 10 نقاط على الأقل لعرض الأسئلة",
+          variant: "destructive",
+        });
+      }
+    };
     
     return (
       <div className="container py-6 max-w-4xl">
@@ -690,6 +715,8 @@ const AbilitiesTestPage: React.FC = () => {
           <CardContent>
             <div className="text-center mb-6">
               <div className="text-5xl font-bold mb-2">{score}/{questions.length}</div>
+              <div className="text-2xl mb-2 text-primary">النسبة: {((score/questions.length) * 100).toFixed(1)}%</div>
+              <div className="text-xl mb-2">النقاط المكتسبة: {score * 10}</div>
               <div className="text-xl text-muted-foreground">{performance.message}</div>
             </div>
             
@@ -768,9 +795,26 @@ const AbilitiesTestPage: React.FC = () => {
           <CardHeader>
             <CardTitle>مراجعة الأسئلة</CardTitle>
             <CardDescription>
-              راجع الأسئلة والإجابات الصحيحة
+              {!showQuestions ? 
+                "خصم 10 نقاط لعرض الأسئلة وإجاباتها" :
+                "راجع الأسئلة والإجابات الصحيحة"
+              }
             </CardDescription>
           </CardHeader>
+          {!showQuestions && (
+            <CardContent className="text-center py-8">
+              <Button 
+                onClick={handleShowQuestions}
+                disabled={!user || user.points < 10}
+              >
+                عرض الأسئلة (10 نقاط)
+              </Button>
+              <p className="text-sm text-muted-foreground mt-2">
+                رصيدك الحالي: {user?.points || 0} نقطة
+              </p>
+            </CardContent>
+          )}
+          {showQuestions && (
           <CardContent className="p-0">
             <Tabs defaultValue="all">
               <div className="px-6 pb-3">
@@ -863,6 +907,8 @@ const AbilitiesTestPage: React.FC = () => {
               </TabsContent>
             </Tabs>
           </CardContent>
+        </Card>
+        )}
         </Card>
       </div>
     );
