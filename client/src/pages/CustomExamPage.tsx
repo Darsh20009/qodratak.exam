@@ -94,30 +94,48 @@ const CustomExamPage = () => {
   const timeLimit = form.watch("timeLimit");
   const timePerQuestion = questionCount > 0 ? (timeLimit / questionCount).toFixed(1) : "0";
   
-  const onSubmit = (data: FormValues) => {
-    // Create a custom exam configuration
-    const examConfig: UserCustomExamConfig = {
-      userId: 1, // Hardcoded for now, would come from auth context in real app
-      name: data.name,
-      description: data.description,
-      questionCount: data.questionCount,
-      timeLimit: data.timeLimit,
-      categories: data.categories as TestType[],
-      difficulty: data.difficulty as TestDifficulty,
-    };
-    
-    // In a real app, this would save to the API first
-    console.log("Creating custom exam:", examConfig);
-    
-    // For now we'll just show a success message and navigate to a placeholder URL
-    toast({
-      title: "تم إنشاء الاختبار بنجاح",
-      description: `تم إنشاء اختبار "${data.name}" ويمكنك البدء الآن.`,
-    });
-    
-    // This would navigate to the actual exam page in a real implementation
-    // For now we'll just go back to home
-    setLocation("/");
+  const onSubmit = async (data: FormValues) => {
+    try {
+      // Create a custom exam configuration
+      const examConfig: UserCustomExamConfig = {
+        userId: 1,
+        name: data.name,
+        description: data.description,
+        questionCount: data.questionCount,
+        timeLimit: data.timeLimit,
+        categories: data.categories as TestType[],
+        difficulty: data.difficulty as TestDifficulty,
+      };
+      
+      // Send to API
+      const response = await fetch('/api/custom-exams', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(examConfig),
+      });
+
+      if (!response.ok) {
+        throw new Error('فشل في إنشاء الاختبار');
+      }
+
+      const result = await response.json();
+      
+      toast({
+        title: "تم إنشاء الاختبار بنجاح",
+        description: `تم إنشاء اختبار "${data.name}" ويمكنك البدء الآن.`,
+      });
+      
+      // Navigate to the custom exam page with the created exam ID
+      setLocation(`/custom-exam/${result.id}`);
+    } catch (error) {
+      toast({
+        variant: "destructive",
+        title: "خطأ في إنشاء الاختبار",
+        description: "حدث خطأ أثناء إنشاء الاختبار. الرجاء المحاولة مرة أخرى.",
+      });
+    }
   };
   
   return (
