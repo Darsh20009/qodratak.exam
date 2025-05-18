@@ -1,3 +1,4 @@
+
 /* Hide scrollbar */
 .scrollbar-hide::-webkit-scrollbar {
   display: none;
@@ -75,6 +76,12 @@
     transform: scale(1.2);
     opacity: 0;
   }
+}
+
+@keyframes float {
+  0% { transform: translateY(0px) rotate(0deg); opacity: 0.8; }
+  50% { transform: translateY(-20px) rotate(5deg); opacity: 1; }
+  100% { transform: translateY(0px) rotate(0deg); opacity: 0.8; }
 }
 
 @keyframes spin-reverse {
@@ -361,38 +368,28 @@
 }
 
 @keyframes gradient-x {
-  0% { 
-    background-position: 0% 50%;
-    background-size: 200% 200%;
-    filter: hue-rotate(0deg);
-  }
-  50% { 
-    background-position: 100% 50%;
-    background-size: 150% 150%;
-    filter: hue-rotate(180deg);
-  }
-  100% { 
-    background-position: 0% 50%;
-    background-size: 200% 200%;
-    filter: hue-rotate(360deg);
-  }
+  0% { background-position: 0% 50%; background-size: 200% 200%; }
+  50% { background-position: 100% 50%; background-size: 100% 100%; }
+  100% { background-position: 0% 50%; background-size: 200% 200%; }
 }
 
-@keyframes morphing {
-  0% { border-radius: 60% 40% 30% 70%/60% 30% 70% 40%; }
-  50% { border-radius: 30% 60% 70% 40%/50% 60% 30% 60%; }
-  100% { border-radius: 60% 40% 30% 70%/60% 30% 70% 40%; }
+@keyframes floating-3d {
+  0% { transform: translateY(0) translateX(0) rotate(0) scale(1); }
+  25% { transform: translateY(-15px) translateX(15px) rotate(5deg) scale(1.05); }
+  50% { transform: translateY(0) translateX(0) rotate(0) scale(1); }
+  75% { transform: translateY(15px) translateX(-15px) rotate(-5deg) scale(0.95); }
+  100% { transform: translateY(0) translateX(0) rotate(0) scale(1); }
 }
 
-@keyframes shine {
-  0% { background-position: -100% 50%; }
-  100% { background-position: 200% 50%; }
+@keyframes glow-ring {
+  0% { box-shadow: 0 0 20px var(--primary), inset 0 0 10px var(--primary-foreground); }
+  50% { box-shadow: 0 0 40px var(--primary), inset 0 0 20px var(--primary-foreground); }
+  100% { box-shadow: 0 0 20px var(--primary), inset 0 0 10px var(--primary-foreground); }
 }
 
-@keyframes pulse-glow {
-  0% { box-shadow: 0 0 5px var(--primary), 0 0 10px var(--primary), 0 0 15px var(--primary); }
-  50% { box-shadow: 0 0 10px var(--primary), 0 0 20px var(--primary), 0 0 30px var(--primary); }
-  100% { box-shadow: 0 0 5px var(--primary), 0 0 10px var(--primary), 0 0 15px var(--primary); }
+@keyframes shimmer {
+  0% { background-position: -1000px 0; }
+  100% { background-position: 1000px 0; }
 }
 
 @keyframes float {
