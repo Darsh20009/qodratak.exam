@@ -239,12 +239,12 @@ const AbilitiesTestPage: React.FC = () => {
     const timeTaken = Math.floor((endTime.getTime() - testStartTime.getTime()) / 1000);
     let pointsEarned = score * 10; // Base points
     
-    try {
-      setCurrentView("results");
-      
-      // Bonus for difficulty
+    // Bonus for difficulty
     if (currentDifficulty === "intermediate") pointsEarned *= 1.5;
     if (currentDifficulty === "advanced") pointsEarned *= 2;
+    
+    try {
+      setCurrentView("results");
     
     // Bonus for time efficiency (if completed before time runs out)
     if (timeLeft > 0) {
