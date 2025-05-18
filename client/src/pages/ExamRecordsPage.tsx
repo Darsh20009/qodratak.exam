@@ -74,6 +74,20 @@ export default function ExamRecordsPage() {
                     <p>{Math.floor(record.timeTaken / 60)} دقيقة</p>
                   </div>
                 </div>
+                <div className="mt-4 flex justify-end">
+                  <Button
+                    variant="secondary"
+                    size="sm"
+                    onClick={() => {
+                      // Store current record in localStorage
+                      localStorage.setItem('currentTestResult', JSON.stringify(record));
+                      // Navigate to results page
+                      window.location.href = '/test-results';
+                    }}
+                  >
+                    شاهد النتيجة
+                  </Button>
+                </div>
               </CardContent>
             </Card>
           ))

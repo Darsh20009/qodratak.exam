@@ -25,6 +25,7 @@ import { cn } from "@/lib/utils";
 import { useState, useEffect } from "react";
 import AskQuestionPage from "@/pages/AskQuestionPage";
 import ProfilePage from "@/pages/ProfilePage";
+import TestResultsPage from './pages/TestResultsPage';
 import AbilitiesTestPage from "@/pages/AbilitiesTestPage";
 import QiyasExamPage from "@/pages/QiyasExamPage";
 import CustomExamPage from "@/pages/CustomExamPage";
@@ -216,6 +217,9 @@ function Router() {
       <Route path="/profile">
         {() => <MainLayout><ProfilePage /></MainLayout>}
       </Route>
+      <Route path="/test-results">
+        {() => <MainLayout><TestResultsPage /></MainLayout>}
+      </Route>
       <Route path="/folders">
         {() => <ProtectedRoute><MainLayout>
           {isPremium ? <FoldersPage /> : <SubscriptionPlans />}
@@ -264,7 +268,7 @@ function App() {
           <div className="absolute inset-0 bg-[conic-gradient(from_90deg_at_50%_50%,var(--primary)/20_0%,transparent_60%)] animate-spin-reverse"/>
           <div className="absolute inset-0 bg-grid-white/10 bg-[size:20px_20px] [mask-image:radial-gradient(black,transparent_70%)]"/>
         </div>
-        
+
         {/* Floating particles */}
         <div className="absolute inset-0 overflow-hidden">
           {[...Array(20)].map((_, i) => (
