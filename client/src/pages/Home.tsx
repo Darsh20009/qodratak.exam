@@ -1,3 +1,4 @@
+
 import React from "react";
 import { Link } from "wouter";
 import { 
@@ -9,7 +10,9 @@ import {
   Sparkles,
   Trophy,
   Target,
-  Stars
+  Stars,
+  Rocket,
+  Zap
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
@@ -20,28 +23,32 @@ const features = [
     description: "محاكاة دقيقة لاختبار هيئة تقويم التعليم - 120 سؤال في 120 دقيقة مع تقييم فوري ونصائح للتحسين",
     icon: GraduationCapIcon,
     href: "/qiyas",
-    color: "bg-blue-500/10 dark:bg-blue-500/20"
+    color: "bg-blue-500/10 dark:bg-blue-500/20",
+    gradient: "from-blue-500 to-blue-600"
   },
   {
     title: "اختبر قدراتك",
     description: "تحديات تفاعلية متدرجة الصعوبة لتطوير مهاراتك اللفظية والكمية، مع نظام مكافآت ومستويات تحفيزية",
     icon: BrainCircuitIcon,
     href: "/abilities",
-    color: "bg-green-500/10 dark:bg-green-500/20"
+    color: "bg-green-500/10 dark:bg-green-500/20",
+    gradient: "from-green-500 to-green-600"
   },
   {
     title: "اسأل سؤال",
     description: "احصل على إجابات دقيقة وشرح مفصل من قاعدة بيانات تضم أكثر من 10,000 سؤال وإجابة",
     icon: HelpCircleIcon,
     href: "/ask",
-    color: "bg-purple-500/10 dark:bg-purple-500/20"
+    color: "bg-purple-500/10 dark:bg-purple-500/20",
+    gradient: "from-purple-500 to-purple-600"
   },
   {
     title: "المكتبة",
     description: "مكتبة شاملة من الأسئلة والشروحات مصنفة حسب المستوى والموضوع، مع أمثلة وتدريبات إضافية",
     icon: BookOpenIcon,
     href: "/library",
-    color: "bg-orange-500/10 dark:bg-orange-500/20"
+    color: "bg-orange-500/10 dark:bg-orange-500/20",
+    gradient: "from-orange-500 to-orange-600"
   }
 ];
 
@@ -55,7 +62,7 @@ const statisticsData = [
 const Home: React.FC = () => {
   return (
     <div className="min-h-screen bg-gradient-to-b from-background to-background/80">
-      {/* Hero Section with Animated Background */}
+      {/* Hero Section with Enhanced Animation */}
       <section className="relative overflow-hidden py-20 sm:py-32">
         <div className="absolute inset-0 bg-grid-white/10 bg-[size:40px_40px] [mask-image:linear-gradient(0deg,transparent,white)]">
           <div className="absolute inset-0 bg-gradient-to-r from-primary/30 via-primary/20 to-primary/10 animate-gradient-shift" />
@@ -79,23 +86,17 @@ const Home: React.FC = () => {
               }}
             />
           ))}
-          <div className="absolute inset-0 animate-glow">
-            <div className="absolute inset-0 bg-[conic-gradient(from_0deg_at_50%_50%,var(--primary)/20_0%,transparent_60%)] animate-spin-slow" />
-            <div className="absolute inset-0 bg-[conic-gradient(from_90deg_at_50%_50%,var(--primary)/10_0%,transparent_60%)] animate-spin-reverse" />
-          </div>
-          <div className="absolute inset-0 bg-[radial-gradient(circle_600px_at_50%_50%,var(--primary)/5,transparent)] animate-pulse" />
         </div>
 
         <div className="container relative px-4 md:px-6">
           <div className="flex flex-col items-center space-y-8 text-center">
-            <div className="animate-fade-in-down space-y-4">
-              <div className="inline-block">
+            <div className="space-y-4 animate-fade-in-down">
+              <div className="inline-flex items-center gap-4 justify-center">
+                <Rocket className="h-8 w-8 text-primary animate-bounce" />
                 <h1 className="text-5xl font-bold tracking-tighter sm:text-6xl md:text-7xl bg-gradient-to-r from-primary via-primary-foreground to-primary bg-clip-text text-transparent">
                   طور قدراتك
                 </h1>
-                <span className="inline-block ml-3">
-                  <Stars className="h-8 w-8 text-primary animate-spin-slow" />
-                </span>
+                <Stars className="h-8 w-8 text-primary animate-spin-slow" />
               </div>
               <p className="mx-auto max-w-[700px] text-gray-500 dark:text-gray-400 md:text-xl leading-relaxed">
                 منصتك الشاملة للتحضير لاختبارات قياس وتطوير مهاراتك اللفظية والكمية
@@ -122,14 +123,16 @@ const Home: React.FC = () => {
         </div>
       </section>
 
-      {/* Statistics with Hover Effects */}
+      {/* Enhanced Statistics Section */}
       <section className="py-16 bg-primary/5 relative overflow-hidden">
         <div className="absolute inset-0 bg-grid-white/5 bg-[size:20px_20px]" />
         <div className="container px-4 md:px-6 relative">
           <div className="grid grid-cols-2 md:grid-cols-4 gap-8 animate-fade-in">
             {statisticsData.map((stat, index) => (
               <div key={index} 
-                className="group flex flex-col items-center justify-center p-6 bg-gradient-to-br from-card/90 to-card rounded-xl shadow-lg card-animated hover-glow animate-float [animation-delay:var(--delay)]" style={{['--delay' as any]: `${index * 0.2}s`}}>
+                className="group flex flex-col items-center justify-center p-6 bg-gradient-to-br from-card/90 to-card rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 hover:-translate-y-1"
+                style={{animationDelay: `${index * 0.2}s`}}
+              >
                 <stat.icon className="h-8 w-8 mb-3 text-primary group-hover:scale-110 transition-transform" />
                 <h3 className="text-3xl font-bold text-primary mb-1 group-hover:scale-110 transition-transform">{stat.value}</h3>
                 <p className="text-muted-foreground text-sm group-hover:text-primary transition-colors">{stat.label}</p>
@@ -139,29 +142,20 @@ const Home: React.FC = () => {
         </div>
       </section>
 
-      {/* Features with Interactive Cards */}
+      {/* Enhanced Features Section */}
       <section className="py-16">
         <div className="container px-4 md:px-6">
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 animate-fade-in">
             {features.map((feature, index) => (
               <Card 
                 key={index} 
-                className="group border-0 card-animated hover-glow hover-scale bg-gradient-to-br from-background/80 to-background/90 relative overflow-hidden backdrop-blur-sm"
+                className="group hover:shadow-2xl transition-all duration-300 border-0 bg-gradient-to-br from-background/80 to-background/90 relative overflow-hidden backdrop-blur-sm hover:-translate-y-1"
                 style={{
                   animation: `floating-3d ${3 + index * 0.5}s ease-in-out infinite`,
                   animationDelay: `${index * 0.2}s`,
-                  transform: 'perspective(1000px) rotateX(5deg)',
-                  transition: 'all 0.5s ease'
                 }}
               >
-                <div className="absolute inset-0 bg-gradient-to-r from-transparent via-primary/20 to-transparent animate-shimmer" 
-                  style={{
-                    backgroundSize: '1000px 100%',
-                    animationDuration: '2s',
-                    animationTimingFunction: 'linear',
-                    animationIterationCount: 'infinite'
-                  }}
-                />
+                <div className={`absolute inset-0 bg-gradient-to-r ${feature.gradient} opacity-0 group-hover:opacity-5 transition-opacity`} />
                 <CardHeader>
                   <div className={`p-3 w-12 h-12 rounded-lg ${feature.color} flex items-center justify-center mb-4 group-hover:scale-110 transition-transform`}>
                     <feature.icon className="h-6 w-6 text-foreground" />
@@ -187,10 +181,11 @@ const Home: React.FC = () => {
         </div>
       </section>
 
-      {/* CTA Section with Gradient */}
+      {/* Enhanced CTA Section */}
       <section className="py-16 bg-gradient-to-r from-primary/90 to-primary text-primary-foreground relative overflow-hidden">
         <div className="absolute inset-0 bg-[radial-gradient(circle_800px_at_50%_-100px,var(--primary-foreground),transparent)] opacity-20" />
         <div className="container px-4 md:px-6 text-center relative">
+          <Zap className="h-12 w-12 mx-auto mb-6 animate-pulse text-primary-foreground/90" />
           <h2 className="text-3xl font-bold mb-4">ابدأ رحلتك نحو التميز</h2>
           <p className="mb-8 max-w-[600px] mx-auto opacity-90">
             سجل حساب مجاني الآن واحصل على تجربة تعليمية متكاملة مع متابعة تقدمك وتحسين مستواك

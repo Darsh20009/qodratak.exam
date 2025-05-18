@@ -171,17 +171,38 @@ const LibraryPage: React.FC = () => {
             <CardContent className="space-y-4">
               <div>
                 <label className="text-sm font-medium block mb-2">البحث</label>
-                <div className="flex gap-2">
+                <div className="relative">
                   <Input
                     placeholder="ابحث عن سؤال..."
                     value={search}
                     onChange={(e) => setSearch(e.target.value)}
-                    className="flex-1"
+                    className="pr-10 flex-1"
+                    onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
                   />
-                  <Button size="icon" onClick={handleSearch}>
-                    <Search className="h-4 w-4" />
+                  <Button 
+                    size="icon" 
+                    variant="ghost" 
+                    className="absolute left-1 top-1/2 -translate-y-1/2 hover:bg-transparent"
+                    onClick={handleSearch}
+                  >
+                    <Search className="h-4 w-4 text-muted-foreground hover:text-primary transition-colors" />
                   </Button>
+                  {search && (
+                    <Button
+                      size="icon"
+                      variant="ghost"
+                      className="absolute right-1 top-1/2 -translate-y-1/2 hover:bg-transparent"
+                      onClick={() => setSearch('')}
+                    >
+                      <X className="h-4 w-4 text-muted-foreground hover:text-primary transition-colors" />
+                    </Button>
+                  )}
                 </div>
+                {search && (
+                  <div className="mt-2 text-sm text-muted-foreground">
+                    اكتب كلمة البحث واضغط Enter للبحث
+                  </div>
+                )}
               </div>
 
               <div>

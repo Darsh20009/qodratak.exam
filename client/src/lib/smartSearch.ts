@@ -102,17 +102,19 @@ export function smartSearch(
     maxResults?: number;
   }
 ): SearchResult[] {
-  // Default options
-  const threshold = options?.threshold || 0.4;
+  // Default options with improved threshold
+  const threshold = options?.threshold || 0.35; // Lower threshold for better matches
   const maxResults = options?.maxResults || 20;
   
   // If query is empty, return empty results
   if (!query || query.trim() === '') return [];
   
-  // Normalize query
+  // Normalize and preprocess query
   const normalizedQuery = normalizeArabicText(query);
-  // Extract keywords from query
   const queryKeywords = extractKeywords(query);
+  
+  // Improved keyword matching by splitting into smaller tokens
+  const queryTokens = normalizedQuery.split(/\s+/).filter(token => token.length > 1);
   
   // Filter questions by category and difficulty if provided
   let filteredQuestions = [...questions];
