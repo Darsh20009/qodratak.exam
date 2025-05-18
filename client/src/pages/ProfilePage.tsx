@@ -29,6 +29,7 @@ import {
   TabsTrigger,
 } from "@/components/ui/tabs";
 import { Trophy, Star, User, Award, BookOpen, ChevronRight } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
 
 // Form schema for login
 const loginSchema = z.object({
