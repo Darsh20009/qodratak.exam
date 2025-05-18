@@ -540,21 +540,17 @@ const QiyasExamPage: React.FC = () => {
               </CardHeader>
               <CardContent>
                 <div className="grid grid-cols-2 gap-4 mb-4">
-                  <div className="bg-muted/30 p-3 rounded-lg text-center">
-                    <div className="text-sm text-muted-foreground mb-1">الأقسام</div>
-                    <div className="font-bold">{exam.totalSections}</div>
+                  <div className="bg-gradient-to-br from-muted/20 to-muted/30 p-4 rounded-xl text-center transform transition-all duration-300 hover:scale-105 hover:shadow-lg">
+                    <div className="text-sm text-muted-foreground/90 mb-2">الأقسام</div>
+                    <div className="font-bold text-lg animate-fade-in">{exam.totalQuestions}</div>
                   </div>
-                  <div className="bg-muted/30 p-3 rounded-lg text-center">
-                    <div className="text-sm text-muted-foreground mb-1">الأسئلة</div>
-                    <div className="font-bold">{exam.totalQuestions}</div>
+                  <div className="bg-gradient-to-br from-muted/20 to-muted/30 p-4 rounded-xl text-center transform transition-all duration-300 hover:scale-105 hover:shadow-lg">
+                    <div className="text-sm text-muted-foreground/90 mb-2">الوقت</div>
+                    <div className="font-bold text-lg animate-fade-in">{exam.totalTime} دقيقة</div>
                   </div>
-                  <div className="bg-muted/30 p-3 rounded-lg text-center">
-                    <div className="text-sm text-muted-foreground mb-1">الوقت</div>
-                    <div className="font-bold">{exam.totalTime} دقيقة</div>
-                  </div>
-                  <div className="bg-muted/30 p-3 rounded-lg text-center">
-                    <div className="text-sm text-muted-foreground mb-1">المستوى</div>
-                    <div className="font-bold">{exam.totalQuestions >= 100 ? "رسمي" : "تدريبي"}</div>
+                  <div className="bg-gradient-to-br from-muted/20 to-muted/30 p-4 rounded-xl text-center transform transition-all duration-300 hover:scale-105 hover:shadow-lg">
+                    <div className="text-sm text-muted-foreground/90 mb-2">المستوى</div>
+                    <div className="font-bold text-lg animate-fade-in">{exam.totalQuestions >= 100 ? "رسمي" : "تدريبي"}</div>
                   </div>
                 </div>
 
@@ -585,7 +581,7 @@ const QiyasExamPage: React.FC = () => {
                       exam.name === "اختبار لفظي - 65 سؤال" ||
                       exam.name === "اختبار كمي - 55 سؤال"
                     );
-                    
+
                     if (isSpecialExam && !isSubscribed) {
                       setLocation("/subscription");
                     } else {
