@@ -237,14 +237,12 @@ const AbilitiesTestPage: React.FC = () => {
     
     const endTime = new Date();
     const timeTaken = Math.floor((endTime.getTime() - testStartTime.getTime()) / 1000);
-
+    let pointsEarned = score * 10; // Base points
+    
     try {
       setCurrentView("results");
       
-      // Calculate points based on score, difficulty and time
-    let pointsEarned = score * 10; // Base points
-    
-    // Bonus for difficulty
+      // Bonus for difficulty
     if (currentDifficulty === "intermediate") pointsEarned *= 1.5;
     if (currentDifficulty === "advanced") pointsEarned *= 2;
     
@@ -313,6 +311,7 @@ const AbilitiesTestPage: React.FC = () => {
       
       // Display test result
       setCurrentView("results");
+    }
     } catch (error) {
       toast({
         title: "خطأ",
