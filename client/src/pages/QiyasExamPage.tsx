@@ -522,9 +522,7 @@ const QiyasExamPage: React.FC = () => {
             <h1 className="text-3xl font-bold mb-2">اختبارات قياس</h1>
             <p className="text-muted-foreground">اختبارات تحاكي اختبار القدرات العامة (قياس) الرسمي</p>
           </div>
-          <Button onClick={() => setLocation("/custom-exam")}>
-            إنشاء اختبار مخصص
-          </Button>
+          
         </div>
 
         <div className="grid md:grid-cols-2 gap-6">
