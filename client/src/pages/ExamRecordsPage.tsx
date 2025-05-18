@@ -2,6 +2,7 @@
 import { useEffect, useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { formatDate } from '@/lib/formatters';
+import { BookText, Calculator, Clock, Award, Target } from 'lucide-react';
 
 interface ExamRecord {
   date: string;
@@ -38,10 +39,17 @@ export default function ExamRecordsPage() {
               <CardHeader>
                 <CardTitle className="text-lg flex items-center gap-2">
                   {record.examType === "verbal" ? 
-                    <BookIcon className="h-5 w-5 text-blue-500" /> : 
-                    <Calculator className="h-5 w-5 text-purple-500" />
+                    <BookText className="h-5 w-5 text-blue-500" /> : 
+                  record.examType === "quantitative" ?
+                    <Calculator className="h-5 w-5 text-purple-500" /> :
+                  record.examType === "qualification" ?
+                    <Award className="h-5 w-5 text-amber-500" /> :
+                    <Target className="h-5 w-5 text-green-500" />
                   }
-                  {record.examType}
+                  {record.examType === "verbal" ? "اختبار لفظي" :
+                   record.examType === "quantitative" ? "اختبار كمي" :
+                   record.examType === "qualification" ? "اختبار تأهيلي" :
+                   "اختبار قدرات"}
                 </CardTitle>
               </CardHeader>
               <CardContent>
@@ -59,7 +67,10 @@ export default function ExamRecordsPage() {
                     <p>{((record.score / record.totalQuestions) * 100).toFixed(1)}%</p>
                   </div>
                   <div>
-                    <p className="text-muted-foreground">الوقت المستغرق</p>
+                    <p className="text-muted-foreground flex items-center gap-1">
+                      <Clock className="h-4 w-4" />
+                      الوقت المستغرق
+                    </p>
                     <p>{Math.floor(record.timeTaken / 60)} دقيقة</p>
                   </div>
                 </div>
