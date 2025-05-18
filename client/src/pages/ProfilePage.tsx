@@ -235,14 +235,35 @@ const ProfilePage: React.FC = () => {
       <div className="container py-4 px-4 sm:py-8">
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 sm:gap-6">
           {/* Profile Summary */}
-          <Card className="md:col-span-1">
-            <CardHeader className="text-center">
-              <div className="w-24 h-24 rounded-full bg-primary/10 mx-auto flex items-center justify-center mb-4">
-                <User className="h-12 w-12 text-primary" />
+          <Card className="md:col-span-1 card-animated hover:shadow-glow relative overflow-hidden">
+            <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-primary/5 animate-pulse-slow"></div>
+            <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,var(--primary)/10,transparent_50%)] animate-pulse"></div>
+            
+            <CardHeader className="text-center relative">
+              <div className="w-28 h-28 rounded-full bg-gradient-to-br from-primary/20 to-primary/5 mx-auto flex items-center justify-center mb-4 animate-float-shadow relative group perspective-1000">
+                <div className="absolute inset-0 rounded-full bg-primary/10 animate-spin-slow"></div>
+                <User className="h-14 w-14 text-primary group-hover:scale-110 transition-transform duration-300" />
+                <div className="absolute -right-1 -top-1 w-6 h-6 bg-primary/20 rounded-full animate-pulse"></div>
+                <div className="absolute -left-2 -bottom-1 w-4 h-4 bg-primary/10 rounded-full animate-bounce-slow"></div>
               </div>
-              <CardTitle className="text-2xl">{user.name}</CardTitle>
-              <CardDescription>
-                {user.subscription.type} • تنتهي في {user.subscription.endDate}
+              <CardTitle className="text-3xl font-bold bg-gradient-to-r from-primary via-primary/80 to-primary bg-clip-text text-transparent">
+                {user.name}
+              </CardTitle>
+              <CardDescription className="text-lg mt-2">
+                <span className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-primary/10 animate-shimmer">
+                  <span className="relative inline-flex">
+                    <span className="absolute inset-0 rounded-full bg-primary/20 animate-ping"></span>
+                    <span className="relative inline-flex items-center">
+                      {user.subscription.type === "Pro" || user.subscription.type === "Pro Live" ? 
+                        <Crown className="h-4 w-4 text-primary" /> : 
+                        <Star className="h-4 w-4 text-primary" />
+                      }
+                    </span>
+                  </span>
+                  <span>{user.subscription.type}</span>
+                </span>
+                <span className="mx-2">•</span>
+                <span className="text-muted-foreground">تنتهي في {user.subscription.endDate}</span>
               </CardDescription>
             </CardHeader>
             <CardContent>
@@ -259,16 +280,47 @@ const ProfilePage: React.FC = () => {
                 </div>
 
                 <div className="pt-3">
-                  <h4 className="font-medium mb-2 text-sm sm:text-base">الإحصائيات</h4>
-                  <div className="grid grid-cols-2 gap-x-2 gap-y-1.5 text-xs sm:text-sm">
-                    <div className="text-sm text-muted-foreground">النقاط:</div>
-                    <div className="text-sm text-right">{user.points}</div>
-                    <div className="text-sm text-muted-foreground">المستوى:</div>
-                    <div className="text-sm text-right">{user.level}</div>
-                    <div className="text-sm text-muted-foreground">عدد الاختبارات:</div>
-                    <div className="text-sm text-right">8</div>
-                    <div className="text-sm text-muted-foreground">متوسط العلامات:</div>
-                    <div className="text-sm text-right">78%</div>
+                  <h4 className="font-medium mb-4 text-lg bg-gradient-to-r from-primary to-primary/80 bg-clip-text text-transparent">الإحصائيات</h4>
+                  <div className="space-y-4">
+                    <div className="p-3 rounded-lg bg-gradient-to-r from-primary/5 to-transparent hover:from-primary/10 transition-colors">
+                      <div className="flex justify-between items-center mb-2">
+                        <span className="text-sm text-muted-foreground flex items-center gap-2">
+                          <Trophy className="h-4 w-4 text-primary animate-bounce-slow" />
+                          النقاط
+                        </span>
+                        <span className="text-lg font-bold text-primary">{user.points}</span>
+                      </div>
+                      <div className="h-1.5 bg-primary/10 rounded-full overflow-hidden">
+                        <div className="h-full bg-primary rounded-full animate-pulse" style={{ width: `${(user.points / 1000) * 100}%` }}></div>
+                      </div>
+                    </div>
+                    
+                    <div className="p-3 rounded-lg bg-gradient-to-r from-primary/5 to-transparent hover:from-primary/10 transition-colors">
+                      <div className="flex justify-between items-center mb-2">
+                        <span className="text-sm text-muted-foreground flex items-center gap-2">
+                          <Star className="h-4 w-4 text-primary animate-spin-slow" />
+                          المستوى
+                        </span>
+                        <span className="text-lg font-bold text-primary">{user.level}</span>
+                      </div>
+                      <div className="h-1.5 bg-primary/10 rounded-full overflow-hidden">
+                        <div className="h-full bg-primary rounded-full animate-pulse" style={{ width: `${(user.level / 10) * 100}%` }}></div>
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="p-3 rounded-lg bg-gradient-to-r from-primary/5 to-transparent hover:from-primary/10 transition-colors text-center">
+                        <BookOpen className="h-5 w-5 text-primary mx-auto mb-2 animate-bounce-slow" />
+                        <div className="text-2xl font-bold text-primary">8</div>
+                        <div className="text-xs text-muted-foreground">عدد الاختبارات</div>
+                      </div>
+                      
+                      <div className="p-3 rounded-lg bg-gradient-to-r from-primary/5 to-transparent hover:from-primary/10 transition-colors text-center">
+                        <Target className="h-5 w-5 text-primary mx-auto mb-2 animate-spin-slow" />
+                        <div className="text-2xl font-bold text-primary">78%</div>
+                        <div className="text-xs text-muted-foreground">متوسط العلامات</div>
+                      </div>
+                    </div>
                   </div>
                 </div>
               </div>
