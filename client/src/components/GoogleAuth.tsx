@@ -3,13 +3,9 @@ import React from 'react';
 import { Button } from "@/components/ui/button";
 import { FcGoogle } from 'react-icons/fc';
 
-export const GoogleAuth = () => {
-  const handleGoogleLogin = async () => {
-    try {
-      window.location.href = '/api/auth/google';
-    } catch (error) {
-      console.error('Google login error:', error);
-    }
+export function GoogleAuth() {
+  const handleGoogleLogin = () => {
+    window.location.href = '/api/auth/google';
   };
 
   return (
@@ -22,4 +18,4 @@ export const GoogleAuth = () => {
       <span>تسجيل الدخول بحساب جوجل</span>
     </Button>
   );
-};
+}
