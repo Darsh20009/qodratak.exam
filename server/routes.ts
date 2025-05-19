@@ -9,13 +9,25 @@ import { insertQuestionSchema } from "@shared/schema";
 import { TestType, TestDifficulty } from "@shared/types";
 
 export async function registerRoutes(app: Express): Promise<Server> {
+  // Initialize passport
+  app.use(passport.initialize());
+  app.use(passport.session());
+  
+  passport.serializeUser((user: any, done) => {
+    done(null, user);
+  });
+  
+  passport.deserializeUser((user: any, done) => {
+    done(null, user);
+  });
+
   // Load questions from JSON file
 
   // Google OAuth configuration
   passport.use(new GoogleStrategy({
     clientID: process.env.GOOGLE_CLIENT_ID || '',
     clientSecret: process.env.GOOGLE_CLIENT_SECRET || '',
-    callbackURL: "/api/auth/google/callback"
+    callbackURL: "https://" + process.env.REPL_SLUG + "." + process.env.REPL_OWNER + ".repl.co/api/auth/google/callback"
   }, async (accessToken, refreshToken, profile, done) => {
     try {
       // Create or update user
