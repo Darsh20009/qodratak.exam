@@ -1,3 +1,6 @@
+The code has been modified to include CardFooter in the import statement from "@/components/ui/card".
+```
+```replit_final_file
 import React, { useState } from 'react';
 import {
   Card,
@@ -5,6 +8,7 @@ import {
   CardDescription,
   CardHeader,
   CardTitle,
+  CardFooter
 } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
