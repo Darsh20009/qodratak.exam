@@ -14,6 +14,9 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } f
 import { Separator } from "@/components/ui/separator";
 import { CopyIcon, CheckIcon, SparklesIcon, StarIcon, ShieldCheckIcon, RocketIcon } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { PayPalButtons, PayPalScriptProvider } from "@paypal/react-paypal-js";
+
+const PAYPAL_CLIENT_ID = "ASFNDEAoLJ9frq71gWnW287UDQz7nC_FrKgrBsEHitKI9EKV8AlSzwZTCDBUfDpTdrDan6j7M4YAmbjp";
 
 export function SubscriptionPlans() {
   const { toast } = useToast();
@@ -194,20 +197,31 @@ export function SubscriptionPlans() {
 
             <div className="space-y-4">
               <h3 className="font-semibold text-lg">PayPal</h3>
-              <div className="flex items-center justify-between p-3 bg-muted rounded-lg">
-                <code className="text-sm font-mono">qodratak2030@gmail.com</code>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => handleCopy("qodratak2030@gmail.com", 'paypal')}
-                >
-                  {copySuccess === 'paypal' ? (
-                    <CheckIcon className="h-4 w-4" />
-                  ) : (
-                    <CopyIcon className="h-4 w-4" />
-                  )}
-                </Button>
-              </div>
+              <PayPalScriptProvider options={{ clientId: PAYPAL_CLIENT_ID }}>
+                <PayPalButtons
+                  createOrder={(data, actions) => {
+                    return actions.order.create({
+                      purchase_units: [{
+                        amount: {
+                          value: selectedPlan === 'pro' ? '180.00' : '400.00',
+                          currency_code: 'SAR'
+                        },
+                        description: selectedPlan === 'pro' ? 'Pro Subscription' : 'Pro Life Subscription'
+                      }]
+                    });
+                  }}
+                  onApprove={async (data, actions) => {
+                    if (actions.order) {
+                      const order = await actions.order.capture();
+                      toast({
+                        title: "تم الدفع بنجاح",
+                        description: "سيتم تفعيل اشتراكك قريباً"
+                      });
+                    }
+                  }}
+                  style={{ layout: "horizontal" }}
+                />
+              </PayPalScriptProvider>
             </div>
 
             <Button
