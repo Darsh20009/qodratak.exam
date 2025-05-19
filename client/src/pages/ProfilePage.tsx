@@ -374,9 +374,27 @@ const ProfilePage: React.FC = () => {
     <div className="min-h-screen bg-gradient-to-br from-background via-primary/5 to-background relative overflow-hidden">
       {/* Animated background effects */}
       <div className="absolute inset-0">
-        <div className="absolute inset-0 bg-[radial-gradient(circle_800px_at_100%_200px,var(--primary)/10%,transparent_100%)]" />
-        <div className="absolute inset-0 bg-[radial-gradient(circle_800px_at_0%_800px,var(--primary)/10%,transparent_100%)]" />
+        <div className="absolute inset-0 bg-[radial-gradient(circle_800px_at_100%_200px,var(--primary)/10%,transparent_100%)] animate-pulse-slow" />
+        <div className="absolute inset-0 bg-[radial-gradient(circle_800px_at_0%_800px,var(--primary)/10%,transparent_100%)] animate-pulse-slow" />
         <div className="absolute inset-0 bg-grid-white/10 bg-[size:20px_20px] [mask-image:radial-gradient(black,transparent_70%)]" />
+        <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-background to-primary/5 opacity-60" />
+      </div>
+      <div className="container max-w-md mx-auto p-6 relative">
+        <div className="bg-card/80 backdrop-blur-sm rounded-lg shadow-xl p-8 border border-border/50">
+          <h1 className="text-3xl font-bold text-center mb-6">تسجيل الدخول</h1>
+          <div className="space-y-4">
+            <GoogleAuth />
+            <div className="relative">
+              <div className="absolute inset-0 flex items-center">
+                <span className="w-full border-t" />
+              </div>
+              <div className="relative flex justify-center text-xs uppercase">
+                <span className="bg-background px-2 text-muted-foreground">أو</span>
+              </div>
+            </div>
+            {/* Existing login form here */}
+          </div>
+        </div>
       </div>
       
       <div className="container max-w-md py-16 relative">

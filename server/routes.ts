@@ -1,5 +1,7 @@
 import type { Express, Request, Response } from "express";
 import { createServer, type Server } from "http";
+import passport from 'passport';
+import { Strategy as GoogleStrategy } from 'passport-google-oauth20';
 import { storage } from "./storage";
 import path from "path";
 import fs from "fs";
@@ -8,6 +10,69 @@ import { TestType, TestDifficulty } from "@shared/types";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Load questions from JSON file
+
+  // Google OAuth configuration
+  passport.use(new GoogleStrategy({
+    clientID: process.env.GOOGLE_CLIENT_ID || '',
+    clientSecret: process.env.GOOGLE_CLIENT_SECRET || '',
+    callbackURL: "/api/auth/google/callback"
+  }, async (accessToken, refreshToken, profile, done) => {
+    try {
+      // Create or update user
+      const email = profile.emails?.[0]?.value;
+      const name = profile.displayName;
+      
+      if (!email) {
+        return done(new Error('No email found'));
+      }
+
+      const users = JSON.parse(fs.readFileSync("attached_assets/user.json", "utf-8"));
+      let user = users.find((u: any) => u.email === email);
+
+      if (!user) {
+        // Create new user
+        user = {
+          name,
+          email,
+          subscription: {
+            type: "free",
+            startDate: new Date().toISOString().split('T')[0],
+            endDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]
+          }
+        };
+        users.push(user);
+        fs.writeFileSync("attached_assets/user.json", JSON.stringify(users, null, 2));
+      }
+
+      return done(null, user);
+    } catch (error) {
+      return done(error);
+    }
+  }));
+
+  // Google OAuth routes
+  app.get('/api/auth/google',
+    passport.authenticate('google', { scope: ['profile', 'email'] })
+  );
+
+  app.get('/api/auth/google/callback',
+    passport.authenticate('google', { failureRedirect: '/profile' }),
+    (req, res) => {
+      if (req.user) {
+        // Store user in localStorage through a script
+        const script = `
+          <script>
+            window.localStorage.setItem('user', '${JSON.stringify(req.user)}');
+            window.location.href = '/';
+          </script>
+        `;
+        res.send(script);
+      } else {
+        res.redirect('/profile');
+      }
+    }
+  );
+
   app.get("/api/seed-questions", async (req: Request, res: Response) => {
     try {
       const questionsPath = path.resolve(
