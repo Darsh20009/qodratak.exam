@@ -19,7 +19,7 @@ export function SubscriptionPlans() {
   const { toast } = useToast();
   const [isPaymentDialogOpen, setIsPaymentDialogOpen] = useState(false);
   const [selectedPlan, setSelectedPlan] = useState<'pro' | 'proLife' | null>(null);
-  const [copySuccess, setCopySuccess] = useState<'bank' | 'stc' | null>(null);
+  const [copySuccess, setCopySuccess] = useState<'bank' | 'stc' | 'paypal' | null>(null);
 
   const handleCopy = async (text: string, type: 'bank' | 'stc') => {
     await navigator.clipboard.writeText(text);
@@ -182,6 +182,26 @@ export function SubscriptionPlans() {
                   onClick={() => handleCopy("+966532441566", 'stc')}
                 >
                   {copySuccess === 'stc' ? (
+                    <CheckIcon className="h-4 w-4" />
+                  ) : (
+                    <CopyIcon className="h-4 w-4" />
+                  )}
+                </Button>
+              </div>
+            </div>
+
+            <Separator />
+
+            <div className="space-y-4">
+              <h3 className="font-semibold text-lg">PayPal</h3>
+              <div className="flex items-center justify-between p-3 bg-muted rounded-lg">
+                <code className="text-sm font-mono">qodratak2030@gmail.com</code>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => handleCopy("qodratak2030@gmail.com", 'paypal')}
+                >
+                  {copySuccess === 'paypal' ? (
                     <CheckIcon className="h-4 w-4" />
                   ) : (
                     <CopyIcon className="h-4 w-4" />
