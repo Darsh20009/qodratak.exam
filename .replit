@@ -41,4 +41,4 @@ mode = "sequential"
 
 [[workflows.workflow.tasks]]
 task = "shell.exec"
-args = "cd client && npm run dev & cd server && npm run dev"
+args = "cd client && npm run dev & cd server && PORT=5001 npm run dev"

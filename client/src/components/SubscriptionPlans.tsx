@@ -1,6 +1,4 @@
-The code has been modified to include CardFooter in the import statement from "@/components/ui/card".
-```
-```replit_final_file
+
 import React, { useState } from 'react';
 import {
   Card,
@@ -18,6 +16,7 @@ import { CopyIcon, CheckIcon, SparklesIcon, StarIcon, ShieldCheckIcon, RocketIco
 import { useToast } from "@/hooks/use-toast";
 
 export function SubscriptionPlans() {
+  const { toast } = useToast();
   const [isPaymentDialogOpen, setIsPaymentDialogOpen] = useState(false);
   const [selectedPlan, setSelectedPlan] = useState<'pro' | 'proLife' | null>(null);
   const [copySuccess, setCopySuccess] = useState<'bank' | 'stc' | null>(null);
@@ -25,10 +24,9 @@ export function SubscriptionPlans() {
   const handleCopy = async (text: string, type: 'bank' | 'stc') => {
     await navigator.clipboard.writeText(text);
     setCopySuccess(type);
-    const { toast } = useToast();
     toast({
       title: "تم النسخ بنجاح",
-      description: "تم نسخ رقم الحساب إلى الحافظة",
+      description: "تم نسخ رقم الحساب إلى الحافظة"
     });
     setTimeout(() => setCopySuccess(null), 2000);
   };
