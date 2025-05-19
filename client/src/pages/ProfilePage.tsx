@@ -30,6 +30,7 @@ import {
 } from "@/components/ui/tabs";
 import { Trophy, Star, User, Award, BookOpen, ChevronRight } from "lucide-react";
 import { Badge } from "../components/ui/badge";
+import { GoogleAuth } from "../components/GoogleAuth";
 
 // Form schema for login
 const loginSchema = z.object({
