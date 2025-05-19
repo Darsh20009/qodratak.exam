@@ -11,7 +11,7 @@ import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Separator } from "@/components/ui/separator";
 import { CopyIcon, CheckIcon, SparklesIcon, StarIcon, ShieldCheckIcon, RocketIcon } from "lucide-react";
-import { toast } from "@/components/ui/use-toast";
+import { useToast } from "@/hooks/use-toast";
 
 export function SubscriptionPlans() {
   const [isPaymentDialogOpen, setIsPaymentDialogOpen] = useState(false);
@@ -21,6 +21,7 @@ export function SubscriptionPlans() {
   const handleCopy = async (text: string, type: 'bank' | 'stc') => {
     await navigator.clipboard.writeText(text);
     setCopySuccess(type);
+    const { toast } = useToast();
     toast({
       title: "تم النسخ بنجاح",
       description: "تم نسخ رقم الحساب إلى الحافظة",
