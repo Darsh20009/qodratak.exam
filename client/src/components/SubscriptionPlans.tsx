@@ -1,80 +1,30 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import {
   Card,
   CardContent,
   CardDescription,
-  CardFooter,
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { Separator } from "@/components/ui/separator";
 import { Button } from "@/components/ui/button";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
-import { CopyIcon, CheckIcon } from "lucide-react";
-import { ClipboardList } from "lucide-react";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Separator } from "@/components/ui/separator";
+import { CopyIcon, CheckIcon, SparklesIcon, StarIcon, ShieldCheckIcon, RocketIcon } from "lucide-react";
+import { toast } from "@/components/ui/use-toast";
 
 export function SubscriptionPlans() {
   const [isPaymentDialogOpen, setIsPaymentDialogOpen] = useState(false);
   const [selectedPlan, setSelectedPlan] = useState<'pro' | 'proLife' | null>(null);
   const [copySuccess, setCopySuccess] = useState<'bank' | 'stc' | null>(null);
-  const [discountPercentage] = useState(20);
-
-  useEffect(() => {
-    const script = document.createElement("script");
-    script.src = "https://www.paypal.com/sdk/js?client-id=ASFNDEAoLJ9frq71gWnW287UDQz7nC_FrKgrBsEHitKI9EKV8AlSzwZTCDBUfDpTdrDan6j7M4YAmbjp&currency=SAR";
-    script.async = true;
-    script.onload = () => {
-      // Pro Plan
-      // @ts-ignore
-      window.paypal.Buttons({
-        createOrder: function(data: any, actions: any) {
-          return actions.order.create({
-            purchase_units: [{
-              amount: { value: "180.00" },
-              description: "اشتراك Qodratak Pro لمدة سنة"
-            }]
-          });
-        },
-        onApprove: async function(data: any, actions: any) {
-          const details = await actions.order.capture();
-          const user = JSON.parse(localStorage.getItem('user') || '{}');
-          // TODO: Update user subscription on server
-          alert("✅ تم الدفع بنجاح: " + details.payer.name.given_name);
-        }
-      }).render("#paypal-pro");
-
-      // Pro Life Plan
-      // @ts-ignore
-      window.paypal.Buttons({
-        createOrder: function(data: any, actions: any) {
-          return actions.order.create({
-            purchase_units: [{
-              amount: { value: "400.00" },
-              description: "اشتراك Qodratak Pro-Life مدى الحياة"
-            }]
-          });
-        },
-        onApprove: async function(data: any, actions: any) {
-          const details = await actions.order.capture();
-          const user = JSON.parse(localStorage.getItem('user') || '{}');
-          // TODO: Update user subscription on server
-          alert("✅ تم الدفع بنجاح: " + details.payer.name.given_name);
-        }
-      }).render("#paypal-prolife");
-    };
-    document.body.appendChild(script);
-  }, []);
 
   const handleCopy = async (text: string, type: 'bank' | 'stc') => {
     await navigator.clipboard.writeText(text);
     setCopySuccess(type);
+    toast({
+      title: "تم النسخ بنجاح",
+      description: "تم نسخ رقم الحساب إلى الحافظة",
+    });
     setTimeout(() => setCopySuccess(null), 2000);
   };
 
@@ -86,45 +36,56 @@ export function SubscriptionPlans() {
   const handleTelegramRedirect = () => {
     const user = localStorage.getItem('user');
     const userData = user ? JSON.parse(user) : null;
-    const planPrice = selectedPlan === 'pro' ? '180' : '500';
-
+    const planPrice = selectedPlan === 'pro' ? '180' : '400';
     const message = encodeURIComponent(
       `طلب اشتراك جديد:\n` +
       `الاسم: ${userData?.name || ''}\n` +
       `البريد الإلكتروني: ${userData?.email || ''}\n` +
-      `نوع الباقة: ${selectedPlan === 'pro' ? 'Pro - 180 SR' : 'Pro Life - 400 SR (خصم 20%)'}\n` +
+      `نوع الباقة: ${selectedPlan === 'pro' ? 'Pro - 180 SR' : 'Pro Life - 400 SR'}\n` +
       `يرجى إرفاق سند التحويل`
     );
-
     window.open(`https://t.me/qodratak2030?text=${message}`, '_blank');
   };
 
   return (
-    <div className="container mx-auto py-8">
-      <h1 className="text-3xl font-bold text-center mb-2">اشترك الآن</h1>
-      <p className="text-muted-foreground text-center mb-8">
-        اختر الباقة المناسبة لك واستمتع بجميع المميزات
-      </p>
+    <div className="container mx-auto py-8 px-4">
+      <div className="text-center mb-12">
+        <h1 className="text-4xl font-bold mb-4">اختر باقتك المفضلة</h1>
+        <p className="text-muted-foreground text-lg">
+          استمتع بتجربة تعليمية متكاملة مع باقاتنا المميزة
+        </p>
+      </div>
 
-      <div className="grid md:grid-cols-2 gap-6 max-w-3xl mx-auto">
-        <Card className="relative overflow-hidden">
+      <div className="grid md:grid-cols-2 gap-8 max-w-4xl mx-auto">
+        {/* Pro Plan */}
+        <Card className="relative overflow-hidden border-2 hover:border-primary transition-all duration-300">
+          <div className="absolute top-4 right-4">
+            <ShieldCheckIcon className="h-6 w-6 text-primary" />
+          </div>
           <CardHeader>
-            <CardTitle>Pro</CardTitle>
+            <CardTitle className="text-2xl">Pro</CardTitle>
             <CardDescription>باقة سنوية مميزة</CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="text-3xl font-bold mb-4">180 ريال</div>
-            <ul className="space-y-2 mb-6">
-              <li>✓ جميع الاختبارات</li>
-              <li>✓ المجلدات الخاصة</li>
-              <li>✓ التحديات والمنافسات</li>
-              <li>✓ دعم فني متميز</li>
+            <div className="text-4xl font-bold mb-6">180 ريال / سنة</div>
+            <ul className="space-y-3">
+              <li className="flex items-center gap-2">
+                <StarIcon className="h-5 w-5 text-primary" />
+                جميع الاختبارات
+              </li>
+              <li className="flex items-center gap-2">
+                <SparklesIcon className="h-5 w-5 text-primary" />
+                المجلدات الخاصة
+              </li>
+              <li className="flex items-center gap-2">
+                <RocketIcon className="h-5 w-5 text-primary" />
+                التحديات والمنافسات
+              </li>
             </ul>
-            <div id="paypal-pro"></div>
           </CardContent>
           <CardFooter>
-            <Button
-              className="w-full"
+            <Button 
+              className="w-full text-lg py-6"
               onClick={() => handleSubscribe('pro')}
             >
               اشترك الآن
@@ -132,37 +93,45 @@ export function SubscriptionPlans() {
           </CardFooter>
         </Card>
 
-        <Card className="relative overflow-hidden border-primary">
-          <div className="absolute top-0 right-0 px-3 py-1 bg-primary text-primary-foreground text-sm">
+        {/* Pro Life Plan */}
+        <Card className="relative overflow-hidden border-2 border-primary bg-primary/5">
+          <div className="absolute -top-4 -right-4 bg-primary text-primary-foreground px-6 py-1 rotate-12">
             الأفضل قيمة
           </div>
           <CardHeader>
-            <CardTitle>Pro Life</CardTitle>
+            <CardTitle className="text-2xl">Pro Life</CardTitle>
             <CardDescription>اشتراك مدى الحياة</CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="relative">
-              <div className="text-3xl font-bold mb-4">
+            <div className="relative mb-6">
+              <div className="text-4xl font-bold">
                 <span className="line-through text-muted-foreground">500 ريال</span>
-                <span className="mr-2 text-primary">400 ريال</span>
+                <span className="text-primary mr-2">400 ريال</span>
               </div>
-              <div className="absolute -top-6 -right-2 bg-primary text-primary-foreground text-sm px-2 py-1 rounded-full">
+              <span className="absolute -top-4 right-32 bg-primary text-primary-foreground text-sm px-2 py-1 rounded-full">
                 خصم 20%
-              </div>
+              </span>
             </div>
-            <ul className="space-y-2 mb-6">
-              <li>✓ جميع مميزات Pro</li>
-              <li>✓ تحديثات مجانية مدى الحياة</li>
-              <li>✓ أولوية في الدعم الفني</li>
-              <li>✓ مميزات حصرية</li>
+            <ul className="space-y-3">
+              <li className="flex items-center gap-2">
+                <StarIcon className="h-5 w-5 text-primary" />
+                جميع مميزات Pro
+              </li>
+              <li className="flex items-center gap-2">
+                <SparklesIcon className="h-5 w-5 text-primary" />
+                تحديثات مجانية مدى الحياة
+              </li>
+              <li className="flex items-center gap-2">
+                <ShieldCheckIcon className="h-5 w-5 text-primary" />
+                أولوية في الدعم الفني
+              </li>
             </ul>
-            <div id="paypal-prolife"></div>
           </CardContent>
           <CardFooter>
-            <Button
-              className="w-full"
-              onClick={() => handleSubscribe('proLife')}
+            <Button 
+              className="w-full text-lg py-6"
               variant="default"
+              onClick={() => handleSubscribe('proLife')}
             >
               اشترك الآن
             </Button>
@@ -173,45 +142,17 @@ export function SubscriptionPlans() {
       <Dialog open={isPaymentDialogOpen} onOpenChange={setIsPaymentDialogOpen}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
-            <DialogTitle>تفاصيل الدفع</DialogTitle>
+            <DialogTitle>طرق الدفع المتاحة</DialogTitle>
             <DialogDescription>
-              يرجى إدخال بياناتك واختيار طريقة الدفع المناسبة
+              اختر طريقة الدفع المناسبة لك
             </DialogDescription>
           </DialogHeader>
-          <div className="flex flex-col space-y-4">
-        <div className="absolute top-4 right-4">
-          <span className="bg-primary text-white px-2 py-1 rounded-full text-sm">خصم {discountPercentage}%</span>
-        </div>
-            <div className="space-y-2">
-              <h3 className="font-medium">البيانات الشخصية:</h3>
-              <Input
-                type="text"
-                placeholder="الاسم الكامل"
-                className="w-full"
-              />
-              <Input
-                type="tel"
-                placeholder="رقم الهاتف"
-                className="w-full"
-                dir="ltr"
-              />
-              <Input
-                type="email"
-                placeholder="البريد الإلكتروني"
-                className="w-full"
-                dir="ltr"
-              />
-              <Input
-                type="password"
-                placeholder="كلمة المرور"
-                className="w-full"
-              />
-            </div>
-            <Separator className="my-4" />
-            <div className="space-y-2">
-              <h3 className="font-medium">الراجحي (تحويل بنكي):</h3>
-              <div className="flex items-center justify-between p-2 bg-muted rounded-md">
-                <code className="text-sm">SA78 8000 0539 6080 1942 4738</code>
+
+          <div className="space-y-6 pt-4">
+            <div className="space-y-4">
+              <h3 className="font-semibold text-lg">الراجحي (تحويل بنكي)</h3>
+              <div className="flex items-center justify-between p-3 bg-muted rounded-lg">
+                <code className="text-sm font-mono">SA78 8000 0539 6080 1942 4738</code>
                 <Button
                   variant="ghost"
                   size="sm"
@@ -226,10 +167,12 @@ export function SubscriptionPlans() {
               </div>
             </div>
 
-            <div className="space-y-2">
-              <h3 className="font-medium">STC Pay (تحويل مباشر):</h3>
-              <div className="flex items-center justify-between p-2 bg-muted rounded-md">
-                <code className="text-sm">+966532441566</code>
+            <Separator />
+
+            <div className="space-y-4">
+              <h3 className="font-semibold text-lg">STC Pay</h3>
+              <div className="flex items-center justify-between p-3 bg-muted rounded-lg">
+                <code className="text-sm font-mono">+966532441566</code>
                 <Button
                   variant="ghost"
                   size="sm"
@@ -244,17 +187,16 @@ export function SubscriptionPlans() {
               </div>
             </div>
 
-            <div className="mt-6">
-              <Button
-                className="w-full"
-                onClick={handleTelegramRedirect}
-              >
-                توثيق الحساب عبر تليجرام
-              </Button>
-              <p className="text-sm text-muted-foreground mt-2 text-center">
-                بعد إتمام التحويل، يرجى التواصل معنا على تليجرام لتوثيق حسابك
-              </p>
-            </div>
+            <Button
+              className="w-full"
+              onClick={handleTelegramRedirect}
+            >
+              تأكيد الدفع عبر تليجرام
+            </Button>
+
+            <p className="text-sm text-muted-foreground text-center">
+              بعد إتمام التحويل، يرجى التواصل معنا على تليجرام لتفعيل اشتراكك
+            </p>
           </div>
         </DialogContent>
       </Dialog>
