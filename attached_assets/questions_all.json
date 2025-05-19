@@ -136874,6 +136874,19 @@
         "97.80"
       ],
       "correctOptionIndex": 2
+    },
+    {
+      "id": 4001,
+      "category": "مقارنات عددية",
+      "question": "انظر إلى الصورة التالية ثم اختر الإجابة الصحيحة:\n\n![صورة](https://raw.githubusercontent.com/Darsh20009/qodratak_bank-kamy/main/Screenshot%202025-05-05%20152854.png)",
+      "options": [
+        "القيمة الأولى أكبر",
+        "القيمة الثانية أكبر",
+        "القيمتان متساويتان",
+        "المعطيات غير كافية"
+      ],
+      "correctOptionIndex": 0,
+      "explanation": "20 × 52 = 1040، و 19 × 53 = 1007، لذا القيمة الأولى أكبر."
     }
   ]
 }
