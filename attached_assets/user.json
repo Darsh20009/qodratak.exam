@@ -93,5 +93,24 @@
       "startDate": "2025-05-17",
       "endDate": "2025-06-16"
     }
+  },
+  {
+    "name": "toty2009@gmail.com",
+    "email": "toty2009@gmail.com",
+    "password": "182009",
+    "subscription": {
+      "type": "free",
+      "startDate": "2025-05-19",
+      "endDate": "2025-06-18"
+    },
+    "points": 0,
+    "level": 1,
+    "testsTaken": 0,
+    "averageScore": 0,
+    "folders": [],
+    "achievements": [],
+    "pointsHistory": [],
+    "testHistory": [],
+    "savedQuestions": []
   }
 ]
