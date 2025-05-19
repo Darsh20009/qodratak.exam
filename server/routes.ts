@@ -365,7 +365,16 @@ app.post("/api/auth/register", async (req: Request, res: Response) => {
           type: "free",
           startDate: new Date().toISOString().split('T')[0],
           endDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]
-        }
+        },
+        points: 0,
+        level: 1,
+        testsTaken: 0,
+        averageScore: 0,
+        folders: [],
+        achievements: [],
+        pointsHistory: [],
+        testHistory: [],
+        savedQuestions: []
       };
 
       users.push(newUser);
@@ -402,21 +411,38 @@ app.post("/api/auth/register", async (req: Request, res: Response) => {
   // Update user points
   app.patch("/api/users/:id/points", async (req: Request, res: Response) => {
     try {
-      const userId = parseInt(req.params.id);
-      const { points } = req.body;
+      const { points, reason } = req.body;
+      const email = req.params.id;
 
-      if (isNaN(userId) || typeof points !== 'number') {
-        return res.status(400).json({ message: "Invalid user ID or points value" });
-      }
+      const users = JSON.parse(fs.readFileSync("attached_assets/user.json", "utf-8"));
+      const userIndex = users.findIndex((u: any) => u.email === email);
 
-      const user = await storage.getUser(userId);
-      if (!user) {
+      if (userIndex === -1) {
         return res.status(404).json({ message: "User not found" });
       }
 
-      const updatedUser = await storage.updateUserPoints(userId, points);
+      const user = users[userIndex];
+      user.points = (user.points || 0) + points;
+      
+      // Update level based on points
+      if (user.points >= 10000) user.level = 5;
+      else if (user.points >= 6000) user.level = 4;
+      else if (user.points >= 3000) user.level = 3;
+      else if (user.points >= 1000) user.level = 2;
+      else user.level = 1;
 
-      res.status(200).json(updatedUser);
+      // Add to points history
+      if (!user.pointsHistory) user.pointsHistory = [];
+      user.pointsHistory.push({
+        points,
+        reason,
+        date: new Date().toISOString()
+      });
+
+      users[userIndex] = user;
+      fs.writeFileSync("attached_assets/user.json", JSON.stringify(users, null, 2));
+
+      res.status(200).json(user);
     } catch (error) {
       console.error("Error updating user points:", error);
       return res.status(500).json({ message: "Error updating user points" });
