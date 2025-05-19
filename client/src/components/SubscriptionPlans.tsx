@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Card,
   CardContent,
@@ -24,7 +24,53 @@ export function SubscriptionPlans() {
   const [isPaymentDialogOpen, setIsPaymentDialogOpen] = useState(false);
   const [selectedPlan, setSelectedPlan] = useState<'pro' | 'proLife' | null>(null);
   const [copySuccess, setCopySuccess] = useState<'bank' | 'stc' | null>(null);
-  const discountPercentage = 20;
+  const [discountPercentage] = useState(20);
+
+  useEffect(() => {
+    const script = document.createElement("script");
+    script.src = "https://www.paypal.com/sdk/js?client-id=ASFNDEAoLJ9frq71gWnW287UDQz7nC_FrKgrBsEHitKI9EKV8AlSzwZTCDBUfDpTdrDan6j7M4YAmbjp&currency=SAR";
+    script.async = true;
+    script.onload = () => {
+      // Pro Plan
+      // @ts-ignore
+      window.paypal.Buttons({
+        createOrder: function(data: any, actions: any) {
+          return actions.order.create({
+            purchase_units: [{
+              amount: { value: "180.00" },
+              description: "اشتراك Qodratak Pro لمدة سنة"
+            }]
+          });
+        },
+        onApprove: async function(data: any, actions: any) {
+          const details = await actions.order.capture();
+          const user = JSON.parse(localStorage.getItem('user') || '{}');
+          // TODO: Update user subscription on server
+          alert("✅ تم الدفع بنجاح: " + details.payer.name.given_name);
+        }
+      }).render("#paypal-pro");
+
+      // Pro Life Plan
+      // @ts-ignore
+      window.paypal.Buttons({
+        createOrder: function(data: any, actions: any) {
+          return actions.order.create({
+            purchase_units: [{
+              amount: { value: "400.00" },
+              description: "اشتراك Qodratak Pro-Life مدى الحياة"
+            }]
+          });
+        },
+        onApprove: async function(data: any, actions: any) {
+          const details = await actions.order.capture();
+          const user = JSON.parse(localStorage.getItem('user') || '{}');
+          // TODO: Update user subscription on server
+          alert("✅ تم الدفع بنجاح: " + details.payer.name.given_name);
+        }
+      }).render("#paypal-prolife");
+    };
+    document.body.appendChild(script);
+  }, []);
 
   const handleCopy = async (text: string, type: 'bank' | 'stc') => {
     await navigator.clipboard.writeText(text);
@@ -74,10 +120,11 @@ export function SubscriptionPlans() {
               <li>✓ التحديات والمنافسات</li>
               <li>✓ دعم فني متميز</li>
             </ul>
+            <div id="paypal-pro"></div>
           </CardContent>
           <CardFooter>
-            <Button 
-              className="w-full" 
+            <Button
+              className="w-full"
               onClick={() => handleSubscribe('pro')}
             >
               اشترك الآن
@@ -109,10 +156,11 @@ export function SubscriptionPlans() {
               <li>✓ أولوية في الدعم الفني</li>
               <li>✓ مميزات حصرية</li>
             </ul>
+            <div id="paypal-prolife"></div>
           </CardContent>
           <CardFooter>
-            <Button 
-              className="w-full" 
+            <Button
+              className="w-full"
               onClick={() => handleSubscribe('proLife')}
               variant="default"
             >
