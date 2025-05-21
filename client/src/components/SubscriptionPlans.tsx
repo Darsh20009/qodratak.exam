@@ -19,8 +19,9 @@ import { PayPalScriptProvider, PayPalButtons } from "@paypal/react-paypal-js";
 const PAYPAL_CLIENT_ID = "ASFNDEAoLJ9frq71gWnW287UDQz7nC_FrKgrBsEHitKI9EKV8AlSzwZTCDBUfDpTdrDan6j7M4YAmbjp";
 
 const paypalOptions = {
-  clientId: PAYPAL_CLIENT_ID,
+  "client-id": PAYPAL_CLIENT_ID,
   currency: "SAR",
+  components: "buttons",
   intent: "capture"
 };
 
@@ -205,6 +206,7 @@ export function SubscriptionPlans() {
               <div className="space-y-4">
                 <h3 className="font-semibold text-lg">PayPal</h3>
                 <PayPalButtons
+                  style={{ layout: "horizontal" }}
                   createOrder={(data, actions) => {
                     return actions.order.create({
                       purchase_units: [{
@@ -217,15 +219,28 @@ export function SubscriptionPlans() {
                     });
                   }}
                   onApprove={async (data, actions) => {
-                    if (actions.order) {
-                      const order = await actions.order.capture();
+                    try {
+                      const order = await actions.order?.capture();
                       toast({
                         title: "تم الدفع بنجاح",
                         description: "سيتم تفعيل اشتراكك قريباً"
                       });
+                      handleTelegramRedirect();
+                    } catch (error) {
+                      toast({
+                        title: "حدث خطأ في عملية الدفع",
+                        description: "يرجى المحاولة مرة أخرى أو استخدام طريقة دفع أخرى",
+                        variant: "destructive"
+                      });
                     }
                   }}
-                  style={{ layout: "horizontal" }}
+                  onError={() => {
+                    toast({
+                      title: "حدث خطأ في عملية الدفع",
+                      description: "يرجى المحاولة مرة أخرى أو استخدام طريقة دفع أخرى",
+                      variant: "destructive"
+                    });
+                  }}
                 />
               </div>
 
