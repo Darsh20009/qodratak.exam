@@ -522,7 +522,7 @@ const QiyasExamPage: React.FC = () => {
             <h1 className="text-3xl font-bold mb-2">اختبارات قياس</h1>
             <p className="text-muted-foreground">اختبارات تحاكي اختبار القدرات العامة (قياس) الرسمي</p>
           </div>
-          
+
         </div>
 
         <div className="grid md:grid-cols-2 gap-6">
@@ -574,7 +574,6 @@ const QiyasExamPage: React.FC = () => {
                   onClick={() => {
                     const user = JSON.parse(localStorage.getItem('user') || '{}');
                     const isSubscribed = user?.subscription?.type === 'Pro Live' || user?.subscription?.type === 'Pro';
-                    
                     if (!isSubscribed && exam.requiresSubscription) {
                       setLocation("/subscription");
                     } else {
