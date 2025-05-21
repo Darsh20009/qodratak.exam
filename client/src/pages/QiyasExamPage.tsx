@@ -574,13 +574,8 @@ const QiyasExamPage: React.FC = () => {
                   onClick={() => {
                     const user = JSON.parse(localStorage.getItem('user') || '{}');
                     const isSubscribed = user?.subscription?.type === 'Pro Live' || user?.subscription?.type === 'Pro';
-                    const isSpecialExam = exam.requiresSubscription && (
-                      exam.name === "اختبار قدراتك التأهيلي" ||
-                      exam.name === "اختبار لفظي - 65 سؤال" ||
-                      exam.name === "اختبار كمي - 55 سؤال"
-                    );
-
-                    if (isSpecialExam && !isSubscribed) {
+                    
+                    if (!isSubscribed && exam.requiresSubscription) {
                       setLocation("/subscription");
                     } else {
                       loadExam(exam);
