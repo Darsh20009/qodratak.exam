@@ -1011,10 +1011,7 @@ const QiyasExamPage: React.FC = () => {
                               size="sm"
                               className="text-muted-foreground"
                               onClick={() => {
-                                const message = encodeURIComponent(
-                                  `@qodratak2030 أريد الإبلاغ عن خطأ في السؤال:\n\n${question.text}\n\nرقم السؤال: ${index + 1}\nالقسم: ${sectionName}`
-                                );
-                                window.open(`https://t.me/share/url?url=${message}`, '_blank');
+                                window.open(`https://t.me/qodratak2030`, '_blank');
                               }}
                             >
                               <span className="ml-2">إبلاغ عن خطأ</span>
