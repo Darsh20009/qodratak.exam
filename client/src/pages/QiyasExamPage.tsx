@@ -1005,6 +1005,22 @@ const QiyasExamPage: React.FC = () => {
                             ))}
                           </div>
 
+                          <div className="mt-4 flex justify-end">
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              className="text-muted-foreground"
+                              onClick={() => {
+                                const message = encodeURIComponent(
+                                  `@qodratak2030 أريد الإبلاغ عن خطأ في السؤال:\n\n${question.text}\n\nرقم السؤال: ${index + 1}\nالقسم: ${sectionName}`
+                                );
+                                window.open(`https://t.me/share/url?url=${message}`, '_blank');
+                              }}
+                            >
+                              <span className="ml-2">إبلاغ عن خطأ</span>
+                            </Button>
+                          </div>
+
                           {question.explanation && (
                             <div className="mt-4 p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200">
                               <h5 className="font-medium mb-1 text-blue-800 dark:text-blue-200">الشرح:</h5>
