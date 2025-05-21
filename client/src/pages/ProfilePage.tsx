@@ -383,16 +383,9 @@ const ProfilePage: React.FC = () => {
       <div className="container max-w-md mx-auto p-6 relative">
         <div className="bg-card/80 backdrop-blur-sm rounded-lg shadow-xl p-8 border border-border/50">
           <h1 className="text-3xl font-bold text-center mb-6">تسجيل الدخول</h1>
-          <div className="space-y-4">
-            <GoogleAuth />
-            <div className="relative">
-              <div className="absolute inset-0 flex items-center">
-                <span className="w-full border-t" />
-              </div>
-              <div className="relative flex justify-center text-xs uppercase">
-                <span className="bg-background px-2 text-muted-foreground">أو</span>
-              </div>
-            </div>
+          <div className="space-y-6">
+            <div className="absolute -z-10 w-[400px] h-[400px] bg-primary/5 rounded-full blur-3xl animate-pulse-slow" />
+            <div className="absolute -z-10 w-[300px] h-[300px] right-0 top-20 bg-primary/10 rounded-full blur-2xl animate-float" />
             {/* Existing login form here */}
           </div>
         </div>

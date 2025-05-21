@@ -62,28 +62,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   }));
 
-  // Google OAuth routes
-  app.get('/api/auth/google',
-    passport.authenticate('google', { scope: ['profile', 'email'] })
-  );
-
-  app.get('/api/auth/google/callback',
-    passport.authenticate('google', { failureRedirect: '/profile' }),
-    (req, res) => {
-      if (req.user) {
-        // Store user in localStorage through a script
-        const script = `
-          <script>
-            window.localStorage.setItem('user', '${JSON.stringify(req.user)}');
-            window.location.href = '/';
-          </script>
-        `;
-        res.send(script);
-      } else {
-        res.redirect('/profile');
-      }
-    }
-  );
+  // Auth routes will be added here
 
   app.get("/api/seed-questions", async (req: Request, res: Response) => {
     try {
