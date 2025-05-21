@@ -373,15 +373,32 @@ const ProfilePage: React.FC = () => {
   // If not logged in, show login/register forms
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-primary/5 to-background relative overflow-hidden">
-      {/* Animated background effects */}
+      {/* Enhanced animated background effects */}
       <div className="absolute inset-0">
-        <div className="absolute inset-0 bg-[radial-gradient(circle_800px_at_100%_200px,var(--primary)/10%,transparent_100%)] animate-pulse-slow" />
-        <div className="absolute inset-0 bg-[radial-gradient(circle_800px_at_0%_800px,var(--primary)/10%,transparent_100%)] animate-pulse-slow" />
-        <div className="absolute inset-0 bg-grid-white/10 bg-[size:20px_20px] [mask-image:radial-gradient(black,transparent_70%)]" />
-        <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-background to-primary/5 opacity-60" />
+        <div className="absolute inset-0 bg-[radial-gradient(circle_1200px_at_100%_200px,var(--primary)/15%,transparent_100%)] animate-pulse-slow" />
+        <div className="absolute inset-0 bg-[radial-gradient(circle_1000px_at_0%_800px,var(--primary)/20%,transparent_100%)] animate-float" />
+        <div className="absolute inset-0 bg-[radial-gradient(circle_800px_at_50%_50%,var(--primary)/10%,transparent_100%)] animate-pulse-slow" />
+        <div className="absolute inset-0 bg-grid-white/5 bg-[size:30px_30px] [mask-image:radial-gradient(black,transparent_80%)]" />
+        {[...Array(20)].map((_, i) => (
+          <div
+            key={i}
+            className="absolute rounded-full bg-primary/10 animate-float"
+            style={{
+              width: `${Math.random() * 100 + 20}px`,
+              height: `${Math.random() * 100 + 20}px`,
+              top: `${Math.random() * 100}%`,
+              left: `${Math.random() * 100}%`,
+              animationDelay: `${Math.random() * 5}s`,
+              animationDuration: `${Math.random() * 10 + 5}s`,
+              filter: `blur(${Math.random() * 3}px)`,
+              opacity: Math.random() * 0.3
+            }}
+          />
+        ))}
       </div>
       <div className="container max-w-md mx-auto p-6 relative">
-        <div className="bg-card/80 backdrop-blur-sm rounded-lg shadow-xl p-8 border border-border/50">
+        <div className="bg-card/60 backdrop-blur-md rounded-2xl shadow-2xl p-8 border border-border/30 hover:shadow-primary/20 transition-all duration-500 hover:scale-[1.02] relative overflow-hidden group">
+          <div className="absolute inset-0 bg-gradient-to-r from-primary/10 via-transparent to-primary/10 translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-1000" />
           <h1 className="text-3xl font-bold text-center mb-6">تسجيل الدخول</h1>
           <div className="space-y-6">
             <div className="absolute -z-10 w-[400px] h-[400px] bg-primary/5 rounded-full blur-3xl animate-pulse-slow" />
