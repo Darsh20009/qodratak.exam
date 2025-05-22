@@ -4,12 +4,12 @@ import { RotateDevicePrompt } from "@/components/RotateDevicePrompt";
 import { queryClient } from "./lib/queryClient";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
-import { ThemeProvider } from "@/components/ThemeProvider";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { Assistant } from "@/components/ui/assistant";
 import NotFound from "@/pages/not-found";
 import Home from "@/pages/Home";
 import ExamRecordsPage from "@/pages/ExamRecordsPage";
+import { ThemeProvider } from "next-themes";
 import { Separator } from "@/components/ui/separator";
 import { 
   BookOpenIcon, 
@@ -150,61 +150,8 @@ function MainLayout({ children }: { children: React.ReactNode }) {
   );
 }
 
-function Router() {
+function Router({ splashDone }: { splashDone: boolean }) {
   const [user, setUser] = React.useState(() => {
-  const [splashDone, setSplashDone] = React.useState(false);
-
-  React.useEffect(() => {
-    const timer = setTimeout(() => {
-      setSplashDone(true);
-    }, 2000);
-    return () => clearTimeout(timer);
-  }, []);
-
-  if (!splashDone) {
-    return (
-      <div className="h-screen w-screen flex flex-col items-center justify-center relative overflow-hidden perspective-1000">
-        {/* Enhanced animated background layers */}
-        <div className="absolute inset-0 bg-gradient-to-br from-primary/40 via-background to-primary/30 animate-gradient-x transform-style-3d"/>
-        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,var(--primary)/30,transparent_70%)] animate-pulse-slow"/>
-        <div className="absolute inset-0">
-          <div className="absolute inset-0 bg-[radial-gradient(circle_1000px_at_50%_-100px,var(--primary-foreground),transparent)] animate-pulse-slow"/>
-          <div className="absolute inset-0 bg-[conic-gradient(from_0deg_at_50%_50%,var(--primary)/30_0%,transparent_60%)] animate-spin-slow"/>
-          <div className="absolute inset-0 bg-[conic-gradient(from_90deg_at_50%_50%,var(--primary)/20_0%,transparent_60%)] animate-spin-reverse"/>
-          <div className="absolute inset-0 bg-grid-white/10 bg-[size:20px_20px] [mask-image:radial-gradient(black,transparent_70%)]"/>
-        </div>
-
-        {/* Floating particles */}
-        <div className="absolute inset-0 overflow-hidden">
-          {[...Array(20)].map((_, i) => (
-            <div
-              key={i}
-              className="absolute h-1 w-1 bg-primary/30 rounded-full animate-float"
-              style={{
-                top: `${Math.random() * 100}%`,
-                left: `${Math.random() * 100}%`,
-                animationDelay: `${Math.random() * 5}s`
-              }}
-            />
-          ))}
-        </div>
-
-        {/* Main content with enhanced animations */}
-        <div className="relative z-10 text-center space-y-6">
-          <div className="relative inline-block">
-            <h1 className="text-7xl font-bold bg-gradient-to-r from-primary via-primary-foreground to-primary bg-clip-text text-transparent animate-float">
-              قدراتك
-            </h1>
-            <div className="absolute -right-8 -top-8 text-4xl animate-bounce-slow">✨</div>
-            <div className="absolute -left-8 -bottom-4 text-4xl animate-bounce-slow" style={{animationDelay: '0.5s'}}>✨</div>
-          </div>
-          <p className="text-3xl text-primary/90 animate-fade-in-delay relative">
-            طريقك للوصول إلى 100% بإذن الله
-          </p>
-        </div>
-      </div>
-    );
-  }
     const storedUser = localStorage.getItem("user");
     return storedUser ? JSON.parse(storedUser) : null;
   });
@@ -245,7 +192,7 @@ function Router() {
 
   return (
     <>
-      <RotateDevicePrompt />
+      {splashDone && <RotateDevicePrompt />}
       <Switch>
       {/* Main pages */}
       <Route path="/">
@@ -299,22 +246,23 @@ function Router() {
         {() => <MainLayout><NotFound /></MainLayout>}
       </Route>
     </Switch>
+    </>
   );
 }
 
 function App() {
   const [showSplash, setShowSplash] = React.useState(true);
-  const [splashDone, setSplashDone] = React.useState(false);
 
   React.useEffect(() => {
     const timer = setTimeout(() => {
       setShowSplash(false);
       setSplashDone(true);
     }, 2000);
-
     return () => clearTimeout(timer);
   }, []);
 
+  const [splashDone, setSplashDone] = React.useState(false);
+  
   if (showSplash) {
     return (
       <div className="h-screen w-screen flex flex-col items-center justify-center relative overflow-hidden perspective-1000">
@@ -362,15 +310,11 @@ function App() {
 
   return (
     <QueryClientProvider client={queryClient}>
-      <ThemeProvider>
+      <ThemeProvider attribute="class">
         <TooltipProvider>
-          <Router>
-            <RotateDevicePrompt />
-            <Switch>
-              {/* أضف طرق التوجيه الخاصة بك هنا */}
-            </Switch>
-            <Toaster />
-          </Router>
+          <Toaster />
+          <Router splashDone={splashDone} />
+          <Assistant />
         </TooltipProvider>
       </ThemeProvider>
     </QueryClientProvider>

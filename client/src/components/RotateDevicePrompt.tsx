@@ -7,16 +7,23 @@ import { motion, AnimatePresence } from "framer-motion";
 export function RotateDevicePrompt() {
   const isMobile = useIsMobile();
   const [showPrompt, setShowPrompt] = useState(false);
+  const [orientation, setOrientation] = useState<string>("");
 
   useEffect(() => {
-    if (isMobile && window.screen.orientation) {
-      const checkOrientation = () => {
-        setShowPrompt(window.screen.orientation.type.includes('portrait'));
-      };
-      checkOrientation();
-      window.addEventListener('orientationchange', checkOrientation);
-      return () => window.removeEventListener('orientationchange', checkOrientation);
-    }
+    const checkOrientation = () => {
+      const isPortrait = window.innerHeight > window.innerWidth;
+      setOrientation(isPortrait ? "portrait" : "landscape");
+      setShowPrompt(isPortrait && isMobile);
+    };
+
+    checkOrientation();
+    window.addEventListener("resize", checkOrientation);
+    window.addEventListener("orientationchange", checkOrientation);
+
+    return () => {
+      window.removeEventListener("resize", checkOrientation);
+      window.removeEventListener("orientationchange", checkOrientation);
+    };
   }, [isMobile]);
 
   return (
