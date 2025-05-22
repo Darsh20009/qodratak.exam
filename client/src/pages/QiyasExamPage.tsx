@@ -961,8 +961,24 @@ const QiyasExamPage: React.FC = () => {
                   onClick={() => {
                     const examName = selectedExam?.name || "اختبار قياس";
                     const withAnswers = true;
+                    
+                    // Create a new window/tab for the results
+                    const resultsWindow = window.open('', '_blank');
+                    if (!resultsWindow) {
+                      toast({
+                        title: "خطأ",
+                        description: "فشل في فتح نافذة النتائج. يرجى السماح بالنوافذ المنبثقة.",
+                        variant: "destructive",
+                      });
+                      return;
+                    }
+
                     const content = `
-                      <html dir="rtl">
+                      <!DOCTYPE html>
+                      <html dir="rtl" lang="ar">
+                      <head>
+                        <meta charset="UTF-8">
+                        <meta name="viewport" content="width=device-width, initial-scale=1.0">
                         <head>
                           <style>
                             @import url('https://fonts.googleapis.com/css2?family=Noto+Kufi+Arabic:wght@400;700&display=swap');
@@ -1232,15 +1248,9 @@ const QiyasExamPage: React.FC = () => {
                       </html>
                     `;
 
-                    const blob = new Blob([content], { type: 'text/html;charset=utf-8' });
-                    const url = window.URL.createObjectURL(blob);
-                    const a = document.createElement('a');
-                    a.href = url;
-                    a.download = `${examName}_مع_الإجابات.html`;
-                    document.body.appendChild(a);
-                    a.click();
-                    document.body.removeChild(a);
-                    window.URL.revokeObjectURL(url);
+                    // Write content directly to the new window
+                    resultsWindow.document.write(content);
+                    resultsWindow.document.close();
 
                     toast({
                       title: "تم تحميل الأسئلة مع الإجابات",
