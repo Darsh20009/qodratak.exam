@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import {
   Card,
@@ -30,6 +29,7 @@ export function SubscriptionPlans() {
   const [isPaymentDialogOpen, setIsPaymentDialogOpen] = useState(false);
   const [selectedPlan, setSelectedPlan] = useState<'pro' | 'proLife' | null>(null);
   const [copySuccess, setCopySuccess] = useState<'bank' | 'stc' | 'paypal' | null>(null);
+  const [userData, setUserData] = useState<{ name?: string, email?: string, password?: string, phone?: string }>({});
 
   const handleCopy = async (text: string, type: 'bank' | 'stc' | 'paypal') => {
     await navigator.clipboard.writeText(text);
@@ -48,12 +48,13 @@ export function SubscriptionPlans() {
 
   const handleTelegramRedirect = () => {
     const user = localStorage.getItem('user');
-    const userData = user ? JSON.parse(user) : null;
+    const localStorageUserData = user ? JSON.parse(user) : null;
     const planPrice = selectedPlan === 'pro' ? '180' : '400';
     const message = encodeURIComponent(
       `طلب اشتراك جديد:\n` +
-      `الاسم: ${userData?.name || ''}\n` +
-      `البريد الإلكتروني: ${userData?.email || ''}\n` +
+      `الاسم: ${userData?.name || localStorageUserData?.name || ''}\n` +
+      `البريد الإلكتروني: ${userData?.email || localStorageUserData?.email || ''}\n` +
+      `رقم الهاتف: ${userData?.phone || ''}\n` +
       `نوع الباقة: ${selectedPlan === 'pro' ? 'Pro - 180 SR' : 'Pro Life - 400 SR'}\n` +
       `يرجى إرفاق سند التحويل`
     );
@@ -156,15 +157,46 @@ export function SubscriptionPlans() {
         <Dialog open={isPaymentDialogOpen} onOpenChange={setIsPaymentDialogOpen}>
           <DialogContent className="sm:max-w-md">
             <DialogHeader>
-              <DialogTitle>طرق الدفع المتاحة</DialogTitle>
+              <DialogTitle>استمارة الاشتراك</DialogTitle>
               <DialogDescription>
-                اختر طريقة الدفع المناسبة لك
+                يرجى تعبئة المعلومات التالية
               </DialogDescription>
             </DialogHeader>
 
             <div className="space-y-6 pt-4">
               <div className="space-y-4">
-                <h3 className="font-semibold text-lg">الراجحي (تحويل بنكي)</h3>
+                <h3 className="font-semibold text-lg">المعلومات الشخصية</h3>
+                <div className="space-y-2">
+                  <Input 
+                    placeholder="الاسم الكامل"
+                    value={userData?.name || ''}
+                    onChange={(e) => setUserData(prev => ({ ...prev, name: e.target.value }))}
+                  />
+                  <Input 
+                    type="email"
+                    placeholder="البريد الإلكتروني"
+                    value={userData?.email || ''}
+                    onChange={(e) => setUserData(prev => ({ ...prev, email: e.target.value }))}
+                  />
+                  <Input 
+                    type="password"
+                    placeholder="كلمة المرور"
+                    value={userData?.password || ''}
+                    onChange={(e) => setUserData(prev => ({ ...prev, password: e.target.value }))}
+                  />
+                  <Input 
+                    type="tel"
+                    placeholder="رقم الهاتف"
+                    value={userData?.phone || ''}
+                    onChange={(e) => setUserData(prev => ({ ...prev, phone: e.target.value }))}
+                  />
+                </div>
+              </div>
+
+              <Separator />
+
+              <div className="space-y-4">
+                <h3 className="font-semibold text-lg">طرق الدفع المتاحة</h3>
                 <div className="flex items-center justify-between p-3 bg-muted rounded-lg">
                   <code className="text-sm font-mono">SA78 8000 0539 6080 1942 4738</code>
                   <Button
