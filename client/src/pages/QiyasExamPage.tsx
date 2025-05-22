@@ -887,20 +887,14 @@ const QiyasExamPage: React.FC = () => {
               <div className="bg-muted/30 p-4 rounded-lg text-center">
                 <div className="text-sm text-muted-foreground mb-1">الوقت المستغرق</div>
                 <div className="font-bold">
-                  {examStartTime ? (
-                    <>
-                      {Math.floor((selectedExam.totalTime * 60 - timeLeft) / 60)} دقيقة
-                      {(selectedExam.totalTime * 60 - timeLeft) % 60 > 0 && (
-                        <>
-                          {" و "}
-                          {(selectedExam.totalTime * 60 - timeLeft) % 60} ثانية
-                        </>
-                      )}
-                    </>
-                  ) : (
-                    "0 دقيقة"
-                  )}
-                </div>
+  {examStartTime ? (
+    <>
+      {selectedExam.totalTime - Math.ceil(timeLeft / 60)} دقيقة
+    </>
+  ) : (
+    "0 دقيقة"
+  )}
+</div>
                 <div className="text-xs text-muted-foreground">
                   من أصل {selectedExam.totalTime} دقيقة
                 </div>
@@ -961,7 +955,7 @@ const QiyasExamPage: React.FC = () => {
                   onClick={() => {
                     const examName = selectedExam?.name || "اختبار قياس";
                     const withAnswers = true;
-                    
+
                     // Create a new window/tab for the results
                     const resultsWindow = window.open('', '_blank');
                     if (!resultsWindow) {
