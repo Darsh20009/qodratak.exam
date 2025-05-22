@@ -947,10 +947,19 @@ const QiyasExamPage: React.FC = () => {
             </Button>
 
               <div className="flex gap-2">
-                <Button 
-                  onClick={() => {
-                    const examName = selectedExam?.name || "اختبار قياس";
-                    const withAnswers = true;
+                {selectedExam?.requiresSubscription ? (
+                  <Button 
+                    onClick={() => setLocation("/subscription")}
+                    className="gap-2"
+                  >
+                    <LockIcon className="h-4 w-4" />
+                    تحميل الاسئلة مع الاجابات (للمشتركين فقط)
+                  </Button>
+                ) : (
+                  <Button 
+                    onClick={() => {
+                      const examName = selectedExam?.name || "اختبار قياس";
+                      const withAnswers = true;
                     const content = `
                       <html dir="rtl">
                         <head>
@@ -1242,6 +1251,7 @@ const QiyasExamPage: React.FC = () => {
                   <Download className="h-4 w-4" />
                   تحميل الاسئلة مع اجاباتي
                 </Button>
+                )}
 
                 <Button 
                   variant="outline"
