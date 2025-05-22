@@ -1535,10 +1535,11 @@ const QiyasExamPage: React.FC = () => {
                             ))}
                           </div>
 
+
                           
                           <div className="mt-4 p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200">
                             <h5 className="font-medium mb-1 text-blue-800 dark:text-blue-200">الشرح:</h5>
-                            <p className="text-sm">{question.explanation || "لا يوجد شرح متاح لهذا السؤال"}</p>
+                            <p className="text-sm">{question.explanation ? question.explanation : "لا يوجد شرح متاح لهذا السؤال"}</p>
                           </div>
                         </div>
                       </div>
@@ -1590,10 +1591,11 @@ const QiyasExamPage: React.FC = () => {
                             ))}
                           </div>
 
+
                           
                           <div className="mt-4 p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200">
                             <h5 className="font-medium mb-1 text-blue-800 dark:text-blue-200">الشرح:</h5>
-                            <p className="text-sm">{question.explanation || "لا يوجد شرح متاح لهذا السؤال"}</p>
+                            <p className="text-sm">{question.explanation ? question.explanation : "لا يوجد شرح متاح لهذا السؤال"}</p>
                           </div>
                         </div>
                       </div>
@@ -1648,7 +1650,7 @@ const QiyasExamPage: React.FC = () => {
                           
                           <div className="mt-4 p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200">
                             <h5 className="font-medium mb-1 text-blue-800 dark:text-blue-200">الشرح:</h5>
-                            <p className="text-sm">{question.explanation || "لا يوجد شرح متاح لهذا السؤال"}</p>
+                            <p className="text-sm">{question.explanation ? question.explanation : "لا يوجد شرح متاح لهذا السؤال"}</p>
                           </div>
                         </div>
                       </div>
