@@ -953,6 +953,14 @@ const QiyasExamPage: React.FC = () => {
               <div className="flex gap-2">
                 <Button 
                   onClick={() => {
+                    const user = JSON.parse(localStorage.getItem('user') || '{}');
+                    const isSubscribed = user?.subscription?.type === 'Pro Live' || user?.subscription?.type === 'Pro';
+                    
+                    if (!isSubscribed) {
+                      setLocation("/subscription");
+                      return;
+                    }
+
                     const examName = selectedExam?.name || "اختبار قياس";
                     const withAnswers = true;
 
@@ -1260,6 +1268,14 @@ const QiyasExamPage: React.FC = () => {
                 <Button 
                   variant="outline"
                   onClick={() => {
+                    const user = JSON.parse(localStorage.getItem('user') || '{}');
+                    const isSubscribed = user?.subscription?.type === 'Pro Live' || user?.subscription?.type === 'Pro';
+                    
+                    if (!isSubscribed) {
+                      setLocation("/subscription");
+                      return;
+                    }
+
                     const examName = selectedExam?.name || "اختبار قياس";
                     const withAnswers = true; // Changed to true to show correct answers
                     const withUserAnswers = false; // New flag to control showing user answers
