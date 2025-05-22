@@ -591,7 +591,7 @@ const QiyasExamPage: React.FC = () => {
                 >
                   {exam.requiresSubscription ? (
                     <div className="flex items-center gap-2">
-                      {user?.subscription?.type === 'Pro Live' || user?.subscription?.type === 'Pro' ? (
+                      {localStorage.getItem('user') && JSON.parse(localStorage.getItem('user') || '{}')?.subscription?.type === 'Pro Live' || JSON.parse(localStorage.getItem('user') || '{}')?.subscription?.type === 'Pro' ? (
                         <>
                           <CheckCircle className="h-4 w-4 text-green-500" />
                           حسابك مفعل - ابدأ الاختبار
