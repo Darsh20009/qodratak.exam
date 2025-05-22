@@ -1068,7 +1068,39 @@ const QiyasExamPage: React.FC = () => {
                       <div class="header">
                         <div class="logo">قدراتك</div>
                         <h1>${examName}</h1>
-                        <div style="color: #6b7280; margin-top: 10px;">www.qodratak.space</div>
+                        <div style="color: #6b7280; margin-top: 10px;">
+                          <a href="https://www.qodratak.space" target="_blank" rel="noopener noreferrer" style="color: #4f46e5; text-decoration: underline; transition: all 0.2s;">www.qodratak.space</a>
+                        </div>
+                        <style>
+                          body {
+                            user-select: none;
+                            -webkit-user-select: none;
+                            -moz-user-select: none;
+                            -ms-user-select: none;
+                          }
+                          
+                          @keyframes gradient-shift {
+                            0% { background-position: 0% 50%; }
+                            50% { background-position: 100% 50%; }
+                            100% { background-position: 0% 50%; }
+                          }
+                          
+                          body {
+                            background: linear-gradient(-45deg, #f8fafc, #e2e8f0, #cbd5e1, #94a3b8);
+                            background-size: 400% 400%;
+                            animation: gradient-shift 15s ease infinite;
+                          }
+                          
+                          .watermark {
+                            animation: float 6s ease-in-out infinite;
+                          }
+                          
+                          @keyframes float {
+                            0% { transform: rotate(-45deg) translateY(0px); }
+                            50% { transform: rotate(-45deg) translateY(-20px); }
+                            100% { transform: rotate(-45deg) translateY(0px); }
+                          }
+                        </style>
                         <div style="margin-top: 20px; font-size: 14px; color: #4b5563;">
                           تاريخ الاختبار: ${new Date().toLocaleDateString('ar-SA')}
                         </div>
