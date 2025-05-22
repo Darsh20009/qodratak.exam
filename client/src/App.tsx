@@ -190,7 +190,9 @@ function Router() {
   }
 
   return (
-    <Switch>
+    <>
+      {splashDone && <RotateDevicePrompt />}
+      <Switch>
       {/* Main pages */}
       <Route path="/">
         {() => <ProtectedRoute><MainLayout><Home /></MainLayout></ProtectedRoute>}
@@ -243,6 +245,7 @@ function Router() {
         {() => <MainLayout><NotFound /></MainLayout>}
       </Route>
     </Switch>
+    </>
   );
 }
 
@@ -252,10 +255,13 @@ function App() {
   React.useEffect(() => {
     const timer = setTimeout(() => {
       setShowSplash(false);
+      setSplashDone(true);
     }, 2000);
     return () => clearTimeout(timer);
   }, []);
 
+  const [splashDone, setSplashDone] = React.useState(false);
+  
   if (showSplash) {
     return (
       <div className="h-screen w-screen flex flex-col items-center justify-center relative overflow-hidden perspective-1000">
