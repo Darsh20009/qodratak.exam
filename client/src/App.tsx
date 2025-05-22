@@ -1,6 +1,5 @@
 import React from 'react';
 import { Switch, Route, Link, useLocation } from "wouter";
-import { RotateDevicePrompt } from "@/components/RotateDevicePrompt";
 import { queryClient } from "./lib/queryClient";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
@@ -150,7 +149,7 @@ function MainLayout({ children }: { children: React.ReactNode }) {
   );
 }
 
-function Router({ splashDone }: { splashDone: boolean }) {
+function Router() {
   const [user, setUser] = React.useState(() => {
     const storedUser = localStorage.getItem("user");
     return storedUser ? JSON.parse(storedUser) : null;
@@ -191,9 +190,7 @@ function Router({ splashDone }: { splashDone: boolean }) {
   }
 
   return (
-    <>
-      {splashDone && <RotateDevicePrompt />}
-      <Switch>
+    <Switch>
       {/* Main pages */}
       <Route path="/">
         {() => <ProtectedRoute><MainLayout><Home /></MainLayout></ProtectedRoute>}
@@ -246,7 +243,6 @@ function Router({ splashDone }: { splashDone: boolean }) {
         {() => <MainLayout><NotFound /></MainLayout>}
       </Route>
     </Switch>
-    </>
   );
 }
 
@@ -256,13 +252,10 @@ function App() {
   React.useEffect(() => {
     const timer = setTimeout(() => {
       setShowSplash(false);
-      setSplashDone(true);
     }, 2000);
     return () => clearTimeout(timer);
   }, []);
 
-  const [splashDone, setSplashDone] = React.useState(false);
-  
   if (showSplash) {
     return (
       <div className="h-screen w-screen flex flex-col items-center justify-center relative overflow-hidden perspective-1000">
@@ -313,7 +306,7 @@ function App() {
       <ThemeProvider attribute="class">
         <TooltipProvider>
           <Toaster />
-          <Router splashDone={splashDone} />
+          <Router />
           <Assistant />
         </TooltipProvider>
       </ThemeProvider>
