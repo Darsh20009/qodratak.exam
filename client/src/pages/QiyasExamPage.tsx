@@ -1521,8 +1521,7 @@ const QiyasExamPage: React.FC = () => {
                   <Download className="h-4 w-4" />
                   تحميل الاسئلة
                 </Button>
-              
-
+              </div>
           </CardFooter>
         </Card>
 
