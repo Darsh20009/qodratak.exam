@@ -43,6 +43,8 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { TestType } from "@shared/types";
+import jsPDF from 'jspdf';
+import html2canvas from 'html2canvas';
 
 // Types for Qiyas exams
 interface QiyasSection {
@@ -961,290 +963,65 @@ const QiyasExamPage: React.FC = () => {
                   onClick={() => {
                     const examName = selectedExam?.name || "اختبار قياس";
                     const withAnswers = true;
-                    const content = `
-                      <html dir="rtl">
-                        <head>
-                          <style>
-                            @import url('https://fonts.googleapis.com/css2?family=Noto+Kufi+Arabic:wght@400;700&display=swap');
-
-                            body { 
-                              font-family: 'Noto Kufi Arabic', Arial, sans-serif; 
-                              padding: 40px;
-                              background: linear-gradient(135deg, #f8fafc 25%, transparent 25%) -50px 0,
-                                        linear-gradient(225deg, #f8fafc 25%, transparent 25%) -50px 0,
-                                        linear-gradient(315deg, #f8fafc 25%, transparent 25%),
-                                        linear-gradient(45deg, #f8fafc 25%, transparent 25%);
-                              background-size: 100px 100px;
-                              background-color: #ffffff;
-                            }
-
-                            .header { 
-                              text-align: center; 
-                              margin-bottom: 40px;
-                              position: relative;
-                              padding: 30px;
-                              border-radius: 20px;
-                              background: #fff;
-                              box-shadow: 0 8px 16px -4px rgba(0,0,0,0.1);
-                              border: 2px solid #4f46e5;
-                            }
-
-                            .logo {
-                              font-size: 32px;
-                              font-weight: bold;
-                              color: #4f46e5;
-                              margin-bottom: 15px;
-                              text-shadow: 2px 2px 4px rgba(0,0,0,0.1);
-                              position: relative;
-                              display: inline-block;
-                            }
-
-                            .logo::after {
-                              content: "";
-                              position: absolute;
-                              bottom: -5px;
-                              left: 0;
-                              right: 0;
-                              height: 3px;
-                              background: linear-gradient(90deg, #4f46e5, #06b6d4);
-                              border-radius: 3px;
-                            }
-
-                            .watermark { 
-                              position: fixed;
-                              bottom: 40px;
-                              left: 50%;
-                              transform: translateX(-50%) rotate(-45deg);
-                              text-align: center;
-                              color: rgba(79, 70, 229, 0.06);
-                              font-size: 60px;
-                              font-weight: bold;
-                              pointer-events: none;
-                              white-space: nowrap;
-                              z-index: -1;
-                            }
-
-                            .section { 
-                              margin: 40px 0;
-                              padding: 25px;
-                              background: #fff;
-                              border-radius: 20px;
-                              box-shadow: 0 4px 12px -2px rgba(0,0,0,0.08);
-                              position: relative;
-                              overflow: hidden;
-                              border: 1px solid #e5e7eb;
-                            }
-
-                            .section::before {
-                              content: "";
-                              position: absolute;
-                              top: 0;
-                              left: 0;
-                              right: 0;
-                              height: 5px;
-                              background: linear-gradient(90deg, #4f46e5, #06b6d4);
-                            }
-
-                            .section h2 {
-                              color: #4f46e5;
-                              border-bottom: 2px solid #e5e7eb;
-                              padding-bottom: 15px;
-                              margin-bottom: 25px;
-                              font-size: 1.5em;
-                            }
-
-                            .question { 
-                              margin: 30px 0;
-                              padding: 25px;
-                              border: 1px solid #e5e7eb;
-                              border-radius: 15px;
-                              background: #fafafa;
-                              position: relative;
-                              transition: all 0.3s ease;
-                            }
-
-                            .question:hover {
-                              box-shadow: 0 4px 12px -2px rgba(0,0,0,0.05);
-                              transform: translateY(-2px);
-                            }
-
-                            .question h3 {
-                              color: #1f2937;
-                              margin-bottom: 20px;
-                              font-weight: bold;
-                              font-size: 1.2em;
-                              display: flex;
-                              align-items: center;
-                              gap: 10px;
-                            }
-
-                            .question h3::before {
-                              content: "◈";
-                              color: #4f46e5;
-                            }
-
-                            .options { 
-                              margin: 20px 30px;
-                            }
-
-                            .options p {
-                              padding: 12px 20px;
-                              margin: 10px 0;
-                              border-radius: 10px;
-                              background: #fff;
-                              border: 1px solid #e5e7eb;
-                              transition: all 0.2s ease;
-                              position: relative;
-                            }
-
-                            .options p:hover {
-                              background: #f8fafc;
-                            }
-
-                            .correct { 
-                              color: #059669 !important;
-                              font-weight: bold;
-                              background: #ecfdf5 !important;
-                              border-color: #059669 !important;
-                              position: relative;
-                            }
-
-                            .correct::before {
-                              content: "✓";
-                              position: absolute;
-                              right: 10px;
-                              color: #059669;
-                            }
-                            .wrong {
-                              color: #dc2626 !important;
-                              font-weight: bold;
-                              background: #fee2e2 !important;
-                              border-color: #dc2626 !important;
-                              position: relative;
-                            }
-
-                            .wrong::before {
-                              content: "✗";
-                              position: absolute;
-                              right: 10px;
-                              color: #dc2626;
-                            }
-
-                            .explanation {
-                              margin-top: 15px;
-                              padding: 15px;
-                              background: #fef0d7;
-                              border-radius: 10px;
-                              border: 1px solid #fcd34d;
-                              color: #374151;
-                            }
-
-                            .note {
-                              font-style: italic;
-                              color: #9a3412;
-                            }
-
-                            .page-break {
-                              page-break-after: always;
-                            }
-
-                            @media print {
-                              .watermark {
-                                position: fixed;
-                                top: 50%;
-                                left: 50%;
-                                transform: translate(-50%, -50%) rotate(-45deg);
-                              }
-                            }
-                          </style>
-                        </head>
-                        <body>
-                          <div class="watermark">قدراتك - QODRATAK - قدراتك - QODRATAK</div>
-                          <div class="header">
-                            <div class="logo">قدراتك</div>
-                            <h1>${examName}</h1>
-                            <div style="color: #6b7280; margin-top: 15px; font-size: 1.1em;">
-                              <a href="https://www.qodratak.space" target="_blank" rel="noopener noreferrer" style="color: #4f46e5; text-decoration: underline; transition: all 0.2s;">www.qodratak.space</a>
-                            </div>
-                            <div style="margin-top: 20px; font-size: 1em; color: #4b5563;">
-                              تاريخ الاختبار: ${new Date().toLocaleDateString('ar-SA')}
-                            </div>
-                          </div>
-                          <style>
-                            * {
-                              user-select: none !important;
-                              -webkit-user-select: none !important;
-                              -moz-user-select: none !important;
-                              -ms-user-select: none !important;
-                            }
-                            body {
-                              background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
-                              background-size: 200% 200%;
-                              animation: gradientBG 15s ease infinite;
-                            }
-                            @keyframes gradientBG {
-                              0% { background-position: 0% 50% }
-                              50% { background-position: 100% 50% }
-                              100% { background-position: 0% 50% }
-                            }
-                            .watermark {
-                              opacity: 0.08;
-                              transform: rotate(-45deg) scale(1.5);
-                            }
-                          </style>
-                          ${Object.entries(allSectionsQuestions).map(([sectionNum, questions]) => {
-                            const sectionName = selectedExam?.sections[parseInt(sectionNum) - 1]?.name || `القسم ${sectionNum}`;
-                            return `
-                              <div class="section">
-                                <h2>${sectionName}</h2>
-                                ${questions.map((q, idx) => `
-                            <div class="question">
-                              <h3>السؤال ${idx + 1}</h3>
-                              <p>${q.text}</p>
-                              <div class="options">
-                                ${q.options.map((opt, i) => `
-                                  <p class="${
-                                    withAnswers ? (
-                                      i === answers[q.id] && i === q.correctOptionIndex ? 'correct' :
-                                      i === answers[q.id] ? 'wrong' :
-                                      i === q.correctOptionIndex ? 'correct' : ''
-                                    ) : 'normal'
-                                  }">${i + 1}. ${opt}${
-                                    withAnswers && i === answers[q.id] ? ' (إجابتك)' : 
-                                    withAnswers && i === q.correctOptionIndex ? ' (الإجابة الصحيحة)' : ''
-                                  }</p>
-                                `).join('')}
-                              </div>
-                              ${withAnswers && answers[q.id] !== q.correctOptionIndex ? `
-                                <div class="explanation">
-                                  <p class="note">ملاحظة: إجابتك غير صحيحة</p>
+                    
+                    const generatePDF = async () => {
+                      const content = document.createElement('div');
+                      content.dir = 'rtl';
+                      content.style.fontFamily = "'Noto Kufi Arabic', Arial, sans-serif";
+                      content.style.padding = '20px';
+                      content.innerHTML = `
+                        <div style="text-align: center; margin-bottom: 20px;">
+                          <h1>${examName}</h1>
+                        </div>
+                        ${Object.entries(allSectionsQuestions).map(([sectionNum, questions]) => {
+                          const sectionName = selectedExam?.sections[parseInt(sectionNum) - 1]?.name || `القسم ${sectionNum}`;
+                          return `
+                            <div style="margin-bottom: 30px;">
+                              <h2>${sectionName}</h2>
+                              ${questions.map((q, idx) => `
+                                <div style="margin-bottom: 15px;">
+                                  <h3>السؤال ${idx + 1}:</h3>
+                                  <p>${q.text}</p>
+                                  <ul>
+                                    ${q.options.map((opt, i) => `
+                                      <li>${opt} ${withAnswers && i === q.correctOptionIndex ? '(الإجابة الصحيحة)' : ''}</li>
+                                    `).join('')}
+                                  </ul>
                                 </div>
-                              ` : ''}
+                              `).join('')}
                             </div>
-                          `).join('')}
-                              </div>
-                            `;
-                          }).join('')}
-                          <div style="text-align: center; margin-top: 40px; color: #6b7280; font-size: 0.9em;">
-                            © ${new Date().getFullYear()} قدراتك - جميع الحقوق محفوظة
-                          </div>
-                        </body>
-                      </html>
-                    `;
-
-                    const blob = new Blob([content], { type: 'text/html;charset=utf-8' });
-                    const url = window.URL.createObjectURL(blob);
-                    const a = document.createElement('a');
-                    a.href = url;
-                    a.download = `${examName}_مع_الإجابات.html`;
-                    document.body.appendChild(a);
-                    a.click();
-                    document.body.removeChild(a);
-                    window.URL.revokeObjectURL(url);
+                          `;
+                        }).join('')}
+                      `;
+                      document.body.appendChild(content);
+                      const pdf = new jsPDF('p', 'mm', 'a4');
+                    
+                      try {
+                        const canvas = await html2canvas(content, {
+                          scale: 2,
+                          useCORS: true,
+                          logging: false,
+                          allowTaint: true,
+                        });
+                    
+                        const imgData = canvas.toDataURL('image/jpeg', 1.0);
+                        const pdfWidth = pdf.internal.pageSize.getWidth();
+                        const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
+                    
+                        pdf.addImage(imgData, 'JPEG', 0, 0, pdfWidth, pdfHeight);
+                        pdf.save(`${examName}.pdf`);
+                      } catch (error) {
+                        console.error('Error generating PDF:', error);
+                      } finally {
+                        document.body.removeChild(content);
+                      }
+                    };
+                    
+                    generatePDF();
 
                     toast({
                       title: "تم تحميل الأسئلة مع الإجابات",
-                      description: "يمكنك فتح الملف في المتصفح لطباعته أو تحويله إلى PDF",
+                      description: "يمكنك فتح الملف",
                     });
                   }}
                   className="gap-2"
@@ -1259,232 +1036,65 @@ const QiyasExamPage: React.FC = () => {
                     const examName = selectedExam?.name || "اختبار قياس";
                     const withAnswers = true; // Changed to true to show correct answers
                     const withUserAnswers = false; // New flag to control showing user answers
-                    const content = `
-                      <html dir="rtl">
-                        <head>
-                          <style>
-                            @import url('https://fonts.googleapis.com/css2?family=Noto+Kufi+Arabic:wght@400;700&display=swap');
-
-                            body { 
-                              font-family: 'Noto Kufi Arabic', Arial, sans-serif; 
-                              padding: 40px;
-                              background: linear-gradient(135deg, #f8fafc 25%, transparent 25%) -50px 0,
-                                        linear-gradient(225deg, #f8fafc 25%, transparent 25%) -50px 0,
-                                        linear-gradient(315deg, #f8fafc 25%, transparent 25%),
-                                        linear-gradient(45deg, #f8fafc 25%, transparent 25%);
-                              background-size: 100px 100px;
-                              background-color: #ffffff;
-                            }
-
-                            .header { 
-                              text-align: center; 
-                              margin-bottom: 40px;
-                              position: relative;
-                              padding: 30px;
-                              border-radius: 20px;
-                              background: #fff;
-                              box-shadow: 0 8px 16px -4px rgba(0,0,0,0.1);
-                              border: 2px solid #4f46e5;
-                            }
-
-                            .logo {
-                              font-size: 32px;
-                              font-weight: bold;
-                              color: #4f46e5;
-                              margin-bottom: 15px;
-                              text-shadow: 2px 2px 4px rgba(0,0,0,0.1);
-                              position: relative;
-                              display: inline-block;
-                            }
-
-                            .logo::after {
-                              content: "";
-                              position: absolute;
-                              bottom: -5px;
-                              left: 0;
-                              right: 0;
-                              height: 3px;
-                              background: linear-gradient(90deg, #4f46e5, #06b6d4);
-                              border-radius: 3px;
-                            }
-
-                            .watermark { 
-                              position: fixed;
-                              bottom: 40px;
-                              left: 50%;
-                              transform: translateX(-50%) rotate(-45deg);
-                              text-align: center;
-                              color: rgba(79, 70, 229, 0.06);
-                              font-size: 60px;
-                              font-weight: bold;
-                              pointer-events: none;
-                              white-space: nowrap;
-                              z-index: -1;
-                            }
-
-                            .section { 
-                              margin: 40px 0;
-                              padding: 25px;
-                              background: #fff;
-                              border-radius: 20px;
-                              box-shadow: 0 4px 12px -2px rgba(0,0,0,0.08);
-                              position: relative;
-                              overflow: hidden;
-                              border: 1px solid #e5e7eb;
-                            }
-
-                            .section::before {
-                              content: "";
-                              position: absolute;
-                              top: 0;
-                              left: 0;
-                              right: 0;
-                              height: 5px;
-                              background: linear-gradient(90deg, #4f46e5, #06b6d4);
-                            }
-
-                            .section h2 {
-                              color: #4f46e5;
-                              border-bottom: 2px solid #e5e7eb;
-                              padding-bottom: 15px;
-                              margin-bottom: 25px;
-                              font-size: 1.5em;
-                            }
-
-                            .question { 
-                              margin: 30px 0;
-                              padding: 25px;
-                              border: 1px solid #e5e7eb;
-                              border-radius: 15px;
-                              background: #fafafa;
-                              position: relative;
-                              transition: all 0.3s ease;
-                            }
-
-                            .question:hover {
-                              box-shadow: 0 4px 12px -2px rgba(0,0,0,0.05);
-                              transform: translateY(-2px);
-                            }
-
-                            .question h3 {
-                              color: #1f2937;
-                              margin-bottom: 20px;
-                              font-weight: bold;
-                              font-size: 1.2em;
-                              display: flex;
-                              align-items: center;
-                              gap: 10px;
-                            }
-
-                            .question h3::before {
-                              content: "◈";
-                              color: #4f46e5;
-                            }
-
-                            .options { 
-                              margin: 20px 30px;
-                            }
-
-                            .options p {
-                              padding: 12px 20px;
-                              margin: 10px 0;
-                              border-radius: 10px;
-                              background: #fff;
-                              border: 1px solid #e5e7eb;
-                              transition: all 0.2s ease;
-                              position: relative;
-                            }
-
-                            .options p:hover {
-                              background: #f8fafc;
-                            }
-
-                            .page-break {
-                              page-break-after: always;
-                            }
-
-                            @media print {
-                              .watermark {
-                                position: fixed;
-                                top: 50%;
-                                left: 50%;
-                                transform: translate(-50%, -50%) rotate(-45deg);
-                              }
-                            }
-                          </style>
-                        </head>
-                        <body>
-                          <div class="watermark">قدراتك - QODRATAK - قدراتك - QODRATAK</div>
-                          <div class="header">
-                            <div class="logo">قدراتك</div>
-                            <h1>${examName}</h1>
-                            <div style="color: #6b7280; margin-top: 15px; font-size: 1.1em;">
-                              <a href="https://www.qodratak.space" target="_blank" rel="noopener noreferrer" style="color: #4f46e5; text-decoration: underline; transition: all 0.2s;">www.qodratak.space</a>
+                    
+                    const generatePDF = async () => {
+                      const content = document.createElement('div');
+                      content.dir = 'rtl';
+                      content.style.fontFamily = "'Noto Kufi Arabic', Arial, sans-serif";
+                      content.style.padding = '20px';
+                      content.innerHTML = `
+                        <div style="text-align: center; margin-bottom: 20px;">
+                          <h1>${examName}</h1>
+                        </div>
+                        ${Object.entries(allSectionsQuestions).map(([sectionNum, questions]) => {
+                          const sectionName = selectedExam?.sections[parseInt(sectionNum) - 1]?.name || `القسم ${sectionNum}`;
+                          return `
+                            <div style="margin-bottom: 30px;">
+                              <h2>${sectionName}</h2>
+                              ${questions.map((q, idx) => `
+                                <div style="margin-bottom: 15px;">
+                                  <h3>السؤال ${idx + 1}:</h3>
+                                  <p>${q.text}</p>
+                                  <ul>
+                                    ${q.options.map((opt, i) => `
+                                      <li>${opt}</li>
+                                    `).join('')}
+                                  </ul>
+                                </div>
+                              `).join('')}
                             </div>
-                            <div style="margin-top: 20px; font-size: 1em; color: #4b5563;">
-                              تاريخ الاختبار: ${new Date().toLocaleDateString('ar-SA')}
-                            </div>
-                          </div>
-                          <style>
-                            * {
-                              user-select: none !important;
-                              -webkit-user-select: none !important;
-                              -moz-user-select: none !important;
-                            }
-                            body {
-                              background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
-                              background-size: 200% 200%;
-                              animation: gradientBG 15s ease infinite;
-                            }
-                            @keyframes gradientBG {
-                              0% { background-position: 0% 50% }
-                              50% { background-position: 100% 50% }
-                              100% { background-position: 0% 50% }
-                            }
-                            .watermark {
-                              opacity: 0.08;
-                              transform: rotate(-45deg) scale(1.5);
-                            }
-                          </style>
-                          ${Object.entries(allSectionsQuestions).map(([sectionNum, questions]) => {
-                            const sectionName = selectedExam?.sections[parseInt(sectionNum) - 1]?.name || `القسم ${sectionNum}`;
-                            return `
-                              <div class="section">
-                                <h2>${sectionName}</h2>
-                                ${questions.map((q, idx) => `
-                                  <div class="question">
-                                    <h3>السؤال ${idx + 1}</h3>
-                                    <p>${q.text}</p>
-                                    <div class="options">
-                                      ${q.options.map((opt, i) => `
-                                        <p>${i + 1}. ${opt}</p>
-                                      `).join('')}
-                                    </div>
-                                  </div>
-                                `).join('')}
-                              </div>
-                            `;
-                          }).join('')}
-                          <div style="text-align: center; margin-top: 40px; color: #6b7280; font-size: 0.9em;">
-                            © ${new Date().getFullYear()} قدراتك - جميع الحقوق محفوظة
-                          </div>
-                        </body>
-                      </html>
-                    `;
-
-                    const blob = new Blob([content], { type: 'text/html;charset=utf-8' });
-                    const url = window.URL.createObjectURL(blob);
-                    const a = document.createElement('a');
-                    a.href = url;
-                    a.download = `${examName}_بدون_إجابات.html`;
-                    document.body.appendChild(a);
-                    a.click();
-                    document.body.removeChild(a);
-                    window.URL.revokeObjectURL(url);
+                          `;
+                        }).join('')}
+                      `;
+                      document.body.appendChild(content);
+                      const pdf = new jsPDF('p', 'mm', 'a4');
+                    
+                      try {
+                        const canvas = await html2canvas(content, {
+                          scale: 2,
+                          useCORS: true,
+                          logging: false,
+                          allowTaint: true,
+                        });
+                    
+                        const imgData = canvas.toDataURL('image/jpeg', 1.0);
+                        const pdfWidth = pdf.internal.pageSize.getWidth();
+                        const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
+                    
+                        pdf.addImage(imgData, 'JPEG', 0, 0, pdfWidth, pdfHeight);
+                        pdf.save(`${examName}.pdf`);
+                      } catch (error) {
+                        console.error('Error generating PDF:', error);
+                      } finally {
+                        document.body.removeChild(content);
+                      }
+                    };
+                    
+                    generatePDF();
 
                     toast({
                       title: "تم تحميل الأسئلة",
-                      description: "يمكنك فتح الملف في المتصفح لطباعته أو تحويله إلى PDF",
+                      description: "يمكنك فتح الملف",
                     });
                   }}
                   className="gap-2"
