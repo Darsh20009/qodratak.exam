@@ -146,7 +146,7 @@ const qiyasExams: QiyasExam[] = [
     totalSections: 7,
     totalQuestions: 120,
     totalTime: 120,
-    requiresSubscription: true,
+    requiresSubscription: false,
     hideQuestionReview: true,
     sections: [
       { sectionNumber: 1, name: "القسم الأول", category: "mixed", questionCount: 24, timeLimit: 24 },
