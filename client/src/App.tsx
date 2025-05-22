@@ -149,7 +149,7 @@ function MainLayout({ children }: { children: React.ReactNode }) {
   );
 }
 
-function Router() {
+function Router({ splashDone }: { splashDone: boolean }) {
   const [user, setUser] = React.useState(() => {
     const storedUser = localStorage.getItem("user");
     return storedUser ? JSON.parse(storedUser) : null;
@@ -312,7 +312,7 @@ function App() {
       <ThemeProvider attribute="class">
         <TooltipProvider>
           <Toaster />
-          <Router />
+          <Router splashDone={splashDone} />
           <Assistant />
         </TooltipProvider>
       </ThemeProvider>
