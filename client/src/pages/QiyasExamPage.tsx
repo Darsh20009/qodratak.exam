@@ -887,12 +887,18 @@ const QiyasExamPage: React.FC = () => {
               <div className="bg-muted/30 p-4 rounded-lg text-center">
                 <div className="text-sm text-muted-foreground mb-1">الوقت المستغرق</div>
                 <div className="font-bold">
-                  {selectedExam.totalTime - Math.floor(timeLeft / 60)} دقيقة
-                  {timeLeft % 60 > 0 && (
+                  {examStartTime ? (
                     <>
-                      {" و "}
-                      {timeLeft % 60} ثانية
+                      {Math.floor((selectedExam.totalTime * 60 - timeLeft) / 60)} دقيقة
+                      {(selectedExam.totalTime * 60 - timeLeft) % 60 > 0 && (
+                        <>
+                          {" و "}
+                          {(selectedExam.totalTime * 60 - timeLeft) % 60} ثانية
+                        </>
+                      )}
                     </>
+                  ) : (
+                    "0 دقيقة"
                   )}
                 </div>
                 <div className="text-xs text-muted-foreground">
