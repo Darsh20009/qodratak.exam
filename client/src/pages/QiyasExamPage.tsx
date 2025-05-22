@@ -873,7 +873,11 @@ const QiyasExamPage: React.FC = () => {
               </div>
               <div className="bg-muted/30 p-4 rounded-lg text-center">
                 <div className="text-sm text-muted-foreground mb-1">الوقت المستغرق</div>
-                <div className="font-bold">{stats.timeTaken} دقيقة</div>
+                <div className="font-bold">
+                  {selectedExam.totalTime - Math.floor(timeLeft / 60)} دقيقة
+                  {" و "}
+                  {60 - (timeLeft % 60)} ثانية
+                </div>
                 <div className="text-xs text-muted-foreground">
                   من أصل {selectedExam.totalTime} دقيقة
                 </div>
@@ -932,33 +936,64 @@ const QiyasExamPage: React.FC = () => {
               <Button 
               onClick={() => {
                 const examName = selectedExam?.name || "اختبار قياس";
-                const watermarkText = `منصة قدراتك - ${examName} - www.qodratak.space`;
                 
-                // Create content for PDF
-                let content = `${examName}\n\n`;
-                Object.entries(allSectionsQuestions).forEach(([sectionNum, questions]) => {
-                  const sectionName = selectedExam?.sections[parseInt(sectionNum) - 1]?.name || `القسم ${sectionNum}`;
-                  content += `\n${sectionName}\n\n`;
-                  
-                  questions.forEach((q, idx) => {
-                    content += `السؤال ${idx + 1}: ${q.text}\n`;
-                    q.options.forEach((opt, i) => {
-                      content += `${i + 1}. ${opt}\n`;
-                    });
-                    content += `\nالإجابة الصحيحة: ${q.correctOptionIndex + 1}\n\n`;
-                  });
-                });
+                // Create PDF content with styling
+                const content = `
+                  <html dir="rtl">
+                    <head>
+                      <style>
+                        body { font-family: Arial, sans-serif; padding: 20px; }
+                        .header { text-align: center; margin-bottom: 30px; }
+                        .watermark { color: #888; font-size: 12px; text-align: center; }
+                        .section { margin: 20px 0; padding: 10px; background: #f5f5f5; border-radius: 5px; }
+                        .question { margin: 15px 0; padding: 10px; border: 1px solid #ddd; }
+                        .options { margin-right: 20px; }
+                        .correct { color: #22c55e; font-weight: bold; }
+                      </style>
+                    </head>
+                    <body>
+                      <div class="header">
+                        <h1>${examName}</h1>
+                        <div class="watermark">منصة قدراتك - www.qodratak.space</div>
+                      </div>
+                      ${Object.entries(allSectionsQuestions).map(([sectionNum, questions]) => {
+                        const sectionName = selectedExam?.sections[parseInt(sectionNum) - 1]?.name || `القسم ${sectionNum}`;
+                        return `
+                          <div class="section">
+                            <h2>${sectionName}</h2>
+                            ${questions.map((q, idx) => `
+                              <div class="question">
+                                <h3>السؤال ${idx + 1}</h3>
+                                <p>${q.text}</p>
+                                <div class="options">
+                                  ${q.options.map((opt, i) => `
+                                    <p>${i + 1}. ${opt} ${i === q.correctOptionIndex ? '<span class="correct">(إجابة صحيحة)</span>' : ''}</p>
+                                  `).join('')}
+                                </div>
+                              </div>
+                            `).join('')}
+                          </div>
+                        `;
+                      }).join('')}
+                    </body>
+                  </html>
+                `;
 
                 // Create blob and download
-                const blob = new Blob([content], { type: 'text/plain;charset=utf-8' });
+                const blob = new Blob([content], { type: 'text/html;charset=utf-8' });
                 const url = window.URL.createObjectURL(blob);
                 const a = document.createElement('a');
                 a.href = url;
-                a.download = `${examName}.txt`;
+                a.download = `${examName}.html`;
                 document.body.appendChild(a);
                 a.click();
                 document.body.removeChild(a);
                 window.URL.revokeObjectURL(url);
+
+                toast({
+                  title: "تم تحميل الأسئلة",
+                  description: "يمكنك فتح الملف في المتصفح لطباعته أو تحويله إلى PDF",
+                });
               }}
                 className="gap-2"
               >
