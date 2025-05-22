@@ -930,14 +930,34 @@ const QiyasExamPage: React.FC = () => {
             
               <Button 
               onClick={() => {
-                // Placeholder for download PDF logic
                 const examName = selectedExam?.name || "اختبار قياس";
                 const watermarkText = `منصة قدراتك - ${examName} - www.qodratak.space`;
                 
-                toast({
-                  title: "جاري تحميل أسئلة الاختبار",
-                  description: "سيتم تنزيل ملف PDF يحتوي على جميع الأسئلة مع العلامة المائية.",
+                // Create content for PDF
+                let content = `${examName}\n\n`;
+                Object.entries(allSectionsQuestions).forEach(([sectionNum, questions]) => {
+                  const sectionName = selectedExam?.sections[parseInt(sectionNum) - 1]?.name || `القسم ${sectionNum}`;
+                  content += `\n${sectionName}\n\n`;
+                  
+                  questions.forEach((q, idx) => {
+                    content += `السؤال ${idx + 1}: ${q.text}\n`;
+                    q.options.forEach((opt, i) => {
+                      content += `${i + 1}. ${opt}\n`;
+                    });
+                    content += `\nالإجابة الصحيحة: ${q.correctOptionIndex + 1}\n\n`;
+                  });
                 });
+
+                // Create blob and download
+                const blob = new Blob([content], { type: 'text/plain;charset=utf-8' });
+                const url = window.URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `${examName}.txt`;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                window.URL.revokeObjectURL(url);
               }}
                 className="gap-2"
               >
@@ -1014,7 +1034,10 @@ const QiyasExamPage: React.FC = () => {
                               size="sm"
                               className="text-muted-foreground"
                               onClick={() => {
-                                window.open(`https://t.me/qodratak2030`, '_blank');
+                                const message = encodeURIComponent(
+                                  `تبليغ عن خطأ في السؤال:\n\nنص السؤال: ${question.text}\n\nالخيارات:\n${question.options.map((opt, i) => `${i + 1}. ${opt}`).join('\n')}\n\nالإجابة الصحيحة: ${question.correctOptionIndex + 1}`
+                                );
+                                window.open(`https://t.me/qodratak2030?text=${message}`, '_blank');
                               }}
                             >
                               <span className="ml-2">إبلاغ عن خطأ</span>
