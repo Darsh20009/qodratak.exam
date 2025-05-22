@@ -581,14 +581,19 @@ const QiyasExamPage: React.FC = () => {
                     }
                   }}
                 >
-                  {exam.requiresSubscription && (
-                    exam.name === "اختبار قدراتك التأهيلي" ||
-                    exam.name === "اختبار لفظي - 65 سؤال" ||
-                    exam.name === "اختبار كمي - 55 سؤال"
-                  ) ? (
+                  {exam.requiresSubscription ? (
                     <div className="flex items-center gap-2">
-                      <LockIcon className="h-4 w-4" />
-                      متاح للمشتركين فقط
+                      {user?.subscription?.type === 'Pro Live' || user?.subscription?.type === 'Pro' ? (
+                        <>
+                          <CheckCircle className="h-4 w-4 text-green-500" />
+                          حسابك مفعل - ابدأ الاختبار
+                        </>
+                      ) : (
+                        <>
+                          <LockIcon className="h-4 w-4" />
+                          يتطلب اشتراك مدفوع
+                        </>
+                      )}
                     </div>
                   ) : (
                     "ابدأ الاختبار"
