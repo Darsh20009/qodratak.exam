@@ -249,6 +249,8 @@ function Router({ splashDone }: { splashDone: boolean }) {
   );
 }
 
+export default App;
+
 function App() {
   const [showSplash, setShowSplash] = React.useState(true);
 
