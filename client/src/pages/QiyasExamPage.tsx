@@ -950,20 +950,20 @@ const QiyasExamPage: React.FC = () => {
               العودة للاختبارات
             </Button>
 
-              
-                  onClick={() => {
-                    const user = JSON.parse(localStorage.getItem('user') || '{}');
-                    const isSubscribed = user?.subscription?.type === 'Pro Live' || user?.subscription?.type === 'Pro';
+              <Button
+                onClick={() => {
+                  const user = JSON.parse(localStorage.getItem('user') || '{}');
+                  const isSubscribed = user?.subscription?.type === 'Pro Live' || user?.subscription?.type === 'Pro';
 
-                    if (!isSubscribed) {
-                      setLocation("/subscription");
-                      toast({
-                        title: "ميزة مقيدة",
-                        description: "هذه الميزة متاحة للمشتركين فقط",
-                        variant: "destructive",
-                      });
-                      return;
-                    }
+                  if (!isSubscribed) {
+                    setLocation("/subscription");
+                    toast({
+                      title: "ميزة مقيدة",
+                      description: "هذه الميزة متاحة للمشتركين فقط",
+                      variant: "destructive",
+                    });
+                    return;
+                  }
 
                     const examName = selectedExam?.name || "اختبار قياس";
                     const withAnswers = true;
