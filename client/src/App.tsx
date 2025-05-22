@@ -1,14 +1,15 @@
 import React from 'react';
 import { Switch, Route, Link, useLocation } from "wouter";
+import { RotateDevicePrompt } from "@/components/RotateDevicePrompt";
 import { queryClient } from "./lib/queryClient";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
+import { ThemeProvider } from "@/components/ThemeProvider";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { Assistant } from "@/components/ui/assistant";
 import NotFound from "@/pages/not-found";
 import Home from "@/pages/Home";
 import ExamRecordsPage from "@/pages/ExamRecordsPage";
-import { ThemeProvider } from "next-themes";
 import { Separator } from "@/components/ui/separator";
 import { 
   BookOpenIcon, 
@@ -208,11 +209,6 @@ function Router() {
     return storedUser ? JSON.parse(storedUser) : null;
   });
 
-  return (
-    <>
-      <RotateDevicePrompt />
-      <Switch>
-
   React.useEffect(() => {
     const handleStorageChange = () => {
       const storedUser = localStorage.getItem("user");
@@ -248,7 +244,9 @@ function Router() {
   }
 
   return (
-    <Switch>
+    <>
+      <RotateDevicePrompt />
+      <Switch>
       {/* Main pages */}
       <Route path="/">
         {() => <ProtectedRoute><MainLayout><Home /></MainLayout></ProtectedRoute>}
@@ -306,11 +304,14 @@ function Router() {
 
 function App() {
   const [showSplash, setShowSplash] = React.useState(true);
+  const [splashDone, setSplashDone] = React.useState(false);
 
   React.useEffect(() => {
     const timer = setTimeout(() => {
       setShowSplash(false);
+      setSplashDone(true);
     }, 2000);
+
     return () => clearTimeout(timer);
   }, []);
 
@@ -361,11 +362,15 @@ function App() {
 
   return (
     <QueryClientProvider client={queryClient}>
-      <ThemeProvider attribute="class">
+      <ThemeProvider>
         <TooltipProvider>
-          <Toaster />
-          <Router />
-          <Assistant />
+          <Router>
+            <RotateDevicePrompt />
+            <Switch>
+              {/* أضف طرق التوجيه الخاصة بك هنا */}
+            </Switch>
+            <Toaster />
+          </Router>
         </TooltipProvider>
       </ThemeProvider>
     </QueryClientProvider>
