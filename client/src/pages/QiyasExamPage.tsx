@@ -933,222 +933,457 @@ const QiyasExamPage: React.FC = () => {
               العودة للاختبارات
             </Button>
             
-              <Button 
-              onClick={() => {
-                const examName = selectedExam?.name || "اختبار قياس";
-                
-                // Create PDF content with enhanced styling
-                const content = `
-                  <html dir="rtl">
-                    <head>
-                      <style>
-                        @import url('https://fonts.googleapis.com/css2?family=Noto+Kufi+Arabic:wght@400;700&display=swap');
-                        
-                        body { 
-                          font-family: 'Noto Kufi Arabic', Arial, sans-serif; 
-                          padding: 40px;
-                          background: linear-gradient(45deg, #f8fafc 25%, transparent 25%, transparent 75%, #f8fafc 75%) 0 0/60px 60px,
-                                    linear-gradient(45deg, #f8fafc 25%, white 25%, white 75%, #f8fafc 75%) 30px 30px/60px 60px;
-                        }
+              <div className="flex gap-2">
+                <Button 
+                  onClick={() => {
+                    const examName = selectedExam?.name || "اختبار قياس";
+                    const withAnswers = true;
+                    const content = `
+                      <html dir="rtl">
+                        <head>
+                          <style>
+                            @import url('https://fonts.googleapis.com/css2?family=Noto+Kufi+Arabic:wght@400;700&display=swap');
+                            
+                            body { 
+                              font-family: 'Noto Kufi Arabic', Arial, sans-serif; 
+                              padding: 40px;
+                              background: linear-gradient(135deg, #f8fafc 25%, transparent 25%) -50px 0,
+                                        linear-gradient(225deg, #f8fafc 25%, transparent 25%) -50px 0,
+                                        linear-gradient(315deg, #f8fafc 25%, transparent 25%),
+                                        linear-gradient(45deg, #f8fafc 25%, transparent 25%);
+                              background-size: 100px 100px;
+                              background-color: #ffffff;
+                            }
 
-                        .header { 
-                          text-align: center; 
-                          margin-bottom: 40px;
-                          position: relative;
-                          padding: 20px;
-                          border-radius: 15px;
-                          background: #fff;
-                          box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1);
-                        }
+                            .header { 
+                              text-align: center; 
+                              margin-bottom: 40px;
+                              position: relative;
+                              padding: 30px;
+                              border-radius: 20px;
+                              background: #fff;
+                              box-shadow: 0 8px 16px -4px rgba(0,0,0,0.1);
+                              border: 2px solid #4f46e5;
+                            }
 
-                        .logo {
-                          font-size: 24px;
-                          font-weight: bold;
-                          color: #4f46e5;
-                          margin-bottom: 10px;
-                          text-shadow: 2px 2px 4px rgba(0,0,0,0.1);
-                        }
+                            .logo {
+                              font-size: 32px;
+                              font-weight: bold;
+                              color: #4f46e5;
+                              margin-bottom: 15px;
+                              text-shadow: 2px 2px 4px rgba(0,0,0,0.1);
+                              position: relative;
+                              display: inline-block;
+                            }
 
-                        .watermark { 
-                          position: fixed;
-                          bottom: 20px;
-                          left: 0;
-                          right: 0;
-                          text-align: center;
-                          color: rgba(79, 70, 229, 0.1);
-                          font-size: 40px;
-                          font-weight: bold;
-                          pointer-events: none;
-                          transform: rotate(-45deg);
-                        }
+                            .logo::after {
+                              content: "";
+                              position: absolute;
+                              bottom: -5px;
+                              left: 0;
+                              right: 0;
+                              height: 3px;
+                              background: linear-gradient(90deg, #4f46e5, #06b6d4);
+                              border-radius: 3px;
+                            }
 
-                        .section { 
-                          margin: 30px 0;
-                          padding: 20px;
-                          background: #fff;
-                          border-radius: 15px;
-                          box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1);
-                          position: relative;
-                          overflow: hidden;
-                        }
+                            .watermark { 
+                              position: fixed;
+                              bottom: 40px;
+                              left: 50%;
+                              transform: translateX(-50%) rotate(-45deg);
+                              text-align: center;
+                              color: rgba(79, 70, 229, 0.06);
+                              font-size: 60px;
+                              font-weight: bold;
+                              pointer-events: none;
+                              white-space: nowrap;
+                              z-index: -1;
+                            }
 
-                        .section::before {
-                          content: "";
-                          position: absolute;
-                          top: 0;
-                          left: 0;
-                          right: 0;
-                          height: 4px;
-                          background: linear-gradient(90deg, #4f46e5, #06b6d4);
-                        }
+                            .section { 
+                              margin: 40px 0;
+                              padding: 25px;
+                              background: #fff;
+                              border-radius: 20px;
+                              box-shadow: 0 4px 12px -2px rgba(0,0,0,0.08);
+                              position: relative;
+                              overflow: hidden;
+                              border: 1px solid #e5e7eb;
+                            }
 
-                        .section h2 {
-                          color: #4f46e5;
-                          border-bottom: 2px solid #e5e7eb;
-                          padding-bottom: 10px;
-                          margin-bottom: 20px;
-                        }
+                            .section::before {
+                              content: "";
+                              position: absolute;
+                              top: 0;
+                              left: 0;
+                              right: 0;
+                              height: 5px;
+                              background: linear-gradient(90deg, #4f46e5, #06b6d4);
+                            }
 
-                        .question { 
-                          margin: 25px 0;
-                          padding: 20px;
-                          border: 1px solid #e5e7eb;
-                          border-radius: 10px;
-                          background: #fafafa;
-                          position: relative;
-                        }
+                            .section h2 {
+                              color: #4f46e5;
+                              border-bottom: 2px solid #e5e7eb;
+                              padding-bottom: 15px;
+                              margin-bottom: 25px;
+                              font-size: 1.5em;
+                            }
 
-                        .question h3 {
-                          color: #1f2937;
-                          margin-bottom: 15px;
-                          font-weight: bold;
-                        }
+                            .question { 
+                              margin: 30px 0;
+                              padding: 25px;
+                              border: 1px solid #e5e7eb;
+                              border-radius: 15px;
+                              background: #fafafa;
+                              position: relative;
+                              transition: all 0.3s ease;
+                            }
 
-                        .options { 
-                          margin: 15px 25px;
-                        }
+                            .question:hover {
+                              box-shadow: 0 4px 12px -2px rgba(0,0,0,0.05);
+                              transform: translateY(-2px);
+                            }
 
-                        .options p {
-                          padding: 8px 15px;
-                          margin: 8px 0;
-                          border-radius: 8px;
-                          background: #fff;
-                          border: 1px solid #e5e7eb;
-                        }
+                            .question h3 {
+                              color: #1f2937;
+                              margin-bottom: 20px;
+                              font-weight: bold;
+                              font-size: 1.2em;
+                              display: flex;
+                              align-items: center;
+                              gap: 10px;
+                            }
 
-                        .correct { 
-                          color: #059669;
-                          font-weight: bold;
-                          background: #ecfdf5 !important;
-                          border-color: #059669 !important;
-                        }
+                            .question h3::before {
+                              content: "◈";
+                              color: #4f46e5;
+                            }
 
-                        .page-number {
-                          position: fixed;
-                          bottom: 20px;
-                          right: 20px;
-                          font-size: 12px;
-                          color: #6b7280;
-                        }
+                            .options { 
+                              margin: 20px 30px;
+                            }
 
-                        .page-number::after {
-                          content: counter(page);
-                        }
+                            .options p {
+                              padding: 12px 20px;
+                              margin: 10px 0;
+                              border-radius: 10px;
+                              background: #fff;
+                              border: 1px solid #e5e7eb;
+                              transition: all 0.2s ease;
+                              position: relative;
+                            }
 
-                        @page {
-                          margin: 40px;
-                          @bottom-right {
-                            content: counter(page);
-                          }
-                        }
-                      </style>
-                    </head>
-                    <body>
-                      <div class="watermark">قدراتك - QODRATAK</div>
-                      <div class="header">
-                        <div class="logo">قدراتك</div>
-                        <h1>${examName}</h1>
-                        <div style="color: #6b7280; margin-top: 10px;">
-                          <a href="https://www.qodratak.space" target="_blank" rel="noopener noreferrer" style="color: #4f46e5; text-decoration: underline; transition: all 0.2s;">www.qodratak.space</a>
-                        </div>
-                        <style>
-                          body {
-                            user-select: none;
-                            -webkit-user-select: none;
-                            -moz-user-select: none;
-                            -ms-user-select: none;
-                          }
-                          
-                          @keyframes gradient-shift {
-                            0% { background-position: 0% 50%; }
-                            50% { background-position: 100% 50%; }
-                            100% { background-position: 0% 50%; }
-                          }
-                          
-                          body {
-                            background: linear-gradient(-45deg, #f8fafc, #e2e8f0, #cbd5e1, #94a3b8);
-                            background-size: 400% 400%;
-                            animation: gradient-shift 15s ease infinite;
-                          }
-                          
-                          .watermark {
-                            animation: float 6s ease-in-out infinite;
-                          }
-                          
-                          @keyframes float {
-                            0% { transform: rotate(-45deg) translateY(0px); }
-                            50% { transform: rotate(-45deg) translateY(-20px); }
-                            100% { transform: rotate(-45deg) translateY(0px); }
-                          }
-                        </style>
-                        <div style="margin-top: 20px; font-size: 14px; color: #4b5563;">
-                          تاريخ الاختبار: ${new Date().toLocaleDateString('ar-SA')}
-                        </div>
-                      </div>
-                      ${Object.entries(allSectionsQuestions).map(([sectionNum, questions]) => {
-                        const sectionName = selectedExam?.sections[parseInt(sectionNum) - 1]?.name || `القسم ${sectionNum}`;
-                        return `
-                          <div class="section">
-                            <h2>${sectionName}</h2>
-                            ${questions.map((q, idx) => `
-                              <div class="question">
-                                <h3>السؤال ${idx + 1}</h3>
-                                <p>${q.text}</p>
-                                <div class="options">
-                                  ${q.options.map((opt, i) => `
-                                    <p>${i + 1}. ${opt} ${i === q.correctOptionIndex ? '<span class="correct">(إجابة صحيحة)</span>' : ''}</p>
-                                  `).join('')}
-                                </div>
-                              </div>
-                            `).join('')}
+                            .options p:hover {
+                              background: #f8fafc;
+                            }
+
+                            .correct { 
+                              color: #059669 !important;
+                              font-weight: bold;
+                              background: #ecfdf5 !important;
+                              border-color: #059669 !important;
+                              position: relative;
+                            }
+
+                            .correct::before {
+                              content: "✓";
+                              position: absolute;
+                              right: 10px;
+                              color: #059669;
+                            }
+
+                            .page-break {
+                              page-break-after: always;
+                            }
+
+                            @media print {
+                              .watermark {
+                                position: fixed;
+                                top: 50%;
+                                left: 50%;
+                                transform: translate(-50%, -50%) rotate(-45deg);
+                              }
+                            }
+                          </style>
+                        </head>
+                        <body>
+                          <div class="watermark">قدراتك - QODRATAK - قدراتك - QODRATAK</div>
+                          <div class="header">
+                            <div class="logo">قدراتك</div>
+                            <h1>${examName}</h1>
+                            <div style="color: #6b7280; margin-top: 15px; font-size: 1.1em;">
+                              <a href="https://www.qodratak.space" target="_blank" rel="noopener noreferrer" style="color: #4f46e5; text-decoration: underline; transition: all 0.2s;">www.qodratak.space</a>
+                            </div>
+                            <div style="margin-top: 20px; font-size: 1em; color: #4b5563;">
+                              تاريخ الاختبار: ${new Date().toLocaleDateString('ar-SA')}
+                            </div>
                           </div>
-                        `;
-                      }).join('')}
-                    </body>
-                  </html>
-                `;
+                          ${Object.entries(allSectionsQuestions).map(([sectionNum, questions]) => {
+                            const sectionName = selectedExam?.sections[parseInt(sectionNum) - 1]?.name || `القسم ${sectionNum}`;
+                            return `
+                              <div class="section">
+                                <h2>${sectionName}</h2>
+                                ${questions.map((q, idx) => `
+                                  <div class="question">
+                                    <h3>السؤال ${idx + 1}</h3>
+                                    <p>${q.text}</p>
+                                    <div class="options">
+                                      ${q.options.map((opt, i) => `
+                                        <p${withAnswers && i === q.correctOptionIndex ? ' class="correct"' : ''}>${i + 1}. ${opt}</p>
+                                      `).join('')}
+                                    </div>
+                                  </div>
+                                `).join('')}
+                              </div>
+                            `;
+                          }).join('')}
+                          <div style="text-align: center; margin-top: 40px; color: #6b7280; font-size: 0.9em;">
+                            © ${new Date().getFullYear()} قدراتك - جميع الحقوق محفوظة
+                          </div>
+                        </body>
+                      </html>
+                    `;
 
-                // Create blob and download
-                const blob = new Blob([content], { type: 'text/html;charset=utf-8' });
-                const url = window.URL.createObjectURL(blob);
-                const a = document.createElement('a');
-                a.href = url;
-                a.download = `${examName}.html`;
-                document.body.appendChild(a);
-                a.click();
-                document.body.removeChild(a);
-                window.URL.revokeObjectURL(url);
+                    const blob = new Blob([content], { type: 'text/html;charset=utf-8' });
+                    const url = window.URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = `${examName}_مع_الإجابات.html`;
+                    document.body.appendChild(a);
+                    a.click();
+                    document.body.removeChild(a);
+                    window.URL.revokeObjectURL(url);
 
-                toast({
-                  title: "تم تحميل الأسئلة",
-                  description: "يمكنك فتح الملف في المتصفح لطباعته أو تحويله إلى PDF",
-                });
-              }}
-                className="gap-2"
-              >
-                <Download className="h-4 w-4" />
-                تحميل الأسئلة
-              </Button>
+                    toast({
+                      title: "تم تحميل الأسئلة مع الإجابات",
+                      description: "يمكنك فتح الملف في المتصفح لطباعته أو تحويله إلى PDF",
+                    });
+                  }}
+                  className="gap-2"
+                >
+                  <Download className="h-4 w-4" />
+                  تحميل مع الإجابات
+                </Button>
+
+                <Button 
+                  variant="outline"
+                  onClick={() => {
+                    const examName = selectedExam?.name || "اختبار قياس";
+                    const withAnswers = false;
+                    const content = `
+                      <html dir="rtl">
+                        <head>
+                          <style>
+                            @import url('https://fonts.googleapis.com/css2?family=Noto+Kufi+Arabic:wght@400;700&display=swap');
+                            
+                            body { 
+                              font-family: 'Noto Kufi Arabic', Arial, sans-serif; 
+                              padding: 40px;
+                              background: linear-gradient(135deg, #f8fafc 25%, transparent 25%) -50px 0,
+                                        linear-gradient(225deg, #f8fafc 25%, transparent 25%) -50px 0,
+                                        linear-gradient(315deg, #f8fafc 25%, transparent 25%),
+                                        linear-gradient(45deg, #f8fafc 25%, transparent 25%);
+                              background-size: 100px 100px;
+                              background-color: #ffffff;
+                            }
+
+                            .header { 
+                              text-align: center; 
+                              margin-bottom: 40px;
+                              position: relative;
+                              padding: 30px;
+                              border-radius: 20px;
+                              background: #fff;
+                              box-shadow: 0 8px 16px -4px rgba(0,0,0,0.1);
+                              border: 2px solid #4f46e5;
+                            }
+
+                            .logo {
+                              font-size: 32px;
+                              font-weight: bold;
+                              color: #4f46e5;
+                              margin-bottom: 15px;
+                              text-shadow: 2px 2px 4px rgba(0,0,0,0.1);
+                              position: relative;
+                              display: inline-block;
+                            }
+
+                            .logo::after {
+                              content: "";
+                              position: absolute;
+                              bottom: -5px;
+                              left: 0;
+                              right: 0;
+                              height: 3px;
+                              background: linear-gradient(90deg, #4f46e5, #06b6d4);
+                              border-radius: 3px;
+                            }
+
+                            .watermark { 
+                              position: fixed;
+                              bottom: 40px;
+                              left: 50%;
+                              transform: translateX(-50%) rotate(-45deg);
+                              text-align: center;
+                              color: rgba(79, 70, 229, 0.06);
+                              font-size: 60px;
+                              font-weight: bold;
+                              pointer-events: none;
+                              white-space: nowrap;
+                              z-index: -1;
+                            }
+
+                            .section { 
+                              margin: 40px 0;
+                              padding: 25px;
+                              background: #fff;
+                              border-radius: 20px;
+                              box-shadow: 0 4px 12px -2px rgba(0,0,0,0.08);
+                              position: relative;
+                              overflow: hidden;
+                              border: 1px solid #e5e7eb;
+                            }
+
+                            .section::before {
+                              content: "";
+                              position: absolute;
+                              top: 0;
+                              left: 0;
+                              right: 0;
+                              height: 5px;
+                              background: linear-gradient(90deg, #4f46e5, #06b6d4);
+                            }
+
+                            .section h2 {
+                              color: #4f46e5;
+                              border-bottom: 2px solid #e5e7eb;
+                              padding-bottom: 15px;
+                              margin-bottom: 25px;
+                              font-size: 1.5em;
+                            }
+
+                            .question { 
+                              margin: 30px 0;
+                              padding: 25px;
+                              border: 1px solid #e5e7eb;
+                              border-radius: 15px;
+                              background: #fafafa;
+                              position: relative;
+                              transition: all 0.3s ease;
+                            }
+
+                            .question:hover {
+                              box-shadow: 0 4px 12px -2px rgba(0,0,0,0.05);
+                              transform: translateY(-2px);
+                            }
+
+                            .question h3 {
+                              color: #1f2937;
+                              margin-bottom: 20px;
+                              font-weight: bold;
+                              font-size: 1.2em;
+                              display: flex;
+                              align-items: center;
+                              gap: 10px;
+                            }
+
+                            .question h3::before {
+                              content: "◈";
+                              color: #4f46e5;
+                            }
+
+                            .options { 
+                              margin: 20px 30px;
+                            }
+
+                            .options p {
+                              padding: 12px 20px;
+                              margin: 10px 0;
+                              border-radius: 10px;
+                              background: #fff;
+                              border: 1px solid #e5e7eb;
+                              transition: all 0.2s ease;
+                              position: relative;
+                            }
+
+                            .options p:hover {
+                              background: #f8fafc;
+                            }
+
+                            .page-break {
+                              page-break-after: always;
+                            }
+
+                            @media print {
+                              .watermark {
+                                position: fixed;
+                                top: 50%;
+                                left: 50%;
+                                transform: translate(-50%, -50%) rotate(-45deg);
+                              }
+                            }
+                          </style>
+                        </head>
+                        <body>
+                          <div class="watermark">قدراتك - QODRATAK - قدراتك - QODRATAK</div>
+                          <div class="header">
+                            <div class="logo">قدراتك</div>
+                            <h1>${examName}</h1>
+                            <div style="color: #6b7280; margin-top: 15px; font-size: 1.1em;">
+                              <a href="https://www.qodratak.space" target="_blank" rel="noopener noreferrer" style="color: #4f46e5; text-decoration: underline; transition: all 0.2s;">www.qodratak.space</a>
+                            </div>
+                            <div style="margin-top: 20px; font-size: 1em; color: #4b5563;">
+                              تاريخ الاختبار: ${new Date().toLocaleDateString('ar-SA')}
+                            </div>
+                          </div>
+                          ${Object.entries(allSectionsQuestions).map(([sectionNum, questions]) => {
+                            const sectionName = selectedExam?.sections[parseInt(sectionNum) - 1]?.name || `القسم ${sectionNum}`;
+                            return `
+                              <div class="section">
+                                <h2>${sectionName}</h2>
+                                ${questions.map((q, idx) => `
+                                  <div class="question">
+                                    <h3>السؤال ${idx + 1}</h3>
+                                    <p>${q.text}</p>
+                                    <div class="options">
+                                      ${q.options.map((opt, i) => `
+                                        <p>${i + 1}. ${opt}</p>
+                                      `).join('')}
+                                    </div>
+                                  </div>
+                                `).join('')}
+                              </div>
+                            `;
+                          }).join('')}
+                          <div style="text-align: center; margin-top: 40px; color: #6b7280; font-size: 0.9em;">
+                            © ${new Date().getFullYear()} قدراتك - جميع الحقوق محفوظة
+                          </div>
+                        </body>
+                      </html>
+                    `;
+
+                    const blob = new Blob([content], { type: 'text/html;charset=utf-8' });
+                    const url = window.URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = `${examName}_بدون_إجابات.html`;
+                    document.body.appendChild(a);
+                    a.click();
+                    document.body.removeChild(a);
+                    window.URL.revokeObjectURL(url);
+
+                    toast({
+                      title: "تم تحميل الأسئلة",
+                      description: "يمكنك فتح الملف في المتصفح لطباعته أو تحويله إلى PDF",
+                    });
+                  }}
+                  className="gap-2"
+                >
+                  <Download className="h-4 w-4" />
+                  تحميل الأسئلة فقط
+                </Button>
+              </div>
             
           </CardFooter>
         </Card>
