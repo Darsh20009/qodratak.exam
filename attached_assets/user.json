@@ -112,24 +112,5 @@
     "pointsHistory": [],
     "testHistory": [],
     "savedQuestions": []
-  },
-  {
-    "name": "aa@gmail.com",
-    "email": "aa@gmail.com",
-    "password": "123022",
-    "subscription": {
-      "type": "free",
-      "startDate": "2025-05-22",
-      "endDate": "2025-06-21"
-    },
-    "points": 0,
-    "level": 1,
-    "testsTaken": 0,
-    "averageScore": 0,
-    "folders": [],
-    "achievements": [],
-    "pointsHistory": [],
-    "testHistory": [],
-    "savedQuestions": []
   }
 ]
