@@ -950,14 +950,18 @@ const QiyasExamPage: React.FC = () => {
               العودة للاختبارات
             </Button>
 
-              <div className="flex gap-2">
-                <Button 
+              
                   onClick={() => {
                     const user = JSON.parse(localStorage.getItem('user') || '{}');
                     const isSubscribed = user?.subscription?.type === 'Pro Live' || user?.subscription?.type === 'Pro';
-                    
+
                     if (!isSubscribed) {
                       setLocation("/subscription");
+                      toast({
+                        title: "ميزة مقيدة",
+                        description: "هذه الميزة متاحة للمشتركين فقط",
+                        variant: "destructive",
+                      });
                       return;
                     }
 
@@ -1265,14 +1269,19 @@ const QiyasExamPage: React.FC = () => {
                   تحميل الاسئلة مع اجاباتي
                 </Button>
 
-                <Button 
+                
                   variant="outline"
                   onClick={() => {
                     const user = JSON.parse(localStorage.getItem('user') || '{}');
                     const isSubscribed = user?.subscription?.type === 'Pro Live' || user?.subscription?.type === 'Pro';
-                    
+
                     if (!isSubscribed) {
                       setLocation("/subscription");
+                      toast({
+                        title: "ميزة مقيدة",
+                        description: "هذه الميزة متاحة للمشتركين فقط",
+                        variant: "destructive",
+                      });
                       return;
                     }
 
@@ -1512,7 +1521,7 @@ const QiyasExamPage: React.FC = () => {
                   <Download className="h-4 w-4" />
                   تحميل الاسئلة
                 </Button>
-              </div>
+              
 
           </CardFooter>
         </Card>
@@ -1652,7 +1661,7 @@ const QiyasExamPage: React.FC = () => {
                               size="sm"
                               className="text-muted-foreground"
                               onClick={() => {
-                                const message = encodeURIComponent(
+                                const message =encodeURIComponent(
                                   `تبليغ عن خطأ في السؤال:\n\nنص السؤال: ${question.text}\n\nالخيارات:\n${question.options.map((opt, i) => `${i + 1}. ${opt}`).join('\n')}\n\nالإجابة الصحيحة: ${question.correctOptionIndex + 1}`
                                 );
                                 window.open(`https://t.me/qodratak2030?text=${message}`, '_blank');
