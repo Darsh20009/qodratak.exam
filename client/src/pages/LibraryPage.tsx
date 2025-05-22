@@ -443,12 +443,10 @@ const QuestionsList: React.FC<QuestionsListProps> = ({
                   </ul>
                 </div>
                 
-                {question.explanation && (
-                  <div>
-                    <h4 className="font-medium">الشرح:</h4>
-                    <p className="p-2">{question.explanation}</p>
-                  </div>
-                )}
+                <div className="mt-4 p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
+                  <h4 className="font-medium text-blue-800 dark:text-blue-200">الشرح:</h4>
+                  <p className="mt-1">{question.explanation || "لا يوجد شرح متاح لهذا السؤال"}</p>
+                </div>
                 
                 <div className="flex justify-end pt-2">
                   <SaveToFolderButton 

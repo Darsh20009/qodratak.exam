@@ -1535,28 +1535,11 @@ const QiyasExamPage: React.FC = () => {
                             ))}
                           </div>
 
-                          <div className="mt-4 flex justify-end">
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              className="text-muted-foreground"
-                              onClick={() => {
-                                const message = encodeURIComponent(
-                                  `تبليغ عن خطأ في السؤال:\n\nنص السؤال: ${question.text}\n\nالخيارات:\n${question.options.map((opt, i) => `${i + 1}. ${opt}`).join('\n')}\n\nالإجابة الصحيحة: ${question.correctOptionIndex + 1}`
-                                );
-                                window.open(`https://t.me/qodratak2030?text=${message}`, '_blank');
-                              }}
-                            >
-                              <span className="ml-2">إبلاغ عن خطأ</span>
-                            </Button>
+                          
+                          <div className="mt-4 p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200">
+                            <h5 className="font-medium mb-1 text-blue-800 dark:text-blue-200">الشرح:</h5>
+                            <p className="text-sm">{question.explanation || "لا يوجد شرح متاح لهذا السؤال"}</p>
                           </div>
-
-                          {question.explanation && (
-                            <div className="mt-4 p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200">
-                              <h5 className="font-medium mb-1 text-blue-800 dark:text-blue-200">الشرح:</h5>
-                              <p className="text-sm">{question.explanation}</p>
-                            </div>
-                          )}
                         </div>
                       </div>
                     </div>
@@ -1607,12 +1590,11 @@ const QiyasExamPage: React.FC = () => {
                             ))}
                           </div>
 
-                          {question.explanation && (
-                            <div className="mt-4 p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200">
-                              <h5 className="font-medium mb-1 text-blue-800 dark:text-blue-200">الشرح:</h5>
-                              <p className="text-sm">{question.explanation}</p>
-                            </div>
-                          )}
+                          
+                          <div className="mt-4 p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200">
+                            <h5 className="font-medium mb-1 text-blue-800 dark:text-blue-200">الشرح:</h5>
+                            <p className="text-sm">{question.explanation || "لا يوجد شرح متاح لهذا السؤال"}</p>
+                          </div>
                         </div>
                       </div>
                     </div>
@@ -1663,12 +1645,11 @@ const QiyasExamPage: React.FC = () => {
                             ))}
                           </div>
 
-                          {question.explanation && (
-                            <div className="mt-4 p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200">
-                              <h5 className="font-medium mb-1 text-blue-800 dark:text-blue-200">الشرح:</h5>
-                              <p className="text-sm">{question.explanation}</p>
-                            </div>
-                          )}
+                          
+                          <div className="mt-4 p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200">
+                            <h5 className="font-medium mb-1 text-blue-800 dark:text-blue-200">الشرح:</h5>
+                            <p className="text-sm">{question.explanation || "لا يوجد شرح متاح لهذا السؤال"}</p>
+                          </div>
                         </div>
                       </div>
                     </div>
