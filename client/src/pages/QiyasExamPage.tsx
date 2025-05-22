@@ -937,24 +937,141 @@ const QiyasExamPage: React.FC = () => {
               onClick={() => {
                 const examName = selectedExam?.name || "اختبار قياس";
                 
-                // Create PDF content with styling
+                // Create PDF content with enhanced styling
                 const content = `
                   <html dir="rtl">
                     <head>
                       <style>
-                        body { font-family: Arial, sans-serif; padding: 20px; }
-                        .header { text-align: center; margin-bottom: 30px; }
-                        .watermark { color: #888; font-size: 12px; text-align: center; }
-                        .section { margin: 20px 0; padding: 10px; background: #f5f5f5; border-radius: 5px; }
-                        .question { margin: 15px 0; padding: 10px; border: 1px solid #ddd; }
-                        .options { margin-right: 20px; }
-                        .correct { color: #22c55e; font-weight: bold; }
+                        @import url('https://fonts.googleapis.com/css2?family=Noto+Kufi+Arabic:wght@400;700&display=swap');
+                        
+                        body { 
+                          font-family: 'Noto Kufi Arabic', Arial, sans-serif; 
+                          padding: 40px;
+                          background: linear-gradient(45deg, #f8fafc 25%, transparent 25%, transparent 75%, #f8fafc 75%) 0 0/60px 60px,
+                                    linear-gradient(45deg, #f8fafc 25%, white 25%, white 75%, #f8fafc 75%) 30px 30px/60px 60px;
+                        }
+
+                        .header { 
+                          text-align: center; 
+                          margin-bottom: 40px;
+                          position: relative;
+                          padding: 20px;
+                          border-radius: 15px;
+                          background: #fff;
+                          box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1);
+                        }
+
+                        .logo {
+                          font-size: 24px;
+                          font-weight: bold;
+                          color: #4f46e5;
+                          margin-bottom: 10px;
+                          text-shadow: 2px 2px 4px rgba(0,0,0,0.1);
+                        }
+
+                        .watermark { 
+                          position: fixed;
+                          bottom: 20px;
+                          left: 0;
+                          right: 0;
+                          text-align: center;
+                          color: rgba(79, 70, 229, 0.1);
+                          font-size: 40px;
+                          font-weight: bold;
+                          pointer-events: none;
+                          transform: rotate(-45deg);
+                        }
+
+                        .section { 
+                          margin: 30px 0;
+                          padding: 20px;
+                          background: #fff;
+                          border-radius: 15px;
+                          box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1);
+                          position: relative;
+                          overflow: hidden;
+                        }
+
+                        .section::before {
+                          content: "";
+                          position: absolute;
+                          top: 0;
+                          left: 0;
+                          right: 0;
+                          height: 4px;
+                          background: linear-gradient(90deg, #4f46e5, #06b6d4);
+                        }
+
+                        .section h2 {
+                          color: #4f46e5;
+                          border-bottom: 2px solid #e5e7eb;
+                          padding-bottom: 10px;
+                          margin-bottom: 20px;
+                        }
+
+                        .question { 
+                          margin: 25px 0;
+                          padding: 20px;
+                          border: 1px solid #e5e7eb;
+                          border-radius: 10px;
+                          background: #fafafa;
+                          position: relative;
+                        }
+
+                        .question h3 {
+                          color: #1f2937;
+                          margin-bottom: 15px;
+                          font-weight: bold;
+                        }
+
+                        .options { 
+                          margin: 15px 25px;
+                        }
+
+                        .options p {
+                          padding: 8px 15px;
+                          margin: 8px 0;
+                          border-radius: 8px;
+                          background: #fff;
+                          border: 1px solid #e5e7eb;
+                        }
+
+                        .correct { 
+                          color: #059669;
+                          font-weight: bold;
+                          background: #ecfdf5 !important;
+                          border-color: #059669 !important;
+                        }
+
+                        .page-number {
+                          position: fixed;
+                          bottom: 20px;
+                          right: 20px;
+                          font-size: 12px;
+                          color: #6b7280;
+                        }
+
+                        .page-number::after {
+                          content: counter(page);
+                        }
+
+                        @page {
+                          margin: 40px;
+                          @bottom-right {
+                            content: counter(page);
+                          }
+                        }
                       </style>
                     </head>
                     <body>
+                      <div class="watermark">قدراتك - QODRATAK</div>
                       <div class="header">
+                        <div class="logo">قدراتك</div>
                         <h1>${examName}</h1>
-                        <div class="watermark">منصة قدراتك - www.qodratak.space</div>
+                        <div style="color: #6b7280; margin-top: 10px;">www.qodratak.space</div>
+                        <div style="margin-top: 20px; font-size: 14px; color: #4b5563;">
+                          تاريخ الاختبار: ${new Date().toLocaleDateString('ar-SA')}
+                        </div>
                       </div>
                       ${Object.entries(allSectionsQuestions).map(([sectionNum, questions]) => {
                         const sectionName = selectedExam?.sections[parseInt(sectionNum) - 1]?.name || `القسم ${sectionNum}`;
