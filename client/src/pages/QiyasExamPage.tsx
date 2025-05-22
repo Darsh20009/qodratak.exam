@@ -591,7 +591,7 @@ const QiyasExamPage: React.FC = () => {
                 >
                   {exam.requiresSubscription ? (
                     <div className="flex items-center gap-2">
-                      {localStorage.getItem('user') && JSON.parse(localStorage.getItem('user') || '{}')?.subscription?.type === 'Pro Live' || JSON.parse(localStorage.getItem('user') || '{}')?.subscription?.type === 'Pro' ? (
+                      {user?.subscription?.type === 'Pro Live' || user?.subscription?.type === 'Pro' ? (
                         <>
                           <CheckCircle className="h-4 w-4 text-green-500" />
                           حسابك مفعل - ابدأ الاختبار
@@ -947,19 +947,10 @@ const QiyasExamPage: React.FC = () => {
             </Button>
 
               <div className="flex gap-2">
-                {selectedExam?.requiresSubscription ? (
-                  <Button 
-                    onClick={() => setLocation("/subscription")}
-                    className="gap-2"
-                  >
-                    <LockIcon className="h-4 w-4" />
-                    تحميل الاسئلة مع الاجابات (للمشتركين فقط)
-                  </Button>
-                ) : (
-                  <Button 
-                    onClick={() => {
-                      const examName = selectedExam?.name || "اختبار قياس";
-                      const withAnswers = true;
+                <Button 
+                  onClick={() => {
+                    const examName = selectedExam?.name || "اختبار قياس";
+                    const withAnswers = true;
                     const content = `
                       <html dir="rtl">
                         <head>
@@ -1251,7 +1242,6 @@ const QiyasExamPage: React.FC = () => {
                   <Download className="h-4 w-4" />
                   تحميل الاسئلة مع اجاباتي
                 </Button>
-                )}
 
                 <Button 
                   variant="outline"
