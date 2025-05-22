@@ -29,11 +29,10 @@ import {
 } from "@/components/ui/dialog";
 import { Separator } from "@/components/ui/separator";
 import { 
-  BookIcon, 
   Clock3, 
   GraduationCapIcon, 
   Info, 
-  TrophyIcon,
+  TrophyIcon, Download,
   ClipboardList,
   Timer,
   ArrowLeftIcon,
@@ -928,20 +927,24 @@ const QiyasExamPage: React.FC = () => {
             <Button variant="outline" onClick={() => setCurrentView("selection")}>
               العودة للاختبارات
             </Button>
-            {stats.percentage >= 60 && (
+            
               <Button 
-                onClick={() => {
-                  toast({
-                    title: "تم حفظ شهادة الاختبار",
-                    description: "يمكنك الوصول إليها من صفحة الملف الشخصي",
-                  });
-                }}
+              onClick={() => {
+                // Placeholder for download PDF logic
+                const examName = selectedExam?.name || "اختبار قياس";
+                const watermarkText = `منصة قدراتك - ${examName} - www.qodratak.space`;
+                
+                toast({
+                  title: "جاري تحميل أسئلة الاختبار",
+                  description: "سيتم تنزيل ملف PDF يحتوي على جميع الأسئلة مع العلامة المائية.",
+                });
+              }}
                 className="gap-2"
               >
-                <CheckCircle className="h-4 w-4" />
-                احصل على شهادة
+                <Download className="h-4 w-4" />
+                تحميل الأسئلة
               </Button>
-            )}
+            
           </CardFooter>
         </Card>
 
