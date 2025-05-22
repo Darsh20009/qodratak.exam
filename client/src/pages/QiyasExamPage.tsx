@@ -932,7 +932,7 @@ const QiyasExamPage: React.FC = () => {
             <Button variant="outline" onClick={() => setCurrentView("selection")}>
               العودة للاختبارات
             </Button>
-            
+
               <div className="flex gap-2">
                 <Button 
                   onClick={() => {
@@ -943,7 +943,7 @@ const QiyasExamPage: React.FC = () => {
                         <head>
                           <style>
                             @import url('https://fonts.googleapis.com/css2?family=Noto+Kufi+Arabic:wght@400;700&display=swap');
-                            
+
                             body { 
                               font-family: 'Noto Kufi Arabic', Arial, sans-serif; 
                               padding: 40px;
@@ -1092,6 +1092,34 @@ const QiyasExamPage: React.FC = () => {
                               right: 10px;
                               color: #059669;
                             }
+                            .wrong {
+                              color: #dc2626 !important;
+                              font-weight: bold;
+                              background: #fee2e2 !important;
+                              border-color: #dc2626 !important;
+                              position: relative;
+                            }
+
+                            .wrong::before {
+                              content: "✗";
+                              position: absolute;
+                              right: 10px;
+                              color: #dc2626;
+                            }
+
+                            .explanation {
+                              margin-top: 15px;
+                              padding: 15px;
+                              background: #fef0d7;
+                              border-radius: 10px;
+                              border: 1px solid #fcd34d;
+                              color: #374151;
+                            }
+
+                            .note {
+                              font-style: italic;
+                              color: #9a3412;
+                            }
 
                             .page-break {
                               page-break-after: always;
@@ -1119,22 +1147,58 @@ const QiyasExamPage: React.FC = () => {
                               تاريخ الاختبار: ${new Date().toLocaleDateString('ar-SA')}
                             </div>
                           </div>
+                          <style>
+                            * {
+                              user-select: none !important;
+                              -webkit-user-select: none !important;
+                              -moz-user-select: none !important;
+                              -ms-user-select: none !important;
+                            }
+                            body {
+                              background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+                              background-size: 200% 200%;
+                              animation: gradientBG 15s ease infinite;
+                            }
+                            @keyframes gradientBG {
+                              0% { background-position: 0% 50% }
+                              50% { background-position: 100% 50% }
+                              100% { background-position: 0% 50% }
+                            }
+                            .watermark {
+                              opacity: 0.08;
+                              transform: rotate(-45deg) scale(1.5);
+                            }
+                          </style>
                           ${Object.entries(allSectionsQuestions).map(([sectionNum, questions]) => {
                             const sectionName = selectedExam?.sections[parseInt(sectionNum) - 1]?.name || `القسم ${sectionNum}`;
                             return `
                               <div class="section">
                                 <h2>${sectionName}</h2>
                                 ${questions.map((q, idx) => `
-                                  <div class="question">
-                                    <h3>السؤال ${idx + 1}</h3>
-                                    <p>${q.text}</p>
-                                    <div class="options">
-                                      ${q.options.map((opt, i) => `
-                                        <p${withAnswers && i === q.correctOptionIndex ? ' class="correct"' : ''}>${i + 1}. ${opt}</p>
-                                      `).join('')}
-                                    </div>
-                                  </div>
+                            <div class="question">
+                              <h3>السؤال ${idx + 1}</h3>
+                              <p>${q.text}</p>
+                              <div class="options">
+                                ${q.options.map((opt, i) => `
+                                  <p class="${
+                                    withAnswers ? (
+                                      i === answers[q.id] && i === q.correctOptionIndex ? 'correct' :
+                                      i === answers[q.id] ? 'wrong' :
+                                      i === q.correctOptionIndex ? 'correct' : ''
+                                    ) : 'normal'
+                                  }">${i + 1}. ${opt}${
+                                    withAnswers && i === answers[q.id] ? ' (إجابتك)' : 
+                                    withAnswers && i === q.correctOptionIndex ? ' (الإجابة الصحيحة)' : ''
+                                  }</p>
                                 `).join('')}
+                              </div>
+                              ${withAnswers && answers[q.id] !== q.correctOptionIndex ? `
+                                <div class="explanation">
+                                  <p class="note">ملاحظة: إجابتك غير صحيحة</p>
+                                </div>
+                              ` : ''}
+                            </div>
+                          `).join('')}
                               </div>
                             `;
                           }).join('')}
@@ -1176,7 +1240,7 @@ const QiyasExamPage: React.FC = () => {
                         <head>
                           <style>
                             @import url('https://fonts.googleapis.com/css2?family=Noto+Kufi+Arabic:wght@400;700&display=swap');
-                            
+
                             body { 
                               font-family: 'Noto Kufi Arabic', Arial, sans-serif; 
                               padding: 40px;
@@ -1337,6 +1401,28 @@ const QiyasExamPage: React.FC = () => {
                               تاريخ الاختبار: ${new Date().toLocaleDateString('ar-SA')}
                             </div>
                           </div>
+                          <style>
+                            * {
+                              user-select: none !important;
+                              -webkit-user-select: none !important;
+                              -moz-user-select: none !important;
+                              -ms-user-select: none !important;
+                            }
+                            body {
+                              background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+                              background-size: 200% 200%;
+                              animation: gradientBG 15s ease infinite;
+                            }
+                            @keyframes gradientBG {
+                              0% { background-position: 0% 50% }
+                              50% { background-position: 100% 50% }
+                              100% { background-position: 0% 50% }
+                            }
+                            .watermark {
+                              opacity: 0.08;
+                              transform: rotate(-45deg) scale(1.5);
+                            }
+                          </style>
                           ${Object.entries(allSectionsQuestions).map(([sectionNum, questions]) => {
                             const sectionName = selectedExam?.sections[parseInt(sectionNum) - 1]?.name || `القسم ${sectionNum}`;
                             return `
@@ -1384,7 +1470,7 @@ const QiyasExamPage: React.FC = () => {
                   تحميل الأسئلة فقط
                 </Button>
               </div>
-            
+
           </CardFooter>
         </Card>
 
