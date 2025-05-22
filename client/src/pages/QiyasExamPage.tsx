@@ -176,6 +176,14 @@ const qiyasExams: QiyasExam[] = [
 const QiyasExamPage: React.FC = () => {
   const [location, setLocation] = useLocation();
   const { toast } = useToast();
+  const [user, setUser] = useState<any>(null);
+
+  useEffect(() => {
+    const storedUser = localStorage.getItem('user');
+    if (storedUser) {
+      setUser(JSON.parse(storedUser));
+    }
+  }, []);
 
   // States for exam selection and progress
   const [selectedExam, setSelectedExam] = useState<QiyasExam | null>(null);
@@ -1541,7 +1549,7 @@ const QiyasExamPage: React.FC = () => {
                           </div>
 
 
-                          
+
                           <div className="mt-4 p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200">
                             <h5 className="font-medium mb-1 text-blue-800 dark:text-blue-200">الشرح:</h5>
                             <p className="text-sm">{question.explanation ? question.explanation : "لا يوجد شرح متاح لهذا السؤال"}</p>
@@ -1597,7 +1605,7 @@ const QiyasExamPage: React.FC = () => {
                           </div>
 
 
-                          
+
                           <div className="mt-4 p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200">
                             <h5 className="font-medium mb-1 text-blue-800 dark:text-blue-200">الشرح:</h5>
                             <p className="text-sm">{question.explanation ? question.explanation : "لا يوجد شرح متاح لهذا السؤال"}</p>
@@ -1623,7 +1631,7 @@ const QiyasExamPage: React.FC = () => {
                     )}>
                       <div className="flex items-start gap-3">
                         <div className={cn(
-                          "w-8 h-8 rounded-full flex items-center justify-center text-white",
+                          "w-8 h-8 rounded-full flex items-center justify-center textwhite",
                           isCorrect ? "bg-green-500" : "bg-red-500"
                         )}>
                           {isCorrect ? "✓" : "✗"}
@@ -1652,7 +1660,7 @@ const QiyasExamPage: React.FC = () => {
                             ))}
                           </div>
 
-                          
+
                           <div className="mt-4 p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200">
                             <h5 className="font-medium mb-1 text-blue-800 dark:text-blue-200">الشرح:</h5>
                             <p className="text-sm">{question.explanation ? question.explanation : "لا يوجد شرح متاح لهذا السؤال"}</p>
