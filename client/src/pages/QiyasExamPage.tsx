@@ -36,6 +36,7 @@ import {
   ClipboardList,
   Timer,
   ArrowLeftIcon,
+  BookOpen,
   ArrowRightIcon,
   CheckCircle,
   LockIcon
@@ -631,7 +632,7 @@ const QiyasExamPage: React.FC = () => {
                   <span>عدد الأقسام: <strong>{selectedExam.totalSections}</strong></span>
                 </li>
                 <li className="flex gap-2">
-                  <BookIcon className="h-5 w-5 text-muted-foreground" />
+                  <BookOpen className="h-5 w-5 text-muted-foreground" />
                   <span>إجمالي الأسئلة: <strong>{selectedExam.totalQuestions}</strong></span>
                 </li>
                 <li className="flex gap-2">
