@@ -1227,14 +1227,15 @@ const QiyasExamPage: React.FC = () => {
                   className="gap-2"
                 >
                   <Download className="h-4 w-4" />
-                  تحميل مع الإجابات
+                  تحميل الاسئلة مع اجاباتي
                 </Button>
 
                 <Button 
                   variant="outline"
                   onClick={() => {
                     const examName = selectedExam?.name || "اختبار قياس";
-                    const withAnswers = false;
+                    const withAnswers = true; // Changed to true to show correct answers
+                    const withUserAnswers = false; // New flag to control showing user answers
                     const content = `
                       <html dir="rtl">
                         <head>
@@ -1467,7 +1468,7 @@ const QiyasExamPage: React.FC = () => {
                   className="gap-2"
                 >
                   <Download className="h-4 w-4" />
-                  تحميل الأسئلة فقط
+                  تحميل الاسئلة
                 </Button>
               </div>
 
