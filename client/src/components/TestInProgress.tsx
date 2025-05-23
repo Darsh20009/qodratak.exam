@@ -31,16 +31,34 @@ const TestInProgress: React.FC<TestInProgressProps> = ({
 }) => {
   if (!question || !currentTestType) {
     return (
-      <div className="p-6 text-center">
-        <p className="text-gray-600 dark:text-gray-400">
-          جاري تحميل الأسئلة...
-        </p>
+      <div className="min-h-[60vh] flex flex-col items-center justify-center p-8 relative overflow-hidden">
+        <div className="absolute inset-0 bg-gradient-to-r from-blue-500/10 to-purple-500/10 animate-gradient-x"></div>
+        
+        {/* دائرة متحركة */}
+        <div className="w-24 h-24 border-4 border-primary rounded-full animate-spin border-t-transparent mb-8"></div>
+        
+        {/* نص متحرك */}
+        <div className="text-center space-y-4 relative z-10">
+          <h3 className="text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-primary to-purple-600 animate-pulse">
+            جاري تحميل الأسئلة
+          </h3>
+          <p className="text-muted-foreground animate-bounce">
+            نقوم بتجهيز تجربة تعليمية مميزة لك...
+          </p>
+        </div>
+
+        {/* زر العودة المحسن */}
         <button
           onClick={onBackToSelection}
-          className="mt-4 py-2 px-4 bg-gray-200 dark:bg-gray-700 rounded-md text-gray-700 dark:text-gray-300"
+          className="mt-8 py-3 px-6 bg-gradient-to-r from-primary to-purple-600 text-white rounded-full 
+                   hover:scale-105 transition-all duration-300 shadow-lg hover:shadow-primary/50"
         >
-          العودة
+          العودة للقائمة الرئيسية
         </button>
+
+        {/* زخارف متحركة */}
+        <div className="absolute -bottom-10 -left-10 w-40 h-40 bg-primary/20 rounded-full blur-3xl animate-pulse"></div>
+        <div className="absolute -top-10 -right-10 w-40 h-40 bg-purple-500/20 rounded-full blur-3xl animate-pulse delay-700"></div>
       </div>
     );
   }
