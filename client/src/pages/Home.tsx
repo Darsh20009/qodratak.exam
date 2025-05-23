@@ -64,7 +64,24 @@ const Home: React.FC = () => {
     <div className="min-h-screen bg-gradient-to-b from-background to-background/80">
       {/* Hero Section with Enhanced Animation */}
       <section className="relative overflow-hidden py-20 sm:py-32">
-        <div className="absolute inset-0 bg-grid-white/10 bg-[size:40px_40px] [mask-image:linear-gradient(0deg,transparent,white)]">
+        {/* خلفية متحركة مع تأثيرات */}
+        <div className="absolute inset-0">
+          <div className="absolute inset-0 bg-gradient-to-br from-primary/20 via-transparent to-primary/10 animate-gradient-shift"></div>
+          <div className="absolute inset-0 bg-[radial-gradient(circle_800px_at_50%_-100px,var(--primary-foreground),transparent)] animate-pulse"></div>
+          <div className="absolute inset-0 bg-grid-white/5 bg-[size:40px_40px]"></div>
+          {[...Array(30)].map((_, i) => (
+            <div
+              key={i}
+              className="absolute h-2 w-2 bg-primary/30 rounded-full animate-float-random"
+              style={{
+                top: `${Math.random() * 100}%`,
+                left: `${Math.random() * 100}%`,
+                animationDelay: `${Math.random() * 5}s`,
+                animationDuration: `${7 + Math.random() * 5}s`,
+              }}
+            />
+          ))}
+        </div>
           <div className="absolute inset-0 bg-gradient-to-r from-primary/30 via-primary/20 to-primary/10 animate-gradient-shift" />
           <div className="absolute inset-0 bg-[radial-gradient(circle_800px_at_50%_-100px,var(--primary-foreground),transparent)] animate-pulse-slow" />
           <div className="absolute inset-0 animate-glow">

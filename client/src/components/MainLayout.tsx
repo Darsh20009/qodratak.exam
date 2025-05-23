@@ -78,16 +78,16 @@ export const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
       { name: "اختبارات قياس", href: "/qiyas", icon: GraduationCapIcon },
       { name: "الملف الشخصي", href: "/profile", icon: UserIcon },
     ];
-  
+
     const premiumItems = [
       { name: "اختبر قدراتك", href: "/abilities", icon: BrainCircuitIcon },
       { name: "اسأل سؤال", href: "/ask", icon: HelpCircleIcon },
       { name: "المكتبة", href: "/library", icon: BookOpenIcon },
     ];
-  
+
     return subscription !== 'free' ? [...baseItems, ...premiumItems] : baseItems;
   };
-  
+
   const navItems = getNavItems(user?.subscription?.type);
 
   return (
@@ -201,9 +201,12 @@ export const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
         </header>
 
         {/* Content */}
-        <main className="flex-1 overflow-y-auto pb-16 md:pb-0">
+        <main className="flex-1 relative">
+        <div className="absolute inset-0 bg-gradient-to-b from-background/50 via-background to-background/50 pointer-events-none" />
+        <div className="relative z-10">
           {children}
-        </main>
+        </div>
+      </main>
       </div>
     </div>
   );

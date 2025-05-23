@@ -237,8 +237,9 @@ const ProfilePage: React.FC = () => {
       <div className="container py-8 px-4">
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           {/* Profile Summary */}
-          <Card className="md:col-span-1 overflow-hidden">
-            <div className="absolute top-0 left-0 w-full h-32 bg-gradient-to-r from-primary/20 to-primary/5" />
+          <Card className="md:col-span-1 overflow-hidden group hover:shadow-xl transition-all duration-500">
+            <div className="absolute top-0 left-0 w-full h-32 bg-gradient-to-r from-primary/20 via-primary/30 to-primary/5 group-hover:scale-110 transition-transform duration-700" />
+            <div className="absolute inset-0 bg-gradient-conic from-primary/0 via-primary/5 to-primary/0 animate-spin-slow opacity-50" />
             <CardHeader className="text-center relative z-10 pt-8">
               <div className="relative">
                 <div className="w-28 h-28 rounded-full bg-gradient-to-br from-primary to-primary/60 mx-auto flex items-center justify-center mb-4 ring-4 ring-background">
