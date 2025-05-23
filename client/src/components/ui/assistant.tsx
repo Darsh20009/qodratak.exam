@@ -41,6 +41,11 @@ const Assistant = ({ className }: AssistantProps) => {
       content: "مرحبا! أنا مساعدك في استخدام المنصة. كيف يمكنني مساعدتك اليوم؟",
       options: [
         {
+          label: "طرق التواصل معنا",
+          action: () => handleSelectOption("كيف يمكنني التواصل معكم؟"),
+          icon: MessageCircleIcon
+        },
+        {
           label: "ما هي اختبارات قياس؟",
           action: () => handleSelectOption("ما هي اختبارات قياس؟"),
           icon: GraduationCapIcon
@@ -157,6 +162,24 @@ const Assistant = ({ className }: AssistantProps) => {
           {
             label: "اسأل سؤالًا",
             action: () => setLocation("/ask"),
+            icon: HelpCircleIcon
+          }
+        ]
+      }]);
+    }
+    else if (lowerQuery.includes("تواصل") || lowerQuery.includes("اتصال") || lowerQuery.includes("تليجرام") || lowerQuery.includes("الموقع")) {
+      setMessages(msgs => [...msgs, {
+        type: "assistant",
+        content: "يمكنك التواصل معنا من خلال:",
+        options: [
+          {
+            label: "تليجرام - Qodratak",
+            action: () => window.open("https://t.me/qodratak2030", "_blank"),
+            icon: MessageCircleIcon
+          },
+          {
+            label: "نموذج التواصل عبر الموقع",
+            action: () => window.open("https://www.qodratak.space/contactus", "_blank"),
             icon: HelpCircleIcon
           }
         ]
