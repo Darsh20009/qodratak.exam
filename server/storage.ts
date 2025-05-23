@@ -416,12 +416,7 @@ export class MemStorage implements IStorage {
         "attached_assets/questions_all.json"
       );
       
-      try {
-        if (!fs.existsSync(questionsPath)) {
-          console.error("ملف الأسئلة غير موجود");
-          return;
-        }
-
+      if (fs.existsSync(questionsPath)) {
         const fileContent = fs.readFileSync(questionsPath, "utf-8");
         const questionsData = JSON.parse(fileContent);
         
@@ -439,14 +434,9 @@ export class MemStorage implements IStorage {
               const keywords = this.extractKeywords(question.text);
               
               // Add the question
-              if (!question.text || !question.options || question.correctOptionIndex === undefined) {
-                console.warn("تم تخطي سؤال غير مكتمل:", question);
-                continue;
-              }
-              
               await this.createQuestion({
                 category: "verbal",
-                text: question.text.trim(),
+                text: question.text,
                 options: question.options,
                 correctOptionIndex: question.correctOptionIndex,
                 difficulty: difficulty,
