@@ -80,10 +80,8 @@ export default function ExamRecordsPage() {
                     variant="secondary"
                     size="sm"
                     onClick={() => {
-                      // Store current record in localStorage
                       localStorage.setItem('currentTestResult', JSON.stringify(record));
-                      // Navigate to results page
-                      window.location.href = '/test-results';
+                      setLocation('/test-results');
                     }}
                   >
                     شاهد النتيجة
