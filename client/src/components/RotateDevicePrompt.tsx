@@ -73,13 +73,15 @@ export function RotateDevicePrompt() {
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.2 }}
               >
-                <h2 className="text-3xl font-bold">
-                  الرجاء تدوير الجهاز
+                <h2 className="text-3xl font-bold bg-gradient-to-r from-primary to-pink-500 bg-clip-text text-transparent">
+                  قم بتدوير جهازك
                 </h2>
                 <div className="flex items-center justify-center gap-2 mt-2">
+                  <SparklesIcon className="h-5 w-5 text-yellow-500 animate-pulse" />
                   <p className="text-muted-foreground text-lg">
-                    قم بتدوير جهازك للوضع الأفقي
+                    للحصول على أفضل تجربة تعليمية
                   </p>
+                  <SparklesIcon className="h-5 w-5 text-yellow-500 animate-pulse" />
                 </div>
               </motion.div>
 
