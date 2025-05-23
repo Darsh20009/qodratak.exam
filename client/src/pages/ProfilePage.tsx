@@ -252,12 +252,40 @@ const ProfilePage: React.FC = () => {
                 </div>
               </div>
               <CardTitle className="text-2xl mt-4">{user.name}</CardTitle>
-              <CardDescription className="flex items-center justify-center gap-2 mt-2">
-                <Badge variant="outline" className="bg-primary/5">
-                  {user.subscription.type}
-                </Badge>
-                <span>•</span>
-                <span className="text-sm">تنتهي في {user.subscription.endDate}</span>
+              <CardDescription className="flex flex-col items-center gap-2 mt-2">
+                <div className="flex items-center gap-2">
+                  <Badge variant="outline" className={user.subscription.type === 'Pro Live' ? 'bg-gradient-to-r from-primary/20 to-pink-500/20' : 'bg-primary/5'}>
+                    {user.subscription.type}
+                  </Badge>
+                  {user.subscription.type === 'Pro Live' ? (
+                    <span className="text-sm">اشتراك مدى الحياة</span>
+                  ) : user.subscription.type === 'Pro' ? (
+                    <>
+                      <span>•</span>
+                      {(() => {
+                        const endDate = new Date(user.subscription.endDate);
+                        const today = new Date();
+                        const daysLeft = Math.ceil((endDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+                        const formattedDate = new Intl.DateTimeFormat('ar-SA', { 
+                          year: 'numeric', 
+                          month: 'long', 
+                          day: 'numeric' 
+                        }).format(endDate);
+                        
+                        return (
+                          <div className="flex flex-col items-center">
+                            <span className="text-sm">ينتهي في {formattedDate}</span>
+                            <Badge variant={daysLeft <= 7 ? 'destructive' : 'outline'} className="mt-1">
+                              متبقي {daysLeft} يوم
+                            </Badge>
+                          </div>
+                        );
+                      })()}
+                    </>
+                  ) : (
+                    <Badge variant="destructive">اشتراك مجاني</Badge>
+                  )}
+                </div>
               </CardDescription>
             </CardHeader>
             <CardContent>
