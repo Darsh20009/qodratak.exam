@@ -33,6 +33,7 @@ interface ChatOption {
 
 const Assistant = ({ className }: AssistantProps) => {
   const [, setLocation] = useLocation();
+  const [isVisible, setIsVisible] = useState(true);
   const [isOpen, setIsOpen] = useState(false);
   const [messages, setMessages] = useState<ChatMessage[]>([
     {
@@ -233,9 +234,21 @@ const Assistant = ({ className }: AssistantProps) => {
     }
   };
   
-  return (
+  if (!isVisible) return null;
+
+return (
     <div className={cn("fixed bottom-20 md:bottom-6 left-6 z-50", className)}>
       {/* Chat button */}
+      <button
+        onClick={() => setIsVisible(false)}
+        className="absolute -top-2 -right-2 w-6 h-6 bg-red-500 hover:bg-red-600 rounded-full text-white text-xs flex items-center justify-center"
+        title="إزالة المساعد"
+      >
+        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <line x1="18" y1="6" x2="6" y2="18"></line>
+          <line x1="6" y1="6" x2="18" y2="18"></line>
+        </svg>
+      </button>
       <Button
         className="h-12 w-12 rounded-full"
         onClick={toggleChat}
