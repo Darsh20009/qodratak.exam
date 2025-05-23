@@ -8,6 +8,7 @@ import ChatInput from "./ChatInput";
 import AbilitiesTest from "./AbilitiesTest";
 
 const Chatbot = () => {
+  const [isVisible, setIsVisible] = useState(true);
   const {
     isOpen,
     isDarkMode,
@@ -41,15 +42,27 @@ const Chatbot = () => {
     abilitiesTest.switchTab(tab);
   };
 
+  if (!isVisible) return null;
+  
   return (
     <div className="fixed bottom-5 left-5 z-50 font-cairo" dir="rtl">
       {/* Toggle Button */}
       <button
         onClick={toggleChatbot}
-        className="w-16 h-16 rounded-full bg-gradient-to-r from-primary to-secondary flex items-center justify-center text-white shadow-lg cursor-pointer text-2xl"
+        className="w-16 h-16 rounded-full bg-gradient-to-r from-primary to-secondary flex items-center justify-center text-white shadow-lg cursor-pointer text-2xl relative group"
         style={{ animation: "pulse-glow 2.5s infinite ease-in-out" }}
       >
         <i className="fas fa-comments"></i>
+        <button 
+          onClick={(e) => {
+            e.stopPropagation();
+            setIsVisible(false);
+          }}
+          className="absolute -top-2 -right-2 w-6 h-6 bg-red-500 rounded-full text-white text-xs flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+          title="إزالة المساعد"
+        >
+          <i className="fas fa-times"></i>
+        </button>
       </button>
 
       {/* Chatbot Window */}
