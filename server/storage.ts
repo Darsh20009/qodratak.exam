@@ -416,19 +416,14 @@ export class MemStorage implements IStorage {
         "attached_assets/questions_all.json"
       );
       
-      if (!fs.existsSync(questionsPath)) {
-        console.error("ملف الأسئلة غير موجود");
-        return;
-      }
-
-      const fileContent = fs.readFileSync(questionsPath, "utf-8");
-      let questionsData;
       try {
-        questionsData = JSON.parse(fileContent);
-      } catch (err) {
-        console.error("خطأ في تنسيق ملف الأسئلة JSON:", err);
-        return;
-      }
+        if (!fs.existsSync(questionsPath)) {
+          console.error("ملف الأسئلة غير موجود");
+          return;
+        }
+
+        const fileContent = fs.readFileSync(questionsPath, "utf-8");
+        const questionsData = JSON.parse(fileContent);
         
         // Process verbal questions
         let count = 0;
