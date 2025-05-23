@@ -632,11 +632,11 @@ const QiyasExamPage: React.FC = () => {
             <CardDescription>{selectedExam.name}</CardDescription>
           </CardHeader>
           <CardContent className="space-y-6">
-            <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg flex items-start gap-3">
-              <Info className="h-5 w-5 text-blue-500 mt-0.5" />
+            <div className="p-4 bg-slate-900/90 border border-slate-800 rounded-lg flex items-start gap-3 text-slate-100">
+              <Info className="h-5 w-5 text-blue-400 mt-0.5" />
               <div>
                 <h3 className="font-medium mb-1">هام جداً</h3>
-                <p className="text-sm">
+                <p className="text-sm text-slate-200">
                   هذا الاختبار يحاكي اختبار قياس الرسمي من حيث البنية والتوقيت. اتبع التعليمات بدقة للحصول على تجربة واقعية.
                 </p>
               </div>
@@ -1754,9 +1754,9 @@ const QiyasExamPage: React.FC = () => {
                   </ul>
                 </div>
 
-                <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                <div className="p-4 bg-slate-900/90 border border-slate-800 rounded-lg text-slate-100">
                   <h4 className="font-medium mb-2">التوصيات</h4>
-                  <p className="text-sm mb-2">
+                  <p className="text-sm mb-2 text-slate-200">
                     نوصي بالتركيز على تدريبات القياس اللفظي والمقارنات اللغوية. يمكنك أيضًا:
                   </p>
                   <ul className="text-sm space-y-1 list-disc list-inside">
