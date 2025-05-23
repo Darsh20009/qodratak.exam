@@ -83,12 +83,10 @@ const Home: React.FC = () => {
           ))}
           <div className="absolute inset-0 bg-gradient-to-r from-primary/30 via-primary/20 to-primary/10 animate-gradient-shift" />
           <div className="absolute inset-0 bg-[radial-gradient(circle_800px_at_50%_-100px,var(--primary-foreground),transparent)] animate-pulse-slow" />
-          <div className="absolute inset-0 animate-glow">
-          </div>
+          <div className="absolute inset-0 animate-glow" />
+          <div className="absolute inset-0 bg-[conic-gradient(from_0deg_at_50%_50%,var(--primary)/20_0%,transparent_60%)] animate-spin-slow" />
+          <div className="absolute inset-0 bg-[conic-gradient(from_90deg_at_50%_50%,var(--primary)/10_0%,transparent_60%)] animate-spin-reverse" />
         </div>
-            <div className="absolute inset-0 bg-[conic-gradient(from_0deg_at_50%_50%,var(--primary)/20_0%,transparent_60%)] animate-spin-slow" />
-            <div className="absolute inset-0 bg-[conic-gradient(from_90deg_at_50%_50%,var(--primary)/10_0%,transparent_60%)] animate-spin-reverse" />
-          </div>
           {[...Array(50)].map((_, i) => (
             <div
               key={i}
