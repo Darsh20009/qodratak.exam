@@ -416,9 +416,19 @@ export class MemStorage implements IStorage {
         "attached_assets/questions_all.json"
       );
       
-      if (fs.existsSync(questionsPath)) {
-        const fileContent = fs.readFileSync(questionsPath, "utf-8");
-        const questionsData = JSON.parse(fileContent);
+      if (!fs.existsSync(questionsPath)) {
+        console.error("ملف الأسئلة غير موجود");
+        return;
+      }
+
+      const fileContent = fs.readFileSync(questionsPath, "utf-8");
+      let questionsData;
+      try {
+        questionsData = JSON.parse(fileContent);
+      } catch (err) {
+        console.error("خطأ في تنسيق ملف الأسئلة JSON:", err);
+        return;
+      }
         
         // Process verbal questions
         let count = 0;
@@ -434,9 +444,14 @@ export class MemStorage implements IStorage {
               const keywords = this.extractKeywords(question.text);
               
               // Add the question
+              if (!question.text || !question.options || question.correctOptionIndex === undefined) {
+                console.warn("تم تخطي سؤال غير مكتمل:", question);
+                continue;
+              }
+              
               await this.createQuestion({
                 category: "verbal",
-                text: question.text,
+                text: question.text.trim(),
                 options: question.options,
                 correctOptionIndex: question.correctOptionIndex,
                 difficulty: difficulty,
