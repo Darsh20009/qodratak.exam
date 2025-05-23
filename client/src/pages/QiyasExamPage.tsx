@@ -662,21 +662,21 @@ const QiyasExamPage: React.FC = () => {
 
             <div>
               <h3 className="font-medium mb-2">تفاصيل الأقسام:</h3>
-              <div className="border rounded-lg overflow-hidden">
+              <div className="border border-slate-700 rounded-lg overflow-hidden bg-slate-900/90">
                 <table className="w-full">
-                  <thead className="bg-muted/50">
+                  <thead className="bg-slate-800">
                     <tr>
-                      <th className="px-4 py-2 text-right">القسم</th>
-                      <th className="px-4 py-2 text-right">النوع</th>
-                      <th className="px-4 py-2 text-right">عدد الأسئلة</th>
-                      <th className="px-4 py-2 text-right">الوقت (دقائق)</th>
+                      <th className="px-4 py-2 text-right text-slate-100">القسم</th>
+                      <th className="px-4 py-2 text-right text-slate-100">النوع</th>
+                      <th className="px-4 py-2 text-right text-slate-100">عدد الأسئلة</th>
+                      <th className="px-4 py-2 text-right text-slate-100">الوقت (دقائق)</th>
                     </tr>
                   </thead>
-                  <tbody>
+                  <tbody className="text-slate-200">
                     {selectedExam.sections.map((section, index) => (
-                      <tr key={section.sectionNumber} className={index % 2 === 0 ? "bg-white" : "bg-muted/20"}>
-                        <td className="border-t px-4 py-2">{section.name}</td>
-                        <td className="border-t px-4 py-2">
+                      <tr key={section.sectionNumber} className={index % 2 === 0 ? "bg-slate-900" : "bg-slate-800/50"}>
+                        <td className="border-t border-slate-700 px-4 py-2">{section.name}</td>
+                        <td className="border-t border-slate-700 px-4 py-2">
                           {section.category === "verbal" ? "لفظي" : 
                            section.category === "quantitative" ? "كمي" : 
                            "مختلط (لفظي وكمي)"}
