@@ -64,7 +64,6 @@ const Home: React.FC = () => {
     <div className="min-h-screen bg-gradient-to-b from-background to-background/80">
       {/* Hero Section with Enhanced Animation */}
       <section className="relative overflow-hidden py-20 sm:py-32">
-        {/* خلفية متحركة مع تأثيرات */}
         <div className="absolute inset-0">
           <div className="absolute inset-0 bg-gradient-to-br from-primary/20 via-transparent to-primary/10 animate-gradient-shift"></div>
           <div className="absolute inset-0 bg-[radial-gradient(circle_800px_at_50%_-100px,var(--primary-foreground),transparent)] animate-pulse"></div>
@@ -81,15 +80,13 @@ const Home: React.FC = () => {
               }}
             />
           ))}
-          <div className="absolute inset-0 bg-gradient-to-r from-primary/30 via-primary/20 to-primary/10 animate-gradient-shift" />
-          <div className="absolute inset-0 bg-[radial-gradient(circle_800px_at_50%_-100px,var(--primary-foreground),transparent)] animate-pulse-slow" />
-          <div className="absolute inset-0 animate-glow" />
-          <div className="absolute inset-0 bg-[conic-gradient(from_0deg_at_50%_50%,var(--primary)/20_0%,transparent_60%)] animate-spin-slow" />
-          <div className="absolute inset-0 bg-[conic-gradient(from_90deg_at_50%_50%,var(--primary)/10_0%,transparent_60%)] animate-spin-reverse" />
         </div>
+
+        {/* الجزيئات المتحركة */}
+        <div className="absolute inset-0">
           {[...Array(50)].map((_, i) => (
             <div
-              key={i}
+              key={`particle-${i}`}
               className="absolute h-1 w-1 bg-primary/40 rounded-full animate-float-particle backdrop-blur-sm"
               style={{
                 top: `${Math.random() * 100}%`,
