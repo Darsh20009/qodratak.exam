@@ -440,10 +440,9 @@ const ProfilePage: React.FC = () => {
             <div className="absolute -z-10 w-[300px] h-[300px] right-0 top-20 bg-primary/10 rounded-full blur-2xl animate-float" />
             {/* Existing login form here */}
           </div>
-        </div>
-      </div>
       <div className="container mx-auto p-4">
-        <Tabs defaultValue="login" className="animate-fade-in-up">
+        <div className="max-w-md mx-auto">
+          <Tabs defaultValue="login" className="animate-fade-in-up">
         <TabsList className="w-full mb-6 p-1 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
           <TabsTrigger value="login" className="flex-1 transition-all duration-300">تسجيل الدخول</TabsTrigger>
           <TabsTrigger value="register" className="flex-1 transition-all duration-300">إنشاء حساب</TabsTrigger>
