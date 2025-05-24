@@ -447,7 +447,7 @@ const ProfilePage: React.FC = () => {
         </div>
       </div>
 
-      
+
 
       <Tabs defaultValue="login" className="animate-fade-in-up">
         <TabsList className="w-full mb-6 p-1 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
