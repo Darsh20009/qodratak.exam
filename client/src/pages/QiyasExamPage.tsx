@@ -846,7 +846,8 @@ const QiyasExamPage: React.FC = () => {
               <DialogFooter>
                 <Button onClick={moveToNextSection}>نعم، إنهاء القسم</Button>
               </DialogFooter>
-            </DialogContent>
+            </```text
+DialogContent>
           </Dialog>
 
           <Button 
@@ -1535,11 +1536,11 @@ const QiyasExamPage: React.FC = () => {
           </CardHeader>
         <CardContent>
           <Tabs defaultValue="all" className="w-full">
-                <TabsList className="w-full mb-4">
-                  <TabsTrigger value="all">جميع الأسئلة</TabsTrigger>
-                  <TabsTrigger value="correct">الإجابات الصحيحة</TabsTrigger>
-                  <TabsTrigger value="incorrect">الإجابات الخاطئة</TabsTrigger>
-                  <TabsTrigger value="ungraded">الأسئلة الغير محسوبة ({20})</TabsTrigger>
+                <TabsList className="mb-4 w-full grid grid-cols-2 md:grid-cols-4 gap-2">
+                  <TabsTrigger value="all" className="w-full">جميع الأسئلة</TabsTrigger>
+                  <TabsTrigger value="correct" className="w-full">الإجابات الصحيحة</TabsTrigger>
+                  <TabsTrigger value="incorrect" className="w-full">الإجابات الخاطئة</TabsTrigger>
+                  <TabsTrigger value="ungraded" className="w-full">الأسئلة الغير محسوبة ({20})</TabsTrigger>
                 </TabsList>
 
             <TabsContent value="all">
