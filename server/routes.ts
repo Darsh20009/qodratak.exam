@@ -324,7 +324,7 @@ app.post("/api/recover-account", async (req: Request, res: Response) => {
 
 app.post("/api/auth/register", async (req: Request, res: Response) => {
     try {
-      const { name, email, password } = req.body;
+      const { name, email, password, subscription } = req.body;
 
       if (!name || !email || !password) {
         return res.status(400).json({ message: "Name, email and password are required" });
@@ -334,6 +334,21 @@ app.post("/api/auth/register", async (req: Request, res: Response) => {
 
       if (users.some((u: any) => u.email === email)) {
         return res.status(400).json({ message: "Email already exists" });
+      }
+
+      // Validate subscription dates if provided
+      if (subscription?.startDate) {
+        const startDate = new Date(subscription.startDate);
+        const today = new Date();
+        
+        if (startDate > today) {
+          const daysUntilStart = Math.ceil((startDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+          return res.status(403).json({ 
+            message: "لا يمكن تسجيل الحساب حالياً",
+            daysRemaining: daysUntilStart,
+            error: `باقي ${daysUntilStart} يوم لتفعيل الحساب` 
+          });
+        }
       }
 
       const newUser = {
