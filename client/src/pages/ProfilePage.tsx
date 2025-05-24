@@ -505,10 +505,10 @@ const ProfilePage: React.FC = () => {
         </TabsContent>
 
         <TabsContent value="register">
-          <Card>
+          <Card className="border-0 shadow-lg bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
             <CardHeader>
-              <CardTitle>إنشاء حساب</CardTitle>
-              <CardDescription>
+              <CardTitle className="text-2xl font-bold bg-gradient-to-r from-primary to-primary/80 bg-clip-text text-transparent">إنشاء حساب</CardTitle>
+              <CardDescription className="text-base">
                 أنشئ حسابك الجديد للوصول لجميع مميزات المنصة
               </CardDescription>
             </CardHeader>
@@ -520,9 +520,14 @@ const ProfilePage: React.FC = () => {
                     name="username"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>اسم المستخدم</FormLabel>
+                        <FormLabel>البريد الإلكتروني</FormLabel>
                         <FormControl>
-                          <Input placeholder="أدخل اسم المستخدم" {...field} />
+                          <Input 
+                            type="email"
+                            placeholder="أدخل بريدك الإلكتروني" 
+                            className="text-right" 
+                            {...field} 
+                          />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -535,7 +540,12 @@ const ProfilePage: React.FC = () => {
                       <FormItem>
                         <FormLabel>كلمة المرور</FormLabel>
                         <FormControl>
-                          <Input type="password" placeholder="أدخل كلمة المرور" {...field} />
+                          <Input 
+                            type="password" 
+                            placeholder="أدخل كلمة المرور" 
+                            className="text-right"
+                            {...field} 
+                          />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -548,13 +558,22 @@ const ProfilePage: React.FC = () => {
                       <FormItem>
                         <FormLabel>تأكيد كلمة المرور</FormLabel>
                         <FormControl>
-                          <Input type="password" placeholder="أعد إدخال كلمة المرور" {...field} />
+                          <Input 
+                            type="password" 
+                            placeholder="أعد إدخال كلمة المرور"
+                            className="text-right" 
+                            {...field} 
+                          />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
                     )}
                   />
-                  <Button type="submit" className="w-full" disabled={isLoading}>
+                  <Button 
+                    type="submit" 
+                    className="w-full bg-primary hover:bg-primary/90" 
+                    disabled={isLoading}
+                  >
                     {isLoading ? "جاري إنشاء الحساب..." : "إنشاء حساب"}
                   </Button>
                 </form>
