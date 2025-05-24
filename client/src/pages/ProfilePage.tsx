@@ -435,8 +435,8 @@ const ProfilePage: React.FC = () => {
           />
         ))}
       </div>
-      <div className="container max-w-md mx-auto p-6 relative">
-        <div className="bg-card/60 backdrop-blur-md rounded-2xl shadow-2xl p-8 border border-border/30 hover:shadow-primary/20 transition-all duration-500 hover:scale-[1.02] relative overflow-hidden group">
+      <div dir="rtl" className="container max-w-md mx-auto p-6 relative">
+                        <div className="bg-card/60 backdrop-blur-md rounded-2xl shadow-2xl p-8 border border-border/30 hover:shadow-primary/20 transition-all duration-500 hover:scale-[1.02] relative overflow-hidden group text-right">
           <div className="absolute inset-0 bg-gradient-to-r from-primary/10 via-transparent to-primary/10 translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-1000" />
           <h1 className="text-3xl font-bold text-center mb-6">تسجيل الدخول</h1>
           <div className="space-y-6">
