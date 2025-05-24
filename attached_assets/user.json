@@ -122,5 +122,31 @@
     "pointsHistory": [],
     "testHistory": [],
     "savedQuestions": []
+  },
+  {
+    "id": 14,
+    "name": "youss9@gmail.com",
+    "email": "youss9@gmail.com",
+    "password": "182009",
+    "subscription": {
+      "type": "free",
+      "startDate": "2025-05-24",
+      "endDate": "2025-06-23"
+    },
+    "points": 100,
+    "level": 1,
+    "testsTaken": 0,
+    "averageScore": 0,
+    "folders": [],
+    "achievements": [],
+    "pointsHistory": [
+      {
+        "points": 100,
+        "reason": "مكافأة الترحيب",
+        "date": "2025-05-24T23:54:40.866Z"
+      }
+    ],
+    "testHistory": [],
+    "savedQuestions": []
   }
 ]
