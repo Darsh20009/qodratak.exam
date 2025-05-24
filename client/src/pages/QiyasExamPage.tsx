@@ -206,19 +206,32 @@ const QiyasExamPage: React.FC = () => {
   // Store questions for all sections to show in results
   const [allSectionsQuestions, setAllSectionsQuestions] = useState<{[sectionNumber: number]: ExamQuestion[]}>({});
 
+  // Prayer Break Functionality
+  const [isPrayerBreak, setIsPrayerBreak] = useState(false);
+
   // Timer for the test
   useEffect(() => {
-    if (currentView === "inProgress" && timeLeft > 0) {
+    if (currentView === "inProgress" && timeLeft > 0 && !isPrayerBreak) {
       const timer = setTimeout(() => {
         setTimeLeft(prev => prev - 1);
       }, 1000);
 
       return () => clearTimeout(timer);
     } else if (timeLeft === 0 && currentView === "inProgress") {
-      // Move to the next section or finish the exam if time is up
       moveToNextSection();
     }
-  }, [timeLeft, currentView]);
+  }, [timeLeft, currentView, isPrayerBreak]);
+
+  // Prayer break overlay
+  useEffect(() => {
+    if (isPrayerBreak) {
+      toast({
+        title: "وقت الصلاة",
+        description: "تم إيقاف الاختبار مؤقتاً. يمكنك استئناف الاختبار بعد الانتهاء من الصلاة.",
+        duration: 5000,
+      });
+    }
+  }, [isPrayerBreak]);
 
   // Format time from seconds to MM:SS
   const formatTime = (seconds: number): string => {
@@ -838,6 +851,15 @@ const QiyasExamPage: React.FC = () => {
             ) : (
               "إنهاء القسم"
             )}
+          </Button>
+
+          {/* Prayer Break Button */}
+```python
+          <Button
+            variant="secondary"
+            onClick={() => setIsPrayerBreak(!isPrayerBreak)}
+          >
+            {isPrayerBreak ? "استئناف الاختبار" : "توقف للصلاة"}
           </Button>
         </div>
       </div>
