@@ -476,7 +476,12 @@ const ProfilePage: React.FC = () => {
                       <FormItem>
                         <FormLabel>اسم المستخدم</FormLabel>
                         <FormControl>
-                          <Input placeholder="أدخل اسم المستخدم" {...field} />
+                          <Input 
+                            dir="rtl"
+                            className="text-right" 
+                            placeholder="أدخل اسم المستخدم" 
+                            {...field} 
+                          />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -489,7 +494,13 @@ const ProfilePage: React.FC = () => {
                       <FormItem>
                         <FormLabel>كلمة المرور</FormLabel>
                         <FormControl>
-                          <Input type="password" placeholder="أدخل كلمة المرور" {...field} />
+                          <Input 
+                            dir="rtl"
+                            className="text-right"
+                            type="password" 
+                            placeholder="أدخل كلمة المرور" 
+                            {...field} 
+                          />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -522,7 +533,12 @@ const ProfilePage: React.FC = () => {
                       <FormItem>
                         <FormLabel>اسم المستخدم</FormLabel>
                         <FormControl>
-                          <Input placeholder="أدخل اسم المستخدم" {...field} />
+                          <Input 
+                            dir="rtl"
+                            className="text-right" 
+                            placeholder="أدخل اسم المستخدم" 
+                            {...field} 
+                          />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -535,7 +551,13 @@ const ProfilePage: React.FC = () => {
                       <FormItem>
                         <FormLabel>كلمة المرور</FormLabel>
                         <FormControl>
-                          <Input type="password" placeholder="أدخل كلمة المرور" {...field} />
+                          <Input 
+                            dir="rtl"
+                            className="text-right"
+                            type="password" 
+                            placeholder="أدخل كلمة المرور" 
+                            {...field} 
+                          />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -649,6 +671,8 @@ const ProfilePage: React.FC = () => {
                     <div className="space-y-2">
                       <label htmlFor="recover-password" className="text-sm font-medium">كلمة المرور</label>
                       <Input 
+                            dir="rtl"
+                            className="text-right"
                         id="recover-password"
                         name="password" 
                         type="password" 
