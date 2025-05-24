@@ -119,6 +119,14 @@ const ProfilePage: React.FC = () => {
   });
 
   const onLoginSubmit = async (data: LoginFormValues) => {
+    if (!data.username || !data.password) {
+      toast({
+        title: "خطأ",
+        description: "يرجى إدخال اسم المستخدم وكلمة المرور",
+        variant: "destructive",
+      });
+      return;
+    }
     setIsLoading(true);
     try {
       const response = await fetch("/api/auth/login", {
@@ -161,6 +169,7 @@ const ProfilePage: React.FC = () => {
       window.dispatchEvent(new Event('storage'));
       setUser(userData);
       setIsLoggedIn(true);
+      localStorage.setItem("isLoggedIn", "true");
 
       // Broadcast login state
       window.dispatchEvent(new CustomEvent('userLoggedIn', { detail: userData }));
@@ -205,6 +214,7 @@ const ProfilePage: React.FC = () => {
       localStorage.setItem("user", JSON.stringify(userData));
       setUser(userData);
       setIsLoggedIn(true);
+      localStorage.setItem("isLoggedIn", "true");
 
       toast({
         title: "تم إنشاء الحساب بنجاح",
@@ -242,8 +252,8 @@ const ProfilePage: React.FC = () => {
             <div className="absolute inset-0 bg-gradient-conic from-primary/0 via-primary/5 to-primary/0 animate-spin-slow opacity-50" />
             <CardHeader className="text-center relative z-10 pt-8">
               <div className="relative">
-                <div className="w-28 h-28 rounded-full bg-gradient-to-br from-primary to-primary/60 mx-auto flex items-center justify-center mb-4 ring-4 ring-background">
-                  <User className="h-14 w-14 text-primary-foreground" />
+                <div className="w-28 h-28 rounded-full bg-gradient-to-br from-primary to-primary/60 mx-auto flex items-center justify-center mb-4 ring-4 ring-background transition-all duration-300 hover:scale-105">
+                  <User className="h-14 w-14 text-primary-foreground" loading="lazy" />
                 </div>
                 <div className="absolute -bottom-2 right-1/2 transform translate-x-1/2">
                   <Badge className="bg-gradient-to-r from-yellow-500 to-amber-500 text-white">
@@ -265,13 +275,13 @@ const ProfilePage: React.FC = () => {
                       {(() => {
                         const endDate = new Date(user.subscription.endDate);
                         const today = new Date();
-                        const daysLeft = Math.ceil((endDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+                        const daysLeft = Math.max(0, Math.ceil((endDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24)));
                         const formattedDate = new Intl.DateTimeFormat('ar-SA', { 
                           year: 'numeric', 
                           month: 'long', 
                           day: 'numeric' 
                         }).format(endDate);
-                        
+
                         return (
                           <div className="flex flex-col items-center">
                             <span className="text-sm">ينتهي في {formattedDate}</span>
@@ -436,7 +446,7 @@ const ProfilePage: React.FC = () => {
           </div>
         </div>
       </div>
-      
+
       <div className="container max-w-md py-16 relative">
         <div className="space-y-6 text-center">
           <div className="relative inline-block">
