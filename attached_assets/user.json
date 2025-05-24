@@ -10,6 +10,16 @@
     }
   },
   {
+    "name": "youssef darwish",
+    "email": "yo9@gmail.com",
+    "password": "182009",
+    "subscription": {
+      "type": "Pro",
+      "startDate": "2025-06-26",
+      "endDate": "2026-05-26"
+    }
+  },
+  {
     "name": "ahmed ahmed",
     "email": "ahmed@gmail.com",
     "password": "123456",
