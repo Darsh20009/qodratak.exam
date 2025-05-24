@@ -754,6 +754,16 @@ const QiyasExamPage: React.FC = () => {
           </div>
 
           <div className="flex items-center gap-3">
+            <Button
+              variant="outline"
+              onClick={() => setIsPrayerBreak(!isPrayerBreak)}
+              className={cn(
+                "transition-colors",
+                isPrayerBreak && "bg-orange-100 text-orange-700 hover:bg-orange-200"
+              )}
+            >
+              {isPrayerBreak ? "استئناف الاختبار" : "توقف للصلاة"}
+            </Button>
             <div className="flex items-center gap-1">
               <Clock3 className="h-4 w-4" />
               <span className={cn(
@@ -853,15 +863,7 @@ const QiyasExamPage: React.FC = () => {
             )}
           </Button>
 
-          {/* Prayer Break Button */}
-```python
-          <Button
-            variant="secondary"
-            onClick={() => setIsPrayerBreak(!isPrayerBreak)}
-          >
-            {isPrayerBreak ? "استئناف الاختبار" : "توقف للصلاة"}
-          </Button>
-        </div>
+          </div>
       </div>
     );
   };
