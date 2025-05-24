@@ -845,7 +845,8 @@ const QiyasExamPage: React.FC = () => {
               </DialogHeader>
               <DialogFooter>
                 <Button onClick={moveToNextSection}>نعم، إنهاء القسم</Button>
-              </DialogFooter>
+              </DialogFooter>```text
+
             </DialogContent>
           </Dialog>
           <Button 
@@ -1742,7 +1743,7 @@ const QiyasExamPage: React.FC = () => {
               </div>
             </TabsContent>
 
-            
+            <TabsContent value="ungraded">
               <div className="space-y-4">
                 {Object.entries(allSectionsQuestions).flatMap(([sectionNum, sectionQuestions]) => {
                   // Get random 20 questions from all sections
