@@ -846,8 +846,7 @@ const QiyasExamPage: React.FC = () => {
               <DialogFooter>
                 <Button onClick={moveToNextSection}>نعم، إنهاء القسم</Button>
               </DialogFooter>
-            </DialogContent>
-          </Dialog>
+            </DialogContent          </Dialog>
 
           <Button 
             onClick={goToNextQuestion}
@@ -1535,11 +1534,12 @@ const QiyasExamPage: React.FC = () => {
           </CardHeader>
         <CardContent>
           <Tabs defaultValue="all" className="w-full">
-            <TabsList className="w-full mb-4">
-              <TabsTrigger value="all">جميع الأسئلة</TabsTrigger>
-              <TabsTrigger value="correct">الإجابات الصحيحة</TabsTrigger>
-              <TabsTrigger value="incorrect">الإجابات الخاطئة</TabsTrigger>
-            </TabsList>
+                <TabsList className="w-full mb-4">
+                  <TabsTrigger value="all">جميع الأسئلة</TabsTrigger>
+                  <TabsTrigger value="correct">الإجابات الصحيحة</TabsTrigger>
+                  <TabsTrigger value="incorrect">الإجابات الخاطئة</TabsTrigger>
+                  <TabsTrigger value="ungraded">الأسئلة الغير محسوبة ({20})</TabsTrigger>
+                </TabsList>
 
             <TabsContent value="all">
               <div className="space-y-4">
@@ -1583,8 +1583,6 @@ const QiyasExamPage: React.FC = () => {
                               </div>
                             ))}
                           </div>
-
-
 
                           <div className="mt-4 flex justify-end">
                             <Button
@@ -1651,8 +1649,6 @@ const QiyasExamPage: React.FC = () => {
                             ))}
                           </div>
 
-
-
                           <div className="mt-4 flex justify-end">
                             <Button
                               variant="outline"
@@ -1718,7 +1714,6 @@ const QiyasExamPage: React.FC = () => {
                             ))}
                           </div>
 
-
                           <div className="mt-4 flex justify-end">
                             <Button
                               variant="outline"
@@ -1740,6 +1735,11 @@ const QiyasExamPage: React.FC = () => {
                   );
                 }))}
               </div>
+            </TabsContent>
+             <TabsContent value="ungraded">
+              <div className="space-y-4">
+                 الأسئلة الغير محسوبة
+                </div>
             </TabsContent>
           </Tabs>
         </CardContent>
