@@ -1739,8 +1739,58 @@ const QiyasExamPage: React.FC = () => {
             </TabsContent>
              <TabsContent value="ungraded">
               <div className="space-y-4">
-                 الأسئلة الغير محسوبة
-                </div>
+                {Object.entries(allSectionsQuestions).flatMap(([sectionNum, sectionQuestions]) => {
+                  // Get random 20 questions from all sections
+                  const randomQuestions = sectionQuestions
+                    .sort(() => 0.5 - Math.random())
+                    .slice(0, Math.ceil(20 / Object.keys(allSectionsQuestions).length));
+
+                  return randomQuestions.map((question, index) => {
+                    const sectionName = selectedExam?.sections[parseInt(sectionNum) - 1]?.name || `القسم ${sectionNum}`;
+                    const userAnswer = answers[question.id];
+                    const isCorrect = userAnswer === question.correctOptionIndex;
+
+                    return (
+                      <div key={question.id} className={cn(
+                        "p-4 rounded-lg border",
+                        isCorrect ? "bg-green-50 dark:bg-green-900/20 border-green-200" : "bg-red-50 dark:bg-red-900/20 border-red-200"
+                      )}>
+                        <div className="flex items-start gap-3">
+                          <div>
+                            <h4 className="font-medium mb-2">{sectionName} - سؤال {index + 1}</h4>
+                            <p className="text-gray-800 dark:text-gray-200 mb-4">{question.text}</p>
+
+                            <div className="space-y-2">
+                              {question.options.map((option, optIndex) => (
+                                <div key={optIndex} className={cn(
+                                  "p-3 rounded-lg border",
+                                  optIndex === question.correctOptionIndex ? "bg-green-50 dark:bg-green-900/20 border-green-200" :
+                                  optIndex === userAnswer ? "bg-red-50 dark:bg-red-900/20 border-red-200" :
+                                  "bg-gray-50 dark:bg-gray-800"
+                                )}>
+                                  <div className="flex items-center">
+                                    <span className="mr-2">{option}</span>
+                                    {optIndex === question.correctOptionIndex && (
+                                      <span className="text-green-600 dark:text-green-400 text-sm mr-auto">
+                                        (الإجابة الصحيحة)
+                                      </span>
+                                    )}
+                                    {optIndex === userAnswer && optIndex !== question.correctOptionIndex && (
+                                      <span className="text-red-600 dark:text-red-400 text-sm mr-auto">
+                                        (إجابتك)
+                                      </span>
+                                    )}
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  });
+                })}
+              </div>
             </TabsContent>
           </Tabs>
         </CardContent>
