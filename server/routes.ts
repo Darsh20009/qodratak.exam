@@ -324,47 +324,49 @@ app.post("/api/recover-account", async (req: Request, res: Response) => {
 
 app.post("/api/auth/register", async (req: Request, res: Response) => {
     try {
-      const { name, email, password, subscription } = req.body;
+      const { name, email, password } = req.body;
 
       if (!name || !email || !password) {
-        return res.status(400).json({ message: "Name, email and password are required" });
+        return res.status(400).json({ message: "يرجى إدخال جميع البيانات المطلوبة" });
       }
 
-      const users = JSON.parse(fs.readFileSync("attached_assets/user.json", "utf-8"));
+      // قراءة ملف المستخدمين
+      let users = [];
+      try {
+        const data = fs.readFileSync("attached_assets/user.json", "utf-8");
+        users = JSON.parse(data);
+      } catch (error) {
+        // إنشاء ملف جديد إذا لم يكن موجوداً
+        fs.writeFileSync("attached_assets/user.json", "[]");
+      }
 
       if (users.some((u: any) => u.email === email)) {
-        return res.status(400).json({ message: "Email already exists" });
+        return res.status(400).json({ message: "البريد الإلكتروني مستخدم من قبل" });
       }
 
-      // Always validate subscription dates
-      const startDate = subscription?.startDate ? new Date(subscription.startDate) : new Date();
       const today = new Date();
-      
-      if (startDate > today) {
-        const daysUntilStart = Math.ceil((startDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
-        return res.status(403).json({ 
-          message: "لا يمكن تسجيل الحساب حالياً",
-          daysRemaining: daysUntilStart,
-          error: `باقي ${daysUntilStart} يوم لتفعيل الحساب` 
-        });
-      }
 
       const newUser = {
+        id: users.length + 1,
         name,
         email,
         password,
         subscription: {
           type: "free",
-          startDate: new Date().toISOString().split('T')[0],
-          endDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]
+          startDate: today.toISOString().split('T')[0],
+          endDate: new Date(today.getTime() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]
         },
-        points: 0,
+        points: 100, // نقاط ترحيبية
         level: 1,
         testsTaken: 0,
         averageScore: 0,
         folders: [],
         achievements: [],
-        pointsHistory: [],
+        pointsHistory: [{
+          points: 100,
+          reason: "مكافأة الترحيب",
+          date: today.toISOString()
+        }],
         testHistory: [],
         savedQuestions: []
       };
