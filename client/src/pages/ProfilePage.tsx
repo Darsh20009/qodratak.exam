@@ -447,17 +447,7 @@ const ProfilePage: React.FC = () => {
         </div>
       </div>
 
-      <div className="container max-w-md py-16 relative">
-        <div className="space-y-6 text-center">
-          <div className="relative inline-block">
-            <h1 className="text-4xl font-bold bg-gradient-to-r from-primary via-primary/80 to-primary bg-clip-text text-transparent">
-              مرحباً بك في قدراتك
-            </h1>
-            <div className="absolute -right-8 -top-8 text-4xl animate-bounce-slow">✨</div>
-            <div className="absolute -left-8 -bottom-4 text-4xl animate-bounce-slow" style={{animationDelay: '0.5s'}}>✨</div>
-          </div>
-          <p className="text-lg text-muted-foreground">منصتك الشخصية للتطور والنجاح</p>
-        </div>
+      
 
       <Tabs defaultValue="login" className="animate-fade-in-up">
         <TabsList className="w-full mb-6 p-1 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">

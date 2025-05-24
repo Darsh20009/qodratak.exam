@@ -336,19 +336,17 @@ app.post("/api/auth/register", async (req: Request, res: Response) => {
         return res.status(400).json({ message: "Email already exists" });
       }
 
-      // Validate subscription dates if provided
-      if (subscription?.startDate) {
-        const startDate = new Date(subscription.startDate);
-        const today = new Date();
-        
-        if (startDate > today) {
-          const daysUntilStart = Math.ceil((startDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
-          return res.status(403).json({ 
-            message: "لا يمكن تسجيل الحساب حالياً",
-            daysRemaining: daysUntilStart,
-            error: `باقي ${daysUntilStart} يوم لتفعيل الحساب` 
-          });
-        }
+      // Always validate subscription dates
+      const startDate = subscription?.startDate ? new Date(subscription.startDate) : new Date();
+      const today = new Date();
+      
+      if (startDate > today) {
+        const daysUntilStart = Math.ceil((startDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+        return res.status(403).json({ 
+          message: "لا يمكن تسجيل الحساب حالياً",
+          daysRemaining: daysUntilStart,
+          error: `باقي ${daysUntilStart} يوم لتفعيل الحساب` 
+        });
       }
 
       const newUser = {
