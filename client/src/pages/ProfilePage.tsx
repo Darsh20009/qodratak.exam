@@ -600,15 +600,19 @@ const ProfilePage: React.FC = () => {
                 <TabsContent value="email">
                   <div className="space-y-4">
                     <div className="space-y-2">
-                      <label htmlFor="recover-email" className="text-sm font-medium">البريد الإلكتروني</label>
-                      <Input 
-                        id="recover-email"
-                        name="email" 
-                        type="email" 
-                        placeholder="أدخل بريدك الإلكتروني"
-                        className="text-right"
-                        required 
-                      />
+                      <FormItem>
+                        <FormLabel>البريد الإلكتروني</FormLabel>
+                        <FormControl>
+                          <Input 
+                            id="recover-email"
+                            name="email" 
+                            type="email" 
+                            placeholder="أدخل بريدك الإلكتروني"
+                            className="text-right" 
+                            required 
+                          />
+                        </FormControl>
+                      </FormItem>
                     </div>
                     <Button 
                       className="w-full bg-primary hover:bg-primary/90"
@@ -667,15 +671,19 @@ const ProfilePage: React.FC = () => {
                 <TabsContent value="password">
                   <div className="space-y-4">
                     <div className="space-y-2">
-                      <label htmlFor="recover-password" className="text-sm font-medium">كلمة المرور</label>
-                      <Input 
-                        id="recover-password"
-                        name="password" 
-                        type="password" 
-                        placeholder="أدخل كلمة المرور"
-                        className="text-right" 
-                        required 
-                      />
+                      <FormItem>
+                        <FormLabel>كلمة المرور</FormLabel>
+                        <FormControl>
+                          <Input 
+                            id="recover-password"
+                            name="password" 
+                            type="password" 
+                            placeholder="أدخل كلمة المرور"
+                            className="text-right" 
+                            required 
+                          />
+                        </FormControl>
+                      </FormItem>
                     </div>
                     <Button 
                       className="w-full bg-primary hover:bg-primary/90"
