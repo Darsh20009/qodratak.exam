@@ -845,10 +845,10 @@ const QiyasExamPage: React.FC = () => {
               </DialogHeader>
               <DialogFooter>
                 <Button onClick={moveToNextSection}>نعم، إنهاء القسم</Button>
-              </DialogFooter>```text
-
+              </DialogFooter>
             </DialogContent>
           </Dialog>
+
           <Button 
             onClick={goToNextQuestion}
             disabled={selectedAnswer === null}
@@ -1539,7 +1539,6 @@ const QiyasExamPage: React.FC = () => {
               <TabsTrigger value="all">جميع الأسئلة</TabsTrigger>
               <TabsTrigger value="correct">الإجابات الصحيحة</TabsTrigger>
               <TabsTrigger value="incorrect">الإجابات الخاطئة</TabsTrigger>
-              <TabsTrigger value="ungraded">أسئلة غير محسوبة</TabsTrigger>
             </TabsList>
 
             <TabsContent value="all">
@@ -1740,82 +1739,6 @@ const QiyasExamPage: React.FC = () => {
                     </div>
                   );
                 }))}
-              </div>
-            </TabsContent>
-
-            <TabsContent value="ungraded">
-              <div className="space-y-4">
-                {Object.entries(allSectionsQuestions).flatMap(([sectionNum, sectionQuestions]) => {
-                  // Get random 20 questions from all sections
-                  const totalSections = Object.keys(allSectionsQuestions).length;
-                  const questionsPerSection = Math.ceil(20 / totalSections);
-                  const randomQuestions = sectionQuestions
-                    .sort(() => 0.5 - Math.random())
-                    .slice(0, questionsPerSection);
-
-                  return randomQuestions.map((question, index) => {
-                    const sectionName = selectedExam?.sections[parseInt(sectionNum) - 1]?.name || `القسم ${sectionNum}`;
-                    const userAnswer = answers[question.id];
-                    const isCorrect = true; // Always mark as correct in ungraded section
-
-                    return (
-                      <div key={question.id} className={cn(
-                        "p-4 rounded-lg border",
-                        isCorrect ? "bg-green-50 dark:bg-green-900/20 border-green-200" : "bg-red-50 dark:bg-red-900/20 border-red-200"
-                      )}>
-                        <div className="flex items-start gap-3">
-                          <div className={cn(
-                            "w-8 h-8 rounded-full flex items-center justify-center text-white",
-                            isCorrect ? "bg-green-500" : "bg-red-500"
-                          )}>
-                            {isCorrect ? "✓" : "✗"}
-                          </div>
-                          <div>
-                            <h4 className="font-medium mb-2">{sectionName} - سؤال {index + 1}</h4>
-                            <p className="text-gray-800 dark:text-gray-200 mb-4">{question.text}</p>
-
-                            <div className="space-y-2">
-                              {question.options.map((option, optIndex) => (
-                                <div key={optIndex} className={cn(
-                                  "p-3 rounded-lg border",
-                                  optIndex === question.correctOptionIndex ? "bg-green-50 dark:bg-green-900/20 border-green-200" :
-                                  optIndex === answers[question.id] ? "bg-red-50 dark:bg-red-900/20 border-red-200" :
-                                  "bg-gray-50 dark:bg-gray-800"
-                                )}>
-                                  <div className="flex items-center">
-                                    <span className="mr-2">{option}</span>
-                                    {optIndex === question.correctOptionIndex && (
-                                      <span className="text-green-600 dark:text-green-400 text-sm mr-auto">
-                                        (الإجابة الصحيحة)
-                                      </span>
-                                    )}
-                                  </div>
-                                </div>
-                              ))}
-                            </div>
-
-
-
-                            <div className="mt-4 flex justify-end">
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                className="text-muted-foreground"
-                                onClick={() => {
-                                  const message = encodeURIComponent(
-                                    `تبليغ عن خطأ في السؤال:\n\nنص السؤال: ${question.text}\n\nالخيارات:\n${question.options.map((opt, i) => `${i + 1}. ${opt}`).join('\n')}\n\nالإجابة الصحيحة: ${question.correctOptionIndex + 1}`
-                                  );
-                                  window.open(`https://t.me/qodratak2030?text=${message}`, '_blank');
-                                }}
-                              >
-                                <span className="ml-2">إبلاغ عن خطأ</span>
-                              </Button>
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                    );
-                  }))}
               </div>
             </TabsContent>
           </Tabs>
