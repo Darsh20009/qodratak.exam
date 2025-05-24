@@ -605,12 +605,13 @@ const ProfilePage: React.FC = () => {
                         id="recover-email"
                         name="email" 
                         type="email" 
-                        placeholder="أدخل بريدك الإلكتروني" 
+                        placeholder="أدخل بريدك الإلكتروني"
+                        className="text-right"
                         required 
                       />
                     </div>
                     <Button 
-                      className="w-full"
+                      className="w-full bg-primary hover:bg-primary/90"
                       onClick={async () => {
                         const email = (document.getElementById('recover-email') as HTMLInputElement).value;
                         if (!email) {
@@ -671,12 +672,13 @@ const ProfilePage: React.FC = () => {
                         id="recover-password"
                         name="password" 
                         type="password" 
-                        placeholder="أدخل كلمة المرور" 
+                        placeholder="أدخل كلمة المرور"
+                        className="text-right" 
                         required 
                       />
                     </div>
                     <Button 
-                      className="w-full"
+                      className="w-full bg-primary hover:bg-primary/90"
                       onClick={async () => {
                         const password = (document.getElementById('recover-password') as HTMLInputElement).value;
                         if (!password) {
