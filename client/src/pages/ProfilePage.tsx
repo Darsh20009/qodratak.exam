@@ -435,14 +435,21 @@ const ProfilePage: React.FC = () => {
           />
         ))}
       </div>
-      
+      <div dir="rtl" className="container max-w-md mx-auto p-6 relative">
+                        <div className="bg-card/60 backdrop-blur-md rounded-2xl shadow-2xl p-8 border border-border/30 hover:shadow-primary/20 transition-all duration-500 hover:scale-[1.02] relative overflow-hidden group text-right">
+          <div className="absolute inset-0 bg-gradient-to-r from-primary/10 via-transparent to-primary/10 translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-1000" />
+          <h1 className="text-3xl font-bold text-center mb-6">تسجيل الدخول</h1>
+          <div className="space-y-6">
             <div className="absolute -z-10 w-[400px] h-[400px] bg-primary/5 rounded-full blur-3xl animate-pulse-slow" />
             <div className="absolute -z-10 w-[300px] h-[300px] right-0 top-20 bg-primary/10 rounded-full blur-2xl animate-float" />
             {/* Existing login form here */}
           </div>
-          <div className="container mx-auto p-4">
-        <div className="max-w-md mx-auto">
-          <Tabs defaultValue="login" className="animate-fade-in-up">
+        </div>
+      </div>
+
+
+
+      <Tabs defaultValue="login" className="animate-fade-in-up">
         <TabsList className="w-full mb-6 p-1 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
           <TabsTrigger value="login" className="flex-1 transition-all duration-300">تسجيل الدخول</TabsTrigger>
           <TabsTrigger value="register" className="flex-1 transition-all duration-300">إنشاء حساب</TabsTrigger>
