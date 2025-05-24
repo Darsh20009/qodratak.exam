@@ -435,14 +435,19 @@ const ProfilePage: React.FC = () => {
           />
         ))}
       </div>
-      <div className="container mx-auto p-4 relative z-10">
+      
+            <div className="absolute -z-10 w-[400px] h-[400px] bg-primary/5 rounded-full blur-3xl animate-pulse-slow" />
+            <div className="absolute -z-10 w-[300px] h-[300px] right-0 top-20 bg-primary/10 rounded-full blur-2xl animate-float" />
+            {/* Existing login form here */}
+          </div>
+          <div className="container mx-auto p-4">
         <div className="max-w-md mx-auto">
-        <Tabs defaultValue="login" className="animate-fade-in-up">
-          <TabsList className="w-full mb-6 p-1 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-            <TabsTrigger value="login" className="flex-1 transition-all duration-300">تسجيل الدخول</TabsTrigger>
-            <TabsTrigger value="register" className="flex-1 transition-all duration-300">إنشاء حساب</TabsTrigger>
-            <TabsTrigger value="recover" className="flex-1 transition-all duration-300">استرداد الحساب</TabsTrigger>
-          </TabsList>
+          <Tabs defaultValue="login" className="animate-fade-in-up">
+        <TabsList className="w-full mb-6 p-1 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+          <TabsTrigger value="login" className="flex-1 transition-all duration-300">تسجيل الدخول</TabsTrigger>
+          <TabsTrigger value="register" className="flex-1 transition-all duration-300">إنشاء حساب</TabsTrigger>
+          <TabsTrigger value="recover" className="flex-1 transition-all duration-300">استرداد الحساب</TabsTrigger>
+        </TabsList>
 
         <TabsContent value="login">
           <Card className="border-0 shadow-lg bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
