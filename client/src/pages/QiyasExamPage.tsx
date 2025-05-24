@@ -847,7 +847,8 @@ const QiyasExamPage: React.FC = () => {
                 <Button onClick={moveToNextSection}>نعم، إنهاء القسم</Button>
               </DialogFooter>
             </DialogContent>
-          </Dialog          <Button 
+          </Dialog>
+          <Button 
             onClick={goToNextQuestion}
             disabled={selectedAnswer === null}
           >
