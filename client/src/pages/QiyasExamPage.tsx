@@ -1740,21 +1740,17 @@ const QiyasExamPage: React.FC = () => {
              <TabsContent value="ungraded">
               <div className="space-y-4">
                 {Object.entries(allSectionsQuestions).flatMap(([sectionNum, sectionQuestions]) => {
-                  // Get random 20 questions from all sections
-                  const randomQuestions = sectionQuestions
+                  // Get random 20 questions from all sections, excluding answered ones
+                  const unansweredQuestions = sectionQuestions.filter(q => !answers[q.id]);
+                  const randomQuestions = unansweredQuestions
                     .sort(() => 0.5 - Math.random())
                     .slice(0, Math.ceil(20 / Object.keys(allSectionsQuestions).length));
 
                   return randomQuestions.map((question, index) => {
                     const sectionName = selectedExam?.sections[parseInt(sectionNum) - 1]?.name || `القسم ${sectionNum}`;
-                    const userAnswer = answers[question.id];
-                    const isCorrect = userAnswer === question.correctOptionIndex;
-
+                    
                     return (
-                      <div key={question.id} className={cn(
-                        "p-4 rounded-lg border",
-                        isCorrect ? "bg-green-50 dark:bg-green-900/20 border-green-200" : "bg-red-50 dark:bg-red-900/20 border-red-200"
-                      )}>
+                      <div key={question.id} className="p-4 rounded-lg border bg-background hover:bg-muted/50 transition-colors">
                         <div className="flex items-start gap-3">
                           <div>
                             <h4 className="font-medium mb-2">{sectionName} - سؤال {index + 1}</h4>
@@ -1762,24 +1758,12 @@ const QiyasExamPage: React.FC = () => {
 
                             <div className="space-y-2">
                               {question.options.map((option, optIndex) => (
-                                <div key={optIndex} className={cn(
-                                  "p-3 rounded-lg border",
-                                  optIndex === question.correctOptionIndex ? "bg-green-50 dark:bg-green-900/20 border-green-200" :
-                                  optIndex === userAnswer ? "bg-red-50 dark:bg-red-900/20 border-red-200" :
-                                  "bg-gray-50 dark:bg-gray-800"
-                                )}>
+                                <div key={optIndex} className="p-3 rounded-lg border bg-card hover:bg-card/80 transition-colors">
                                   <div className="flex items-center">
-                                    <span className="mr-2">{option}</span>
-                                    {optIndex === question.correctOptionIndex && (
-                                      <span className="text-green-600 dark:text-green-400 text-sm mr-auto">
-                                        (الإجابة الصحيحة)
-                                      </span>
-                                    )}
-                                    {optIndex === userAnswer && optIndex !== question.correctOptionIndex && (
-                                      <span className="text-red-600 dark:text-red-400 text-sm mr-auto">
-                                        (إجابتك)
-                                      </span>
-                                    )}
+                                    <span className="w-6 h-6 rounded-full bg-muted flex items-center justify-center text-sm ml-2">
+                                      {optIndex + 1}
+                                    </span>
+                                    <span>{option}</span>
                                   </div>
                                 </div>
                               ))}
