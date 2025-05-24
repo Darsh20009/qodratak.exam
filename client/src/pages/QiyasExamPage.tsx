@@ -1535,12 +1535,11 @@ const QiyasExamPage: React.FC = () => {
           </CardHeader>
         <CardContent>
           <Tabs defaultValue="all" className="w-full">
-                <TabsList className="mb-4 w-full grid grid-cols-2 md:grid-cols-4 gap-2">
-                  <TabsTrigger value="all" className="w-full">جميع الأسئلة</TabsTrigger>
-                  <TabsTrigger value="correct" className="w-full">الإجابات الصحيحة</TabsTrigger>
-                  <TabsTrigger value="incorrect" className="w-full">الإجابات الخاطئة</TabsTrigger>
-                  <TabsTrigger value="ungraded" className="w-full">الأسئلة الغير محسوبة ({20})</TabsTrigger>
-                </TabsList>
+            <TabsList className="w-full mb-4">
+              <TabsTrigger value="all">جميع الأسئلة</TabsTrigger>
+              <TabsTrigger value="correct">الإجابات الصحيحة</TabsTrigger>
+              <TabsTrigger value="incorrect">الإجابات الخاطئة</TabsTrigger>
+            </TabsList>
 
             <TabsContent value="all">
               <div className="space-y-4">
@@ -1584,6 +1583,8 @@ const QiyasExamPage: React.FC = () => {
                               </div>
                             ))}
                           </div>
+
+
 
                           <div className="mt-4 flex justify-end">
                             <Button
@@ -1650,6 +1651,8 @@ const QiyasExamPage: React.FC = () => {
                             ))}
                           </div>
 
+
+
                           <div className="mt-4 flex justify-end">
                             <Button
                               variant="outline"
@@ -1715,6 +1718,7 @@ const QiyasExamPage: React.FC = () => {
                             ))}
                           </div>
 
+
                           <div className="mt-4 flex justify-end">
                             <Button
                               variant="outline"
@@ -1735,45 +1739,6 @@ const QiyasExamPage: React.FC = () => {
                     </div>
                   );
                 }))}
-              </div>
-            </TabsContent>
-             <TabsContent value="ungraded">
-              <div className="space-y-4">
-                {Object.entries(allSectionsQuestions).flatMap(([sectionNum, sectionQuestions]) => {
-                  // Get random 20 questions from all sections, excluding answered ones
-                  const unansweredQuestions = sectionQuestions.filter(q => !answers[q.id]);
-                  const randomQuestions = unansweredQuestions
-                    .sort(() => 0.5 - Math.random())
-                    .slice(0, Math.ceil(20 / Object.keys(allSectionsQuestions).length));
-
-                  return randomQuestions.map((question, index) => {
-                    const sectionName = selectedExam?.sections[parseInt(sectionNum) - 1]?.name || `القسم ${sectionNum}`;
-                    
-                    return (
-                      <div key={question.id} className="p-4 rounded-lg border bg-background hover:bg-muted/50 transition-colors">
-                        <div className="flex items-start gap-3">
-                          <div>
-                            <h4 className="font-medium mb-2">{sectionName} - سؤال {index + 1}</h4>
-                            <p className="text-gray-800 dark:text-gray-200 mb-4">{question.text}</p>
-
-                            <div className="space-y-2">
-                              {question.options.map((option, optIndex) => (
-                                <div key={optIndex} className="p-3 rounded-lg border bg-card hover:bg-card/80 transition-colors">
-                                  <div className="flex items-center">
-                                    <span className="w-6 h-6 rounded-full bg-muted flex items-center justify-center text-sm ml-2">
-                                      {optIndex + 1}
-                                    </span>
-                                    <span>{option}</span>
-                                  </div>
-                                </div>
-                              ))}
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                    );
-                  });
-                })}
               </div>
             </TabsContent>
           </Tabs>
