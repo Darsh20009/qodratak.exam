@@ -442,10 +442,8 @@ const ProfilePage: React.FC = () => {
           </div>
         </div>
       </div>
-
-
-
-      <Tabs defaultValue="login" className="animate-fade-in-up">
+      <div className="container mx-auto p-4">
+        <Tabs defaultValue="login" className="animate-fade-in-up">
         <TabsList className="w-full mb-6 p-1 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
           <TabsTrigger value="login" className="flex-1 transition-all duration-300">تسجيل الدخول</TabsTrigger>
           <TabsTrigger value="register" className="flex-1 transition-all duration-300">إنشاء حساب</TabsTrigger>
