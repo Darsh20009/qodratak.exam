@@ -75,7 +75,30 @@ export default function ExamRecordsPage() {
                     <p>{Math.floor(record.timeTaken / 60)} دقيقة</p>
                   </div>
                 </div>
-                <div className="mt-4 flex justify-end">
+                <div className="mt-4 flex justify-end gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      // Create a blob with the test data
+                      const data = JSON.stringify(record, null, 2);
+                      const blob = new Blob([data], { type: 'application/json' });
+                      const url = window.URL.createObjectURL(blob);
+                      
+                      // Create and trigger download
+                      const a = document.createElement('a');
+                      a.href = url;
+                      a.download = `اختبار-${record.examType}-${formatDate(record.date)}.json`;
+                      document.body.appendChild(a);
+                      a.click();
+                      
+                      // Cleanup
+                      window.URL.revokeObjectURL(url);
+                      document.body.removeChild(a);
+                    }}
+                  >
+                    تحميل الأسئلة
+                  </Button>
                   <Button
                     variant="secondary"
                     size="sm"
