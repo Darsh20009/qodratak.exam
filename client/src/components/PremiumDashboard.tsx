@@ -16,7 +16,9 @@ import {
   WandIcon,
   InfinityIcon,
   MedalIcon,
-  BookOpenIcon
+  BookOpenIcon,
+  LockIcon,
+  StarIcon
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -52,8 +54,8 @@ export function PremiumDashboard({ user }: PremiumDashboardProps) {
     { icon: MedalIcon, title: "🏅 شارة الأسطورة", description: "تميز عن الجميع بشارة Pro Life الذهبية", premium: true },
     { icon: WandIcon, title: "✨ مساعد AI متطور", description: "ذكاء اصطناعي شخصي لتحليل أدائك وتطويره", premium: true },
     { icon: InfinityIcon, title: "∞ تحديثات مجانية للأبد", description: "جميع الميزات الجديدة مجاناً مدى الحياة", premium: true },
-    { icon: LockIcon, title: "🔐 منطقة الأساطير", description: "وصول حصري لقسم متقدم للمحترفين فقط", premium: true },
-    { icon: StarIcon, title: "⭐ دعم VIP شخصي", description: "مساعد شخصي متاح 24/7 لمساعدتك", premium: true },
+    { icon: ShieldCheckIcon, title: "🔐 منطقة الأساطير", description: "وصول حصري لقسم متقدم للمحترفين فقط", premium: true },
+    { icon: SparklesIcon, title: "⭐ دعم VIP شخصي", description: "مساعد شخصي متاح 24/7 لمساعدتك", premium: true },
     { icon: TrophyIcon, title: "🏆 مسابقات الأبطال", description: "مشاركة في بطولات النخبة مع جوائز حصرية", premium: true }
   ];
 
