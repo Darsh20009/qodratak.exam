@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -6,18 +5,11 @@ import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { 
   CrownIcon, 
+  DiamondIcon, 
   SparklesIcon, 
-  DiamondIcon,
-  GiftIcon,
-  StarIcon,
-  TrophyIcon,
-  ZapIcon,
-  FlameIcon,
-  HeartIcon,
-  InfinityIcon,
-  MagicWandIcon,
-  RocketIcon,
-  XIcon
+  XIcon, 
+  Flame,
+  Wand2
 } from "lucide-react";
 
 interface PremiumNotificationsProps {
@@ -74,14 +66,14 @@ export function PremiumNotifications({ userSubscription, userName }: PremiumNoti
               ? 'border-purple-400 shadow-2xl shadow-purple-500/30' 
               : 'border-amber-400 shadow-2xl shadow-amber-500/30'
           } bg-gradient-to-br from-background via-background/95 to-background overflow-hidden`}>
-            
+
             {/* Animated Background */}
             <div className={`absolute inset-0 bg-gradient-to-r ${
               isProLife 
                 ? 'from-purple-500/10 via-pink-500/5 to-violet-500/10' 
                 : 'from-amber-500/10 via-yellow-500/5 to-orange-500/10'
             } animate-gradient-x`} />
-            
+
             {/* Floating Particles */}
             <div className="absolute inset-0 overflow-hidden">
               {[...Array(15)].map((_, i) => (
@@ -121,11 +113,11 @@ export function PremiumNotifications({ userSubscription, userName }: PremiumNoti
                   <div className="relative">
                     <CrownIcon className="h-20 w-20 text-amber-500 animate-bounce drop-shadow-lg" />
                     <div className="absolute inset-0 h-20 w-20 bg-amber-400 rounded-full blur-xl opacity-30 animate-ping" />
-                    <FlameIcon className="absolute -top-2 -right-2 h-7 w-7 text-orange-400 animate-pulse" />
+                    <Flame className="absolute -top-2 -right-2 h-7 w-7 text-orange-400 animate-pulse" />
                   </div>
                 )}
               </div>
-              
+
               <CardTitle className={`text-3xl font-bold bg-gradient-to-r ${
                 isProLife 
                   ? 'from-purple-600 via-pink-500 to-violet-600' 
@@ -134,7 +126,7 @@ export function PremiumNotifications({ userSubscription, userName }: PremiumNoti
                 🎉 مرحباً بك في عالم النخبة!
               </CardTitle>
             </CardHeader>
-            
+
             <CardContent className="text-center space-y-6 relative">
               <div className={`p-6 rounded-xl bg-gradient-to-r ${
                 isProLife 
@@ -200,7 +192,7 @@ export function PremiumNotifications({ userSubscription, userName }: PremiumNoti
               ? 'border-purple-400 bg-gradient-to-r from-purple-50 via-pink-50 to-violet-50 dark:from-purple-950/20 dark:via-pink-950/20 dark:to-violet-950/20 shadow-lg shadow-purple-500/20'
               : 'border-amber-400 bg-gradient-to-r from-amber-50 via-yellow-50 to-orange-50 dark:from-amber-950/20 dark:via-yellow-950/20 dark:to-orange-950/20 shadow-lg shadow-amber-500/20'
           } overflow-hidden relative`}>
-            
+
             {/* Animated Border */}
             <div className={`absolute inset-0 bg-gradient-to-r ${
               isProLife 
@@ -231,7 +223,7 @@ export function PremiumNotifications({ userSubscription, userName }: PremiumNoti
                       <div className="absolute inset-0 h-8 w-8 bg-amber-400 rounded-full blur-md opacity-30" />
                     </div>
                   )}
-                  
+
                   <div>
                     <div className={`font-bold text-lg ${
                       isProLife ? 'text-purple-700 dark:text-purple-300' : 'text-amber-700 dark:text-amber-300'
@@ -269,7 +261,7 @@ export function PremiumNotifications({ userSubscription, userName }: PremiumNoti
             ? 'from-purple-100 to-pink-100 dark:from-purple-950/30 dark:to-pink-950/30 border border-purple-200 dark:border-purple-800'
             : 'from-amber-100 to-yellow-100 dark:from-amber-950/30 dark:to-yellow-950/30 border border-amber-200 dark:border-amber-800'
         } relative overflow-hidden`}>
-          
+
           {/* Background Pattern */}
           <div className="absolute inset-0 opacity-10">
             <div className="absolute inset-0 bg-[radial-gradient(circle_400px_at_50%_50%,rgba(255,255,255,0.3),transparent)]" />
@@ -282,7 +274,7 @@ export function PremiumNotifications({ userSubscription, userName }: PremiumNoti
               <SparklesIcon className="h-4 w-4" />
               إشعارات النخبة المميزة
             </h4>
-            
+
             <div className="space-y-2">
               {notifications.slice(0, 3).map((notification, index) => (
                 <div 

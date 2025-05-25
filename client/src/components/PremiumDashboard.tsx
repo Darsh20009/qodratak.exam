@@ -38,14 +38,30 @@ export function PremiumDashboard({ user }: PremiumDashboardProps) {
 
   if (!isPro && !isProLife) return null;
 
-  const premiumFeatures = [
-    { icon: SparklesIcon, title: "اختبارات لا محدودة", description: "وصول كامل لجميع الاختبارات المتقدمة", color: "from-blue-500 to-cyan-500" },
-    { icon: TrophyIcon, title: "تحديات حصرية", description: "منافسات مخصصة للنخبة المميزة فقط", color: "from-yellow-500 to-orange-500" },
-    { icon: GemIcon, title: "مكتبة متقدمة", description: "محتوى تعليمي عالي الجودة ومحدث", color: "from-purple-500 to-pink-500" },
-    { icon: RocketIcon, title: "دعم فني VIP", description: "استجابة فورية وأولوية قصوى", color: "from-green-500 to-emerald-500" },
-    { icon: ShieldCheckIcon, title: "مجلدات ذكية", description: "تنظيم متقدم ونظام حفظ ذكي", color: "from-indigo-500 to-blue-500" },
-    { icon: ZapIcon, title: "تحليل ذكي متطور", description: "إحصائيات مفصلة وتوصيات شخصية", color: "from-red-500 to-rose-500" }
-  ];
+  let premiumFeatures = [];
+  
+  if (isProLife) {
+    premiumFeatures = [
+      { icon: DiamondIcon, title: "💎 عضوية مدى الحياة", description: "لا تنتهي صلاحيتها أبداً - استثمار دائم للمستقبل", color: "from-purple-600 to-pink-600" },
+      { icon: InfinityIcon, title: "♾️ تحديثات مجانية إلى الأبد", description: "جميع الميزات والتحسينات المستقبلية مجاناً", color: "from-violet-500 to-purple-500" },
+      { icon: Wand2, title: "🌟 امتيازات سحرية", description: "ميزات حصرية تُضاف باستمرار للنخبة الماسية", color: "from-pink-500 to-rose-500" },
+      { icon: RocketIcon, title: "🚀 وصول مبكر", description: "كن أول من يجرب الميزات الجديدة قبل الجميع", color: "from-indigo-600 to-purple-600" },
+      { icon: SparklesIcon, title: "✨ اختبارات لا محدودة", description: "وصول كامل لجميع الاختبارات الحالية والمستقبلية", color: "from-blue-500 to-cyan-500" },
+      { icon: TrophyIcon, title: "🏆 تحديات النخبة الماسية", description: "منافسات حصرية للأعضاء الماسيين فقط", color: "from-yellow-500 to-orange-500" },
+      { icon: GemIcon, title: "💎 مكتبة الخبراء", description: "محتوى متقدم ومصادر حصرية للنخبة الماسية", color: "from-emerald-500 to-teal-500" },
+      { icon: ShieldCheckIcon, title: "🛡️ دعم VIP فائق", description: "استجابة فورية وأولوية قصوى مع خط مباشر", color: "from-green-500 to-emerald-500" },
+      { icon: ZapIcon, title: "⚡ ذكاء اصطناعي متقدم", description: "تحليل شخصي متطور وتوصيات ذكية مخصصة", color: "from-red-500 to-rose-500" }
+    ];
+  } else {
+    premiumFeatures = [
+      { icon: SparklesIcon, title: "✨ اختبارات متقدمة", description: "وصول كامل لجميع الاختبارات المتوفرة حالياً", color: "from-blue-500 to-cyan-500" },
+      { icon: TrophyIcon, title: "🏆 تحديات حصرية", description: "منافسات مخصصة لأعضاء Pro المميزين", color: "from-yellow-500 to-orange-500" },
+      { icon: GemIcon, title: "📚 مكتبة متقدمة", description: "محتوى تعليمي عالي الجودة ومحدث بانتظام", color: "from-purple-500 to-pink-500" },
+      { icon: RocketIcon, title: "🚀 دعم فني متميز", description: "استجابة سريعة وأولوية عالية في الدعم", color: "from-green-500 to-emerald-500" },
+      { icon: ShieldCheckIcon, title: "🗂️ مجلدات ذكية", description: "تنظيم متقدم ونظام حفظ ذكي للمراجعة", color: "from-indigo-500 to-blue-500" },
+      { icon: ZapIcon, title: "⚡ تحليل ذكي", description: "إحصائيات مفصلة وتوصيات لتحسين الأداء", color: "from-red-500 to-rose-500" }
+    ];
+  }
 
   if (isProLife) {
     premiumFeatures.push(
@@ -136,7 +152,7 @@ export function PremiumDashboard({ user }: PremiumDashboardProps) {
                   ? 'from-purple-600 via-pink-500 to-violet-600' 
                   : 'from-amber-600 via-yellow-500 to-orange-600'
               } bg-clip-text text-transparent animate-gradient-x`}>
-                أهلاً بك في عالم النخبة
+                {isProLife ? "أهلاً بك في النخبة الماسية" : "أهلاً بك في النخبة الذهبية"}
               </CardTitle>
 
               <div className="flex justify-center">
@@ -159,21 +175,29 @@ export function PremiumDashboard({ user }: PremiumDashboardProps) {
 
               <div className="space-y-4">
                 <p className="text-2xl font-semibold text-muted-foreground">
-                  مرحباً {user.name}، أنت من أعضاء النخبة المميزة
+                  مرحباً {user.name}، أنت من {isProLife ? "النخبة الماسية الحصرية" : "النخبة الذهبية المميزة"}
                 </p>
                 <div className={`p-6 rounded-2xl bg-gradient-to-r ${
                   isProLife 
-                    ? 'from-purple-50 to-pink-50 dark:from-purple-950/30 dark:to-pink-950/30 border border-purple-200 dark:border-purple-800' 
-                    : 'from-amber-50 to-yellow-50 dark:from-amber-950/30 dark:to-yellow-950/30 border border-amber-200 dark:border-amber-800'
+                    ? 'from-purple-50 to-pink-50 dark:from-purple-950/30 dark:to-pink-950/30 border-2 border-purple-300 dark:border-purple-700' 
+                    : 'from-amber-50 to-yellow-50 dark:from-amber-950/30 dark:to-yellow-950/30 border-2 border-amber-300 dark:border-amber-700'
                 }`}>
                   <p className={`text-lg font-medium ${
                     isProLife ? 'text-purple-700 dark:text-purple-300' : 'text-amber-700 dark:text-amber-300'
                   }`}>
                     {isProLife 
-                      ? "🌟 استمتع بجميع الميزات المتقدمة إلى الأبد، أنت الآن جزء من العائلة الماسية الحصرية!" 
-                      : "✨ لديك وصول حصري لجميع الميزات المتقدمة، كن مستعداً للتفوق والإبداع!"
+                      ? "💎✨ أنت عضو في النخبة الماسية! استمتع بجميع الميزات إلى الأبد مع تحديثات مجانية مدى الحياة. هذا استثمار ذكي لمستقبلك التعليمي!" 
+                      : "👑🌟 أنت عضو في النخبة الذهبية! استمتع بسنة كاملة من التميز. يمكنك الترقية إلى Pro Life في أي وقت للحصول على امتيازات أكثر!"
                     }
                   </p>
+                  
+                  {!isProLife && (
+                    <div className="mt-4 p-3 bg-gradient-to-r from-purple-100 to-pink-100 dark:from-purple-900/30 dark:to-pink-900/30 border border-purple-200 dark:border-purple-700 rounded-lg">
+                      <p className="text-sm text-purple-700 dark:text-purple-300 font-medium">
+                        💡 <strong>نصيحة:</strong> باقة Pro Life توفر عليك المال على المدى الطويل + امتيازات حصرية أكثر!
+                      </p>
+                    </div>
+                  )}
                 </div>
               </div>
             </div>
