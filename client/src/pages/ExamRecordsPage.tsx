@@ -80,19 +80,30 @@ export default function ExamRecordsPage() {
                     variant="outline"
                     size="sm"
                     onClick={() => {
-                      // Create a blob with the test data
-                      const data = JSON.stringify(record, null, 2);
+                      // تحميل الأسئلة من التخزين المحلي
+                      const testData = localStorage.getItem(`test_${record.examType}_${record.date}`);
+                      const questions = testData ? JSON.parse(testData).questions : [];
+                      
+                      // تحضير البيانات للتحميل
+                      const downloadData = {
+                        ...record,
+                        questions: questions,
+                        userAnswers: testData ? JSON.parse(testData).userAnswers : {}
+                      };
+                      
+                      // إنشاء ملف للتحميل
+                      const data = JSON.stringify(downloadData, null, 2);
                       const blob = new Blob([data], { type: 'application/json' });
                       const url = window.URL.createObjectURL(blob);
                       
-                      // Create and trigger download
+                      // إنشاء وتفعيل التحميل
                       const a = document.createElement('a');
                       a.href = url;
                       a.download = `اختبار-${record.examType}-${formatDate(record.date)}.json`;
                       document.body.appendChild(a);
                       a.click();
                       
-                      // Cleanup
+                      // تنظيف
                       window.URL.revokeObjectURL(url);
                       document.body.removeChild(a);
                     }}
