@@ -227,27 +227,36 @@ const QiyasExamPage: React.FC = () => {
     if (!isPrayerBreak) return null;
 
     return (
-      <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center">
-        <div className="bg-white dark:bg-gray-900 p-8 rounded-xl max-w-md w-full mx-4 text-center space-y-6">
-          <div className="w-20 h-20 bg-orange-100 dark:bg-orange-900/20 rounded-full flex items-center justify-center mx-auto">
-            <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-orange-600 dark:text-orange-400">
-              <path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1-2.5-2.5Z"></path>
-              <path d="M12 13V7"></path>
-              <path d="M12 17v-0.5"></path>
-            </svg>
+      <div className="fixed inset-0 bg-gradient-to-br from-black/90 to-black/70 backdrop-blur-sm z-50 flex items-center justify-center">
+        <div className="bg-white dark:bg-gray-900 p-8 rounded-xl max-w-md w-full mx-4 text-center space-y-6 relative overflow-hidden shadow-2xl border border-orange-200 dark:border-orange-800">
+          <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-orange-400 via-orange-500 to-orange-600"></div>
+          <div className="w-24 h-24 bg-gradient-to-br from-orange-100 to-orange-200 dark:from-orange-900/30 dark:to-orange-800/20 rounded-full flex items-center justify-center mx-auto transform transition-transform hover:scale-110">
+            <div className="relative">
+              <svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-orange-600 dark:text-orange-400">
+                <path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1-2.5-2.5Z"></path>
+                <path d="M12 13V7"></path>
+                <path d="M12 17v-0.5"></path>
+              </svg>
+              <div className="absolute -bottom-1 left-1/2 transform -translate-x-1/2 w-8 h-1 bg-orange-400/50 rounded-full blur-sm"></div>
+            </div>
           </div>
-          <div>
-            <h3 className="text-2xl font-bold mb-2">وقت الصلاة</h3>
-            <p className="text-gray-600 dark:text-gray-300">
-              تم إيقاف الاختبار مؤقتاً للصلاة. يمكنك استئناف الاختبار بعد الانتهاء من الصلاة.
+          <div className="relative">
+            <h3 className="text-3xl font-bold mb-3 bg-gradient-to-r from-orange-600 to-orange-400 dark:from-orange-400 dark:to-orange-300 text-transparent bg-clip-text">وقت الصلاة</h3>
+            <p className="text-gray-600 dark:text-gray-300 leading-relaxed">
+              حان وقت الصلاة 🕌 
+              <br />
+              <span className="text-sm opacity-90">تم إيقاف الاختبار مؤقتاً. خذ وقتك في أداء الصلاة بخشوع.</span>
             </p>
           </div>
           <Button 
             onClick={() => setIsPrayerBreak(false)}
-            className="w-full"
+            className="w-full bg-gradient-to-r from-orange-600 to-orange-500 hover:from-orange-500 hover:to-orange-400 transition-all duration-300 shadow-lg hover:shadow-orange-500/25"
           >
             استئناف الاختبار
           </Button>
+          <div className="text-xs text-gray-400 dark:text-gray-500 mt-4">
+            "إِنَّ الصَّلَاةَ كَانَتْ عَلَى الْمُؤْمِنِينَ كِتَابًا مَوْقُوتًا"
+          </div>
         </div>
       </div>
     );
