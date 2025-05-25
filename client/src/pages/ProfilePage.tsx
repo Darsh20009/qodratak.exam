@@ -671,19 +671,17 @@ const ProfilePage: React.FC = () => {
                 <TabsContent value="password">
                   <div className="space-y-4">
                     <div className="space-y-2">
-                      <FormItem>
-                        <FormLabel>كلمة المرور</FormLabel>
-                        <FormControl>
-                          <Input 
-                            id="recover-password"
-                            name="password" 
-                            type="password" 
-                            placeholder="أدخل كلمة المرور"
-                            className="text-right" 
-                            required 
-                          />
-                        </FormControl>
-                      </FormItem>
+                      <label htmlFor="recover-password" className="text-sm font-medium">
+                        كلمة المرور
+                      </label>
+                      <Input 
+                        id="recover-password"
+                        name="password" 
+                        type="password" 
+                        placeholder="أدخل كلمة المرور"
+                        className="text-right" 
+                        required 
+                      />
                     </div>
                     <Button 
                       className="w-full bg-primary hover:bg-primary/90"
