@@ -41,15 +41,40 @@ function MainLayout({ children }: { children: React.ReactNode }) {
   const [userName, setUserName] = useState<string | null>(null);
 
   useEffect(() => {
-    const storedUser = localStorage.getItem('user');
-    if (storedUser) {
-      try {
-        const user = JSON.parse(storedUser);
-        setUserName(user.username);
-      } catch (e) {
-        console.error("Error parsing stored user:", e);
+    const updateUserData = () => {
+      const storedUser = localStorage.getItem('user');
+      if (storedUser) {
+        try {
+          const user = JSON.parse(storedUser);
+          setUserName(user.username || user.name);
+        } catch (e) {
+          console.error("Error parsing stored user:", e);
+          setUserName(null);
+        }
+      } else {
+        setUserName(null);
       }
-    }
+    };
+
+    // تحديث البيانات عند تحميل الصفحة
+    updateUserData();
+
+    // الاستماع لتغييرات تسجيل الدخول
+    const handleUserLogin = (event: any) => {
+      setUserName(event.detail?.username || event.detail?.name);
+    };
+
+    const handleStorageChange = () => {
+      updateUserData();
+    };
+
+    window.addEventListener('userLoggedIn', handleUserLogin);
+    window.addEventListener('storage', handleStorageChange);
+
+    return () => {
+      window.removeEventListener('userLoggedIn', handleUserLogin);
+      window.removeEventListener('storage', handleStorageChange);
+    };
   }, []);
 
   const navItems = [
@@ -187,8 +212,17 @@ function Router({ splashDone }: { splashDone: boolean }) {
       setUser(storedUser ? JSON.parse(storedUser) : null);
     };
 
+    const handleUserLogin = (event: any) => {
+      setUser(event.detail);
+    };
+
     window.addEventListener('storage', handleStorageChange);
-    return () => window.removeEventListener('storage', handleStorageChange);
+    window.addEventListener('userLoggedIn', handleUserLogin);
+    
+    return () => {
+      window.removeEventListener('storage', handleStorageChange);
+      window.removeEventListener('userLoggedIn', handleUserLogin);
+    };
   }, []);
 
   const isPremium = user?.subscription?.type !== 'free';
