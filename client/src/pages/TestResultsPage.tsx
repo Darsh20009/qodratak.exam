@@ -17,8 +17,8 @@ export default function TestResultsPage() {
   const [result, setResult] = useState<TestResult | null>(null);
 
   const handleBackToRecords = () => {
-    console.log('Navigating to exam records...');
-    setLocation('/exam-records');
+    console.log('Navigating to records...');
+    setLocation('/records');
   };
 
   useEffect(() => {
