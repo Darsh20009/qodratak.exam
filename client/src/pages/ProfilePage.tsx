@@ -352,11 +352,30 @@ const ProfilePage: React.FC = () => {
                 <CrownIcon className="h-4 w-4 mr-2" />
                 Pro - عضوية ذهبية 👑
               </Badge>
-              {user.subscription.endDate && (
-                <span className="text-sm text-amber-600 dark:text-amber-400">
-                  ينتهي في {new Intl.DateTimeFormat('ar-SA', { year: 'numeric', month: 'long', day: 'numeric' }).format(new Date(user.subscription.endDate))}
-                </span>
-              )}
+              {user.subscription.endDate && (() => {
+                const endDate = new Date(user.subscription.endDate);
+                const today = new Date();
+                const diffTime = endDate.getTime() - today.getTime();
+                const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+                
+                return (
+                  <div className="flex flex-col items-center gap-1">
+                    <span className="text-sm text-amber-600 dark:text-amber-400">
+                      ينتهي في {new Intl.DateTimeFormat('ar-SA', { year: 'numeric', month: 'long', day: 'numeric' }).format(endDate)}
+                    </span>
+                    {diffDays > 0 && (
+                      <Badge variant="outline" className="border-amber-400 text-amber-700 dark:text-amber-300 bg-amber-50 dark:bg-amber-950/20 text-xs px-2 py-1">
+                        {diffDays} يوم متبقي ⏰
+                      </Badge>
+                    )}
+                    {diffDays <= 0 && (
+                      <Badge variant="destructive" className="text-xs px-2 py-1">
+                        انتهت الباقة ⚠️
+                      </Badge>
+                    )}
+                  </div>
+                );
+              })()}
             </CardDescription>
           </CardHeader>
 
@@ -375,12 +394,30 @@ const ProfilePage: React.FC = () => {
               <div className="pt-2">
                 <h4 className="font-semibold text-lg mb-3 text-center text-amber-800 dark:text-amber-200">📊 إحصائياتي المميزة</h4>
                 <div className="grid grid-cols-2 gap-3">
-                  {[
-                    { label: "النقاط", value: user.points, icon: <Star className="w-4 h-4 text-amber-500" /> },
-                    { label: "الاختبارات", value: user.tests_completed || 0, icon: <BookOpen className="w-4 h-4 text-amber-600" /> },
-                    { label: "المتوسط", value: user.average_score || "N/A", icon: <Trophy className="w-4 h-4 text-amber-700" /> },
-                    { label: "التحديات", value: user.challenges_won || 0, icon: <Award className="w-4 h-4 text-amber-800" /> }
-                  ].map(stat => (
+                  {(() => {
+                    const baseStats = [
+                      { label: "النقاط", value: user.points, icon: <Star className="w-4 h-4 text-amber-500" /> },
+                      { label: "الاختبارات", value: user.tests_completed || 0, icon: <BookOpen className="w-4 h-4 text-amber-600" /> },
+                      { label: "المتوسط", value: user.average_score || "N/A", icon: <Trophy className="w-4 h-4 text-amber-700" /> },
+                      { label: "التحديات", value: user.challenges_won || 0, icon: <Award className="w-4 h-4 text-amber-800" /> }
+                    ];
+                    
+                    // إضافة الأيام المتبقية إذا كان لديه تاريخ انتهاء
+                    if (user.subscription.endDate) {
+                      const endDate = new Date(user.subscription.endDate);
+                      const today = new Date();
+                      const diffTime = endDate.getTime() - today.getTime();
+                      const diffDays = Math.max(0, Math.ceil(diffTime / (1000 * 60 * 60 * 24)));
+                      
+                      baseStats.push({
+                        label: "أيام متبقية",
+                        value: diffDays,
+                        icon: <svg className="w-4 h-4 text-amber-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                      });
+                    }
+                    
+                    return baseStats;
+                  })().map(stat => (
                     <div key={stat.label} className="bg-amber-50 dark:bg-amber-900/20 rounded-lg p-3 text-center group/stat hover:shadow-md hover:scale-105 transition-all duration-300 cursor-pointer border border-amber-200 dark:border-amber-700">
                       <div className="flex items-center justify-center gap-1.5 text-2xl font-bold text-amber-700 dark:text-amber-300 mb-1 group-hover/stat:text-amber-600 transition-colors">
                         {stat.icon} {stat.value}
