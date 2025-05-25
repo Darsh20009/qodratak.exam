@@ -1,5 +1,5 @@
 
-import React from "react";
+import React, { useState, useEffect } from "react";
 import { Link } from "wouter";
 import { 
   BrainCircuitIcon, 
@@ -12,7 +12,8 @@ import {
   Target,
   Stars,
   Rocket,
-  Zap
+  Zap,
+  User
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
@@ -60,6 +61,46 @@ const statisticsData = [
 ];
 
 const Home: React.FC = () => {
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [user, setUser] = useState<any>(null);
+
+  useEffect(() => {
+    // تحقق من حالة تسجيل الدخول
+    const checkLoginStatus = () => {
+      const loginStatus = localStorage.getItem("isLoggedIn") === "true";
+      const userData = localStorage.getItem("user");
+      
+      setIsLoggedIn(loginStatus);
+      if (userData) {
+        try {
+          setUser(JSON.parse(userData));
+        } catch (error) {
+          console.error("Error parsing user data:", error);
+        }
+      }
+    };
+
+    checkLoginStatus();
+    
+    // استمع لتغييرات تسجيل الدخول
+    const handleStorageChange = () => {
+      checkLoginStatus();
+    };
+
+    const handleUserLogin = (event: CustomEvent) => {
+      setUser(event.detail);
+      setIsLoggedIn(true);
+    };
+
+    window.addEventListener('storage', handleStorageChange);
+    window.addEventListener('userLoggedIn', handleUserLogin as EventListener);
+
+    return () => {
+      window.removeEventListener('storage', handleStorageChange);
+      window.removeEventListener('userLoggedIn', handleUserLogin as EventListener);
+    };
+  }, []);
+
   return (
     <div className="min-h-screen bg-gradient-to-b from-background to-background/80">
       {/* Hero Section with Enhanced Animation */}
@@ -198,16 +239,40 @@ const Home: React.FC = () => {
       <section className="py-16 bg-gradient-to-r from-primary/90 to-primary text-primary-foreground relative overflow-hidden">
         <div className="absolute inset-0 bg-[radial-gradient(circle_800px_at_50%_-100px,var(--primary-foreground),transparent)] opacity-20" />
         <div className="container px-4 md:px-6 text-center relative">
-          <Zap className="h-12 w-12 mx-auto mb-6 animate-pulse text-primary-foreground/90" />
-          <h2 className="text-3xl font-bold mb-4">ابدأ رحلتك نحو التميز</h2>
-          <p className="mb-8 max-w-[600px] mx-auto opacity-90">
-            سجل حساب مجاني الآن واحصل على تجربة تعليمية متكاملة مع متابعة تقدمك وتحسين مستواك
-          </p>
-          <Button asChild size="lg" variant="secondary" className="min-w-[200px] hover:scale-105 transition-transform">
-            <Link href="/profile">
-              سجل الآن
-            </Link>
-          </Button>
+          {isLoggedIn && user ? (
+            <>
+              <User className="h-12 w-12 mx-auto mb-6 animate-pulse text-primary-foreground/90" />
+              <h2 className="text-3xl font-bold mb-4">مرحباً بك، {user.name || user.username}!</h2>
+              <p className="mb-8 max-w-[600px] mx-auto opacity-90">
+                استمر في رحلتك التعليمية واكتشف المزيد من الاختبارات والتحديات
+              </p>
+              <div className="flex flex-col sm:flex-row gap-4 justify-center">
+                <Button asChild size="lg" variant="secondary" className="min-w-[200px] hover:scale-105 transition-transform">
+                  <Link href="/records">
+                    عرض سجل الاختبارات
+                  </Link>
+                </Button>
+                <Button asChild size="lg" variant="outline" className="min-w-[200px] hover:scale-105 transition-transform border-primary-foreground text-primary-foreground hover:bg-primary-foreground hover:text-primary">
+                  <Link href="/profile">
+                    الملف الشخصي
+                  </Link>
+                </Button>
+              </div>
+            </>
+          ) : (
+            <>
+              <Zap className="h-12 w-12 mx-auto mb-6 animate-pulse text-primary-foreground/90" />
+              <h2 className="text-3xl font-bold mb-4">ابدأ رحلتك نحو التميز</h2>
+              <p className="mb-8 max-w-[600px] mx-auto opacity-90">
+                سجل حساب مجاني الآن واحصل على تجربة تعليمية متكاملة مع متابعة تقدمك وتحسين مستواك
+              </p>
+              <Button asChild size="lg" variant="secondary" className="min-w-[200px] hover:scale-105 transition-transform">
+                <Link href="/profile">
+                  سجل الآن
+                </Link>
+              </Button>
+            </>
+          )}
         </div>
       </section>
     </div>
