@@ -256,8 +256,6 @@ const QiyasExamPage: React.FC = () => {
   const [isPrayerBreak, setIsPrayerBreak] = useState(false);
   const [isReviewDialogOpen, setIsReviewDialogOpen] = useState(false); // State for review dialog
   const [isFinalReviewDialogOpen, setIsFinalReviewDialogOpen] = useState(false); // State for final review dialog
-  const [prayerBreakUsed, setPrayerBreakUsed] = useState(false); // Track if prayer break was used
-  const [prayerBreakTimeLeft, setPrayerBreakTimeLeft] = useState(0); // Timer for prayer break
 
 
   useEffect(() => {
@@ -277,129 +275,44 @@ const QiyasExamPage: React.FC = () => {
     return () => clearTimeout(timerId);
   }, [timeLeft, currentView, isPrayerBreak, selectedExam]);
 
-  // Prayer break timer effect
-  useEffect(() => {
-    let prayerTimerId: NodeJS.Timeout;
-    if (isPrayerBreak && prayerBreakTimeLeft > 0) {
-      prayerTimerId = setTimeout(() => {
-        setPrayerBreakTimeLeft(prev => prev - 1);
-      }, 1000);
-    } else if (isPrayerBreak && prayerBreakTimeLeft === 0) {
-      // Auto resume after 15 minutes
-      setIsPrayerBreak(false);
-      toast({
-        title: "انتهت فترة الصلاة",
-        description: "تم استئناف الاختبار تلقائياً بعد انتهاء الوقت المخصص للصلاة (15 دقيقة).",
-        duration: 5000,
-      });
-    }
-    return () => clearTimeout(prayerTimerId);
-  }, [isPrayerBreak, prayerBreakTimeLeft]);
-
 
   const renderPrayerBreakOverlay = () => {
     if (!isPrayerBreak) return null;
-    const minutes = Math.floor(prayerBreakTimeLeft / 60);
-    const seconds = prayerBreakTimeLeft % 60;
-    const timeDisplay = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
-    const progressPercentage = ((15 * 60 - prayerBreakTimeLeft) / (15 * 60)) * 100;
-    
     return (
-      <div className="fixed inset-0 bg-gradient-to-br from-slate-900/95 via-slate-800/95 to-slate-900/95 backdrop-blur-md z-[100] flex items-center justify-center p-4 font-arabic">
-        <div className="relative bg-white/95 dark:bg-slate-800/95 backdrop-blur-sm p-8 sm:p-10 rounded-3xl max-w-md w-full mx-auto text-center space-y-6 shadow-2xl border border-orange-200/30 dark:border-orange-700/30">
-          
-          {/* Background decoration */}
-          <div className="absolute inset-0 bg-gradient-to-br from-orange-50/30 via-transparent to-yellow-50/30 dark:from-orange-900/20 dark:via-transparent dark:to-yellow-900/20 rounded-3xl"></div>
-          
-          {/* Floating elements */}
-          <div className="absolute -top-4 -right-4 w-8 h-8 bg-orange-200 dark:bg-orange-800 rounded-full opacity-60 animate-pulse-slow"></div>
-          <div className="absolute -bottom-4 -left-4 w-6 h-6 bg-yellow-200 dark:bg-yellow-800 rounded-full opacity-40 animate-pulse-slow"></div>
-          
-          {/* Main content */}
+      <div className="fixed inset-0 bg-black/80 backdrop-blur-lg z-[100] flex items-center justify-center p-4 font-arabic animate-fadeIn">
+        <div className="bg-white dark:bg-gray-950 p-8 rounded-2xl max-w-lg w-full mx-auto text-center space-y-8 relative overflow-hidden shadow-2xl border border-orange-300 dark:border-orange-700">
+          {/* Creative Background Elements */}
+          <div className="absolute -top-1/4 -right-1/4 w-80 h-80 bg-orange-400/15 dark:bg-orange-500/10 rounded-full filter blur-3xl animate-pulse-slow"></div>
+          <div className="absolute -bottom-1/4 -left-1/4 w-80 h-80 bg-teal-400/15 dark:bg-teal-500/10 rounded-full filter blur-3xl animate-pulse-slow animation-delay-2000"></div>
+          <div className="absolute top-10 left-10 w-10 h-10 bg-yellow-300/20 dark:bg-yellow-400/10 rounded-full animate-ping opacity-50"></div>
+          <div className="absolute bottom-10 right-10 w-12 h-12 bg-white/20 dark:bg-white/10 rounded-full animate-bounce delay-1000"></div>
+
           <div className="relative z-10">
-            {/* Icon with enhanced design */}
-            <div className="mx-auto mb-6">
-              <div className="relative w-24 h-24 sm:w-28 sm:h-28 bg-gradient-to-br from-orange-100 via-orange-200 to-orange-300 dark:from-orange-900/70 dark:via-orange-800/70 dark:to-orange-700/70 rounded-full flex items-center justify-center shadow-xl border-4 border-orange-300/40 dark:border-orange-600/40">
-                <Moon className="h-12 w-12 sm:h-14 sm:w-14 text-orange-600 dark:text-orange-300 drop-shadow-sm" />
-                <div className="absolute inset-0 bg-gradient-to-t from-transparent via-white/20 to-white/40 dark:from-transparent dark:via-orange-400/10 dark:to-orange-300/20 rounded-full"></div>
-              </div>
+             {/* Enhanced Icon */}
+            <div className="w-32 h-32 bg-gradient-to-br from-orange-100 via-orange-200 to-yellow-200 dark:from-gray-800 dark:via-gray-800/70 dark:to-gray-900 rounded-full flex items-center justify-center mx-auto mb-6 shadow-lg transform transition-transform hover:scale-110 duration-300 ring-4 ring-orange-500/30 dark:ring-orange-400/20">
+                <Moon className="h-20 w-20 text-orange-500 dark:text-orange-400 animate-pulse-slow" />
             </div>
+             {/* Enhanced Text */}
+            <h3 className="text-4xl font-extrabold mb-4 bg-gradient-to-r from-orange-500 to-yellow-400 dark:from-orange-400 dark:to-yellow-300 text-transparent bg-clip-text drop-shadow-sm">
+              استراحة للصلاة
+            </h3>
+            <p className="text-gray-700 dark:text-gray-300 leading-relaxed text-xl">
+              تقبّل الله طاعتكم <Star className="inline h-5 w-5 text-yellow-400 animate-spin-slow" />
+            </p>
+            <p className="text-gray-600 dark:text-gray-400 text-base mt-3">
+              تم إيقاف الاختبار مؤقتاً. عند الانتهاء، يمكنك استئناف الاختبار.
+            </p>
+          </div>
 
-            {/* Enhanced Typography */}
-            <div className="space-y-5">
-              <div className="space-y-2">
-                <h3 className="text-3xl sm:text-4xl font-bold bg-gradient-to-r from-orange-700 via-orange-600 to-yellow-600 dark:from-orange-400 dark:via-orange-300 dark:to-yellow-300 bg-clip-text text-transparent">
-                  استراحة للصلاة
-                </h3>
-                <div className="flex items-center justify-center gap-2">
-                  <div className="w-12 h-0.5 bg-gradient-to-r from-transparent via-orange-300 to-transparent rounded-full"></div>
-                  <Star className="h-4 w-4 text-orange-400" />
-                  <div className="w-12 h-0.5 bg-gradient-to-r from-transparent via-orange-300 to-transparent rounded-full"></div>
-                </div>
-              </div>
-              <p className="text-xl font-semibold text-orange-700 dark:text-orange-300">
-                تقبّل الله طاعتكم
-              </p>
-              <p className="text-sm sm:text-base text-gray-600 dark:text-gray-400 leading-relaxed max-w-sm mx-auto">
-                تم إيقاف الاختبار مؤقتاً. عند الانتهاء، يمكنك استئناف الاختبار.
-              </p>
-            </div>
-            
-            {/* Enhanced Timer Display */}
-            <div className="bg-gradient-to-br from-orange-50 to-yellow-50 dark:from-orange-900/30 dark:to-yellow-900/30 p-6 rounded-2xl border border-orange-200/50 dark:border-orange-700/50 shadow-inner">
-              <p className="text-sm font-medium text-orange-800 dark:text-orange-300 mb-3 flex items-center justify-center gap-2">
-                <Clock3 className="h-4 w-4" />
-                الاستئناف التلقائي خلال
-              </p>
-              <div className="text-4xl sm:text-5xl font-bold text-orange-700 dark:text-orange-400 mb-4 font-mono tracking-wider">
-                {timeDisplay}
-              </div>
-              <div className="relative">
-                <div className="w-full bg-orange-200/60 dark:bg-orange-800/40 rounded-full h-3 overflow-hidden">
-                  <div 
-                    className="h-full bg-gradient-to-r from-orange-400 via-orange-500 to-yellow-500 rounded-full transition-all duration-1000 ease-linear shadow-sm"
-                    style={{ width: `${progressPercentage}%` }}
-                  ></div>
-                </div>
-                <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent rounded-full"></div>
-              </div>
-            </div>
-
-            {/* Enhanced Action Button */}
-            <Button
-              onClick={() => setIsPrayerBreak(false)}
-              className="w-full bg-gradient-to-r from-orange-600 via-orange-500 to-yellow-500 hover:from-orange-700 hover:via-orange-600 hover:to-yellow-600 text-white text-lg py-4 sm:py-5 rounded-2xl font-semibold transition-all duration-300 shadow-lg hover:shadow-xl transform hover:scale-105"
-            >
-              <span className="flex items-center justify-center gap-3">
-                <ArrowLeftIcon className="h-5 w-5" />
-                استئناف الاختبار
-              </span>
-            </Button>
-            
-            {/* Enhanced Notice */}
-            <div className="bg-gradient-to-r from-yellow-50 to-amber-50 dark:from-yellow-900/20 dark:to-amber-900/20 p-5 rounded-2xl border border-yellow-200/60 dark:border-yellow-700/40">
-              <div className="flex items-start gap-3 text-right">
-                <div className="w-7 h-7 bg-gradient-to-br from-yellow-400 to-amber-400 rounded-full flex items-center justify-center flex-shrink-0 shadow-sm">
-                  <span className="text-yellow-900 font-bold text-sm">!</span>
-                </div>
-                <div className="text-sm text-yellow-800 dark:text-yellow-300">
-                  <p className="font-semibold mb-2 text-amber-700 dark:text-amber-300">تنويه هام</p>
-                  <p className="leading-relaxed text-xs sm:text-sm">
-                    هذا الزر وضع وفقاً لاقتراحات الطلبة بأنهم يجعلون الاختبارات في آخر الليل أو في أول النهار لكي لا يكون هناك صلاة تجعلهم يتوقفون فهو للتسهيل ولعدم خروج الصلاة عن وقتها وغير مسموح استعمال الزر لأي غرض آخر
-                  </p>
-                </div>
-              </div>
-            </div>
-            
-            {/* Enhanced Quranic Verse */}
-            <div className="border-t border-gradient-to-r from-transparent via-orange-200 to-transparent dark:via-orange-700 pt-6">
-              <div className="bg-gradient-to-br from-slate-50 to-orange-50/30 dark:from-slate-800/50 dark:to-orange-900/20 p-4 rounded-xl border border-slate-200/50 dark:border-slate-700/50">
-                <div className="text-base font-medium text-gray-700 dark:text-gray-300 leading-relaxed">
-                  <p className="mb-2 text-lg">"إِنَّ الصَّلَاةَ كَانَتْ عَلَى الْمُؤْمِنِينَ كِتَابًا مَوْقُوتًا"</p>
-                  <p className="text-sm text-gray-500 dark:text-gray-400">(النساء: 103)</p>
-                </div>
-              </div>
-            </div>
+          <Button
+            onClick={() => setIsPrayerBreak(false)}
+            className="w-full bg-gradient-to-r from-orange-500 to-yellow-500 hover:from-orange-600 hover:to-yellow-600 transition-all duration-300 shadow-xl hover:shadow-orange-500/40 dark:shadow-orange-400/20 text-xl py-4 rounded-xl relative z-10 transform hover:scale-105"
+          >
+            استئناف الاختبار
+          </Button>
+           {/* Quranic Verse */}
+          <div className="text-sm text-gray-500 dark:text-gray-500 mt-6 relative z-10 tracking-wide">
+            "إِنَّ الصَّلَاةَ كَانَتْ عَلَى الْمُؤْمِنِينَ كِتَابًا مَوْقُوتًا" <span className="opacity-70">(النساء: 103)</span>
           </div>
         </div>
       </div>
@@ -411,8 +324,8 @@ const QiyasExamPage: React.FC = () => {
     if (isPrayerBreak) {
       toast({
         title: "وقت الصلاة",
-        description: "تم إيقاف الاختبار لمدة أقصاها 15 دقيقة. سيتم الاستئناف تلقائياً عند انتهاء الوقت. يمكن استخدام هذه الميزة مرة واحدة فقط في الاختبار.",
-        duration: 8000,
+        description: "تم إيقاف الاختبار مؤقتاً. يمكنك استئناف الاختبار بعد الانتهاء من الصلاة.",
+        duration: 7000,
       });
     }
   }, [isPrayerBreak, toast]);
@@ -503,8 +416,6 @@ const QiyasExamPage: React.FC = () => {
     setQuestions([]);
     setSelectedAnswer(null);
     setIsFinalReviewDialogOpen(false); // Reset on start
-    setPrayerBreakUsed(false); // Reset prayer break usage
-    setPrayerBreakTimeLeft(0); // Reset prayer break timer
 
 
     try {
@@ -1106,24 +1017,14 @@ const QiyasExamPage: React.FC = () => {
                     <Button
                     variant="outline"
                     size="sm"
-                    onClick={() => {
-                      if (!isPrayerBreak && !prayerBreakUsed) {
-                        setIsPrayerBreak(true);
-                        setPrayerBreakUsed(true);
-                        setPrayerBreakTimeLeft(15 * 60); // 15 minutes in seconds
-                      } else if (isPrayerBreak) {
-                        setIsPrayerBreak(false);
-                      }
-                    }}
-                    disabled={prayerBreakUsed && !isPrayerBreak}
+                    onClick={() => setIsPrayerBreak(prev => !prev)} // Toggle prayer break
                     className={cn(
                         "transition-colors dark:text-gray-300 dark:border-slate-600 dark:hover:bg-slate-700 text-xs sm:text-sm px-2 sm:px-3",
-                        isPrayerBreak && "bg-orange-100 text-orange-700 hover:bg-orange-200 dark:bg-orange-700/30 dark:text-orange-300 dark:border-orange-600",
-                        prayerBreakUsed && !isPrayerBreak && "opacity-50 cursor-not-allowed"
+                        isPrayerBreak && "bg-orange-100 text-orange-700 hover:bg-orange-200 dark:bg-orange-700/30 dark:text-orange-300 dark:border-orange-600"
                     )}
                     >
                      <Moon className="h-3.5 w-3.5 sm:h-4 sm:w-4 ml-1 sm:ml-2" />
-                    {isPrayerBreak ? "استئناف" : prayerBreakUsed ? "تم الاستخدام" : "توقف للصلاة"}
+                    {isPrayerBreak ? "استئناف" : "توقف للصلاة"}
                     </Button>
                     <div className="flex items-center gap-1 p-2 bg-slate-100 dark:bg-slate-700 rounded-md">
                     <Clock3 className="h-4 w-4 text-primary" />
