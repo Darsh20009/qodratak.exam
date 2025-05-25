@@ -1263,10 +1263,13 @@ const QiyasExamPage: React.FC = () => {
       }
 
       const incorrectQuestionsDataForRetake: Array<ProcessedExamQuestion & { userAnswerIndex: number; sectionName: string }> = [];
+      
+      // جمع جميع الأسئلة الخاطئة (سواء محسوبة أو غير محسوبة)
       Object.entries(allProcessedQuestionsBySection).forEach(([sectionNumStr, sectionQuestions]) => {
         const sectionConfig = selectedExam.sections.find(s => s.sectionNumber === parseInt(sectionNumStr));
         sectionQuestions.forEach(q => {
-          if (!q._isNonScored && answers[q.id] !== undefined && answers[q.id] !== q.correctOptionIndex) {
+          // تضمين جميع الأسئلة الخاطئة (حتى التجريبية) للمراجعة الشاملة
+          if (answers[q.id] !== undefined && answers[q.id] !== q.correctOptionIndex) {
             incorrectQuestionsDataForRetake.push({
               ...q,
               userAnswerIndex: answers[q.id],
@@ -1277,7 +1280,7 @@ const QiyasExamPage: React.FC = () => {
       });
 
       if (incorrectQuestionsDataForRetake.length === 0) {
-        toast({ title: "رائع!", description: "لم تكن لديك أي أسئلة خاطئة (محسوبة) لمراجعتها في هذا التحدي.", duration: 6000, className: "bg-green-50 dark:bg-green-900/30 border-green-200 dark:border-green-700" });
+        toast({ title: "رائع!", description: "لم تكن لديك أي أسئلة خاطئة للمراجعة في هذا التحدي. أداؤك كان ممتازاً!", duration: 6000, className: "bg-green-50 dark:bg-green-900/30 border-green-200 dark:border-green-700" });
         return;
       }
 
@@ -1289,6 +1292,7 @@ const QiyasExamPage: React.FC = () => {
         explanation: q.explanation || "راجع مصادرك لمزيد من التفاصيل.",
         userAnswerIndex: q.userAnswerIndex,
         sectionName: q.sectionName,
+        isNonScored: q._isNonScored || false, // تمييز الأسئلة التجريبية
       })));
 
       const htmlContent = `
@@ -1346,7 +1350,7 @@ const QiyasExamPage: React.FC = () => {
     <div class="container">
         <div class="header">
             <h1>🎯 تحدي الأسئلة الخاطئة</h1>
-            <p>فرصتك لمراجعة أخطائك وتحويلها إلى نقاط قوة!</p>
+            <p>فرصتك لمراجعة جميع أخطائك (بما في ذلك الأسئلة التجريبية) وتحويلها إلى نقاط قوة!</p>
         </div>
         <div id="progress-bar-container">
             <div id="progress-bar">0%</div>
@@ -1412,7 +1416,8 @@ const QiyasExamPage: React.FC = () => {
                         <strong>تذكير بالامتحان الأصلي:</strong><br>
                         إجابتك الأصلية: <span style="color: #c62828;">"\${questionData.options[questionData.userAnswerIndex]}"</span>.<br>
                         الإجابة الصحيحة: <span style="color: #2e7d32;">"\${questionData.options[questionData.correctOptionIndex]}"</span>.<br>
-                        القسم الأصلي: \${questionData.sectionName}.
+                        القسم الأصلي: \${questionData.sectionName}.<br>
+                        \${questionData.isNonScored ? '<span style="color: #1e88e5; font-weight: bold;">📝 سؤال تجريبي (غير محسوب في النتيجة)</span>' : '<span style="color: #4caf50; font-weight: bold;">✓ سؤال محسوب في النتيجة</span>'}
                     </div>
                     <ul class="options-list" id="options-\${questionData.id}">
                         \${questionData.shuffledOptions.map((opt, i) => \`
@@ -1548,7 +1553,11 @@ const QiyasExamPage: React.FC = () => {
       a.click();
       document.body.removeChild(a);
       window.URL.revokeObjectURL(url);
-      toast({ title: "تم تحميل تحدي الأسئلة الخاطئة", description: "افتح الملف في متصفحك لبدء التحدي.", duration: 7000 });
+      toast({ 
+        title: "تم تحميل تحدي الأسئلة الخاطئة", 
+        description: `تم إنشاء تحدي يحتوي على ${incorrectQuestionsDataForRetake.length} سؤال خاطئ. افتح الملف في متصفحك لبدء التحدي.`, 
+        duration: 7000 
+      });
     };
 
 
