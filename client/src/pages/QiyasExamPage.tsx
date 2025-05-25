@@ -1264,15 +1264,16 @@ const QiyasExamPage: React.FC = () => {
 
       const incorrectQuestionsDataForRetake: Array<ProcessedExamQuestion & { userAnswerIndex: number; sectionName: string }> = [];
       
-      // جمع جميع الأسئلة الخاطئة (سواء محسوبة أو غير محسوبة)
+      // جمع جميع الأسئلة الخاطئة من جميع الأقسام
       Object.entries(allProcessedQuestionsBySection).forEach(([sectionNumStr, sectionQuestions]) => {
         const sectionConfig = selectedExam.sections.find(s => s.sectionNumber === parseInt(sectionNumStr));
         sectionQuestions.forEach(q => {
-          // تضمين جميع الأسئلة الخاطئة (حتى التجريبية) للمراجعة الشاملة
-          if (answers[q.id] !== undefined && answers[q.id] !== q.correctOptionIndex) {
+          // تضمين جميع الأسئلة التي تم الإجابة عليها بشكل خاطئ
+          const userAnswer = answers[q.id];
+          if (userAnswer !== undefined && userAnswer !== q.correctOptionIndex) {
             incorrectQuestionsDataForRetake.push({
               ...q,
-              userAnswerIndex: answers[q.id],
+              userAnswerIndex: userAnswer,
               sectionName: sectionConfig?.name || `القسم ${sectionNumStr}`,
             });
           }
