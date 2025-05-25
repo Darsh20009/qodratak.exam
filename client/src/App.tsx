@@ -97,8 +97,23 @@ function MainLayout({ children }: { children: React.ReactNode }) {
             href="/profile"
             className="flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium hover:bg-muted/50"
           >
-            <UserIcon className="h-5 w-5" />
-            <span>{userName || "تسجيل الدخول"}</span>
+            {userName ? (
+              <>
+                <div className="h-8 w-8 rounded-full overflow-hidden bg-primary/10">
+                  <img 
+                    src={`https://api.dicebear.com/7.x/avataaars-neutral/svg?seed=${userName}`} 
+                    alt="صورة المستخدم" 
+                    className="w-full h-full object-cover"
+                  />
+                </div>
+                <span>{userName}</span>
+              </>
+            ) : (
+              <>
+                <UserIcon className="h-5 w-5" />
+                <span>تسجيل الدخول</span>
+              </>
+            )}
           </Link>
         </div>
       </div>
@@ -136,7 +151,17 @@ function MainLayout({ children }: { children: React.ReactNode }) {
               href="/profile"
               className="p-2"
             >
-              <UserIcon className="h-5 w-5" />
+              {userName ? (
+                <div className="h-6 w-6 rounded-full overflow-hidden bg-primary/10">
+                  <img 
+                    src={`https://api.dicebear.com/7.x/avataaars-neutral/svg?seed=${userName}`} 
+                    alt="صورة المستخدم" 
+                    className="w-full h-full object-cover"
+                  />
+                </div>
+              ) : (
+                <UserIcon className="h-5 w-5" />
+              )}
             </Link>
           </div>
         </header>
