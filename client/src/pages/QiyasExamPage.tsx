@@ -440,12 +440,22 @@ const QiyasExamPage: React.FC = () => {
   // Finish the exam and calculate overall results
   const finishExam = () => {
     const stats = calculateExamStats();
-    // Save to local storage
+    const currentDate = new Date().toISOString();
+    const examType = selectedExam?.name || "اختبار قياس";
+    
+    // Save exam data
+    const storageKey = `exam_data_${examType}_${new Date(currentDate).getTime()}`;
+    localStorage.setItem(storageKey, JSON.stringify({
+      questions: questions,
+      userAnswers: answers
+    }));
+    
+    // Save to exam records
     const storedRecords = localStorage.getItem('examRecords') || '[]';
     const records = JSON.parse(storedRecords);
     records.push({
-      date: new Date().toISOString(),
-      examType: selectedExam?.name || "اختبار قياس",
+      date: currentDate,
+      examType: examType,
       score: stats.totalCorrect,
       totalQuestions: stats.totalQuestions,
       timeTaken: stats.timeTaken

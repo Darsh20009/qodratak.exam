@@ -81,14 +81,15 @@ export default function ExamRecordsPage() {
                     size="sm"
                     onClick={() => {
                       // تحميل الأسئلة من التخزين المحلي
-                      const testData = localStorage.getItem(`test_${record.examType}_${record.date}`);
-                      const questions = testData ? JSON.parse(testData).questions : [];
+                      const storageKey = `exam_data_${record.examType}_${new Date(record.date).getTime()}`;
+                      const testData = localStorage.getItem(storageKey);
                       
                       // تحضير البيانات للتحميل
                       const downloadData = {
                         ...record,
-                        questions: questions,
-                        userAnswers: testData ? JSON.parse(testData).userAnswers : {}
+                        questions: testData ? JSON.parse(testData).questions : [],
+                        userAnswers: testData ? JSON.parse(testData).userAnswers : {},
+                        date: formatDate(record.date)
                       };
                       
                       // إنشاء ملف للتحميل
