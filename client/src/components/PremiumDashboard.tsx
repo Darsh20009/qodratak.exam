@@ -63,17 +63,17 @@ export function PremiumDashboard({ user }: PremiumDashboardProps) {
   // واجهة Pro Life الفاخرة
   if (isProLife) {
     return (
-      <div className="space-y-8 relative">
+      <div className="space-y-8 relative min-h-screen">
         {/* خلفية متحركة فاخرة */}
-        <div className="fixed inset-0 z-0 opacity-10">
+        <div className="fixed inset-0 -z-10 opacity-10 pointer-events-none">
           <div className="absolute inset-0 bg-gradient-to-br from-purple-600 via-pink-500 to-amber-500 animate-pulse"></div>
           <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,transparent_30%,rgba(0,0,0,0.1)_70%)]"></div>
         </div>
 
         {/* ترحيب فاخر لـ Pro Life */}
         <div className="relative z-10 overflow-hidden">
-          <div className="absolute inset-0 bg-gradient-to-br from-purple-900/30 via-pink-900/20 to-amber-900/30 animate-gradient-x" />
-          <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,rgba(168,85,247,0.3),transparent_70%)]" />
+          <div className="absolute inset-0 bg-gradient-to-br from-purple-900/30 via-pink-900/20 to-amber-900/30 animate-gradient-x pointer-events-none" />
+          <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,rgba(168,85,247,0.3),transparent_70%)] pointer-events-none" />
 
           <Card className="relative border-4 border-gradient-to-r from-purple-500 via-pink-500 to-amber-500 bg-gradient-to-br from-slate-900 via-purple-900/50 to-pink-900/30 shadow-2xl shadow-purple-500/25">
             <CardHeader className="text-center pb-4 relative">
@@ -141,10 +141,10 @@ export function PremiumDashboard({ user }: PremiumDashboardProps) {
             {features.map((feature, index) => (
               <Card 
                 key={index}
-                className="group relative overflow-hidden hover:shadow-2xl hover:shadow-purple-500/30 transition-all duration-500 hover:scale-105 bg-gradient-to-br from-slate-800/80 via-purple-900/40 to-pink-900/30 border-2 border-purple-500/40 hover:border-purple-400"
+                className="group relative overflow-hidden hover:shadow-2xl hover:shadow-purple-500/30 transition-all duration-500 hover:scale-105 bg-gradient-to-br from-slate-800/80 via-purple-900/40 to-pink-900/30 border-2 border-purple-500/40 hover:border-purple-400 cursor-pointer z-10"
               >
                 {/* تأثير الضوء المتحرك */}
-                <div className="absolute inset-0 bg-gradient-to-r from-transparent via-purple-500/10 to-transparent transform -skew-x-12 group-hover:translate-x-full transition-transform duration-1000"></div>
+                <div className="absolute inset-0 bg-gradient-to-r from-transparent via-purple-500/10 to-transparent transform -skew-x-12 group-hover:translate-x-full transition-transform duration-1000 pointer-events-none"></div>
 
                 <CardHeader className="text-center pb-3 relative z-10">
                   <div className="flex justify-center mb-4">
@@ -175,9 +175,9 @@ export function PremiumDashboard({ user }: PremiumDashboardProps) {
         </div>
 
         {/* قسم الحركة الحصري */}
-        <Card className="relative overflow-hidden bg-gradient-to-r from-purple-900 via-pink-900 to-amber-900 text-white border-4 border-gradient-to-r from-purple-500 to-amber-500 shadow-2xl shadow-purple-500/40">
-          <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAiIGhlaWdodD0iNDAiIHZpZXdCb3g9IjAgMCA0MCA0MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4gPGcgZmlsbD0ibm9uZSIgZmlsbC1ydWxlPSJldmVub2RkIj4gPGcgZmlsbD0iIzAwMDAiIG9wYWNpdHk9IjAuMDUiPiA8Y2lyY2xlIGN4PSI0IiBjeT0iNCIgcj0iMiI+PC9jaXJjbGU+IDwvZz4gPC9nPiA8L3N2Zz4=')] opacity-20"></div>
-          <CardContent className="relative z-10 text-center py-12">
+        <Card className="relative overflow-hidden bg-gradient-to-r from-purple-900 via-pink-900 to-amber-900 text-white border-4 border-gradient-to-r from-purple-500 to-amber-500 shadow-2xl shadow-purple-500/40 z-10">
+          <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAiIGhlaWdodD0iNDAiIHZpZXdCb3g9IjAgMCA0MCA0MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4gPGcgZmlsbD0ibm9uZSIgZmlsbC1ydWxlPSJldmVub2RkIj4gPGcgZmlsbD0iIzAwMDAiIG9wYWNpdHk9IjAuMDUiPiA8Y2lyY2xlIGN4PSI0IiBjeT0iNCIgcj0iMiI+PC9jaXJjbGU+IDwvZz4gPC9nPiA8L3N2Zz4=')] opacity-20 pointer-events-none"></div>
+          <CardContent className="relative z-20 text-center py-12">
             <div className="flex justify-center mb-6">
               <div className="flex space-x-4">
                 <div className="animate-bounce delay-100"><RocketIcon className="h-12 w-12 text-purple-300" /></div>
@@ -191,28 +191,30 @@ export function PremiumDashboard({ user }: PremiumDashboardProps) {
             <p className="text-xl mb-8 text-purple-100 font-medium leading-relaxed">
               كأسطورة Pro Life، لديك مفاتيح مملكة التعلم بالكامل
             </p>
-            <div className="flex justify-center gap-6 flex-wrap">
+            <div className="flex justify-center gap-6 flex-wrap relative z-30">
               <Button 
                 size="lg" 
-                className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white font-black shadow-2xl hover:shadow-purple-500/50 transition-all duration-300 transform hover:scale-110 border-2 border-purple-400"
+                className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white font-black shadow-2xl hover:shadow-purple-500/50 transition-all duration-300 transform hover:scale-105 border-2 border-purple-400 cursor-pointer relative z-30"
+                onClick={() => window.location.href = '/qiyas'}
               >
                 <RocketIcon className="h-6 w-6 mr-3" />
-                🔥 ابدأ الرحلة الأسطورية
+                🔥 ابدأ اختبار قياس
               </Button>
               <Button 
                 size="lg" 
                 variant="outline"
-                className="border-2 border-amber-400 text-amber-300 hover:bg-amber-400 hover:text-black font-black shadow-xl hover:shadow-amber-500/50 transition-all duration-300 transform hover:scale-110"
+                className="border-2 border-amber-400 text-amber-300 hover:bg-amber-400 hover:text-black font-black shadow-xl hover:shadow-amber-500/50 transition-all duration-300 transform hover:scale-105 cursor-pointer relative z-30"
+                onClick={() => window.location.href = '/abilities'}
               >
                 <DiamondIcon className="h-6 w-6 mr-3" />
-                💎 استكشف الكنوز الخفية
+                💎 اختبارات القدرات
               </Button>
             </div>
           </CardContent>
         </Card>
 
         {/* إحصائيات أسطورية */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 relative z-10">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 relative z-20">
           <Card className="text-center bg-gradient-to-br from-purple-800/60 to-purple-900/80 border-2 border-purple-500 shadow-xl shadow-purple-500/30">
             <CardContent className="py-8">
               <div className="text-4xl font-black text-purple-300 mb-3">♾️</div>
