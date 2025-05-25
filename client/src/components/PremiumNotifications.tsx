@@ -9,7 +9,13 @@ import {
   SparklesIcon, 
   XIcon, 
   Flame,
-  Wand2
+  Wand2,
+  StarIcon,
+  InfinityIcon,
+  TrophyIcon,
+  ZapIcon,
+  HeartIcon,
+  GiftIcon
 } from "lucide-react";
 
 interface PremiumNotificationsProps {

@@ -39,7 +39,7 @@ export function PremiumDashboard({ user }: PremiumDashboardProps) {
   if (!isPro && !isProLife) return null;
 
   let premiumFeatures = [];
-  
+
   if (isProLife) {
     premiumFeatures = [
       { icon: DiamondIcon, title: "💎 عضوية مدى الحياة", description: "لا تنتهي صلاحيتها أبداً - استثمار دائم للمستقبل", color: "from-purple-600 to-pink-600" },
@@ -190,7 +190,7 @@ export function PremiumDashboard({ user }: PremiumDashboardProps) {
                       : "👑🌟 أنت عضو في النخبة الذهبية! استمتع بسنة كاملة من التميز. يمكنك الترقية إلى Pro Life في أي وقت للحصول على امتيازات أكثر!"
                     }
                   </p>
-                  
+
                   {!isProLife && (
                     <div className="mt-4 p-3 bg-gradient-to-r from-purple-100 to-pink-100 dark:from-purple-900/30 dark:to-pink-900/30 border border-purple-200 dark:border-purple-700 rounded-lg">
                       <p className="text-sm text-purple-700 dark:text-purple-300 font-medium">
