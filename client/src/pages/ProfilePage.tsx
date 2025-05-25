@@ -600,19 +600,19 @@ const ProfilePage: React.FC = () => {
                 <TabsContent value="email">
                   <div className="space-y-4">
                     <div className="space-y-2">
-                      <FormItem>
-                        <FormLabel>البريد الإلكتروني</FormLabel>
-                        <FormControl>
-                          <Input 
-                            id="recover-email"
-                            name="email" 
-                            type="email" 
-                            placeholder="أدخل بريدك الإلكتروني"
-                            className="text-right" 
-                            required 
-                          />
-                        </FormControl>
-                      </FormItem>
+                      <div className="space-y-2">
+                        <label htmlFor="recover-email" className="text-sm font-medium">
+                          البريد الإلكتروني
+                        </label>
+                        <Input 
+                          id="recover-email"
+                          name="email" 
+                          type="email" 
+                          placeholder="أدخل بريدك الإلكتروني"
+                          className="text-right" 
+                          required 
+                        />
+                      </div>
                     </div>
                     <Button 
                       className="w-full bg-primary hover:bg-primary/90"
