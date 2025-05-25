@@ -255,6 +255,8 @@ const QiyasExamPage: React.FC = () => {
 
   const [isPrayerBreak, setIsPrayerBreak] = useState(false);
   const [hasPrayerBreakBeenUsed, setHasPrayerBreakBeenUsed] = useState(false); // Track if prayer break has been used
+  const [prayerBreakStartTime, setPrayerBreakStartTime] = useState<Date | null>(null); // Track when prayer break started
+  const [prayerBreakTimeLeft, setPrayerBreakTimeLeft] = useState(900); // 15 minutes in seconds
   const [isReviewDialogOpen, setIsReviewDialogOpen] = useState(false); // State for review dialog
   const [isFinalReviewDialogOpen, setIsFinalReviewDialogOpen] = useState(false); // State for final review dialog
 
@@ -275,6 +277,25 @@ const QiyasExamPage: React.FC = () => {
     }
     return () => clearTimeout(timerId);
   }, [timeLeft, currentView, isPrayerBreak, selectedExam]);
+
+  // Prayer break timer effect
+  useEffect(() => {
+    let prayerTimerId: NodeJS.Timeout;
+    if (isPrayerBreak && prayerBreakTimeLeft > 0) {
+      prayerTimerId = setTimeout(() => {
+        setPrayerBreakTimeLeft(prev => prev - 1);
+      }, 1000);
+    } else if (isPrayerBreak && prayerBreakTimeLeft === 0) {
+      // Auto-resume when prayer break time expires
+      setIsPrayerBreak(false);
+      toast({
+        title: "انتهت فترة الصلاة",
+        description: "تم استئناف الاختبار تلقائياً بعد انتهاء الوقت المسموح (15 دقيقة).",
+        duration: 5000,
+      });
+    }
+    return () => clearTimeout(prayerTimerId);
+  }, [isPrayerBreak, prayerBreakTimeLeft]);
 
 
   const renderPrayerBreakOverlay = () => {
@@ -306,6 +327,19 @@ const QiyasExamPage: React.FC = () => {
             <div className="text-xs text-orange-600 dark:text-orange-400 mt-4 p-2 bg-orange-50 dark:bg-orange-900/20 rounded-md text-center">
               ملاحظة: يمكن استخدام زر توقف الصلاة مرة واحدة فقط لكل اختبار (الحد الأقصى 15 دقيقة)
             </div>
+          </div>
+
+          {/* Prayer break timer display */}
+          <div className="text-center mb-6 relative z-10">
+            <div className="inline-flex items-center gap-2 bg-white/90 dark:bg-gray-800/90 backdrop-blur-sm rounded-xl px-6 py-3 shadow-lg border border-orange-200 dark:border-orange-700">
+              <Clock3 className="h-5 w-5 text-orange-500 dark:text-orange-400" />
+              <span className="text-lg font-bold text-gray-800 dark:text-gray-200">
+                الوقت المتبقي: {formatTime(prayerBreakTimeLeft)}
+              </span>
+            </div>
+            <p className="text-xs text-orange-600 dark:text-orange-400 mt-2 opacity-80">
+              سيتم استئناف الاختبار تلقائياً عند انتهاء الوقت
+            </p>
           </div>
 
           <Button
@@ -1026,6 +1060,8 @@ const QiyasExamPage: React.FC = () => {
                       if (!isPrayerBreak && !hasPrayerBreakBeenUsed) {
                         setIsPrayerBreak(true);
                         setHasPrayerBreakBeenUsed(true);
+                        setPrayerBreakStartTime(new Date());
+                        setPrayerBreakTimeLeft(900); // Reset to 15 minutes
                       } else if (isPrayerBreak) {
                         setIsPrayerBreak(false);
                       }
