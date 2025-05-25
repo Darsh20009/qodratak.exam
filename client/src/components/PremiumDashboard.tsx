@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -15,12 +14,12 @@ import {
   ZapIcon,
   InfinityIcon,
   DiamondIcon,
-  FlameIcon,
+  Flame,
   LightbulbIcon,
-  GiftIcon,
+  Gift,
   AwardIcon,
   HeartIcon,
-  MagicWandIcon
+  Wand2
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -36,7 +35,7 @@ interface PremiumDashboardProps {
 export function PremiumDashboard({ user }: PremiumDashboardProps) {
   const isProLife = user.subscription.type === 'Pro Life';
   const isPro = user.subscription.type === 'Pro';
-  
+
   if (!isPro && !isProLife) return null;
 
   const premiumFeatures = [
@@ -52,7 +51,7 @@ export function PremiumDashboard({ user }: PremiumDashboardProps) {
     premiumFeatures.push(
       { icon: InfinityIcon, title: "مدى الحياة", description: "لا تنتهي صلاحيتها أبداً - استثمار دائم", color: "from-violet-500 to-purple-500" },
       { icon: DiamondIcon, title: "تحديثات مجانية", description: "جميع الميزات الجديدة مجاناً للأبد", color: "from-pink-500 to-rose-500" },
-      { icon: MagicWandIcon, title: "امتيازات سحرية", description: "ميزات حصرية تُضاف باستمرار", color: "from-amber-500 to-yellow-500" }
+      { icon: Wand2, title: "امتيازات سحرية", description: "ميزات حصرية تُضاف باستمرار", color: "from-amber-500 to-yellow-500" }
     );
   }
 
@@ -75,7 +74,7 @@ export function PremiumDashboard({ user }: PremiumDashboardProps) {
             }}
           />
         ))}
-        
+
         {/* Glowing Orbs */}
         {[...Array(5)].map((_, i) => (
           <div
@@ -102,13 +101,13 @@ export function PremiumDashboard({ user }: PremiumDashboardProps) {
             ? 'from-purple-500/20 via-pink-500/15 to-violet-500/20' 
             : 'from-amber-500/20 via-yellow-500/15 to-orange-500/20'
         } animate-gradient-x rounded-3xl blur-xl`} />
-        
+
         <Card className={`relative border-4 ${
           isProLife 
             ? 'border-gradient-to-r from-purple-400 to-pink-400 shadow-2xl shadow-purple-500/30' 
             : 'border-gradient-to-r from-amber-400 to-yellow-400 shadow-2xl shadow-amber-500/30'
         } bg-gradient-to-br from-background/95 via-background/90 to-background/95 backdrop-blur-sm overflow-hidden`}>
-          
+
           {/* Animated Crown/Diamond with Effects */}
           <div className="absolute top-0 left-1/2 transform -translate-x-1/2 -translate-y-6">
             <div className="relative">
@@ -123,7 +122,7 @@ export function PremiumDashboard({ user }: PremiumDashboardProps) {
                 <div className="relative">
                   <CrownIcon className="h-20 w-20 text-amber-500 animate-bounce drop-shadow-2xl" />
                   <div className="absolute inset-0 h-20 w-20 bg-gradient-to-r from-amber-400 to-yellow-400 rounded-full blur-lg opacity-50 animate-ping" />
-                  <FlameIcon className="absolute -top-2 -right-2 h-7 w-7 text-orange-400 animate-pulse" />
+                  <Flame className="absolute -top-2 -right-2 h-7 w-7 text-orange-400 animate-pulse" />
                   <StarIcon className="absolute -bottom-1 -left-1 h-5 w-5 text-yellow-400 animate-spin" />
                 </div>
               )}
@@ -139,7 +138,7 @@ export function PremiumDashboard({ user }: PremiumDashboardProps) {
               } bg-clip-text text-transparent animate-gradient-x`}>
                 أهلاً بك في عالم النخبة
               </CardTitle>
-              
+
               <div className="flex justify-center">
                 <Badge 
                   variant="outline" 
@@ -196,7 +195,7 @@ export function PremiumDashboard({ user }: PremiumDashboardProps) {
             تمتع بمجموعة استثنائية من الميزات المصممة خصيصاً لتجربة تعليمية لا مثيل لها
           </p>
         </div>
-        
+
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
           {premiumFeatures.map((feature, index) => (
             <Card 
@@ -208,7 +207,7 @@ export function PremiumDashboard({ user }: PremiumDashboardProps) {
             >
               {/* Card Background Gradient */}
               <div className={`absolute inset-0 bg-gradient-to-br ${feature.color} opacity-0 group-hover:opacity-10 transition-opacity duration-500`} />
-              
+
               {/* Shine Effect */}
               <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000 ease-in-out" />
 
@@ -216,7 +215,7 @@ export function PremiumDashboard({ user }: PremiumDashboardProps) {
                 <div className="flex justify-center mb-4">
                   <div className={`relative p-4 rounded-full bg-gradient-to-br ${feature.color} group-hover:scale-110 transition-all duration-300 shadow-lg`}>
                     <feature.icon className="h-8 w-8 text-white drop-shadow-md" />
-                    
+
                     {/* Icon Glow Effect */}
                     <div className={`absolute inset-0 rounded-full bg-gradient-to-br ${feature.color} blur-lg opacity-50 group-hover:opacity-70 transition-opacity duration-300`} />
                   </div>
@@ -225,7 +224,7 @@ export function PremiumDashboard({ user }: PremiumDashboardProps) {
                   {feature.title}
                 </CardTitle>
               </CardHeader>
-              
+
               <CardContent className="text-center">
                 <p className="text-sm text-muted-foreground group-hover:text-foreground transition-colors duration-300 leading-relaxed">
                   {feature.description}
@@ -242,7 +241,7 @@ export function PremiumDashboard({ user }: PremiumDashboardProps) {
           ? 'from-purple-600 via-pink-500 to-violet-600' 
           : 'from-amber-500 via-yellow-500 to-orange-500'
       } text-white border-none shadow-2xl`}>
-        
+
         {/* Animated Background Pattern */}
         <div className="absolute inset-0 opacity-20">
           <div className="absolute inset-0 bg-[radial-gradient(circle_800px_at_50%_200px,rgba(255,255,255,0.3),transparent)]" />
@@ -258,11 +257,11 @@ export function PremiumDashboard({ user }: PremiumDashboardProps) {
                 <RocketIcon className="h-16 w-16 animate-bounce drop-shadow-lg" />
               )}
             </div>
-            
+
             <h3 className="text-3xl font-bold mb-4 drop-shadow-md">
               🚀 جاهز لبدء رحلتك الاستثنائية؟
             </h3>
-            
+
             <p className="text-xl mb-8 opacity-90 max-w-2xl mx-auto leading-relaxed">
               اكتشف عالماً لا محدود من الاختبارات المتقدمة والتحديات الحصرية المصممة خصيصاً للنخبة
             </p>
@@ -279,7 +278,7 @@ export function PremiumDashboard({ user }: PremiumDashboardProps) {
               <RocketIcon className="h-6 w-6 mr-3" />
               ابدأ اختبار متقدم
             </Button>
-            
+
             <Button 
               size="lg" 
               variant="outline"
@@ -296,7 +295,7 @@ export function PremiumDashboard({ user }: PremiumDashboardProps) {
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
         {[
           { icon: InfinityIcon, value: "∞", label: "اختبارات لا محدودة", color: "from-green-500 to-emerald-500" },
-          { icon: FlameIcon, value: "VIP", label: "دعم أولوية", color: "from-blue-500 to-cyan-500" },
+          { icon: Flame, value: "VIP", label: "دعم أولوية", color: "from-blue-500 to-cyan-500" },
           { icon: AwardIcon, value: "100%", label: "وصول كامل", color: "from-purple-500 to-pink-500" },
           { icon: HeartIcon, value: isProLife ? "∞" : "365", label: isProLife ? "مدى الحياة" : "يوم", color: isProLife ? "from-red-500 to-rose-500" : "from-amber-500 to-yellow-500" }
         ].map((stat, index) => (
@@ -306,7 +305,7 @@ export function PremiumDashboard({ user }: PremiumDashboardProps) {
           >
             {/* Background Gradient */}
             <div className={`absolute inset-0 bg-gradient-to-br ${stat.color} opacity-0 group-hover:opacity-10 transition-opacity duration-300`} />
-            
+
             <CardContent className="relative py-8">
               <div className="flex justify-center mb-4">
                 <div className={`p-3 rounded-full bg-gradient-to-br ${stat.color} shadow-lg`}>
