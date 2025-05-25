@@ -165,7 +165,7 @@ const Home: React.FC = () => {
               <div className="inline-flex items-center gap-4 justify-center">
                 <Rocket className="h-8 w-8 text-primary animate-bounce" />
                 <h1 className="text-5xl font-bold tracking-tighter sm:text-6xl md:text-7xl bg-gradient-to-r from-primary via-primary-foreground to-primary bg-clip-text text-transparent">
-                  طور قدراتك
+                  منصة قدراتك
                 </h1>
                 <Stars className="h-8 w-8 text-primary animate-spin-slow" />
               </div>

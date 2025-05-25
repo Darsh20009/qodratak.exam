@@ -103,7 +103,7 @@ function MainLayout({ children }: { children: React.ReactNode }) {
       {/* Sidebar */}
       <div className="hidden md:flex w-64 flex-col bg-white dark:bg-gray-800 border-r dark:border-gray-700">
         <div className="p-4">
-          <h2 className="text-2xl font-bold text-primary">قدراتي</h2>
+          <h2 className="text-2xl font-bold text-primary">منصة قدراتك</h2>
         </div>
         <Separator />
         <nav className="flex-1 p-4">
@@ -201,7 +201,7 @@ function MainLayout({ children }: { children: React.ReactNode }) {
         {/* Header */}
         <header className="bg-white dark:bg-gray-800 border-b dark:border-gray-700 md:hidden">
           <div className="flex items-center justify-between p-4">
-            <h1 className="text-xl font-bold text-primary">قدراتي</h1>
+            <h1 className="text-xl font-bold text-primary">منصة قدراتك</h1>
             <Link 
               href="/profile"
               className="p-2"
@@ -424,7 +424,7 @@ function App() {
           {/* العنوان */}
           <div className="space-y-4">
             <h1 className="text-6xl font-black bg-gradient-to-r from-blue-400 via-purple-400 to-cyan-400 bg-clip-text text-transparent animate-pulse drop-shadow-lg">
-              طور قدراتك
+              منصة قدراتك
             </h1>
             <p className="text-xl text-blue-200/80 font-medium animate-fade-in">
               منصتك الذكية للتميز الأكاديمي
