@@ -12,7 +12,10 @@ import {
   Stars,
   Rocket,
   Zap,
-  User
+  User,
+  CrownIcon,
+  DiamondIcon,
+  TrophyIcon
 } from "lucide-react";
 import { SubscriptionPlans } from "@/components/SubscriptionPlans";
 import { PremiumDashboard } from "@/components/PremiumDashboard";
@@ -248,26 +251,93 @@ const Home: React.FC = () => {
         </div>
       </section>
 
-      {/* Enhanced CTA Section */}
-      <section className="py-16 bg-gradient-to-r from-primary/90 to-primary text-primary-foreground relative overflow-hidden">
-        <div className="absolute inset-0 bg-[radial-gradient(circle_800px_at_50%_-100px,var(--primary-foreground),transparent)] opacity-20" />
-        <div className="container px-4 md:px-6 text-center relative">
-          {isLoggedIn && user ? (
-            <>
-              {/* Premium Dashboard for Pro/Pro Life users */}
-              {isPremiumUser && user && (
-                <div className="mb-12">
-                  <PremiumDashboard user={user} />
-                </div>
-              )}
-
-              {/* Regular welcome section for free users or as secondary content for premium */}
-              <div className={cn("text-center", isPremiumUser ? "mb-8" : "mb-12")}>
+      {/* Enhanced CTA Section - Different for Premium vs Free Users */}
+      {isPremiumUser && user ? (
+        <section className="py-20 bg-gradient-to-br from-amber-600 via-yellow-500 to-orange-500 text-white relative overflow-hidden">
+          {/* Premium Background Effects */}
+          <div className="absolute inset-0 bg-[radial-gradient(circle_1200px_at_50%_-100px,rgba(255,255,255,0.2),transparent)] opacity-30" />
+          <div className="absolute inset-0 bg-[conic-gradient(from_0deg_at_50%_50%,rgba(255,255,255,0.1)_0%,transparent_60%)] animate-spin-slow" />
+          <div className="absolute inset-0">
+            {[...Array(20)].map((_, i) => (
+              <div
+                key={i}
+                className="absolute h-2 w-2 bg-white/30 rounded-full animate-float"
+                style={{
+                  top: `${Math.random() * 100}%`,
+                  left: `${Math.random() * 100}%`,
+                  animationDelay: `${Math.random() * 5}s`,
+                  animationDuration: `${3 + Math.random() * 2}s`,
+                }}
+              />
+            ))}
+          </div>
+          
+          <div className="container px-4 md:px-6 text-center relative">
+            <PremiumDashboard user={user} />
+            
+            {/* VIP Action Section */}
+            <div className="mt-12 p-8 bg-white/10 backdrop-blur-sm rounded-2xl border border-white/20">
+              <div className="flex justify-center mb-6">
+                {user.subscription?.type === 'Pro Life' ? (
+                  <DiamondIcon className="h-16 w-16 text-white animate-pulse" />
+                ) : (
+                  <CrownIcon className="h-16 w-16 text-white animate-bounce" />
+                )}
+              </div>
+              <h3 className="text-2xl font-bold mb-4">🌟 أنت مستخدم VIP</h3>
+              <p className="text-lg mb-6 opacity-90">
+                {user.subscription?.type === 'Pro Life' 
+                  ? "عضويتك الماسية تمنحك امتيازات لا محدودة مدى الحياة"
+                  : "عضويتك الذهبية تفتح لك عالماً من الإمكانيات المتقدمة"
+                }
+              </p>
+              <div className="flex flex-col sm:flex-row gap-4 justify-center">
+                <Button asChild size="lg" className="min-w-[200px] bg-white text-amber-600 hover:bg-amber-50 hover:scale-105 transition-all font-bold shadow-xl">
+                  <Link href="/records">
+                    📊 سجل الإنجازات الذهبية
+                  </Link>
+                </Button>
+                <Button asChild size="lg" variant="outline" className="min-w-[200px] border-white text-white hover:bg-white hover:text-amber-600 hover:scale-105 transition-all font-bold">
+                  <Link href="/challenges">
+                    🏆 التحديات الحصرية
+                  </Link>
+                </Button>
+              </div>
+            </div>
+          </div>
+        </section>
+      ) : (
+        <section className="py-16 bg-gradient-to-r from-primary/90 to-primary text-primary-foreground relative overflow-hidden">
+          <div className="absolute inset-0 bg-[radial-gradient(circle_800px_at_50%_-100px,var(--primary-foreground),transparent)] opacity-20" />
+          <div className="container px-4 md:px-6 text-center relative">
+            {isLoggedIn && user ? (
+              <>
                 <User className="h-12 w-12 mx-auto mb-6 animate-pulse text-primary-foreground/90" />
-                <h2 className="text-3xl font-bold mb-4">{isPremiumUser ? "مرحباً بك في واجهة المستخدمين المميزين" : `مرحباً بك، ${user.name || user.username}!` }</h2>
+                <h2 className="text-3xl font-bold mb-4">مرحباً بك، {user.name || user.username}!</h2>
                 <p className="mb-8 max-w-[600px] mx-auto opacity-90">
-                  {isPremiumUser ? "استمتع بميزاتك الحصرية ولوحة التحكم المخصصة لتجربة تعليمية فريدة." : "استمر في رحلتك التعليمية واكتشف المزيد من الاختبارات والتحديات" }
+                  استمر في رحلتك التعليمية واكتشف المزيد من الاختبارات والتحديات
                 </p>
+                <div className="mb-8 p-6 bg-primary-foreground/10 rounded-xl border border-primary-foreground/20">
+                  <h3 className="text-xl font-bold mb-4">💎 ترقية إلى Pro للحصول على:</h3>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+                    <div className="flex items-center gap-2">
+                      <CrownIcon className="h-4 w-4" />
+                      <span>اختبارات لا محدودة</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <TrophyIcon className="h-4 w-4" />
+                      <span>تحديات حصرية</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <BookOpenIcon className="h-4 w-4" />
+                      <span>مكتبة متقدمة</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <RocketIcon className="h-4 w-4" />
+                      <span>دعم أولوية</span>
+                    </div>
+                  </div>
+                </div>
                 <div className="flex flex-col sm:flex-row gap-4 justify-center">
                   <Button asChild size="lg" variant="secondary" className="min-w-[200px] hover:scale-105 transition-transform">
                     <Link href="/records">
@@ -276,28 +346,28 @@ const Home: React.FC = () => {
                   </Button>
                   <Button asChild size="lg" variant="outline" className="min-w-[200px] hover:scale-105 transition-transform border-primary-foreground text-primary-foreground hover:bg-primary-foreground hover:text-primary">
                     <Link href="/profile">
-                      الملف الشخصي
+                      ترقية إلى Pro 👑
                     </Link>
                   </Button>
                 </div>
-              </div>
-            </>
-          ) : (
-            <>
-              <Zap className="h-12 w-12 mx-auto mb-6 animate-pulse text-primary-foreground/90" />
-              <h2 className="text-3xl font-bold mb-4">ابدأ رحلتك نحو التميز</h2>
-              <p className="mb-8 max-w-[600px] mx-auto opacity-90">
-                سجل حساب مجاني الآن واحصل على تجربة تعليمية متكاملة مع متابعة تقدمك وتحسين مستواك
-              </p>
-              <Button asChild size="lg" variant="secondary" className="min-w-[200px] hover:scale-105 transition-transform">
-                <Link href="/profile">
-                  سجل الآن
-                </Link>
-              </Button>
-            </>
-          )}
-        </div>
-      </section>
+              </>
+            ) : (
+              <>
+                <Zap className="h-12 w-12 mx-auto mb-6 animate-pulse text-primary-foreground/90" />
+                <h2 className="text-3xl font-bold mb-4">ابدأ رحلتك نحو التميز</h2>
+                <p className="mb-8 max-w-[600px] mx-auto opacity-90">
+                  سجل حساب مجاني الآن واحصل على تجربة تعليمية متكاملة مع متابعة تقدمك وتحسين مستواك
+                </p>
+                <Button asChild size="lg" variant="secondary" className="min-w-[200px] hover:scale-105 transition-transform">
+                  <Link href="/profile">
+                    سجل الآن
+                  </Link>
+                </Button>
+              </>
+            )}
+          </div>
+        </section>
+      )}
     </div>
   );
 };
