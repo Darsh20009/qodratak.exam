@@ -368,14 +368,104 @@ function App() {
 
   if (showSplash) {
     return (
-      <div className="h-screen w-screen flex flex-col items-center justify-center relative overflow-hidden perspective-1000">
-        {/* Enhanced animated background layers */}
-        <div className="absolute inset-0 bg-gradient-to-br from-primary/40 via-background to-primary/30 animate-gradient-x transform-style-3d"/>
-        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,var(--primary)/30,transparent_70%)] animate-pulse-slow"/>
+      <div className="h-screen w-screen flex flex-col items-center justify-center relative overflow-hidden bg-gradient-to-br from-slate-900 via-blue-900 to-indigo-900">
+        {/* خلفيات متحركة متطورة */}
         <div className="absolute inset-0">
-          <div className="absolute inset-0 bg-[radial-gradient(circle_1000px_at_50%_-100px,var(--primary-foreground),transparent)] animate-pulse-slow"/>
-          <div className="absolute inset-0 bg-[conic-gradient(from_0deg_at_50%_50%,var(--primary)/30_0%,transparent_60%)] animate-spin-slow"/>
-          <div className="absolute inset-0 bg-[conic-gradient(from_90deg_at_50%_50%,var(--primary)/20_0%,transparent_60%)] animate-spin-reverse"/>
+          {/* شبكة متحركة */}
+          <div className="absolute inset-0 bg-[radial-gradient(circle_600px_at_50%_50%,rgba(59,130,246,0.3),transparent_70%)] animate-pulse-slow"/>
+          <div className="absolute inset-0 bg-[conic-gradient(from_0deg_at_50%_50%,rgba(99,102,241,0.2)_0%,transparent_60%)] animate-spin-slow"/>
+          
+          {/* جزيئات متحركة */}
+          {[...Array(50)].map((_, i) => (
+            <div
+              key={i}
+              className="absolute w-1 h-1 bg-blue-400/50 rounded-full animate-float"
+              style={{
+                top: `${Math.random() * 100}%`,
+                left: `${Math.random() * 100}%`,
+                animationDelay: `${Math.random() * 5}s`,
+                animationDuration: `${3 + Math.random() * 4}s`,
+                filter: `blur(${Math.random() * 1}px)`,
+              }}
+            />
+          ))}
+          
+          {/* دوائر متوهجة */}
+          <div className="absolute top-20 left-20 w-32 h-32 bg-blue-500/20 rounded-full blur-xl animate-pulse"/>
+          <div className="absolute bottom-20 right-20 w-40 h-40 bg-purple-500/20 rounded-full blur-xl animate-pulse" style={{animationDelay: '2s'}}/>
+          <div className="absolute top-1/2 left-10 w-20 h-20 bg-indigo-500/30 rounded-full blur-lg animate-bounce"/>
+          <div className="absolute bottom-32 left-1/3 w-24 h-24 bg-cyan-500/25 rounded-full blur-lg animate-bounce" style={{animationDelay: '1s'}}/>
+        </div>
+
+        {/* شعاع ضوئي متحرك */}
+        <div className="absolute inset-0">
+          <div className="absolute top-0 left-1/4 w-1 h-full bg-gradient-to-b from-transparent via-blue-400/30 to-transparent transform rotate-12 animate-pulse"/>
+          <div className="absolute top-0 right-1/3 w-1 h-full bg-gradient-to-b from-transparent via-purple-400/30 to-transparent transform -rotate-12 animate-pulse" style={{animationDelay: '1.5s'}}/>
+        </div>
+
+        {/* المحتوى الرئيسي */}
+        <div className="relative z-10 text-center space-y-8">
+          {/* الأيقونة الرئيسية */}
+          <div className="relative">
+            <div className="w-32 h-32 mx-auto bg-gradient-to-br from-blue-500 via-indigo-600 to-purple-700 rounded-3xl shadow-2xl shadow-blue-500/50 flex items-center justify-center transform animate-float hover:scale-110 transition-all duration-500">
+              <div className="absolute inset-0 bg-gradient-to-br from-white/20 to-transparent rounded-3xl"/>
+              <div className="text-6xl animate-pulse">🧠</div>
+            </div>
+            
+            {/* تأثير الوهج حول الأيقونة */}
+            <div className="absolute inset-0 w-32 h-32 mx-auto bg-gradient-to-r from-blue-500 to-purple-600 rounded-3xl blur-xl opacity-30 animate-pulse"/>
+            
+            {/* نجوم متحركة حول الأيقونة */}
+            <div className="absolute -top-4 -right-4 text-yellow-400 text-2xl animate-bounce">⭐</div>
+            <div className="absolute -bottom-4 -left-4 text-blue-400 text-xl animate-bounce" style={{animationDelay: '0.5s'}}>💫</div>
+            <div className="absolute -top-2 -left-6 text-purple-400 text-lg animate-bounce" style={{animationDelay: '1s'}}>✨</div>
+          </div>
+
+          {/* العنوان */}
+          <div className="space-y-4">
+            <h1 className="text-6xl font-black bg-gradient-to-r from-blue-400 via-purple-400 to-cyan-400 bg-clip-text text-transparent animate-pulse drop-shadow-lg">
+              طور قدراتك
+            </h1>
+            <p className="text-xl text-blue-200/80 font-medium animate-fade-in">
+              منصتك الذكية للتميز الأكاديمي
+            </p>
+          </div>
+
+          {/* شريط التحميل المتطور */}
+          <div className="w-64 mx-auto space-y-3">
+            <div className="w-full h-2 bg-blue-900/50 rounded-full overflow-hidden backdrop-blur-sm">
+              <div className="h-full bg-gradient-to-r from-blue-400 via-purple-500 to-cyan-400 rounded-full animate-loading-bar shadow-lg shadow-blue-500/50"/>
+            </div>
+            <p className="text-blue-300/70 text-sm animate-pulse">جاري التحضير...</p>
+          </div>
+
+          {/* نصوص تحفيزية متغيرة */}
+          <div className="text-blue-200/60 text-sm animate-fade-in">
+            <p>🚀 استعد لرحلة تعليمية مذهلة</p>
+          </div>
+        </div>
+
+        {/* تأثيرات إضافية */}
+        <div className="absolute bottom-10 left-1/2 transform -translate-x-1/2">
+          <div className="flex space-x-2">
+            <div className="w-2 h-2 bg-blue-400 rounded-full animate-ping"/>
+            <div className="w-2 h-2 bg-purple-400 rounded-full animate-ping" style={{animationDelay: '0.2s'}}/>
+            <div className="w-2 h-2 bg-cyan-400 rounded-full animate-ping" style={{animationDelay: '0.4s'}}/>
+          </div>
+        </div>
+
+        <style jsx>{`
+          @keyframes loading-bar {
+            0% { width: 0%; }
+            100% { width: 100%; }
+          }
+          .animate-loading-bar {
+            animation: loading-bar 2s ease-in-out;
+          }
+        `}</style>
+      </div>
+    );
+  }conic-gradient(from_90deg_at_50%_50%,var(--primary)/20_0%,transparent_60%)] animate-spin-reverse"/>
           <div className="absolute inset-0 bg-grid-white/10 bg-[size:20px_20px] [mask-image:radial-gradient(black,transparent_70%)]"/>
         </div>
 

@@ -1,4 +1,37 @@
 @keyframes float-random {
+  0%, 100% { transform: translate(0, 0) rotate(0deg); }
+  25% { transform: translate(10px, -10px) rotate(5deg); }
+  50% { transform: translate(-5px, 15px) rotate(-3deg); }
+  75% { transform: translate(-10px, -5px) rotate(2deg); }
+}
+
+@keyframes loading-bar {
+  0% { width: 0%; }
+  50% { width: 70%; }
+  100% { width: 100%; }
+}
+
+@keyframes fade-in {
+  0% { opacity: 0; transform: translateY(20px); }
+  100% { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes scale-pulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.05); }
+}
+
+.animate-loading-bar {
+  animation: loading-bar 2s ease-in-out;
+}
+
+.animate-fade-in {
+  animation: fade-in 1s ease-out;
+}
+
+.animate-scale-pulse {
+  animation: scale-pulse 2s ease-in-out infinite;
+}
 
 @keyframes gradient-x {
   0% {
@@ -15,12 +48,6 @@
 .animate-gradient-x {
   animation: gradient-x 15s ease infinite;
   background-size: 400% 400%;
-}
-
-  0%, 100% { transform: translate(0, 0) rotate(0deg); }
-  25% { transform: translate(10px, -10px) rotate(5deg); }
-  50% { transform: translate(-5px, 15px) rotate(-3deg); }
-  75% { transform: translate(-10px, -5px) rotate(2deg); }
 }
 
 .animate-float {
