@@ -1262,6 +1262,18 @@ const QiyasExamPage: React.FC = () => {
         return;
       }
 
+      // أولاً، نتحقق من أن المستخدم قد أجاب على أسئلة فعلاً
+      const totalAnsweredQuestions = Object.keys(answers).length;
+      if (totalAnsweredQuestions === 0) {
+        toast({ 
+          title: "لا توجد إجابات", 
+          description: "لم تجب على أي سؤال في هذا الاختبار. أكمل الاختبار أولاً للحصول على تحدي الأسئلة الخاطئة.", 
+          variant: "destructive",
+          duration: 5000 
+        });
+        return;
+      }
+
       const incorrectQuestionsDataForRetake: Array<ProcessedExamQuestion & { userAnswerIndex: number; sectionName: string }> = [];
       
       // جمع جميع الأسئلة الخاطئة من جميع الأقسام
@@ -1281,7 +1293,12 @@ const QiyasExamPage: React.FC = () => {
       });
 
       if (incorrectQuestionsDataForRetake.length === 0) {
-        toast({ title: "رائع!", description: "لم تكن لديك أي أسئلة خاطئة للمراجعة في هذا التحدي. أداؤك كان ممتازاً!", duration: 6000, className: "bg-green-50 dark:bg-green-900/30 border-green-200 dark:border-green-700" });
+        toast({ 
+          title: "ممتاز! 🎉", 
+          description: `لم تخطئ في أي سؤال! أجبت على ${totalAnsweredQuestions} سؤال بشكل صحيح. أداؤك كان مثالياً!`, 
+          duration: 6000, 
+          className: "bg-green-50 dark:bg-green-900/30 border-green-200 dark:border-green-700" 
+        });
         return;
       }
 
