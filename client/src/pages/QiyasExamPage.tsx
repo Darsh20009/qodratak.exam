@@ -254,6 +254,7 @@ const QiyasExamPage: React.FC = () => {
   const [allProcessedQuestionsBySection, setAllProcessedQuestionsBySection] = useState<{[sectionNumber: number]: ProcessedExamQuestion[]}>({});
 
   const [isPrayerBreak, setIsPrayerBreak] = useState(false);
+  const [hasPrayerBreakBeenUsed, setHasPrayerBreakBeenUsed] = useState(false); // Track if prayer break has been used
   const [isReviewDialogOpen, setIsReviewDialogOpen] = useState(false); // State for review dialog
   const [isFinalReviewDialogOpen, setIsFinalReviewDialogOpen] = useState(false); // State for final review dialog
 
@@ -302,13 +303,16 @@ const QiyasExamPage: React.FC = () => {
             <p className="text-gray-600 dark:text-gray-400 text-base mt-3">
               تم إيقاف الاختبار مؤقتاً. عند الانتهاء، يمكنك استئناف الاختبار.
             </p>
+            <div className="text-xs text-orange-600 dark:text-orange-400 mt-4 p-2 bg-orange-50 dark:bg-orange-900/20 rounded-md text-center">
+              ملاحظة: يمكن استخدام زر توقف الصلاة مرة واحدة فقط لكل اختبار (الحد الأقصى 15 دقيقة)
+            </div>
           </div>
 
           <Button
             onClick={() => setIsPrayerBreak(false)}
             className="w-full bg-gradient-to-r from-orange-500 to-yellow-500 hover:from-orange-600 hover:to-yellow-600 transition-all duration-300 shadow-xl hover:shadow-orange-500/40 dark:shadow-orange-400/20 text-xl py-4 rounded-xl relative z-10 transform hover:scale-105"
           >
-            استئناف الاختبار
+            استئناف الاختبار (لن يتوفر مرة أخرى)
           </Button>
            {/* Quranic Verse */}
           <div className="text-sm text-gray-500 dark:text-gray-500 mt-6 relative z-10 tracking-wide">
@@ -416,6 +420,7 @@ const QiyasExamPage: React.FC = () => {
     setQuestions([]);
     setSelectedAnswer(null);
     setIsFinalReviewDialogOpen(false); // Reset on start
+    setHasPrayerBreakBeenUsed(false); // Reset prayer break usage for new exam
 
 
     try {
@@ -1017,14 +1022,23 @@ const QiyasExamPage: React.FC = () => {
                     <Button
                     variant="outline"
                     size="sm"
-                    onClick={() => setIsPrayerBreak(prev => !prev)} // Toggle prayer break
+                    onClick={() => {
+                      if (!isPrayerBreak && !hasPrayerBreakBeenUsed) {
+                        setIsPrayerBreak(true);
+                        setHasPrayerBreakBeenUsed(true);
+                      } else if (isPrayerBreak) {
+                        setIsPrayerBreak(false);
+                      }
+                    }}
+                    disabled={!isPrayerBreak && hasPrayerBreakBeenUsed}
                     className={cn(
                         "transition-colors dark:text-gray-300 dark:border-slate-600 dark:hover:bg-slate-700 text-xs sm:text-sm px-2 sm:px-3",
-                        isPrayerBreak && "bg-orange-100 text-orange-700 hover:bg-orange-200 dark:bg-orange-700/30 dark:text-orange-300 dark:border-orange-600"
+                        isPrayerBreak && "bg-orange-100 text-orange-700 hover:bg-orange-200 dark:bg-orange-700/30 dark:text-orange-300 dark:border-orange-600",
+                        (!isPrayerBreak && hasPrayerBreakBeenUsed) && "opacity-50 cursor-not-allowed"
                     )}
                     >
                      <Moon className="h-3.5 w-3.5 sm:h-4 sm:w-4 ml-1 sm:ml-2" />
-                    {isPrayerBreak ? "استئناف" : "توقف للصلاة"}
+                    {isPrayerBreak ? "استئناف" : hasPrayerBreakBeenUsed ? "تم استخدامه" : "توقف للصلاة"}
                     </Button>
                     <div className="flex items-center gap-1 p-2 bg-slate-100 dark:bg-slate-700 rounded-md">
                     <Clock3 className="h-4 w-4 text-primary" />
