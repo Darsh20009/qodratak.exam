@@ -53,6 +53,7 @@ import {
   Target, // For challenge icon
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useIsMobile } from "@/hooks/use-mobile";
 import { TestType } from "@shared/types"; // Assuming TestType is "verbal" | "quantitative" | "mixed"
 
 // Types for Qiyas exams
@@ -226,6 +227,7 @@ const qiyasExams: QiyasExam[] = [
 const QiyasExamPage: React.FC = () => {
   const [, setLocation] = useLocation();
   const { toast } = useToast();
+  const isMobile = useIsMobile();
   const [user, setUser] = useState<any>(null); // Replace 'any' with your User type
 
   useEffect(() => {
@@ -1274,6 +1276,16 @@ const QiyasExamPage: React.FC = () => {
         return;
       }
 
+      // تحقق من نوع الجهاز وعرض تنبيه للأجهزة المحمولة
+      if (isMobile) {
+        toast({ 
+          title: "💻 ميزة متقدمة للحاسوب", 
+          description: "ميزة اختبار الأخطاء التفاعلية تعمل بأفضل شكل على أجهزة الحاسوب. سيتم تحميل الأسئلة الخاطئة كملف للمراجعة.", 
+          duration: 6000,
+          className: "bg-blue-50 dark:bg-blue-900/30 border-blue-200 dark:border-blue-700"
+        });
+      }
+
       const incorrectQuestionsDataForRetake: Array<ProcessedExamQuestion & { userAnswerIndex: number | undefined; sectionName: string }> = [];
       
       // جمع جميع الأسئلة الخاطئة والغير مجاب عليها من جميع الأقسام
@@ -1809,7 +1821,7 @@ const QiyasExamPage: React.FC = () => {
       
       toast({ 
         title: "تم تحميل التحدي", 
-        description: `تم إنشاء تحدي يحتوي على ${incorrectQuestionsDataForRetake.length} سؤال (${wrongCount} خاطئ، ${unansweredCount} غير مجاب عليه). الآن محسّن للهواتف! افتح الملف في متصفحك لبدء التحدي.`, 
+        description: `تم إنشاء تحدي يحتوي على ${incorrectQuestionsDataForRetake.length} سؤال (${wrongCount} خاطئ، ${unansweredCount} غير مجاب عليه). ${isMobile ? 'افتح الملف في متصفحك للمراجعة.' : 'الآن محسّن للهواتف! افتح الملف في متصفحك لبدء التحدي التفاعلي.'}`, 
         duration: 7000 
       });
     };
@@ -1916,7 +1928,7 @@ const QiyasExamPage: React.FC = () => {
                   className="gap-2 w-full sm:w-auto bg-red-600 hover:bg-red-700 text-white dark:bg-red-700 dark:hover:bg-red-800"
                 >
                   <Target className="h-4 w-4" /> {/* Or RefreshCw */}
-                  🎯 تحدي الأسئلة الخاطئة والغير مجاب عليها
+                  🎯 {isMobile ? 'تحميل الأسئلة الخاطئة' : 'تحدي الأسئلة الخاطئة والغير مجاب عليها'}
                 </Button>
                 <Button
                   onClick={() => {
@@ -2099,10 +2111,10 @@ const QiyasExamPage: React.FC = () => {
                         const isCorrect = answers[question.id] === question.correctOptionIndex;
                         return filterType === "correct" ? isCorrect : !isCorrect;
                     })
-                    .map(({question, sectionName, questionDisplayIndex}) => {
+                    .map(({question, sectionName, questionDisplayIndex}, reviewIndex) => {
                     const isCorrect = answers[question.id] === question.correctOptionIndex;
                     return (
-                        <div key={`${question.id}-${filterType}`} className={cn(
+                        <div key={`${question.id}-${filterType}-${reviewIndex}`} className={cn(
                         "p-4 rounded-lg border-2 shadow-sm",
                         question._isNonScored ? "border-dashed border-blue-400 bg-blue-50/30 dark:bg-blue-900/10 dark:border-blue-600/50" :
                         isCorrect ? "border-green-500 bg-green-50/50 dark:bg-green-900/20 dark:border-green-600" :
@@ -2122,7 +2134,7 @@ const QiyasExamPage: React.FC = () => {
 
                             <div className="space-y-2">
                                 {question.options.map((option, optIndex) => (
-                                <div key={`${question.id}-optrev-${optIndex}`} className={cn(
+                                <div key={`${question.id}-optrev-${optIndex}-${filterType}-${reviewIndex}`} className={cn(
                                     "p-3 rounded-lg border text-xs sm:text-sm",
                                     "bg-white dark:bg-slate-700/50 dark:border-slate-600",
                                     optIndex === question.correctOptionIndex && "border-green-400 bg-green-50/80 dark:bg-green-800/30 dark:border-green-500 font-semibold text-green-700 dark:text-green-300",
