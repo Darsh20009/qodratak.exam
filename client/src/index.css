@@ -643,48 +643,48 @@
 
 /* Dark Mode Theme */
 :root {
-  --background: 220 100% 10%; /* Deep, rich blue */
-  --foreground: 220 100% 95%; /* Light text on dark blue */
-  --muted: 220 50% 25%; /* Muted blue */
-  --muted-foreground: 220 70% 50%; /* Muted lighter text */
-  --popover: 220 80% 15%; /* Deep blue popups */
-  --popover-foreground: 220 100% 95%; /* Lighter popup text */
-  --card: 220 80% 20%; /* Strong blue card background */
-  --card-foreground: 220 100% 95%; /* Light card text */
-  --border: 220 80% 30%; /* Dark border */
-  --input: 220 70% 30%; /* Dark input */
-  --primary: 210 100% 50%; /* Vivid accent blue */
-  --primary-foreground: 220 100% 98%; /* Lighter text on primary elements */
-  --secondary: 220 60% 35%; /* Secondary blue */
-  --secondary-foreground: 220 100% 90%; /* Lighter secondary text */
-  --accent: 220 100% 25%; /* Rich accent blue */
-  --accent-foreground: 220 100% 95%; /* Accent text */
-  --destructive: 0 80% 50%; /* Destructive color */
-  --destructive-foreground: 60 10% 90%; /* Lighter destructive text */
-  --ring: 220 90% 55%; /* Ring around elements */
+  --background: 225 25% 8%; /* خلفية رمادية مزرقة قاتمة جداً */
+  --foreground: 210 40% 95%; /* نص فاتح مع لمسة زرقاء */
+  --muted: 220 20% 18%; /* رمادي مكتوم مع لمسة زرقاء */
+  --muted-foreground: 215 25% 65%; /* نص مكتوم فاتح */
+  --popover: 225 30% 12%; /* نوافذ منبثقة قاتمة */
+  --popover-foreground: 210 40% 95%; /* نص النوافذ المنبثقة */
+  --card: 225 25% 15%; /* كروت بخلفية قاتمة أنيقة */
+  --card-foreground: 210 40% 95%; /* نص الكروت فاتح */
+  --border: 220 25% 25%; /* حدود رمادية مع لمسة زرقاء */
+  --input: 225 20% 20%; /* مدخلات قاتمة */
+  --primary: 220 100% 55%; /* أزرق نابض للعناصر الأساسية */
+  --primary-foreground: 220 100% 98%; /* نص فاتح على العناصر الأساسية */
+  --secondary: 225 15% 25%; /* ثانوي رمادي قاتم */
+  --secondary-foreground: 210 40% 90%; /* نص ثانوي فاتح */
+  --accent: 225 25% 22%; /* لون مميز قاتم */
+  --accent-foreground: 210 40% 95%; /* نص مميز فاتح */
+  --destructive: 0 75% 55%; /* أحمر للحذف */
+  --destructive-foreground: 60 10% 95%; /* نص فاتح للحذف */
+  --ring: 220 90% 60%; /* حلقة حول العناصر */
   --radius: 0.5rem;
 }
 
 .dark {
-  --background: 220 100% 5%; /* Very dark, almost navy blue for dark mode */
-  --foreground: 220 100% 90%; /* Light text */
-  --muted: 220 50% 20%; /* Very muted dark blue */
-  --muted-foreground: 220 70% 60%; /* Muted light text */
-  --popover: 220 80% 5%; /* Deeper blue popups */
-  --popover-foreground: 220 100% 90%; /* Light text for popups */
-  --card: 220 80% 5%; /* Deep blue cards */
-  --card-foreground: 220 100% 90%; /* Lighter text in cards */
-  --border: 220 80% 25%; /* Dark border */
-  --input: 220 70% 20%; /* Very dark blue input */
-  --primary: 210 100% 50%; /* Bright accent blue */
-  --primary-foreground: 220 100% 98%; /* Light primary text */
-  --secondary: 220 60% 30%; /* Dark secondary blue */
-  --secondary-foreground: 220 100% 90%; /* Light secondary text */
-  --accent: 220 100% 15%; /* Deep accent blue */
-  --accent-foreground: 220 100% 95%; /* Accent text */
-  --destructive: 0 70% 50%; /* Dark destructive color */
-  --destructive-foreground: 60 10% 90%; /* Lighter destructive text */
-  --ring: 220 90% 60%; /* Lighter ring */
+  --background: 225 30% 3%; /* خلفية سوداء مع لمسة زرقاء للوضع المظلم */
+  --foreground: 210 40% 98%; /* نص أبيض تقريباً */
+  --muted: 220 25% 10%; /* رمادي قاتم جداً */
+  --muted-foreground: 215 20% 70%; /* نص مكتوم فاتح */
+  --popover: 225 35% 6%; /* نوافذ منبثقة سوداء تقريباً */
+  --popover-foreground: 210 40% 98%; /* نص فاتح للنوافذ */
+  --card: 225 30% 8%; /* كروت بخلفية سوداء أنيقة */
+  --card-foreground: 210 40% 98%; /* نص فاتح للكروت */
+  --border: 220 30% 18%; /* حدود قاتمة */
+  --input: 225 25% 12%; /* مدخلات سوداء تقريباً */
+  --primary: 220 100% 60%; /* أزرق نابض أكثر إشراقاً */
+  --primary-foreground: 220 100% 98%; /* نص فاتح */
+  --secondary: 225 20% 15%; /* ثانوي قاتم */
+  --secondary-foreground: 210 40% 95%; /* نص ثانوي فاتح */
+  --accent: 225 30% 12%; /* لون مميز قاتم جداً */
+  --accent-foreground: 210 40% 98%; /* نص مميز فاتح */
+  --destructive: 0 75% 60%; /* أحمر مشرق للحذف */
+  --destructive-foreground: 60 10% 98%; /* نص فاتح للحذف */
+  --ring: 220 90% 65%; /* حلقة أكثر إشراقاً */
   --radius: 0.5rem;
 }
 
@@ -696,6 +696,22 @@
 
   body {
     @apply font-sans antialiased bg-background text-foreground;
+    /* تطبيق خلفية متدرجة أنيقة */
+    background: linear-gradient(135deg, hsl(var(--background)) 0%, hsl(225, 35%, 5%) 100%);
+    min-height: 100vh;
+  }
+
+  /* تحسين مظهر البطاقات */
+  .card {
+    background: linear-gradient(135deg, hsl(var(--card)) 0%, hsl(225, 30%, 12%) 100%);
+    border: 1px solid hsl(var(--border));
+    backdrop-filter: blur(10px);
+  }
+
+  /* تحسين مظهر الأزرار */
+  .bg-primary {
+    background: linear-gradient(135deg, hsl(var(--primary)) 0%, hsl(220, 90%, 45%) 100%);
+    box-shadow: 0 4px 15px hsl(var(--primary) / 0.3);
   }
 }
 
