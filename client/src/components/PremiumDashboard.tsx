@@ -33,8 +33,7 @@ export function PremiumDashboard({ user }: PremiumDashboardProps) {
   
   if (!isPro && !isProLife) return null;
 
-  // نفس الميزات لكلا الباقتين مع إضافة ميزات خاصة لـ Pro Life
-  const basePremiumFeatures = [
+  const premiumFeatures = [
     { icon: SparklesIcon, title: "اختبارات لا محدودة", description: "وصول كامل لجميع الاختبارات" },
     { icon: TrophyIcon, title: "تحديات حصرية", description: "منافسات مخصصة للمميزين فقط" },
     { icon: GemIcon, title: "مكتبة متقدمة", description: "محتوى تعليمي عالي الجودة" },
@@ -43,12 +42,12 @@ export function PremiumDashboard({ user }: PremiumDashboardProps) {
     { icon: ZapIcon, title: "تحليل ذكي", description: "إحصائيات مفصلة لأدائك" }
   ];
 
-  // إضافة ميزات Pro Life فقط إذا كان المستخدم لديه هذه الباقة
-  const premiumFeatures = isProLife ? [
-    ...basePremiumFeatures,
-    { icon: InfinityIcon, title: "مدى الحياة", description: "لا تنتهي صلاحيتها أبداً" },
-    { icon: DiamondIcon, title: "تحديثات مجانية", description: "جميع الميزات الجديدة مجاناً" }
-  ] : basePremiumFeatures;
+  if (isProLife) {
+    premiumFeatures.push(
+      { icon: InfinityIcon, title: "مدى الحياة", description: "لا تنتهي صلاحيتها أبداً" },
+      { icon: DiamondIcon, title: "تحديثات مجانية", description: "جميع الميزات الجديدة مجاناً" }
+    );
+  }
 
   return (
     <div className="space-y-8">
@@ -60,14 +59,17 @@ export function PremiumDashboard({ user }: PremiumDashboardProps) {
         <Card className="relative border-2 border-gradient-to-r from-yellow-400 to-amber-500 bg-gradient-to-br from-background via-amber-50/50 to-yellow-50/30 dark:from-slate-900 dark:via-amber-950/20 dark:to-yellow-950/10 shadow-2xl">
           <CardHeader className="text-center pb-4">
             <div className="flex justify-center mb-4">
-              <div className="relative">
-                {isProLife ? (
+              {isProLife ? (
+                <div className="relative">
                   <DiamondIcon className="h-16 w-16 text-amber-500 animate-pulse" />
-                ) : (
+                  <SparklesIcon className="absolute -top-2 -right-2 h-6 w-6 text-yellow-400 animate-bounce" />
+                </div>
+              ) : (
+                <div className="relative">
                   <CrownIcon className="h-16 w-16 text-amber-500 animate-bounce" />
-                )}
-                <SparklesIcon className="absolute -top-2 -right-2 h-6 w-6 text-yellow-400 animate-bounce" />
-              </div>
+                  <StarIcon className="absolute -top-1 -right-1 h-5 w-5 text-yellow-400 animate-pulse" />
+                </div>
+              )}
             </div>
             
             <CardTitle className="text-4xl font-bold bg-gradient-to-r from-amber-600 via-yellow-500 to-orange-500 bg-clip-text text-transparent">
@@ -77,10 +79,15 @@ export function PremiumDashboard({ user }: PremiumDashboardProps) {
             <div className="flex justify-center mt-4">
               <Badge 
                 variant="outline" 
-                className="text-lg px-6 py-2 font-bold border-2 animate-pulse border-gradient-to-r from-amber-500 to-yellow-500 bg-gradient-to-r from-amber-100 to-yellow-100 text-amber-700 dark:from-amber-900/50 dark:to-yellow-900/50 dark:text-amber-300"
+                className={cn(
+                  "text-lg px-6 py-2 font-bold border-2 animate-pulse",
+                  isProLife 
+                    ? "border-gradient-to-r from-purple-500 to-pink-500 bg-gradient-to-r from-purple-100 to-pink-100 text-purple-700 dark:from-purple-900/50 dark:to-pink-900/50 dark:text-purple-300"
+                    : "border-gradient-to-r from-amber-500 to-yellow-500 bg-gradient-to-r from-amber-100 to-yellow-100 text-amber-700 dark:from-amber-900/50 dark:to-yellow-900/50 dark:text-amber-300"
+                )}
               >
                 {isProLife ? (
-                  <><DiamondIcon className="h-5 w-5 mr-2" /> عضو Pro Life مدى الحياة</>
+                  <><InfinityIcon className="h-5 w-5 mr-2" /> عضو Pro Life مدى الحياة</>
                 ) : (
                   <><CrownIcon className="h-5 w-5 mr-2" /> عضو Pro مميز</>
                 )}
@@ -93,12 +100,10 @@ export function PremiumDashboard({ user }: PremiumDashboardProps) {
               أهلاً {user.name}، أنت من النخبة المميزة في منصة قدراتك
             </p>
             <p className="text-lg text-amber-700 dark:text-amber-300 font-medium">
-              ✨ لديك وصول حصري لجميع الميزات المتقدمة، كن مستعداً للتفوق!
-              {isProLife && (
-                <span className="block mt-2">
-                  🌟 ميزة إضافية: عضويتك لا تنتهي أبداً - أنت جزء من العائلة الذهبية مدى الحياة!
-                </span>
-              )}
+              {isProLife 
+                ? "🌟 استمتع بجميع الميزات المتقدمة إلى الأبد، أنت الآن جزء من العائلة الذهبية!" 
+                : "✨ لديك وصول حصري لجميع الميزات المتقدمة، كن مستعداً للتفوق!"
+              }
             </p>
           </CardContent>
         </Card>
