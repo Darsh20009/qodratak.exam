@@ -15,7 +15,8 @@ import {
   User,
   CrownIcon,
   DiamondIcon,
-  TrophyIcon
+  TrophyIcon,
+  RocketIcon
 } from "lucide-react";
 import { SubscriptionPlans } from "@/components/SubscriptionPlans";
 import { PremiumDashboard } from "@/components/PremiumDashboard";
