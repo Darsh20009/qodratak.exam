@@ -1390,5 +1390,31 @@
     ],
     "testHistory": [],
     "savedQuestions": []
+  },
+  {
+    "id": 70,
+    "name": "09",
+    "email": "09@gmail.com",
+    "password": "182009",
+    "subscription": {
+      "type": "free",
+      "startDate": "2025-05-25",
+      "endDate": "2025-06-24"
+    },
+    "points": 100,
+    "level": 1,
+    "testsTaken": 0,
+    "averageScore": 0,
+    "folders": [],
+    "achievements": [],
+    "pointsHistory": [
+      {
+        "points": 100,
+        "reason": "مكافأة الترحيب",
+        "date": "2025-05-25T20:35:53.112Z"
+      }
+    ],
+    "testHistory": [],
+    "savedQuestions": []
   }
 ]

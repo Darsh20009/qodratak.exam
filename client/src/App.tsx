@@ -94,7 +94,9 @@ function MainLayout({ children }: { children: React.ReactNode }) {
     { name: "المكتبة", href: "/library", icon: BookOpenIcon },
     { name: "مجلداتي", href: "/folders", icon: FolderIcon },
     { name: "سجل الاختبارات", href: "/records", icon: ClipboardIcon },
+    { name: "كتبي", href: "/books", icon: BookOpenIcon },  // إضافة قسم "كتبي"
   ];
+
 
   return (
     <div className="flex min-h-screen bg-gray-100 dark:bg-gray-900">

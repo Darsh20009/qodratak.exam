@@ -49,6 +49,8 @@ import {
   Star,
   CloudSun,
   Eye, // Added for Review Button
+  RefreshCw, // For retake challenge
+  Target, // For challenge icon
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { TestType } from "@shared/types"; // Assuming TestType is "verbal" | "quantitative" | "mixed"
@@ -1254,6 +1256,302 @@ const QiyasExamPage: React.FC = () => {
       stats.percentage >= 50 ? { label: "جيد", color: "text-yellow-500 dark:text-yellow-400", icon: <Info className="inline-block mr-2 h-6 w-6"/> } :
       { label: "بحاجة للمزيد من التدريب", color: "text-red-500 dark:text-red-400", icon: <BookOpen className="inline-block mr-2 h-6 w-6"/> };
 
+    const handleDownloadIncorrectQuestions = () => {
+      if (!selectedExam || !allProcessedQuestionsBySection) {
+        toast({ title: "خطأ", description: "بيانات الاختبار غير متوفرة.", variant: "destructive" });
+        return;
+      }
+
+      const incorrectQuestionsDataForRetake: Array<ProcessedExamQuestion & { userAnswerIndex: number; sectionName: string }> = [];
+      Object.entries(allProcessedQuestionsBySection).forEach(([sectionNumStr, sectionQuestions]) => {
+        const sectionConfig = selectedExam.sections.find(s => s.sectionNumber === parseInt(sectionNumStr));
+        sectionQuestions.forEach(q => {
+          if (!q._isNonScored && answers[q.id] !== undefined && answers[q.id] !== q.correctOptionIndex) {
+            incorrectQuestionsDataForRetake.push({
+              ...q,
+              userAnswerIndex: answers[q.id],
+              sectionName: sectionConfig?.name || `القسم ${sectionNumStr}`,
+            });
+          }
+        });
+      });
+
+      if (incorrectQuestionsDataForRetake.length === 0) {
+        toast({ title: "رائع!", description: "لم تكن لديك أي أسئلة خاطئة (محسوبة) لمراجعتها في هذا التحدي.", duration: 6000, className: "bg-green-50 dark:bg-green-900/30 border-green-200 dark:border-green-700" });
+        return;
+      }
+
+      const questionsJson = JSON.stringify(incorrectQuestionsDataForRetake.map(q => ({
+        id: q.id,
+        text: q.text,
+        options: q.options,
+        correctOptionIndex: q.correctOptionIndex,
+        explanation: q.explanation || "راجع مصادرك لمزيد من التفاصيل.",
+        userAnswerIndex: q.userAnswerIndex,
+        sectionName: q.sectionName,
+      })));
+
+      const htmlContent = `
+<!DOCTYPE html>
+<html dir="rtl" lang="ar">
+<head>
+    <meta charset="UTF-8">
+    <title>تحدي الأسئلة الخاطئة: ${selectedExam.name}</title>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Kufi+Arabic:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Noto Kufi Arabic', sans-serif; margin: 0; background-color: #f0f4f8; color: #333; display: flex; flex-direction: column; align-items: center; padding: 20px; min-height: 100vh; box-sizing: border-box; }
+        .container { background-color: #fff; padding: 20px 30px 30px 30px; border-radius: 12px; box-shadow: 0 8px 25px rgba(0,0,0,0.1); width: 95%; max-width: 850px; }
+        .header { text-align: center; margin-bottom: 25px; border-bottom: 2px solid #e0e0e0; padding-bottom: 15px; }
+        .header h1 { color: #e53935; /* Red for mistakes */ font-size: 2em; margin-bottom: 5px; }
+        .header p { color: #555; font-size: 1em; }
+        .question-area { margin-bottom: 20px; }
+        .question-card { padding: 20px; border: 1px solid #ddd; border-radius: 8px; margin-bottom: 15px; background-color: #fdfdfd; position: relative; }
+        .question-text { font-size: 1.2em; font-weight: bold; margin-bottom: 15px; color: #444; line-height: 1.6; }
+        .original-info { font-size: 0.85em; color: #777; margin-bottom: 15px; background-color: #fffde7; padding: 8px; border-radius: 4px; border-right: 3px solid #ffc107;}
+        .original-info strong {color: #333;}
+        .options-list { list-style: none; padding: 0; }
+        .options-list li {
+            padding: 12px; margin: 8px 0; border: 2px solid #eee; border-radius: 8px; cursor: pointer;
+            transition: all 0.25s ease; display: flex; align-items: center;
+            background-color: #fff; font-size: 0.95em;
+        }
+        .options-list li:hover { border-color: #b0bec5; }
+        .options-list li.selected { border-color: #26a69a; background-color: #e0f2f1; font-weight: bold; } /* Teal */
+        .option-letter {
+            min-width: 28px; height: 28px; background-color: #78909c; /* Blue Grey */ color: white; border-radius: 50%;
+            display: inline-flex; justify-content: center; align-items: center; margin-left: 12px; font-weight: bold; font-size: 0.9em;
+        }
+        .options-list li.selected .option-letter { background-color: #26a69a; } /* Teal */
+        .feedback-area { margin-top: 12px; padding: 12px; border-radius: 6px; font-size: 0.9em; display: none; }
+        .feedback-area.correct { background-color: #e8f5e9; color: #2e7d32; border: 1px solid #a5d6a7; }
+        .feedback-area.incorrect { background-color: #ffebee; color: #c62828; border: 1px solid #ef9a9a; }
+        .explanation-text { margin-top:8px; font-style: italic; color: #5f5f5f; line-height:1.5; }
+        #navigation-buttons, #result-area { text-align: center; margin-top: 25px; }
+        button {
+            background-color: #546e7a; /* Blue Grey */ color: white; border: none; padding: 10px 20px; border-radius: 8px;
+            font-size: 1em; cursor: pointer; transition: background-color 0.3s; margin: 5px;
+        }
+        button:hover { background-color: #455a64; }
+        button:disabled { background-color: #ccc; cursor: not-allowed; }
+        #submit-retake-btn { background-color: #66bb6a; /* Green */ }
+        #submit-retake-btn:hover { background-color: #4caf50; }
+        #result-area h2 { color: #1e88e5; /* Blue */ } #result-area p {margin: 8px 0;}
+        #progress-bar-container { width: 100%; background-color: #e0e0e0; border-radius: 5px; margin-bottom: 20px; height: 18px; overflow: hidden;}
+        #progress-bar { width: 0%; height: 100%; background-color: #42a5f5; /* Light Blue */ border-radius: 5px; transition: width 0.3s ease-in-out; text-align: center; color: white; font-size: 0.8em; line-height:18px;}
+        .footer { text-align: center; margin-top: 30px; padding-top: 15px; border-top: 1px solid #eee; font-size: 0.85em; color: #777; }
+        .no-questions { text-align: center; font-size: 1.2em; color: #2e7d32; padding: 30px; background-color: #e8f5e9; border-radius: 8px;}
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🎯 تحدي الأسئلة الخاطئة</h1>
+            <p>فرصتك لمراجعة أخطائك وتحويلها إلى نقاط قوة!</p>
+        </div>
+        <div id="progress-bar-container">
+            <div id="progress-bar">0%</div>
+        </div>
+        <div id="question-area">
+            </div>
+        <div id="navigation-buttons">
+            <button id="prev-btn" onclick="prevRetakeQuestion()" disabled>السابق</button>
+            <button id="next-btn" onclick="nextRetakeQuestion()">التالي</button>
+            <button id="submit-retake-btn" onclick="submitRetake()" style="display:none;">عرض النتيجة النهائية</button>
+        </div>
+        <div id="result-area" style="display:none;">
+            <h2>نتائج تحدي الأخطاء:</h2>
+            <p id="score-text"></p>
+            <p id="feedback-message"></p>
+            <button onclick="restartRetake()">أعد التحدي</button>
+        </div>
+    </div>
+    <div class="footer">
+        © ${new Date().getFullYear()} قدراتك - بالتوفيق في رحلتك التعليمية!
+    </div>
+    <script>
+        let incorrectQuestionsForRetake = [];
+        let userRetakeAnswers = {}; // { questionOriginalId: selectedOptionOriginalIndex }
+        let currentRetakeQuestionDisplayIndex = 0;
+        let retakeSubmitted = false;
+        let mappedIncorrectQuestions = [];
+        const optionChars = ['أ', 'ب', 'ج', 'د', 'هـ', 'و', 'ز', 'ح', 'ط', 'ي'];
+
+
+        function shuffleArray(array) {
+            for (let i = array.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [array[i], array[j]] = [array[j], array[i]];
+            }
+            return array;
+        }
+
+        function createQuestionMap(question) {
+            const optionsWithOriginalIndex = question.options.map((optionText, originalIndex) => ({
+                text: optionText,
+                originalIndex: originalIndex
+            }));
+            const shuffledOptions = shuffleArray([...optionsWithOriginalIndex]);
+            return { ...question, shuffledOptions };
+        }
+
+        function loadRetakeQuestion(index) {
+            retakeSubmitted = false;
+            const questionArea = document.getElementById('question-area');
+            const questionData = mappedIncorrectQuestions[index];
+            if (!questionData) return;
+
+            const progressBar = document.getElementById('progress-bar');
+            const progressPercentage = Math.round(((index + 1) / mappedIncorrectQuestions.length) * 100);
+            progressBar.style.width = progressPercentage + '%';
+            progressBar.textContent = progressPercentage + '%';
+
+            questionArea.innerHTML = \`
+                <div class="question-card" id="qcard-\${questionData.id}">
+                    <p class="question-text">(\${index + 1}/\${mappedIncorrectQuestions.length}) \${questionData.text}</p>
+                    <div class="original-info">
+                        <strong>تذكير بالامتحان الأصلي:</strong><br>
+                        إجابتك الأصلية: <span style="color: #c62828;">"\${questionData.options[questionData.userAnswerIndex]}"</span>.<br>
+                        الإجابة الصحيحة: <span style="color: #2e7d32;">"\${questionData.options[questionData.correctOptionIndex]}"</span>.<br>
+                        القسم الأصلي: \${questionData.sectionName}.
+                    </div>
+                    <ul class="options-list" id="options-\${questionData.id}">
+                        \${questionData.shuffledOptions.map((opt, i) => \`
+                            <li onclick="selectRetakeAnswer('\${questionData.id}', \${opt.originalIndex}, this)">
+                                <span class="option-letter">\${optionChars[i] || i+1}</span>
+                                \${opt.text}
+                            </li>
+                        \`).join('')}
+                    </ul>
+                    <div class="feedback-area" id="feedback-\${questionData.id}"></div>
+                </div>
+            \`;
+
+            if (userRetakeAnswers[questionData.id] !== undefined) {
+                const listItems = document.getElementById(\`options-\${questionData.id}\`).getElementsByTagName('li');
+                const selectedOriginalIndex = userRetakeAnswers[questionData.id];
+                for (let i=0; i < listItems.length; i++) {
+                    if (questionData.shuffledOptions[i].originalIndex === selectedOriginalIndex) {
+                        listItems[i].classList.add('selected');
+                        break;
+                    }
+                }
+            }
+
+            document.getElementById('prev-btn').disabled = index === 0;
+            document.getElementById('next-btn').disabled = index === mappedIncorrectQuestions.length - 1;
+            document.getElementById('submit-retake-btn').style.display = (index === mappedIncorrectQuestions.length - 1) ? 'inline-block' : 'none';
+            document.getElementById('result-area').style.display = 'none';
+        }
+
+        function selectRetakeAnswer(questionId, originalOptionIndex, listItemElement) {
+            if (retakeSubmitted) return;
+            userRetakeAnswers[questionId] = originalOptionIndex;
+            const optionsList = listItemElement.parentNode;
+            Array.from(optionsList.getElementsByTagName('li')).forEach(li => li.classList.remove('selected'));
+            listItemElement.classList.add('selected');
+        }
+
+        function prevRetakeQuestion() {
+            if (currentRetakeQuestionDisplayIndex > 0) {
+                currentRetakeQuestionDisplayIndex--;
+                loadRetakeQuestion(currentRetakeQuestionDisplayIndex);
+            }
+        }
+
+        function nextRetakeQuestion() {
+            if (currentRetakeQuestionDisplayIndex < mappedIncorrectQuestions.length - 1) {
+                currentRetakeQuestionDisplayIndex++;
+                loadRetakeQuestion(currentRetakeQuestionDisplayIndex);
+            }
+        }
+
+        function submitRetake() {
+            retakeSubmitted = true;
+            let score = 0;
+            mappedIncorrectQuestions.forEach(qData => {
+                const feedbackDiv = document.getElementById(\`feedback-\${qData.id}\`);
+                const selectedOptOriginalIndex = userRetakeAnswers[qData.id];
+                const isCorrectThisTime = selectedOptOriginalIndex === qData.correctOptionIndex;
+
+                if (selectedOptOriginalIndex !== undefined) {
+                    if (isCorrectThisTime) {
+                        score++;
+                        feedbackDiv.innerHTML = \`رائع! إجابة صحيحة هذه المرة. <br> \${qData.explanation ? \`<p class="explanation-text"><strong>الشرح:</strong> \${qData.explanation}</p>\` : ''}\`;
+                        feedbackDiv.className = 'feedback-area correct';
+                    } else {
+                        feedbackDiv.innerHTML = \`للأسف، إجابة خاطئة. الإجابة الصحيحة كانت: "\${qData.options[qData.correctOptionIndex]}". <br> \${qData.explanation ? \`<p class="explanation-text"><strong>الشرح:</strong> \${qData.explanation}</p>\` : ''}\`;
+                        feedbackDiv.className = 'feedback-area incorrect';
+                    }
+                } else {
+                    feedbackDiv.innerHTML = \`لم تجب على هذا السؤال في التحدي. الإجابة الصحيحة هي: "\${qData.options[qData.correctOptionIndex]}". <br> \${qData.explanation ? \`<p class="explanation-text"><strong>الشرح:</strong> \${qData.explanation}</p>\` : ''}\`;
+                    feedbackDiv.className = 'feedback-area incorrect';
+                }
+                feedbackDiv.style.display = 'block';
+                const qOptionsList = document.getElementById(\`options-\${qData.id}\`);
+                if(qOptionsList) { Array.from(qOptionsList.getElementsByTagName('li')).forEach(li => li.onclick = null); }
+            });
+
+            const resultArea = document.getElementById('result-area');
+            const scoreText = document.getElementById('score-text');
+            const feedbackMsg = document.getElementById('feedback-message');
+            scoreText.textContent = \`نتيجتك في هذا التحدي: \${score} من \${mappedIncorrectQuestions.length} (\${((score / mappedIncorrectQuestions.length) * 100).toFixed(1)}%)\`;
+
+            if (score === mappedIncorrectQuestions.length) {
+                feedbackMsg.textContent = "🎉 ممتاز! لقد أتقنت جميع الأسئلة التي أخطأت بها سابقاً. استمر في هذا التقدم!";
+                feedbackMsg.style.color = "#2e7d32";
+            } else if (score >= mappedIncorrectQuestions.length / 2) {
+                feedbackMsg.textContent = "👍 جيد جداً! لقد تحسنت كثيراً. القليل من التركيز وستتقن البقية.";
+                feedbackMsg.style.color = "#1e88e5";
+            } else {
+                feedbackMsg.textContent = "💡 لا بأس، كل خطأ هو فرصة للتعلم. راجع الشروحات وحاول مرة أخرى!";
+                feedbackMsg.style.color = "#ef6c00";
+            }
+            resultArea.style.display = 'block';
+            document.getElementById('navigation-buttons').style.display = 'none';
+            resultArea.scrollIntoView({ behavior: 'smooth' });
+        }
+
+        function restartRetake() {
+            currentRetakeQuestionDisplayIndex = 0;
+            userRetakeAnswers = {};
+            retakeSubmitted = false;
+            mappedIncorrectQuestions.forEach(qData => {
+                const feedbackDiv = document.getElementById(\`feedback-\${qData.id}\`);
+                if (feedbackDiv) { feedbackDiv.innerHTML = ''; feedbackDiv.style.display = 'none';}
+            });
+            document.getElementById('navigation-buttons').style.display = 'block';
+            document.getElementById('prev-btn').disabled = true;
+            document.getElementById('next-btn').disabled = mappedIncorrectQuestions.length <=1;
+            loadRetakeQuestion(0);
+        }
+
+        window.onload = () => {
+            incorrectQuestionsForRetake = ${questionsJson};
+            if (incorrectQuestionsForRetake.length > 0) {
+                mappedIncorrectQuestions = incorrectQuestionsForRetake.map(q => createQuestionMap(q));
+                loadRetakeQuestion(0);
+            } else {
+                document.getElementById('question-area').innerHTML = '<p class="no-questions">رائع! لم تكن لديك أي أسئلة خاطئة لمراجعتها في هذا الاختبار.</p>';
+                document.getElementById('navigation-buttons').style.display = 'none';
+                document.getElementById('progress-bar-container').style.display = 'none';
+            }
+        };
+    </script>
+</body>
+</html>`;
+      const blob = new Blob([htmlContent], { type: 'text/html;charset=utf-8' });
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `${selectedExam.name}_تحدي_الاخطاء.html`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      window.URL.revokeObjectURL(url);
+      toast({ title: "تم تحميل تحدي الأسئلة الخاطئة", description: "افتح الملف في متصفحك لبدء التحدي.", duration: 7000 });
+    };
+
+
     return (
       <div className="container py-8 max-w-4xl font-arabic animate-fadeIn">
         <Card className="mb-8 overflow-hidden shadow-xl dark:bg-slate-800/50">
@@ -1348,6 +1646,15 @@ const QiyasExamPage: React.FC = () => {
             </Button>
 
               <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
+                 {/* New Button for Incorrect Questions Challenge */}
+                <Button
+                  onClick={handleDownloadIncorrectQuestions}
+                  variant="default"
+                  className="gap-2 w-full sm:w-auto bg-red-600 hover:bg-red-700 text-white dark:bg-red-700 dark:hover:bg-red-800"
+                >
+                  <Target className="h-4 w-4" /> {/* Or RefreshCw */}
+                  🎯 تحدي الأسئلة الخاطئة
+                </Button>
                 <Button
                   onClick={() => {
                     try {

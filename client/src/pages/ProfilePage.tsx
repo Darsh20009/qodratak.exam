@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { useLocation } from "wouter";
 import { useToast } from "@/hooks/use-toast";
@@ -235,76 +234,73 @@ const ProfilePage: React.FC = () => {
 
     if (isProLife) {
       return (
-        <Card className="lg:col-span-1 overflow-hidden group/profile-card hover:shadow-2xl transition-all duration-700 bg-gradient-to-br from-slate-900 via-purple-900/50 to-pink-900/30 border-4 border-gradient-to-r from-purple-500 via-pink-500 to-amber-500 rounded-xl relative">
-          <div className="absolute inset-0 bg-gradient-to-br from-purple-600/10 via-pink-600/10 to-amber-600/10 animate-pulse pointer-events-none" />
-          <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,rgba(168,85,247,0.2),transparent_70%)] pointer-events-none" />
+        <Card className="lg:col-span-1 overflow-hidden group/profile-card hover:shadow-2xl transition-all duration-700 bg-gradient-to-br from-indigo-950 via-slate-900 to-purple-950 border-4 border-yellow-500/60 rounded-xl relative">
+          {/* Subtle background glow/sparkles */}
+          <div className="absolute inset-0 bg-gradient-to-br from-purple-700/10 via-indigo-700/5 to-yellow-600/10 animate-pulse pointer-events-none opacity-50" />
+          <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,rgba(234,179,8,0.1),transparent_70%)] pointer-events-none" />
 
-          <div className="absolute top-4 left-4 animate-bounce delay-100">
-            <DiamondIcon className="h-5 w-5 text-purple-400 animate-pulse" />
-          </div>
-          <div className="absolute top-6 right-6 animate-bounce delay-300">
-            <SparklesIcon className="h-4 w-4 text-pink-400 animate-pulse" />
-          </div>
-          <div className="absolute bottom-4 left-6 animate-bounce delay-500">
-            <GemIcon className="h-4 w-4 text-amber-400 animate-pulse" />
-          </div>
+          {/* Decorative, less random icons */}
+          <SparklesIcon className="absolute top-5 right-5 h-6 w-6 text-yellow-400 opacity-70 animate-pulse [animation-delay:200ms]" />
+          <ZapIcon className="absolute bottom-16 left-8 h-5 w-5 text-amber-300 opacity-60 animate-pulse [animation-delay:500ms]" />
+          <ShieldCheckIcon className="absolute top-1/3 left-5 h-5 w-5 text-yellow-500 opacity-70 animate-pulse [animation-delay:800ms]" />
 
-          <div className="h-48 bg-gradient-to-br from-purple-700/80 via-pink-600/60 to-amber-600/40 relative group-hover/profile-card:scale-[1.02] transition-transform duration-700">
-            <div className="absolute inset-0 bg-gradient-conic from-purple-500/20 via-transparent to-pink-500/20 animate-spin-slow opacity-60"/>
-            <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAiIGhlaWdodD0iNDAiIHZpZXdCb3g9IjAgMCA0MCA0MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4gPGcgZmlsbD0ibm9uZSIgZmlsbC1ydWxlPSJldmVub2RkIj4gPGcgZmlsbD0iIzAwMDAiIG9wYWNpdHk9IjAuMDUiPiA8Y2lyY2xlIGN4PSI0IiBjeT0iNCIgcj0iMiI+PC9jaXJjbGU+IDwvZz4gPC9nPiA8L3N2Zz4=')] opacity-30" />
+
+          <div className="h-48 bg-gradient-to-br from-indigo-800/80 via-slate-900/70 to-purple-900/60 relative group-hover/profile-card:scale-[1.02] transition-transform duration-700">
+            <div className="absolute inset-0 bg-gradient-conic from-yellow-500/15 via-transparent to-amber-500/15 animate-spin-slow opacity-60"/>
+            <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAiIGhlaWdodD0iNDAiIHZpZXdCb3g9IjAgMCA0MCA0MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4gPGcgZmlsbD0ibm9uZSIgZmlsbC1ydWxlPSJldmVub2RkIj4gPGcgZmlsbD0iI0FBQTVDRiIgb3BhY2l0eT0iMC4wNSI+IDxjaXJjbGUgY3g9IjQiIGN5PSI0IiByPSIyIj48L2NpcmNsZT4gPC9nPiA8L2c+IDwvc3ZnPg==')] opacity-20" /> {/* Adjusted opacity */}
           </div>
 
           <CardHeader className="text-center relative z-10 -mt-24">
             <div className="relative w-40 h-40 mx-auto">
-              <div className="absolute inset-0 bg-gradient-to-r from-purple-500 via-pink-500 to-amber-500 rounded-full animate-spin-slow p-1 shadow-2xl shadow-purple-500/50" />
-              <div className="w-full h-full rounded-full bg-gradient-to-br from-purple-600 to-pink-600 p-1 relative">
-                <img src={`https://api.dicebear.com/7.x/avataaars-neutral/svg?seed=${user.email || user.name}`} alt="User Avatar" className="w-full h-full rounded-full object-cover bg-white" />
-                <div className="absolute -top-2 -right-2 bg-gradient-to-r from-amber-400 to-yellow-400 rounded-full p-2 animate-bounce shadow-lg">
-                  <DiamondIcon className="h-6 w-6 text-white" />
+              <div className="absolute inset-0 bg-gradient-to-r from-yellow-500 via-amber-400 to-yellow-600 rounded-full animate-spin-slow p-1 shadow-2xl shadow-yellow-500/40" />
+              <div className="w-full h-full rounded-full bg-gradient-to-br from-indigo-700 to-purple-800 p-1 relative">
+                <img src={`https://api.dicebear.com/7.x/avataaars-neutral/svg?seed=${user.email || user.name}`} alt="User Avatar" className="w-full h-full rounded-full object-cover bg-slate-200" /> {/* Lighter bg for avatar if needed */}
+                <div className="absolute -top-2 -right-2 bg-gradient-to-r from-amber-400 to-yellow-400 rounded-full p-2 shadow-lg ring-2 ring-slate-900"> {/* Ring for better separation */}
+                  <CrownIcon className="h-6 w-6 text-white" />
                 </div>
               </div>
-              <Badge className="absolute -bottom-2 left-1/2 transform -translate-x-1/2 bg-gradient-to-r from-purple-600 to-pink-600 text-white px-4 py-2 text-sm shadow-lg border-2 border-white font-black">
-                💎 مستوى {user.level} - أسطورة
+              <Badge className="absolute -bottom-2 left-1/2 transform -translate-x-1/2 bg-gradient-to-r from-yellow-600 via-amber-500 to-yellow-600 text-slate-900 px-4 py-2 text-sm shadow-lg border-2 border-slate-800 font-black">
+                <MedalIcon className="h-4 w-4 mr-1.5 text-slate-800 inline-block" /> مستوى {user.level} - أسطورة
               </Badge>
             </div>
-            <CardTitle className="text-4xl mt-8 font-black bg-gradient-to-r from-purple-300 via-pink-300 to-amber-300 bg-clip-text text-transparent drop-shadow-lg">
+            <CardTitle className="text-4xl mt-8 font-black bg-gradient-to-r from-yellow-300 via-amber-200 to-yellow-400 bg-clip-text text-transparent drop-shadow-lg">
               {user.name}
             </CardTitle>
             <CardDescription className="flex flex-col items-center gap-3 mt-4">
-              <Badge className="border-4 border-purple-400 bg-gradient-to-r from-purple-600/80 to-pink-600/80 text-white px-6 py-3 text-lg font-black animate-pulse shadow-xl">
-                <DiamondIcon className="h-6 w-6 mr-2" />
-                👑 Pro Life - الماس الأبدي 💎
+              <Badge className="border-2 border-yellow-400/80 bg-gradient-to-r from-indigo-700/80 to-purple-800/80 text-yellow-200 px-6 py-3 text-lg font-black shadow-xl hover:shadow-yellow-400/30 transition-shadow">
+                <InfinityIcon className="h-6 w-6 mr-2 text-yellow-300" />
+                👑 Pro Life - العضوية الأبدية 💎
               </Badge>
-              <span className="text-lg text-purple-200 font-bold">عضوية مدى الحياة - لا تنتهي أبداً ✨</span>
+              <span className="text-lg text-amber-200 font-bold">عضوية مدى الحياة - تفوق كل الحدود ✨</span>
             </CardDescription>
           </CardHeader>
 
           <CardContent className="pt-4 pb-6 px-8 relative z-10">
             <div className="space-y-6">
-              <div className="bg-gradient-to-r from-purple-800/50 via-pink-800/50 to-amber-800/50 rounded-xl p-4 border border-purple-500/30">
+              <div className="bg-gradient-to-r from-indigo-900/70 via-slate-800/60 to-purple-900/70 rounded-xl p-4 border border-yellow-600/40 shadow-md">
                 <div className="flex justify-between text-sm mb-2">
-                  <span className="text-purple-200">قوة الأسطورة:</span>
-                  <span className="font-bold text-purple-100">♾️ لا نهائية</span>
+                  <span className="text-yellow-200">قوة الأسطورة:</span>
+                  <span className="font-bold text-yellow-100">♾️ لا نهائية</span>
                 </div>
-                <div className="h-3 bg-purple-900/50 rounded-full overflow-hidden">
-                  <div className="h-full bg-gradient-to-r from-purple-400 via-pink-400 to-amber-400 rounded-full animate-pulse shadow-lg"></div>
+                <div className="h-3 bg-slate-700/50 rounded-full overflow-hidden border border-yellow-700/30">
+                  <div className="h-full bg-gradient-to-r from-yellow-500 via-amber-400 to-yellow-600 rounded-full animate-pulse shadow-lg"></div>
                 </div>
               </div>
 
               <div className="pt-2">
-                <h4 className="font-black text-xl mb-4 text-center text-purple-100">👑 إحصائيات الأسطورة</h4>
+                <h4 className="font-black text-xl mb-4 text-center text-yellow-100">👑 إحصائيات الأسطورة</h4>
                 <div className="grid grid-cols-2 gap-4">
                   {[
-                    { label: "النقاط", value: user.points, icon: <Star className="w-5 h-5 text-purple-400" />, bg: "from-purple-800/60 to-purple-900/80" },
-                    { label: "الاختبارات", value: user.tests_completed || 0, icon: <BookOpen className="w-5 h-5 text-pink-400" />, bg: "from-pink-800/60 to-pink-900/80" },
-                    { label: "المتوسط", value: user.average_score || "∞", icon: <Trophy className="w-5 h-5 text-amber-400" />, bg: "from-amber-800/60 to-amber-900/80" },
-                    { label: "التحديات", value: user.challenges_won || 0, icon: <FlameIcon className="w-5 h-5 text-red-400" />, bg: "from-red-800/60 to-red-900/80" }
+                    { label: "النقاط", value: user.points, icon: <Star className="w-5 h-5 text-yellow-400" />, bg: "from-indigo-800/70 to-slate-900/80", border: "border-yellow-600/30" },
+                    { label: "الاختبارات", value: user.tests_completed || 0, icon: <BookOpen className="w-5 h-5 text-amber-400" />, bg: "from-indigo-800/70 to-slate-900/80", border: "border-amber-600/30" },
+                    { label: "المتوسط", value: user.average_score || "∞", icon: <Trophy className="w-5 h-5 text-yellow-500" />, bg: "from-indigo-800/70 to-slate-900/80", border: "border-yellow-700/30" },
+                    { label: "التحديات", value: user.challenges_won || 0, icon: <FlameIcon className="w-5 h-5 text-red-400" />, bg: "from-indigo-800/70 to-slate-900/80", border: "border-red-600/30" }
                   ].map(stat => (
-                    <div key={stat.label} className={`bg-gradient-to-br ${stat.bg} rounded-xl p-4 text-center group/stat hover:shadow-xl hover:scale-105 transition-all duration-300 cursor-pointer border border-white/10`}>
-                      <div className="flex items-center justify-center gap-2 text-3xl font-black text-white mb-2 group-hover/stat:scale-110 transition-transform">
+                    <div key={stat.label} className={`bg-gradient-to-br ${stat.bg} rounded-xl p-4 text-center group/stat hover:shadow-xl hover:scale-105 transition-all duration-300 cursor-pointer border ${stat.border} hover:border-yellow-400/50`}>
+                      <div className="flex items-center justify-center gap-2 text-3xl font-black text-white mb-2 group-hover/stat:scale-110 transition-transform group-hover/stat:text-yellow-300">
                         {stat.icon} {stat.value}
                       </div>
-                      <div className="text-xs text-gray-200 font-bold">{stat.label}</div>
+                      <div className="text-xs text-gray-300 group-hover/stat:text-yellow-200 font-bold">{stat.label}</div>
                     </div>
                   ))}
                 </div>
@@ -312,8 +308,8 @@ const ProfilePage: React.FC = () => {
             </div>
           </CardContent>
 
-          <CardFooter className="p-6 border-t border-purple-500/30 bg-gradient-to-r from-purple-900/30 to-pink-900/30">
-            <Button onClick={handleLogout} variant="ghost" className="w-full text-purple-200 hover:bg-purple-500/20 hover:text-white font-bold border border-purple-500/30">
+          <CardFooter className="p-6 border-t border-yellow-600/30 bg-gradient-to-r from-indigo-950/50 to-purple-950/40">
+            <Button onClick={handleLogout} variant="outline" className="w-full text-yellow-300 border-yellow-500/70 hover:bg-yellow-500/10 hover:text-yellow-100 hover:border-yellow-400 font-bold transition-colors duration-300">
               تسجيل الخروج
             </Button>
           </CardFooter>
@@ -357,7 +353,7 @@ const ProfilePage: React.FC = () => {
                 const today = new Date();
                 const diffTime = endDate.getTime() - today.getTime();
                 const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-                
+
                 return (
                   <div className="flex flex-col items-center gap-1">
                     <span className="text-sm text-amber-600 dark:text-amber-400">
@@ -401,21 +397,21 @@ const ProfilePage: React.FC = () => {
                       { label: "المتوسط", value: user.average_score || "N/A", icon: <Trophy className="w-4 h-4 text-amber-700" /> },
                       { label: "التحديات", value: user.challenges_won || 0, icon: <Award className="w-4 h-4 text-amber-800" /> }
                     ];
-                    
+
                     // إضافة الأيام المتبقية إذا كان لديه تاريخ انتهاء
                     if (user.subscription.endDate) {
                       const endDate = new Date(user.subscription.endDate);
                       const today = new Date();
                       const diffTime = endDate.getTime() - today.getTime();
                       const diffDays = Math.max(0, Math.ceil(diffTime / (1000 * 60 * 60 * 24)));
-                      
+
                       baseStats.push({
                         label: "أيام متبقية",
                         value: diffDays,
                         icon: <svg className="w-4 h-4 text-amber-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
                       });
                     }
-                    
+
                     return baseStats;
                   })().map(stat => (
                     <div key={stat.label} className="bg-amber-50 dark:bg-amber-900/20 rounded-lg p-3 text-center group/stat hover:shadow-md hover:scale-105 transition-all duration-300 cursor-pointer border border-amber-200 dark:border-amber-700">
