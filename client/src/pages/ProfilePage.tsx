@@ -1,7 +1,4 @@
-` tags. I will pay close attention to indentation, structure, and completeness. I will focus on implementing the profile customization based on subscription type as described in the intention.
 
-```
-<replit_final_file>
 import React, { useState, useEffect } from "react";
 import { useLocation } from "wouter";
 import { useToast } from "@/hooks/use-toast";
@@ -130,7 +127,6 @@ const ProfilePage: React.FC = () => {
     defaultValues: { username: "", password: "", confirmPassword: "" },
   });
 
-  // --- API Handlers with Creative Toasts ---
   const onLoginSubmit = async (data: LoginFormValues) => {
     setIsLoading(true);
     try {
@@ -230,7 +226,6 @@ const ProfilePage: React.FC = () => {
     });
   };
 
-  // --- Profile Component based on subscription type ---
   const renderProfileCard = () => {
     if (!user) return null;
 
@@ -238,15 +233,12 @@ const ProfilePage: React.FC = () => {
     const isPro = user.subscription.type === 'Pro';
     const isFree = user.subscription.type === 'free';
 
-    // Pro Life Profile - Ultra Luxury
     if (isProLife) {
       return (
         <Card className="lg:col-span-1 overflow-hidden group/profile-card hover:shadow-2xl transition-all duration-700 bg-gradient-to-br from-slate-900 via-purple-900/50 to-pink-900/30 border-4 border-gradient-to-r from-purple-500 via-pink-500 to-amber-500 rounded-xl relative">
-          {/* Background Effects */}
           <div className="absolute inset-0 bg-gradient-to-br from-purple-600/10 via-pink-600/10 to-amber-600/10 animate-pulse pointer-events-none" />
           <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,rgba(168,85,247,0.2),transparent_70%)] pointer-events-none" />
 
-          {/* Floating Gems */}
           <div className="absolute top-4 left-4 animate-bounce delay-100">
             <DiamondIcon className="h-5 w-5 text-purple-400 animate-pulse" />
           </div>
@@ -257,7 +249,6 @@ const ProfilePage: React.FC = () => {
             <GemIcon className="h-4 w-4 text-amber-400 animate-pulse" />
           </div>
 
-          {/* Header with premium background */}
           <div className="h-48 bg-gradient-to-br from-purple-700/80 via-pink-600/60 to-amber-600/40 relative group-hover/profile-card:scale-[1.02] transition-transform duration-700">
             <div className="absolute inset-0 bg-gradient-conic from-purple-500/20 via-transparent to-pink-500/20 animate-spin-slow opacity-60"/>
             <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAiIGhlaWdodD0iNDAiIHZpZXdCb3g9IjAgMCA0MCA0MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4gPGcgZmlsbD0ibm9uZSIgZmlsbC1ydWxlPSJldmVub2RkIj4gPGcgZmlsbD0iIzAwMDAiIG9wYWNpdHk9IjAuMDUiPiA8Y2lyY2xlIGN4PSI0IiBjeT0iNCIgcj0iMiI+PC9jaXJjbGU+IDwvZz4gPC9nPiA8L3N2Zz4=')] opacity-30" />
@@ -330,14 +321,11 @@ const ProfilePage: React.FC = () => {
       );
     }
 
-    // Pro Profile - Premium Gold
     if (isPro) {
       return (
         <Card className="lg:col-span-1 overflow-hidden group/profile-card hover:shadow-xl transition-all duration-500 bg-gradient-to-br from-amber-50 via-yellow-50 to-orange-50 dark:from-amber-950/20 dark:via-yellow-950/10 dark:to-orange-950/20 border-3 border-gradient-to-r from-amber-400 to-yellow-500 rounded-xl relative">
-          {/* Golden glow effect */}
           <div className="absolute inset-0 bg-gradient-to-br from-amber-400/10 via-yellow-400/5 to-orange-400/10 animate-pulse pointer-events-none" />
 
-          {/* Golden crown floating */}
           <div className="absolute top-4 right-4 animate-bounce">
             <CrownIcon className="h-6 w-6 text-amber-500 animate-pulse" />
           </div>
@@ -414,7 +402,6 @@ const ProfilePage: React.FC = () => {
       );
     }
 
-    // Free Profile - Simple and Clean
     return (
       <Card className="lg:col-span-1 overflow-hidden group/profile-card hover:shadow-lg transition-all duration-300 bg-card border rounded-xl">
         <div className="h-32 bg-gradient-to-br from-primary/20 via-primary/10 to-primary/5 relative group-hover/profile-card:scale-[1.01] transition-transform duration-300">
@@ -482,17 +469,14 @@ const ProfilePage: React.FC = () => {
     );
   };
 
-  // --- Logged In View ---
   if (isLoggedIn && user) {
     const achievementProgress = (achievementsData.filter(ach => user.points >= (ach.id * 100)).length / achievementsData.length) * 100;
 
     return (
       <div className="container py-8 px-4 mx-auto animate-fade-in-up">
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          {/* Profile Card - Dynamic based on subscription */}
           {renderProfileCard()}
 
-          {/* Activity and Achievements */}
           <div className="lg:col-span-2 space-y-6">
             <Card className="hover:shadow-lg transition-shadow duration-300">
               <CardHeader>
@@ -562,10 +546,8 @@ const ProfilePage: React.FC = () => {
     );
   }
 
-  // --- Not Logged In View (Auth Forms) - Keep existing code ---
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-gray-900 to-slate-900 text-gray-100 relative overflow-hidden flex items-center justify-center p-4">
-      {/* Background Visuals - Creative */}
       <div className="absolute inset-0 -z-10">
         <div className="absolute inset-0 bg-[radial-gradient(circle_800px_at_50%_100px,rgba(var(--color-primary-rgb),0.15),transparent_80%)] animate-pulse-slow" />
         <div className="absolute bottom-0 left-0 w-full h-1/2 bg-gradient-to-t from-primary/10 via-primary/5 to-transparent" />
@@ -605,7 +587,6 @@ const ProfilePage: React.FC = () => {
             ))}
           </TabsList>
 
-          {/* Login Tab */}
           <TabsContent value="login">
             <Card className="border-0 shadow-none bg-transparent rounded-none">
               <CardHeader className="pt-6 px-6 sm:px-8 text-center">
@@ -660,7 +641,6 @@ const ProfilePage: React.FC = () => {
             </Card>
           </TabsContent>
 
-          {/* Register Tab */}
           <TabsContent value="register">
             <Card className="border-0 shadow-none bg-transparent rounded-none">
               <CardHeader className="pt-6 px-6 sm:px-8 text-center">
@@ -714,7 +694,6 @@ const ProfilePage: React.FC = () => {
             </Card>
           </TabsContent>
 
-          {/* Recover Tab */}
           <TabsContent value="recover">
             <Card className="border-0 shadow-none bg-transparent rounded-none">
               <CardHeader className="pt-6 px-6 sm:px-8 text-center">
