@@ -222,7 +222,38 @@ const QiyasExamPage: React.FC = () => {
     }
   }, [timeLeft, currentView, isPrayerBreak]);
 
-  // Prayer break overlay
+  // Prayer Break Overlay
+  const renderPrayerBreakOverlay = () => {
+    if (!isPrayerBreak) return null;
+
+    return (
+      <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center">
+        <div className="bg-white dark:bg-gray-900 p-8 rounded-xl max-w-md w-full mx-4 text-center space-y-6">
+          <div className="w-20 h-20 bg-orange-100 dark:bg-orange-900/20 rounded-full flex items-center justify-center mx-auto">
+            <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-orange-600 dark:text-orange-400">
+              <path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1-2.5-2.5Z"></path>
+              <path d="M12 13V7"></path>
+              <path d="M12 17v-0.5"></path>
+            </svg>
+          </div>
+          <div>
+            <h3 className="text-2xl font-bold mb-2">وقت الصلاة</h3>
+            <p className="text-gray-600 dark:text-gray-300">
+              تم إيقاف الاختبار مؤقتاً للصلاة. يمكنك استئناف الاختبار بعد الانتهاء من الصلاة.
+            </p>
+          </div>
+          <Button 
+            onClick={() => setIsPrayerBreak(false)}
+            className="w-full"
+          >
+            استئناف الاختبار
+          </Button>
+        </div>
+      </div>
+    );
+  };
+
+  // Prayer Break Effect
   useEffect(() => {
     if (isPrayerBreak) {
       toast({
@@ -442,14 +473,14 @@ const QiyasExamPage: React.FC = () => {
     const stats = calculateExamStats();
     const currentDate = new Date().toISOString();
     const examType = selectedExam?.name || "اختبار قياس";
-    
+
     // Save exam data
     const storageKey = `exam_data_${examType}_${new Date(currentDate).getTime()}`;
     localStorage.setItem(storageKey, JSON.stringify({
       questions: questions,
       userAnswers: answers
     }));
-    
+
     // Save to exam records
     const storedRecords = localStorage.getItem('examRecords') || '[]';
     const records = JSON.parse(storedRecords);
@@ -750,6 +781,9 @@ const QiyasExamPage: React.FC = () => {
 
     return (
       <div className="container py-6 max-w-4xl">
+        {/* Prayer Break Overlay */}
+        {renderPrayerBreakOverlay()}
+
         {/* Header with progress & timer */}
         <div className="flex justify-between items-center mb-4">
           <div>
