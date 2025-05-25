@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { useLocation } from "wouter";
 import { useToast } from "@/hooks/use-toast";
 import {
@@ -39,10 +39,17 @@ import {
   BookOpen,
   ArrowRightIcon,
   CheckCircle,
-  LockIcon
+  LockIcon,
+  Sparkles,
+  Brain,
+  Atom,
+  Palette,
+  Moon,
+  Star,
+  CloudSun,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { TestType } from "@shared/types";
+import { TestType } from "@shared/types"; // Assuming TestType is "verbal" | "quantitative" | "mixed"
 
 // Types for Qiyas exams
 interface QiyasSection {
@@ -58,13 +65,17 @@ interface QiyasExam {
   name: string;
   description?: string;
   totalSections: number;
-  totalQuestions: number;
+  totalQuestions: number; // Total questions presented to the user
   totalTime: number; // in minutes
   sections: QiyasSection[];
   isQiyas?: boolean;
   requiresSubscription?: boolean;
   isMockExam?: boolean;
   hideQuestionReview?: boolean;
+  overallCategory?: TestType; // For exams primarily of one type
+  nonScoredCount?: number; // Number of questions not counted in score
+  themeColor?: string; // For creative exam selection
+  icon?: React.ElementType; // For creative exam selection
 }
 
 interface ExamQuestion {
@@ -73,21 +84,30 @@ interface ExamQuestion {
   options: string[];
   correctOptionIndex: number;
   category: TestType;
-  section: number;
-  explanation?: string; // Added explanation field
+  section: number; 
+  explanation?: string;
 }
+
+interface ProcessedExamQuestion extends ExamQuestion {
+  _isNonScored?: boolean; 
+  _globalIndex?: number; 
+}
+
 
 // Mock data for Qiyas exams
 const qiyasExams: QiyasExam[] = [
   {
     id: 1,
     name: "اختبار قدراتك التأهيلي",
-    description: "اختبار تأهيلي شامل يتكون من سبعة أقسام متنوعة بين اللفظي والكمي",
+    description: "اختبار تأهيلي شامل يتكون من سبعة أقسام متنوعة بين اللفظي والكمي. يتضمن 20 سؤالاً تجريبياً غير محسوب للمساعدة.",
     totalSections: 7,
-    totalQuestions: 120,
+    totalQuestions: 120, 
     totalTime: 120,
     isQiyas: true,
     requiresSubscription: true,
+    nonScoredCount: 20, 
+    themeColor: "from-blue-500 to-indigo-600",
+    icon: Brain,
     sections: [
       { sectionNumber: 1, name: "القسم الأول", category: "mixed", questionCount: 24, timeLimit: 24 },
       { sectionNumber: 2, name: "القسم الثاني", category: "mixed", questionCount: 24, timeLimit: 24 },
@@ -102,12 +122,14 @@ const qiyasExams: QiyasExam[] = [
     id: 2,
     name: "اختبار لفظي - 65 سؤال",
     description: "اختبار قدرات لفظي شامل يحاكي نموذج قياس: 65 سؤال في 65 دقيقة مع الشرح المفصل",
-    type: "verbal",
+    overallCategory: "verbal",
     totalSections: 1,
     totalQuestions: 65,
     totalTime: 65,
     isMockExam: true,
     requiresSubscription: true,
+    themeColor: "from-green-500 to-emerald-600",
+    icon: Palette,
     sections: [
       {
         sectionNumber: 1,
@@ -122,12 +144,14 @@ const qiyasExams: QiyasExam[] = [
     id: 3,
     name: "اختبار كمي - 55 سؤال",
     description: "اختبار قدرات كمي شامل يحاكي نموذج قياس: 55 سؤال في 55 دقيقة مع الشرح المفصل",
-    type: "quantitative",
+    overallCategory: "quantitative",
     totalSections: 1,
     totalQuestions: 55,
     totalTime: 55,
     isMockExam: true,
     requiresSubscription: true,
+    themeColor: "from-red-500 to-orange-600",
+    icon: Atom,
     sections: [
       {
         sectionNumber: 1,
@@ -138,16 +162,18 @@ const qiyasExams: QiyasExam[] = [
       }
     ]
   },
-
   {
     id: 4,
     name: "اختبار قياس عام 2025",
-    description: "اختبار محاكاة كامل يتبع النموذج الرسمي لاختبار قياس: 65 سؤال لفظي و 55 سؤال كمي",
+    description: "اختبار محاكاة كامل يتبع النموذج الرسمي لاختبار قياس. يتضمن 20 سؤالاً تجريبياً غير محسوب للمساعدة.",
     totalSections: 7,
-    totalQuestions: 120,
+    totalQuestions: 120, 
     totalTime: 120,
     requiresSubscription: false,
     hideQuestionReview: true,
+    nonScoredCount: 20, 
+    themeColor: "from-purple-500 to-pink-600",
+    icon: Sparkles,
     sections: [
       { sectionNumber: 1, name: "القسم الأول", category: "mixed", questionCount: 24, timeLimit: 24 },
       { sectionNumber: 2, name: "القسم الثاني", category: "mixed", questionCount: 24, timeLimit: 24 },
@@ -165,6 +191,8 @@ const qiyasExams: QiyasExam[] = [
     totalSections: 2,
     totalQuestions: 20,
     totalTime: 20,
+    themeColor: "from-yellow-500 to-amber-600",
+    icon: CloudSun,
     sections: [
       { sectionNumber: 1, name: "قدرات لفظية", category: "verbal", questionCount: 10, timeLimit: 10 },
       { sectionNumber: 2, name: "قدرات كمية", category: "quantitative", questionCount: 10, timeLimit: 10 },
@@ -174,578 +202,616 @@ const qiyasExams: QiyasExam[] = [
 
 // Main component
 const QiyasExamPage: React.FC = () => {
-  const [location, setLocation] = useLocation();
+  const [, setLocation] = useLocation();
   const { toast } = useToast();
-  const [user, setUser] = useState<any>(null);
+  const [user, setUser] = useState<any>(null); // Replace 'any' with your User type
 
   useEffect(() => {
     const storedUser = localStorage.getItem('user');
     if (storedUser) {
-      setUser(JSON.parse(storedUser));
+      try {
+        setUser(JSON.parse(storedUser));
+      } catch (error) {
+        console.error("Failed to parse user from localStorage", error);
+        localStorage.removeItem('user'); // Clear corrupted user data
+      }
     }
   }, []);
 
-  // States for exam selection and progress
   const [selectedExam, setSelectedExam] = useState<QiyasExam | null>(null);
   const [currentView, setCurrentView] = useState<"selection" | "instructions" | "inProgress" | "results">("selection");
-  const [currentSection, setCurrentSection] = useState(0);
-  const [currentQuestion, setCurrentQuestion] = useState(0);
+  const [currentSectionIdx, setCurrentSectionIdx] = useState(0);
+  const [currentQuestionIdx, setCurrentQuestionIdx] = useState(0);
   const [timeLeft, setTimeLeft] = useState(0);
-  const [showExamResults, setShowExamResults] = useState(false);
 
-  // States for question answers
-  const [questions, setQuestions] = useState<ExamQuestion[]>([]);
-  const [answers, setAnswers] = useState<{[questionId: number]: number}>({});
+  const [questions, setQuestions] = useState<ProcessedExamQuestion[]>([]);
+  const [answers, setAnswers] = useState<{[questionId: number]: number}>({}); // questionId maps to selectedOptionIndex
   const [selectedAnswer, setSelectedAnswer] = useState<number | null>(null);
 
-  // Stats for results
-  const [sectionScores, setSectionScores] = useState<{[sectionNumber: number]: number}>({});
+  const [sectionScores, setSectionScores] = useState<{[sectionNumber: number]: { score: number, scoredQuestionsCount: number } }>({});
   const [examStartTime, setExamStartTime] = useState<Date | null>(null);
-  const [examEndTime, setExamEndTime] = useState<Date | null>(null);
 
-  // Store questions for all sections to show in results
-  const [allSectionsQuestions, setAllSectionsQuestions] = useState<{[sectionNumber: number]: ExamQuestion[]}>({});
+  const [allProcessedQuestionsBySection, setAllProcessedQuestionsBySection] = useState<{[sectionNumber: number]: ProcessedExamQuestion[]}>({});
 
-  // Prayer Break Functionality
   const [isPrayerBreak, setIsPrayerBreak] = useState(false);
 
-  // Timer for the test
   useEffect(() => {
+    let timerId: NodeJS.Timeout;
     if (currentView === "inProgress" && timeLeft > 0 && !isPrayerBreak) {
-      const timer = setTimeout(() => {
+      timerId = setTimeout(() => {
         setTimeLeft(prev => prev - 1);
       }, 1000);
-
-      return () => clearTimeout(timer);
-    } else if (timeLeft === 0 && currentView === "inProgress") {
+    } else if (timeLeft === 0 && currentView === "inProgress" && selectedExam && !isPrayerBreak) {
+        toast({
+            title: "الوقت انتهى",
+            description: `انتهى وقت القسم الحالي. سيتم نقلك للقسم التالي أو لصفحة النتائج.`,
+            duration: 4000,
+        });
       moveToNextSection();
     }
-  }, [timeLeft, currentView, isPrayerBreak]);
+    return () => clearTimeout(timerId);
+  }, [timeLeft, currentView, isPrayerBreak, selectedExam]);
 
-  // Prayer Break Overlay
+
   const renderPrayerBreakOverlay = () => {
     if (!isPrayerBreak) return null;
-
     return (
-      <div className="fixed inset-0 bg-gradient-to-br from-black/90 to-black/70 backdrop-blur-sm z-50 flex items-center justify-center">
-        <div className="bg-white dark:bg-gray-900 p-8 rounded-xl max-w-md w-full mx-4 text-center space-y-6 relative overflow-hidden shadow-2xl border border-orange-200 dark:border-orange-800">
-          <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-orange-400 via-orange-500 to-orange-600"></div>
-          <div className="w-24 h-24 bg-gradient-to-br from-orange-100 to-orange-200 dark:from-orange-900/30 dark:to-orange-800/20 rounded-full flex items-center justify-center mx-auto transform transition-transform hover:scale-110">
-            <div className="relative">
-              <svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-orange-600 dark:text-orange-400">
-                <path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1-2.5-2.5Z"></path>
-                <path d="M12 13V7"></path>
-                <path d="M12 17v-0.5"></path>
-              </svg>
-              <div className="absolute -bottom-1 left-1/2 transform -translate-x-1/2 w-8 h-1 bg-orange-400/50 rounded-full blur-sm"></div>
+      <div className="fixed inset-0 bg-black/80 backdrop-blur-lg z-[100] flex items-center justify-center p-4 font-arabic animate-fadeIn">
+        <div className="bg-white dark:bg-gray-950 p-8 rounded-2xl max-w-lg w-full mx-auto text-center space-y-8 relative overflow-hidden shadow-2xl border border-orange-300 dark:border-orange-700">
+          <div className="absolute -top-1/3 -right-1/4 w-72 h-72 bg-orange-400/20 dark:bg-orange-500/10 rounded-full filter blur-3xl animate-pulse-slow"></div>
+          <div className="absolute -bottom-1/3 -left-1/4 w-72 h-72 bg-teal-400/20 dark:bg-teal-500/10 rounded-full filter blur-3xl animate-pulse-slow animation-delay-2000"></div>
+
+          <div className="relative z-10">
+            <div className="w-28 h-28 bg-gradient-to-br from-orange-100 via-orange-200 to-yellow-200 dark:from-gray-800 dark:via-gray-800/70 dark:to-gray-900 rounded-full flex items-center justify-center mx-auto mb-6 shadow-lg transform transition-transform hover:scale-110 duration-300">
+                <Moon className="h-16 w-16 text-orange-500 dark:text-orange-400 animate-pulse-slow"/>
             </div>
-          </div>
-          <div className="relative">
-            <h3 className="text-3xl font-bold mb-3 bg-gradient-to-r from-orange-600 to-orange-400 dark:from-orange-400 dark:to-orange-300 text-transparent bg-clip-text">وقت الصلاة</h3>
-            <p className="text-gray-600 dark:text-gray-300 leading-relaxed">
-              حان وقت الصلاة 🕌 
-              <br />
-              <span className="text-sm opacity-90">تم إيقاف الاختبار مؤقتاً. خذ وقتك في أداء الصلاة بخشوع.</span>
+            <h3 className="text-4xl font-bold mb-4 bg-gradient-to-r from-orange-500 to-yellow-400 dark:from-orange-400 dark:to-yellow-300 text-transparent bg-clip-text">
+              استراحة للصلاة
+            </h3>
+            <p className="text-gray-700 dark:text-gray-300 leading-relaxed text-lg">
+              تقبّل الله طاعتكم <Star className="inline h-5 w-5 text-yellow-400" />
+            </p>
+            <p className="text-gray-600 dark:text-gray-400 text-sm mt-2">
+              تم إيقاف الاختبار مؤقتاً. عند الانتهاء، يمكنك استئناف الاختبار.
             </p>
           </div>
+
           <Button 
             onClick={() => setIsPrayerBreak(false)}
-            className="w-full bg-gradient-to-r from-orange-600 to-orange-500 hover:from-orange-500 hover:to-orange-400 transition-all duration-300 shadow-lg hover:shadow-orange-500/25"
+            className="w-full bg-gradient-to-r from-orange-500 to-yellow-500 hover:from-orange-600 hover:to-yellow-600 transition-all duration-300 shadow-xl hover:shadow-orange-500/30 dark:shadow-orange-400/20 text-lg py-3 rounded-xl relative z-10"
           >
             استئناف الاختبار
           </Button>
-          <div className="text-xs text-gray-400 dark:text-gray-500 mt-4">
-            "إِنَّ الصَّلَاةَ كَانَتْ عَلَى الْمُؤْمِنِينَ كِتَابًا مَوْقُوتًا"
+          <div className="text-xs text-gray-500 dark:text-gray-500 mt-6 relative z-10">
+            "إِنَّ الصَّلَاةَ كَانَتْ عَلَى الْمُؤْمِنِينَ كِتَابًا مَوْقُوتًا" <span className="opacity-70">(النساء: 103)</span>
           </div>
         </div>
       </div>
     );
   };
 
-  // Prayer Break Effect
   useEffect(() => {
     if (isPrayerBreak) {
       toast({
         title: "وقت الصلاة",
         description: "تم إيقاف الاختبار مؤقتاً. يمكنك استئناف الاختبار بعد الانتهاء من الصلاة.",
-        duration: 5000,
+        duration: 7000,
       });
     }
-  }, [isPrayerBreak]);
+  }, [isPrayerBreak, toast]);
 
-  // Format time from seconds to MM:SS
   const formatTime = (seconds: number): string => {
     const minutes = Math.floor(seconds / 60);
     const remainingSeconds = seconds % 60;
     return `${minutes.toString().padStart(2, '0')}:${remainingSeconds.toString().padStart(2, '0')}`;
   };
 
-  // Load exam data
   const loadExam = (exam: QiyasExam) => {
     setSelectedExam(exam);
     setCurrentView("instructions");
   };
 
-  // Start the exam
-  const startExam = async () => {
-    if (!selectedExam) return;
-
-    // Clear previous state
-    setCurrentSection(0);
-    setCurrentQuestion(0);
-    setAnswers({});
-    setSectionScores({});
-    setShowExamResults(false);
-    setAllSectionsQuestions({});
-
+  const fetchRawQuestionsForSectionConfig = async (section: QiyasSection): Promise<ExamQuestion[]> => {
     try {
-      // In a real app, this would fetch questions from the API
-      // For now, we'll simulate loading questions
-      const firstSection = selectedExam.sections[0];
-      const examQuestions: ExamQuestion[] = await fetchQuestionsForSection(firstSection);
-      setQuestions(examQuestions);
-
-      // Store questions for the first section
-      setAllSectionsQuestions({ [firstSection.sectionNumber]: examQuestions });
-
-      // Set time limit for the first section
-      setTimeLeft(selectedExam.sections[0].timeLimit * 60);
-
-      // Record exam start time
-      setExamStartTime(new Date());
-
-      // Switch to exam view
-      setCurrentView("inProgress");
-    } catch (error) {
-      toast({
-        title: "خطأ",
-        description: "فشل في تحميل أسئلة الاختبار",
-        variant: "destructive",
-      });
-    }
-  };
-
-  // Fetch questions for a section (simulated)
-  const fetchQuestionsForSection = async (section: QiyasSection): Promise<ExamQuestion[]> => {
-    try {
-      const response = await fetch('/api/questions');
+      // In a real app, this endpoint would be more sophisticated, e.g., /api/questions?category=X&count=Y
+      const response = await fetch('/api/questions'); 
       if (!response.ok) {
-        throw new Error(`Failed to fetch questions. Status: ${response.status}`);
+        throw new Error(`فشل في جلب الأسئلة من الخادم: ${response.status}`);
       }
-      const allQuestions = await response.json();
+      const allAvailableQuestions: ExamQuestion[] = await response.json();
+
+      let filteredQuestions: ExamQuestion[];
 
       if (section.category === "mixed") {
-        // For mixed sections, get 13 verbal and 11 quantitative questions
-        const verbalQuestions = allQuestions
+        const verbalCount = Math.ceil(section.questionCount * 0.55); // Slightly more verbal for typical mixed
+        const quantitativeCount = section.questionCount - verbalCount;
+
+        const verbalQuestions = allAvailableQuestions
           .filter(q => q.category === "verbal")
           .sort(() => 0.5 - Math.random())
-          .slice(0, 13);
+          .slice(0, verbalCount);
 
-        const quantitativeQuestions = allQuestions
+        const quantitativeQuestions = allAvailableQuestions
           .filter(q => q.category === "quantitative")
           .sort(() => 0.5 - Math.random())
-          .slice(0, 11);
+          .slice(0, quantitativeCount);
 
-        // Return verbal questions first, then quantitative
-        return [...verbalQuestions, ...quantitativeQuestions];
+        filteredQuestions = [...verbalQuestions, ...quantitativeQuestions].sort(() => 0.5 - Math.random()).slice(0, section.questionCount);
       } else {
-        // For regular sections (verbal or quantitative)
-        const sectionQuestions = allQuestions
+        filteredQuestions = allAvailableQuestions
           .filter(q => q.category === section.category)
           .sort(() => 0.5 - Math.random())
           .slice(0, section.questionCount);
-
-        return sectionQuestions;
       }
+
+      if (filteredQuestions.length < section.questionCount) {
+         console.warn(`Warning: Fetched ${filteredQuestions.length} for section ${section.name} (expected ${section.questionCount}). Padding...`);
+         while (filteredQuestions.length < section.questionCount && allAvailableQuestions.length > 0) { // Pad with random from available
+            const randomQ = allAvailableQuestions[Math.floor(Math.random() * allAvailableQuestions.length)];
+            // Ensure unique ID if adding duplicates for padding in a real scenario
+            filteredQuestions.push({...randomQ, id: Math.random() * 1000000 + (randomQ.id || 0) }); 
+         }
+         if (filteredQuestions.length === 0 && section.questionCount > 0) {
+            // Create placeholder questions if API fails completely for a section
+            return Array.from({ length: section.questionCount }, (_, i) => ({
+                id: Date.now() + i, // Unique ID
+                text: `نص سؤال تجريبي ${i + 1} (فئة: ${section.category}) - حدث خطأ في التحميل`,
+                options: ["خيار 1", "خيار 2", "خيار 3", "خيار 4"],
+                correctOptionIndex: 0,
+                category: section.category,
+                section: section.sectionNumber,
+                explanation: "هذا سؤال تجريبي بسبب خطأ في تحميل الأسئلة الأصلية."
+            }));
+         }
+      }
+      return filteredQuestions.map(q => ({...q, section: section.sectionNumber, id: q.id || Date.now() + Math.random()})); // Ensure ID
     } catch (error) {
-      console.error('Error fetching questions:', error);
-      throw error;
+      console.error(`Error fetching raw questions for section ${section.name}:`, error);
+      toast({ title: "خطأ في تحميل الأسئلة", description: `لم نتمكن من تحميل أسئلة قسم "${section.name}".`, variant: "destructive"});
+      // Return placeholder questions on error to prevent crash
+      return Array.from({ length: section.questionCount }, (_, i) => ({
+        id: Date.now() + i, text: `Placeholder Question ${i+1} for ${section.name}`, options: ["A","B","C","D"], correctOptionIndex:0, category: section.category, section: section.sectionNumber
+      }));
     }
   };
 
-  // Select an answer for the current question
-  const selectAnswer = (index: number) => {
-    setSelectedAnswer(index);
-
-    // Store the answer
-    if (questions[currentQuestion]) {
-      const questionId = questions[currentQuestion].id;
-      setAnswers(prev => ({ ...prev, [questionId]: index }));
-    }
-  };
-
-  // Move to the next question
-  const goToNextQuestion = () => {
-    if (currentQuestion < questions.length - 1) {
-      setCurrentQuestion(prev => prev + 1);
-      setSelectedAnswer(null);
-    } else {
-      // Last question of the section
-      moveToNextSection();
-    }
-  };
-
-  // Move to previous question
-  const goToPreviousQuestion = () => {
-    if (currentQuestion > 0) {
-      setCurrentQuestion(prev => prev - 1);
-      // Set the selected answer to the previously selected one
-      const questionId = questions[currentQuestion - 1].id;
-      setSelectedAnswer(answers[questionId] ?? null);
-    }
-  };
-
-  // Move to the next section or finish the exam
-  const moveToNextSection = async () => {
+  const startExam = async () => {
     if (!selectedExam) return;
 
-    // Calculate score for current section
-    calculateSectionScore();
+    setCurrentSectionIdx(0);
+    setCurrentQuestionIdx(0);
+    setAnswers({});
+    setSectionScores({});
+    setAllProcessedQuestionsBySection({});
+    setQuestions([]);
+    setSelectedAnswer(null);
 
-    // Check if this was the last section
-    if (currentSection >= selectedExam.sections.length - 1) {
+    try {
+      let flatListOfAllRawQuestions: ExamQuestion[] = [];
+      for (const section of selectedExam.sections) {
+        const rawQs = await fetchRawQuestionsForSectionConfig(section);
+        flatListOfAllRawQuestions.push(...rawQs);
+      }
+
+      // Ensure total fetched questions match totalQuestions for accurate non-scored distribution
+      if (flatListOfAllRawQuestions.length !== selectedExam.totalQuestions) {
+          console.warn(`Mismatch: Fetched ${flatListOfAllRawQuestions.length} raw questions, expected ${selectedExam.totalQuestions}. Non-scored distribution might be affected.`);
+          // Adjust flatListOfAllRawQuestions to match totalQuestions if necessary (e.g. slice or pad further)
+          if (flatListOfAllRawQuestions.length > selectedExam.totalQuestions) {
+            flatListOfAllRawQuestions = flatListOfAllRawQuestions.slice(0, selectedExam.totalQuestions);
+          } // Padding already handled in fetchRawQuestionsForSectionConfig to some extent
+      }
+
+
+      const numNonScored = selectedExam.nonScoredCount || 0;
+      const nonScoredGlobalIndices = new Set<number>();
+
+      if (numNonScored > 0 && flatListOfAllRawQuestions.length > 0) {
+        const totalIndices = Array.from({ length: flatListOfAllRawQuestions.length }, (_, i) => i);
+        for (let i = totalIndices.length - 1; i > 0; i--) { 
+          const j = Math.floor(Math.random() * (i + 1));
+          [totalIndices[i], totalIndices[j]] = [totalIndices[j], totalIndices[i]];
+        }
+        for (let i = 0; i < Math.min(numNonScored, totalIndices.length) ; i++) { // Ensure not to pick more than available
+          nonScoredGlobalIndices.add(totalIndices[i]);
+        }
+      }
+
+      const processedQuestionsMap: {[sectionNumber: number]: ProcessedExamQuestion[]} = {};
+      let currentGlobalIndex = 0;
+      let cumulativeQuestionCount = 0;
+
+      for (const section of selectedExam.sections) {
+        const questionsForThisSection = flatListOfAllRawQuestions.slice(cumulativeQuestionCount, cumulativeQuestionCount + section.questionCount);
+
+        processedQuestionsMap[section.sectionNumber] = questionsForThisSection.map(q => {
+          const isNonScored = nonScoredGlobalIndices.has(currentGlobalIndex);
+          const processedQ: ProcessedExamQuestion = {
+            ...q,
+            _isNonScored: isNonScored,
+            _globalIndex: currentGlobalIndex,
+          };
+          currentGlobalIndex++;
+          return processedQ;
+        });
+        cumulativeQuestionCount += section.questionCount;
+      }
+
+      setAllProcessedQuestionsBySection(processedQuestionsMap);
+
+      if (selectedExam.sections.length > 0 && processedQuestionsMap[selectedExam.sections[0].sectionNumber]) {
+        setQuestions(processedQuestionsMap[selectedExam.sections[0].sectionNumber]);
+        setTimeLeft(selectedExam.sections[0].timeLimit * 60);
+      } else {
+        throw new Error("No questions found or processed for the first section.");
+      }
+
+      setExamStartTime(new Date());
+      setCurrentView("inProgress");
+
+    } catch (error) {
+      console.error("Error starting exam:", error);
+      toast({
+        title: "خطأ فادح عند بدء الاختبار",
+        description: `فشل في تحميل أو معالجة أسئلة الاختبار. ${(error as Error).message}`,
+        variant: "destructive",
+      });
+       setCurrentView("selection");
+    }
+  };
+
+  const selectAnswer = (optionIndex: number) => {
+    setSelectedAnswer(optionIndex);
+    if (questions[currentQuestionIdx]) {
+      const questionId = questions[currentQuestionIdx].id;
+      setAnswers(prev => ({ ...prev, [questionId]: optionIndex }));
+    }
+  };
+
+  const goToNextQuestion = () => {
+    if (currentQuestionIdx < questions.length - 1) {
+      const nextIdx = currentQuestionIdx + 1;
+      setCurrentQuestionIdx(nextIdx);
+      const nextQuestionId = questions[nextIdx]?.id;
+      setSelectedAnswer(answers[nextQuestionId] ?? null);
+    } else {
+      moveToNextSection(); // This will handle score calculation and moving
+    }
+  };
+
+  const goToPreviousQuestion = () => {
+    if (currentQuestionIdx > 0) {
+      const prevIdx = currentQuestionIdx - 1;
+      setCurrentQuestionIdx(prevIdx);
+      const prevQuestionId = questions[prevIdx]?.id;
+      setSelectedAnswer(answers[prevQuestionId] ?? null);
+    }
+  };
+
+  const moveToNextSection = () => { // Renamed from async as it's not directly async now
+    if (!selectedExam) return;
+
+    calculateSectionScore(); 
+
+    if (currentSectionIdx >= selectedExam.sections.length - 1) {
       finishExam();
       return;
     }
 
-    // Accumulate results without showing them yet
-    setCurrentSection(nextSection => nextSection + 1);
-    setCurrentQuestion(0);
-    setSelectedAnswer(null);
+    const nextSectionIndex = currentSectionIdx + 1;
+    setCurrentSectionIdx(nextSectionIndex);
+    setCurrentQuestionIdx(0);
 
-    // Load questions for the next section
-    try {
-      const nextSection = currentSection + 1;
-      const nextSectionQuestions = await fetchQuestionsForSection(selectedExam.sections[nextSection]);
-      setQuestions(nextSectionQuestions);
-      setTimeLeft(selectedExam.sections[nextSection].timeLimit * 60);
+    const nextSectionData = selectedExam.sections[nextSectionIndex];
+    const nextSectionQuestions = allProcessedQuestionsBySection[nextSectionData.sectionNumber];
 
-      // Store the questions for the next section
-      setAllSectionsQuestions(prev => ({
-        ...prev,
-        [selectedExam.sections[nextSection].sectionNumber]: nextSectionQuestions
-      }));
-    } catch (error) {
-      toast({
-        title: "خطأ",
-        description: "فشل في تحميل أسئلة القسم التالي",
-        variant: "destructive",
-      });
+    if (nextSectionQuestions && nextSectionQuestions.length > 0) {
+        setQuestions(nextSectionQuestions);
+        setTimeLeft(nextSectionData.timeLimit * 60);
+        const firstQuestionId = nextSectionQuestions[0]?.id;
+        setSelectedAnswer(answers[firstQuestionId] ?? null); // Restore answer if exists
+    } else {
+        toast({
+            title: "خطأ في تحميل القسم",
+            description: `فشل في تحميل أسئلة القسم التالي (${nextSectionData.name}). إنهاء الاختبار.`,
+            variant: "destructive",
+        });
+        finishExam(); 
     }
-
-    // Move to the next section
-    // const nextSection = currentSection + 1;
-    // setCurrentSection(nextSection);
-    // setCurrentQuestion(0);
-    // setSelectedAnswer(null);
-
-    // // Load questions for the next section
-    // try {
-    //   const nextSectionQuestions = await fetchQuestionsForSection(selectedExam.sections[nextSection]);
-    //   setQuestions(nextSectionQuestions);
-
-    //   // Set time limit for the next section
-    //   setTimeLeft(selectedExam.sections[nextSection].timeLimit * 60);
-    // } catch (error) {
-    //   toast({
-    //     title: "خطأ",
-    //     description: "فشل في تحميل أسئلة القسم التالي",
-    //     variant: "destructive",
-    //   });
-    // }
   };
 
-  // Calculate score for the current section
   const calculateSectionScore = () => {
-    if (!selectedExam) return;
+    if (!selectedExam || !questions || questions.length === 0 || currentSectionIdx < 0 || currentSectionIdx >= selectedExam.sections.length) return;
 
-    const sectionNumber = selectedExam.sections[currentSection].sectionNumber;
+    const currentSectionConfig = selectedExam.sections[currentSectionIdx];
+    const sectionNumber = currentSectionConfig.sectionNumber;
+
+    const scoredQuestionsInThisSection = questions.filter(q => !q._isNonScored);
     let correctCount = 0;
 
-    // Count correct answers for this section
-    questions.forEach(q => {
-      const userAnswer = answers[q.id];
-      if (userAnswer === q.correctOptionIndex) {
+    scoredQuestionsInThisSection.forEach(q => {
+      if (answers[q.id] === q.correctOptionIndex) {
         correctCount++;
       }
     });
 
-    // Store section score
     setSectionScores(prev => ({
       ...prev,
-      [sectionNumber]: correctCount
+      [sectionNumber]: { score: correctCount, scoredQuestionsCount: scoredQuestionsInThisSection.length }
     }));
   };
 
-  // Finish the exam and calculate overall results
   const finishExam = () => {
-    const stats = calculateExamStats();
+    setCurrentView("results");
+
+    const finalStats = calculateExamStats(); 
     const currentDate = new Date().toISOString();
-    const examType = selectedExam?.name || "اختبار قياس";
+    const examName = selectedExam?.name || "اختبار قياس";
 
-    // Save exam data
-    const storageKey = `exam_data_${examType}_${new Date(currentDate).getTime()}`;
-    localStorage.setItem(storageKey, JSON.stringify({
-      questions: questions,
-      userAnswers: answers
-    }));
-
-    // Save to exam records
     const storedRecords = localStorage.getItem('examRecords') || '[]';
-    const records = JSON.parse(storedRecords);
+    let records = [];
+    try {
+        records = JSON.parse(storedRecords);
+    } catch (e) {
+        console.error("Failed to parse examRecords from localStorage", e);
+        records = []; // Reset if corrupted
+    }
+
     records.push({
       date: currentDate,
-      examType: examType,
-      score: stats.totalCorrect,
-      totalQuestions: stats.totalQuestions,
-      timeTaken: stats.timeTaken
+      examType: examName,
+      score: finalStats.totalCorrect, 
+      totalQuestions: finalStats.totalScoredQuestions, 
+      timeTaken: finalStats.timeTaken,
+      examId: selectedExam?.id,
+      // Storing allProcessedQuestionsBySection could be large, consider if needed for all records
+      // allProcessedQuestionsBySection: allProcessedQuestionsBySection, 
+      userAnswers: answers,
+      sectionScores: sectionScores, 
     });
-    localStorage.setItem('examRecords', JSON.stringify(records));
-
-    setShowExamResults(true);
-    setCurrentView("results");
+    try {
+        localStorage.setItem('examRecords', JSON.stringify(records));
+    } catch (e) {
+        console.error("Failed to save examRecords to localStorage", e);
+        toast({title: "خطأ", description: "لم نتمكن من حفظ نتيجة الاختبار بسبب امتلاء الذاكرة.", variant:"destructive"});
+    }
   };
 
-  // Calculate exam statistics for results page
-  const calculateExamStats = () => {
-    if (!selectedExam || !examStartTime) return {
-      totalScore: 0,
-      totalCorrect: 0,
-      totalQuestions: 0,
-      verbalScore: 0,
-      verbalTotal: 0,
-      verbalPercentage: 0,
-      quantitativeScore: 0,
-      quantitativeTotal: 0,
-      quantitativePercentage: 0,
-      timeTaken: 0,
-      percentage: 0
-    };
+  const examStats = useMemo(() => {
+    if (!selectedExam || !examStartTime || Object.keys(allProcessedQuestionsBySection).length === 0) {
+      return {
+        totalCorrect: 0, totalScoredQuestions: 0, verbalScore: 0, verbalTotal: 0,
+        verbalPercentage: 0, quantitativeScore: 0, quantitativeTotal: 0,
+        quantitativePercentage: 0, timeTaken: 0, percentage: 0,
+      };
+    }
 
-    // Calculate actual time taken
-    const endTime = examEndTime || new Date();
-    const timeDiffInMinutes = Math.ceil((endTime.getTime() - examStartTime.getTime()) / (1000 * 60));
-    const actualTimeTaken = Math.min(timeDiffInMinutes, selectedExam.totalTime);
+    const endTime = new Date(); 
+    const timeDiffInSeconds = Math.round((endTime.getTime() - examStartTime.getTime()) / 1000);
+    const actualTimeTakenInMinutes = Math.min(Math.ceil(timeDiffInSeconds / 60), selectedExam.totalTime);
 
-    // Calculate total score
-    let totalCorrect = 0;
-    let totalQuestions = 0;
-    let verbalCorrect = 0;
-    let quantitativeCorrect = 0;
-    let verbalTotal = 0;
-    let quantitativeTotal = 0;
+    let totalCorrectScored = 0;
+    let totalScoredQuestionsPresented = 0;
+    let verbalCorrectScored = 0;
+    let quantitativeCorrectScored = 0;
+    let verbalTotalScored = 0;
+    let quantitativeTotalScored = 0;
 
-    selectedExam.sections.forEach(section => {
-      const sectionScore = sectionScores[section.sectionNumber] || 0;
+    selectedExam.sections.forEach(sectionConfig => {
+      const sectionNum = sectionConfig.sectionNumber;
+      const questionsInSection = allProcessedQuestionsBySection[sectionNum] || [];
 
-      totalCorrect += sectionScore;
-      totalQuestions += section.questionCount;
+      questionsInSection.forEach(q => {
+        if (!q._isNonScored) { 
+          totalScoredQuestionsPresented++;
+          const userAnswer = answers[q.id];
+          const isCorrect = userAnswer === q.correctOptionIndex;
 
-      if (section.category === "mixed") {
-        // For mixed sections, we have 13 verbal questions and 11 quantitative questions
-        const verbalCount = 13;
-        const quantitativeCount = section.questionCount - verbalCount;
+          // Simplified category check for mixed questions
+          if (q.category === "verbal" || (sectionConfig.category === "mixed" && (q.category === "verbal" || String(q.text).match(/مرادف|معنى|نص|علاقة/i)) ) ) { 
+            verbalTotalScored++;
+            if (isCorrect) verbalCorrectScored++;
+          } else if (q.category === "quantitative" || (sectionConfig.category === "mixed" && (q.category === "quantitative" || String(q.text).match(/حساب|هندسة|جبر|نسبة|رقم/i)) ) ) {
+            quantitativeTotalScored++;
+            if (isCorrect) quantitativeCorrectScored++;
+          }
+          // This logic for mixed can be refined if questions have clearer sub-categories
 
-        // For mixed sections, we can't know exactly how many verbal vs quantitative 
-        // questions were answered correctly, so we distribute proportionally
-        const verbalProportion = verbalCount / section.questionCount;
-        const verbalScoreEstimate = Math.round(sectionScore * verbalProportion);
-        const quantitativeScoreEstimate = sectionScore - verbalScoreEstimate;
-
-        verbalCorrect += verbalScoreEstimate;
-        verbalTotal += verbalCount;
-
-        quantitativeCorrect += quantitativeScoreEstimate;
-        quantitativeTotal += quantitativeCount;
-      } else if (section.category === "verbal") {
-        verbalCorrect += sectionScore;
-        verbalTotal += section.questionCount;
-      } else {
-        quantitativeCorrect += sectionScore;
-        quantitativeTotal += section.questionCount;
-      }
+          if (isCorrect) totalCorrectScored++;
+        }
+      });
     });
 
-    // Calculate time taken 
-    const timeTaken = actualTimeTaken;
-
-    // Calculate percentages
-    const percentage = (totalCorrect / totalQuestions) * 100;
-    const verbalPercentage = verbalTotal > 0 ? (verbalCorrect / verbalTotal) * 100 : 0;
-    const quantitativePercentage = quantitativeTotal > 0 ? (quantitativeCorrect / quantitativeTotal) * 100 : 0;
+    const percentage = totalScoredQuestionsPresented > 0 ? (totalCorrectScored / totalScoredQuestionsPresented) * 100 : 0;
+    const verbalPercentage = verbalTotalScored > 0 ? (verbalCorrectScored / verbalTotalScored) * 100 : 0;
+    const quantitativePercentage = quantitativeTotalScored > 0 ? (quantitativeCorrectScored / quantitativeTotalScored) * 100 : 0;
 
     return {
-      totalScore: totalCorrect,
-      totalCorrect,
-      totalQuestions,
-      verbalScore: verbalCorrect,
-      verbalTotal,
+      totalCorrect: totalCorrectScored,
+      totalScoredQuestions: totalScoredQuestionsPresented,
+      verbalScore: verbalCorrectScored,
+      verbalTotal: verbalTotalScored,
       verbalPercentage,
-      quantitativeScore: quantitativeCorrect,
-      quantitativeTotal,
+      quantitativeScore: quantitativeCorrectScored,
+      quantitativeTotal: quantitativeTotalScored,
       quantitativePercentage,
-      timeTaken,
-      percentage
+      timeTaken: actualTimeTakenInMinutes,
+      percentage,
     };
-  };
+  }, [selectedExam, examStartTime, answers, allProcessedQuestionsBySection, currentView]); // Depend on currentView to recalculate when results are shown
 
-  // Render the exam selection view
+
+  const calculateExamStats = () => examStats;
+
+
   const renderExamSelection = () => (
-    <div className="p-6 space-y-8">
-      <div className="max-w-4xl mx-auto">
-        <div className="flex justify-between items-center mb-8">
-          <div>
-            <h1 className="text-3xl font-bold mb-2">اختبارات قياس</h1>
-            <p className="text-muted-foreground">اختبارات تحاكي اختبار القدرات العامة (قياس) الرسمي</p>
-          </div>
-
+    <div className="p-4 md:p-8 min-h-screen bg-gradient-to-br from-gray-100 to-slate-200 dark:from-gray-900 dark:to-slate-950 font-arabic">
+      <div className="max-w-5xl mx-auto">
+        <div className="text-center mb-12">
+          <h1 className="text-4xl md:text-5xl font-bold mb-3 text-gray-800 dark:text-white">
+            اختر <span className="bg-gradient-to-r from-blue-500 to-teal-400 text-transparent bg-clip-text">اختبارك</span>
+          </h1>
+          <p className="text-lg text-gray-600 dark:text-gray-400">
+            اختبارات محاكية لاختبار القدرات العامة (قياس) لمساعدتك على التألق.
+          </p>
         </div>
 
-        <div className="grid md:grid-cols-2 gap-6">
-          {qiyasExams.map(exam => (
-            <Card key={exam.id} className="overflow-hidden">
-              <div className="bg-primary h-2"></div>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <GraduationCapIcon className="h-5 w-5" />
+        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6 md:gap-8">
+          {qiyasExams.map(exam => {
+            const ExamIcon = exam.icon || GraduationCapIcon;
+            const isUserSubscribed = user?.subscription?.type === 'Pro Live' || user?.subscription?.type === 'Pro';
+            return (
+            <Card 
+              key={exam.id} 
+              className={cn(
+                "overflow-hidden shadow-lg hover:shadow-2xl transition-all duration-300 ease-in-out transform hover:-translate-y-1 group dark:bg-slate-800/70 border-2 border-transparent hover:border-blue-500/50 dark:hover:border-blue-400/50",
+                exam.requiresSubscription && !isUserSubscribed && "opacity-60 hover:opacity-80"
+              )}
+            >
+              <div className={cn("h-20 p-4 flex items-center justify-between bg-gradient-to-r text-white", exam.themeColor || "from-gray-700 to-gray-800")}>
+                <CardTitle className="text-xl font-semibold flex items-center gap-2">
+                  <ExamIcon className="h-7 w-7 opacity-90" />
                   {exam.name}
                 </CardTitle>
-                <CardDescription>{exam.description}</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="grid grid-cols-2 gap-4 mb-4">
-                  <div className="bg-gradient-to-br from-muted/20 to-muted/30 p-4 rounded-xl text-center transform transition-all duration-300 hover:scale-105 hover:shadow-lg">
-                    <div className="text-sm text-muted-foreground/90 mb-2">الأقسام</div>
-                    <div className="font-bold text-lg animate-fade-in">{exam.totalQuestions}</div>
+                {exam.isMockExam && <Badge variant="secondary" className="bg-white/20 text-white backdrop-blur-sm">محاكاة</Badge>}
+              </div>
+
+              <CardContent className="p-6 space-y-4">
+                <CardDescription className="text-gray-600 dark:text-gray-300 h-16 line-clamp-3">{exam.description}</CardDescription>
+
+                <div className="grid grid-cols-3 gap-3 text-center text-sm">
+                  <div className="bg-slate-100 dark:bg-slate-700/50 p-3 rounded-lg">
+                    <div className="font-semibold text-gray-700 dark:text-gray-200">{exam.totalQuestions}</div>
+                    <div className="text-xs text-gray-500 dark:text-gray-400">سؤال</div>
                   </div>
-                  <div className="bg-gradient-to-br from-muted/20 to-muted/30 p-4 rounded-xl text-center transform transition-all duration-300 hover:scale-105 hover:shadow-lg">
-                    <div className="text-sm text-muted-foreground/90 mb-2">الوقت</div>
-                    <div className="font-bold text-lg animate-fade-in">{exam.totalTime} دقيقة</div>
+                  <div className="bg-slate-100 dark:bg-slate-700/50 p-3 rounded-lg">
+                    <div className="font-semibold text-gray-700 dark:text-gray-200">{exam.totalTime}</div>
+                    <div className="text-xs text-gray-500 dark:text-gray-400">دقيقة</div>
                   </div>
-                  <div className="bg-gradient-to-br from-muted/20 to-muted/30 p-4 rounded-xl text-center transform transition-all duration-300 hover:scale-105 hover:shadow-lg">
-                    <div className="text-sm text-muted-foreground/90 mb-2">المستوى</div>
-                    <div className="font-bold text-lg animate-fade-in">{exam.totalQuestions >= 100 ? "رسمي" : "تدريبي"}</div>
+                   <div className="bg-slate-100 dark:bg-slate-700/50 p-3 rounded-lg">
+                    <div className="font-semibold text-gray-700 dark:text-gray-200">{exam.totalSections}</div>
+                    <div className="text-xs text-gray-500 dark:text-gray-400">أقسام</div>
                   </div>
                 </div>
 
-                <div className="space-y-2">
-                  {exam.sections.map(section => (
-                    <div key={section.sectionNumber} className="flex justify-between items-center text-sm">
-                      <div>{section.name}</div>
-                      <Badge className="ml-2" variant="outline">
-                        {section.questionCount} سؤال
-                      </Badge>
+                {exam.nonScoredCount && exam.nonScoredCount > 0 && (
+                    <div className="text-xs text-blue-600 dark:text-blue-400 p-2 bg-blue-50 dark:bg-blue-900/30 rounded-md text-center flex items-center justify-center gap-1">
+                        <Info size={14} />
+                        يتضمن {exam.nonScoredCount} سؤالاً تجريبياً غير محسوب.
                     </div>
-                  ))}
-                </div>
-                {exam.requiresSubscription && exam.name !== "اختبار قياس عام 2025" && (
-                  <div className="mt-4 p-2 bg-muted/50 rounded-lg text-sm text-center text-muted-foreground">
-                    هذا الاختبار متاح للمشتركين فقط
+                )}
+
+                {exam.requiresSubscription && (
+                  <div className={cn(
+                      "mt-3 p-2 rounded-lg text-xs text-center flex items-center justify-center gap-1",
+                      isUserSubscribed 
+                        ? "bg-green-50 dark:bg-green-900/30 text-green-700 dark:text-green-300"
+                        : "bg-yellow-50 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-400"
+                    )}>
+                    {isUserSubscribed ? (
+                      <> <CheckCircle size={14} /> متاح (اشتراكك فعال) </>
+                    ) : (
+                      <> <LockIcon size={14} /> يتطلب اشتراك مدفوع </>
+                    )}
                   </div>
                 )}
               </CardContent>
-              <CardFooter>
+              <CardFooter className="bg-gray-50 dark:bg-slate-800 p-4">
                 <Button 
-                  className="w-full" 
+                  className={cn("w-full font-semibold text-base py-3 bg-gradient-to-r hover:opacity-90 transition-opacity", exam.themeColor || "from-gray-700 to-gray-800")}
                   onClick={() => {
-                    const user = JSON.parse(localStorage.getItem('user') || '{}');
-                    const isSubscribed = user?.subscription?.type === 'Pro Live' || user?.subscription?.type === 'Pro';
-                    if (!isSubscribed && exam.requiresSubscription) {
-                      setLocation("/subscription");
+                    if (exam.requiresSubscription && !isUserSubscribed) {
+                      setLocation("/subscription"); // Or your subscription page route
                     } else {
                       loadExam(exam);
                     }
                   }}
                 >
-                  {exam.requiresSubscription ? (
-                    <div className="flex items-center gap-2">
-                      {user?.subscription?.type === 'Pro Live' || user?.subscription?.type === 'Pro' ? (
-                        <>
-                          <CheckCircle className="h-4 w-4 text-green-500" />
-                          حسابك مفعل - ابدأ الاختبار
-                        </>
-                      ) : (
-                        <>
-                          <LockIcon className="h-4 w-4" />
-                          يتطلب اشتراك مدفوع
-                        </>
-                      )}
-                    </div>
-                  ) : (
-                    "ابدأ الاختبار"
-                  )}
+                  ابدأ الاختبار
                 </Button>
               </CardFooter>
             </Card>
-          ))}
+          )})}
         </div>
       </div>
     </div>
   );
 
-  // Render the exam instructions view
+
   const renderExamInstructions = () => {
     if (!selectedExam) return null;
+    const ExamSpecificIcon = selectedExam.icon || GraduationCapIcon;
+    const themeColorName = selectedExam.themeColor?.split('-')[1] || 'primary';
+
 
     return (
-      <div className="container max-w-4xl py-8">
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-2xl">تعليمات الاختبار</CardTitle>
-            <CardDescription>{selectedExam.name}</CardDescription>
+      <div className="container max-w-4xl py-8 font-arabic animate-fadeIn">
+        <Card className="dark:bg-slate-800/50 shadow-xl">
+          <CardHeader className="pb-4">
+            <div className="flex items-center gap-3 mb-3">
+                <ExamSpecificIcon className={cn("h-10 w-10", `text-${themeColorName}-500 dark:text-${themeColorName}-400`)} />
+                <CardTitle className="text-3xl font-bold text-gray-800 dark:text-white">{selectedExam.name}</CardTitle>
+            </div>
+            <CardDescription className="text-gray-600 dark:text-gray-300 text-base leading-relaxed">{selectedExam.description}</CardDescription>
+            {selectedExam.nonScoredCount && selectedExam.nonScoredCount > 0 && (
+                <div className="mt-4 p-3 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-700 rounded-lg text-sm text-blue-700 dark:text-blue-300 flex items-start gap-2">
+                    <Info className="h-5 w-5 text-blue-500 flex-shrink-0 mt-0.5" />
+                    <span>هذا الاختبار يحتوي على <strong>{selectedExam.nonScoredCount} أسئلة تجريبية</strong> موزعة عشوائياً. هذه الأسئلة لا تؤثر على نتيجتك النهائية وهي لمساعدتك على التعود على أنواع مختلفة من الأسئلة.</span>
+                </div>
+            )}
           </CardHeader>
-          <CardContent className="space-y-6">
-            <div className="p-4 bg-slate-900/90 border border-slate-800 rounded-lg flex items-start gap-3 text-slate-100">
-              <Info className="h-5 w-5 text-blue-400 mt-0.5" />
+          <CardContent className="space-y-6 pt-4">
+            <div className="p-4 bg-slate-100 dark:bg-slate-700/30 border border-slate-200 dark:border-slate-600 rounded-lg flex items-start gap-3 ">
+              <Info className="h-6 w-6 text-blue-500 dark:text-blue-400 mt-0.5 flex-shrink-0" />
               <div>
-                <h3 className="font-medium mb-1">هام جداً</h3>
-                <p className="text-sm text-slate-200">
+                <h3 className="font-semibold text-gray-700 dark:text-gray-100 mb-1 text-lg">هام جداً</h3>
+                <p className="text-sm text-gray-600 dark:text-gray-300">
                   هذا الاختبار يحاكي اختبار قياس الرسمي من حيث البنية والتوقيت. اتبع التعليمات بدقة للحصول على تجربة واقعية.
                 </p>
               </div>
             </div>
 
             <div>
-              <h3 className="font-medium mb-2">معلومات الاختبار:</h3>
-              <ul className="space-y-2">
-                <li className="flex gap-2">
-                  <ClipboardList className="h-5 w-5 text-muted-foreground" />
-                  <span>عدد الأقسام: <strong>{selectedExam.totalSections}</strong></span>
-                </li>
-                <li className="flex gap-2">
-                  <BookOpen className="h-5 w-5 text-muted-foreground" />
-                  <span>إجمالي الأسئلة: <strong>{selectedExam.totalQuestions}</strong></span>
-                </li>
-                <li className="flex gap-2">
-                  <Timer className="h-5 w-5 text-muted-foreground" />
-                  <span>الوقت الإجمالي: <strong>{selectedExam.totalTime} دقيقة</strong></span>
-                </li>
-              </ul>
+              <h3 className="font-semibold text-gray-700 dark:text-gray-100 mb-3 text-xl">تفاصيل الاختبار:</h3>
+              <div className="space-y-3">
+                  <div className="flex items-center gap-3 p-3 bg-white dark:bg-slate-700/20 rounded-md border dark:border-slate-600/50 shadow-sm">
+                    <ClipboardList className="h-5 w-5 text-primary" />
+                    <span className="text-gray-700 dark:text-gray-200">عدد الأقسام: <strong>{selectedExam.totalSections}</strong></span>
+                  </div>
+                  <div className="flex items-center gap-3 p-3 bg-white dark:bg-slate-700/20 rounded-md border dark:border-slate-600/50 shadow-sm">
+                    <BookOpen className="h-5 w-5 text-primary" />
+                    <span className="text-gray-700 dark:text-gray-200">إجمالي الأسئلة المعروضة: <strong>{selectedExam.totalQuestions}</strong></span>
+                  </div>
+                  <div className="flex items-center gap-3 p-3 bg-white dark:bg-slate-700/20 rounded-md border dark:border-slate-600/50 shadow-sm">
+                    <Timer className="h-5 w-5 text-primary" />
+                    <span className="text-gray-700 dark:text-gray-200">الوقت الإجمالي المتاح: <strong>{selectedExam.totalTime} دقيقة</strong></span>
+                  </div>
+              </div>
             </div>
 
             <div>
-              <h3 className="font-medium mb-2">تفاصيل الأقسام:</h3>
-              <div className="border border-slate-700 rounded-lg overflow-hidden bg-slate-900/90">
-                <table className="w-full">
-                  <thead className="bg-slate-800">
+              <h3 className="font-semibold text-gray-700 dark:text-gray-100 mb-3 text-xl">جدول الأقسام:</h3>
+              <div className="border border-slate-200 dark:border-slate-700 rounded-lg overflow-hidden shadow-sm">
+                <table className="w-full text-sm">
+                  <thead className="bg-slate-50 dark:bg-slate-800">
                     <tr>
-                      <th className="px-4 py-2 text-right text-slate-100">القسم</th>
-                      <th className="px-4 py-2 text-right text-slate-100">النوع</th>
-                      <th className="px-4 py-2 text-right text-slate-100">عدد الأسئلة</th>
-                      <th className="px-4 py-2 text-right text-slate-100">الوقت (دقائق)</th>
+                      <th className="px-4 py-3 text-right font-medium text-gray-600 dark:text-gray-300">القسم</th>
+                      <th className="px-4 py-3 text-right font-medium text-gray-600 dark:text-gray-300">النوع</th>
+                      <th className="px-4 py-3 text-center font-medium text-gray-600 dark:text-gray-300">عدد الأسئلة</th>
+                      <th className="px-4 py-3 text-center font-medium text-gray-600 dark:text-gray-300">الوقت (دقائق)</th>
                     </tr>
                   </thead>
-                  <tbody className="text-slate-200">
+                  <tbody className="text-gray-700 dark:text-gray-200">
                     {selectedExam.sections.map((section, index) => (
-                      <tr key={section.sectionNumber} className={index % 2 === 0 ? "bg-slate-900" : "bg-slate-800/50"}>
-                        <td className="border-t border-slate-700 px-4 py-2">{section.name}</td>
-                        <td className="border-t border-slate-700 px-4 py-2">
+                      <tr key={section.sectionNumber} className={index % 2 === 0 ? "bg-white dark:bg-slate-900/30" : "bg-slate-50/50 dark:bg-slate-800/40"}>
+                        <td className="border-t border-slate-200 dark:border-slate-700 px-4 py-3">{section.name}</td>
+                        <td className="border-t border-slate-200 dark:border-slate-700 px-4 py-3">
                           {section.category === "verbal" ? "لفظي" : 
                            section.category === "quantitative" ? "كمي" : 
-                           "مختلط (لفظي وكمي)"}
+                           "مختلط"}
                         </td>
-                        <td className="border-t px-4 py-2">{section.questionCount}</td>
-                        <td className="border-t px-4 py-2">{section.timeLimit}</td>
+                        <td className="border-t border-slate-200 dark:border-slate-700 px-4 py-3 text-center">{section.questionCount}</td>
+                        <td className="border-t border-slate-200 dark:border-slate-700 px-4 py-3 text-center">{section.timeLimit}</td>
                       </tr>
                     ))}
                   </tbody>
@@ -754,22 +820,29 @@ const QiyasExamPage: React.FC = () => {
             </div>
 
             <div>
-              <h3 className="font-medium mb-2">إرشادات:</h3>
-              <ul className="space-y-1 text-sm list-disc list-inside">
-                <li>لا يمكن العودة إلى قسم سابق بعد الانتهاء منه.</li>
-                <li>يمكنك التنقل بين أسئلة القسم الواحد بحرية.</li>
-                <li>سيتم الانتقال تلقائياً إلى القسم التالي عند انتهاء الوقت.</li>
-                <li>كل إجابة صحيحة تمنح نقطة واحدة.</li>
+              <h3 className="font-semibold text-gray-700 dark:text-gray-100 mb-2 text-xl">إرشادات هامة:</h3>
+              <ul className="space-y-2 text-sm text-gray-600 dark:text-gray-300 list-disc list-inside marker:text-primary pl-4">
+                <li>لا يمكنك العودة إلى قسم سابق بعد الانتهاء منه ومتابعة للقسم التالي.</li>
+                <li>يمكنك التنقل بين أسئلة القسم الواحد بحرية طالما لم ينته وقت القسم.</li>
+                <li>سيتم الانتقال تلقائياً إلى القسم التالي عند انتهاء الوقت المخصص للقسم الحالي.</li>
+                <li>كل إجابة صحيحة على سؤال <strong>محسوب</strong> تمنح نقطة واحدة.</li>
                 <li>لا توجد نقاط سالبة للإجابات الخاطئة.</li>
+                {selectedExam.nonScoredCount && selectedExam.nonScoredCount > 0 && <li>بعض الأسئلة المعروضة هي أسئلة تجريبية ولن يتم احتسابها ضمن نتيجتك النهائية.</li>}
+                <li>تأكد من اتصال جيد بالإنترنت، وحاول أن تكون في مكان هادئ لضمان أفضل تركيز.</li>
               </ul>
             </div>
           </CardContent>
-          <CardFooter className="flex justify-between">
-            <Button variant="outline" onClick={() => setCurrentView("selection")}>
-              العودة للاختبارات
+          <CardFooter className="flex flex-col sm:flex-row justify-between gap-3 p-6 bg-gray-50 dark:bg-slate-800/30 border-t dark:border-slate-700">
+            <Button variant="outline" className="w-full sm:w-auto dark:text-gray-200 dark:border-slate-600 dark:hover:bg-slate-700" onClick={() => setCurrentView("selection")}>
+              <ArrowRightIcon className="h-4 w-4 ml-2" />
+              العودة لاختيار اختبار آخر
             </Button>
-            <Button onClick={startExam}>
-              ابدأ الاختبار
+            <Button 
+                className={cn("w-full sm:w-auto font-semibold text-base py-3 px-6 bg-gradient-to-r hover:opacity-90 transition-opacity flex items-center justify-center gap-2", selectedExam.themeColor || "from-blue-500 to-indigo-600")}
+                onClick={startExam}
+            >
+              ابدأ الاختبار الآن
+              <ArrowLeftIcon className="h-4 w-4" />
             </Button>
           </CardFooter>
         </Card>
@@ -777,107 +850,126 @@ const QiyasExamPage: React.FC = () => {
     );
   };
 
-  // Render the exam in progress view
   const renderExamInProgress = () => {
-    if (!selectedExam || questions.length === 0) return (
-      <div className="container py-8 text-center">
-        <div className="animate-pulse">جاري تحميل الأسئلة...</div>
-      </div>
-    );
+    if (!selectedExam || !questions || questions.length === 0) {
+        return (
+            <div className="container py-12 text-center flex flex-col items-center justify-center min-h-[calc(100vh-200px)] font-arabic animate-fadeIn">
+                <div className="animate-spin rounded-full h-16 w-16 border-t-4 border-b-4 border-blue-500 mb-6"></div>
+                <p className="text-xl text-gray-600 dark:text-gray-400">جاري تحضير أسئلة الاختبار...</p>
+                <p className="text-sm text-gray-500 dark:text-gray-500 mt-2">لحظات قليلة ويبدأ التحدي!</p>
+            </div>
+        );
+    }
 
-    const currentSectionData = selectedExam.sections[currentSection];
-    const currentQuestionData = questions[currentQuestion];
+    const currentSectionData = selectedExam.sections[currentSectionIdx];
+    const currentQuestionData = questions[currentQuestionIdx];
+
+    if (!currentSectionData || !currentQuestionData) {
+         toast({ title: "خطأ في عرض السؤال", description: "لا يمكن عرض السؤال أو القسم الحالي. الرجاء المحاولة مرة أخرى.", variant: "destructive", duration: 5000});
+         setCurrentView("selection"); 
+         return null;
+    }
 
     return (
-      <div className="container py-6 max-w-4xl">
-        {/* Prayer Break Overlay */}
+      <div className="container py-6 max-w-4xl font-arabic animate-fadeIn">
         {renderPrayerBreakOverlay()}
 
-        {/* Header with progress & timer */}
-        <div className="flex justify-between items-center mb-4">
-          <div>
-            <h2 className="text-lg font-medium">
-              القسم {currentSectionData.sectionNumber}: {currentSectionData.name}
-            </h2>
-            <div className="text-sm text-muted-foreground">
-              {currentSectionData.category === "verbal" ? "قدرات لفظية" : 
-               currentSectionData.category === "quantitative" ? "قدرات كمية" : 
-               "قدرات مختلطة (لفظية وكمية)"}
-            </div>
-          </div>
+        <div className="bg-white dark:bg-slate-800 shadow-xl rounded-xl p-4 md:p-6 mb-6">
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4 gap-3">
+                <div>
+                    <h2 className="text-xl font-semibold text-gray-800 dark:text-white">
+                    القسم {currentSectionData.sectionNumber}: {currentSectionData.name}
+                    </h2>
+                    <div className="text-sm text-gray-500 dark:text-gray-400">
+                    {currentSectionData.category === "verbal" ? "قدرات لفظية" : 
+                    currentSectionData.category === "quantitative" ? "قدرات كمية" : 
+                    "قدرات مختلطة"}
+                    </div>
+                </div>
 
-          <div className="flex items-center gap-3">
-            <Button
-              variant="outline"
-              onClick={() => setIsPrayerBreak(!isPrayerBreak)}
-              className={cn(
-                "transition-colors",
-                isPrayerBreak && "bg-orange-100 text-orange-700 hover:bg-orange-200"
-              )}
-            >
-              {isPrayerBreak ? "استئناف الاختبار" : "توقف للصلاة"}
-            </Button>
-            <div className="flex items-center gap-1">
-              <Clock3 className="h-4 w-4" />
-              <span className={cn(
-                "font-medium",
-                timeLeft < 60 && "text-red-500"
-              )}>
-                {formatTime(timeLeft)}
-              </span>
+                <div className="flex items-center gap-2 sm:gap-3">
+                    <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setIsPrayerBreak(prev => !prev)} // Toggle prayer break
+                    className={cn(
+                        "transition-colors dark:text-gray-300 dark:border-slate-600 dark:hover:bg-slate-700 text-xs sm:text-sm px-2 sm:px-3",
+                        isPrayerBreak && "bg-orange-100 text-orange-700 hover:bg-orange-200 dark:bg-orange-700/30 dark:text-orange-300 dark:border-orange-600"
+                    )}
+                    >
+                     <Moon className="h-3.5 w-3.5 sm:h-4 sm:w-4 ml-1 sm:ml-2" />
+                    {isPrayerBreak ? "استئناف" : "توقف للصلاة"}
+                    </Button>
+                    <div className="flex items-center gap-1 p-2 bg-slate-100 dark:bg-slate-700 rounded-md">
+                    <Clock3 className="h-4 w-4 text-primary" />
+                    <span className={cn(
+                        "font-medium text-gray-700 dark:text-gray-200 text-sm",
+                        timeLeft <= 10 && timeLeft > 0 && "text-red-500 dark:text-red-400 animate-ping", // Ping only when very low
+                        timeLeft <= 60 && timeLeft > 10 && "text-red-500 dark:text-red-400"
+                    )}>
+                        {formatTime(timeLeft)}
+                    </span>
+                    </div>
+                </div>
             </div>
-          </div>
+
+            <div className="flex justify-between text-xs sm:text-sm mb-1 text-gray-600 dark:text-gray-400">
+            <span>السؤال {currentQuestionIdx + 1} من {questions.length}</span>
+            <span>القسم {currentSectionIdx + 1} من {selectedExam.sections.length}</span>
+            </div>
+            <Progress 
+                value={((currentQuestionIdx + 1) / questions.length) * 100} 
+                className="mb-1 h-2 sm:h-2.5 [&>div]:bg-gradient-to-r [&>div]:from-blue-500 [&>div]:to-teal-400" 
+            />
         </div>
 
-        {/* Progress bar */}
-        <div className="flex justify-between text-sm mb-1">
-          <span>السؤال {currentQuestion + 1} من {questions.length}</span>
-          <span>القسم {currentSection + 1} من {selectedExam.sections.length}</span>
-        </div>
-        <Progress value={(currentQuestion + 1) / questions.length * 100} className="mb-6" />
-
-        {/* Question */}
-        <Card className="mb-6">
-          <CardHeader>
-            <CardTitle className="text-xl">
-              السؤال {currentQuestion + 1}
-            </CardTitle>
-            <CardDescription className="text-base">
+        <Card className="mb-6 shadow-xl dark:bg-slate-800">
+          <CardHeader className="p-5 md:p-6">
+            <CardTitle className="text-lg md:text-xl text-gray-800 dark:text-white leading-relaxed font-semibold" dir="auto">
               {currentQuestionData.text}
-            </CardDescription>
+            </CardTitle>
+            {currentQuestionData._isNonScored && (
+                <Badge variant="outline" className="mt-3 w-fit border-blue-500 text-blue-600 bg-blue-50 dark:bg-blue-900/30 dark:text-blue-400 dark:border-blue-700 text-xs py-1 px-2">
+                    <Info size={12} className="ml-1"/> سؤال تجريبي (غير محسوب في النتيجة)
+                </Badge>
+            )}
           </CardHeader>
         </Card>
 
-        {/* Options */}
         <div className="space-y-3 mb-8">
           {currentQuestionData.options.map((option, index) => (
             <div
-              key={index}
+              key={`${currentQuestionData.id}-opt-${index}`} // More robust key
               className={cn(
-                "p-4 border rounded-lg cursor-pointer hover:bg-accent/50 transition-colors",
-                selectedAnswer === index && "border-primary bg-primary/10"
+                "p-3 sm:p-4 border-2 rounded-lg cursor-pointer hover:border-primary/80 transition-all duration-200 ease-in-out text-gray-700 dark:text-gray-200",
+                "bg-white dark:bg-slate-800 dark:border-slate-700",
+                selectedAnswer === index 
+                  ? "border-primary bg-primary/10 dark:bg-primary/20 dark:border-primary shadow-md" 
+                  : "hover:bg-slate-50 dark:hover:bg-slate-700/50"
               )}
               onClick={() => selectAnswer(index)}
             >
-              <div className="flex items-center gap-3">
+              <div className="flex items-center gap-3 sm:gap-4">
                 <div className={cn(
-                  "w-6 h-6 rounded-full flex items-center justify-center text-sm", 
-                  selectedAnswer === index ? "bg-primary text-primary-foreground" : "bg-muted"
+                  "w-7 h-7 sm:w-8 sm:h-8 rounded-md flex items-center justify-center text-sm font-semibold shrink-0", 
+                  selectedAnswer === index 
+                    ? "bg-primary text-primary-foreground" 
+                    : "bg-slate-200 dark:bg-slate-600 text-slate-700 dark:text-slate-200"
                 )}>
-                  {index + 1}
+                  {["أ", "ب", "ج", "د"][index] || index + 1}
                 </div>
-                <div>{option}</div>
+                <div className="text-sm sm:text-base" dir="auto">{option}</div>
               </div>
             </div>
           ))}
         </div>
 
-        {/* Navigation */}
-        <div className="flex justify-between">
+        <div className="flex flex-col sm:flex-row justify-between items-center gap-3">
           <Button 
             variant="outline" 
+            className="w-full sm:w-auto dark:text-gray-200 dark:border-slate-600 dark:hover:bg-slate-700"
             onClick={goToPreviousQuestion}
-            disabled={currentQuestion === 0}
+            disabled={currentQuestionIdx === 0}
           >
             <ArrowRightIcon className="h-4 w-4 ml-2" />
             السؤال السابق
@@ -885,134 +977,137 @@ const QiyasExamPage: React.FC = () => {
 
           <Dialog>
             <DialogTrigger asChild>
-              <Button variant="outline" className="mx-2">
-                إنهاء القسم
+              <Button variant="outline" className="w-full sm:w-auto border-red-500 text-red-500 hover:bg-red-50 hover:text-red-600 dark:border-red-500/70 dark:text-red-500/90 dark:hover:bg-red-900/30 dark:hover:text-red-400">
+                إنهاء القسم الحالي
               </Button>
             </DialogTrigger>
-            <DialogContent>
+            <DialogContent className="font-arabic dark:bg-slate-800 border-slate-700">
               <DialogHeader>
-                <DialogTitle>هل أنت متأكد من إنهاء هذا القسم؟</DialogTitle>
-                <DialogDescription>
-                  لا يمكنك العودة إلى هذا القسم بعد الانتهاء منه. تبقى لديك {questions.length - currentQuestion - 1} سؤال غير مجاب.
+                <DialogTitle className="text-right dark:text-white">هل أنت متأكد من إنهاء هذا القسم؟</DialogTitle>
+                <DialogDescription className="text-right dark:text-gray-300 pt-2">
+                  لن تتمكن من العودة إلى هذا القسم بعد المتابعة.
+                  {(questions.length - (currentQuestionIdx +1)) > 0 && ` تبقى لديك ${questions.length - (currentQuestionIdx +1) } سؤال غير مجاب في هذا القسم.`}
                 </DialogDescription>
               </DialogHeader>
-              <DialogFooter>
-                <Button onClick={moveToNextSection}>نعم، إنهاء القسم</Button>
+              <DialogFooter className="sm:justify-start pt-4">
+                <Button onClick={() => { moveToNextSection(); (document.querySelector('[data-radix-dialog-trigger]') as HTMLElement)?.click(); }} className="w-full sm:w-auto bg-red-600 hover:bg-red-700 dark:bg-red-700 dark:hover:bg-red-800">نعم، إنهاء والانتقال</Button>
+                <DialogTrigger asChild>
+                    <Button variant="ghost" className="w-full sm:w-auto dark:text-gray-300 dark:hover:bg-slate-700">إلغاء</Button>
+                </DialogTrigger>
               </DialogFooter>
             </DialogContent>
           </Dialog>
 
           <Button 
             onClick={goToNextQuestion}
-            disabled={selectedAnswer === null}
+            disabled={selectedAnswer === null && currentQuestionData.options?.length > 0}
+            className="w-full sm:w-auto bg-gradient-to-r from-blue-500 to-teal-500 hover:opacity-90 text-white"
           >
-            {currentQuestion < questions.length - 1 ? (
+            {currentQuestionIdx < questions.length - 1 ? (
               <>
                 السؤال التالي
                 <ArrowLeftIcon className="h-4 w-4 mr-2" />
               </>
             ) : (
-              "إنهاء القسم"
+              selectedExam && currentSectionIdx < selectedExam.sections.length -1 ? "القسم التالي" : "إنهاء الاختبار وعرض النتيجة"
             )}
+             {currentQuestionIdx === questions.length - 1 && <ArrowLeftIcon className="h-4 w-4 mr-2" />}
           </Button>
-
-          </div>
+        </div>
       </div>
     );
   };
 
-  // Render the exam results view
   const renderExamResults = () => {
-    if (!selectedExam || questions.length === 0) return null;
+    if (!selectedExam || currentView !== "results") return null;
+    const stats = calculateExamStats(); 
 
-    const stats = calculateExamStats();
     const performance = 
-      stats.percentage >= 90 ? { label: "ممتاز", color: "text-green-500" } :
-      stats.percentage >= 70 ? { label: "جيد جداً", color: "text-blue-500" } :
-      stats.percentage >= 50 ? { label: "جيد", color: "text-yellow-500" } :
-      { label: "بحاجة للتحسين", color: "text-red-500" };
+      stats.percentage >= 90 ? { label: "ممتاز جداً!", color: "text-green-500 dark:text-green-400", icon: <TrophyIcon className="inline-block mr-2 h-7 w-7"/> } :
+      stats.percentage >= 80 ? { label: "ممتاز", color: "text-sky-500 dark:text-sky-400", icon: <Star className="inline-block mr-2 h-6 w-6"/> } :
+      stats.percentage >= 70 ? { label: "جيد جداً", color: "text-blue-500 dark:text-blue-400", icon: <CheckCircle className="inline-block mr-2 h-6 w-6"/> } :
+      stats.percentage >= 50 ? { label: "جيد", color: "text-yellow-500 dark:text-yellow-400", icon: <Info className="inline-block mr-2 h-6 w-6"/> } :
+      { label: "بحاجة للمزيد من التدريب", color: "text-red-500 dark:text-red-400", icon: <BookOpen className="inline-block mr-2 h-6 w-6"/> };
 
     return (
-      <div className="container py-8 max-w-4xl">
-        <Card className="mb-8 overflow-hidden">
-          <div className="h-2 bg-primary"></div>
-          <CardHeader className="text-center">
-            <TrophyIcon className="h-12 w-12 text-yellow-500 mx-auto mb-2" />
-            <CardTitle className="text-2xl">نتيجة اختبار {selectedExam.name}</CardTitle>
-            <CardDescription>
-              أكملت الاختبار بنجاح
+      <div className="container py-8 max-w-4xl font-arabic animate-fadeIn">
+        <Card className="mb-8 overflow-hidden shadow-xl dark:bg-slate-800/50">
+          <div className={cn("h-3 rounded-t-lg", selectedExam.themeColor || "bg-primary")}></div>
+          <CardHeader className="text-center p-6">
+            <div className="w-20 h-20 mx-auto mb-4 rounded-full flex items-center justify-center bg-gradient-to-br from-yellow-400 to-orange-500 text-white shadow-lg animate-pulse-slow">
+                {performance.icon}
+            </div>
+            <CardTitle className="text-3xl font-bold text-gray-800 dark:text-white">نتيجة اختبار: {selectedExam.name}</CardTitle>
+            <CardDescription className="text-lg text-gray-600 dark:text-gray-300 mt-1">
+              أكملت الاختبار بنجاح! إليك ملخص أدائك.
             </CardDescription>
           </CardHeader>
-          <CardContent>
-            <div className="text-center mb-8">
-              <div className="text-4xl font-bold mb-1">{stats.totalScore}/{stats.totalQuestions}</div>
-              <div className={cn("text-xl font-medium", performance.color)}>
+          <CardContent className="p-6">
+            <div className="text-center mb-10">
+              <div className="text-5xl font-bold mb-2 text-gray-800 dark:text-white">{stats.totalCorrect} <span className="text-3xl text-gray-500 dark:text-gray-400">/ {stats.totalScoredQuestions}</span></div>
+              <div className={cn("text-2xl font-semibold", performance.color)}>
                 {performance.label} ({stats.percentage.toFixed(1)}%)
               </div>
+               {selectedExam.nonScoredCount && selectedExam.nonScoredCount > 0 && (
+                <p className="text-xs text-gray-500 dark:text-gray-400 mt-3 p-2 bg-slate-100 dark:bg-slate-700/50 rounded-md">
+                    <Info size={12} className="inline ml-1"/>
+                    تم عرض {selectedExam.totalQuestions} سؤالاً، منها {selectedExam.nonScoredCount} أسئلة تجريبية لم تُحتسب في النتيجة أعلاه.
+                </p>
+            )}
             </div>
 
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
-              <div className="bg-muted/30 p-4 rounded-lg text-center">
-                <div className="text-sm text-muted-foreground mb-1">القدرات اللفظية</div>
-                <div className="font-bold">{stats.verbalScore}/{stats.verbalTotal}</div>
-                <div className="text-xs text-muted-foreground">
-                  {stats.verbalPercentage ? stats.verbalPercentage.toFixed(1) : 0}%
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8 text-center">
+              {[
+                {label: "اللفظي", value: `${stats.verbalScore}/${stats.verbalTotal}`, percentage: stats.verbalPercentage},
+                {label: "الكمي", value: `${stats.quantitativeScore}/${stats.quantitativeTotal}`, percentage: stats.quantitativePercentage},
+                {label: "الوقت", value: `${stats.timeTaken} د`, subtext: `من ${selectedExam.totalTime} د`},
+                {label: "التقدير", value: performance.label, color: performance.color, subtext: "العام"},
+              ].map(item => (
+                <div key={item.label} className="bg-slate-100 dark:bg-slate-700/50 p-4 rounded-xl shadow-sm hover:shadow-md transition-shadow">
+                  <div className="text-xs sm:text-sm text-gray-500 dark:text-gray-400 mb-1">{item.label}</div>
+                  <div className={cn("text-lg sm:text-xl font-bold text-gray-800 dark:text-white", item.color)}>{item.value}</div>
+                  {item.percentage !== undefined && <div className="text-xs text-gray-500 dark:text-gray-400">{item.percentage.toFixed(1)}%</div>}
+                  {item.subtext && <div className="text-xs text-gray-500 dark:text-gray-400">{item.subtext}</div>}
                 </div>
-              </div>
-              <div className="bg-muted/30 p-4 rounded-lg text-center">
-                <div className="text-sm text-muted-foreground mb-1">القدرات الكمية</div>
-                <div className="font-bold">{stats.quantitativeScore}/{stats.quantitativeTotal}</div>
-                <div className="text-xs text-muted-foreground">
-                  {stats.quantitativePercentage ? stats.quantitativePercentage.toFixed(1) : 0}%
-                </div>
-              </div>
-              <div className="bg-muted/30 p-4 rounded-lg text-center">
-                <div className="text-sm text-muted-foreground mb-1">الوقت المستغرق</div>
-                <div className="font-bold">
-                {stats.timeTaken} دقيقة
-              </div>
-                <div className="text-xs text-muted-foreground">
-                  من أصل {selectedExam.totalTime} دقيقة
-                </div>
-              </div>
-              <div className="bg-muted/30 p-4 rounded-lg text-center">
-        <div className="text-sm text-muted-foreground mb-1">التقدير</div>
-                <div className={cn("font-bold", performance.color)}>{performance.label}</div>
-                <div className="text-xs text-muted-foreground">
-                  المستوى العام
-                </div>
-              </div>
+              ))}
             </div>
 
-            <Separator className="my-6" />
+            <Separator className="my-8 dark:bg-slate-700" />
 
             <div>
-              <h3 className="font-medium mb-4">النتائج حسب القسم:</h3>
-              <div className="border border-slate-700 rounded-lg overflow-hidden bg-slate-900/90">
-                <table className="w-full">
-                  <thead className="bg-slate-800">
+              <h3 className="font-semibold text-xl text-gray-700 dark:text-gray-100 mb-4">النتائج التفصيلية حسب القسم:</h3>
+              <div className="border border-slate-200 dark:border-slate-700 rounded-lg overflow-hidden shadow-sm">
+                <table className="w-full text-sm">
+                  <thead className="bg-slate-50 dark:bg-slate-800">
                     <tr>
-                      <th className="px-4 py-2 text-right text-slate-100">القسم</th>
-                      <th className="px-4 py-2 text-right text-slate-100">النوع</th>
-                      <th className="px-4 py-2 text-right text-slate-100">النتيجة</th>
-                      <th className="px-4 py-2 text-right text-slate-100">النسبة</th>
+                      <th className="px-3 py-3 text-right font-medium text-gray-600 dark:text-gray-300">القسم</th>
+                      <th className="px-3 py-3 text-right font-medium text-gray-600 dark:text-gray-300 hidden sm:table-cell">النوع</th>
+                      <th className="px-3 py-3 text-center font-medium text-gray-600 dark:text-gray-300">النتيجة (المحسوبة)</th>
+                       <th className="px-3 py-3 text-center font-medium text-gray-600 dark:text-gray-300">الأسئلة المعروضة</th>
+                      <th className="px-3 py-3 text-center font-medium text-gray-600 dark:text-gray-300">النسبة</th>
                     </tr>
                   </thead>
-                  <tbody className="text-slate-200">
+                  <tbody className="text-gray-700 dark:text-gray-200">
                     {selectedExam.sections.map((section, index) => {
-                      const sectionScore = sectionScores[section.sectionNumber] || 0;
-                      const sectionPercentage = (sectionScore / section.questionCount) * 100;
+                      const sectionResult = sectionScores[section.sectionNumber] || { score: 0, scoredQuestionsCount: 0 };
+                      const sectionRawQuestions = allProcessedQuestionsBySection[section.sectionNumber] || [];
+                      const actualScoredCountInSection = sectionRawQuestions.filter(q => !q._isNonScored).length;
+
+                      const sectionPercentage = actualScoredCountInSection > 0 
+                        ? (sectionResult.score / actualScoredCountInSection) * 100 
+                        : 0;
 
                       return (
-                        <tr key={section.sectionNumber} className={index % 2 === 0 ? "bg-slate-900" : "bg-slate-800/50"}>
-                          <td className="border-t border-slate-700 px-4 py-2">{section.name}</td>
-                          <td className="border-t border-slate-700 px-4 py-2">
+                        <tr key={section.sectionNumber} className={index % 2 === 0 ? "bg-white dark:bg-slate-900/30" : "bg-slate-50/50 dark:bg-slate-800/30"}>
+                          <td className="border-t border-slate-200 dark:border-slate-700 px-3 py-3">{section.name}</td>
+                          <td className="border-t border-slate-200 dark:border-slate-700 px-3 py-3 hidden sm:table-cell">
                             {section.category === "verbal" ? "لفظي" : 
                              section.category === "quantitative" ? "كمي" : 
-                             "مختلط (لفظي وكمي)"}
+                             "مختلط"}
                           </td>
-                          <td className="border-t border-slate-700 px-4 py-2">{sectionScore}/{section.questionCount}</td>
-                          <td className="border-t border-slate-700 px-4 py-2">{sectionPercentage.toFixed(1)}%</td>
+                          <td className="border-t border-slate-200 dark:border-slate-700 px-3 py-3 text-center font-semibold">{sectionResult.score}/{actualScoredCountInSection}</td>
+                          <td className="border-t border-slate-200 dark:border-slate-700 px-3 py-3 text-center">{section.questionCount}</td>
+                          <td className="border-t border-slate-200 dark:border-slate-700 px-3 py-3 text-center">{sectionPercentage.toFixed(1)}%</td>
                         </tr>
                       );
                     })}
@@ -1021,855 +1116,336 @@ const QiyasExamPage: React.FC = () => {
               </div>
             </div>
           </CardContent>
-          <CardFooter className="flex justify-between">
-            <Button variant="outline" onClick={() => setCurrentView("selection")}>
+          <CardFooter className="flex flex-col sm:flex-row justify-between items-center gap-3 p-6 bg-gray-50 dark:bg-slate-800/30 border-t dark:border-slate-700">
+            <Button variant="outline" className="w-full sm:w-auto dark:text-gray-200 dark:border-slate-600 dark:hover:bg-slate-700" onClick={() => setCurrentView("selection")}>
+              <ArrowRightIcon className="h-4 w-4 ml-2" />
               العودة للاختبارات
             </Button>
 
-              <div className="flex gap-2">
+              <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
                 <Button 
                   onClick={() => {
-                    const examName = selectedExam?.name || "اختبار قياس";
-                    const withAnswers = true;
+                    try {
+                      if (!selectedExam || !allProcessedQuestionsBySection) {
+                        toast({ title: "خطأ", description: "بيانات الاختبار غير متوفرة للتحميل.", variant: "destructive" });
+                        return;
+                      }
+                      const examName = selectedExam.name || "اختبار قياس";
+                      const withAnswers = true; // For this button, always show answers
 
-                    // Create a new window/tab for the results
-                    const resultsWindow = window.open('', '_blank');
-                    if (!resultsWindow) {
-                      toast({
-                        title: "خطأ",
-                        description: "فشل في فتح نافذة النتائج. يرجى السماح بالنوافذ المنبثقة.",
-                        variant: "destructive",
+                      const resultsWindow = window.open('', '_blank');
+                      if (!resultsWindow) {
+                        toast({ title: "خطأ بفتح النافذة", description: "يرجى السماح بالنوافذ المنبثقة.", variant: "destructive" });
+                        return;
+                      }
+
+                      let content = `
+                        <!DOCTYPE html><html dir="rtl" lang="ar"><head><meta charset="UTF-8"><title>نتائج: ${examName}</title><style>
+                        @import url('https://fonts.googleapis.com/css2?family=Noto+Kufi+Arabic:wght@400;700&display=swap');
+                        body{font-family:'Noto Kufi Arabic',sans-serif;padding:20px;margin:0;background-color:#f8f9fa;color:#212529;line-height:1.6;}
+                        .container{max-width:800px;margin:auto;background:#fff;padding:20px;border-radius:8px;box-shadow:0 0 15px rgba(0,0,0,0.1);}
+                        .header{text-align:center;margin-bottom:30px;padding-bottom:20px;border-bottom:1px solid #e0e0e0;}
+                        .logo{font-size:28px;font-weight:bold;color:#4f46e5;margin-bottom:10px;}
+                        .section{margin-bottom:30px;padding-bottom:20px;border-bottom:1px dashed #eee;}.section:last-child{border-bottom:none;}
+                        .section h2{color:#4f46e5;margin-bottom:20px;font-size:1.6em;}
+                        .question{margin-bottom:25px;padding:15px;border:1px solid #e0e0e0;border-radius:8px;background:#fdfdfd;}
+                        .question h3{color:#343a40;margin:0 0 15px 0;font-size:1.1em;font-weight:bold;}
+                        .question p:first-of-type{margin-top:0;} .options p{padding:10px 15px;margin:8px 0;border-radius:6px;border:1px solid #ced4da;background:#fff;position:relative;}
+                        .options p.correct{color:#155724 !important;background-color:#d4edda !important;border-color:#c3e6cb !important;font-weight:bold;}
+                        .options p.correct::before{content:"✓";position:absolute;left:15px;top:50%;transform:translateY(-50%);color:#155724;font-size:1.2em;}
+                        .options p.wrong{color:#721c24 !important;background-color:#f8d7da !important;border-color:#f5c6cb !important;font-weight:bold;}
+                        .options p.wrong::before{content:"✗";position:absolute;left:15px;top:50%;transform:translateY(-50%);color:#721c24;font-size:1.2em;}
+                        .explanation{margin-top:10px;padding:10px;background:#fff3cd;border-radius:6px;border:1px solid #ffeeba;color:#856404;font-size:0.9em;}
+                        .explanation .note{font-weight:bold;display:block;margin-bottom:5px;}
+                        .option-label{font-size:0.9em;margin-left:8px;font-weight:normal;color:#555;}
+                        .non-scored-q{border-left: 4px solid #007bff; padding-left:10px;}
+                        .non-scored-badge{font-size:0.8em;background-color:#e7f3ff;color:#007bff;padding:2px 6px;border-radius:4px;margin-left:10px;font-weight:normal;}
+                        @media print{body{padding:0;background:#fff;}.container{box-shadow:none;border:none;padding:5px;}.header{margin-bottom:10px;} P{page-break-inside: avoid;}}
+                        </style></head><body><div class="container"><div class="header"><div class="logo">قدراتك</div><h1>نتائج: ${examName}</h1>
+                        <div style="font-size:0.9em;color:#6c757d;">تاريخ التقرير: ${new Date().toLocaleDateString('ar-SA')}</div></div>`;
+
+                      Object.entries(allProcessedQuestionsBySection).forEach(([sectionNum, sectionQuestions]) => {
+                        const sectionConfig = selectedExam.sections.find(s => s.sectionNumber === parseInt(sectionNum));
+                        const sectionName = sectionConfig?.name || `القسم ${sectionNum}`;
+                        content += `<div class="section"><h2>${sectionName}</h2>`;
+                        sectionQuestions.forEach((q, idx) => {
+                          content += `<div class="question ${q._isNonScored ? 'non-scored-q' : ''}"><h3>السؤال ${idx + 1}${q._isNonScored? '<span class="non-scored-badge">تجريبي</span>':''}</h3><p>${q.text}</p><div class="options">`;
+                          q.options.forEach((opt, i) => {
+                            let optionClass = ''; let label = '';
+                            const isUserAnswer = (i === answers[q.id]);
+                            const isCorrectAnswer = (i === q.correctOptionIndex);
+                            if (isUserAnswer && isCorrectAnswer) { optionClass = 'correct'; label = ' <span class="option-label">(إجابتك - صحيحة)</span>'; }
+                            else if (isUserAnswer && !isCorrectAnswer) { optionClass = 'wrong'; label = ' <span class="option-label">(إجابتك - خاطئة)</span>'; }
+                            else if (!isUserAnswer && isCorrectAnswer) { optionClass = 'correct'; label = ' <span class="option-label">(الإجابة الصحيحة)</span>'; }
+                            content += `<p class="${optionClass}">${String.fromCharCode(0x0623 + i)}. ${opt}${label}</p>`;
+                          });
+                          content += `</div>`;
+                          if (answers[q.id] !== undefined && answers[q.id] !== q.correctOptionIndex) {
+                            if (q.explanation) { content += `<div class="explanation"><strong class="note">الشرح:</strong>${q.explanation}</div>`; }
+                            else { content += `<div class="explanation"><strong class="note">ملاحظة:</strong> إجابتك غير صحيحة. الإجابة الصحيحة هي الخيار: ${String.fromCharCode(0x0623 + q.correctOptionIndex)}.</div>`; }
+                          } else if (answers[q.id] !== undefined && answers[q.id] === q.correctOptionIndex && q.explanation) {
+                             content += `<div class="explanation"><strong class="note">الشرح (إجابة صحيحة):</strong>${q.explanation}</div>`;
+                          }
+                          content += `</div>`;
+                        });
+                        content += `</div>`;
                       });
-                      return;
+                      content += `<div style="text-align:center;margin-top:30px;padding-top:20px;border-top:1px solid #e0e0e0;font-size:0.8em;color:#6c757d;">© ${new Date().getFullYear()} قدراتك</div></div></body></html>`;
+
+                      resultsWindow.document.write(content);
+                      resultsWindow.document.close();
+                      toast({ title: "تم عرض النتائج", description: "يمكنك طباعة هذه الصفحة أو حفظها كـ PDF.", duration: 5000 });
+                    } catch (error) {
+                      console.error("Error displaying results with answers:", error);
+                      toast({ title: "خطأ", description: "حدث خطأ أثناء محاولة عرض النتائج.", variant: "destructive" });
                     }
-
-                    const content = `
-                      <!DOCTYPE html>
-                      <html dir="rtl" lang="ar">
-                      <head>
-                        <meta charset="UTF-8">
-                        <meta name="viewport" content="width=device-width, initial-scale=1.0">
-                        <head>
-                          <style>
-                            @import url('https://fonts.googleapis.com/css2?family=Noto+Kufi+Arabic:wght@400;700&display=swap');
-
-                            body { 
-                              font-family: 'Noto Kufi Arabic', Arial, sans-serif; 
-                              padding: 40px;
-                              background: linear-gradient(135deg, #f8fafc 25%, transparent 25%) -50px 0,
-                                        linear-gradient(225deg, #f8fafc 25%, transparent 25%) -50px 0,
-                                        linear-gradient(315deg, #f8fafc 25%, transparent 25%),
-                                        linear-gradient(45deg, #f8fafc 25%, transparent 25%);
-                              background-size: 100px 100px;
-                              background-color: #ffffff;
-                            }
-
-                            .header { 
-                              text-align: center; 
-                              margin-bottom: 40px;
-                              position: relative;
-                              padding: 30px;
-                              border-radius: 20px;
-                              background: #fff;
-                              box-shadow: 0 8px 16px -4px rgba(0,0,0,0.1);
-                              border: 2px solid #4f46e5;
-                            }
-
-                            .logo {
-                              font-size: 32px;
-                              font-weight: bold;
-                              color: #4f46e5;
-                              margin-bottom: 15px;
-                              text-shadow: 2px 2px 4px rgba(0,0,0,0.1);
-                              position: relative;
-                              display: inline-block;
-                            }
-
-                            .logo::after {
-                              content: "";
-                              position: absolute;
-                              bottom: -5px;
-                              left: 0;
-                              right: 0;
-                              height: 3px;
-                              background: linear-gradient(90deg, #4f46e5, #06b6d4);
-                              border-radius: 3px;
-                            }
-
-                            .watermark { 
-                              position: fixed;
-                              bottom: 40px;
-                              left: 50%;
-                              transform: translateX(-50%) rotate(-45deg);
-                              text-align: center;
-                              color: rgba(79, 70, 229, 0.06);
-                              font-size: 60px;
-                              font-weight: bold;
-                              pointer-events: none;
-                              white-space: nowrap;
-                              z-index: -1;
-                            }
-
-                            .section { 
-                              margin: 40px 0;
-                              padding: 25px;
-                              background: #fff;
-                              border-radius: 20px;
-                              box-shadow: 0 4px 12px -2px rgba(0,0,0,0.08);
-                              position: relative;
-                              overflow: hidden;
-                              border: 1px solid #e5e7eb;
-                            }
-
-                            .section::before {
-                              content: "";
-                              position: absolute;
-                              top: 0;
-                              left: 0;
-                              right: 0;
-                              height: 5px;
-                              background: linear-gradient(90deg, #4f46e5, #06b6d4);
-                            }
-
-                            .section h2 {
-                              color: #4f46e5;
-                              border-bottom: 2px solid #e5e7eb;
-                              padding-bottom: 15px;
-                              margin-bottom: 25px;
-                              font-size: 1.5em;
-                            }
-
-                            .question { 
-                              margin: 30px 0;
-                              padding: 25px;
-                              border: 1px solid #e5e7eb;
-                              border-radius: 15px;
-                              background: #fafafa;
-                              position: relative;
-                              transition: all 0.3s ease;
-                            }
-
-                            .question:hover {
-                              box-shadow: 0 4px 12px -2px rgba(0,0,0,0.05);
-                              transform: translateY(-2px);
-                            }
-
-                            .question h3 {
-                              color: #1f2937;
-                              margin-bottom: 20px;
-                              font-weight: bold;
-                              font-size: 1.2em;
-                              display: flex;
-                              align-items: center;
-                              gap: 10px;
-                            }
-
-                            .question h3::before {
-                              content: "◈";
-                              color: #4f46e5;
-                            }
-
-                            .options { 
-                              margin: 20px 30px;
-                            }
-
-                            .options p {
-                              padding: 12px 20px;
-                              margin: 10px 0;
-                              border-radius: 10px;
-                              background: #fff;
-                              border: 1px solid #e5e7eb;
-                              transition: all 0.2s ease;
-                              position: relative;
-                            }
-
-                            .options p:hover {
-                              background: #f8fafc;
-                            }
-
-                            .correct { 
-                              color: #059669 !important;
-                              font-weight: bold;
-                              background: #ecfdf5 !important;
-                              border-color: #059669 !important;
-                              position: relative;
-                            }
-
-                            .correct::before {
-                              content: "✓";
-                              position: absolute;
-                              right: 10px;
-                              color: #059669;
-                            }
-                            .wrong {
-                              color: #dc2626 !important;
-                              font-weight: bold;
-                              background: #fee2e2 !important;
-                              border-color: #dc2626 !important;
-                              position: relative;
-                            }
-
-                            .wrong::before {
-                              content: "✗";
-                              position: absolute;
-                              right: 10px;
-                              color: #dc2626;
-                            }
-
-                            .explanation {
-                              margin-top: 15px;
-                              padding: 15px;
-                              background: #fef0d7;
-                              border-radius: 10px;
-                              border: 1px solid #fcd34d;
-                              color: #374151;
-                            }
-
-                            .note {
-                              font-style: italic;
-                              color: #9a3412;
-                            }
-
-                            .page-break {
-                              page-break-after: always;
-                            }
-
-                            @media print {
-                              .watermark {
-                                position: fixed;
-                                top: 50%;
-                                left: 50%;
-                                transform: translate(-50%, -50%) rotate(-45deg);
-                              }
-                            }
-                          </style>
-                        </head>
-                        <body>
-                          <div class="watermark">قدراتك - QODRATAK - قدراتك - QODRATAK</div>
-                          <div class="header">
-                            <div class="logo">قدراتك</div>
-                            <h1>${examName}</h1>
-                            <div style="color: #6b7280; margin-top: 15px; font-size: 1.1em;">
-                              <a href="https://www.qodratak.space" target="_blank" rel="noopener noreferrer" style="color: #4f46e5; text-decoration: underline; transition: all 0.2s;">www.qodratak.space</a>
-                            </div>
-                            <div style="margin-top: 20px; font-size: 1em; color: #4b5563;">
-                              تاريخ الاختبار: ${new Date().toLocaleDateString('ar-SA')}
-                            </div>
-                          </div>
-                          <style>
-                            * {
-                              user-select: none !important;
-                              -webkit-user-select: none !important;
-                              -moz-user-select: none !important;
-                              -ms-user-select: none !important;
-                            }
-                            body {
-                              background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
-                              background-size: 200% 200%;
-                              animation: gradientBG 15s ease infinite;
-                            }
-                            @keyframes gradientBG {
-                              0% { background-position: 0% 50% }
-                              50% { background-position: 100% 50% }
-                              100% { background-position: 0% 50% }
-                            }
-                            .watermark {
-                              opacity: 0.08;
-                              transform: rotate(-45deg) scale(1.5);
-                            }
-                          </style>
-                          ${Object.entries(allSectionsQuestions).map(([sectionNum, questions]) => {
-                            const sectionName = selectedExam?.sections[parseInt(sectionNum) - 1]?.name || `القسم ${sectionNum}`;
-                            return `
-                              <div class="section">
-                                <h2>${sectionName}</h2>
-                                ${questions.map((q, idx) => `
-                            <div class="question">
-                              <h3>السؤال ${idx + 1}</h3>
-                              <p>${q.text}</p>
-                              <div class="options">
-                                ${q.options.map((opt, i) => `
-                                  <p class="${
-                                    withAnswers ? (
-                                      i === answers[q.id] && i === q.correctOptionIndex ? 'correct' :
-                                      i === answers[q.id] ? 'wrong' :
-                                      i === q.correctOptionIndex ? 'correct' : ''
-                                    ) : 'normal'
-                                  }">${i + 1}. ${opt}${
-                                    withAnswers && i === answers[q.id] ? ' (إجابتك)' : 
-                                    withAnswers && i === q.correctOptionIndex ? ' (الإجابة الصحيحة)' : ''
-                                  }</p>
-                                `).join('')}
-                              </div>
-                              ${withAnswers && answers[q.id] !== q.correctOptionIndex ? `
-                                <div class="explanation">
-                                  <p class="note">ملاحظة: إجابتك غير صحيحة</p>
-                                </div>
-                              ` : ''}
-                            </div>
-                          `).join('')}
-                              </div>
-                            `;
-                          }).join('')}
-                          <div style="text-align: center; margin-top: 40px; color: #6b7280; font-size: 0.9em;">
-                            © ${new Date().getFullYear()} قدراتك - جميع الحقوق محفوظة
-                          </div>
-                        </body>
-                      </html>
-                    `;
-
-                    // Write content directly to the new window
-                    resultsWindow.document.write(content);
-                    resultsWindow.document.close();
-
-                    toast({
-                      title: "تم تحميل الأسئلة مع الإجابات",
-                      description: "يمكنك فتح الملف في المتصفح لطباعته أو تحويله إلى PDF",
-                    });
                   }}
-                  className="gap-2"
+                  className="gap-2 w-full sm:w-auto bg-blue-600 hover:bg-blue-700 text-white"
                 >
                   <Download className="h-4 w-4" />
-                  تحميل الاسئلة مع اجاباتي
+                  عرض النتائج للطباعة
                 </Button>
 
                 <Button 
                   variant="outline"
+                   className="gap-2 w-full sm:w-auto dark:text-gray-200 dark:border-slate-600 dark:hover:bg-slate-700"
                   onClick={() => {
-                    const examName = selectedExam?.name || "اختبار قياس";
-                    const withAnswers = true; // Changed to true to show correct answers
-                    const withUserAnswers = false; // New flag to control showing user answers
-                    const content = `
-                      <html dir="rtl">
-                        <head>
-                          <style>
-                            @import url('https://fonts.googleapis.com/css2?family=Noto+Kufi+Arabic:wght@400;700&display=swap');
+                    try {
+                      if (!selectedExam || !allProcessedQuestionsBySection) {
+                        toast({ title: "خطأ", description: "بيانات الاختبار غير متوفرة للتحميل.", variant: "destructive" });
+                        return;
+                      }
+                      const examName = selectedExam.name || "اختبار قياس";
+                      let content = `
+                        <!DOCTYPE html><html dir="rtl" lang="ar"><head><meta charset="UTF-8"><title>أسئلة: ${examName}</title><style>
+                        @import url('https://fonts.googleapis.com/css2?family=Noto+Kufi+Arabic:wght@400;700&display=swap');
+                        body{font-family:'Noto Kufi Arabic',sans-serif;padding:20px;margin:0;background-color:#f8f9fa;color:#212529;line-height:1.6;}
+                        .container{max-width:800px;margin:auto;background:#fff;padding:20px;border-radius:8px;box-shadow:0 0 15px rgba(0,0,0,0.1);}
+                        .header{text-align:center;margin-bottom:30px;padding-bottom:20px;border-bottom:1px solid #e0e0e0;}
+                        .logo{font-size:28px;font-weight:bold;color:#4f46e5;margin-bottom:10px;}
+                        .section{margin-bottom:30px;padding-bottom:20px;border-bottom:1px dashed #eee;}.section:last-child{border-bottom:none;}
+                        .section h2{color:#4f46e5;margin-bottom:20px;font-size:1.6em;}
+                        .question{margin-bottom:25px;padding:15px;border:1px solid #e0e0e0;border-radius:8px;background:#fdfdfd;}
+                        .question h3{color:#343a40;margin:0 0 15px 0;font-size:1.1em;font-weight:bold;}
+                        .question p:first-of-type{margin-top:0;} .options p{padding:10px 15px;margin:8px 0;border-radius:6px;border:1px solid #ced4da;background:#fff;}
+                        .non-scored-badge{font-size:0.8em;background-color:#e7f3ff;color:#007bff;padding:2px 6px;border-radius:4px;margin-left:10px;font-weight:normal;}
+                        @media print{body{padding:0;background:#fff;}.container{box-shadow:none;border:none;padding:5px;} P{page-break-inside: avoid;}}
+                        </style></head><body><div class="container"><div class="header"><div class="logo">قدراتك</div><h1>أسئلة: ${examName}</h1>
+                        <div style="font-size:0.9em;color:#6c757d;">تاريخ التصدير: ${new Date().toLocaleDateString('ar-SA')}</div></div>`;
 
-                            body { 
-                              font-family: 'Noto Kufi Arabic', Arial, sans-serif; 
-                              padding: 40px;
-                              background: linear-gradient(135deg, #f8fafc 25%, transparent 25%) -50px 0,
-                                        linear-gradient(225deg, #f8fafc 25%, transparent 25%) -50px 0,
-                                        linear-gradient(315deg, #f8fafc 25%, transparent 25%),
-                                        linear-gradient(45deg, #f8fafc 25%, transparent 25%);
-                              background-size: 100px 100px;
-                              background-color: #ffffff;
-                            }
+                      Object.entries(allProcessedQuestionsBySection).forEach(([sectionNum, sectionQuestions]) => {
+                        const sectionConfig = selectedExam.sections.find(s => s.sectionNumber === parseInt(sectionNum));
+                        const sectionName = sectionConfig?.name || `القسم ${sectionNum}`;
+                        content += `<div class="section"><h2>${sectionName}</h2>`;
+                        sectionQuestions.forEach((q, idx) => {
+                          content += `<div class="question"><h3>السؤال ${idx + 1}${q._isNonScored? '<span class="non-scored-badge">تجريبي</span>':''}</h3><p>${q.text}</p><div class="options">`;
+                          q.options.forEach((opt, i) => {
+                            content += `<p>${String.fromCharCode(0x0623 + i)}. ${opt}</p>`;
+                          });
+                          content += `</div></div>`;
+                        });
+                        content += `</div>`;
+                      });
+                      content += `<div style="text-align:center;margin-top:30px;padding-top:20px;border-top:1px solid #e0e0e0;font-size:0.8em;color:#6c757d;">© ${new Date().getFullYear()} قدراتك</div></div></body></html>`;
 
-                            .header { 
-                              text-align: center; 
-                              margin-bottom: 40px;
-                              position: relative;
-                              padding: 30px;
-                              border-radius: 20px;
-                              background: #fff;
-                              box-shadow: 0 8px 16px -4px rgba(0,0,0,0.1);
-                              border: 2px solid #4f46e5;
-                            }
-
-                            .logo {
-                              font-size: 32px;
-                              font-weight: bold;
-                              color: #4f46e5;
-                              margin-bottom: 15px;
-                              text-shadow: 2px 2px 4px rgba(0,0,0,0.1);
-                              position: relative;
-                              display: inline-block;
-                            }
-
-                            .logo::after {
-                              content: "";
-                              position: absolute;
-                              bottom: -5px;
-                              left: 0;
-                              right: 0;
-                              height: 3px;
-                              background: linear-gradient(90deg, #4f46e5, #06b6d4);
-                              border-radius: 3px;
-                            }
-
-                            .watermark { 
-                              position: fixed;
-                              bottom: 40px;
-                              left: 50%;
-                              transform: translateX(-50%) rotate(-45deg);
-                              text-align: center;
-                              color: rgba(79, 70, 229, 0.06);
-                              font-size: 60px;
-                              font-weight: bold;
-                              pointer-events: none;
-                              white-space: nowrap;
-                              z-index: -1;
-                            }
-
-                            .section { 
-                              margin: 40px 0;
-                              padding: 25px;
-                              background: #fff;
-                              border-radius: 20px;
-                              box-shadow: 0 4px 12px -2px rgba(0,0,0,0.08);
-                              position: relative;
-                              overflow: hidden;
-                              border: 1px solid #e5e7eb;
-                            }
-
-                            .section::before {
-                              content: "";
-                              position: absolute;
-                              top: 0;
-                              left: 0;
-                              right: 0;
-                              height: 5px;
-                              background: linear-gradient(90deg, #4f46e5, #06b6d4);
-                            }
-
-                            .section h2 {
-                              color: #4f46e5;
-                              border-bottom: 2px solid #e5e7eb;
-                              padding-bottom: 15px;
-                              margin-bottom: 25px;
-                              font-size: 1.5em;
-                            }
-
-                            .question { 
-                              margin: 30px 0;
-                              padding: 25px;
-                              border: 1px solid #e5e7eb;
-                              border-radius: 15px;
-                              background: #fafafa;
-                              position: relative;
-                              transition: all 0.3s ease;
-                            }
-
-                            .question:hover {
-                              box-shadow: 0 4px 12px -2px rgba(0,0,0,0.05);
-                              transform: translateY(-2px);
-                            }
-
-                            .question h3 {
-                              color: #1f2937;
-                              margin-bottom: 20px;
-                              font-weight: bold;
-                              font-size: 1.2em;
-                              display: flex;
-                              align-items: center;
-                              gap: 10px;
-                            }
-
-                            .question h3::before {
-                              content: "◈";
-                              color: #4f46e5;
-                            }
-
-                            .options { 
-                              margin: 20px 30px;
-                            }
-
-                            .options p {
-                              padding: 12px 20px;
-                              margin: 10px 0;
-                              border-radius: 10px;
-                              background: #fff;
-                              border: 1px solid #e5e7eb;
-                              transition: all 0.2s ease;
-                              position: relative;
-                            }
-
-                            .options p:hover {
-                              background: #f8fafc;
-                            }
-
-                            .page-break {
-                              page-break-after: always;
-                            }
-
-                            @media print {
-                              .watermark {
-                                position: fixed;
-                                top: 50%;
-                                left: 50%;
-                                transform: translate(-50%, -50%) rotate(-45deg);
-                              }
-                            }
-                          </style>
-                        </head>
-                        <body>
-                          <div class="watermark">قدراتك - QODRATAK - قدراتك - QODRATAK</div>
-                          <div class="header">
-                            <div class="logo">قدراتك</div>
-                            <h1>${examName}</h1>
-                            <div style="color: #6b7280; margin-top: 15px; font-size: 1.1em;">
-                              <a href="https://www.qodratak.space" target="_blank" rel="noopener noreferrer" style="color: #4f46e5; text-decoration: underline; transition: all 0.2s;">www.qodratak.space</a>
-                            </div>
-                            <div style="margin-top: 20px; font-size: 1em; color: #4b5563;">
-                              تاريخ الاختبار: ${new Date().toLocaleDateString('ar-SA')}
-                            </div>
-                          </div>
-                          <style>
-                            * {
-                              user-select: none !important;
-                              -webkit-user-select: none !important;
-                              -moz-user-select: none !important;
-                            }
-                            body {
-                              background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
-                              background-size: 200% 200%;
-                              animation: gradientBG 15s ease infinite;
-                            }
-                            @keyframes gradientBG {
-                              0% { background-position: 0% 50% }
-                              50% { background-position: 100% 50% }
-                              100% { background-position: 0% 50% }
-                            }
-                            .watermark {
-                              opacity: 0.08;
-                              transform: rotate(-45deg) scale(1.5);
-                            }
-                          </style>
-                          ${Object.entries(allSectionsQuestions).map(([sectionNum, questions]) => {
-                            const sectionName = selectedExam?.sections[parseInt(sectionNum) - 1]?.name || `القسم ${sectionNum}`;
-                            return `
-                              <div class="section">
-                                <h2>${sectionName}</h2>
-                                ${questions.map((q, idx) => `
-                                  <div class="question">
-                                    <h3>السؤال ${idx + 1}</h3>
-                                    <p>${q.text}</p>
-                                    <div class="options">
-                                      ${q.options.map((opt, i) => `
-                                        <p>${i + 1}. ${opt}</p>
-                                      `).join('')}
-                                    </div>
-                                  </div>
-                                `).join('')}
-                              </div>
-                            `;
-                          }).join('')}
-                          <div style="text-align: center; margin-top: 40px; color: #6b7280; font-size: 0.9em;">
-                            © ${new Date().getFullYear()} قدراتك - جميع الحقوق محفوظة
-                          </div>
-                        </body>
-                      </html>
-                    `;
-
-                    const blob = new Blob([content], { type: 'text/html;charset=utf-8' });
-                    const url = window.URL.createObjectURL(blob);
-                    const a = document.createElement('a');
-                    a.href = url;
-                    a.download = `${examName}_بدون_إجابات.html`;
-                    document.body.appendChild(a);
-                    a.click();
-                    document.body.removeChild(a);
-                    window.URL.revokeObjectURL(url);
-
-                    toast({
-                      title: "تم تحميل الأسئلة",
-                      description: "يمكنك فتح الملف في المتصفح لطباعته أو تحويله إلى PDF",
-                    });
+                      const blob = new Blob([content], { type: 'text/html;charset=utf-8' });
+                      const url = window.URL.createObjectURL(blob);
+                      const a = document.createElement('a');
+                      a.href = url;
+                      a.download = `${examName}_اسئلة_فقط.html`;
+                      document.body.appendChild(a);
+                      a.click();
+                      document.body.removeChild(a);
+                      window.URL.revokeObjectURL(url);
+                      toast({ title: "تم تحميل الأسئلة", description: "يمكنك فتح الملف في المتصفح لطباعته أو تحويله إلى PDF.", duration: 5000});
+                    } catch (error) {
+                      console.error("Error downloading questions only:", error);
+                      toast({ title: "خطأ", description: "حدث خطأ أثناء محاولة تحميل ملف الأسئلة.", variant: "destructive"});
+                    }
                   }}
-                  className="gap-2"
                 >
                   <Download className="h-4 w-4" />
-                  تحميل الاسئلة
+                  تحميل الاسئلة فقط
                 </Button>
               </div>
-
           </CardFooter>
         </Card>
 
-        {/* Questions Review */}
-      {(!selectedExam?.hideQuestionReview) && (
-        <Card className="mb-6">
+        {(!selectedExam?.hideQuestionReview) && (
+        <Card className="mb-6 dark:bg-slate-800/50">
           <CardHeader>
-            <CardTitle>مراجعة الأسئلة والإجابات</CardTitle>
-            <CardDescription>
-              راجع إجاباتك وتعلم من أخطائك
+            <CardTitle className="text-xl font-semibold text-gray-800 dark:text-white">مراجعة الأسئلة والإجابات</CardTitle>
+            <CardDescription className="text-gray-600 dark:text-gray-300">
+              راجع إجاباتك وتعلم من أخطائك للتحضير بشكل أفضل.
             </CardDescription>
           </CardHeader>
         <CardContent>
           <Tabs defaultValue="all" className="w-full">
-            <TabsList className="w-full mb-4">
-              <TabsTrigger value="all">جميع الأسئلة</TabsTrigger>
-              <TabsTrigger value="correct">الإجابات الصحيحة</TabsTrigger>
-              <TabsTrigger value="incorrect">الإجابات الخاطئة</TabsTrigger>
+            <TabsList className="grid w-full grid-cols-3 mb-6 bg-slate-100 dark:bg-slate-700 rounded-lg p-1">
+              <TabsTrigger value="all" className="data-[state=active]:bg-white data-[state=active]:text-primary data-[state=active]:shadow-md dark:data-[state=active]:bg-slate-600 dark:data-[state=active]:text-white">الكل</TabsTrigger>
+              <TabsTrigger value="correct" className="data-[state=active]:bg-white data-[state=active]:text-green-600 data-[state=active]:shadow-md dark:data-[state=active]:bg-slate-600 dark:data-[state=active]:text-green-400">الصحيحة</TabsTrigger>
+              <TabsTrigger value="incorrect" className="data-[state=active]:bg-white data-[state=active]:text-red-600 data-[state=active]:shadow-md dark:data-[state=active]:bg-slate-600 dark:data-[state=active]:text-red-400">الخاطئة</TabsTrigger>
             </TabsList>
 
-            <TabsContent value="all">
-              <div className="space-y-4">
-                {Object.entries(allSectionsQuestions).flatMap(([sectionNum, sectionQuestions]) => 
-              sectionQuestions.map((question, index) => {
-                const isCorrect = answers[question.id] === question.correctOptionIndex;
-                const sectionName = selectedExam?.sections[parseInt(sectionNum) - 1]?.name || `القسم ${sectionNum}`;
-
-                  return (
-                    <div key={question.id} className={cn(
-                      "p-4 rounded-lg border",
-                      isCorrect ? "bg-green-50 dark:bg-green-900/20 border-green-200" : "bg-red-50 dark:bg-red-900/20 border-red-200"
-                    )}>
-                      <div className="flex items-start gap-3">
-                        <div className={cn(
-                          "w-8 h-8 rounded-full flex items-center justify-center text-white",
-                          isCorrect ? "bg-green-500" : "bg-red-500"
+            {['all', 'correct', 'incorrect'].map(filterType => (
+                <TabsContent key={filterType} value={filterType} className="space-y-6">
+                  {Object.entries(allProcessedQuestionsBySection)
+                    .flatMap(([sectionNumStr, sectionQuestions]) => {
+                        const sectionConfig = selectedExam.sections.find(s => s.sectionNumber === parseInt(sectionNumStr));
+                        return sectionQuestions.map((question, index) => ({ 
+                            question, 
+                            sectionName: sectionConfig?.name || `القسم ${sectionNumStr}`,
+                            questionDisplayIndex: index + 1 
+                        }));
+                    })
+                    .filter(({question}) => {
+                        if (filterType === "all") return true;
+                        // For non-scored questions, we might not want them in "correct/incorrect" unless specified
+                        // if (question._isNonScored && filterType !== "all") return false; 
+                        const isCorrect = answers[question.id] === question.correctOptionIndex;
+                        return filterType === "correct" ? isCorrect : !isCorrect;
+                    })
+                    .map(({question, sectionName, questionDisplayIndex}) => {
+                    const isCorrect = answers[question.id] === question.correctOptionIndex;
+                    return (
+                        <div key={`${question.id}-${filterType}`} className={cn(
+                        "p-4 rounded-lg border-2 shadow-sm",
+                        question._isNonScored ? "border-dashed border-blue-400 bg-blue-50/30 dark:bg-blue-900/10 dark:border-blue-600/50" :
+                        isCorrect ? "border-green-500 bg-green-50/50 dark:bg-green-900/20 dark:border-green-600" : 
+                        "border-red-500 bg-red-50/50 dark:bg-red-900/20 dark:border-red-600"
                         )}>
-                          {isCorrect ? "✓" : "✗"}
-                        </div>
-                        <div>
-                          <h4 className="font-medium mb-2">{sectionName} - سؤال {index + 1}</h4>
-                          <p className="text-gray-800 dark:text-gray-200 mb-4">{question.text}</p>
+                        <div className="flex items-start gap-3 sm:gap-4">
+                            <div className={cn(
+                            "w-8 h-8 sm:w-10 sm:h-10 rounded-full flex items-center justify-center text-white font-bold text-lg flex-shrink-0 mt-1",
+                            question._isNonScored ? "bg-blue-400" : isCorrect ? "bg-green-500" : "bg-red-500"
+                            )}>
+                            {question._isNonScored ? <Info size={18}/> : isCorrect ? "✓" : "✗"}
+                            </div>
+                            <div className="flex-grow">
+                            <h4 className="font-semibold text-sm sm:text-base text-gray-700 dark:text-gray-100 mb-1">{sectionName} - سؤال {questionDisplayIndex}</h4>
+                            {question._isNonScored && <Badge variant="outline" className="mb-2 text-xs border-blue-500 text-blue-600 bg-blue-100 dark:bg-blue-900/30 dark:text-blue-300 dark:border-blue-600">سؤال تجريبي</Badge>}
+                            <p className="text-gray-800 dark:text-gray-200 mb-4 leading-relaxed text-sm sm:text-base" dir="auto">{question.text}</p>
 
-                          <div className="space-y-2">
-                            {question.options.map((option, optIndex) => (
-                              <div key={optIndex} className={cn(
-                                "p-3 rounded-lg border",
-                                optIndex === question.correctOptionIndex ? "bg-green-50 dark:bg-green-900/20 border-green-200" :
-                                optIndex === answers[question.id] ? "bg-red-50 dark:bg-red-900/20 border-red-200" :
-                                "bg-gray-50 dark:bg-gray-800"
-                              )}>
-                                <div className="flex items-center">
-                                  <span className="mr-2">{option}</span>
-                                  {optIndex === question.correctOptionIndex && (
-                                    <span className="text-green-600 dark:text-green-400 text-sm mr-auto">
-                                      (الإجابة الصحيحة)
-                                    </span>
-                                  )}
+                            <div className="space-y-2">
+                                {question.options.map((option, optIndex) => (
+                                <div key={`${question.id}-optrev-${optIndex}`} className={cn(
+                                    "p-3 rounded-lg border text-xs sm:text-sm",
+                                    "bg-white dark:bg-slate-700/50 dark:border-slate-600",
+                                    optIndex === question.correctOptionIndex && "border-green-400 bg-green-50/80 dark:bg-green-800/30 dark:border-green-500 font-semibold text-green-700 dark:text-green-300",
+                                    optIndex === answers[question.id] && optIndex !== question.correctOptionIndex && "border-red-400 bg-red-50/80 dark:bg-red-800/30 dark:border-red-500 text-red-700 dark:text-red-300"
+                                )}>
+                                    <div className="flex items-center justify-between">
+                                    <span dir="auto">{["أ", "ب", "ج", "د"][optIndex]}. {option}</span>
+                                    {optIndex === answers[question.id] && (
+                                        <Badge variant={optIndex === question.correctOptionIndex ? "default" : "destructive"} className={cn("text-xs px-1.5 py-0.5", optIndex === question.correctOptionIndex ? "bg-green-500" : "bg-red-500", "text-white")}>
+                                        {optIndex === question.correctOptionIndex ? "إجابتك (صحيحة)" : "إجابتك (خاطئة)"}
+                                        </Badge>
+                                    )}
+                                     {optIndex !== answers[question.id] && optIndex === question.correctOptionIndex && (
+                                         <Badge variant="default" className="text-xs px-1.5 py-0.5 bg-green-100 text-green-700 border border-green-500 dark:bg-green-800/50 dark:text-green-300">الإجابة الصحيحة</Badge>
+                                     )}
+                                    </div>
                                 </div>
-                              </div>
-                            ))}
-                          </div>
-
-
-
-                          <div className="mt-4 flex justify-end">
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              className="text-muted-foreground"
-                              onClick={() => {
-                                const message = encodeURIComponent(
-                                  `تبليغ عن خطأ في السؤال:\n\nنص السؤال: ${question.text}\n\nالخيارات:\n${question.options.map((opt, i) => `${i + 1}. ${opt}`).join('\n')}\n\nالإجابة الصحيحة: ${question.correctOptionIndex + 1}`
-                                );
-                                window.open(`https://t.me/qodratak2030?text=${message}`, '_blank');
-                              }}
-                            >
-                              <span className="ml-2">إبلاغ عن خطأ</span>
-                            </Button>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  );
-                }))}
-              </div>
-            </TabsContent>
-
-            <TabsContent value="correct">
-              <div className="space-y-4">
-                {Object.entries(allSectionsQuestions).flatMap(([sectionNum, sectionQuestions]) => 
-              sectionQuestions.filter(q => answers[q.id] === q.correctOptionIndex).map((question, index) => {
-                  const isCorrect = answers[question.id] === question.correctOptionIndex;
-                  const sectionName = selectedExam?.sections[parseInt(sectionNum) - 1]?.name || `القسم ${sectionNum}`;
-                   return (
-                    <div key={question.id} className={cn(
-                      "p-4 rounded-lg border",
-                      isCorrect ? "bg-green-50 dark:bg-green-900/20 border-green-200" : "bg-red-50 dark:bg-red-900/20 border-red-200"
-                    )}>
-                      <div className="flex items-start gap-3">
-                        <div className={cn(
-                          "w-8 h-8 rounded-full flex items-center justify-center text-white",
-                          isCorrect ? "bg-green-500" : "bg-red-500"
-                        )}>
-                          {isCorrect ? "✓" : "✗"}
-                        </div>
-                        <div>
-                          <h4 className="font-medium mb-2">{sectionName} - سؤال {index + 1}</h4>
-                          <p className="text-gray-800 dark:text-gray-200 mb-4">{question.text}</p>
-
-                          <div className="space-y-2">
-                            {question.options.map((option, optIndex) => (
-                              <div key={optIndex} className={cn(
-                                "p-3 rounded-lg border",
-                                optIndex === question.correctOptionIndex ? "bg-green-50 dark:bg-green-900/20 border-green-200" :
-                                optIndex === answers[question.id] ? "bg-red-50 dark:bg-red-900/20 border-red-200" :
-                                "bg-gray-50 dark:bg-gray-800"
-                              )}>
-                                <div className="flex items-center">
-                                  <span className="mr-2">{option}</span>
-                                  {optIndex === question.correctOptionIndex && (
-                                    <span className="text-green-600 dark:text-green-400 text-sm mr-auto">
-                                      (الإجابة الصحيحة)
-                                    </span>
-                                  )}
+                                ))}
+                            </div>
+                            {question.explanation && (
+                                <div className="mt-4 p-3 bg-yellow-50 border border-yellow-300 rounded-lg text-xs sm:text-sm text-yellow-800 dark:bg-yellow-900/20 dark:border-yellow-700 dark:text-yellow-200">
+                                    <strong className="block mb-1">الشرح:</strong>
+                                    {question.explanation}
                                 </div>
-                              </div>
-                            ))}
-                          </div>
-
-
-
-                          <div className="mt-4 flex justify-end">
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              className="text-muted-foreground"
-                              onClick={() => {
-                                const message = encodeURIComponent(
-                                  `تبليغ عن خطأ في السؤال:\n\nنص السؤال: ${question.text}\n\nالخيارات:\n${question.options.map((opt, i) => `${i + 1}. ${opt}`).join('\n')}\n\nالإجابة الصحيحة: ${question.correctOptionIndex + 1}`
-                                );
-                                window.open(`https://t.me/qodratak2030?text=${message}`, '_blank');
-                              }}
-                            >
-                              <span className="ml-2">إبلاغ عن خطأ</span>
-                            </Button>
-                          </div>
+                            )}
+                            <div className="mt-4 flex justify-end">
+                                <Button
+                                variant="ghost"
+                                size="sm"
+                                className="text-xs text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 dark:hover:bg-slate-700"
+                                onClick={() => {
+                                    const message = encodeURIComponent(
+                                    `تبليغ عن خطأ في السؤال (ID: ${question.id}):\n\nنص السؤال: ${question.text}\n\nالخيارات:\n${question.options.map((opt, i) => `${i + 1}. ${opt}`).join('\n')}\n\nالإجابة الصحيحة المعلمة: ${question.options[question.correctOptionIndex]} (الخيار ${question.correctOptionIndex + 1})`
+                                    );
+                                    window.open(`https://t.me/qodratak2030?text=${message}`, '_blank');
+                                }}
+                                >
+                                <Info size={12} className="ml-1"/> إبلاغ عن خطأ
+                                </Button>
+                            </div>
+                            </div>
                         </div>
-                      </div>
-                    </div>
-                  );
-                }))}
-              </div>
-            </TabsContent>
-
-            <TabsContent value="incorrect">
-              <div className="space-y-4">
-                {Object.entries(allSectionsQuestions).flatMap(([sectionNum, sectionQuestions]) => 
-              sectionQuestions.filter(q => answers[q.id] !== q.correctOptionIndex).map((question, index) => {
-                  const isCorrect = answers[question.id] === question.correctOptionIndex;
-                  const sectionName = selectedExam?.sections[parseInt(sectionNum) - 1]?.name || `القسم ${sectionNum}`;
-                   return (
-                    <div key={question.id} className={cn(
-                      "p-4 rounded-lg border",
-                      isCorrect ? "bg-green-50 dark:bg-green-900/20 border-green-200" : "bg-red-50 dark:bg-red-900/20 border-red-200"
-                    )}>
-                      <div className="flex items-start gap-3">
-                        <div className={cn(
-                          "w-8 h-8 rounded-full flex items-center justify-center textwhite",
-                          isCorrect ? "bg-green-500" : "bg-red-500"
-                        )}>
-                          {isCorrect ? "✓" : "✗"}
                         </div>
-                        <div>
-                          <h4 className="font-medium mb-2">{sectionName} - سؤال {index + 1}</h4>
-                          <p className="text-gray-800 dark:text-gray-200 mb-4">{question.text}</p>
-
-                          <div className="space-y-2">
-                            {question.options.map((option, optIndex) => (
-                              <div key={optIndex} className={cn(
-                                "p-3 rounded-lg border",
-                                optIndex === question.correctOptionIndex ? "bg-green-50 dark:bg-green-900/20 border-green-200" :
-                                optIndex === answers[question.id] ? "bg-red-50 dark:bg-red-900/20 border-red-200" :
-                                "bg-gray-50 dark:bg-gray-800"
-                              )}>
-                                <div className="flex items-center">
-                                  <span className="mr-2">{option}</span>
-                                  {optIndex === question.correctOptionIndex && (
-                                    <span className="text-green-600 dark:text-green-400 text-sm mr-auto">
-                                      (الإجابة الصحيحة)
-                                    </span>
-                                  )}
-                                </div>
-                              </div>
-                            ))}
-                          </div>
-
-
-                          <div className="mt-4 flex justify-end">
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              className="text-muted-foreground"
-                              onClick={() => {
-                                const message = encodeURIComponent(
-                                  `تبليغ عن خطأ في السؤال:\n\nنص السؤال: ${question.text}\n\nالخيارات:\n${question.options.map((opt, i) => `${i + 1}. ${opt}`).join('\n')}\n\nالإجابة الصحيحة: ${question.correctOptionIndex + 1}`
-                                );
-                                window.open(`https://t.me/qodratak2030?text=${message}`, '_blank');
-                              }}
-                            >
-                              <span className="ml-2">إبلاغ عن خطأ</span>
-                            </Button>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  );
-                }))}
-              </div>
-            </TabsContent>
+                    );
+                    })}
+                </TabsContent>
+            ))}
           </Tabs>
         </CardContent>
       </Card>
       )}
 
-        {/* More detailed analysis and recommendations would go here */}
-        <Card>
+        <Card className="dark:bg-slate-800/50">
           <CardHeader>
-            <CardTitle>تحليل الأداء والتوصيات</CardTitle>
-            <CardDescription>
-              بناءً على أدائك في هذا الاختبار، إليك بعض التوصيات لتحسين نتيجتك
+            <CardTitle className="text-xl font-semibold text-gray-800 dark:text-white">تحليل الأداء والتوصيات</CardTitle>
+            <CardDescription className="text-gray-600 dark:text-gray-300">
+              بناءً على أدائك، إليك بعض التوصيات لتحسين نتيجتك المستقبلية.
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <Tabs defaultValue="verbal">
-              <TabsList className="w-full mb-4">
-                <TabsTrigger value="verbal">القدرات اللفظية</TabsTrigger>
-                <TabsTrigger value="quantitative">القدرات الكمية</TabsTrigger>
+            <Tabs defaultValue="verbal" className="w-full">
+              <TabsList className="grid w-full grid-cols-2 mb-6 bg-slate-100 dark:bg-slate-700 rounded-lg p-1">
+                <TabsTrigger value="verbal" className="data-[state=active]:bg-white data-[state=active]:text-primary data-[state=active]:shadow-md dark:data-[state=active]:bg-slate-600 dark:data-[state=active]:text-white">القدرات اللفظية</TabsTrigger>
+                <TabsTrigger value="quantitative" className="data-[state=active]:bg-white data-[state=active]:text-primary data-[state=active]:shadow-md dark:data-[state=active]:bg-slate-600 dark:data-[state=active]:text-white">القدرات الكمية</TabsTrigger>
               </TabsList>
 
               <TabsContent value="verbal" className="space-y-4">
-                <div className="p-4 border rounded-lg">
-                  <h4 className="font-medium mb-2">نقاط القوة</h4>
-                  <ul className="text-sm space-y-1 list-disc list-inside">
-                    <li>أداء جيد في فهم النصوص واستخلاص النتائج</li>
-                    <li>معرفة مناسبة بالمترادفات والمتضادات</li>
+                <div className="p-4 border dark:border-slate-700 rounded-lg bg-white dark:bg-slate-900/30 shadow-sm">
+                  <h4 className="font-medium text-gray-700 dark:text-gray-100 mb-2">نقاط القوة</h4>
+                  <ul className="text-sm text-gray-600 dark:text-gray-300 space-y-1 list-disc list-inside marker:text-green-500 pl-4">
+                    <li>أداء جيد في فهم النصوص واستخلاص النتائج.</li>
+                    <li>معرفة مناسبة بالمترادفات والمتضادات.</li>
                   </ul>
                 </div>
-
-                <div className="p-4 border rounded-lg">
-                  <h4 className="font-medium mb-2">مجالات التحسين</h4>
-                  <ul className="text-sm space-y-1 list-disc list-inside">
-                    <li>تحتاج إلى تحسين في القياس اللفظي</li>
-                    <li>تدرب على التمييز بين العلاقات اللفظية المتشابهة</li>
+                 <div className="p-4 border dark:border-slate-700 rounded-lg bg-white dark:bg-slate-900/30 shadow-sm">
+                  <h4 className="font-medium text-gray-700 dark:text-gray-100 mb-2">مجالات التحسين</h4>
+                  <ul className="text-sm text-gray-600 dark:text-gray-300 space-y-1 list-disc list-inside marker:text-red-500 pl-4">
+                    <li>تحتاج إلى تحسين في الاستدلال اللفظي (إكمال الجمل).</li>
+                    <li>تدرب على التمييز بين العلاقات اللفظية المتشابهة (التناظر اللفظي).</li>
                   </ul>
                 </div>
-
-                <div className="p-4 bg-slate-900/90 border border-slate-800 rounded-lg text-slate-100">
-                  <h4 className="font-medium mb-2">التوصيات</h4>
-                  <p className="text-sm mb-2 text-slate-200">
-                    نوصي بالتركيز على تدريبات القياس اللفظي والمقارنات اللغوية. يمكنك أيضًا:
+                <div className="p-4 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-700 rounded-lg text-blue-800 dark:text-blue-200 shadow-sm">
+                  <h4 className="font-medium mb-2 flex items-center gap-2"><Sparkles size={18}/> توصيات ذهبية</h4>
+                  <p className="text-sm mb-2">
+                    نوصي بالتركيز على تدريبات الاستدلال اللفظي والتناظر. يمكنك أيضًا:
                   </p>
-                  <ul className="text-sm space-y-1 list-disc list-inside">
-                    <li>قراءة النصوص الأدبية المتنوعة</li>
-                    <li>حل تمارين مخصصة للعلاقات اللفظية</li>
-                    <li>الاطلاع على قاموس المترادفات والأضداد</li>
+                  <ul className="text-sm space-y-1 list-disc list-inside pl-4">
+                    <li>قراءة نصوص متنوعة مع التركيز على فهم السياق.</li>
+                    <li>حل تمارين مخصصة لإكمال الجمل والعلاقات اللفظية.</li>
+                    <li>مراجعة شروحات الأسئلة الخاطئة لفهم طريقة التفكير الصحيحة.</li>
                   </ul>
                 </div>
               </TabsContent>
-
               <TabsContent value="quantitative" className="space-y-4">
-                <div className="p-4 border rounded-lg">
-                  <h4 className="font-medium mb-2">نقاط القوة</h4>
-                  <ul className="text-sm space-y-1 list-disc list-inside">
-                    <li>إتقان العمليات الحسابية الأساسية</li>
-                    <li>فهم جيد للنسب المئوية</li>
+                <div className="p-4 border dark:border-slate-700 rounded-lg bg-white dark:bg-slate-900/30 shadow-sm">
+                  <h4 className="font-medium text-gray-700 dark:text-gray-100 mb-2">نقاط القوة</h4>
+                  <ul className="text-sm text-gray-600 dark:text-gray-300 space-y-1 list-disc list-inside marker:text-green-500 pl-4">
+                    <li>إتقان العمليات الحسابية الأساسية.</li>
+                    <li>فهم جيد للنسب المئوية والتناسب.</li>
                   </ul>
                 </div>
-
-                <div className="p-4 border rounded-lg">
-                  <h4 className="font-medium mb-2">مجالات التحسين</h4>
-                  <ul className="text-sm space-y-1 list-disc list-inside">
-                    <li>تحتاج إلى تحسين في حل المسائل الهندسية</li>
-                    <li>تقوية التعامل مع الاحتمالات والإحصاء</li>
+                <div className="p-4 border dark:border-slate-700 rounded-lg bg-white dark:bg-slate-900/30 shadow-sm">
+                  <h4 className="font-medium text-gray-700 dark:text-gray-100 mb-2">مجالات التحسين</h4>
+                  <ul className="text-sm text-gray-600 dark:text-gray-300 space-y-1 list-disc list-inside marker:text-red-500 pl-4">
+                    <li>تحتاج إلى تحسين في حل المسائل الهندسية (المساحات والحجوم).</li>
+                    <li>تقوية مهارات تحليل البيانات وقراءة الرسوم البيانية.</li>
                   </ul>
                 </div>
-
-                <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
-                  <h4 className="font-medium mb-2">التوصيات</h4>
+                 <div className="p-4 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-700 rounded-lg text-blue-800 dark:text-blue-200 shadow-sm">
+                  <h4 className="font-medium mb-2 flex items-center gap-2"><Sparkles size={18}/> توصيات ذهبية</h4>
                   <p className="text-sm mb-2">
-                    نوصي بالتركيز على تدريبات الهندسة والاحتمالات. يمكنك أيضًا:
+                    نوصي بالتركيز على تدريبات الهندسة وتحليل البيانات. يمكنك أيضًا:
                   </p>
-                  <ul className="text-sm space-y-1 list-disc list-inside">
-                    <li>مراجعة قوانين المساحة والحجم للأشكال الهندسية</li>
-                    <li>التدرب على مسائل التوافيق والتباديل</li>
-                    <li>حل تمارين إضافية في تحليل البيانات الإحصائية</li>
+                  <ul className="text-sm space-y-1 list-disc list-inside pl-4">
+                    <li>مراجعة القوانين الأساسية للمساحات والحجوم للأشكال الهندسية الشائعة.</li>
+                    <li>التدرب على مسائل متنوعة تتضمن رسومًا بيانية وجداول.</li>
+                    <li>تعلم استراتيجيات الحل السريع للمسائل الكمية.</li>
                   </ul>
                 </div>
               </TabsContent>
@@ -1880,15 +1456,13 @@ const QiyasExamPage: React.FC = () => {
     );
   };
 
-  const isSubscribed = true; // Replace with actual subscription check
-
   return (
-    <>
+    <div className="min-h-screen bg-gray-50 dark:bg-slate-900 text-gray-900 dark:text-gray-100">
       {currentView === "selection" && renderExamSelection()}
       {currentView === "instructions" && renderExamInstructions()}
       {currentView === "inProgress" && renderExamInProgress()}
       {currentView === "results" && renderExamResults()}
-    </>
+    </div>
   );
 };
 

@@ -231,7 +231,7 @@ const ChallengePage = () => {
   const [, navigate] = useLocation();
   const [selectedLevel, setSelectedLevel] = useState<number | null>(null);
   const [isBoostingPoints, setIsBoostingPoints] = useState(false);
-  
+
   // طلب جلب بيانات المستخدم
   const { data: user } = useQuery({
     queryKey: ["/api/user"],
@@ -242,7 +242,7 @@ const ChallengePage = () => {
         if (storedUser) {
           return JSON.parse(storedUser);
         }
-        
+
         // إذا لم يكن هناك مستخدم، قم بإنشاء مستخدم افتراضي
         return {
           id: 1,
@@ -256,7 +256,7 @@ const ChallengePage = () => {
       }
     }
   });
-  
+
   // طلب جلب نتائج الاختبارات السابقة
   const { data: testResults = [] } = useQuery({
     queryKey: ["/api/test-results/user", user?.id],
@@ -272,7 +272,7 @@ const ChallengePage = () => {
     },
     enabled: !!user?.id
   });
-  
+
   // التحقق من المستويات المفتوحة بناءً على نتائج الاختبارات السابقة
   const getEnabledLevels = () => {
     if (!user) return challengeLevels.map((level, idx) => ({
@@ -283,29 +283,29 @@ const ChallengePage = () => {
     return challengeLevels.map((level, idx) => {
       // المستوى الأول مفتوح دائمًا
       if (idx === 0) return { ...level, enabled: true };
-      
+
       // للمستويات الأخرى، نتحقق من اكتمال المستوى السابق بنجاح
       const previousLevelResults = testResults.filter(
         (result: any) => result.levelId === idx
       );
-      
+
       const previousLevelCompleted = previousLevelResults.some(
         (result: any) => (result.score / result.totalQuestions) >= 1.0 // يتطلب 100% لفتح المستوى التالي
       );
-      
+
       return { 
         ...level,
         enabled: previousLevelCompleted
       };
     });
   };
-  
+
   const enabledLevels = getEnabledLevels();
-  
+
   // بدء تحدي جديد
   const startChallenge = (levelId: number) => {
     const level = enabledLevels.find(l => l.id === levelId);
-    
+
     if (!level || !level.enabled) {
       toast({
         title: "المستوى مغلق",
@@ -314,7 +314,7 @@ const ChallengePage = () => {
       });
       return;
     }
-    
+
     // احفظ معلومات التحدي في localStorage
     localStorage.setItem('currentChallenge', JSON.stringify({
       levelId,
@@ -324,39 +324,39 @@ const ChallengePage = () => {
       timeLimit: level.timeLimit,
       points: level.points
     }));
-    
+
     // انتقل إلى صفحة الاختبار
     navigate("/abilities");
   };
-  
+
   // حساب النسبة المئوية للتقدم نحو المستوى التالي
   const calculateLevelProgress = () => {
     if (!user) return 0;
-    
+
     // البحث عن المستوى التالي المغلق
     const nextLockedLevel = enabledLevels.find(level => !level.enabled);
-    
+
     if (!nextLockedLevel || !nextLockedLevel.requiredPoints) return 100;
-    
+
     // حساب نسبة التقدم
     const previousThreshold = nextLockedLevel.id > 3 ? 
       enabledLevels[nextLockedLevel.id - 2].requiredPoints || 0 : 0;
-      
+
     const pointsNeeded = nextLockedLevel.requiredPoints - previousThreshold;
     const pointsGained = user.points - previousThreshold;
-    
+
     if (pointsGained <= 0) return 0;
     if (pointsGained >= pointsNeeded) return 100;
-    
+
     return Math.round((pointsGained / pointsNeeded) * 100);
   };
-  
+
   // دالة لزيادة نقاط المستخدم بشكل سريع للتجربة
   const boostPoints = async () => {
     if (!user) return;
-    
+
     setIsBoostingPoints(true);
-    
+
     try {
       // قم بإضافة مسابقة وهمية بنقاط كبيرة
       const testResult = {
@@ -368,7 +368,7 @@ const ChallengePage = () => {
         pointsEarned: 500,
         timeTaken: 600, // 10 minutes
       };
-      
+
       const response = await fetch('/api/test-results', {
         method: 'POST',
         headers: {
@@ -376,7 +376,7 @@ const ChallengePage = () => {
         },
         body: JSON.stringify(testResult),
       });
-      
+
       if (response.ok) {
         const updatedUserResponse = await fetch(`/api/users/${user.id}/points`, {
           method: 'PATCH',
@@ -385,17 +385,17 @@ const ChallengePage = () => {
           },
           body: JSON.stringify({ points: user.points + 500 }),
         });
-        
+
         if (updatedUserResponse.ok) {
           // تحديث بيانات المستخدم في localStorage
           const updatedUser = { ...user, points: user.points + 500 };
           localStorage.setItem('user', JSON.stringify(updatedUser));
-          
+
           toast({
             title: "تم إضافة النقاط",
             description: "تم إضافة 500 نقطة إلى رصيدك",
           });
-          
+
           // إعادة تحميل الصفحة بعد ثانية واحدة
           setTimeout(() => {
             window.location.reload();
@@ -413,14 +413,14 @@ const ChallengePage = () => {
       setIsBoostingPoints(false);
     }
   };
-  
+
   return (
     <div className="container py-8">
       <h1 className="text-3xl font-bold mb-2 text-center">تحديات وألعاب قدراتك</h1>
       <p className="text-muted-foreground mb-8 text-center">
         اختبر نفسك في سلسلة من التحديات المتدرجة في الصعوبة واكسب النقاط
       </p>
-      
+
       {user && (
         <Card className="mb-8 bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-950/30 dark:to-indigo-950/30 border-2 border-primary/20">
           <CardContent className="pt-6">
@@ -437,7 +437,7 @@ const ChallengePage = () => {
                   </Badge>
                 </div>
               </div>
-              
+
               <div className="w-full sm:w-72">
                 <p className="text-sm text-muted-foreground mb-1.5">
                   {calculateLevelProgress() === 100 ? 
@@ -450,7 +450,7 @@ const ChallengePage = () => {
           </CardContent>
         </Card>
       )}
-      
+
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
         {enabledLevels.map((level) => (
           <Card 
@@ -477,7 +477,7 @@ const ChallengePage = () => {
                 )}
               </div>
             )}
-            
+
             <CardHeader>
               <div className="flex justify-between items-start">
                 <div>
@@ -487,7 +487,7 @@ const ChallengePage = () => {
                 {level.icon}
               </div>
             </CardHeader>
-            
+
             <CardContent>
               <div className="space-y-3">
                 <div className="flex items-center justify-between text-sm">
@@ -522,7 +522,7 @@ const ChallengePage = () => {
                 </div>
               </div>
             </CardContent>
-            
+
             <CardFooter>
               <Button 
                 className="w-full" 
@@ -541,7 +541,7 @@ const ChallengePage = () => {
           </Card>
         ))}
       </div>
-      
+
       {testResults.length > 0 && (
         <div className="mt-12">
           <h2 className="text-2xl font-bold mb-4">التحديات السابقة</h2>
@@ -592,7 +592,7 @@ const ChallengePage = () => {
           </div>
         </div>
       )}
-      
+
       {/* قسم الإنجازات */}
       <Card className="mt-12">
         <CardHeader>
@@ -605,7 +605,7 @@ const ChallengePage = () => {
           <AchievementsDisplay userId={user?.id} />
         </CardContent>
       </Card>
-      
+
       {/* زر تعزيز النقاط للتجربة */}
       <div className="flex justify-center mt-10">
         <Button
