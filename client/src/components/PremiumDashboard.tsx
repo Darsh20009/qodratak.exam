@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -34,7 +33,7 @@ interface PremiumDashboardProps {
 export function PremiumDashboard({ user }: PremiumDashboardProps) {
   const isProLife = user.subscription.type === 'Pro Life' || user.subscription.type === 'Pro Live';
   const isPro = user.subscription.type === 'Pro';
-  
+
   if (!isPro && !isProLife) return null;
 
   // ميزات Pro العادية
@@ -75,7 +74,7 @@ export function PremiumDashboard({ user }: PremiumDashboardProps) {
         <div className="relative z-10 overflow-hidden">
           <div className="absolute inset-0 bg-gradient-to-br from-purple-900/30 via-pink-900/20 to-amber-900/30 animate-gradient-x" />
           <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,rgba(168,85,247,0.3),transparent_70%)]" />
-          
+
           <Card className="relative border-4 border-gradient-to-r from-purple-500 via-pink-500 to-amber-500 bg-gradient-to-br from-slate-900 via-purple-900/50 to-pink-900/30 shadow-2xl shadow-purple-500/25">
             <CardHeader className="text-center pb-4 relative">
               {/* جواهر متطايرة */}
@@ -100,11 +99,11 @@ export function PremiumDashboard({ user }: PremiumDashboardProps) {
                   </div>
                 </div>
               </div>
-              
+
               <CardTitle className="text-5xl font-black bg-gradient-to-r from-purple-400 via-pink-400 to-amber-400 bg-clip-text text-transparent mb-4">
                 👑 أهلاً بأسطورة Pro Life
               </CardTitle>
-              
+
               <div className="flex justify-center mt-6">
                 <Badge 
                   variant="outline" 
@@ -115,7 +114,7 @@ export function PremiumDashboard({ user }: PremiumDashboardProps) {
                 </Badge>
               </div>
             </CardHeader>
-            
+
             <CardContent className="text-center relative">
               <p className="text-2xl text-purple-200 mb-6 font-semibold">
                 مرحباً {user.name}، أنت من النخبة الماسية في منصة قدراتك
@@ -137,7 +136,7 @@ export function PremiumDashboard({ user }: PremiumDashboardProps) {
           <h2 className="text-4xl font-black text-center mb-8 bg-gradient-to-r from-purple-400 via-pink-400 to-amber-400 bg-clip-text text-transparent">
             ✨ مملكة الميزات الأسطورية ✨
           </h2>
-          
+
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
             {features.map((feature, index) => (
               <Card 
@@ -146,7 +145,7 @@ export function PremiumDashboard({ user }: PremiumDashboardProps) {
               >
                 {/* تأثير الضوء المتحرك */}
                 <div className="absolute inset-0 bg-gradient-to-r from-transparent via-purple-500/10 to-transparent transform -skew-x-12 group-hover:translate-x-full transition-transform duration-1000"></div>
-                
+
                 <CardHeader className="text-center pb-3 relative z-10">
                   <div className="flex justify-center mb-4">
                     <div className="relative">
@@ -220,14 +219,14 @@ export function PremiumDashboard({ user }: PremiumDashboardProps) {
               <div className="text-sm font-bold text-purple-100">قوة لا نهائية</div>
             </CardContent>
           </Card>
-          
+
           <Card className="text-center bg-gradient-to-br from-pink-800/60 to-pink-900/80 border-2 border-pink-500 shadow-xl shadow-pink-500/30">
             <CardContent className="py-8">
               <div className="text-4xl font-black text-pink-300 mb-3">💎</div>
               <div className="text-sm font-bold text-pink-100">مرتبة الماس</div>
             </CardContent>
           </Card>
-          
+
           <Card className="text-center bg-gradient-to-br from-amber-800/60 to-amber-900/80 border-2 border-amber-500 shadow-xl shadow-amber-500/30">
             <CardContent className="py-8">
               <div className="text-4xl font-black text-amber-300 mb-3">👑</div>
@@ -253,7 +252,7 @@ export function PremiumDashboard({ user }: PremiumDashboardProps) {
       <div className="relative overflow-hidden">
         <div className="absolute inset-0 bg-gradient-to-br from-amber-500/20 via-yellow-500/10 to-orange-500/20 animate-gradient-x" />
         <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,var(--primary)/20,transparent_70%)]" />
-        
+
         <Card className="relative border-2 border-gradient-to-r from-yellow-400 to-amber-500 bg-gradient-to-br from-background via-amber-50/50 to-yellow-50/30 dark:from-slate-900 dark:via-amber-950/20 dark:to-yellow-950/10 shadow-2xl">
           <CardHeader className="text-center pb-4">
             <div className="flex justify-center mb-4">
@@ -262,11 +261,11 @@ export function PremiumDashboard({ user }: PremiumDashboardProps) {
                 <SparklesIcon className="absolute -top-2 -right-2 h-6 w-6 text-yellow-400 animate-bounce" />
               </div>
             </div>
-            
+
             <CardTitle className="text-4xl font-bold bg-gradient-to-r from-amber-600 via-yellow-500 to-orange-500 bg-clip-text text-transparent">
               مرحباً بك أيها المميز
             </CardTitle>
-            
+
             <div className="flex justify-center mt-4">
               <Badge 
                 variant="outline" 
@@ -276,7 +275,7 @@ export function PremiumDashboard({ user }: PremiumDashboardProps) {
               </Badge>
             </div>
           </CardHeader>
-          
+
           <CardContent className="text-center">
             <p className="text-xl text-muted-foreground mb-6">
               أهلاً {user.name}، أنت من النخبة المميزة في منصة قدراتك
@@ -296,7 +295,7 @@ export function PremiumDashboard({ user }: PremiumDashboardProps) {
         <h2 className="text-3xl font-bold text-center mb-8 bg-gradient-to-r from-amber-600 to-yellow-600 bg-clip-text text-transparent">
           🔥 مميزاتك الحصرية
         </h2>
-        
+
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {features.map((feature, index) => (
             <Card 
@@ -359,14 +358,14 @@ export function PremiumDashboard({ user }: PremiumDashboardProps) {
             <div className="text-sm font-medium text-green-700 dark:text-green-300">اختبارات لا محدودة</div>
           </CardContent>
         </Card>
-        
+
         <Card className="text-center bg-gradient-to-br from-blue-50 to-cyan-50 dark:from-blue-950/20 dark:to-cyan-950/20 border-blue-200 dark:border-blue-800">
           <CardContent className="py-6">
             <div className="text-3xl font-bold text-blue-600 dark:text-blue-400 mb-2">VIP</div>
             <div className="text-sm font-medium text-blue-700 dark:text-blue-300">دعم أولوية</div>
           </CardContent>
         </Card>
-        
+
         <Card className="text-center bg-gradient-to-br from-purple-50 to-pink-50 dark:from-purple-950/20 dark:to-pink-950/20 border-purple-200 dark:border-purple-800">
           <CardContent className="py-6">
             <div className="text-3xl font-bold text-purple-600 dark:text-purple-400 mb-2">100%</div>

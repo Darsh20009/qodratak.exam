@@ -220,7 +220,7 @@ const Home: React.FC = () => {
             {features.map((feature, index) => (
               <Card 
                 key={index} 
-                className="group hover:shadow-2xl transition-all duration-300 border-0 bg-gradient-to-br from-background/80 to-background/90 relative overflow-hidden backdrop-blur-sm hover:-translate-y-1"
+                className="p-6 hover:shadow-2xl transition-all duration-300 border-0 bg-gradient-to-br from-background/80 to-background/90 relative overflow-hidden backdrop-blur-sm hover:-translate-y-1 card-touch tap-highlight-none"
                 style={{
                   animation: `floating-3d ${3 + index * 0.5}s ease-in-out infinite`,
                   animationDelay: `${index * 0.2}s`,

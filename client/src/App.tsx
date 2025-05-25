@@ -172,21 +172,21 @@ function MainLayout({ children }: { children: React.ReactNode }) {
 
       {/* Mobile navigation */}
       <div className="fixed bottom-0 left-0 right-0 z-50 bg-white dark:bg-gray-800 border-t dark:border-gray-700 md:hidden">
-        <nav className="relative overflow-x-auto scrollbar-hide">
-          <div className="flex items-center h-16 px-4 animate-scroll">
+        <nav className="relative overflow-x-auto scrollbar-hide responsive-touch">
+          <div className="flex items-center h-16 px-2">
             {navItems.map((item) => (
               <Link 
                 key={item.href} 
                 href={item.href}
                 className={cn(
-                  "flex flex-col items-center justify-center p-2 rounded-md min-w-[4.5rem] mx-1",
+                  "flex flex-col items-center justify-center p-3 rounded-lg min-w-[4.5rem] mx-1 touch-target button-touch tap-highlight-none",
                   location === item.href 
-                    ? "text-primary" 
-                    : "text-muted-foreground"
+                    ? "text-primary bg-primary/10" 
+                    : "text-muted-foreground hover:bg-muted/50"
                 )}
               >
                 <item.icon className="h-5 w-5" />
-                <span className="text-xs whitespace-nowrap">{item.name}</span>
+                <span className="text-xs mt-1 text-center leading-tight">{item.label}</span>
               </Link>
             ))}
           </div>
