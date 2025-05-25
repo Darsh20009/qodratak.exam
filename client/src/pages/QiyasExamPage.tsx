@@ -256,6 +256,8 @@ const QiyasExamPage: React.FC = () => {
   const [isPrayerBreak, setIsPrayerBreak] = useState(false);
   const [isReviewDialogOpen, setIsReviewDialogOpen] = useState(false); // State for review dialog
   const [isFinalReviewDialogOpen, setIsFinalReviewDialogOpen] = useState(false); // State for final review dialog
+  const [prayerBreakUsed, setPrayerBreakUsed] = useState(false); // Track if prayer break was used
+  const [prayerBreakTimeLeft, setPrayerBreakTimeLeft] = useState(0); // Timer for prayer break
 
 
   useEffect(() => {
@@ -275,9 +277,32 @@ const QiyasExamPage: React.FC = () => {
     return () => clearTimeout(timerId);
   }, [timeLeft, currentView, isPrayerBreak, selectedExam]);
 
+  // Prayer break timer effect
+  useEffect(() => {
+    let prayerTimerId: NodeJS.Timeout;
+    if (isPrayerBreak && prayerBreakTimeLeft > 0) {
+      prayerTimerId = setTimeout(() => {
+        setPrayerBreakTimeLeft(prev => prev - 1);
+      }, 1000);
+    } else if (isPrayerBreak && prayerBreakTimeLeft === 0) {
+      // Auto resume after 15 minutes
+      setIsPrayerBreak(false);
+      toast({
+        title: "انتهت فترة الصلاة",
+        description: "تم استئناف الاختبار تلقائياً بعد انتهاء الوقت المخصص للصلاة (15 دقيقة).",
+        duration: 5000,
+      });
+    }
+    return () => clearTimeout(prayerTimerId);
+  }, [isPrayerBreak, prayerBreakTimeLeft]);
+
 
   const renderPrayerBreakOverlay = () => {
     if (!isPrayerBreak) return null;
+    const minutes = Math.floor(prayerBreakTimeLeft / 60);
+    const seconds = prayerBreakTimeLeft % 60;
+    const timeDisplay = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+    
     return (
       <div className="fixed inset-0 bg-black/80 backdrop-blur-lg z-[100] flex items-center justify-center p-4 font-arabic animate-fadeIn">
         <div className="bg-white dark:bg-gray-950 p-8 rounded-2xl max-w-lg w-full mx-auto text-center space-y-8 relative overflow-hidden shadow-2xl border border-orange-300 dark:border-orange-700">
@@ -302,14 +327,27 @@ const QiyasExamPage: React.FC = () => {
             <p className="text-gray-600 dark:text-gray-400 text-base mt-3">
               تم إيقاف الاختبار مؤقتاً. عند الانتهاء، يمكنك استئناف الاختبار.
             </p>
+            
+            {/* Timer Display */}
+            <div className="mt-4 p-3 bg-orange-100 dark:bg-orange-900/30 rounded-lg border border-orange-300 dark:border-orange-700">
+              <p className="text-sm text-orange-700 dark:text-orange-300 mb-1">الوقت المتبقي للاستئناف التلقائي:</p>
+              <p className="text-2xl font-bold text-orange-600 dark:text-orange-400">{timeDisplay}</p>
+            </div>
           </div>
 
           <Button
             onClick={() => setIsPrayerBreak(false)}
             className="w-full bg-gradient-to-r from-orange-500 to-yellow-500 hover:from-orange-600 hover:to-yellow-600 transition-all duration-300 shadow-xl hover:shadow-orange-500/40 dark:shadow-orange-400/20 text-xl py-4 rounded-xl relative z-10 transform hover:scale-105"
           >
-            استئناف الاختبار
+            استئناف الاختبار الآن
           </Button>
+          
+          {/* Important Notice */}
+          <div className="text-xs text-gray-500 dark:text-gray-400 bg-yellow-50 dark:bg-yellow-900/20 p-3 rounded-lg border border-yellow-200 dark:border-yellow-700">
+            <p className="font-semibold mb-1">⚠️ تنويه هام:</p>
+            <p>هذا الزر مخصص للصلاة فقط وفقاً لاقتراحات الطلبة. يُنصح بجدولة الاختبارات في أوقات لا تتداخل مع أوقات الصلاة.</p>
+          </div>
+          
            {/* Quranic Verse */}
           <div className="text-sm text-gray-500 dark:text-gray-500 mt-6 relative z-10 tracking-wide">
             "إِنَّ الصَّلَاةَ كَانَتْ عَلَى الْمُؤْمِنِينَ كِتَابًا مَوْقُوتًا" <span className="opacity-70">(النساء: 103)</span>
@@ -324,8 +362,8 @@ const QiyasExamPage: React.FC = () => {
     if (isPrayerBreak) {
       toast({
         title: "وقت الصلاة",
-        description: "تم إيقاف الاختبار مؤقتاً. يمكنك استئناف الاختبار بعد الانتهاء من الصلاة.",
-        duration: 7000,
+        description: "تم إيقاف الاختبار لمدة أقصاها 15 دقيقة. سيتم الاستئناف تلقائياً عند انتهاء الوقت. يمكن استخدام هذه الميزة مرة واحدة فقط في الاختبار.",
+        duration: 8000,
       });
     }
   }, [isPrayerBreak, toast]);
@@ -416,6 +454,8 @@ const QiyasExamPage: React.FC = () => {
     setQuestions([]);
     setSelectedAnswer(null);
     setIsFinalReviewDialogOpen(false); // Reset on start
+    setPrayerBreakUsed(false); // Reset prayer break usage
+    setPrayerBreakTimeLeft(0); // Reset prayer break timer
 
 
     try {
@@ -1017,14 +1057,24 @@ const QiyasExamPage: React.FC = () => {
                     <Button
                     variant="outline"
                     size="sm"
-                    onClick={() => setIsPrayerBreak(prev => !prev)} // Toggle prayer break
+                    onClick={() => {
+                      if (!isPrayerBreak && !prayerBreakUsed) {
+                        setIsPrayerBreak(true);
+                        setPrayerBreakUsed(true);
+                        setPrayerBreakTimeLeft(15 * 60); // 15 minutes in seconds
+                      } else if (isPrayerBreak) {
+                        setIsPrayerBreak(false);
+                      }
+                    }}
+                    disabled={prayerBreakUsed && !isPrayerBreak}
                     className={cn(
                         "transition-colors dark:text-gray-300 dark:border-slate-600 dark:hover:bg-slate-700 text-xs sm:text-sm px-2 sm:px-3",
-                        isPrayerBreak && "bg-orange-100 text-orange-700 hover:bg-orange-200 dark:bg-orange-700/30 dark:text-orange-300 dark:border-orange-600"
+                        isPrayerBreak && "bg-orange-100 text-orange-700 hover:bg-orange-200 dark:bg-orange-700/30 dark:text-orange-300 dark:border-orange-600",
+                        prayerBreakUsed && !isPrayerBreak && "opacity-50 cursor-not-allowed"
                     )}
                     >
                      <Moon className="h-3.5 w-3.5 sm:h-4 sm:w-4 ml-1 sm:ml-2" />
-                    {isPrayerBreak ? "استئناف" : "توقف للصلاة"}
+                    {isPrayerBreak ? "استئناف" : prayerBreakUsed ? "تم الاستخدام" : "توقف للصلاة"}
                     </Button>
                     <div className="flex items-center gap-1 p-2 bg-slate-100 dark:bg-slate-700 rounded-md">
                     <Clock3 className="h-4 w-4 text-primary" />
