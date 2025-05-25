@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -17,6 +16,11 @@ export default function TestResultsPage() {
   const [, setLocation] = useLocation();
   const [result, setResult] = useState<TestResult | null>(null);
 
+  const handleBackToRecords = () => {
+    console.log('Navigating to exam records...');
+    setLocation('/exam-records');
+  };
+
   useEffect(() => {
     const storedResult = localStorage.getItem('currentTestResult');
     if (storedResult) {
@@ -28,7 +32,10 @@ export default function TestResultsPage() {
     return (
       <div className="container py-8 text-center">
         <p>لا توجد نتيجة للعرض</p>
-        <Button onClick={() => setLocation('/exam-records')} className="mt-4">
+        <Button 
+          onClick={handleBackToRecords} 
+          className="mt-4 bg-primary hover:bg-primary/90 text-white"
+        >
           العودة لسجل الاختبارات
         </Button>
       </div>
@@ -77,7 +84,10 @@ export default function TestResultsPage() {
           </div>
 
           <div className="flex justify-center">
-            <Button onClick={() => setLocation('/exam-records')}>
+            <Button 
+              onClick={handleBackToRecords}
+              className="bg-primary hover:bg-primary/90 text-white px-6 py-2 shadow-lg hover:shadow-xl transition-all duration-200"
+            >
               العودة لسجل الاختبارات
             </Button>
           </div>
