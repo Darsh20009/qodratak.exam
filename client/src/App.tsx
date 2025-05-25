@@ -137,7 +137,7 @@ function MainLayout({ children }: { children: React.ReactNode }) {
                     alt="صورة المستخدم" 
                     className="w-full h-full object-cover"
                   />
-                  {(userSubscription === 'Pro' || userSubscription === 'Pro Life') && (
+                  {(userSubscription === 'Pro' || userSubscription === 'Pro Life' || userSubscription === 'Pro Live') && (
                     <div className="absolute -top-1 -right-1 h-4 w-4 rounded-full bg-gradient-to-r from-amber-400 to-yellow-500 flex items-center justify-center">
                       {userSubscription === 'Pro Life' ? (
                         <DiamondIcon className="h-2.5 w-2.5 text-white" />
@@ -149,7 +149,7 @@ function MainLayout({ children }: { children: React.ReactNode }) {
                 </div>
                 <div className="flex flex-col items-start">
                   <span className="text-sm font-medium">{userName}</span>
-                  {(userSubscription === 'Pro' || userSubscription === 'Pro Life') && (
+                  {(userSubscription === 'Pro' || userSubscription === 'Pro Life' || userSubscription === 'Pro Live') && (
                     <span className="text-xs text-amber-600 dark:text-amber-400 font-bold flex items-center gap-1">
                       {userSubscription === 'Pro Life' ? (
                         <><DiamondIcon className="h-3 w-3" /> Pro Life</>
@@ -210,7 +210,7 @@ function MainLayout({ children }: { children: React.ReactNode }) {
                     alt="صورة المستخدم" 
                     className="w-full h-full object-cover"
                   />
-                  {(userSubscription === 'Pro' || userSubscription === 'Pro Life') && (
+                  {(userSubscription === 'Pro' || userSubscription === 'Pro Life' || userSubscription === 'Pro Live') && (
                     <div className="absolute -top-0.5 -right-0.5 h-3 w-3 rounded-full bg-gradient-to-r from-amber-400 to-yellow-500 flex items-center justify-center">
                       {userSubscription === 'Pro Life' ? (
                         <DiamondIcon className="h-2 w-2 text-white" />
@@ -254,14 +254,14 @@ function Router({ splashDone }: { splashDone: boolean }) {
 
     window.addEventListener('storage', handleStorageChange);
     window.addEventListener('userLoggedIn', handleUserLogin);
-    
+
     return () => {
       window.removeEventListener('storage', handleStorageChange);
       window.removeEventListener('userLoggedIn', handleUserLogin);
     };
   }, []);
 
-  const isPremium = user?.subscription?.type !== 'free';
+  const isPremium = user?.subscription?.type !== 'free' && (user?.subscription?.type === 'Pro' || user?.subscription?.type === 'Pro Life' || user?.subscription?.type === 'Pro Live');
 
   const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
     if (!user) {
@@ -357,7 +357,7 @@ function App() {
   }, []);
 
   const [splashDone, setSplashDone] = React.useState(false);
-  
+
   if (showSplash) {
     return (
       <div className="h-screen w-screen flex flex-col items-center justify-center relative overflow-hidden perspective-1000">

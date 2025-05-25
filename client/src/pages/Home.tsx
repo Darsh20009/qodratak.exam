@@ -108,7 +108,7 @@ const Home: React.FC = () => {
     };
   }, []);
 
-  const isPremiumUser = user?.subscription?.type === 'Pro' || user?.subscription?.type === 'Pro Life';
+  const isPremiumUser = user && (user.subscription?.type === 'Pro' || user.subscription?.type === 'Pro Life' || user.subscription?.type === 'Pro Live');
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-background to-background/80">
@@ -272,10 +272,10 @@ const Home: React.FC = () => {
               />
             ))}
           </div>
-          
+
           <div className="container px-4 md:px-6 text-center relative">
             <PremiumDashboard user={user} />
-            
+
             {/* VIP Action Section */}
             <div className="mt-12 p-8 bg-white/10 backdrop-blur-sm rounded-2xl border border-white/20">
               <div className="flex justify-center mb-6">

@@ -22,8 +22,8 @@ export function PremiumNotifications({ userSubscription, userName }: PremiumNoti
   const [showWelcome, setShowWelcome] = useState(false);
   const [notifications, setNotifications] = useState<string[]>([]);
 
-  const isPremium = userSubscription === 'Pro' || userSubscription === 'Pro Life';
-  const isProLife = userSubscription === 'Pro Life';
+  const isPremium = userSubscription === 'Pro' || userSubscription === 'Pro Life' || userSubscription === 'Pro Live';
+  const isProLife = userSubscription === 'Pro Life' || userSubscription === 'Pro Live';
 
   useEffect(() => {
     if (isPremium) {

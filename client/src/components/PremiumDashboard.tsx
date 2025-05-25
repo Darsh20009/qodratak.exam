@@ -32,7 +32,7 @@ interface PremiumDashboardProps {
 }
 
 export function PremiumDashboard({ user }: PremiumDashboardProps) {
-  const isProLife = user.subscription.type === 'Pro Life';
+  const isProLife = user.subscription.type === 'Pro Life' || user.subscription.type === 'Pro Live';
   const isPro = user.subscription.type === 'Pro';
   
   if (!isPro && !isProLife) return null;
