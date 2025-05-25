@@ -1274,18 +1274,18 @@ const QiyasExamPage: React.FC = () => {
         return;
       }
 
-      const incorrectQuestionsDataForRetake: Array<ProcessedExamQuestion & { userAnswerIndex: number; sectionName: string }> = [];
+      const incorrectQuestionsDataForRetake: Array<ProcessedExamQuestion & { userAnswerIndex: number | undefined; sectionName: string }> = [];
       
-      // جمع جميع الأسئلة الخاطئة من جميع الأقسام
+      // جمع جميع الأسئلة الخاطئة والغير مجاب عليها من جميع الأقسام
       Object.entries(allProcessedQuestionsBySection).forEach(([sectionNumStr, sectionQuestions]) => {
         const sectionConfig = selectedExam.sections.find(s => s.sectionNumber === parseInt(sectionNumStr));
         sectionQuestions.forEach(q => {
-          // تضمين جميع الأسئلة التي تم الإجابة عليها بشكل خاطئ
           const userAnswer = answers[q.id];
-          if (userAnswer !== undefined && userAnswer !== q.correctOptionIndex) {
+          // تضمين الأسئلة الخاطئة أو غير المجاب عليها
+          if (userAnswer === undefined || userAnswer !== q.correctOptionIndex) {
             incorrectQuestionsDataForRetake.push({
               ...q,
-              userAnswerIndex: userAnswer,
+              userAnswerIndex: userAnswer, // سيكون undefined للأسئلة غير المجاب عليها
               sectionName: sectionConfig?.name || `القسم ${sectionNumStr}`,
             });
           }
@@ -1295,7 +1295,7 @@ const QiyasExamPage: React.FC = () => {
       if (incorrectQuestionsDataForRetake.length === 0) {
         toast({ 
           title: "ممتاز! 🎉", 
-          description: `لم تخطئ في أي سؤال! أجبت على ${totalAnsweredQuestions} سؤال بشكل صحيح. أداؤك كان مثالياً!`, 
+          description: `أجبت على جميع الأسئلة بشكل صحيح! لا توجد أسئلة خاطئة أو غير مجاب عليها للمراجعة. أداؤك كان مثالياً!`, 
           duration: 6000, 
           className: "bg-green-50 dark:bg-green-900/30 border-green-200 dark:border-green-700" 
         });
@@ -1308,9 +1308,10 @@ const QiyasExamPage: React.FC = () => {
         options: q.options,
         correctOptionIndex: q.correctOptionIndex,
         explanation: q.explanation || "راجع مصادرك لمزيد من التفاصيل.",
-        userAnswerIndex: q.userAnswerIndex,
+        userAnswerIndex: q.userAnswerIndex, // قد يكون undefined للأسئلة غير المجاب عليها
         sectionName: q.sectionName,
         isNonScored: q._isNonScored || false, // تمييز الأسئلة التجريبية
+        wasUnanswered: q.userAnswerIndex === undefined, // تمييز الأسئلة غير المجاب عليها
       })));
 
       const htmlContent = `
@@ -1367,8 +1368,8 @@ const QiyasExamPage: React.FC = () => {
 <body>
     <div class="container">
         <div class="header">
-            <h1>🎯 تحدي الأسئلة الخاطئة</h1>
-            <p>فرصتك لمراجعة جميع أخطائك (بما في ذلك الأسئلة التجريبية) وتحويلها إلى نقاط قوة!</p>
+            <h1>🎯 تحدي الأسئلة الخاطئة والمفقودة</h1>
+            <p>فرصتك لمراجعة جميع الأسئلة الخاطئة والتي لم تجب عليها (بما في ذلك الأسئلة التجريبية) وتحويلها إلى نقاط قوة!</p>
         </div>
         <div id="progress-bar-container">
             <div id="progress-bar">0%</div>
@@ -1432,7 +1433,10 @@ const QiyasExamPage: React.FC = () => {
                     <p class="question-text">(\${index + 1}/\${mappedIncorrectQuestions.length}) \${questionData.text}</p>
                     <div class="original-info">
                         <strong>تذكير بالامتحان الأصلي:</strong><br>
-                        إجابتك الأصلية: <span style="color: #c62828;">"\${questionData.options[questionData.userAnswerIndex]}"</span>.<br>
+                        \${questionData.wasUnanswered 
+                            ? 'إجابتك الأصلية: <span style="color: #ff9800;">لم تجب على هذا السؤال</span>' 
+                            : \`إجابتك الأصلية: <span style="color: #c62828;">"\${questionData.options[questionData.userAnswerIndex]}"</span>\`
+                        }.<br>
                         الإجابة الصحيحة: <span style="color: #2e7d32;">"\${questionData.options[questionData.correctOptionIndex]}"</span>.<br>
                         القسم الأصلي: \${questionData.sectionName}.<br>
                         \${questionData.isNonScored ? '<span style="color: #1e88e5; font-weight: bold;">📝 سؤال تجريبي (غير محسوب في النتيجة)</span>' : '<span style="color: #4caf50; font-weight: bold;">✓ سؤال محسوب في النتيجة</span>'}
@@ -1571,9 +1575,12 @@ const QiyasExamPage: React.FC = () => {
       a.click();
       document.body.removeChild(a);
       window.URL.revokeObjectURL(url);
+      const wrongCount = incorrectQuestionsDataForRetake.filter(q => q.userAnswerIndex !== undefined).length;
+      const unansweredCount = incorrectQuestionsDataForRetake.filter(q => q.userAnswerIndex === undefined).length;
+      
       toast({ 
-        title: "تم تحميل تحدي الأسئلة الخاطئة", 
-        description: `تم إنشاء تحدي يحتوي على ${incorrectQuestionsDataForRetake.length} سؤال خاطئ. افتح الملف في متصفحك لبدء التحدي.`, 
+        title: "تم تحميل التحدي", 
+        description: `تم إنشاء تحدي يحتوي على ${incorrectQuestionsDataForRetake.length} سؤال (${wrongCount} خاطئ، ${unansweredCount} غير مجاب عليه). افتح الملف في متصفحك لبدء التحدي.`, 
         duration: 7000 
       });
     };
