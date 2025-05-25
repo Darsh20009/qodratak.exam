@@ -33,22 +33,17 @@ export function PremiumDashboard({ user }: PremiumDashboardProps) {
   
   if (!isPro && !isProLife) return null;
 
-  // نفس الميزات لكلا الباقتين مع إضافة ميزات خاصة لـ Pro Life
-  const basePremiumFeatures = [
+  // نفس الميزات لكلا الباقتين
+  const premiumFeatures = [
     { icon: SparklesIcon, title: "اختبارات لا محدودة", description: "وصول كامل لجميع الاختبارات" },
     { icon: TrophyIcon, title: "تحديات حصرية", description: "منافسات مخصصة للمميزين فقط" },
     { icon: GemIcon, title: "مكتبة متقدمة", description: "محتوى تعليمي عالي الجودة" },
     { icon: RocketIcon, title: "دعم فني أولوية", description: "استجابة فورية لطلباتك" },
     { icon: ShieldCheckIcon, title: "مجلدات خاصة", description: "تنظيم متقدم لدراستك" },
-    { icon: ZapIcon, title: "تحليل ذكي", description: "إحصائيات مفصلة لأدائك" }
+    { icon: ZapIcon, title: "تحليل ذكي", description: "إحصائيات مفصلة لأدائك" },
+    { icon: InfinityIcon, title: "مميزات حصرية", description: isProLife ? "عضوية مدى الحياة" : "مميزات سنوية متجددة" },
+    { icon: DiamondIcon, title: "تحديثات مستمرة", description: isProLife ? "جميع التحديثات مجاناً مدى الحياة" : "تحديثات مجانية طوال فترة الاشتراك" }
   ];
-
-  // إضافة ميزات Pro Life فقط إذا كان المستخدم لديه هذه الباقة
-  const premiumFeatures = isProLife ? [
-    ...basePremiumFeatures,
-    { icon: InfinityIcon, title: "مدى الحياة", description: "لا تنتهي صلاحيتها أبداً" },
-    { icon: DiamondIcon, title: "تحديثات مجانية", description: "جميع الميزات الجديدة مجاناً" }
-  ] : basePremiumFeatures;
 
   return (
     <div className="space-y-8">
@@ -94,11 +89,9 @@ export function PremiumDashboard({ user }: PremiumDashboardProps) {
             </p>
             <p className="text-lg text-amber-700 dark:text-amber-300 font-medium">
               ✨ لديك وصول حصري لجميع الميزات المتقدمة، كن مستعداً للتفوق!
-              {isProLife && (
-                <span className="block mt-2">
-                  🌟 ميزة إضافية: عضويتك لا تنتهي أبداً - أنت جزء من العائلة الذهبية مدى الحياة!
-                </span>
-              )}
+              <span className="block mt-2">
+                🌟 {isProLife ? 'عضويتك لا تنتهي أبداً - أنت جزء من العائلة الذهبية مدى الحياة!' : 'استمتع بجميع المميزات الحصرية طوال فترة اشتراكك!'}
+              </span>
             </p>
           </CardContent>
         </Card>
