@@ -4,20 +4,19 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { 
-  CrownIcon, 
   SparklesIcon, 
   TrophyIcon, 
-  StarIcon,
-  GemIcon,
+  GemIcon, 
+  RocketIcon, 
   ShieldCheckIcon,
-  RocketIcon,
   ZapIcon,
-  InfinityIcon,
+  CrownIcon,
   DiamondIcon,
   FlameIcon,
-  MedalIcon,
   WandIcon,
-  LockIcon
+  InfinityIcon,
+  MedalIcon,
+  BookOpenIcon
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 

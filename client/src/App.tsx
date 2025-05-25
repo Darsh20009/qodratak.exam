@@ -34,6 +34,7 @@ import QiyasExamPage from "@/pages/QiyasExamPage";
 import CustomExamPage from "@/pages/CustomExamPage";
 import MockExamPage from "@/pages/MockExamPage";
 import LibraryPage from "@/pages/LibraryPage";
+import BooksPage from "@/pages/BooksPage";
 import FoldersPage from "@/pages/FoldersPage";
 import ChallengePage from "@/pages/ChallengePage";
 import { SubscriptionPlans } from "@/components/SubscriptionPlans";
@@ -256,8 +257,8 @@ function Router({ splashDone }: { splashDone: boolean }) {
     window.addEventListener('userLoggedIn', handleUserLogin);
 
     return () => {
+      window.removeEventListener('storage', handleUserLogin);
       window.removeEventListener('storage', handleStorageChange);
-      window.removeEventListener('userLoggedIn', handleUserLogin);
     };
   }, []);
 
@@ -310,6 +311,11 @@ function Router({ splashDone }: { splashDone: boolean }) {
       <Route path="/library">
         {() => <ProtectedRoute><MainLayout>
           {isPremium ? <LibraryPage /> : <SubscriptionPlans />}
+        </MainLayout></ProtectedRoute>}
+      </Route>
+      <Route path="/books">
+        {() => <ProtectedRoute><MainLayout>
+          {isPremium ? <BooksPage /> : <SubscriptionPlans />}
         </MainLayout></ProtectedRoute>}
       </Route>
       <Route path="/profile">
