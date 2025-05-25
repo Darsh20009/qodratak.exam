@@ -1267,7 +1267,7 @@ const QiyasExamPage: React.FC = () => {
       if (totalAnsweredQuestions === 0) {
         toast({ 
           title: "لا توجد إجابات", 
-          description: "لم تجب على أي سؤال في هذا الاختبار. أكمل الاختبار أولاً للحصول على تحدي الأسئلة الخاطئة.", 
+          description: "لم تجب على أي سؤال في هذا الاختبار. أكمل الاختبار أولاً للحصول على تحدي الأسئلة الخاطئة والغير مجاب عليها.", 
           variant: "destructive",
           duration: 5000 
         });
@@ -1319,57 +1319,286 @@ const QiyasExamPage: React.FC = () => {
 <html dir="rtl" lang="ar">
 <head>
     <meta charset="UTF-8">
-    <title>تحدي الأسئلة الخاطئة: ${selectedExam.name}</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>تحدي الأسئلة الخاطئة والغير مجاب عليها: ${selectedExam.name}</title>
     <link href="https://fonts.googleapis.com/css2?family=Noto+Kufi+Arabic:wght@400;700&display=swap" rel="stylesheet">
     <style>
-        body { font-family: 'Noto Kufi Arabic', sans-serif; margin: 0; background-color: #f0f4f8; color: #333; display: flex; flex-direction: column; align-items: center; padding: 20px; min-height: 100vh; box-sizing: border-box; }
-        .container { background-color: #fff; padding: 20px 30px 30px 30px; border-radius: 12px; box-shadow: 0 8px 25px rgba(0,0,0,0.1); width: 95%; max-width: 850px; }
-        .header { text-align: center; margin-bottom: 25px; border-bottom: 2px solid #e0e0e0; padding-bottom: 15px; }
-        .header h1 { color: #e53935; /* Red for mistakes */ font-size: 2em; margin-bottom: 5px; }
-        .header p { color: #555; font-size: 1em; }
-        .question-area { margin-bottom: 20px; }
-        .question-card { padding: 20px; border: 1px solid #ddd; border-radius: 8px; margin-bottom: 15px; background-color: #fdfdfd; position: relative; }
-        .question-text { font-size: 1.2em; font-weight: bold; margin-bottom: 15px; color: #444; line-height: 1.6; }
-        .original-info { font-size: 0.85em; color: #777; margin-bottom: 15px; background-color: #fffde7; padding: 8px; border-radius: 4px; border-right: 3px solid #ffc107;}
-        .original-info strong {color: #333;}
-        .options-list { list-style: none; padding: 0; }
+        * { box-sizing: border-box; }
+        body { 
+            font-family: 'Noto Kufi Arabic', sans-serif; 
+            margin: 0; 
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: #333; 
+            padding: 10px; 
+            min-height: 100vh; 
+            font-size: 16px;
+        }
+        .container { 
+            background-color: #fff; 
+            padding: 15px; 
+            border-radius: 15px; 
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2); 
+            width: 100%; 
+            max-width: 800px; 
+            margin: 0 auto;
+        }
+        .header { 
+            text-align: center; 
+            margin-bottom: 20px; 
+            border-bottom: 3px solid #667eea; 
+            padding-bottom: 15px; 
+        }
+        .header h1 { 
+            color: #667eea; 
+            font-size: 1.8rem; 
+            margin-bottom: 8px; 
+            font-weight: bold;
+        }
+        .header p { 
+            color: #666; 
+            font-size: 1rem; 
+            line-height: 1.5;
+        }
+        .question-area { margin-bottom: 15px; }
+        .question-card { 
+            padding: 15px; 
+            border: 1px solid #e0e0e0; 
+            border-radius: 12px; 
+            margin-bottom: 15px; 
+            background: linear-gradient(135deg, #f8f9ff 0%, #fff 100%);
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .question-text { 
+            font-size: 1.1rem; 
+            font-weight: bold; 
+            margin-bottom: 15px; 
+            color: #2c3e50; 
+            line-height: 1.6; 
+        }
+        .original-info { 
+            font-size: 0.9rem; 
+            color: #555; 
+            margin-bottom: 15px; 
+            background: linear-gradient(135deg, #fff3cd 0%, #ffeaa7 100%);
+            padding: 12px; 
+            border-radius: 8px; 
+            border-right: 4px solid #f39c12;
+        }
+        .original-info strong { color: #2c3e50; }
+        .options-list { 
+            list-style: none; 
+            padding: 0; 
+            margin: 0;
+        }
         .options-list li {
-            padding: 12px; margin: 8px 0; border: 2px solid #eee; border-radius: 8px; cursor: pointer;
-            transition: all 0.25s ease; display: flex; align-items: center;
-            background-color: #fff; font-size: 0.95em;
+            padding: 12px 15px; 
+            margin: 10px 0; 
+            border: 2px solid #e8e8e8; 
+            border-radius: 10px; 
+            cursor: pointer;
+            transition: all 0.3s ease; 
+            display: flex; 
+            align-items: center;
+            background: linear-gradient(135deg, #fff 0%, #f8f9ff 100%);
+            font-size: 1rem;
+            min-height: 50px;
         }
-        .options-list li:hover { border-color: #b0bec5; }
-        .options-list li.selected { border-color: #26a69a; background-color: #e0f2f1; font-weight: bold; } /* Teal */
+        .options-list li:hover { 
+            border-color: #667eea; 
+            transform: translateY(-2px);
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+        }
+        .options-list li.selected { 
+            border-color: #00b894; 
+            background: linear-gradient(135deg, #d1f2eb 0%, #a8e6cf 100%); 
+            font-weight: bold; 
+            transform: translateY(-2px);
+            box-shadow: 0 4px 15px rgba(0, 184, 148, 0.3);
+        }
         .option-letter {
-            min-width: 28px; height: 28px; background-color: #78909c; /* Blue Grey */ color: white; border-radius: 50%;
-            display: inline-flex; justify-content: center; align-items: center; margin-left: 12px; font-weight: bold; font-size: 0.9em;
+            min-width: 35px; 
+            height: 35px; 
+            background: linear-gradient(135deg, #74b9ff 0%, #0984e3 100%);
+            color: white; 
+            border-radius: 50%;
+            display: flex; 
+            justify-content: center; 
+            align-items: center; 
+            margin-left: 12px; 
+            font-weight: bold; 
+            font-size: 1rem;
+            flex-shrink: 0;
         }
-        .options-list li.selected .option-letter { background-color: #26a69a; } /* Teal */
-        .feedback-area { margin-top: 12px; padding: 12px; border-radius: 6px; font-size: 0.9em; display: none; }
-        .feedback-area.correct { background-color: #e8f5e9; color: #2e7d32; border: 1px solid #a5d6a7; }
-        .feedback-area.incorrect { background-color: #ffebee; color: #c62828; border: 1px solid #ef9a9a; }
-        .explanation-text { margin-top:8px; font-style: italic; color: #5f5f5f; line-height:1.5; }
-        #navigation-buttons, #result-area { text-align: center; margin-top: 25px; }
+        .options-list li.selected .option-letter { 
+            background: linear-gradient(135deg, #00b894 0%, #00a085 100%);
+        }
+        .feedback-area { 
+            margin-top: 15px; 
+            padding: 15px; 
+            border-radius: 10px; 
+            font-size: 0.95rem; 
+            display: none; 
+            line-height: 1.5;
+        }
+        .feedback-area.correct { 
+            background: linear-gradient(135deg, #d4edda 0%, #c3e6cb 100%);
+            color: #155724; 
+            border: 2px solid #28a745; 
+        }
+        .feedback-area.incorrect { 
+            background: linear-gradient(135deg, #f8d7da 0%, #f5c6cb 100%);
+            color: #721c24; 
+            border: 2px solid #dc3545; 
+        }
+        .explanation-text { 
+            margin-top: 10px; 
+            font-style: italic; 
+            color: #495057; 
+            line-height: 1.6; 
+        }
+        #navigation-buttons, #result-area { 
+            text-align: center; 
+            margin-top: 20px; 
+        }
         button {
-            background-color: #546e7a; /* Blue Grey */ color: white; border: none; padding: 10px 20px; border-radius: 8px;
-            font-size: 1em; cursor: pointer; transition: background-color 0.3s; margin: 5px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white; 
+            border: none; 
+            padding: 12px 20px; 
+            border-radius: 25px;
+            font-size: 1rem; 
+            cursor: pointer; 
+            transition: all 0.3s ease; 
+            margin: 5px;
+            font-weight: bold;
+            min-width: 100px;
         }
-        button:hover { background-color: #455a64; }
-        button:disabled { background-color: #ccc; cursor: not-allowed; }
-        #submit-retake-btn { background-color: #66bb6a; /* Green */ }
-        #submit-retake-btn:hover { background-color: #4caf50; }
-        #result-area h2 { color: #1e88e5; /* Blue */ } #result-area p {margin: 8px 0;}
-        #progress-bar-container { width: 100%; background-color: #e0e0e0; border-radius: 5px; margin-bottom: 20px; height: 18px; overflow: hidden;}
-        #progress-bar { width: 0%; height: 100%; background-color: #42a5f5; /* Light Blue */ border-radius: 5px; transition: width 0.3s ease-in-out; text-align: center; color: white; font-size: 0.8em; line-height:18px;}
-        .footer { text-align: center; margin-top: 30px; padding-top: 15px; border-top: 1px solid #eee; font-size: 0.85em; color: #777; }
-        .no-questions { text-align: center; font-size: 1.2em; color: #2e7d32; padding: 30px; background-color: #e8f5e9; border-radius: 8px;}
+        button:hover { 
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
+        }
+        button:active {
+            transform: translateY(0);
+        }
+        button:disabled { 
+            background: linear-gradient(135deg, #95a5a6 0%, #7f8c8d 100%);
+            cursor: not-allowed; 
+            transform: none;
+            box-shadow: none;
+        }
+        #submit-retake-btn { 
+            background: linear-gradient(135deg, #00b894 0%, #00a085 100%);
+        }
+        #submit-retake-btn:hover { 
+            box-shadow: 0 6px 20px rgba(0, 184, 148, 0.4);
+        }
+        #result-area h2 { 
+            color: #667eea; 
+            font-size: 1.5rem;
+        } 
+        #result-area p { margin: 10px 0; }
+        #progress-bar-container { 
+            width: 100%; 
+            background-color: #e9ecef; 
+            border-radius: 10px; 
+            margin-bottom: 20px; 
+            height: 20px; 
+            overflow: hidden;
+            box-shadow: inset 0 2px 4px rgba(0,0,0,0.1);
+        }
+        #progress-bar { 
+            width: 0%; 
+            height: 100%; 
+            background: linear-gradient(135deg, #00b894 0%, #00a085 100%);
+            border-radius: 10px; 
+            transition: width 0.5s ease-in-out; 
+            text-align: center; 
+            color: white; 
+            font-size: 0.9rem; 
+            line-height: 20px;
+            font-weight: bold;
+        }
+        .footer { 
+            text-align: center; 
+            margin-top: 25px; 
+            padding-top: 15px; 
+            border-top: 2px solid #e9ecef; 
+            font-size: 0.9rem; 
+            color: #6c757d; 
+        }
+        .no-questions { 
+            text-align: center; 
+            font-size: 1.2rem; 
+            color: #00b894; 
+            padding: 30px; 
+            background: linear-gradient(135deg, #d4edda 0%, #c3e6cb 100%);
+            border-radius: 15px;
+            border: 2px solid #28a745;
+        }
+        
+        /* تحسينات للهواتف المحمولة */
+        @media (max-width: 768px) {
+            body { padding: 5px; font-size: 14px; }
+            .container { padding: 12px; border-radius: 12px; }
+            .header h1 { font-size: 1.5rem; }
+            .header p { font-size: 0.9rem; }
+            .question-text { font-size: 1rem; }
+            .original-info { font-size: 0.8rem; padding: 10px; }
+            .options-list li { 
+                padding: 10px 12px; 
+                margin: 8px 0; 
+                font-size: 0.9rem;
+                min-height: 45px;
+            }
+            .option-letter { 
+                min-width: 30px; 
+                height: 30px; 
+                font-size: 0.9rem;
+                margin-left: 8px;
+            }
+            button { 
+                padding: 10px 16px; 
+                font-size: 0.9rem; 
+                margin: 3px;
+                min-width: 80px;
+            }
+            #navigation-buttons { 
+                display: flex; 
+                flex-wrap: wrap; 
+                justify-content: center; 
+                gap: 5px; 
+            }
+            #progress-bar-container { height: 18px; }
+            #progress-bar { font-size: 0.8rem; line-height: 18px; }
+        }
+        
+        @media (max-width: 480px) {
+            .header h1 { font-size: 1.3rem; }
+            .question-text { font-size: 0.95rem; }
+            .options-list li { 
+                font-size: 0.85rem;
+                padding: 8px 10px;
+                min-height: 40px;
+            }
+            .option-letter { 
+                min-width: 28px; 
+                height: 28px; 
+                font-size: 0.8rem;
+                margin-left: 6px;
+            }
+            button { 
+                padding: 8px 12px; 
+                font-size: 0.8rem;
+                min-width: 70px;
+            }
+        }
     </style>
 </head>
 <body>
     <div class="container">
         <div class="header">
-            <h1>🎯 تحدي الأسئلة الخاطئة والمفقودة</h1>
-            <p>فرصتك لمراجعة جميع الأسئلة الخاطئة والتي لم تجب عليها (بما في ذلك الأسئلة التجريبية) وتحويلها إلى نقاط قوة!</p>
+            <h1>🎯 تحدي الأسئلة الخاطئة والغير مجاب عليها</h1>
+            <p>فرصتك لمراجعة جميع الأسئلة الخاطئة والتي لم تجب عليها وتحويلها إلى نقاط قوة!</p>
         </div>
         <div id="progress-bar-container">
             <div id="progress-bar">0%</div>
@@ -1382,14 +1611,14 @@ const QiyasExamPage: React.FC = () => {
             <button id="submit-retake-btn" onclick="submitRetake()" style="display:none;">عرض النتيجة النهائية</button>
         </div>
         <div id="result-area" style="display:none;">
-            <h2>نتائج تحدي الأخطاء:</h2>
+            <h2>نتائج تحدي الأخطاء والمفقودات:</h2>
             <p id="score-text"></p>
             <p id="feedback-message"></p>
             <button onclick="restartRetake()">أعد التحدي</button>
         </div>
     </div>
     <div class="footer">
-        © ${new Date().getFullYear()} قدراتك - بالتوفيق في رحلتك التعليمية!
+        © ${new Date().getFullYear()} منصة قدراتك - بالتوفيق في رحلتك التعليمية!
     </div>
     <script>
         let incorrectQuestionsForRetake = [];
@@ -1434,18 +1663,18 @@ const QiyasExamPage: React.FC = () => {
                     <div class="original-info">
                         <strong>تذكير بالامتحان الأصلي:</strong><br>
                         \${questionData.wasUnanswered 
-                            ? 'إجابتك الأصلية: <span style="color: #ff9800;">لم تجب على هذا السؤال</span>' 
-                            : \`إجابتك الأصلية: <span style="color: #c62828;">"\${questionData.options[questionData.userAnswerIndex]}"</span>\`
+                            ? 'إجابتك الأصلية: <span style="color: #e17055; font-weight: bold;">لم تجب على هذا السؤال</span>' 
+                            : \`إجابتك الأصلية: <span style="color: #d63031; font-weight: bold;">"\${questionData.options[questionData.userAnswerIndex]}"</span>\`
                         }.<br>
-                        الإجابة الصحيحة: <span style="color: #2e7d32;">"\${questionData.options[questionData.correctOptionIndex]}"</span>.<br>
-                        القسم الأصلي: \${questionData.sectionName}.<br>
-                        \${questionData.isNonScored ? '<span style="color: #1e88e5; font-weight: bold;">📝 سؤال تجريبي (غير محسوب في النتيجة)</span>' : '<span style="color: #4caf50; font-weight: bold;">✓ سؤال محسوب في النتيجة</span>'}
+                        الإجابة الصحيحة: <span style="color: #00b894; font-weight: bold;">"\${questionData.options[questionData.correctOptionIndex]}"</span>.<br>
+                        القسم الأصلي: <span style="font-weight: bold;">\${questionData.sectionName}</span>.<br>
+                        \${questionData.isNonScored ? '<span style="color: #0984e3; font-weight: bold;">📝 سؤال تجريبي (غير محسوب في النتيجة)</span>' : '<span style="color: #00b894; font-weight: bold;">✓ سؤال محسوب في النتيجة</span>'}
                     </div>
                     <ul class="options-list" id="options-\${questionData.id}">
                         \${questionData.shuffledOptions.map((opt, i) => \`
                             <li onclick="selectRetakeAnswer('\${questionData.id}', \${opt.originalIndex}, this)">
                                 <span class="option-letter">\${optionChars[i] || i+1}</span>
-                                \${opt.text}
+                                <span style="flex: 1;">\${opt.text}</span>
                             </li>
                         \`).join('')}
                     </ul>
@@ -1503,14 +1732,14 @@ const QiyasExamPage: React.FC = () => {
                 if (selectedOptOriginalIndex !== undefined) {
                     if (isCorrectThisTime) {
                         score++;
-                        feedbackDiv.innerHTML = \`رائع! إجابة صحيحة هذه المرة. <br> \${qData.explanation ? \`<p class="explanation-text"><strong>الشرح:</strong> \${qData.explanation}</p>\` : ''}\`;
+                        feedbackDiv.innerHTML = \`🎉 رائع! إجابة صحيحة هذه المرة. <br> \${qData.explanation ? \`<p class="explanation-text"><strong>الشرح:</strong> \${qData.explanation}</p>\` : ''}\`;
                         feedbackDiv.className = 'feedback-area correct';
                     } else {
-                        feedbackDiv.innerHTML = \`للأسف، إجابة خاطئة. الإجابة الصحيحة كانت: "\${qData.options[qData.correctOptionIndex]}". <br> \${qData.explanation ? \`<p class="explanation-text"><strong>الشرح:</strong> \${qData.explanation}</p>\` : ''}\`;
+                        feedbackDiv.innerHTML = \`❌ للأسف، إجابة خاطئة. الإجابة الصحيحة كانت: "\${qData.options[qData.correctOptionIndex]}". <br> \${qData.explanation ? \`<p class="explanation-text"><strong>الشرح:</strong> \${qData.explanation}</p>\` : ''}\`;
                         feedbackDiv.className = 'feedback-area incorrect';
                     }
                 } else {
-                    feedbackDiv.innerHTML = \`لم تجب على هذا السؤال في التحدي. الإجابة الصحيحة هي: "\${qData.options[qData.correctOptionIndex]}". <br> \${qData.explanation ? \`<p class="explanation-text"><strong>الشرح:</strong> \${qData.explanation}</p>\` : ''}\`;
+                    feedbackDiv.innerHTML = \`⚠️ لم تجب على هذا السؤال في التحدي. الإجابة الصحيحة هي: "\${qData.options[qData.correctOptionIndex]}". <br> \${qData.explanation ? \`<p class="explanation-text"><strong>الشرح:</strong> \${qData.explanation}</p>\` : ''}\`;
                     feedbackDiv.className = 'feedback-area incorrect';
                 }
                 feedbackDiv.style.display = 'block';
@@ -1524,14 +1753,14 @@ const QiyasExamPage: React.FC = () => {
             scoreText.textContent = \`نتيجتك في هذا التحدي: \${score} من \${mappedIncorrectQuestions.length} (\${((score / mappedIncorrectQuestions.length) * 100).toFixed(1)}%)\`;
 
             if (score === mappedIncorrectQuestions.length) {
-                feedbackMsg.textContent = "🎉 ممتاز! لقد أتقنت جميع الأسئلة التي أخطأت بها سابقاً. استمر في هذا التقدم!";
-                feedbackMsg.style.color = "#2e7d32";
+                feedbackMsg.textContent = "🎉 ممتاز! لقد أتقنت جميع الأسئلة التي أخطأت بها أو لم تجب عليها سابقاً. استمر في هذا التقدم!";
+                feedbackMsg.style.color = "#00b894";
             } else if (score >= mappedIncorrectQuestions.length / 2) {
                 feedbackMsg.textContent = "👍 جيد جداً! لقد تحسنت كثيراً. القليل من التركيز وستتقن البقية.";
-                feedbackMsg.style.color = "#1e88e5";
+                feedbackMsg.style.color = "#0984e3";
             } else {
                 feedbackMsg.textContent = "💡 لا بأس، كل خطأ هو فرصة للتعلم. راجع الشروحات وحاول مرة أخرى!";
-                feedbackMsg.style.color = "#ef6c00";
+                feedbackMsg.style.color = "#e17055";
             }
             resultArea.style.display = 'block';
             document.getElementById('navigation-buttons').style.display = 'none';
@@ -1558,7 +1787,7 @@ const QiyasExamPage: React.FC = () => {
                 mappedIncorrectQuestions = incorrectQuestionsForRetake.map(q => createQuestionMap(q));
                 loadRetakeQuestion(0);
             } else {
-                document.getElementById('question-area').innerHTML = '<p class="no-questions">رائع! لم تكن لديك أي أسئلة خاطئة لمراجعتها في هذا الاختبار.</p>';
+                document.getElementById('question-area').innerHTML = '<p class="no-questions">🎉 رائع! لم تكن لديك أي أسئلة خاطئة أو غير مجاب عليها لمراجعتها في هذا الاختبار. أداؤك كان مثالياً!</p>';
                 document.getElementById('navigation-buttons').style.display = 'none';
                 document.getElementById('progress-bar-container').style.display = 'none';
             }
@@ -1580,7 +1809,7 @@ const QiyasExamPage: React.FC = () => {
       
       toast({ 
         title: "تم تحميل التحدي", 
-        description: `تم إنشاء تحدي يحتوي على ${incorrectQuestionsDataForRetake.length} سؤال (${wrongCount} خاطئ، ${unansweredCount} غير مجاب عليه). افتح الملف في متصفحك لبدء التحدي.`, 
+        description: `تم إنشاء تحدي يحتوي على ${incorrectQuestionsDataForRetake.length} سؤال (${wrongCount} خاطئ، ${unansweredCount} غير مجاب عليه). الآن محسّن للهواتف! افتح الملف في متصفحك لبدء التحدي.`, 
         duration: 7000 
       });
     };
@@ -1687,7 +1916,7 @@ const QiyasExamPage: React.FC = () => {
                   className="gap-2 w-full sm:w-auto bg-red-600 hover:bg-red-700 text-white dark:bg-red-700 dark:hover:bg-red-800"
                 >
                   <Target className="h-4 w-4" /> {/* Or RefreshCw */}
-                  🎯 تحدي الأسئلة الخاطئة
+                  🎯 تحدي الأسئلة الخاطئة والغير مجاب عليها
                 </Button>
                 <Button
                   onClick={() => {
