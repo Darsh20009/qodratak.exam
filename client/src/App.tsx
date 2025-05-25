@@ -465,40 +465,6 @@ function App() {
         `}</style>
       </div>
     );
-  }conic-gradient(from_90deg_at_50%_50%,var(--primary)/20_0%,transparent_60%)] animate-spin-reverse"/>
-          <div className="absolute inset-0 bg-grid-white/10 bg-[size:20px_20px] [mask-image:radial-gradient(black,transparent_70%)]"/>
-        </div>
-
-        {/* Floating particles */}
-        <div className="absolute inset-0 overflow-hidden">
-          {[...Array(20)].map((_, i) => (
-            <div
-              key={i}
-              className="absolute h-1 w-1 bg-primary/30 rounded-full animate-float"
-              style={{
-                top: `${Math.random() * 100}%`,
-                left: `${Math.random() * 100}%`,
-                animationDelay: `${Math.random() * 5}s`
-              }}
-            />
-          ))}
-        </div>
-
-        {/* Main content with enhanced animations */}
-        <div className="relative z-10 text-center space-y-6">
-          <div className="relative inline-block">
-            <h1 className="text-7xl font-bold bg-gradient-to-r from-primary via-primary-foreground to-primary bg-clip-text text-transparent animate-float">
-              قدراتك
-            </h1>
-            <div className="absolute -right-8 -top-8 text-4xl animate-bounce-slow">✨</div>
-            <div className="absolute -left-8 -bottom-4 text-4xl animate-bounce-slow" style={{animationDelay: '0.5s'}}>✨</div>
-          </div>
-          <p className="text-3xl text-primary/90 animate-fade-in-delay relative">
-            طريقك للوصول إلى 100% بإذن الله
-          </p>
-        </div>
-      </div>
-    );
   }
 
   return (
