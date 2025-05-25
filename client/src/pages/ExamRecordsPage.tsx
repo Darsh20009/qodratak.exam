@@ -1,9 +1,11 @@
 
 import { useEffect, useState } from 'react';
+import { useLocation } from 'wouter';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { formatDate } from '@/lib/formatters';
 import { BookText, Calculator, Clock, Award, Target } from 'lucide-react';
+import { useToast } from '@/hooks/use-toast';
 
 interface ExamRecord {
   date: string;
@@ -15,6 +17,8 @@ interface ExamRecord {
 
 export default function ExamRecordsPage() {
   const [records, setRecords] = useState<ExamRecord[]>([]);
+  const [location, setLocation] = useLocation();
+  const { toast } = useToast();
 
   useEffect(() => {
     const storedRecords = localStorage.getItem('examRecords');
