@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { Link } from "wouter";
 import { 
@@ -15,8 +14,12 @@ import {
   Zap,
   User
 } from "lucide-react";
+import { SubscriptionPlans } from "@/components/SubscriptionPlans";
+import { PremiumDashboard } from "@/components/PremiumDashboard";
+import { PremiumNotifications } from "@/components/PremiumNotifications";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import { cn } from "@/lib/utils";
 
 const features = [
   {
@@ -69,7 +72,7 @@ const Home: React.FC = () => {
     const checkLoginStatus = () => {
       const loginStatus = localStorage.getItem("isLoggedIn") === "true";
       const userData = localStorage.getItem("user");
-      
+
       setIsLoggedIn(loginStatus);
       if (userData) {
         try {
@@ -81,7 +84,7 @@ const Home: React.FC = () => {
     };
 
     checkLoginStatus();
-    
+
     // استمع لتغييرات تسجيل الدخول
     const handleStorageChange = () => {
       checkLoginStatus();
@@ -100,6 +103,8 @@ const Home: React.FC = () => {
       window.removeEventListener('userLoggedIn', handleUserLogin as EventListener);
     };
   }, []);
+
+  const isPremiumUser = user?.subscription?.type === 'Pro' || user?.subscription?.type === 'Pro Life';
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-background to-background/80">
@@ -143,6 +148,14 @@ const Home: React.FC = () => {
         </div>
 
         <div className="container relative px-4 md:px-6">
+          {/* Premium Notifications */}
+          {isPremiumUser && user && (
+            <PremiumNotifications 
+              userSubscription={user.subscription?.type || 'free'} 
+              userName={user.name || ''} 
+            />
+          )}
+
           <div className="flex flex-col items-center space-y-8 text-center">
             <div className="space-y-4 animate-fade-in-down">
               <div className="inline-flex items-center gap-4 justify-center">
@@ -241,22 +254,32 @@ const Home: React.FC = () => {
         <div className="container px-4 md:px-6 text-center relative">
           {isLoggedIn && user ? (
             <>
-              <User className="h-12 w-12 mx-auto mb-6 animate-pulse text-primary-foreground/90" />
-              <h2 className="text-3xl font-bold mb-4">مرحباً بك، {user.name || user.username}!</h2>
-              <p className="mb-8 max-w-[600px] mx-auto opacity-90">
-                استمر في رحلتك التعليمية واكتشف المزيد من الاختبارات والتحديات
-              </p>
-              <div className="flex flex-col sm:flex-row gap-4 justify-center">
-                <Button asChild size="lg" variant="secondary" className="min-w-[200px] hover:scale-105 transition-transform">
-                  <Link href="/records">
-                    عرض سجل الاختبارات
-                  </Link>
-                </Button>
-                <Button asChild size="lg" variant="outline" className="min-w-[200px] hover:scale-105 transition-transform border-primary-foreground text-primary-foreground hover:bg-primary-foreground hover:text-primary">
-                  <Link href="/profile">
-                    الملف الشخصي
-                  </Link>
-                </Button>
+              {/* Premium Dashboard for Pro/Pro Life users */}
+              {isPremiumUser && user && (
+                <div className="mb-12">
+                  <PremiumDashboard user={user} />
+                </div>
+              )}
+
+              {/* Regular welcome section for free users or as secondary content for premium */}
+              <div className={cn("text-center", isPremiumUser ? "mb-8" : "mb-12")}>
+                <User className="h-12 w-12 mx-auto mb-6 animate-pulse text-primary-foreground/90" />
+                <h2 className="text-3xl font-bold mb-4">{isPremiumUser ? "مرحباً بك في واجهة المستخدمين المميزين" : `مرحباً بك، ${user.name || user.username}!` }</h2>
+                <p className="mb-8 max-w-[600px] mx-auto opacity-90">
+                  {isPremiumUser ? "استمتع بميزاتك الحصرية ولوحة التحكم المخصصة لتجربة تعليمية فريدة." : "استمر في رحلتك التعليمية واكتشف المزيد من الاختبارات والتحديات" }
+                </p>
+                <div className="flex flex-col sm:flex-row gap-4 justify-center">
+                  <Button asChild size="lg" variant="secondary" className="min-w-[200px] hover:scale-105 transition-transform">
+                    <Link href="/records">
+                      عرض سجل الاختبارات
+                    </Link>
+                  </Button>
+                  <Button asChild size="lg" variant="outline" className="min-w-[200px] hover:scale-105 transition-transform border-primary-foreground text-primary-foreground hover:bg-primary-foreground hover:text-primary">
+                    <Link href="/profile">
+                      الملف الشخصي
+                    </Link>
+                  </Button>
+                </div>
               </div>
             </>
           ) : (

@@ -20,7 +20,9 @@ import {
   GraduationCapIcon,
   HelpCircleIcon, 
   HomeIcon, 
-  UserIcon
+  UserIcon,
+  CrownIcon,
+  DiamondIcon
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useState, useEffect } from "react";
@@ -39,6 +41,7 @@ import { SubscriptionPlans } from "@/components/SubscriptionPlans";
 function MainLayout({ children }: { children: React.ReactNode }) {
   const [location] = useLocation();
   const [userName, setUserName] = useState<string | null>(null);
+  const [userSubscription, setUserSubscription] = useState<string>('free');
 
   useEffect(() => {
     const updateUserData = () => {
@@ -47,12 +50,15 @@ function MainLayout({ children }: { children: React.ReactNode }) {
         try {
           const user = JSON.parse(storedUser);
           setUserName(user.username || user.name);
+          setUserSubscription(user.subscription?.type || 'free');
         } catch (e) {
           console.error("Error parsing stored user:", e);
           setUserName(null);
+          setUserSubscription('free');
         }
       } else {
         setUserName(null);
+        setUserSubscription('free');
       }
     };
 
@@ -62,6 +68,7 @@ function MainLayout({ children }: { children: React.ReactNode }) {
     // الاستماع لتغييرات تسجيل الدخول
     const handleUserLogin = (event: any) => {
       setUserName(event.detail?.username || event.detail?.name);
+      setUserSubscription(event.detail?.subscription?.type || 'free');
     };
 
     const handleStorageChange = () => {
@@ -124,14 +131,34 @@ function MainLayout({ children }: { children: React.ReactNode }) {
           >
             {userName ? (
               <>
-                <div className="h-8 w-8 rounded-full overflow-hidden bg-primary/10">
+                <div className="relative h-8 w-8 rounded-full overflow-hidden bg-primary/10">
                   <img 
                     src={`https://api.dicebear.com/7.x/avataaars-neutral/svg?seed=${userName}`} 
                     alt="صورة المستخدم" 
                     className="w-full h-full object-cover"
                   />
+                  {(userSubscription === 'Pro' || userSubscription === 'Pro Life') && (
+                    <div className="absolute -top-1 -right-1 h-4 w-4 rounded-full bg-gradient-to-r from-amber-400 to-yellow-500 flex items-center justify-center">
+                      {userSubscription === 'Pro Life' ? (
+                        <DiamondIcon className="h-2.5 w-2.5 text-white" />
+                      ) : (
+                        <CrownIcon className="h-2.5 w-2.5 text-white" />
+                      )}
+                    </div>
+                  )}
                 </div>
-                <span>{userName}</span>
+                <div className="flex flex-col items-start">
+                  <span className="text-sm font-medium">{userName}</span>
+                  {(userSubscription === 'Pro' || userSubscription === 'Pro Life') && (
+                    <span className="text-xs text-amber-600 dark:text-amber-400 font-bold flex items-center gap-1">
+                      {userSubscription === 'Pro Life' ? (
+                        <><DiamondIcon className="h-3 w-3" /> Pro Life</>
+                      ) : (
+                        <><CrownIcon className="h-3 w-3" /> Pro</>
+                      )}
+                    </span>
+                  )}
+                </div>
               </>
             ) : (
               <>
@@ -177,12 +204,21 @@ function MainLayout({ children }: { children: React.ReactNode }) {
               className="p-2"
             >
               {userName ? (
-                <div className="h-6 w-6 rounded-full overflow-hidden bg-primary/10">
+                <div className="relative h-6 w-6 rounded-full overflow-hidden bg-primary/10">
                   <img 
                     src={`https://api.dicebear.com/7.x/avataaars-neutral/svg?seed=${userName}`} 
                     alt="صورة المستخدم" 
                     className="w-full h-full object-cover"
                   />
+                  {(userSubscription === 'Pro' || userSubscription === 'Pro Life') && (
+                    <div className="absolute -top-0.5 -right-0.5 h-3 w-3 rounded-full bg-gradient-to-r from-amber-400 to-yellow-500 flex items-center justify-center">
+                      {userSubscription === 'Pro Life' ? (
+                        <DiamondIcon className="h-2 w-2 text-white" />
+                      ) : (
+                        <CrownIcon className="h-2 w-2 text-white" />
+                      )}
+                    </div>
+                  )}
                 </div>
               ) : (
                 <UserIcon className="h-5 w-5" />
