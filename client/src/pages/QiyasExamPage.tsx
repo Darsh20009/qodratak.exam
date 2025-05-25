@@ -302,79 +302,103 @@ const QiyasExamPage: React.FC = () => {
     const minutes = Math.floor(prayerBreakTimeLeft / 60);
     const seconds = prayerBreakTimeLeft % 60;
     const timeDisplay = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+    const progressPercentage = ((15 * 60 - prayerBreakTimeLeft) / (15 * 60)) * 100;
     
     return (
-      <div className="fixed inset-0 bg-slate-900/95 backdrop-blur-sm z-[100] flex items-center justify-center p-4 font-arabic">
-        <div className="bg-white dark:bg-slate-800 p-6 sm:p-8 rounded-2xl max-w-lg w-full mx-auto text-center space-y-6 shadow-2xl border border-slate-200 dark:border-slate-700">
+      <div className="fixed inset-0 bg-gradient-to-br from-slate-900/95 via-slate-800/95 to-slate-900/95 backdrop-blur-md z-[100] flex items-center justify-center p-4 font-arabic">
+        <div className="relative bg-white/95 dark:bg-slate-800/95 backdrop-blur-sm p-8 sm:p-10 rounded-3xl max-w-md w-full mx-auto text-center space-y-6 shadow-2xl border border-orange-200/30 dark:border-orange-700/30">
           
-          {/* Simple Icon */}
-          <div className="mx-auto mb-6">
-            <div className="w-20 h-20 sm:w-24 sm:h-24 bg-gradient-to-br from-orange-100 to-orange-200 dark:from-orange-900/50 dark:to-orange-800/50 rounded-full flex items-center justify-center shadow-lg">
-              <Moon className="h-10 w-10 sm:h-12 sm:w-12 text-orange-600 dark:text-orange-400" />
-            </div>
-          </div>
-
-          {/* Simple Typography */}
-          <div className="space-y-4">
-            <h3 className="text-2xl sm:text-3xl font-bold text-gray-800 dark:text-gray-100">
-              استراحة للصلاة
-            </h3>
-            <p className="text-lg font-semibold text-gray-700 dark:text-gray-300">
-              تقبّل الله طاعتكم
-            </p>
-            <p className="text-sm sm:text-base text-gray-600 dark:text-gray-400 leading-relaxed">
-              تم إيقاف الاختبار مؤقتاً. عند الانتهاء، يمكنك استئناف الاختبار.
-            </p>
-          </div>
+          {/* Background decoration */}
+          <div className="absolute inset-0 bg-gradient-to-br from-orange-50/30 via-transparent to-yellow-50/30 dark:from-orange-900/20 dark:via-transparent dark:to-yellow-900/20 rounded-3xl"></div>
           
-          {/* Timer Display */}
-          <div className="bg-orange-50 dark:bg-orange-900/20 p-4 sm:p-6 rounded-xl border border-orange-200 dark:border-orange-700">
-            <p className="text-sm font-medium text-orange-800 dark:text-orange-300 mb-2 flex items-center justify-center gap-2">
-              <Clock3 className="h-4 w-4" />
-              الاستئناف التلقائي خلال
-            </p>
-            <div className="text-3xl sm:text-4xl font-bold text-orange-700 dark:text-orange-400 mb-3">
-              {timeDisplay}
-            </div>
-            <div className="w-full bg-orange-200 dark:bg-orange-800/50 rounded-full h-2">
-              <div 
-                className="h-full bg-orange-500 rounded-full transition-all duration-1000 ease-linear"
-                style={{ width: `${((15 * 60 - prayerBreakTimeLeft) / (15 * 60)) * 100}%` }}
-              ></div>
-            </div>
-          </div>
-
-          {/* Action Button */}
-          <Button
-            onClick={() => setIsPrayerBreak(false)}
-            className="w-full bg-orange-600 hover:bg-orange-700 text-white text-lg py-3 sm:py-4 rounded-xl font-semibold transition-colors"
-          >
-            <span className="flex items-center justify-center gap-2">
-              استئناف الاختبار
-              <ArrowLeftIcon className="h-5 w-5" />
-            </span>
-          </Button>
+          {/* Floating elements */}
+          <div className="absolute -top-4 -right-4 w-8 h-8 bg-orange-200 dark:bg-orange-800 rounded-full opacity-60 animate-pulse-slow"></div>
+          <div className="absolute -bottom-4 -left-4 w-6 h-6 bg-yellow-200 dark:bg-yellow-800 rounded-full opacity-40 animate-pulse-slow"></div>
           
-          {/* Notice */}
-          <div className="bg-yellow-50 dark:bg-yellow-900/20 p-4 rounded-xl border border-yellow-200 dark:border-yellow-700">
-            <div className="flex items-start gap-3 text-right">
-              <div className="w-6 h-6 bg-yellow-400 rounded-full flex items-center justify-center flex-shrink-0">
-                <span className="text-yellow-900 font-bold text-xs">!</span>
-              </div>
-              <div className="text-sm text-yellow-800 dark:text-yellow-300">
-                <p className="font-semibold mb-1">تنويه هام</p>
-                <p className="leading-relaxed">
-                  هذا الزر وضع وفقاً لاقتراحات الطلبة بأنهم يجعلون الاختبارات في آخر الليل أو في أول النهار لكي لا يكون هناك صلاة تجعلهم يتوقفون فهو للتسهيل ولعدم خروج الصلاة عن وقتها وغير مسموح استعمال الزر لأي غرض آخر
-                </p>
+          {/* Main content */}
+          <div className="relative z-10">
+            {/* Icon with enhanced design */}
+            <div className="mx-auto mb-6">
+              <div className="relative w-24 h-24 sm:w-28 sm:h-28 bg-gradient-to-br from-orange-100 via-orange-200 to-orange-300 dark:from-orange-900/70 dark:via-orange-800/70 dark:to-orange-700/70 rounded-full flex items-center justify-center shadow-xl border-4 border-orange-300/40 dark:border-orange-600/40">
+                <Moon className="h-12 w-12 sm:h-14 sm:w-14 text-orange-600 dark:text-orange-300 drop-shadow-sm" />
+                <div className="absolute inset-0 bg-gradient-to-t from-transparent via-white/20 to-white/40 dark:from-transparent dark:via-orange-400/10 dark:to-orange-300/20 rounded-full"></div>
               </div>
             </div>
-          </div>
-          
-          {/* Quranic Verse */}
-          <div className="border-t border-slate-200 dark:border-slate-700 pt-6">
-            <div className="text-base font-medium text-gray-700 dark:text-gray-300 leading-relaxed">
-              <p className="mb-2">"إِنَّ الصَّلَاةَ كَانَتْ عَلَى الْمُؤْمِنِينَ كِتَابًا مَوْقُوتًا"</p>
-              <p className="text-sm text-gray-500 dark:text-gray-400">(النساء: 103)</p>
+
+            {/* Enhanced Typography */}
+            <div className="space-y-5">
+              <div className="space-y-2">
+                <h3 className="text-3xl sm:text-4xl font-bold bg-gradient-to-r from-orange-700 via-orange-600 to-yellow-600 dark:from-orange-400 dark:via-orange-300 dark:to-yellow-300 bg-clip-text text-transparent">
+                  استراحة للصلاة
+                </h3>
+                <div className="flex items-center justify-center gap-2">
+                  <div className="w-12 h-0.5 bg-gradient-to-r from-transparent via-orange-300 to-transparent rounded-full"></div>
+                  <Star className="h-4 w-4 text-orange-400" />
+                  <div className="w-12 h-0.5 bg-gradient-to-r from-transparent via-orange-300 to-transparent rounded-full"></div>
+                </div>
+              </div>
+              <p className="text-xl font-semibold text-orange-700 dark:text-orange-300">
+                تقبّل الله طاعتكم
+              </p>
+              <p className="text-sm sm:text-base text-gray-600 dark:text-gray-400 leading-relaxed max-w-sm mx-auto">
+                تم إيقاف الاختبار مؤقتاً. عند الانتهاء، يمكنك استئناف الاختبار.
+              </p>
+            </div>
+            
+            {/* Enhanced Timer Display */}
+            <div className="bg-gradient-to-br from-orange-50 to-yellow-50 dark:from-orange-900/30 dark:to-yellow-900/30 p-6 rounded-2xl border border-orange-200/50 dark:border-orange-700/50 shadow-inner">
+              <p className="text-sm font-medium text-orange-800 dark:text-orange-300 mb-3 flex items-center justify-center gap-2">
+                <Clock3 className="h-4 w-4" />
+                الاستئناف التلقائي خلال
+              </p>
+              <div className="text-4xl sm:text-5xl font-bold text-orange-700 dark:text-orange-400 mb-4 font-mono tracking-wider">
+                {timeDisplay}
+              </div>
+              <div className="relative">
+                <div className="w-full bg-orange-200/60 dark:bg-orange-800/40 rounded-full h-3 overflow-hidden">
+                  <div 
+                    className="h-full bg-gradient-to-r from-orange-400 via-orange-500 to-yellow-500 rounded-full transition-all duration-1000 ease-linear shadow-sm"
+                    style={{ width: `${progressPercentage}%` }}
+                  ></div>
+                </div>
+                <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent rounded-full"></div>
+              </div>
+            </div>
+
+            {/* Enhanced Action Button */}
+            <Button
+              onClick={() => setIsPrayerBreak(false)}
+              className="w-full bg-gradient-to-r from-orange-600 via-orange-500 to-yellow-500 hover:from-orange-700 hover:via-orange-600 hover:to-yellow-600 text-white text-lg py-4 sm:py-5 rounded-2xl font-semibold transition-all duration-300 shadow-lg hover:shadow-xl transform hover:scale-105"
+            >
+              <span className="flex items-center justify-center gap-3">
+                <ArrowLeftIcon className="h-5 w-5" />
+                استئناف الاختبار
+              </span>
+            </Button>
+            
+            {/* Enhanced Notice */}
+            <div className="bg-gradient-to-r from-yellow-50 to-amber-50 dark:from-yellow-900/20 dark:to-amber-900/20 p-5 rounded-2xl border border-yellow-200/60 dark:border-yellow-700/40">
+              <div className="flex items-start gap-3 text-right">
+                <div className="w-7 h-7 bg-gradient-to-br from-yellow-400 to-amber-400 rounded-full flex items-center justify-center flex-shrink-0 shadow-sm">
+                  <span className="text-yellow-900 font-bold text-sm">!</span>
+                </div>
+                <div className="text-sm text-yellow-800 dark:text-yellow-300">
+                  <p className="font-semibold mb-2 text-amber-700 dark:text-amber-300">تنويه هام</p>
+                  <p className="leading-relaxed text-xs sm:text-sm">
+                    هذا الزر وضع وفقاً لاقتراحات الطلبة بأنهم يجعلون الاختبارات في آخر الليل أو في أول النهار لكي لا يكون هناك صلاة تجعلهم يتوقفون فهو للتسهيل ولعدم خروج الصلاة عن وقتها وغير مسموح استعمال الزر لأي غرض آخر
+                  </p>
+                </div>
+              </div>
+            </div>
+            
+            {/* Enhanced Quranic Verse */}
+            <div className="border-t border-gradient-to-r from-transparent via-orange-200 to-transparent dark:via-orange-700 pt-6">
+              <div className="bg-gradient-to-br from-slate-50 to-orange-50/30 dark:from-slate-800/50 dark:to-orange-900/20 p-4 rounded-xl border border-slate-200/50 dark:border-slate-700/50">
+                <div className="text-base font-medium text-gray-700 dark:text-gray-300 leading-relaxed">
+                  <p className="mb-2 text-lg">"إِنَّ الصَّلَاةَ كَانَتْ عَلَى الْمُؤْمِنِينَ كِتَابًا مَوْقُوتًا"</p>
+                  <p className="text-sm text-gray-500 dark:text-gray-400">(النساء: 103)</p>
+                </div>
+              </div>
             </div>
           </div>
         </div>
