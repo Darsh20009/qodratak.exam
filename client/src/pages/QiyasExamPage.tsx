@@ -304,53 +304,160 @@ const QiyasExamPage: React.FC = () => {
     const timeDisplay = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
     
     return (
-      <div className="fixed inset-0 bg-black/80 backdrop-blur-lg z-[100] flex items-center justify-center p-4 font-arabic animate-fadeIn">
-        <div className="bg-white dark:bg-gray-950 p-8 rounded-2xl max-w-lg w-full mx-auto text-center space-y-8 relative overflow-hidden shadow-2xl border border-orange-300 dark:border-orange-700">
-          {/* Creative Background Elements */}
-          <div className="absolute -top-1/4 -right-1/4 w-80 h-80 bg-orange-400/15 dark:bg-orange-500/10 rounded-full filter blur-3xl animate-pulse-slow"></div>
-          <div className="absolute -bottom-1/4 -left-1/4 w-80 h-80 bg-teal-400/15 dark:bg-teal-500/10 rounded-full filter blur-3xl animate-pulse-slow animation-delay-2000"></div>
-          <div className="absolute top-10 left-10 w-10 h-10 bg-yellow-300/20 dark:bg-yellow-400/10 rounded-full animate-ping opacity-50"></div>
-          <div className="absolute bottom-10 right-10 w-12 h-12 bg-white/20 dark:bg-white/10 rounded-full animate-bounce delay-1000"></div>
+      <div className="fixed inset-0 bg-gradient-to-br from-indigo-900/90 via-purple-900/90 to-blue-900/90 backdrop-blur-2xl z-[100] flex items-center justify-center p-4 font-arabic animate-fadeIn">
+        {/* Floating Stars Animation */}
+        <div className="absolute inset-0 overflow-hidden">
+          {Array.from({ length: 50 }).map((_, i) => (
+            <div
+              key={i}
+              className="absolute animate-float-particle opacity-30"
+              style={{
+                left: `${Math.random() * 100}%`,
+                top: `${Math.random() * 100}%`,
+                animationDelay: `${Math.random() * 5}s`,
+                animationDuration: `${3 + Math.random() * 4}s`
+              }}
+            >
+              <Star className="h-2 w-2 text-yellow-300 animate-pulse" />
+            </div>
+          ))}
+        </div>
+
+        {/* Floating Particles */}
+        <div className="absolute inset-0">
+          {Array.from({ length: 20 }).map((_, i) => (
+            <div
+              key={`particle-${i}`}
+              className="absolute w-1 h-1 bg-white/20 rounded-full animate-float-particle"
+              style={{
+                left: `${Math.random() * 100}%`,
+                top: `${Math.random() * 100}%`,
+                animationDelay: `${Math.random() * 3}s`,
+                animationDuration: `${4 + Math.random() * 2}s`
+              }}
+            />
+          ))}
+        </div>
+
+        <div className="bg-gradient-to-br from-white/95 via-orange-50/95 to-yellow-50/95 dark:from-slate-900/95 dark:via-slate-800/95 dark:to-slate-900/95 p-10 rounded-3xl max-w-2xl w-full mx-auto text-center space-y-10 relative overflow-hidden shadow-2xl border-2 border-gradient-to-r from-orange-300 via-yellow-300 to-orange-300 dark:border-orange-700/50 backdrop-blur-xl">
+          
+          {/* Animated Background Waves */}
+          <div className="absolute inset-0 opacity-10">
+            <div className="absolute -top-10 -left-10 w-40 h-40 bg-gradient-to-br from-orange-400 to-yellow-400 rounded-full filter blur-2xl animate-pulse-slow"></div>
+            <div className="absolute -bottom-10 -right-10 w-60 h-60 bg-gradient-to-br from-teal-400 to-blue-400 rounded-full filter blur-3xl animate-pulse-slow animation-delay-2000"></div>
+            <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-80 h-80 bg-gradient-to-br from-purple-400/30 to-pink-400/30 rounded-full filter blur-3xl animate-spin-slow"></div>
+          </div>
+
+          {/* Floating Geometric Shapes */}
+          <div className="absolute top-8 left-8 w-6 h-6 bg-yellow-300/40 rounded-full animate-bounce" style={{ animationDelay: '0.5s' }}></div>
+          <div className="absolute top-12 right-12 w-4 h-4 bg-orange-300/40 rotate-45 animate-pulse" style={{ animationDelay: '1s' }}></div>
+          <div className="absolute bottom-16 left-16 w-8 h-8 bg-teal-300/40 rounded-full animate-ping" style={{ animationDelay: '1.5s' }}></div>
+          <div className="absolute bottom-8 right-8 w-5 h-5 bg-purple-300/40 rotate-12 animate-bounce" style={{ animationDelay: '2s' }}></div>
 
           <div className="relative z-10">
-             {/* Enhanced Icon */}
-            <div className="w-32 h-32 bg-gradient-to-br from-orange-100 via-orange-200 to-yellow-200 dark:from-gray-800 dark:via-gray-800/70 dark:to-gray-900 rounded-full flex items-center justify-center mx-auto mb-6 shadow-lg transform transition-transform hover:scale-110 duration-300 ring-4 ring-orange-500/30 dark:ring-orange-400/20">
-                <Moon className="h-20 w-20 text-orange-500 dark:text-orange-400 animate-pulse-slow" />
+            {/* Enhanced Islamic Icon with Animation */}
+            <div className="relative mx-auto mb-8">
+              <div className="w-40 h-40 bg-gradient-to-br from-orange-200 via-yellow-200 to-orange-300 dark:from-slate-700 dark:via-slate-600 dark:to-slate-700 rounded-full flex items-center justify-center shadow-2xl transform transition-all hover:scale-110 duration-500 ring-8 ring-orange-300/30 dark:ring-orange-500/20 relative overflow-hidden">
+                {/* Inner Glow Effect */}
+                <div className="absolute inset-2 bg-gradient-to-br from-orange-100 to-yellow-100 dark:from-slate-800 dark:to-slate-700 rounded-full"></div>
+                {/* Rotating Ring */}
+                <div className="absolute inset-0 rounded-full border-4 border-dashed border-orange-400/50 animate-spin-slow"></div>
+                <Moon className="h-24 w-24 text-orange-600 dark:text-orange-400 relative z-10 drop-shadow-lg transform transition-transform hover:rotate-12 duration-300" />
+                {/* Sparkle Effects */}
+                <div className="absolute -top-2 -right-2 w-4 h-4 bg-yellow-400 rounded-full animate-ping"></div>
+                <div className="absolute -bottom-2 -left-2 w-3 h-3 bg-orange-400 rounded-full animate-pulse"></div>
+              </div>
+              {/* Orbital Elements */}
+              <div className="absolute inset-0 animate-spin-slow">
+                <Star className="absolute top-4 left-1/2 transform -translate-x-1/2 h-6 w-6 text-yellow-400 animate-pulse" />
+                <Star className="absolute bottom-4 left-1/2 transform -translate-x-1/2 h-4 w-4 text-orange-400 animate-pulse" style={{ animationDelay: '1s' }} />
+                <Star className="absolute left-4 top-1/2 transform -translate-y-1/2 h-5 w-5 text-yellow-500 animate-pulse" style={{ animationDelay: '2s' }} />
+                <Star className="absolute right-4 top-1/2 transform -translate-y-1/2 h-4 w-4 text-orange-500 animate-pulse" style={{ animationDelay: '3s' }} />
+              </div>
             </div>
-             {/* Enhanced Text */}
-            <h3 className="text-4xl font-extrabold mb-4 bg-gradient-to-r from-orange-500 to-yellow-400 dark:from-orange-400 dark:to-yellow-300 text-transparent bg-clip-text drop-shadow-sm">
-              استراحة للصلاة
-            </h3>
-            <p className="text-gray-700 dark:text-gray-300 leading-relaxed text-xl">
-              تقبّل الله طاعتكم <Star className="inline h-5 w-5 text-yellow-400 animate-spin-slow" />
-            </p>
-            <p className="text-gray-600 dark:text-gray-400 text-base mt-3">
-              تم إيقاف الاختبار مؤقتاً. عند الانتهاء، يمكنك استئناف الاختبار.
-            </p>
+
+            {/* Enhanced Typography with Gradient Animation */}
+            <div className="space-y-6">
+              <h3 className="text-5xl md:text-6xl font-black mb-6 bg-gradient-to-r from-orange-600 via-yellow-500 to-orange-600 dark:from-orange-400 dark:via-yellow-300 dark:to-orange-400 text-transparent bg-clip-text animate-gradient-shift drop-shadow-sm">
+                استراحة للصلاة
+              </h3>
+              
+              <div className="space-y-4">
+                <p className="text-2xl md:text-3xl font-bold text-gray-800 dark:text-gray-200 leading-relaxed flex items-center justify-center gap-3">
+                  تقبّل الله طاعتكم 
+                  <Star className="h-8 w-8 text-yellow-500 animate-spin-slow drop-shadow-md" />
+                </p>
+                <p className="text-lg text-gray-600 dark:text-gray-400 leading-relaxed max-w-md mx-auto">
+                  تم إيقاف الاختبار مؤقتاً للصلاة. استغل هذا الوقت المبارك للتقرب إلى الله.
+                </p>
+              </div>
+            </div>
             
-            {/* Timer Display */}
-            <div className="mt-4 p-3 bg-orange-100 dark:bg-orange-900/30 rounded-lg border border-orange-300 dark:border-orange-700">
-              <p className="text-sm text-orange-700 dark:text-orange-300 mb-1">الوقت المتبقي للاستئناف التلقائي:</p>
-              <p className="text-2xl font-bold text-orange-600 dark:text-orange-400">{timeDisplay}</p>
+            {/* Enhanced Timer with Breathing Animation */}
+            <div className="mt-8 relative">
+              <div className="absolute inset-0 bg-gradient-to-r from-orange-500 to-yellow-500 rounded-2xl blur-lg opacity-30 animate-pulse"></div>
+              <div className="relative bg-gradient-to-br from-orange-100 to-yellow-100 dark:from-orange-900/50 dark:to-yellow-900/50 p-6 rounded-2xl border-2 border-orange-300 dark:border-orange-600 shadow-lg backdrop-blur-sm">
+                <p className="text-sm font-semibold text-orange-800 dark:text-orange-300 mb-3 flex items-center justify-center gap-2">
+                  <Clock3 className="h-5 w-5 animate-pulse" />
+                  الاستئناف التلقائي خلال
+                </p>
+                <div className="text-4xl md:text-5xl font-black text-orange-700 dark:text-orange-400 tracking-wider">
+                  {timeDisplay}
+                </div>
+                <div className="mt-2 w-full bg-orange-200 dark:bg-orange-800/50 rounded-full h-2 overflow-hidden">
+                  <div 
+                    className="h-full bg-gradient-to-r from-orange-500 to-yellow-500 rounded-full transition-all duration-1000 ease-linear"
+                    style={{ width: `${((15 * 60 - prayerBreakTimeLeft) / (15 * 60)) * 100}%` }}
+                  ></div>
+                </div>
+              </div>
             </div>
           </div>
 
-          <Button
-            onClick={() => setIsPrayerBreak(false)}
-            className="w-full bg-gradient-to-r from-orange-500 to-yellow-500 hover:from-orange-600 hover:to-yellow-600 transition-all duration-300 shadow-xl hover:shadow-orange-500/40 dark:shadow-orange-400/20 text-xl py-4 rounded-xl relative z-10 transform hover:scale-105"
-          >
-            استئناف الاختبار الآن
-          </Button>
-          
-          {/* Important Notice */}
-          <div className="text-xs text-gray-500 dark:text-gray-400 bg-yellow-50 dark:bg-yellow-900/20 p-3 rounded-lg border border-yellow-200 dark:border-yellow-700">
-            <p className="font-semibold mb-1">⚠️ تنويه هام:</p>
-            <p>هذا الزر مخصص للصلاة فقط وفقاً لاقتراحات الطلبة. يُنصح بجدولة الاختبارات في أوقات لا تتداخل مع أوقات الصلاة.</p>
+          {/* Enhanced Action Button */}
+          <div className="space-y-4 relative z-10">
+            <Button
+              onClick={() => setIsPrayerBreak(false)}
+              className="w-full relative overflow-hidden bg-gradient-to-r from-orange-500 via-yellow-500 to-orange-500 hover:from-orange-600 hover:via-yellow-600 hover:to-orange-600 transition-all duration-500 shadow-2xl hover:shadow-orange-500/50 dark:shadow-orange-400/30 text-2xl py-6 rounded-2xl transform hover:scale-105 hover:-translate-y-1 font-bold text-white border-2 border-orange-400/50"
+            >
+              <div className="absolute inset-0 bg-white/20 transform -skew-x-12 -translate-x-full group-hover:translate-x-full transition-transform duration-1000"></div>
+              <span className="relative flex items-center justify-center gap-3">
+                <Sparkles className="h-6 w-6 animate-pulse" />
+                استئناف الاختبار الآن
+                <ArrowLeftIcon className="h-6 w-6 animate-bounce" />
+              </span>
+            </Button>
           </div>
           
-           {/* Quranic Verse */}
-          <div className="text-sm text-gray-500 dark:text-gray-500 mt-6 relative z-10 tracking-wide">
-            "إِنَّ الصَّلَاةَ كَانَتْ عَلَى الْمُؤْمِنِينَ كِتَابًا مَوْقُوتًا" <span className="opacity-70">(النساء: 103)</span>
+          {/* Enhanced Notice with Icons */}
+          <div className="bg-gradient-to-br from-yellow-50 to-orange-50 dark:from-yellow-900/20 dark:to-orange-900/20 p-5 rounded-2xl border-2 border-yellow-300 dark:border-yellow-600/50 shadow-lg backdrop-blur-sm relative z-10">
+            <div className="flex items-start gap-3">
+              <div className="w-8 h-8 bg-yellow-400 rounded-full flex items-center justify-center flex-shrink-0 animate-pulse">
+                <span className="text-yellow-900 font-bold text-sm">⚠️</span>
+              </div>
+              <div className="text-sm text-yellow-800 dark:text-yellow-300">
+                <p className="font-bold mb-2 flex items-center gap-2">
+                  <Moon className="h-4 w-4" />
+                  تنويه هام حول استراحة الصلاة
+                </p>
+                <p className="leading-relaxed">
+                  هذه الميزة مخصصة للصلاة فقط وفقاً لاقتراحات الطلبة. يُنصح بجدولة الاختبارات في أوقات لا تتداخل مع أوقات الصلاة المفروضة.
+                </p>
+              </div>
+            </div>
+          </div>
+          
+          {/* Enhanced Quranic Verse with Decorative Elements */}
+          <div className="relative z-10 mt-8">
+            <div className="flex items-center justify-center mb-4">
+              <div className="h-px bg-gradient-to-r from-transparent via-orange-400 to-transparent flex-grow"></div>
+              <BookOpen className="mx-4 h-6 w-6 text-orange-500 animate-pulse" />
+              <div className="h-px bg-gradient-to-r from-transparent via-orange-400 to-transparent flex-grow"></div>
+            </div>
+            <div className="text-lg font-semibold text-gray-700 dark:text-gray-300 tracking-wide leading-relaxed bg-gradient-to-r from-orange-100 to-yellow-100 dark:from-orange-900/30 dark:to-yellow-900/30 p-4 rounded-xl border border-orange-200 dark:border-orange-700">
+              <p className="mb-2">"إِنَّ الصَّلَاةَ كَانَتْ عَلَى الْمُؤْمِنِينَ كِتَابًا مَوْقُوتًا"</p>
+              <p className="text-sm opacity-80">(سورة النساء: الآية 103)</p>
+            </div>
           </div>
         </div>
       </div>
