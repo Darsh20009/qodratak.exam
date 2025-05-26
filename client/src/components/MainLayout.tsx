@@ -10,6 +10,10 @@ import {
   UserIcon,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { Button } from "@/components/ui/button";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { Toaster } from "@/components/ui/toaster";
+import { SmartNotifications } from "@/components/SmartNotifications";
 
 export interface MainLayoutProps {
   children: React.ReactNode;
@@ -191,12 +195,15 @@ export const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
         <header className="bg-white dark:bg-gray-800 border-b dark:border-gray-700 md:hidden">
           <div className="flex items-center justify-between p-4">
             <h1 className="text-xl font-bold text-primary">قدراتي</h1>
-            <div 
-              onClick={() => window.location.href = "/profile"}
-              className="p-2 cursor-pointer"
+            <SmartNotifications />
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={toggleTheme}
+              className="ml-2"
             >
-              <UserIcon className="h-5 w-5" />
-            </div>
+              {theme === "light" ? <Moon className="h-5 w-5" /> : <Sun className="h-5 w-5" />}
+            </Button>
           </div>
         </header>
 

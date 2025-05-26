@@ -21,6 +21,9 @@ import {
 import { SubscriptionPlans } from "@/components/SubscriptionPlans";
 import { PremiumDashboard } from "@/components/PremiumDashboard";
 import { PremiumNotifications } from "@/components/PremiumNotifications";
+import { GameificationSystem } from "@/components/GameificationSystem";
+import { InteractiveAnalytics } from "@/components/InteractiveAnalytics";
+import { SmartNotifications } from "@/components/SmartNotifications";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
@@ -299,6 +302,41 @@ const Home: React.FC = () => {
           </div>
         </div>
       </section>
+
+      {/* قسم الميزات الإبداعية الجديدة */}
+      {isLoggedIn && user && (
+        <>
+          {/* نظام التحفيز والألعاب */}
+          <section className="py-16 bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-blue-950/30 dark:to-indigo-950/30">
+            <div className="container px-4 md:px-6">
+              <div className="text-center mb-12">
+                <h2 className="text-4xl font-bold mb-4 bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+                  🎮 مركز التحفيز والإنجازات
+                </h2>
+                <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
+                  تابع تقدمك، اكسب النقاط، وحقق الإنجازات مع نظام التحفيز المتطور
+                </p>
+              </div>
+              <GameificationSystem userId={user?.id} />
+            </div>
+          </section>
+
+          {/* لوحة التحليلات التفاعلية */}
+          <section className="py-16 bg-gradient-to-br from-green-50 to-teal-100 dark:from-green-950/30 dark:to-teal-950/30">
+            <div className="container px-4 md:px-6">
+              <div className="text-center mb-12">
+                <h2 className="text-4xl font-bold mb-4 bg-gradient-to-r from-green-600 to-teal-600 bg-clip-text text-transparent">
+                  📊 تحليلات ذكية لأدائك
+                </h2>
+                <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
+                  اكتشف نقاط قوتك وضعفك مع رسوم بيانية تفاعلية وتحليلات متقدمة
+                </p>
+              </div>
+              <InteractiveAnalytics userId={user?.id} />
+            </div>
+          </section>
+        </>
+      )}
 
       {/* Enhanced CTA Section - Different for Premium vs Free Users */}
       {isPremiumUser && user ? (

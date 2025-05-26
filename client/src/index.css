@@ -558,8 +558,73 @@
 }
 
 @keyframes float-particle {
-  0%, 100% { transform: translateY(0) translateX(0); }
-  50% { transform: translateY(-100px) translateX(50px); }
+  0%, 100% { transform: translateY(0px) translateX(0px); }
+  25% { transform: translateY(-20px) translateX(5px); }
+  50% { transform: translateY(-10px) translateX(-5px); }
+  75% { transform: translateY(-15px) translateX(3px); }
+}
+
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+@keyframes gradient-shift {
+  0%, 100% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+}
+
+@keyframes spin-slow {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+@keyframes pulse-slow {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+
+@keyframes float-random {
+  0%, 100% { transform: translateY(0px) translateX(0px) rotate(0deg); }
+  25% { transform: translateY(-15px) translateX(8px) rotate(90deg); }
+  50% { transform: translateY(-8px) translateX(-6px) rotate(180deg); }
+  75% { transform: translateY(-12px) translateX(4px) rotate(270deg); }
+}
+
+@keyframes bounce-gentle {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-10px); }
+}
+
+.animate-shimmer {
+  animation: shimmer 2s linear infinite;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+  background-size: 200% 100%;
+}
+
+.animate-gradient-shift {
+  background-size: 400% 400%;
+  animation: gradient-shift 8s ease infinite;
+}
+
+.animate-spin-slow {
+  animation: spin-slow 20s linear infinite;
+}
+
+.animate-pulse-slow {
+  animation: pulse-slow 3s ease-in-out infinite;
+}
+
+.animate-float-random {
+  animation: float-random 8s ease-in-out infinite;
+}
+
+.animate-float-gentle {
+  animation: bounce-gentle 6s ease-in-out infinite;
+}
+
+.animation-delay-2000 {
+  animation-delay: 2s;
 }
 
 .animate-float-particle {
@@ -878,6 +943,7 @@
 @keyframes card-glow {
   0%, 100% { box-shadow: 0 0 20px var(--primary), 0 0 30px var(--primary-foreground); }
   50% { box-shadow: 0 0 40px var(--primary), 0 0 60px var(--primary-foreground); }
+  100% { box-shadow: 0 0 20px var(--primary), inset 0 0 10px var(--primary-foreground); }
 }
 
 .card-glow {
