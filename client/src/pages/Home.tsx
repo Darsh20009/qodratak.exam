@@ -113,20 +113,20 @@ const Home: React.FC = () => {
   return (
     <div className="min-h-screen bg-gradient-to-b from-background to-background/80">
       {/* Hero Section with Deep Blue Creative Animation */}
-      <section className="relative overflow-hidden py-20 sm:py-32 min-h-screen flex items-center">
+      <section className="relative overflow-hidden py-20 sm:py-32 min-h-screen flex items-center bg-gradient-to-b from-slate-950 via-blue-950 to-indigo-950">
         <div className="absolute inset-0">
-          {/* تدرجات زرقاء متحركة إبداعية */}
-          <div className="absolute inset-0 bg-gradient-to-br from-blue-900/30 via-indigo-900/20 to-cyan-900/25 animate-gradient-shift"></div>
-          <div className="absolute inset-0 bg-gradient-to-tr from-slate-900/40 via-blue-900/30 to-indigo-900/35 animate-pulse-slow"></div>
+          {/* خلفية غامقة جداً مع تدرجات زرقاء عميقة */}
+          <div className="absolute inset-0 bg-gradient-to-br from-slate-950/90 via-blue-950/80 to-indigo-950/90 animate-gradient-shift"></div>
+          <div className="absolute inset-0 bg-gradient-to-tr from-gray-950/60 via-blue-950/50 to-slate-950/70 animate-pulse-slow"></div>
           
-          {/* تأثير الشبكة المضيئة */}
-          <div className="absolute inset-0 bg-[radial-gradient(circle_1200px_at_50%_-200px,rgba(59,130,246,0.15),transparent)] animate-pulse"></div>
-          <div className="absolute inset-0 bg-[conic-gradient(from_0deg_at_50%_50%,rgba(59,130,246,0.1)_0deg,transparent_60deg,rgba(37,99,235,0.08)_120deg,transparent_180deg,rgba(29,78,216,0.12)_240deg,transparent_300deg,rgba(59,130,246,0.1)_360deg)] animate-spin-slow"></div>
+          {/* تأثير الشبكة المضيئة الخافتة */}
+          <div className="absolute inset-0 bg-[radial-gradient(circle_1200px_at_50%_-200px,rgba(59,130,246,0.08),transparent)] animate-pulse"></div>
+          <div className="absolute inset-0 bg-[conic-gradient(from_0deg_at_50%_50%,rgba(59,130,246,0.05)_0deg,transparent_60deg,rgba(37,99,235,0.04)_120deg,transparent_180deg,rgba(29,78,216,0.06)_240deg,transparent_300deg,rgba(59,130,246,0.05)_360deg)] animate-spin-slow"></div>
           
-          {/* شبكة مضيئة */}
-          <div className="absolute inset-0 bg-[linear-gradient(rgba(59,130,246,0.03)_1px,transparent_1px),linear-gradient(90deg,rgba(59,130,246,0.03)_1px,transparent_1px)] bg-[size:60px_60px]"></div>
+          {/* شبكة مضيئة خافتة */}
+          <div className="absolute inset-0 bg-[linear-gradient(rgba(59,130,246,0.015)_1px,transparent_1px),linear-gradient(90deg,rgba(59,130,246,0.015)_1px,transparent_1px)] bg-[size:60px_60px]"></div>
           
-          {/* جسيمات متحركة مضيئة */}
+          {/* جسيمات متحركة مضيئة خافتة */}
           {[...Array(40)].map((_, i) => (
             <div
               key={`star-${i}`}
@@ -134,26 +134,26 @@ const Home: React.FC = () => {
               style={{
                 width: `${2 + Math.random() * 4}px`,
                 height: `${2 + Math.random() * 4}px`,
-                background: `radial-gradient(circle, rgba(59,130,246,${0.6 + Math.random() * 0.4}) 0%, rgba(37,99,235,${0.3 + Math.random() * 0.3}) 70%, transparent 100%)`,
+                background: `radial-gradient(circle, rgba(59,130,246,${0.2 + Math.random() * 0.2}) 0%, rgba(37,99,235,${0.1 + Math.random() * 0.15}) 70%, transparent 100%)`,
                 top: `${Math.random() * 100}%`,
                 left: `${Math.random() * 100}%`,
                 animationDelay: `${Math.random() * 8}s`,
                 animationDuration: `${6 + Math.random() * 8}s`,
                 filter: `blur(${Math.random() * 1}px)`,
-                boxShadow: `0 0 ${4 + Math.random() * 8}px rgba(59,130,246,${0.3 + Math.random() * 0.4})`
+                boxShadow: `0 0 ${4 + Math.random() * 8}px rgba(59,130,246,${0.1 + Math.random() * 0.2})`
               }}
             />
           ))}
           
-          {/* أضواء متحركة كبيرة */}
+          {/* أضواء متحركة كبيرة خافتة */}
           {[...Array(8)].map((_, i) => (
             <div
               key={`light-${i}`}
-              className="absolute rounded-full animate-float-gentle opacity-20"
+              className="absolute rounded-full animate-float-gentle opacity-10"
               style={{
                 width: `${50 + Math.random() * 100}px`,
                 height: `${50 + Math.random() * 100}px`,
-                background: `radial-gradient(circle, rgba(59,130,246,0.4) 0%, rgba(37,99,235,0.2) 40%, transparent 70%)`,
+                background: `radial-gradient(circle, rgba(59,130,246,0.15) 0%, rgba(37,99,235,0.08) 40%, transparent 70%)`,
                 top: `${Math.random() * 100}%`,
                 left: `${Math.random() * 100}%`,
                 animationDelay: `${Math.random() * 10}s`,
@@ -164,12 +164,12 @@ const Home: React.FC = () => {
           ))}
         </div>
 
-        {/* الجزيئات المتحركة */}
+        {/* الجزيئات المتحركة الخافتة */}
         <div className="absolute inset-0">
           {[...Array(50)].map((_, i) => (
             <div
               key={`particle-${i}`}
-              className="absolute h-1 w-1 bg-primary/40 rounded-full animate-float-particle backdrop-blur-sm"
+              className="absolute h-1 w-1 bg-blue-400/20 rounded-full animate-float-particle backdrop-blur-sm"
               style={{
                 top: `${Math.random() * 100}%`,
                 left: `${Math.random() * 100}%`,
@@ -177,7 +177,7 @@ const Home: React.FC = () => {
                 animationDuration: `${5 + Math.random() * 5}s`,
                 filter: `blur(${Math.random() * 2}px)`,
                 transform: `scale(${1 + Math.random()})`,
-                opacity: 0.3 + Math.random() * 0.7
+                opacity: 0.1 + Math.random() * 0.3
               }}
             />
           ))}
@@ -209,14 +209,14 @@ const Home: React.FC = () => {
               </div>
               
               <div className="relative mx-auto max-w-[800px]">
-                <p className="text-blue-100/90 md:text-xl leading-relaxed font-medium drop-shadow-lg">
+                <p className="text-blue-100 md:text-xl leading-relaxed font-medium drop-shadow-2xl">
                   منصتك الشاملة للتحضير لاختبارات قياس وتطوير مهاراتك اللفظية والكمية
                   <br />
-                  <span className="bg-gradient-to-r from-cyan-300 to-blue-300 bg-clip-text text-transparent font-bold">
+                  <span className="bg-gradient-to-r from-cyan-200 to-blue-200 bg-clip-text text-transparent font-bold drop-shadow-xl">
                     بأسلوب تفاعلي ومتطور مع تقنيات الذكاء الاصطناعي
                   </span>
                 </p>
-                <div className="absolute -inset-4 bg-gradient-to-r from-blue-500/10 via-cyan-500/5 to-indigo-500/10 rounded-xl blur-xl animate-pulse-slow"></div>
+                <div className="absolute -inset-4 bg-gradient-to-r from-blue-500/5 via-cyan-500/3 to-indigo-500/5 rounded-xl blur-xl animate-pulse-slow"></div>
               </div>
             </div>
 
