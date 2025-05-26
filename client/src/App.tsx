@@ -368,41 +368,142 @@ function App() {
 
   if (showSplash) {
     return (
-      <div className="h-screen w-screen flex flex-col items-center justify-center bg-slate-900">
+      <div className="h-screen w-screen relative overflow-hidden bg-gradient-to-br from-slate-950 via-blue-950 to-indigo-950">
+        {/* خلفية متحركة فاخرة */}
+        <div className="absolute inset-0">
+          {/* تأثير الشفق القطبي */}
+          <div className="absolute inset-0 bg-gradient-to-br from-blue-900/30 via-purple-900/20 to-indigo-900/30 animate-pulse"></div>
+          
+          {/* جسيمات ضوئية متحركة */}
+          <div className="absolute top-10 left-10 w-2 h-2 bg-blue-400 rounded-full animate-ping opacity-60"></div>
+          <div className="absolute top-20 right-20 w-1 h-1 bg-purple-400 rounded-full animate-pulse delay-1000 opacity-80"></div>
+          <div className="absolute bottom-20 left-20 w-3 h-3 bg-indigo-400 rounded-full animate-bounce delay-500 opacity-70"></div>
+          <div className="absolute bottom-10 right-10 w-2 h-2 bg-cyan-400 rounded-full animate-ping delay-2000 opacity-50"></div>
+          <div className="absolute top-1/3 left-1/4 w-1 h-1 bg-pink-400 rounded-full animate-pulse delay-1500 opacity-90"></div>
+          <div className="absolute top-2/3 right-1/3 w-2 h-2 bg-violet-400 rounded-full animate-bounce delay-700 opacity-60"></div>
+          
+          {/* تأثير الشبكة المضيئة */}
+          <div className="absolute inset-0 bg-[radial-gradient(circle_800px_at_50%_200px,rgba(59,130,246,0.1),transparent)] animate-pulse"></div>
+          <div className="absolute inset-0 bg-[radial-gradient(circle_600px_at_80%_80%,rgba(168,85,247,0.08),transparent)] animate-pulse delay-1000"></div>
+          <div className="absolute inset-0 bg-[radial-gradient(circle_400px_at_20%_60%,rgba(236,72,153,0.06),transparent)] animate-pulse delay-2000"></div>
+        </div>
+
         {/* المحتوى الرئيسي */}
-        <div className="text-center space-y-8">
-          {/* الأيقونة البسيطة */}
-          <div className="w-24 h-24 mx-auto bg-blue-600 rounded-2xl flex items-center justify-center">
-            <div className="text-4xl">🧠</div>
-          </div>
-
-          {/* العنوان البسيط */}
-          <div className="space-y-4">
-            <h1 className="text-4xl font-bold text-white">
-              منصة قدراتك
-            </h1>
-            <p className="text-lg text-slate-300">
-              منصتك للتعلم والنجاح
-            </p>
-          </div>
-
-          {/* شريط التحميل البسيط */}
-          <div className="w-64 mx-auto space-y-3">
-            <div className="w-full h-2 bg-slate-700 rounded-full overflow-hidden">
-              <div className="h-full bg-blue-500 rounded-full animate-loading-bar"/>
+        <div className="relative z-10 h-full flex flex-col items-center justify-center text-center space-y-12">
+          {/* الأيقونة الفخمة مع تأثيرات */}
+          <div className="relative">
+            {/* هالة ضوئية خارجية */}
+            <div className="absolute inset-0 w-40 h-40 bg-gradient-to-r from-blue-500/30 via-purple-500/30 to-pink-500/30 rounded-full blur-xl animate-spin-slow"></div>
+            <div className="absolute inset-2 w-36 h-36 bg-gradient-to-r from-cyan-400/20 via-blue-400/20 to-indigo-400/20 rounded-full blur-lg animate-spin-reverse"></div>
+            
+            {/* الأيقونة المركزية */}
+            <div className="relative w-32 h-32 mx-auto bg-gradient-to-br from-blue-600 via-purple-600 to-indigo-700 rounded-3xl flex items-center justify-center shadow-2xl shadow-blue-500/50 border border-blue-400/30 backdrop-blur-sm">
+              <div className="absolute inset-0 bg-gradient-to-br from-white/20 to-transparent rounded-3xl"></div>
+              <div className="text-5xl animate-pulse">🧠</div>
+              
+              {/* تأثير البريق */}
+              <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent rounded-3xl animate-shimmer"></div>
             </div>
-            <p className="text-slate-400 text-sm">جاري التحميل...</p>
+            
+            {/* جسيمات دائرية حول الأيقونة */}
+            <div className="absolute -top-2 -right-2 w-4 h-4 bg-gradient-to-r from-yellow-400 to-orange-500 rounded-full animate-bounce opacity-80"></div>
+            <div className="absolute -bottom-2 -left-2 w-3 h-3 bg-gradient-to-r from-pink-400 to-rose-500 rounded-full animate-ping opacity-70"></div>
+            <div className="absolute top-1/2 -right-4 w-2 h-2 bg-gradient-to-r from-cyan-400 to-blue-500 rounded-full animate-pulse opacity-90"></div>
+            <div className="absolute top-1/2 -left-4 w-2 h-2 bg-gradient-to-r from-purple-400 to-violet-500 rounded-full animate-bounce delay-500 opacity-80"></div>
+          </div>
+
+          {/* العنوان الفخم */}
+          <div className="space-y-6">
+            <div className="relative">
+              <h1 className="text-6xl font-black bg-gradient-to-r from-blue-400 via-purple-400 to-pink-400 bg-clip-text text-transparent animate-shimmer drop-shadow-2xl">
+                منصة قدراتك
+              </h1>
+              {/* تأثير الظل المضيء */}
+              <div className="absolute inset-0 text-6xl font-black text-blue-400/20 blur-sm">
+                منصة قدراتك
+              </div>
+            </div>
+            
+            <div className="relative">
+              <p className="text-xl text-slate-200 font-medium tracking-wide opacity-90">
+                رحلتك نحو التميز والإبداع
+              </p>
+              <div className="absolute inset-0 text-xl text-blue-300/30 blur-sm">
+                رحلتك نحو التميز والإبداع
+              </div>
+            </div>
+            
+            {/* شعار فرعي أنيق */}
+            <div className="flex items-center justify-center space-x-2 text-slate-300">
+              <div className="w-8 h-px bg-gradient-to-r from-transparent via-blue-400 to-transparent"></div>
+              <span className="text-sm font-light tracking-widest">QUDRATUK PLATFORM</span>
+              <div className="w-8 h-px bg-gradient-to-r from-transparent via-blue-400 to-transparent"></div>
+            </div>
+          </div>
+
+          {/* شريط التحميل الفخم */}
+          <div className="w-80 mx-auto space-y-4">
+            <div className="relative">
+              {/* الخلفية المضيئة */}
+              <div className="absolute inset-0 bg-gradient-to-r from-blue-500/20 via-purple-500/20 to-pink-500/20 rounded-full blur-sm"></div>
+              
+              {/* شريط التحميل الرئيسي */}
+              <div className="relative w-full h-3 bg-slate-800/50 rounded-full overflow-hidden border border-blue-400/30 backdrop-blur-sm">
+                <div className="h-full bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500 rounded-full animate-loading-bar shadow-lg shadow-blue-500/50"></div>
+                
+                {/* تأثير البريق المتحرك */}
+                <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent animate-shimmer"></div>
+              </div>
+            </div>
+            
+            {/* نص التحميل الأنيق */}
+            <div className="flex items-center justify-center space-x-3">
+              <div className="flex space-x-1">
+                <div className="w-2 h-2 bg-blue-400 rounded-full animate-bounce"></div>
+                <div className="w-2 h-2 bg-purple-400 rounded-full animate-bounce delay-150"></div>
+                <div className="w-2 h-2 bg-pink-400 rounded-full animate-bounce delay-300"></div>
+              </div>
+              <p className="text-slate-300 text-sm font-light tracking-wide">جاري تحضير التجربة المثالية</p>
+            </div>
           </div>
         </div>
 
-        {/* أنماط CSS مخصصة */}
+        {/* أنماط CSS مخصصة فخمة */}
         <style>{`
           @keyframes loading-bar {
             0% { width: 0%; }
             100% { width: 100%; }
           }
+          
+          @keyframes shimmer {
+            0% { transform: translateX(-100%); }
+            100% { transform: translateX(100%); }
+          }
+          
+          @keyframes spin-slow {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+          }
+          
+          @keyframes spin-reverse {
+            from { transform: rotate(360deg); }
+            to { transform: rotate(0deg); }
+          }
+          
           .animate-loading-bar {
             animation: loading-bar 2s ease-in-out;
+          }
+          
+          .animate-shimmer {
+            animation: shimmer 3s ease-in-out infinite;
+          }
+          
+          .animate-spin-slow {
+            animation: spin-slow 8s linear infinite;
+          }
+          
+          .animate-spin-reverse {
+            animation: spin-reverse 12s linear infinite;
           }
         `}</style>
       </div>
