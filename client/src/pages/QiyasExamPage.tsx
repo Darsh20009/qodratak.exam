@@ -51,6 +51,10 @@ import {
   Eye, // Added for Review Button
   RefreshCw, // For retake challenge
   Target, // For challenge icon
+  AlertTriangle, // For warnings or important notes
+  MessageSquare, // For explanations or feedback
+  Check, // For correct items
+  X // For incorrect items
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useIsMobile } from "@/hooks/use-mobile";
@@ -67,7 +71,7 @@ interface QiyasSection {
 
 interface QiyasExam {
   id: number;
-  name: string;
+  name:string;
   description?: string;
   totalSections: number;
   totalQuestions: number; // Total questions presented to the user
@@ -1246,371 +1250,357 @@ const QiyasExamPage: React.FC = () => {
     );
   };
 
+  const handleDownloadIncorrectQuestions = () => {
+    if (!selectedExam || !allProcessedQuestionsBySection) {
+      toast({ title: "خطأ", description: "بيانات الاختبار غير متوفرة.", variant: "destructive" });
+      return;
+    }
 
-  const renderExamResults = () => {
-    if (!selectedExam || currentView !== "results") return null;
-    const stats = calculateExamStats();
+    const totalAnsweredQuestions = Object.keys(answers).length;
+    // Note: We want to include unanswered questions in the challenge, so this check might be too strict
+    // if (totalAnsweredQuestions === 0 && selectedExam.totalQuestions > 0) {
+    //   toast({ 
+    //     title: "لا توجد إجابات", 
+    //     description: "لم تجب على أي سؤال في هذا الاختبار. لا يمكن إنشاء تحدي للأخطاء.", 
+    //     variant: "destructive",
+    //     duration: 5000 
+    //   });
+    //   return;
+    // }
 
-    const performance =
-      stats.percentage >= 90 ? { label: "ممتاز جداً!", color: "text-green-500 dark:text-green-400", icon: <TrophyIcon className="inline-block mr-2 h-7 w-7"/> } :
-      stats.percentage >= 80 ? { label: "ممتاز", color: "text-sky-500 dark:text-sky-400", icon: <Star className="inline-block mr-2 h-6 w-6"/> } :
-      stats.percentage >= 70 ? { label: "جيد جداً", color: "text-blue-500 dark:text-blue-400", icon: <CheckCircle className="inline-block mr-2 h-6 w-6"/> } :
-      stats.percentage >= 50 ? { label: "جيد", color: "text-yellow-500 dark:text-yellow-400", icon: <Info className="inline-block mr-2 h-6 w-6"/> } :
-      { label: "بحاجة للمزيد من التدريب", color: "text-red-500 dark:text-red-400", icon: <BookOpen className="inline-block mr-2 h-6 w-6"/> };
+    const incorrectOrUnansweredQuestionsData: Array<ProcessedExamQuestion & { userAnswerIndex: number | undefined; sectionName: string; wasUnanswered: boolean; }> = [];
 
-    const handleDownloadIncorrectQuestions = () => {
-      if (!selectedExam || !allProcessedQuestionsBySection) {
-        toast({ title: "خطأ", description: "بيانات الاختبار غير متوفرة.", variant: "destructive" });
-        return;
-      }
+    Object.entries(allProcessedQuestionsBySection).forEach(([sectionNumStr, sectionQuestions]) => {
+      const sectionConfig = selectedExam.sections.find(s => s.sectionNumber === parseInt(sectionNumStr));
+      sectionQuestions.forEach(q => {
+        const userAnswerOriginalIndex = answers[q.id];
+        const isCorrect = userAnswerOriginalIndex === q.correctOptionIndex;
+        const wasUnanswered = userAnswerOriginalIndex === undefined;
 
-      // أولاً، نتحقق من أن المستخدم قد أجاب على أسئلة فعلاً
-      const totalAnsweredQuestions = Object.keys(answers).length;
-      if (totalAnsweredQuestions === 0) {
-        toast({ 
-          title: "لا توجد إجابات", 
-          description: "لم تجب على أي سؤال في هذا الاختبار. أكمل الاختبار أولاً للحصول على تحدي الأسئلة الخاطئة والغير مجاب عليها.", 
-          variant: "destructive",
-          duration: 5000 
-        });
-        return;
-      }
-
-      // تحقق من نوع الجهاز وعرض تنبيه للأجهزة المحمولة
-      if (isMobile) {
-        toast({ 
-          title: "💻 ميزة متقدمة للحاسوب", 
-          description: "ميزة اختبار الأخطاء التفاعلية تعمل بأفضل شكل على أجهزة الحاسوب. سيتم تحميل الأسئلة الخاطئة كملف للمراجعة.", 
-          duration: 6000,
-          className: "bg-blue-50 dark:bg-blue-900/30 border-blue-200 dark:border-blue-700"
-        });
-      }
-
-      const incorrectQuestionsDataForRetake: Array<ProcessedExamQuestion & { userAnswerIndex: number | undefined; sectionName: string }> = [];
-      
-      // جمع جميع الأسئلة الخاطئة والغير مجاب عليها من جميع الأقسام
-      Object.entries(allProcessedQuestionsBySection).forEach(([sectionNumStr, sectionQuestions]) => {
-        const sectionConfig = selectedExam.sections.find(s => s.sectionNumber === parseInt(sectionNumStr));
-        sectionQuestions.forEach(q => {
-          const userAnswer = answers[q.id];
-          // تضمين الأسئلة الخاطئة أو غير المجاب عليها
-          if (userAnswer === undefined || userAnswer !== q.correctOptionIndex) {
-            incorrectQuestionsDataForRetake.push({
-              ...q,
-              userAnswerIndex: userAnswer, // سيكون undefined للأسئلة غير المجاب عليها
-              sectionName: sectionConfig?.name || `القسم ${sectionNumStr}`,
-            });
-          }
-        });
+        if (!isCorrect || wasUnanswered) { // Include incorrect and unanswered
+          incorrectOrUnansweredQuestionsData.push({
+            ...q,
+            userAnswerIndex: userAnswerOriginalIndex,
+            sectionName: sectionConfig?.name || `القسم ${sectionNumStr}`,
+            wasUnanswered: wasUnanswered,
+          });
+        }
       });
+    });
 
-      if (incorrectQuestionsDataForRetake.length === 0) {
-        toast({ 
-          title: "ممتاز! 🎉", 
-          description: `أجبت على جميع الأسئلة بشكل صحيح! لا توجد أسئلة خاطئة أو غير مجاب عليها للمراجعة. أداؤك كان مثالياً!`, 
-          duration: 6000, 
-          className: "bg-green-50 dark:bg-green-900/30 border-green-200 dark:border-green-700" 
-        });
-        return;
-      }
+    if (incorrectOrUnansweredQuestionsData.length === 0) {
+      toast({ 
+        title: "ممتاز! 🎉", 
+        description: `أجبت على جميع الأسئلة بشكل صحيح! لا توجد أسئلة خاطئة أو غير مجاب عليها للمراجعة. أداؤك كان مثالياً!`, 
+        duration: 6000, 
+        className: "bg-green-50 dark:bg-green-900/30 border-green-200 dark:border-green-700" 
+      });
+      return;
+    }
 
-      const questionsJson = JSON.stringify(incorrectQuestionsDataForRetake.map(q => ({
-        id: q.id,
-        text: q.text,
-        options: q.options,
-        correctOptionIndex: q.correctOptionIndex,
-        explanation: q.explanation || "راجع مصادرك لمزيد من التفاصيل.",
-        userAnswerIndex: q.userAnswerIndex, // قد يكون undefined للأسئلة غير المجاب عليها
-        sectionName: q.sectionName,
-        isNonScored: q._isNonScored || false, // تمييز الأسئلة التجريبية
-        wasUnanswered: q.userAnswerIndex === undefined, // تمييز الأسئلة غير المجاب عليها
-      })));
+    const examNameForFile = selectedExam.name.replace(/[^a-zA-Z0-9\u0600-\u06FF\s]/g, '_'); // Sanitize name
+    const optionChars = ['أ', 'ب', 'ج', 'د', 'هـ', 'و'];
 
-      const htmlContent = `
+    if (isMobile) {
+        // Generate HTML for Mobile (Static Review)
+        let mobileHtmlContent = `
 <!DOCTYPE html>
 <html dir="rtl" lang="ar">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>تحدي الأسئلة الخاطئة والغير مجاب عليها: ${selectedExam.name}</title>
+    <title>مراجعة الأخطاء: ${selectedExam.name}</title>
     <link href="https://fonts.googleapis.com/css2?family=Noto+Kufi+Arabic:wght@400;700&display=swap" rel="stylesheet">
     <style>
-        * { box-sizing: border-box; }
+        body { font-family: 'Noto Kufi Arabic', sans-serif; margin: 0; padding: 10px; background-color: #f4f7f9; color: #333; line-height: 1.7; }
+        .container { background-color: #fff; padding: 15px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); max-width: 800px; margin: 20px auto; }
+        .header { text-align: center; margin-bottom: 20px; padding-bottom: 15px; border-bottom: 2px solid #667eea; }
+        .header h1 { color: #667eea; font-size: 1.6rem; margin-bottom: 5px; }
+        .header p { color: #555; font-size: 0.9rem; }
+        .question-review { border: 1px solid #e0e0e0; border-radius: 10px; margin-bottom: 20px; padding: 15px; background-color: #fcfdff; }
+        .question-text { font-size: 1.1rem; font-weight: bold; margin-bottom: 12px; color: #2c3e50; }
+        .info-badge { display: inline-block; font-size: 0.75rem; padding: 3px 8px; border-radius: 15px; margin-right: 8px; margin-bottom: 8px; font-weight: bold; }
+        .info-badge.section { background-color: #e7f3ff; color: #007bff; }
+        .info-badge.experimental { background-color: #fff3cd; color: #856404; }
+        .answer-info { font-size: 0.9rem; color: #444; margin-bottom: 8px; padding: 8px; border-radius: 6px; }
+        .answer-info.user-ans { background-color: #ffebee; border-left: 3px solid #e53935; }
+        .answer-info.user-ans.unanswered { background-color: #fff9c4; border-left: 3px solid #fdd835; }
+        .answer-info.correct-ans { background-color: #e8f5e9; border-left: 3px solid #43a047; }
+        .options-list { list-style: none; padding: 0; margin: 10px 0 0 0; }
+        .options-list li { padding: 10px; margin-bottom: 8px; border-radius: 6px; border: 1px solid #ddd; background-color: #fff; }
+        .options-list li.correct { background-color: #d4edda; border-color: #c3e6cb; color: #155724; font-weight: bold; }
+        .options-list li.user-incorrect { background-color: #f8d7da; border-color: #f5c6cb; color: #721c24; text-decoration: line-through; }
+        .explanation { margin-top: 12px; padding: 12px; background-color: #e9ecef; border-radius: 6px; font-size: 0.9rem; color: #495057; }
+        .explanation strong { color: #2c3e50; }
+        .footer { text-align: center; margin-top: 25px; padding-top: 15px; border-top: 1px solid #eee; font-size: 0.85rem; color: #777; }
+        @media (max-width: 600px) { .header h1 {font-size: 1.4rem;} .question-text {font-size: 1rem;} }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>مراجعة الأخطاء والأسئلة غير المجابة</h1>
+            <p>اختبار: ${selectedExam.name}</p>
+            <p>تاريخ المراجعة: ${new Date().toLocaleDateString('ar-SA')}</p>
+        </div>`;
+
+        incorrectOrUnansweredQuestionsData.forEach((q, index) => {
+            mobileHtmlContent += `
+            <div class="question-review">
+                <span class="info-badge section">القسم: ${q.sectionName}</span>
+                ${q._isNonScored ? '<span class="info-badge experimental">سؤال تجريبي</span>' : ''}
+                <p class="question-text">(${index + 1}) ${q.text}</p>`;
+
+            if (q.wasUnanswered) {
+                mobileHtmlContent += `<div class="answer-info user-ans unanswered"><strong>إجابتك الأصلية:</strong> لم يتم الإجابة على هذا السؤال.</div>`;
+            } else if (q.userAnswerIndex !== undefined) {
+                mobileHtmlContent += `<div class="answer-info user-ans"><strong>إجابتك الأصلية:</strong> ${optionChars[q.userAnswerIndex]}. ${q.options[q.userAnswerIndex]} (خاطئة)</div>`;
+            }
+            mobileHtmlContent += `<div class="answer-info correct-ans"><strong>الإجابة الصحيحة:</strong> ${optionChars[q.correctOptionIndex]}. ${q.options[q.correctOptionIndex]}</div>`;
+
+            mobileHtmlContent += `<p><strong>الخيارات:</strong></p><ul class="options-list">`;
+            q.options.forEach((opt, optIdx) => {
+                let liClass = '';
+                if (optIdx === q.correctOptionIndex) liClass = 'correct';
+                else if (optIdx === q.userAnswerIndex) liClass = 'user-incorrect';
+                mobileHtmlContent += `<li class="${liClass}">${optionChars[optIdx]}. ${opt}</li>`;
+            });
+            mobileHtmlContent += `</ul>`;
+
+            if (q.explanation) {
+                mobileHtmlContent += `<div class="explanation"><strong>الشرح:</strong> ${q.explanation}</div>`;
+            }
+            mobileHtmlContent += `</div>`;
+        });
+
+        mobileHtmlContent += `
+        <div class="footer">© ${new Date().getFullYear()} منصة قدراتك</div>
+    </div>
+</body>
+</html>`;
+        const blob = new Blob([mobileHtmlContent], { type: 'text/html;charset=utf-8' });
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `${examNameForFile}_مراجعة_الاخطاء_جوال.html`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        window.URL.revokeObjectURL(url);
+        toast({ 
+            title: "تم تحميل ملخص الأخطاء", 
+            description: `تم إنشاء ملف لمراجعة ${incorrectOrUnansweredQuestionsData.length} سؤال. افتحه في متصفحك على الجوال.`, 
+            duration: 7000 
+        });
+
+    } else {
+        // Generate HTML for Desktop (Interactive Challenge)
+        const questionsJson = JSON.stringify(incorrectOrUnansweredQuestionsData.map(q => ({
+            id: q.id,
+            text: q.text,
+            options: q.options,
+            correctOptionIndex: q.correctOptionIndex,
+            explanation: q.explanation || "راجع مصادرك لمزيد من التفاصيل.",
+            userAnswerIndex: q.userAnswerIndex,
+            sectionName: q.sectionName,
+            isNonScored: q._isNonScored || false,
+            wasUnanswered: q.wasUnanswered,
+        })));
+
+        const desktopInteractiveHtmlContent = `
+<!DOCTYPE html>
+<html dir="rtl" lang="ar">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>تحدي الأخطاء: ${selectedExam.name}</title>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Kufi+Arabic:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary-color: #667eea; /* Indigo */
+            --secondary-color: #764ba2; /* Purple */
+            --success-color: #28a745; /* Green */
+            --danger-color: #dc3545; /* Red */
+            --warning-color: #ffc107; /* Yellow */
+            --light-bg: #f8f9fa;
+            --dark-text: #212529;
+            --light-text: #f8f9fa;
+            --card-bg: #ffffff;
+            --border-color: #e0e0e0;
+        }
+        * { box-sizing: border-box; margin: 0; padding: 0; }
         body { 
             font-family: 'Noto Kufi Arabic', sans-serif; 
-            margin: 0; 
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: #333; 
-            padding: 10px; 
+            background: linear-gradient(135deg, var(--primary-color) 0%, var(--secondary-color) 100%);
+            color: var(--dark-text); 
+            padding: 20px; 
             min-height: 100vh; 
             font-size: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
         }
         .container { 
-            background-color: #fff; 
-            padding: 15px; 
+            background-color: var(--card-bg); 
+            padding: 25px; 
             border-radius: 15px; 
-            box-shadow: 0 10px 30px rgba(0,0,0,0.2); 
+            box-shadow: 0 10px 40px rgba(0,0,0,0.25); 
             width: 100%; 
-            max-width: 800px; 
-            margin: 0 auto;
+            max-width: 850px; 
+            margin: 20px auto;
         }
         .header { 
             text-align: center; 
-            margin-bottom: 20px; 
-            border-bottom: 3px solid #667eea; 
-            padding-bottom: 15px; 
+            margin-bottom: 25px; 
+            padding-bottom: 20px; 
+            border-bottom: 3px solid var(--primary-color); 
         }
         .header h1 { 
-            color: #667eea; 
-            font-size: 1.8rem; 
-            margin-bottom: 8px; 
-            font-weight: bold;
+            color: var(--primary-color); 
+            font-size: 2rem; 
+            margin-bottom: 10px; 
+            font-weight: 700;
         }
-        .header p { 
-            color: #666; 
-            font-size: 1rem; 
-            line-height: 1.5;
-        }
-        .question-area { margin-bottom: 15px; }
-        .question-card { 
-            padding: 15px; 
-            border: 1px solid #e0e0e0; 
-            border-radius: 12px; 
-            margin-bottom: 15px; 
-            background: linear-gradient(135deg, #f8f9ff 0%, #fff 100%);
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-        }
-        .question-text { 
-            font-size: 1.1rem; 
-            font-weight: bold; 
-            margin-bottom: 15px; 
-            color: #2c3e50; 
-            line-height: 1.6; 
-        }
-        .original-info { 
-            font-size: 0.9rem; 
-            color: #555; 
-            margin-bottom: 15px; 
-            background: linear-gradient(135deg, #fff3cd 0%, #ffeaa7 100%);
-            padding: 12px; 
-            border-radius: 8px; 
-            border-right: 4px solid #f39c12;
-        }
-        .original-info strong { color: #2c3e50; }
-        .options-list { 
-            list-style: none; 
-            padding: 0; 
-            margin: 0;
-        }
-        .options-list li {
-            padding: 12px 15px; 
-            margin: 10px 0; 
-            border: 2px solid #e8e8e8; 
-            border-radius: 10px; 
-            cursor: pointer;
-            transition: all 0.3s ease; 
-            display: flex; 
-            align-items: center;
-            background: linear-gradient(135deg, #fff 0%, #f8f9ff 100%);
-            font-size: 1rem;
-            min-height: 50px;
-        }
-        .options-list li:hover { 
-            border-color: #667eea; 
-            transform: translateY(-2px);
-            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
-        }
-        .options-list li.selected { 
-            border-color: #00b894; 
-            background: linear-gradient(135deg, #d1f2eb 0%, #a8e6cf 100%); 
-            font-weight: bold; 
-            transform: translateY(-2px);
-            box-shadow: 0 4px 15px rgba(0, 184, 148, 0.3);
-        }
-        .option-letter {
-            min-width: 35px; 
-            height: 35px; 
-            background: linear-gradient(135deg, #74b9ff 0%, #0984e3 100%);
-            color: white; 
-            border-radius: 50%;
-            display: flex; 
-            justify-content: center; 
-            align-items: center; 
-            margin-left: 12px; 
-            font-weight: bold; 
-            font-size: 1rem;
-            flex-shrink: 0;
-        }
-        .options-list li.selected .option-letter { 
-            background: linear-gradient(135deg, #00b894 0%, #00a085 100%);
-        }
-        .feedback-area { 
-            margin-top: 15px; 
-            padding: 15px; 
-            border-radius: 10px; 
-            font-size: 0.95rem; 
-            display: none; 
-            line-height: 1.5;
-        }
-        .feedback-area.correct { 
-            background: linear-gradient(135deg, #d4edda 0%, #c3e6cb 100%);
-            color: #155724; 
-            border: 2px solid #28a745; 
-        }
-        .feedback-area.incorrect { 
-            background: linear-gradient(135deg, #f8d7da 0%, #f5c6cb 100%);
-            color: #721c24; 
-            border: 2px solid #dc3545; 
-        }
-        .explanation-text { 
-            margin-top: 10px; 
-            font-style: italic; 
-            color: #495057; 
-            line-height: 1.6; 
-        }
-        #navigation-buttons, #result-area { 
-            text-align: center; 
-            margin-top: 20px; 
-        }
-        button {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white; 
-            border: none; 
-            padding: 12px 20px; 
-            border-radius: 25px;
-            font-size: 1rem; 
-            cursor: pointer; 
-            transition: all 0.3s ease; 
-            margin: 5px;
-            font-weight: bold;
-            min-width: 100px;
-        }
-        button:hover { 
-            transform: translateY(-2px);
-            box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
-        }
-        button:active {
-            transform: translateY(0);
-        }
-        button:disabled { 
-            background: linear-gradient(135deg, #95a5a6 0%, #7f8c8d 100%);
-            cursor: not-allowed; 
-            transform: none;
-            box-shadow: none;
-        }
-        #submit-retake-btn { 
-            background: linear-gradient(135deg, #00b894 0%, #00a085 100%);
-        }
-        #submit-retake-btn:hover { 
-            box-shadow: 0 6px 20px rgba(0, 184, 148, 0.4);
-        }
-        #result-area h2 { 
-            color: #667eea; 
-            font-size: 1.5rem;
-        } 
-        #result-area p { margin: 10px 0; }
+        .header p { color: #555; font-size: 1rem; line-height: 1.6; }
+
+        .controls { margin-bottom: 20px; padding: 15px; background-color: #f0f2f5; border-radius: 8px; display: flex; align-items: center; }
+        .controls label { font-size: 0.95rem; color: #333; display: flex; align-items: center; cursor: pointer; }
+        .controls input[type="checkbox"] { margin-left: 10px; width: 18px; height: 18px; accent-color: var(--primary-color); }
+
         #progress-bar-container { 
-            width: 100%; 
-            background-color: #e9ecef; 
-            border-radius: 10px; 
-            margin-bottom: 20px; 
-            height: 20px; 
-            overflow: hidden;
-            box-shadow: inset 0 2px 4px rgba(0,0,0,0.1);
+            width: 100%; background-color: #e9ecef; border-radius: 25px; 
+            margin-bottom: 25px; height: 22px; overflow: hidden;
+            box-shadow: inset 0 2px 5px rgba(0,0,0,0.1);
         }
         #progress-bar { 
-            width: 0%; 
-            height: 100%; 
-            background: linear-gradient(135deg, #00b894 0%, #00a085 100%);
-            border-radius: 10px; 
-            transition: width 0.5s ease-in-out; 
-            text-align: center; 
-            color: white; 
-            font-size: 0.9rem; 
-            line-height: 20px;
-            font-weight: bold;
+            width: 0%; height: 100%; 
+            background: linear-gradient(90deg, var(--success-color), #52c234); /* Green gradient */
+            border-radius: 25px; 
+            transition: width 0.4s ease-in-out; 
+            text-align: center; color: white; 
+            font-size: 0.9rem; line-height: 22px; font-weight: 600;
         }
+
+        .question-card { 
+            padding: 20px; border: 1px solid var(--border-color); 
+            border-radius: 12px; margin-bottom: 20px; 
+            background: #fff;
+            box-shadow: 0 3px 15px rgba(0,0,0,0.08);
+        }
+        .question-text { 
+            font-size: 1.2rem; font-weight: 600; 
+            margin-bottom: 18px; color: #2c3e50; line-height: 1.7; 
+        }
+        .original-info { 
+            font-size: 0.9rem; color: #454545; 
+            margin-bottom: 18px; background-color: #f9f9f9; 
+            padding: 15px; border-radius: 8px; border-right: 4px solid var(--warning-color);
+        }
+        .original-info strong { color: #2c3e50; }
+        .original-info .detail { margin-top: 5px; }
+        .original-info .correct-highlight { color: var(--success-color); font-weight: bold; }
+        .original-info .incorrect-highlight { color: var(--danger-color); font-weight: bold; }
+        .original-info .unanswered-highlight { color: #fd7e14; font-weight: bold; } /* Orange for unanswered */
+
+        .options-list { list-style: none; padding: 0; margin: 0; }
+        .options-list li {
+            padding: 14px 18px; margin: 10px 0; 
+            border: 2px solid var(--border-color); 
+            border-radius: 10px; cursor: pointer;
+            transition: all 0.25s ease; display: flex; align-items: center;
+            background-color: #fff; font-size: 1rem; min-height: 55px;
+        }
+        .options-list li:hover { border-color: var(--primary-color); transform: translateY(-2px); box-shadow: 0 5px 15px rgba(102,126,234,0.2); }
+        .options-list li.selected { 
+            border-color: var(--primary-color); 
+            background-color: #e9eefe; /* Light indigo */
+            font-weight: 600; color: var(--primary-color);
+            transform: translateY(-2px); box-shadow: 0 5px 18px rgba(102,126,234,0.3);
+        }
+        .option-letter {
+            min-width: 38px; height: 38px; 
+            background: linear-gradient(135deg, #bdc3c7, #95a5a6); /* Grey gradient */
+            color: white; border-radius: 50%;
+            display: flex; justify-content: center; align-items: center; 
+            margin-left: 15px; font-weight: bold; font-size: 1rem; flex-shrink: 0;
+            transition: background 0.25s ease;
+        }
+        .options-list li.selected .option-letter { background: linear-gradient(135deg, var(--primary-color), var(--secondary-color)); }
+
+        .feedback-area { 
+            margin-top: 18px; padding: 15px; border-radius: 10px; 
+            font-size: 1rem; display: none; line-height: 1.6; font-weight: 600;
+            text-align: center;
+        }
+        .feedback-area.correct { background-color: #d4edda; color: #155724; border: 2px solid var(--success-color); }
+        .feedback-area.incorrect { background-color: #f8d7da; color: #721c24; border: 2px solid var(--danger-color); }
+        .explanation-text { margin-top: 12px; font-style: normal; font-weight:normal; color: #333; line-height: 1.7; font-size: 0.95rem; text-align:right; padding:10px; background-color: #f0f0f0; border-radius: 6px;}
+        .explanation-text strong { color: var(--primary-color); }
+
+        #navigation-buttons, #result-area { text-align: center; margin-top: 25px; }
+        button {
+            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+            color: white; border: none; padding: 14px 28px; 
+            border-radius: 30px; font-size: 1.05rem; cursor: pointer; 
+            transition: all 0.3s ease; margin: 8px; font-weight: 600;
+            min-width: 130px; box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        }
+        button:hover { transform: translateY(-3px); box-shadow: 0 7px 20px rgba(102,126,234,0.35); }
+        button:active { transform: translateY(-1px); box-shadow: 0 3px 10px rgba(102,126,234,0.25); }
+        button:disabled { 
+            background: linear-gradient(135deg, #b0bec5, #90a4ae); /* Disabled grey */
+            cursor: not-allowed; transform: none; box-shadow: none; opacity: 0.7;
+        }
+        #submit-retake-btn { background: linear-gradient(135deg, var(--success-color), #388e3c); } /* Green */
+        #submit-retake-btn:hover { box-shadow: 0 7px 20px rgba(40,167,69,0.3); }
+
+        #result-area { padding: 20px; background-color: #f0f2f5; border-radius: 12px; }
+        #result-area h2 { color: var(--primary-color); font-size: 1.8rem; margin-bottom:15px; } 
+        #result-area p { margin: 12px 0; font-size: 1.1rem; color: #333; }
+        #feedback-message { font-weight: bold; }
+
         .footer { 
-            text-align: center; 
-            margin-top: 25px; 
-            padding-top: 15px; 
-            border-top: 2px solid #e9ecef; 
-            font-size: 0.9rem; 
-            color: #6c757d; 
+            text-align: center; margin-top: 30px; padding-top: 20px; 
+            border-top: 2px solid #e9ecef; font-size: 0.9rem; color: #6c757d; 
         }
         .no-questions { 
-            text-align: center; 
-            font-size: 1.2rem; 
-            color: #00b894; 
-            padding: 30px; 
-            background: linear-gradient(135deg, #d4edda 0%, #c3e6cb 100%);
-            border-radius: 15px;
-            border: 2px solid #28a745;
+            text-align: center; font-size: 1.3rem; color: var(--success-color); 
+            padding: 35px; background-color: #e6ffed; 
+            border-radius: 15px; border: 2px solid var(--success-color);
+            font-weight: 600;
         }
-        
-        /* تحسينات للهواتف المحمولة */
+        .toggleable-original-details { display: block; /* Default to show, JS will hide if checkbox is unchecked initially */ }
+
         @media (max-width: 768px) {
-            body { padding: 5px; font-size: 14px; }
-            .container { padding: 12px; border-radius: 12px; }
-            .header h1 { font-size: 1.5rem; }
-            .header p { font-size: 0.9rem; }
-            .question-text { font-size: 1rem; }
-            .original-info { font-size: 0.8rem; padding: 10px; }
-            .options-list li { 
-                padding: 10px 12px; 
-                margin: 8px 0; 
-                font-size: 0.9rem;
-                min-height: 45px;
-            }
-            .option-letter { 
-                min-width: 30px; 
-                height: 30px; 
-                font-size: 0.9rem;
-                margin-left: 8px;
-            }
-            button { 
-                padding: 10px 16px; 
-                font-size: 0.9rem; 
-                margin: 3px;
-                min-width: 80px;
-            }
-            #navigation-buttons { 
-                display: flex; 
-                flex-wrap: wrap; 
-                justify-content: center; 
-                gap: 5px; 
-            }
-            #progress-bar-container { height: 18px; }
-            #progress-bar { font-size: 0.8rem; line-height: 18px; }
+            body { padding: 10px; font-size: 15px; }
+            .container { padding: 20px; }
+            .header h1 { font-size: 1.7rem; }
+            .question-text { font-size: 1.1rem; }
+            .options-list li { padding: 12px 15px; font-size: 0.95rem; min-height: 50px; }
+            .option-letter { min-width: 35px; height: 35px; font-size: 0.95rem; margin-left: 12px; }
+            button { padding: 12px 22px; font-size: 1rem; margin: 5px; min-width: 110px; }
+            #navigation-buttons { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; }
         }
-        
         @media (max-width: 480px) {
-            .header h1 { font-size: 1.3rem; }
-            .question-text { font-size: 0.95rem; }
-            .options-list li { 
-                font-size: 0.85rem;
-                padding: 8px 10px;
-                min-height: 40px;
-            }
-            .option-letter { 
-                min-width: 28px; 
-                height: 28px; 
-                font-size: 0.8rem;
-                margin-left: 6px;
-            }
-            button { 
-                padding: 8px 12px; 
-                font-size: 0.8rem;
-                min-width: 70px;
-            }
+            .header h1 { font-size: 1.5rem; }
+            .question-text { font-size: 1rem; }
+            .options-list li { font-size: 0.9rem; padding: 10px 12px; min-height: 45px; }
+            .option-letter { min-width: 30px; height: 30px; font-size: 0.9rem; margin-left: 10px; }
+            button { padding: 10px 18px; font-size: 0.9rem; min-width: 100px; }
         }
     </style>
 </head>
 <body>
     <div class="container">
         <div class="header">
-            <h1>🎯 تحدي الأسئلة الخاطئة والغير مجاب عليها</h1>
-            <p>فرصتك لمراجعة جميع الأسئلة الخاطئة والتي لم تجب عليها وتحويلها إلى نقاط قوة!</p>
+            <h1>🎯 تحدي الأخطاء والأسئلة غير المجابة</h1>
+            <p>هذه فرصتك لمراجعة وتصحيح الأسئلة التي أخطأت بها أو لم تجب عليها. ركز جيداً!</p>
+        </div>
+        <div class="controls">
+            <label for="toggle-details-cb">
+                <input type="checkbox" id="toggle-details-cb" onchange="toggleOriginalDetailsVisibility(this.checked)" checked>
+                إظهار التفاصيل الأصلية (إجابتك السابقة، الإجابة الصحيحة، القسم، إلخ)
+            </label>
         </div>
         <div id="progress-bar-container">
             <div id="progress-bar">0%</div>
@@ -1620,26 +1610,27 @@ const QiyasExamPage: React.FC = () => {
         <div id="navigation-buttons">
             <button id="prev-btn" onclick="prevRetakeQuestion()" disabled>السابق</button>
             <button id="next-btn" onclick="nextRetakeQuestion()">التالي</button>
-            <button id="submit-retake-btn" onclick="submitRetake()" style="display:none;">عرض النتيجة النهائية</button>
+            <button id="submit-retake-btn" onclick="submitRetake()" style="display:none;">عرض النتيجة النهائية للتحدي</button>
         </div>
         <div id="result-area" style="display:none;">
-            <h2>نتائج تحدي الأخطاء والمفقودات:</h2>
+            <h2>نتائج تحدي الأخطاء:</h2>
             <p id="score-text"></p>
             <p id="feedback-message"></p>
-            <button onclick="restartRetake()">أعد التحدي</button>
+            <button onclick="restartRetake()">أعد محاولة التحدي</button>
         </div>
     </div>
     <div class="footer">
         © ${new Date().getFullYear()} منصة قدراتك - بالتوفيق في رحلتك التعليمية!
     </div>
+
     <script>
-        let incorrectQuestionsForRetake = [];
+        let allIncorrectOrUnansweredQuestions = [];
         let userRetakeAnswers = {}; // { questionOriginalId: selectedOptionOriginalIndex }
         let currentRetakeQuestionDisplayIndex = 0;
         let retakeSubmitted = false;
-        let mappedIncorrectQuestions = [];
-        const optionChars = ['أ', 'ب', 'ج', 'د', 'هـ', 'و', 'ز', 'ح', 'ط', 'ي'];
-
+        let mappedQuestionsForRetake = [];
+        const optionDisplayChars = ['أ', 'ب', 'ج', 'د', 'هـ', 'و', 'ز', 'ح', 'ط', 'ي'];
+        let showOriginalDetails = true; // Default to show details
 
         function shuffleArray(array) {
             for (let i = array.length - 1; i > 0; i--) {
@@ -1649,43 +1640,60 @@ const QiyasExamPage: React.FC = () => {
             return array;
         }
 
-        function createQuestionMap(question) {
+        function createQuestionMapWithShuffledOptions(question) {
             const optionsWithOriginalIndex = question.options.map((optionText, originalIndex) => ({
                 text: optionText,
                 originalIndex: originalIndex
             }));
-            const shuffledOptions = shuffleArray([...optionsWithOriginalIndex]);
+            // Shuffle options for the retake to make it a better challenge
+            const shuffledOptions = shuffleArray([...optionsWithOriginalIndex]); 
             return { ...question, shuffledOptions };
         }
 
+        function toggleOriginalDetailsVisibility(isVisible) {
+            showOriginalDetails = isVisible;
+            const detailDivs = document.querySelectorAll('.toggleable-original-details');
+            detailDivs.forEach(div => {
+                div.style.display = isVisible ? 'block' : 'none';
+            });
+        }
+
         function loadRetakeQuestion(index) {
-            retakeSubmitted = false;
+            // Retake is not submitted yet for this question load
+            // This line was causing feedback to not show after restart: retakeSubmitted = false; 
+            // It should be set to false only when restarting the whole challenge.
             const questionArea = document.getElementById('question-area');
-            const questionData = mappedIncorrectQuestions[index];
+            const questionData = mappedQuestionsForRetake[index];
             if (!questionData) return;
 
             const progressBar = document.getElementById('progress-bar');
-            const progressPercentage = Math.round(((index + 1) / mappedIncorrectQuestions.length) * 100);
+            const progressPercentage = Math.round(((index + 1) / mappedQuestionsForRetake.length) * 100);
             progressBar.style.width = progressPercentage + '%';
             progressBar.textContent = progressPercentage + '%';
 
+            let originalAnswerHtml = '';
+            if (questionData.wasUnanswered) {
+                originalAnswerHtml = '<p class="detail">إجابتك الأصلية: <span class="unanswered-highlight">لم تجب على هذا السؤال</span></p>';
+            } else if (questionData.userAnswerIndex !== undefined) {
+                originalAnswerHtml = \`<p class="detail">إجابتك الأصلية: <span class="incorrect-highlight">"\${questionData.options[questionData.userAnswerIndex]}" (خاطئة)</span></p>\`;
+            }
+
             questionArea.innerHTML = \`
                 <div class="question-card" id="qcard-\${questionData.id}">
-                    <p class="question-text">(\${index + 1}/\${mappedIncorrectQuestions.length}) \${questionData.text}</p>
+                    <p class="question-text">(\${index + 1}/\${mappedQuestionsForRetake.length}) \${questionData.text}</p>
                     <div class="original-info">
-                        <strong>تذكير بالامتحان الأصلي:</strong><br>
-                        \${questionData.wasUnanswered 
-                            ? 'إجابتك الأصلية: <span style="color: #e17055; font-weight: bold;">لم تجب على هذا السؤال</span>' 
-                            : \`إجابتك الأصلية: <span style="color: #d63031; font-weight: bold;">"\${questionData.options[questionData.userAnswerIndex]}"</span>\`
-                        }.<br>
-                        الإجابة الصحيحة: <span style="color: #00b894; font-weight: bold;">"\${questionData.options[questionData.correctOptionIndex]}"</span>.<br>
-                        القسم الأصلي: <span style="font-weight: bold;">\${questionData.sectionName}</span>.<br>
-                        \${questionData.isNonScored ? '<span style="color: #0984e3; font-weight: bold;">📝 سؤال تجريبي (غير محسوب في النتيجة)</span>' : '<span style="color: #00b894; font-weight: bold;">✓ سؤال محسوب في النتيجة</span>'}
+                        <p><strong>تذكير بالامتحان الأصلي:</strong></p>
+                        \${originalAnswerHtml}
+                        <div class="toggleable-original-details" style="display: \${showOriginalDetails ? 'block' : 'none'};">
+                            <p class="detail">الإجابة الصحيحة الأصلية: <span class="correct-highlight">"\${questionData.options[questionData.correctOptionIndex]}"</span></p>
+                            <p class="detail">القسم الأصلي: <strong>\${questionData.sectionName}</strong></p>
+                            <p class="detail">\${questionData.isNonScored ? '<span style="color: #0984e3; font-weight: bold;">📝 سؤال تجريبي (غير محسوب في النتيجة)</span>' : '<span style="color: var(--success-color); font-weight: bold;">✓ سؤال محسوب في النتيجة</span>'}</p>
+                        </div>
                     </div>
                     <ul class="options-list" id="options-\${questionData.id}">
                         \${questionData.shuffledOptions.map((opt, i) => \`
                             <li onclick="selectRetakeAnswer('\${questionData.id}', \${opt.originalIndex}, this)">
-                                <span class="option-letter">\${optionChars[i] || i+1}</span>
+                                <span class="option-letter">\${optionDisplayChars[i] || i+1}</span>
                                 <span style="flex: 1;">\${opt.text}</span>
                             </li>
                         \`).join('')}
@@ -1694,25 +1702,65 @@ const QiyasExamPage: React.FC = () => {
                 </div>
             \`;
 
+            // Restore selected answer for this question if already answered in this retake session
             if (userRetakeAnswers[questionData.id] !== undefined) {
                 const listItems = document.getElementById(\`options-\${questionData.id}\`).getElementsByTagName('li');
                 const selectedOriginalIndex = userRetakeAnswers[questionData.id];
-                for (let i=0; i < listItems.length; i++) {
+                for (let i = 0; i < listItems.length; i++) {
+                    // Compare originalIndex from shuffledOptions
                     if (questionData.shuffledOptions[i].originalIndex === selectedOriginalIndex) {
                         listItems[i].classList.add('selected');
                         break;
                     }
                 }
             }
+             // If retake was already submitted, show feedback for this question
+            if (retakeSubmitted) {
+                showFeedbackForQuestion(questionData);
+            }
+
 
             document.getElementById('prev-btn').disabled = index === 0;
-            document.getElementById('next-btn').disabled = index === mappedIncorrectQuestions.length - 1;
-            document.getElementById('submit-retake-btn').style.display = (index === mappedIncorrectQuestions.length - 1) ? 'inline-block' : 'none';
+            document.getElementById('next-btn').disabled = index === mappedQuestionsForRetake.length - 1;
+            document.getElementById('submit-retake-btn').style.display = (index === mappedQuestionsForRetake.length - 1) ? 'inline-block' : 'none';
             document.getElementById('result-area').style.display = 'none';
+            if(retakeSubmitted) { // If retake is submitted, disable options
+                 const qOptionsList = document.getElementById(\`options-\${questionData.id}\`);
+                 if(qOptionsList) { Array.from(qOptionsList.getElementsByTagName('li')).forEach(li => li.onclick = null); }
+            }
         }
 
+        function showFeedbackForQuestion(qData) {
+            const feedbackDiv = document.getElementById(\`feedback-\${qData.id}\`);
+            if (!feedbackDiv) return;
+
+            const selectedOptOriginalIndex = userRetakeAnswers[qData.id];
+            const isCorrectThisTime = selectedOptOriginalIndex === qData.correctOptionIndex;
+            let feedbackHtml = '';
+
+            if (selectedOptOriginalIndex !== undefined) { // Answered in retake
+                if (isCorrectThisTime) {
+                    feedbackHtml = \`🎉 ممتاز! إجابة صحيحة هذه المرة.\`;
+                    feedbackDiv.className = 'feedback-area correct';
+                } else {
+                    feedbackHtml = \`❌ للأسف، إجابة خاطئة. الإجابة الصحيحة كانت: <strong class="correct-highlight">"\${qData.options[qData.correctOptionIndex]}"</strong>.\`;
+                    feedbackDiv.className = 'feedback-area incorrect';
+                }
+            } else { // Not answered in retake
+                feedbackHtml = \`⚠️ لم تجب على هذا السؤال في التحدي. الإجابة الصحيحة هي: <strong class="correct-highlight">"\${qData.options[qData.correctOptionIndex]}"</strong>.\`;
+                feedbackDiv.className = 'feedback-area incorrect'; // Treat as incorrect for feedback style
+            }
+
+            if (qData.explanation) {
+                feedbackHtml += \`<div class="explanation-text"><strong>الشرح:</strong> \${qData.explanation}</div>\`;
+            }
+            feedbackDiv.innerHTML = feedbackHtml;
+            feedbackDiv.style.display = 'block';
+        }
+
+
         function selectRetakeAnswer(questionId, originalOptionIndex, listItemElement) {
-            if (retakeSubmitted) return;
+            if (retakeSubmitted) return; // Don't allow changing answers after submission
             userRetakeAnswers[questionId] = originalOptionIndex;
             const optionsList = listItemElement.parentNode;
             Array.from(optionsList.getElementsByTagName('li')).forEach(li => li.classList.remove('selected'));
@@ -1727,34 +1775,21 @@ const QiyasExamPage: React.FC = () => {
         }
 
         function nextRetakeQuestion() {
-            if (currentRetakeQuestionDisplayIndex < mappedIncorrectQuestions.length - 1) {
+            if (currentRetakeQuestionDisplayIndex < mappedQuestionsForRetake.length - 1) {
                 currentRetakeQuestionDisplayIndex++;
                 loadRetakeQuestion(currentRetakeQuestionDisplayIndex);
             }
         }
 
         function submitRetake() {
-            retakeSubmitted = true;
+            retakeSubmitted = true; // Mark as submitted
             let score = 0;
-            mappedIncorrectQuestions.forEach(qData => {
-                const feedbackDiv = document.getElementById(\`feedback-\${qData.id}\`);
-                const selectedOptOriginalIndex = userRetakeAnswers[qData.id];
-                const isCorrectThisTime = selectedOptOriginalIndex === qData.correctOptionIndex;
-
-                if (selectedOptOriginalIndex !== undefined) {
-                    if (isCorrectThisTime) {
-                        score++;
-                        feedbackDiv.innerHTML = \`🎉 رائع! إجابة صحيحة هذه المرة. <br> \${qData.explanation ? \`<p class="explanation-text"><strong>الشرح:</strong> \${qData.explanation}</p>\` : ''}\`;
-                        feedbackDiv.className = 'feedback-area correct';
-                    } else {
-                        feedbackDiv.innerHTML = \`❌ للأسف، إجابة خاطئة. الإجابة الصحيحة كانت: "\${qData.options[qData.correctOptionIndex]}". <br> \${qData.explanation ? \`<p class="explanation-text"><strong>الشرح:</strong> \${qData.explanation}</p>\` : ''}\`;
-                        feedbackDiv.className = 'feedback-area incorrect';
-                    }
-                } else {
-                    feedbackDiv.innerHTML = \`⚠️ لم تجب على هذا السؤال في التحدي. الإجابة الصحيحة هي: "\${qData.options[qData.correctOptionIndex]}". <br> \${qData.explanation ? \`<p class="explanation-text"><strong>الشرح:</strong> \${qData.explanation}</p>\` : ''}\`;
-                    feedbackDiv.className = 'feedback-area incorrect';
+            mappedQuestionsForRetake.forEach(qData => {
+                if (userRetakeAnswers[qData.id] === qData.correctOptionIndex) {
+                    score++;
                 }
-                feedbackDiv.style.display = 'block';
+                showFeedbackForQuestion(qData); // Show individual feedback for all questions
+                 // Disable options for all questions after submitting
                 const qOptionsList = document.getElementById(\`options-\${qData.id}\`);
                 if(qOptionsList) { Array.from(qOptionsList.getElementsByTagName('li')).forEach(li => li.onclick = null); }
             });
@@ -1762,70 +1797,105 @@ const QiyasExamPage: React.FC = () => {
             const resultArea = document.getElementById('result-area');
             const scoreText = document.getElementById('score-text');
             const feedbackMsg = document.getElementById('feedback-message');
-            scoreText.textContent = \`نتيجتك في هذا التحدي: \${score} من \${mappedIncorrectQuestions.length} (\${((score / mappedIncorrectQuestions.length) * 100).toFixed(1)}%)\`;
+            const percentageScore = mappedQuestionsForRetake.length > 0 ? ((score / mappedQuestionsForRetake.length) * 100).toFixed(1) : 0;
+            scoreText.textContent = \`نتيجتك في هذا التحدي: \${score} من \${mappedQuestionsForRetake.length} (\${percentageScore}%)\`;
 
-            if (score === mappedIncorrectQuestions.length) {
-                feedbackMsg.textContent = "🎉 ممتاز! لقد أتقنت جميع الأسئلة التي أخطأت بها أو لم تجب عليها سابقاً. استمر في هذا التقدم!";
-                feedbackMsg.style.color = "#00b894";
-            } else if (score >= mappedIncorrectQuestions.length / 2) {
-                feedbackMsg.textContent = "👍 جيد جداً! لقد تحسنت كثيراً. القليل من التركيز وستتقن البقية.";
-                feedbackMsg.style.color = "#0984e3";
-            } else {
-                feedbackMsg.textContent = "💡 لا بأس، كل خطأ هو فرصة للتعلم. راجع الشروحات وحاول مرة أخرى!";
-                feedbackMsg.style.color = "#e17055";
+            if (mappedQuestionsForRetake.length === 0) {
+                 feedbackMsg.textContent = "لا توجد أسئلة في هذا التحدي.";
+            } else if (score === mappedQuestionsForRetake.length) {
+                feedbackMsg.textContent = "🎉 مذهل! لقد أتقنت جميع الأسئلة التي واجهتك في هذا التحدي. استمر على هذا المنوال!";
+                feedbackMsg.style.color = "var(--success-color)";
+            } else if (score >= mappedQuestionsForRetake.length * 0.7) {
+                feedbackMsg.textContent = "👍 رائع! لقد تحسنت بشكل كبير. القليل من المراجعة وستصل للكمال.";
+                feedbackMsg.style.color = "#54a0ff"; /* A positive blue */
+            } else if (score >= mappedQuestionsForRetake.length * 0.4) {
+                feedbackMsg.textContent = "💡 جيد! لقد قطعت شوطاً. ركز على مراجعة الأخطاء لفهم أعمق.";
+                 feedbackMsg.style.color = "#f39c12"; /* Orange for "good, but improve" */
+            }
+             else {
+                feedbackMsg.textContent = "💪 لا تستسلم! كل محاولة هي خطوة نحو الإتقان. راجع الشروحات بعناية وحاول مجدداً.";
+                feedbackMsg.style.color = "var(--danger-color)";
             }
             resultArea.style.display = 'block';
-            document.getElementById('navigation-buttons').style.display = 'none';
+            document.getElementById('navigation-buttons').style.display = 'none'; // Hide nav buttons
+            document.getElementById('submit-retake-btn').style.display = 'none';
             resultArea.scrollIntoView({ behavior: 'smooth' });
         }
 
         function restartRetake() {
             currentRetakeQuestionDisplayIndex = 0;
             userRetakeAnswers = {};
-            retakeSubmitted = false;
-            mappedIncorrectQuestions.forEach(qData => {
+            retakeSubmitted = false; // Reset submission state
+
+            // Re-shuffle questions or just options? For now, just reset state and re-load.
+            // If we want to re-shuffle questions themselves:
+            // mappedQuestionsForRetake = shuffleArray(allIncorrectOrUnansweredQuestions.map(q => createQuestionMapWithShuffledOptions(q)));
+            // Or if keeping the same question order but re-shuffling their options:
+            mappedQuestionsForRetake.forEach(q => {
+                q.shuffledOptions = shuffleArray([...q.options.map((text, originalIndex) => ({text, originalIndex}))]);
+            });
+
+
+            mappedQuestionsForRetake.forEach(qData => {
                 const feedbackDiv = document.getElementById(\`feedback-\${qData.id}\`);
                 if (feedbackDiv) { feedbackDiv.innerHTML = ''; feedbackDiv.style.display = 'none';}
             });
-            document.getElementById('navigation-buttons').style.display = 'block';
-            document.getElementById('prev-btn').disabled = true;
-            document.getElementById('next-btn').disabled = mappedIncorrectQuestions.length <=1;
+            document.getElementById('navigation-buttons').style.display = 'block'; // Show nav buttons
+            document.getElementById('result-area').style.display = 'none'; // Hide result area
+            document.getElementById('submit-retake-btn').style.display = (mappedQuestionsForRetake.length === 1) ? 'inline-block' : 'none';
+
+            // Ensure the toggle visibility is respected on restart
+            toggleOriginalDetailsVisibility(document.getElementById('toggle-details-cb').checked);
+
             loadRetakeQuestion(0);
         }
 
         window.onload = () => {
-            incorrectQuestionsForRetake = ${questionsJson};
-            if (incorrectQuestionsForRetake.length > 0) {
-                mappedIncorrectQuestions = incorrectQuestionsForRetake.map(q => createQuestionMap(q));
+            allIncorrectOrUnansweredQuestions = ${questionsJson};
+            if (allIncorrectOrUnansweredQuestions.length > 0) {
+                mappedQuestionsForRetake = allIncorrectOrUnansweredQuestions.map(q => createQuestionMapWithShuffledOptions(q));
+                // Initial state of toggle: Checkbox is checked by default, so details are visible.
+                toggleOriginalDetailsVisibility(document.getElementById('toggle-details-cb').checked);
                 loadRetakeQuestion(0);
             } else {
                 document.getElementById('question-area').innerHTML = '<p class="no-questions">🎉 رائع! لم تكن لديك أي أسئلة خاطئة أو غير مجاب عليها لمراجعتها في هذا الاختبار. أداؤك كان مثالياً!</p>';
                 document.getElementById('navigation-buttons').style.display = 'none';
                 document.getElementById('progress-bar-container').style.display = 'none';
+                document.querySelector('.controls').style.display = 'none';
             }
         };
     </script>
 </body>
 </html>`;
-      const blob = new Blob([htmlContent], { type: 'text/html;charset=utf-8' });
-      const url = window.URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `${selectedExam.name}_تحدي_الاخطاء.html`;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      window.URL.revokeObjectURL(url);
-      const wrongCount = incorrectQuestionsDataForRetake.filter(q => q.userAnswerIndex !== undefined).length;
-      const unansweredCount = incorrectQuestionsDataForRetake.filter(q => q.userAnswerIndex === undefined).length;
-      
-      toast({ 
-        title: "تم تحميل التحدي", 
-        description: `تم إنشاء تحدي يحتوي على ${incorrectQuestionsDataForRetake.length} سؤال (${wrongCount} خاطئ، ${unansweredCount} غير مجاب عليه). ${isMobile ? 'افتح الملف في متصفحك للمراجعة.' : 'الآن محسّن للهواتف! افتح الملف في متصفحك لبدء التحدي التفاعلي.'}`, 
-        duration: 7000 
-      });
-    };
+        const blob = new Blob([desktopInteractiveHtmlContent], { type: 'text/html;charset=utf-8' });
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `${examNameForFile}_تحدي_الاخطاء_تفاعلي.html`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        window.URL.revokeObjectURL(url);
 
+        toast({ 
+            title: "تم تحميل تحدي الأخطاء التفاعلي", 
+            description: `تم إنشاء تحدي يحتوي على ${incorrectOrUnansweredQuestionsData.length} سؤال. افتحه في متصفحك على الحاسوب.`, 
+            duration: 7000 
+        });
+    }
+};
+
+
+  const renderExamResults = () => {
+    if (!selectedExam || currentView !== "results") return null;
+    const stats = calculateExamStats();
+
+    const performance =
+      stats.percentage >= 90 ? { label: "ممتاز جداً!", color: "text-green-500 dark:text-green-400", icon: <TrophyIcon className="inline-block mr-2 h-7 w-7"/> } :
+      stats.percentage >= 80 ? { label: "ممتاز", color: "text-sky-500 dark:text-sky-400", icon: <Star className="inline-block mr-2 h-6 w-6"/> } :
+      stats.percentage >= 70 ? { label: "جيد جداً", color: "text-blue-500 dark:text-blue-400", icon: <CheckCircle className="inline-block mr-2 h-6 w-6"/> } :
+      stats.percentage >= 50 ? { label: "جيد", color: "text-yellow-500 dark:text-yellow-400", icon: <Info className="inline-block mr-2 h-6 w-6"/> } :
+      { label: "بحاجة للمزيد من التدريب", color: "text-red-500 dark:text-red-400", icon: <BookOpen className="inline-block mr-2 h-6 w-6"/> };
 
     return (
       <div className="container py-8 max-w-4xl font-arabic animate-fadeIn">
@@ -1921,14 +1991,13 @@ const QiyasExamPage: React.FC = () => {
             </Button>
 
               <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
-                 {/* New Button for Incorrect Questions Challenge */}
                 <Button
                   onClick={handleDownloadIncorrectQuestions}
                   variant="default"
                   className="gap-2 w-full sm:w-auto bg-red-600 hover:bg-red-700 text-white dark:bg-red-700 dark:hover:bg-red-800"
                 >
-                  <Target className="h-4 w-4" /> {/* Or RefreshCw */}
-                  🎯 {isMobile ? 'تحميل الأسئلة الخاطئة' : 'تحدي الأسئلة الخاطئة والغير مجاب عليها'}
+                  <Target className="h-4 w-4" />
+                  {isMobile ? 'مراجعة الأخطاء (للجوال)' : 'تحدي الأخطاء (للحاسوب)'}
                 </Button>
                 <Button
                   onClick={() => {
@@ -2059,7 +2128,8 @@ const QiyasExamPage: React.FC = () => {
                       const url = window.URL.createObjectURL(blob);
                       const a = document.createElement('a');
                       a.href = url;
-                      a.download = `${examName}_اسئلة_فقط.html`;
+                      const examNameForFile = examName.replace(/[^a-zA-Z0-9\u0600-\u06FF\s]/g, '_');
+                      a.download = `${examNameForFile}_اسئلة_فقط.html`;
                       document.body.appendChild(a);
                       a.click();
                       document.body.removeChild(a);
@@ -2125,7 +2195,7 @@ const QiyasExamPage: React.FC = () => {
                             "w-8 h-8 sm:w-10 sm:h-10 rounded-full flex items-center justify-center text-white font-bold text-lg flex-shrink-0 mt-1",
                             question._isNonScored ? "bg-blue-400" : isCorrect ? "bg-green-500" : "bg-red-500"
                             )}>
-                            {question._isNonScored ? <Info size={18}/> : isCorrect ? "✓" : "✗"}
+                            {question._isNonScored ? <Info size={18}/> : isCorrect ? <Check size={18}/> : <X size={18}/>}
                             </div>
                             <div className="flex-grow">
                             <h4 className="font-semibold text-sm sm:text-base text-gray-700 dark:text-gray-100 mb-1">{sectionName} - سؤال {questionDisplayIndex}</h4>
