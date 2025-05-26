@@ -112,21 +112,53 @@ const Home: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-background to-background/80">
-      {/* Hero Section with Enhanced Animation */}
-      <section className="relative overflow-hidden py-20 sm:py-32">
+      {/* Hero Section with Deep Blue Creative Animation */}
+      <section className="relative overflow-hidden py-20 sm:py-32 min-h-screen flex items-center">
         <div className="absolute inset-0">
-          <div className="absolute inset-0 bg-gradient-to-br from-primary/20 via-transparent to-primary/10 animate-gradient-shift"></div>
-          <div className="absolute inset-0 bg-[radial-gradient(circle_800px_at_50%_-100px,var(--primary-foreground),transparent)] animate-pulse"></div>
-          <div className="absolute inset-0 bg-grid-white/5 bg-[size:40px_40px]"></div>
-          {[...Array(30)].map((_, i) => (
+          {/* تدرجات زرقاء متحركة إبداعية */}
+          <div className="absolute inset-0 bg-gradient-to-br from-blue-900/30 via-indigo-900/20 to-cyan-900/25 animate-gradient-shift"></div>
+          <div className="absolute inset-0 bg-gradient-to-tr from-slate-900/40 via-blue-900/30 to-indigo-900/35 animate-pulse-slow"></div>
+          
+          {/* تأثير الشبكة المضيئة */}
+          <div className="absolute inset-0 bg-[radial-gradient(circle_1200px_at_50%_-200px,rgba(59,130,246,0.15),transparent)] animate-pulse"></div>
+          <div className="absolute inset-0 bg-[conic-gradient(from_0deg_at_50%_50%,rgba(59,130,246,0.1)_0deg,transparent_60deg,rgba(37,99,235,0.08)_120deg,transparent_180deg,rgba(29,78,216,0.12)_240deg,transparent_300deg,rgba(59,130,246,0.1)_360deg)] animate-spin-slow"></div>
+          
+          {/* شبكة مضيئة */}
+          <div className="absolute inset-0 bg-[linear-gradient(rgba(59,130,246,0.03)_1px,transparent_1px),linear-gradient(90deg,rgba(59,130,246,0.03)_1px,transparent_1px)] bg-[size:60px_60px]"></div>
+          
+          {/* جسيمات متحركة مضيئة */}
+          {[...Array(40)].map((_, i) => (
             <div
-              key={i}
-              className="absolute h-2 w-2 bg-primary/30 rounded-full animate-float-random"
+              key={`star-${i}`}
+              className="absolute rounded-full animate-float-random"
               style={{
+                width: `${2 + Math.random() * 4}px`,
+                height: `${2 + Math.random() * 4}px`,
+                background: `radial-gradient(circle, rgba(59,130,246,${0.6 + Math.random() * 0.4}) 0%, rgba(37,99,235,${0.3 + Math.random() * 0.3}) 70%, transparent 100%)`,
                 top: `${Math.random() * 100}%`,
                 left: `${Math.random() * 100}%`,
-                animationDelay: `${Math.random() * 5}s`,
-                animationDuration: `${7 + Math.random() * 5}s`,
+                animationDelay: `${Math.random() * 8}s`,
+                animationDuration: `${6 + Math.random() * 8}s`,
+                filter: `blur(${Math.random() * 1}px)`,
+                boxShadow: `0 0 ${4 + Math.random() * 8}px rgba(59,130,246,${0.3 + Math.random() * 0.4})`
+              }}
+            />
+          ))}
+          
+          {/* أضواء متحركة كبيرة */}
+          {[...Array(8)].map((_, i) => (
+            <div
+              key={`light-${i}`}
+              className="absolute rounded-full animate-float-gentle opacity-20"
+              style={{
+                width: `${50 + Math.random() * 100}px`,
+                height: `${50 + Math.random() * 100}px`,
+                background: `radial-gradient(circle, rgba(59,130,246,0.4) 0%, rgba(37,99,235,0.2) 40%, transparent 70%)`,
+                top: `${Math.random() * 100}%`,
+                left: `${Math.random() * 100}%`,
+                animationDelay: `${Math.random() * 10}s`,
+                animationDuration: `${10 + Math.random() * 10}s`,
+                filter: `blur(${5 + Math.random() * 10}px)`,
               }}
             />
           ))}
@@ -161,32 +193,48 @@ const Home: React.FC = () => {
           )}
 
           <div className="flex flex-col items-center space-y-8 text-center">
-            <div className="space-y-4 animate-fade-in-down">
-              <div className="inline-flex items-center gap-4 justify-center">
-                <Rocket className="h-8 w-8 text-primary animate-bounce" />
-                <h1 className="text-5xl font-bold tracking-tighter sm:text-6xl md:text-7xl bg-gradient-to-r from-primary via-primary-foreground to-primary bg-clip-text text-transparent">
+            <div className="space-y-6 animate-fade-in-down">
+              <div className="inline-flex items-center gap-6 justify-center">
+                <div className="relative">
+                  <Rocket className="h-10 w-10 text-blue-400 animate-bounce drop-shadow-lg" />
+                  <div className="absolute inset-0 h-10 w-10 bg-blue-400/30 rounded-full animate-ping"></div>
+                </div>
+                <h1 className="text-5xl font-bold tracking-tighter sm:text-6xl md:text-7xl bg-gradient-to-r from-blue-300 via-cyan-200 to-indigo-300 bg-clip-text text-transparent drop-shadow-2xl">
                   منصة قدراتك
                 </h1>
-                <Stars className="h-8 w-8 text-primary animate-spin-slow" />
+                <div className="relative">
+                  <Stars className="h-10 w-10 text-cyan-400 animate-spin-slow drop-shadow-lg" />
+                  <div className="absolute inset-0 h-10 w-10 bg-cyan-400/20 rounded-full animate-pulse"></div>
+                </div>
               </div>
-              <p className="mx-auto max-w-[700px] text-gray-500 dark:text-gray-400 md:text-xl leading-relaxed">
-                منصتك الشاملة للتحضير لاختبارات قياس وتطوير مهاراتك اللفظية والكمية
-                <br />
-                بأسلوب تفاعلي ومتطور
-              </p>
+              
+              <div className="relative mx-auto max-w-[800px]">
+                <p className="text-blue-100/90 md:text-xl leading-relaxed font-medium drop-shadow-lg">
+                  منصتك الشاملة للتحضير لاختبارات قياس وتطوير مهاراتك اللفظية والكمية
+                  <br />
+                  <span className="bg-gradient-to-r from-cyan-300 to-blue-300 bg-clip-text text-transparent font-bold">
+                    بأسلوب تفاعلي ومتطور مع تقنيات الذكاء الاصطناعي
+                  </span>
+                </p>
+                <div className="absolute -inset-4 bg-gradient-to-r from-blue-500/10 via-cyan-500/5 to-indigo-500/10 rounded-xl blur-xl animate-pulse-slow"></div>
+              </div>
             </div>
 
-            <div className="flex flex-col sm:flex-row gap-4 animate-fade-in">
-              <Button asChild size="lg" className="group bg-gradient-to-r from-primary to-primary/80 hover:scale-105 transition-transform">
+            <div className="flex flex-col sm:flex-row gap-6 animate-fade-in">
+              <Button asChild size="lg" className="group relative overflow-hidden bg-gradient-to-r from-blue-600 via-blue-500 to-cyan-500 hover:from-blue-500 hover:to-cyan-400 hover:scale-110 transition-all duration-300 shadow-2xl hover:shadow-blue-500/50 min-w-[200px] py-4 text-lg font-bold border-0">
                 <Link href="/qiyas">
-                  <GraduationCapIcon className="ml-2 h-5 w-5 group-hover:rotate-12 transition-transform" />
+                  <div className="absolute inset-0 bg-gradient-to-r from-white/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
+                  <GraduationCapIcon className="ml-3 h-6 w-6 group-hover:rotate-12 transition-transform drop-shadow-lg" />
                   ابدأ اختبار قياس
+                  <div className="absolute -inset-1 bg-gradient-to-r from-blue-600 to-cyan-500 rounded-lg blur opacity-30 group-hover:opacity-60 transition-opacity -z-10"></div>
                 </Link>
               </Button>
-              <Button asChild variant="outline" size="lg" className="group hover:scale-105 transition-transform">
+              <Button asChild variant="outline" size="lg" className="group relative overflow-hidden border-2 border-blue-400/50 bg-blue-950/30 backdrop-blur-sm hover:bg-blue-900/50 hover:border-cyan-400/70 hover:scale-110 transition-all duration-300 shadow-xl hover:shadow-cyan-500/30 min-w-[200px] py-4 text-lg font-bold text-blue-100">
                 <Link href="/abilities">
-                  <BrainCircuitIcon className="ml-2 h-5 w-5 group-hover:rotate-12 transition-transform" />
+                  <div className="absolute inset-0 bg-gradient-to-r from-cyan-500/10 to-blue-500/10 opacity-0 group-hover:opacity-100 transition-opacity"></div>
+                  <BrainCircuitIcon className="ml-3 h-6 w-6 group-hover:rotate-12 transition-transform drop-shadow-lg" />
                   اختبر قدراتك
+                  <div className="absolute -inset-1 bg-gradient-to-r from-cyan-500/20 to-blue-500/20 rounded-lg blur opacity-20 group-hover:opacity-50 transition-opacity -z-10"></div>
                 </Link>
               </Button>
             </div>

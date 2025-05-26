@@ -596,12 +596,38 @@
 }
 
 @keyframes float-gentle {
-  0%, 100% { transform: translateY(0px) scale(1); }
-  50% { transform: translateY(-10px) scale(1.05); }
+  0%, 100% { transform: translateY(0px) scale(1) rotate(0deg); }
+  25% { transform: translateY(-15px) scale(1.05) rotate(5deg); }
+  50% { transform: translateY(-10px) scale(1.1) rotate(0deg); }
+  75% { transform: translateY(-5px) scale(1.05) rotate(-5deg); }
 }
 
 .animate-float-gentle {
-  animation: float-gentle 4s ease-in-out infinite;
+  animation: float-gentle 6s ease-in-out infinite;
+}
+
+@keyframes blue-glow-pulse {
+  0%, 100% { 
+    box-shadow: 0 0 20px rgba(59,130,246,0.3), 0 0 40px rgba(37,99,235,0.2), inset 0 0 20px rgba(59,130,246,0.1);
+  }
+  50% { 
+    box-shadow: 0 0 40px rgba(59,130,246,0.5), 0 0 80px rgba(37,99,235,0.3), inset 0 0 30px rgba(59,130,246,0.2);
+  }
+}
+
+.animate-blue-glow-pulse {
+  animation: blue-glow-pulse 3s ease-in-out infinite;
+}
+
+@keyframes electric-border {
+  0%, 100% { border-color: rgba(59,130,246,0.3); }
+  25% { border-color: rgba(37,99,235,0.5); }
+  50% { border-color: rgba(29,78,216,0.7); }
+  75% { border-color: rgba(59,130,246,0.5); }
+}
+
+.animate-electric-border {
+  animation: electric-border 2s ease-in-out infinite;
 }
 
 .animation-delay-2000 {
@@ -641,50 +667,50 @@
   animation: fade-in-down 1s ease-out;
 }
 
-/* Dark Elite Theme */
+/* Deep Blue Dark Elite Theme */
 :root {
-  --background: 225 35% 4%; /* خلفية سوداء عميقة مع لمسة زرقاء أنيقة */
-  --foreground: 210 45% 97%; /* نص أبيض ناصع مع لمسة زرقاء */
-  --muted: 220 30% 12%; /* رمادي أغمق مع عمق أكبر */
-  --muted-foreground: 215 30% 70%; /* نص مكتوم أكثر وضوحاً */
-  --popover: 225 40% 6%; /* نوافذ منبثقة شديدة القتامة */
-  --popover-foreground: 210 45% 97%; /* نص النوافذ المنبثقة ناصع */
-  --card: 225 35% 8%; /* كروت بخلفية سوداء فاخرة */
-  --card-foreground: 210 45% 97%; /* نص الكروت ناصع */
-  --border: 220 35% 18%; /* حدود داكنة مع لمعة خفيفة */
-  --input: 225 30% 10%; /* مدخلات سوداء عميقة */
-  --primary: 220 100% 65%; /* أزرق ساطع مميز */
+  --background: 230 55% 2%; /* خلفية زرقاء غامقة جداً */
+  --foreground: 220 65% 98%; /* نص أبيض مع لمسة زرقاء */
+  --muted: 225 50% 5%; /* رمادي أزرق غامق */
+  --muted-foreground: 220 35% 75%; /* نص مكتوم مع لمسة زرقاء */
+  --popover: 230 60% 3%; /* نوافذ منبثقة زرقاء غامقة */
+  --popover-foreground: 220 65% 98%; /* نص النوافذ المنبثقة ناصع */
+  --card: 228 50% 4%; /* كروت بخلفية زرقاء غامقة فاخرة */
+  --card-foreground: 220 65% 98%; /* نص الكروت ناصع */
+  --border: 225 45% 12%; /* حدود زرقاء غامقة مع لمعة */
+  --input: 228 50% 6%; /* مدخلات زرقاء غامقة */
+  --primary: 210 100% 60%; /* أزرق ساطع مميز */
   --primary-foreground: 220 100% 99%; /* نص أبيض ناصع */
-  --secondary: 225 25% 12%; /* ثانوي قاتم فاخر */
-  --secondary-foreground: 210 45% 92%; /* نص ثانوي فاتح */
-  --accent: 225 35% 15%; /* لون مميز قاتم أنيق */
-  --accent-foreground: 210 45% 97%; /* نص مميز ناصع */
-  --destructive: 0 80% 60%; /* أحمر قوي للحذف */
-  --destructive-foreground: 60 15% 97%; /* نص فاتح للحذف */
-  --ring: 220 95% 70%; /* حلقة ساطعة مميزة */
+  --secondary: 228 40% 8%; /* ثانوي أزرق قاتم فاخر */
+  --secondary-foreground: 220 65% 95%; /* نص ثانوي فاتح */
+  --accent: 225 50% 10%; /* لون مميز أزرق قاتم */
+  --accent-foreground: 220 65% 98%; /* نص مميز ناصع */
+  --destructive: 0 85% 65%; /* أحمر قوي للحذف */
+  --destructive-foreground: 60 20% 98%; /* نص فاتح للحذف */
+  --ring: 210 100% 70%; /* حلقة زرقاء ساطعة */
   --radius: 0.75rem;
 }
 
 .dark {
-  --background: 225 40% 2%; /* خلفية سوداء مطلقة مع لمسة زرقاء عميقة */
-  --foreground: 210 50% 99%; /* نص أبيض مثالي */
-  --muted: 220 35% 8%; /* رمادي قاتم جداً مع عمق */
-  --muted-foreground: 215 25% 75%; /* نص مكتوم أكثر إشراقاً */
-  --popover: 225 45% 3%; /* نوافذ منبثقة سوداء مطلقة */
-  --popover-foreground: 210 50% 99%; /* نص فاتح مثالي */
-  --card: 225 40% 5%; /* كروت بخلفية سوداء مطلقة فاخرة */
-  --card-foreground: 210 50% 99%; /* نص فاتح مثالي */
-  --border: 220 40% 15%; /* حدود قاتمة جداً مع لمعة */
-  --input: 225 35% 7%; /* مدخلات سوداء عميقة جداً */
-  --primary: 220 100% 70%; /* أزرق ساطع جداً */
-  --primary-foreground: 220 100% 99%; /* نص أبيض مثالي */
-  --secondary: 225 30% 8%; /* ثانوي قاتم جداً */
-  --secondary-foreground: 210 50% 97%; /* نص ثانوي ناصع */
-  --accent: 225 40% 10%; /* لون مميز قاتم جداً */
-  --accent-foreground: 210 50% 99%; /* نص مميز مثالي */
-  --destructive: 0 85% 65%; /* أحمر ساطع للحذف */
-  --destructive-foreground: 60 20% 99%; /* نص فاتح مثالي */
-  --ring: 220 100% 75%; /* حلقة ساطعة جداً */
+  --background: 235 65% 1%; /* خلفية زرقاء مطلقة الظلام */
+  --foreground: 215 70% 99%; /* نص أبيض مثالي مع لمسة زرقاء */
+  --muted: 230 60% 3%; /* رمادي أزرق قاتم جداً */
+  --muted-foreground: 220 40% 80%; /* نص مكتوم مع لمسة زرقاء */
+  --popover: 235 70% 2%; /* نوافذ منبثقة زرقاء مطلقة */
+  --popover-foreground: 215 70% 99%; /* نص فاتح مثالي */
+  --card: 232 60% 2.5%; /* كروت بخلفية زرقاء مطلقة فاخرة */
+  --card-foreground: 215 70% 99%; /* نص فاتح مثالي */
+  --border: 228 55% 8%; /* حدود زرقاء قاتمة مع لمعة */
+  --input: 232 60% 4%; /* مدخلات زرقاء عميقة جداً */
+  --primary: 205 100% 65%; /* أزرق ساطع مذهل */
+  --primary-foreground: 215 100% 99%; /* نص أبيض مثالي */
+  --secondary: 230 50% 5%; /* ثانوي أزرق قاتم جداً */
+  --secondary-foreground: 215 70% 98%; /* نص ثانوي ناصع */
+  --accent: 228 60% 6%; /* لون مميز أزرق قاتم جداً */
+  --accent-foreground: 215 70% 99%; /* نص مميز مثالي */
+  --destructive: 0 90% 68%; /* أحمر ساطع للحذف */
+  --destructive-foreground: 60 25% 99%; /* نص فاتح مثالي */
+  --ring: 205 100% 75%; /* حلقة زرقاء ساطعة جداً */
   --radius: 0.75rem;
 }
 
@@ -696,17 +722,35 @@
 
   body {
     @apply font-sans antialiased bg-background text-foreground;
-    /* خلفية متدرجة أنيقة وقاتمة */
+    /* خلفية متدرجة إبداعية زرقاء غامقة */
     background: 
-      radial-gradient(circle at 20% 50%, hsl(220, 100%, 8%) 0%, transparent 50%),
-      radial-gradient(circle at 80% 20%, hsl(225, 80%, 6%) 0%, transparent 50%),
-      radial-gradient(circle at 40% 80%, hsl(215, 90%, 4%) 0%, transparent 50%),
-      linear-gradient(135deg, hsl(var(--background)) 0%, hsl(225, 45%, 2%) 100%);
+      radial-gradient(ellipse at 25% 30%, hsl(210, 100%, 3%) 0%, transparent 65%),
+      radial-gradient(ellipse at 75% 15%, hsl(220, 95%, 2%) 0%, transparent 70%),
+      radial-gradient(ellipse at 50% 85%, hsl(200, 100%, 1.5%) 0%, transparent 60%),
+      radial-gradient(ellipse at 10% 70%, hsl(230, 90%, 2%) 0%, transparent 55%),
+      radial-gradient(ellipse at 90% 60%, hsl(240, 85%, 1%) 0%, transparent 50%),
+      conic-gradient(from 45deg at 50% 50%, 
+        hsl(235, 70%, 0.5%) 0deg,
+        hsl(210, 100%, 1%) 60deg,
+        hsl(220, 95%, 0.8%) 120deg,
+        hsl(200, 100%, 1.2%) 180deg,
+        hsl(225, 90%, 0.7%) 240deg,
+        hsl(240, 85%, 1%) 300deg,
+        hsl(235, 70%, 0.5%) 360deg
+      ),
+      linear-gradient(135deg, 
+        hsl(var(--background)) 0%, 
+        hsl(230, 70%, 1%) 25%,
+        hsl(220, 85%, 0.5%) 50%,
+        hsl(210, 100%, 1%) 75%,
+        hsl(235, 75%, 0.8%) 100%
+      );
     min-height: 100vh;
     position: relative;
+    overflow-x: hidden;
   }
 
-  /* تأثير الضباب الخفيف */
+  /* تأثير الأضواء الزرقاء المتحركة */
   body::before {
     content: '';
     position: fixed;
@@ -715,12 +759,58 @@
     right: 0;
     bottom: 0;
     background: 
-      radial-gradient(600px circle at var(--mouse-x, 50%) var(--mouse-y, 50%), 
-        hsl(220, 100%, 15%) 0%, 
-        transparent 40%);
-    opacity: 0.05;
+      radial-gradient(800px circle at var(--mouse-x, 30%) var(--mouse-y, 40%), 
+        hsl(205, 100%, 8%) 0%, 
+        hsl(215, 90%, 4%) 20%,
+        transparent 50%),
+      radial-gradient(600px circle at calc(var(--mouse-x, 70%) + 20%) calc(var(--mouse-y, 60%) - 10%), 
+        hsl(225, 100%, 6%) 0%, 
+        transparent 45%),
+      radial-gradient(400px circle at calc(100% - var(--mouse-x, 50%)) calc(100% - var(--mouse-y, 50%)), 
+        hsl(195, 100%, 5%) 0%, 
+        transparent 35%);
+    opacity: 0.12;
     pointer-events: none;
     z-index: 1;
+    animation: aurora-flow 20s ease-in-out infinite;
+  }
+
+  /* تأثير الشفق القطبي الأزرق */
+  body::after {
+    content: '';
+    position: fixed;
+    top: -50%;
+    left: -50%;
+    width: 200%;
+    height: 200%;
+    background: 
+      conic-gradient(from 0deg at 30% 70%, 
+        transparent 0deg,
+        hsl(200, 100%, 3%) 45deg,
+        transparent 90deg,
+        hsl(220, 95%, 2%) 135deg,
+        transparent 180deg,
+        hsl(210, 100%, 2.5%) 225deg,
+        transparent 270deg,
+        hsl(195, 100%, 2%) 315deg,
+        transparent 360deg
+      );
+    opacity: 0.08;
+    pointer-events: none;
+    z-index: 0;
+    animation: cosmic-rotation 30s linear infinite;
+  }
+
+  @keyframes aurora-flow {
+    0%, 100% { transform: translateX(-5%) translateY(-5%) scale(1); }
+    25% { transform: translateX(5%) translateY(5%) scale(1.1); }
+    50% { transform: translateX(-3%) translateY(7%) scale(0.95); }
+    75% { transform: translateX(7%) translateY(-3%) scale(1.05); }
+  }
+
+  @keyframes cosmic-rotation {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
   }
 
   /* تحسين مظهر البطاقات */
