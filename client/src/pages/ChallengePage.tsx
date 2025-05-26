@@ -415,11 +415,50 @@ const ChallengePage = () => {
   };
 
   return (
-    <div className="container py-8">
-      <h1 className="text-3xl font-bold mb-2 text-center">تحديات وألعاب قدراتك</h1>
-      <p className="text-muted-foreground mb-8 text-center">
-        اختبر نفسك في سلسلة من التحديات المتدرجة في الصعوبة واكسب النقاط
-      </p>
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100 dark:from-slate-950 dark:via-blue-950 dark:to-indigo-950">
+      {/* Header Section with Enhanced Design */}
+      <div className="relative overflow-hidden bg-gradient-to-r from-blue-600 via-purple-600 to-indigo-600 py-20">
+        <div className="absolute inset-0 bg-[radial-gradient(circle_500px_at_50%_200px,rgba(255,255,255,0.1),transparent)]"></div>
+        <div className="absolute inset-0">
+          {[...Array(20)].map((_, i) => (
+            <div
+              key={i}
+              className="absolute w-2 h-2 bg-white/20 rounded-full animate-float"
+              style={{
+                top: `${Math.random() * 100}%`,
+                left: `${Math.random() * 100}%`,
+                animationDelay: `${Math.random() * 5}s`,
+                animationDuration: `${3 + Math.random() * 2}s`,
+              }}
+            />
+          ))}
+        </div>
+        
+        <div className="container relative z-10 text-center">
+          <div className="flex justify-center mb-6">
+            <div className="relative">
+              <TrophyIcon className="h-20 w-20 text-yellow-300 animate-bounce" />
+              <div className="absolute inset-0 h-20 w-20 bg-yellow-300/30 rounded-full animate-ping"></div>
+            </div>
+          </div>
+          <h1 className="text-5xl md:text-7xl font-black text-white mb-4 animate-fade-in-down">
+            🏆 تحديات قدراتك
+          </h1>
+          <p className="text-xl md:text-2xl text-blue-100 mb-8 max-w-3xl mx-auto animate-fade-in-up">
+            اختبر نفسك في سلسلة من التحديات المتدرجة واكسب النقاط والإنجازات
+          </p>
+          <div className="flex justify-center gap-4">
+            <div className="bg-white/20 backdrop-blur-sm rounded-full px-6 py-3 border border-white/30">
+              <span className="text-white font-semibold">🎮 {challengeLevels.length} تحدي</span>
+            </div>
+            <div className="bg-white/20 backdrop-blur-sm rounded-full px-6 py-3 border border-white/30">
+              <span className="text-white font-semibold">⭐ نقاط لا محدودة</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div className="container py-8">
 
       {user && (
         <Card className="mb-8 bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-950/30 dark:to-indigo-950/30 border-2 border-primary/20">
@@ -451,93 +490,180 @@ const ChallengePage = () => {
         </Card>
       )}
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-        {enabledLevels.map((level) => (
-          <Card 
-            key={level.id} 
-            className={`relative overflow-hidden border-2 transition-all duration-300 hover:shadow-lg ${
-              level.enabled ? level.color : "bg-gray-100 border-gray-300 opacity-75"
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
+        {enabledLevels.map((level, index) => (
+          <div
+            key={level.id}
+            className={`group relative transform hover:scale-105 transition-all duration-500 ${
+              level.enabled ? 'hover:-rotate-1' : ''
             }`}
+            style={{
+              animation: `float ${3 + index * 0.3}s ease-in-out infinite`,
+              animationDelay: `${index * 0.2}s`
+            }}
           >
+            <Card 
+              className={`relative overflow-hidden border-2 backdrop-blur-sm transition-all duration-500 hover:shadow-2xl hover:shadow-blue-500/25 ${
+                level.enabled 
+                  ? `${level.color} border-transparent hover:border-white/50 shadow-lg` 
+                  : "bg-slate-200/80 border-slate-300 opacity-60 dark:bg-slate-800/60 dark:border-slate-700"
+              }`}
+            >
             {!level.enabled && (
-              <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/50 z-10">
-                <LockIcon className="w-10 h-10 text-white mb-2" />
-                <p className="text-white font-semibold text-center px-4 mb-1 text-lg">
-                  مستوى مغلق
-                </p>
-                {level.requiredPoints && user && user.points < level.requiredPoints && (
-                  <p className="text-white/90 text-center text-sm px-6">
-                    تحتاج {level.requiredPoints - user.points} نقطة إضافية
+              <div className="absolute inset-0 flex flex-col items-center justify-center bg-gradient-to-br from-slate-900/80 via-blue-900/70 to-purple-900/80 backdrop-blur-sm z-10 border-2 border-dashed border-slate-400/50 rounded-lg">
+                <div className="relative mb-4">
+                  <LockIcon className="w-12 h-12 text-slate-300 animate-pulse" />
+                  <div className="absolute inset-0 w-12 h-12 bg-slate-300/20 rounded-full animate-ping"></div>
+                </div>
+                <div className="text-center px-4 space-y-2">
+                  <p className="text-white font-bold text-lg flex items-center justify-center gap-2">
+                    <span>🔒</span> مستوى مغلق
                   </p>
-                )}
-                {level.requiredPoints && level.id > 2 && (
-                  <p className="text-white/90 text-center text-sm px-6 mt-2">
-                    اكسب المزيد من النقاط للوصول إلى {level.requiredPoints} نقطة
-                  </p>
-                )}
+                  {level.requiredPoints && user && user.points < level.requiredPoints && (
+                    <div className="bg-slate-800/60 rounded-lg p-3 border border-slate-600/50">
+                      <p className="text-slate-200 text-sm mb-1">
+                        تحتاج <span className="font-bold text-yellow-400">{level.requiredPoints - user.points}</span> نقطة إضافية
+                      </p>
+                      <div className="w-full bg-slate-700 rounded-full h-2 mt-2">
+                        <div 
+                          className="bg-gradient-to-r from-blue-400 to-purple-400 h-2 rounded-full transition-all duration-500"
+                          style={{ width: `${Math.min((user.points / level.requiredPoints) * 100, 100)}%` }}
+                        ></div>
+                      </div>
+                    </div>
+                  )}
+                  {level.requiredPoints && level.id > 2 && (
+                    <p className="text-slate-300/80 text-xs italic">
+                      💡 اكمل التحديات السابقة لفتح هذا المستوى
+                    </p>
+                  )}
+                </div>
               </div>
             )}
 
-            <CardHeader>
-              <div className="flex justify-between items-start">
-                <div>
-                  <CardTitle className="text-lg">{level.name}</CardTitle>
-                  <CardDescription>{level.description}</CardDescription>
+            {/* تأثير الضوء للمستويات المفتوحة */}
+            {level.enabled && (
+              <div className="absolute inset-0 bg-gradient-to-br from-white/5 via-transparent to-blue-500/10 opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
+            )}
+
+            <CardHeader className="relative">
+              <div className="flex justify-between items-start mb-4">
+                <div className="flex-1">
+                  <CardTitle className="text-xl font-bold mb-2 group-hover:text-primary transition-colors">
+                    {level.name}
+                  </CardTitle>
+                  <CardDescription className="text-sm leading-relaxed">
+                    {level.description}
+                  </CardDescription>
                 </div>
-                {level.icon}
+                <div className="ml-4 p-3 bg-white/80 dark:bg-slate-800/80 rounded-full shadow-lg group-hover:scale-110 transition-transform duration-300">
+                  {level.icon}
+                </div>
+              </div>
+              
+              {/* شارة المستوى */}
+              <div className="flex gap-2 mb-2">
+                <Badge 
+                  variant="secondary" 
+                  className="bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300"
+                >
+                  مستوى {level.id}
+                </Badge>
+                <Badge 
+                  variant="outline"
+                  className={`${
+                    level.difficulty === "beginner" ? "border-green-500 text-green-600" :
+                    level.difficulty === "intermediate" ? "border-yellow-500 text-yellow-600" :
+                    "border-red-500 text-red-600"
+                  }`}
+                >
+                  {level.difficulty === "beginner" ? "مبتدئ" : 
+                   level.difficulty === "intermediate" ? "متوسط" : "متقدم"}
+                </Badge>
               </div>
             </CardHeader>
 
-            <CardContent>
-              <div className="space-y-3">
-                <div className="flex items-center justify-between text-sm">
-                  <span className="text-muted-foreground">عدد الأسئلة:</span>
-                  <span className="font-medium">{level.questionsCount} سؤال</span>
+            <CardContent className="space-y-4">
+              {/* إحصائيات سريعة */}
+              <div className="grid grid-cols-2 gap-3">
+                <div className="bg-white/50 dark:bg-slate-800/50 p-3 rounded-lg text-center">
+                  <div className="text-2xl font-bold text-blue-600">{level.questionsCount}</div>
+                  <div className="text-xs text-muted-foreground">سؤال</div>
                 </div>
-                <div className="flex items-center justify-between text-sm">
-                  <span className="text-muted-foreground">الوقت:</span>
-                  <span className="font-medium">{level.timeLimit} دقائق</span>
-                </div>
-                <div className="flex items-center justify-between text-sm">
-                  <span className="text-muted-foreground">المستوى:</span>
-                  <span className="font-medium">
-                    {level.difficulty === "beginner" ? "مبتدئ" : 
-                     level.difficulty === "intermediate" ? "متوسط" : "متقدم"}
-                  </span>
-                </div>
-                <div className="flex items-center justify-between text-sm">
-                  <span className="text-muted-foreground">النوع:</span>
-                  <span className="font-medium">
-                    {level.category === "verbal" ? "لفظي" : 
-                     level.category === "quantitative" ? "كمي" : "مختلط"}
-                  </span>
-                </div>
-                <Separator />
-                <div className="flex items-center justify-between text-sm">
-                  <span className="text-muted-foreground">النقاط:</span>
-                  <Badge variant="outline">
-                    <StarIcon className="w-3.5 h-3.5 me-1 text-amber-500" />
-                    <span className="font-bold">{level.points}</span>
-                  </Badge>
+                <div className="bg-white/50 dark:bg-slate-800/50 p-3 rounded-lg text-center">
+                  <div className="text-2xl font-bold text-green-600">{level.timeLimit}</div>
+                  <div className="text-xs text-muted-foreground">دقيقة</div>
                 </div>
               </div>
+
+              {/* تفاصيل التحدي */}
+              <div className="space-y-3">
+                <div className="flex items-center gap-3">
+                  <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
+                  <span className="text-sm">
+                    النوع: <strong>
+                      {level.category === "verbal" ? "لفظي 📝" : 
+                       level.category === "quantitative" ? "كمي 🧮" : "مختلط 🔀"}
+                    </strong>
+                  </span>
+                </div>
+                
+                <div className="flex items-center gap-3">
+                  <div className="w-2 h-2 bg-amber-500 rounded-full"></div>
+                  <span className="text-sm">
+                    المكافأة: <strong className="text-amber-600">{level.points} نقطة ⭐</strong>
+                  </span>
+                </div>
+
+                {level.enabled && (
+                  <div className="flex items-center gap-3">
+                    <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+                    <span className="text-sm text-green-600 font-medium">
+                      ✅ جاهز للبدء
+                    </span>
+                  </div>
+                )}
+              </div>
+
+              <Separator className="my-4" />
+              
+              {/* شريط التقدم للمستوى */}
+              {level.enabled && (
+                <div className="space-y-2">
+                  <div className="flex justify-between text-xs">
+                    <span>التقدم المتوقع</span>
+                    <span>⭐ {Math.floor(level.points * 0.7)}-{level.points} نقطة</span>
+                  </div>
+                  <Progress value={75} className="h-2" />
+                </div>
+              )}
             </CardContent>
 
-            <CardFooter>
+            <CardFooter className="bg-white/30 dark:bg-slate-800/30">
               <Button 
-                className="w-full" 
-                variant={level.enabled ? "default" : "outline"}
+                className={`w-full group/btn font-bold text-lg py-6 ${
+                  level.enabled 
+                    ? "bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-300" 
+                    : "bg-slate-400 text-slate-600 cursor-not-allowed"
+                }`}
                 disabled={!level.enabled}
                 onClick={() => startChallenge(level.id)}
               >
                 {level.enabled ? (
                   <>
-                    ابدأ التحدي
-                    <ArrowRightCircleIcon className="w-4 h-4 mr-2" />
+                    <span className="mr-3">🚀</span>
+                    ابدأ التحدي الآن
+                    <ArrowRightCircleIcon className="w-5 h-5 mr-2 group-hover/btn:translate-x-1 transition-transform" />
                   </>
-                ) : "مغلق"}
+                ) : (
+                  <>
+                    <LockIcon className="w-5 h-5 mr-2" />
+                    مستوى مغلق
+                  </>
+                )}
               </Button>
             </CardFooter>
+          </div>
           </Card>
         ))}
       </div>

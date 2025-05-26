@@ -378,10 +378,39 @@ const AbilitiesTestPage: React.FC = () => {
 
   // Render for Test Selection View
   const renderTestSelection = () => (
-    <div className="p-6 space-y-8">
-      <div className="max-w-4xl mx-auto">
-        <h1 className="text-3xl font-bold mb-2">اختبر قدراتك</h1>
-        <p className="text-muted-foreground mb-6">اختر نوع الاختبار والمستوى لتحسين مهاراتك واكتساب النقاط</p>
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 dark:from-slate-950 dark:via-blue-950 dark:to-indigo-950">
+      {/* Hero Section */}
+      <div className="relative overflow-hidden bg-gradient-to-r from-blue-600 via-purple-600 to-indigo-600 py-16">
+        <div className="absolute inset-0 bg-[radial-gradient(circle_400px_at_50%_300px,rgba(255,255,255,0.1),transparent)]"></div>
+        <div className="absolute inset-0">
+          {[...Array(15)].map((_, i) => (
+            <div
+              key={i}
+              className="absolute w-1 h-1 bg-white/30 rounded-full animate-float"
+              style={{
+                top: `${Math.random() * 100}%`,
+                left: `${Math.random() * 100}%`,
+                animationDelay: `${Math.random() * 3}s`,
+              }}
+            />
+          ))}
+        </div>
+        
+        <div className="container relative z-10 text-center">
+          <div className="flex justify-center mb-6">
+            <BrainCircuitIcon className="h-16 w-16 text-yellow-300 animate-pulse" />
+          </div>
+          <h1 className="text-4xl md:text-6xl font-black text-white mb-4">
+            🧠 اختبر قدراتك
+          </h1>
+          <p className="text-lg md:text-xl text-blue-100 mb-8 max-w-2xl mx-auto">
+            اختر نوع الاختبار والمستوى لتحسين مهاراتك واكتساب النقاط
+          </p>
+        </div>
+      </div>
+
+      <div className="p-6 space-y-8">
+        <div className="max-w-4xl mx-auto">
 
         {user && (
           <Card className="mb-8">
@@ -431,51 +460,90 @@ const AbilitiesTestPage: React.FC = () => {
           </div>
         </div>
 
-        <div className="grid md:grid-cols-2 gap-6">
-          <Card className="overflow-hidden">
-            <div className="bg-blue-600 h-2"></div>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <BookOpenIcon className="h-5 w-5" />
-                القدرات اللفظية
+        <div className="grid md:grid-cols-2 gap-8">
+          <Card className="overflow-hidden group transform hover:scale-105 transition-all duration-500 hover:shadow-2xl hover:shadow-blue-500/25 border-2 border-transparent hover:border-blue-300 bg-gradient-to-br from-white via-blue-50 to-blue-100 dark:from-slate-900 dark:via-blue-950 dark:to-indigo-950">
+            <div className="bg-gradient-to-r from-blue-500 to-cyan-500 h-3 relative">
+              <div className="absolute inset-0 bg-white/30 animate-shimmer"></div>
+            </div>
+            <CardHeader className="relative">
+              <div className="absolute top-4 right-4">
+                <div className="w-12 h-12 bg-gradient-to-br from-blue-400 to-cyan-400 rounded-full flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform">
+                  <BookOpenIcon className="h-6 w-6 text-white" />
+                </div>
+              </div>
+              <CardTitle className="text-2xl font-bold mb-3 text-blue-800 dark:text-blue-200 group-hover:text-blue-600 transition-colors">
+                📝 القدرات اللفظية
               </CardTitle>
-              <CardDescription>
-                اختبارات تركز على فهم اللغة والمفردات والقدرة اللغوية
+              <CardDescription className="text-base leading-relaxed text-slate-600 dark:text-slate-300">
+                اختبارات تركز على فهم اللغة والمفردات والقدرة اللغوية مع تحليل النصوص
               </CardDescription>
             </CardHeader>
-            <CardContent>
-              <ul className="space-y-2 mb-4">
-                <li className="flex items-start gap-2">
-                  <CheckCircle2 className="h-5 w-5 text-green-500 mt-0.5" />
-                  <span>تشابه واختلاف الكلمات والجمل</span>
+            <CardContent className="space-y-4">
+              <ul className="space-y-3 mb-6">
+                <li className="flex items-start gap-3 group/item">
+                  <div className="mt-1 w-6 h-6 bg-gradient-to-br from-green-400 to-emerald-500 rounded-full flex items-center justify-center shadow-sm">
+                    <CheckCircle2 className="h-4 w-4 text-white" />
+                  </div>
+                  <span className="text-sm group-hover/item:text-blue-600 transition-colors">
+                    🔄 تشابه واختلاف الكلمات والجمل
+                  </span>
                 </li>
-                <li className="flex items-start gap-2">
-                  <CheckCircle2 className="h-5 w-5 text-green-500 mt-0.5" />
-                  <span>فهم النصوص واستخلاص النتائج</span>
+                <li className="flex items-start gap-3 group/item">
+                  <div className="mt-1 w-6 h-6 bg-gradient-to-br from-green-400 to-emerald-500 rounded-full flex items-center justify-center shadow-sm">
+                    <CheckCircle2 className="h-4 w-4 text-white" />
+                  </div>
+                  <span className="text-sm group-hover/item:text-blue-600 transition-colors">
+                    📖 فهم النصوص واستخلاص النتائج
+                  </span>
                 </li>
-                <li className="flex items-start gap-2">
-                  <CheckCircle2 className="h-5 w-5 text-green-500 mt-0.5" />
-                  <span>القياس اللفظي والمنطق</span>
+                <li className="flex items-start gap-3 group/item">
+                  <div className="mt-1 w-6 h-6 bg-gradient-to-br from-green-400 to-emerald-500 rounded-full flex items-center justify-center shadow-sm">
+                    <CheckCircle2 className="h-4 w-4 text-white" />
+                  </div>
+                  <span className="text-sm group-hover/item:text-blue-600 transition-colors">
+                    🧠 القياس اللفظي والمنطق
+                  </span>
                 </li>
               </ul>
 
-              <Badge className={cn("mb-2", getDifficultyColor(currentDifficulty))}>
-                {currentDifficulty === "beginner" ? "مستوى مبتدئ" : 
-                 currentDifficulty === "intermediate" ? "مستوى متوسط" : "مستوى متقدم"}
-              </Badge>
+              <div className="bg-white/60 dark:bg-slate-800/60 p-4 rounded-lg space-y-3">
+                <Badge className={cn("text-sm px-3 py-1", getDifficultyColor(currentDifficulty))}>
+                  {currentDifficulty === "beginner" ? "🟢 مستوى مبتدئ" : 
+                   currentDifficulty === "intermediate" ? "🟡 مستوى متوسط" : "🔴 مستوى متقدم"}
+                </Badge>
 
-              <div className="text-sm text-muted-foreground">
-                10 أسئلة | {currentDifficulty === "beginner" ? "5 دقائق" : 
-                           currentDifficulty === "intermediate" ? "4 دقائق" : "3 دقائق"}
+                <div className="grid grid-cols-2 gap-3 text-sm">
+                  <div className="text-center">
+                    <div className="font-bold text-blue-600">10</div>
+                    <div className="text-muted-foreground">أسئلة</div>
+                  </div>
+                  <div className="text-center">
+                    <div className="font-bold text-green-600">
+                      {currentDifficulty === "beginner" ? "5" : 
+                       currentDifficulty === "intermediate" ? "4" : "3"}
+                    </div>
+                    <div className="text-muted-foreground">دقائق</div>
+                  </div>
+                </div>
               </div>
             </CardContent>
-            <CardFooter>
+            <CardFooter className="bg-gradient-to-r from-blue-50 to-cyan-50 dark:from-blue-950/50 dark:to-cyan-950/50">
               <Button 
-                className="w-full" 
+                className="w-full group/btn font-bold text-lg py-6 bg-gradient-to-r from-blue-500 to-cyan-500 hover:from-blue-600 hover:to-cyan-600 text-white shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-300" 
                 onClick={() => startTest("verbal")}
                 disabled={loading}
               >
-                {loading ? "جاري التحميل..." : "ابدأ الاختبار"}
+                {loading ? (
+                  <>
+                    <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-3"></div>
+                    جاري التحميل...
+                  </>
+                ) : (
+                  <>
+                    🚀 ابدأ الاختبار اللفظي
+                    <ArrowRightIcon className="w-5 h-5 mr-2 group-hover/btn:translate-x-1 transition-transform" />
+                  </>
+                )}
               </Button>
             </CardFooter>
           </Card>
@@ -664,33 +732,129 @@ const AbilitiesTestPage: React.FC = () => {
     const performance = getPerformanceData();
 
     return (
-      <div className="container py-6 max-w-4xl">
-        <Card className="mb-6 overflow-hidden">
-          <div className={cn(
-            "h-2",
-            performance.percentage >= 70 ? "bg-green-500" : 
-            performance.percentage >= 50 ? "bg-yellow-500" : "bg-red-500"
-          )}></div>
-          <CardHeader className="text-center">
-            <div className="mb-2 mx-auto">
-              <TrophyIcon className={cn(
-                "h-12 w-12 mx-auto",
-                performance.percentage >= 70 ? "text-yellow-500" : 
-                performance.percentage >= 50 ? "text-blue-500" : "text-gray-400"
-              )} />
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 dark:from-slate-950 dark:via-blue-950 dark:to-indigo-950 py-8">
+        <div className="container max-w-4xl">
+          {/* Header with animated celebration */}
+          <div className="text-center mb-8 relative">
+            <div className="absolute inset-0 flex justify-center items-center">
+              {performance.percentage >= 70 && (
+                <>
+                  {[...Array(20)].map((_, i) => (
+                    <div
+                      key={i}
+                      className="absolute w-2 h-2 bg-yellow-400 rounded-full animate-bounce"
+                      style={{
+                        top: `${Math.random() * 100}%`,
+                        left: `${Math.random() * 100}%`,
+                        animationDelay: `${Math.random() * 2}s`,
+                        animationDuration: `${1 + Math.random()}s`
+                      }}
+                    />
+                  ))}
+                </>
+              )}
             </div>
-            <CardTitle className="text-2xl">نتيجة الاختبار</CardTitle>
-            <CardDescription>
-              {currentTestType === "verbal" ? "القدرات اللفظية" : "القدرات الكمية"} - {
-                currentDifficulty === "beginner" ? "المستوى المبتدئ" : 
-                currentDifficulty === "intermediate" ? "المستوى المتوسط" : "المستوى المتقدم"
+            
+            <div className="relative z-10">
+              <div className="mb-6">
+                <TrophyIcon className={cn(
+                  "h-20 w-20 mx-auto animate-bounce",
+                  performance.percentage >= 80 ? "text-yellow-500" : 
+                  performance.percentage >= 60 ? "text-blue-500" : 
+                  performance.percentage >= 40 ? "text-orange-500" : "text-gray-400"
+                )} />
+              </div>
+              <h1 className="text-4xl md:text-6xl font-black mb-4 bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+                🎉 نتيجة اختبارك
+              </h1>
+              <p className="text-xl text-muted-foreground">
+                {currentTestType === "verbal" ? "اختبار القدرات اللفظية" : "اختبار القدرات الكمية"}
+              </p>
+            </div>
+          </div>
+
+          <Card className="mb-6 overflow-hidden border-2 shadow-2xl">
+            <div className={cn(
+              "h-3 relative",
+              performance.percentage >= 70 ? "bg-gradient-to-r from-green-400 to-emerald-500" : 
+              performance.percentage >= 50 ? "bg-gradient-to-r from-yellow-400 to-orange-500" : 
+              "bg-gradient-to-r from-red-400 to-pink-500"
+            )}>
+              <div className="absolute inset-0 bg-white/30 animate-shimmer"></div>
+            </div>
+          <CardHeader className="text-center bg-gradient-to-br from-white via-blue-50 to-purple-50 dark:from-slate-900 dark:via-blue-950 dark:to-purple-950 pb-8">
+            <CardTitle className="text-3xl font-bold mb-4">
+              {performance.percentage >= 80 ? "🏆 نتيجة ممتازة!" :
+               performance.percentage >= 60 ? "🌟 نتيجة جيدة جداً!" :
+               performance.percentage >= 40 ? "👍 نتيجة جيدة!" : "💪 يمكنك التحسن!"}
+            </CardTitle>
+            <CardDescription className="text-lg">
+              {currentTestType === "verbal" ? "اختبار القدرات اللفظية 📝" : "اختبار القدرات الكمية 🧮"} - {
+                currentDifficulty === "beginner" ? "المستوى المبتدئ 🟢" : 
+                currentDifficulty === "intermediate" ? "المستوى المتوسط 🟡" : "المستوى المتقدم 🔴"
               }
             </CardDescription>
           </CardHeader>
-          <CardContent>
-            <div className="text-center mb-6">
-              <div className="text-5xl font-bold mb-2">{score}/{questions.length}</div>
-              <div className="text-xl text-muted-foreground">{performance.message}</div>
+          
+          <CardContent className="space-y-8">
+            {/* النتيجة الرئيسية */}
+            <div className="text-center relative">
+              <div className="inline-block relative">
+                <div className="text-8xl font-black mb-4 bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+                  {score}/{questions.length}
+                </div>
+                <div className="absolute -inset-4 bg-gradient-to-r from-blue-500/20 to-purple-500/20 blur-xl rounded-full"></div>
+              </div>
+              
+              <div className="mb-6">
+                <div className={cn(
+                  "text-2xl font-bold mb-2",
+                  performance.percentage >= 70 ? "text-green-600" :
+                  performance.percentage >= 50 ? "text-yellow-600" : "text-red-600"
+                )}>
+                  {performance.percentage.toFixed(1)}% 
+                  {performance.percentage >= 70 ? " 🎉" :
+                   performance.percentage >= 50 ? " 👏" : " 💪"}
+                </div>
+                <div className="text-xl text-muted-foreground">{performance.message}</div>
+              </div>
+
+              {/* دائرة التقدم */}
+              <div className="flex justify-center mb-6">
+                <div className="relative w-32 h-32">
+                  <svg className="w-32 h-32 transform -rotate-90" viewBox="0 0 120 120">
+                    <circle
+                      cx="60"
+                      cy="60"
+                      r="54"
+                      stroke="currentColor"
+                      strokeWidth="12"
+                      fill="transparent"
+                      className="text-gray-200 dark:text-gray-700"
+                    />
+                    <circle
+                      cx="60"
+                      cy="60"
+                      r="54"
+                      stroke="currentColor"
+                      strokeWidth="12"
+                      fill="transparent"
+                      strokeDasharray={`${performance.percentage * 3.39} 339`}
+                      className={cn(
+                        "transition-all duration-1000 ease-out",
+                        performance.percentage >= 70 ? "text-green-500" :
+                        performance.percentage >= 50 ? "text-yellow-500" : "text-red-500"
+                      )}
+                      strokeLinecap="round"
+                    />
+                  </svg>
+                  <div className="absolute inset-0 flex items-center justify-center">
+                    <span className="text-xl font-bold">
+                      {performance.percentage.toFixed(0)}%
+                    </span>
+                  </div>
+                </div>
+              </div>
             </div>
 
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
