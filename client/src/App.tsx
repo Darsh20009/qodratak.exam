@@ -1515,7 +1515,6 @@ function App() {
     
       <div 
         className="fixed inset-0 z-50 flex items-center justify-center bg-gradient-to-br from-slate-950 via-blue-950 to-indigo-950 overflow-hidden"
-        jsx="true"
       >
         {/* خلفية متحركة متقدمة */}
         <div className="absolute inset-0">

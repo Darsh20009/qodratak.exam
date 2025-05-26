@@ -29,6 +29,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Separator } from "@/components/ui/separator";
 import { 
+  ArrowRight as ArrowRightIcon,
   BookIcon, 
   BookOpenIcon, 
   BrainCircuitIcon, 
