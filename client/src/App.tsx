@@ -189,7 +189,7 @@ function MainLayout({ children }: { children: React.ReactNode }) {
                 )}
               >
                 <item.icon className="h-5 w-5" />
-                <span className="text-xs mt-1 text-center leading-tight">{item.label}</span>
+                <span className="text-xs mt-1 text-center leading-tight">{item.name}</span>
               </Link>
             ))}
           </div>
