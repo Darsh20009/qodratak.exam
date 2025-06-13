@@ -234,6 +234,20 @@ function MainLayout({ children }: { children: React.ReactNode }) {
         <main className="flex-1 overflow-y-auto pb-16 md:pb-0">
           {children}
         </main>
+              {/* Tawk.to Widget */}
+      <script dangerouslySetInnerHTML={{
+        __html: `
+          var Tawk_API=Tawk_API||{}, Tawk_LoadStart=new Date();
+          (function(){
+          var s1=document.createElement("script"),s0=document.getElementsByTagName("script")[0];
+          s1.async=true;
+          s1.src='https://embed.tawk.to/6848549398d0591910f17c9a/1itd8ko6u';
+          s1.charset='UTF-8';
+          s1.setAttribute('crossorigin','*');
+          s0.parentNode.insertBefore(s1,s0);
+          })();
+        `,
+      }} />
       </div>
     </div>
   );
@@ -373,7 +387,7 @@ function App() {
         <div className="absolute inset-0">
           {/* تأثير الشفق القطبي */}
           <div className="absolute inset-0 bg-gradient-to-br from-blue-900/30 via-purple-900/20 to-indigo-900/30 animate-pulse"></div>
-          
+
           {/* جسيمات ضوئية متحركة */}
           <div className="absolute top-10 left-10 w-2 h-2 bg-blue-400 rounded-full animate-ping opacity-60"></div>
           <div className="absolute top-20 right-20 w-1 h-1 bg-purple-400 rounded-full animate-pulse delay-1000 opacity-80"></div>
@@ -381,7 +395,7 @@ function App() {
           <div className="absolute bottom-10 right-10 w-2 h-2 bg-cyan-400 rounded-full animate-ping delay-2000 opacity-50"></div>
           <div className="absolute top-1/3 left-1/4 w-1 h-1 bg-pink-400 rounded-full animate-pulse delay-1500 opacity-90"></div>
           <div className="absolute top-2/3 right-1/3 w-2 h-2 bg-violet-400 rounded-full animate-bounce delay-700 opacity-60"></div>
-          
+
           {/* تأثير الشبكة المضيئة */}
           <div className="absolute inset-0 bg-[radial-gradient(circle_800px_at_50%_200px,rgba(59,130,246,0.1),transparent)] animate-pulse"></div>
           <div className="absolute inset-0 bg-[radial-gradient(circle_600px_at_80%_80%,rgba(168,85,247,0.08),transparent)] animate-pulse delay-1000"></div>
@@ -395,16 +409,16 @@ function App() {
             {/* هالة ضوئية خارجية */}
             <div className="absolute inset-0 w-40 h-40 bg-gradient-to-r from-blue-500/30 via-purple-500/30 to-pink-500/30 rounded-full blur-xl animate-spin-slow"></div>
             <div className="absolute inset-2 w-36 h-36 bg-gradient-to-r from-cyan-400/20 via-blue-400/20 to-indigo-400/20 rounded-full blur-lg animate-spin-reverse"></div>
-            
+
             {/* الأيقونة المركزية */}
             <div className="relative w-32 h-32 mx-auto bg-gradient-to-br from-blue-600 via-purple-600 to-indigo-700 rounded-3xl flex items-center justify-center shadow-2xl shadow-blue-500/50 border border-blue-400/30 backdrop-blur-sm">
               <div className="absolute inset-0 bg-gradient-to-br from-white/20 to-transparent rounded-3xl"></div>
               <div className="text-5xl animate-pulse">🧠</div>
-              
+
               {/* تأثير البريق */}
               <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent rounded-3xl animate-shimmer"></div>
             </div>
-            
+
             {/* جسيمات دائرية حول الأيقونة */}
             <div className="absolute -top-2 -right-2 w-4 h-4 bg-gradient-to-r from-yellow-400 to-orange-500 rounded-full animate-bounce opacity-80"></div>
             <div className="absolute -bottom-2 -left-2 w-3 h-3 bg-gradient-to-r from-pink-400 to-rose-500 rounded-full animate-ping opacity-70"></div>
@@ -423,7 +437,7 @@ function App() {
                 منصة قدراتك
               </div>
             </div>
-            
+
             <div className="relative">
               <p className="text-xl text-slate-200 font-medium tracking-wide opacity-90">
                 رحلتك نحو التميز والإبداع
@@ -432,7 +446,7 @@ function App() {
                 رحلتك نحو التميز والإبداع
               </div>
             </div>
-            
+
             {/* شعار فرعي أنيق */}
             <div className="flex items-center justify-center space-x-2 text-slate-300">
               <div className="w-8 h-px bg-gradient-to-r from-transparent via-blue-400 to-transparent"></div>
@@ -446,16 +460,16 @@ function App() {
             <div className="relative">
               {/* الخلفية المضيئة */}
               <div className="absolute inset-0 bg-gradient-to-r from-blue-500/20 via-purple-500/20 to-pink-500/20 rounded-full blur-sm"></div>
-              
+
               {/* شريط التحميل الرئيسي */}
               <div className="relative w-full h-3 bg-slate-800/50 rounded-full overflow-hidden border border-blue-400/30 backdrop-blur-sm">
                 <div className="h-full bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500 rounded-full animate-loading-bar shadow-lg shadow-blue-500/50"></div>
-                
+
                 {/* تأثير البريق المتحرك */}
                 <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent animate-shimmer"></div>
               </div>
             </div>
-            
+
             {/* نص التحميل الأنيق */}
             <div className="flex items-center justify-center space-x-3">
               <div className="flex space-x-1">
@@ -474,34 +488,34 @@ function App() {
             0% { width: 0%; }
             100% { width: 100%; }
           }
-          
+
           @keyframes shimmer {
             0% { transform: translateX(-100%); }
             100% { transform: translateX(100%); }
           }
-          
+
           @keyframes spin-slow {
             from { transform: rotate(0deg); }
             to { transform: rotate(360deg); }
           }
-          
+
           @keyframes spin-reverse {
             from { transform: rotate(360deg); }
             to { transform: rotate(0deg); }
           }
-          
+
           .animate-loading-bar {
             animation: loading-bar 2s ease-in-out;
           }
-          
+
           .animate-shimmer {
             animation: shimmer 3s ease-in-out infinite;
           }
-          
+
           .animate-spin-slow {
             animation: spin-slow 8s linear infinite;
           }
-          
+
           .animate-spin-reverse {
             animation: spin-reverse 12s linear infinite;
           }
