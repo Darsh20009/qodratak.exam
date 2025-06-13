@@ -204,7 +204,7 @@ const MistakeChallengeModal: React.FC<MistakeChallengeModalProps> = ({
                 </p>
               </div>
             </div>
-          </div>
+          </motion.div>
         </div>
       </DialogContent>
     </Dialog>
