@@ -12,9 +12,12 @@ import {
   LockIcon,
   TrendingUpIcon,
   Users2Icon,
-  BookOpenIcon
+  BookOpenIcon,
+  AlertTriangle,
+  Target
 } from "lucide-react";
 import { AchievementsDisplay } from "@/components/AchievementsDisplay";
+import MistakeChallengeModal from "@/components/MistakeChallengeModal";
 import { Button } from "@/components/ui/button";
 import { Spinner } from "@/components/ui/spinner";
 import { 
@@ -231,6 +234,7 @@ const ChallengePage = () => {
   const [, navigate] = useLocation();
   const [selectedLevel, setSelectedLevel] = useState<number | null>(null);
   const [isBoostingPoints, setIsBoostingPoints] = useState(false);
+  const [isMistakeChallengeOpen, setIsMistakeChallengeOpen] = useState(false);
 
   // طلب جلب بيانات المستخدم
   const { data: user } = useQuery({
@@ -349,6 +353,26 @@ const ChallengePage = () => {
     if (pointsGained >= pointsNeeded) return 100;
 
     return Math.round((pointsGained / pointsNeeded) * 100);
+  };
+
+  // التعامل مع تحدي الأخطاء
+  const handleMistakeChallengeSelect = (timed: boolean) => {
+    // هنا يمكن إضافة منطق بدء تحدي الأخطاء
+    console.log('Starting mistake challenge with timed mode:', timed);
+    
+    // مؤقتاً، سنحفظ إعدادات التحدي
+    localStorage.setItem('mistakeChallengeMode', JSON.stringify({
+      timed,
+      timePerMistake: timed ? 60 : null // 60 ثانية لكل خطأ
+    }));
+
+    toast({
+      title: timed ? "تحدي السرعة مُفعل" : "التحدي المفتوح مُفعل",
+      description: timed ? "لديك دقيقة واحدة لكل خطأ" : "راجع أخطاءك بدون قيود زمنية",
+    });
+
+    // انتقل إلى صفحة مراجعة الأخطاء (يمكن إنشاؤها لاحقاً)
+    // navigate("/mistake-review");
   };
 
   // دالة لزيادة نقاط المستخدم بشكل سريع للتجربة
@@ -606,6 +630,41 @@ const ChallengePage = () => {
         </CardContent>
       </Card>
 
+      {/* تحدي الأخطاء */}
+      <Card className="mt-12 bg-gradient-to-r from-red-50 to-orange-50 dark:from-red-950/30 dark:to-orange-950/30 border-2 border-red-200 dark:border-red-800">
+        <CardHeader>
+          <CardTitle className="text-2xl font-bold flex items-center gap-3">
+            <AlertTriangle className="w-8 h-8 text-red-600" />
+            تحدي مراجعة الأخطاء
+          </CardTitle>
+          <CardDescription>
+            راجع أخطاءك السابقة وتعلم منها بطريقتين مختلفتين
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="flex flex-col sm:flex-row gap-4 items-center justify-between">
+            <div className="flex-1">
+              <p className="text-muted-foreground mb-4">
+                استفد من أخطائك السابقة واختبر نفسك عليها مرة أخرى. 
+                اختر بين النمط المفتوح للتعلم العميق أو تحدي السرعة للحصول على نقاط إضافية.
+              </p>
+              <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                <Clock className="w-4 h-4" />
+                <span>متوفر نمطان: بدون وقت أو دقيقة لكل خطأ</span>
+              </div>
+            </div>
+            <Button
+              onClick={() => setIsMistakeChallengeOpen(true)}
+              className="bg-gradient-to-r from-red-600 to-orange-600 hover:from-red-700 hover:to-orange-700 text-white px-8 py-3 text-lg shadow-lg hover:shadow-xl transition-all duration-300"
+              size="lg"
+            >
+              <Target className="w-5 h-5 mr-2" />
+              ابدأ تحدي الأخطاء
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+
       {/* زر تعزيز النقاط للتجربة */}
       <div className="flex justify-center mt-10">
         <Button
@@ -630,6 +689,13 @@ const ChallengePage = () => {
       <p className="text-center text-muted-foreground text-sm mt-2">
         اضغط هنا لإضافة 500 نقطة لفتح المزيد من المستويات (للتجربة)
       </p>
+
+      {/* نافذة تحدي الأخطاء */}
+      <MistakeChallengeModal
+        isOpen={isMistakeChallengeOpen}
+        onClose={() => setIsMistakeChallengeOpen(false)}
+        onSelectMode={handleMistakeChallengeSelect}
+      />
     </div>
   );
 };
