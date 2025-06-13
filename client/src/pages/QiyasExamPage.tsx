@@ -54,7 +54,8 @@ import {
   AlertTriangle, // For warnings or important notes
   MessageSquare, // For explanations or feedback
   Check, // For correct items
-  X // For incorrect items
+  X, // For incorrect items
+  Infinity // For untimed option
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useIsMobile } from "@/hooks/use-mobile";
@@ -101,6 +102,13 @@ interface ProcessedExamQuestion extends ExamQuestion {
   _isNonScored?: boolean;
   _globalIndex?: number;
 }
+
+// Type for questions passed to challenge generator
+type ChallengeQuestionData = ProcessedExamQuestion & {
+    userAnswerIndex: number | undefined;
+    sectionName: string;
+    wasUnanswered: boolean;
+};
 
 
 // Mock data for Qiyas exams
@@ -267,6 +275,9 @@ const QiyasExamPage: React.FC = () => {
   const [prayerBreakTimeLeft, setPrayerBreakTimeLeft] = useState(900); // 15 minutes in seconds
   const [isReviewDialogOpen, setIsReviewDialogOpen] = useState(false); // State for review dialog
   const [isFinalReviewDialogOpen, setIsFinalReviewDialogOpen] = useState(false); // State for final review dialog
+  const [isMistakeChallengeDialogOpen, setIsMistakeChallengeDialogOpen] = useState(false);
+  const [challengeQuestions, setChallengeQuestions] = useState<ChallengeQuestionData[]>([]);
+
 
 
   useEffect(() => {
@@ -1022,6 +1033,67 @@ const QiyasExamPage: React.FC = () => {
     </Dialog>
   );
 
+    const renderMistakeChallengeDialog = () => (
+    <Dialog open={isMistakeChallengeDialogOpen} onOpenChange={setIsMistakeChallengeDialogOpen}>
+      <DialogContent className="font-arabic dark:bg-slate-900 border-slate-700 max-w-lg p-0 overflow-hidden shadow-2xl rounded-2xl">
+        {/* Creative Header */}
+        <div className="bg-gradient-to-br from-red-600 via-rose-600 to-orange-500 p-8 text-center text-white relative">
+            <div className="absolute top-0 left-0 w-full h-full bg-black/10 mix-blend-multiply opacity-50"></div>
+            <div className="absolute -top-1/4 -right-1/4 w-60 h-60 bg-white/5 rounded-full filter blur-3xl opacity-70 animate-pulse-slow"></div>
+            <div className="absolute -bottom-1/4 -left-1/4 w-60 h-60 bg-white/5 rounded-full filter blur-3xl opacity-80 animate-pulse-slow animation-delay-2000"></div>
+            <Target className="h-20 w-20 mx-auto mb-5 text-yellow-300 drop-shadow-lg transform transition-transform hover:scale-110 duration-300" />
+            <DialogTitle className="text-4xl font-extrabold mb-3 drop-shadow-sm">تحدي الأخطاء</DialogTitle>
+            <DialogDescription className="text-xl opacity-90 leading-relaxed">
+                لديك <strong className="font-bold underline decoration-yellow-300">{challengeQuestions.length}</strong> سؤال للمراجعة. اختر طريقتك للمحاولة مرة أخرى!
+            </DialogDescription>
+        </div>
+
+        {/* Content and Options */}
+        <div className="p-6 md:p-8 space-y-5 bg-white dark:bg-slate-800">
+            <div className="p-5 bg-slate-100 dark:bg-slate-700/50 border-r-4 border-red-500 dark:border-red-400 rounded-lg flex items-start gap-4">
+                <RefreshCw className="h-8 w-8 text-red-500 dark:text-red-400 mt-1 flex-shrink-0" />
+                <div>
+                    <h4 className="font-semibold text-lg text-gray-800 dark:text-white mb-1">فرصة ثانية للإتقان</h4>
+                    <p className="text-gray-600 dark:text-gray-300 leading-relaxed text-base">
+                        هذه هي أفضل طريقة لترسيخ المعلومات وتجنب تكرار نفس الأخطاء في الاختبارات القادمة.
+                    </p>
+                </div>
+            </div>
+
+            {/* Action Buttons */}
+            <DialogClose asChild>
+                <Button
+                    variant="default"
+                    className="w-full text-lg py-4 bg-gradient-to-r from-blue-500 to-teal-500 hover:opacity-95 transition-all duration-200 transform hover:scale-105 shadow-lg hover:shadow-blue-500/30 flex items-center justify-center gap-3"
+                    onClick={() => generateChallengeFile({ isTimed: true, questions: challengeQuestions })}
+                >
+                    <Timer className="h-6 w-6"/>
+                    تحدي بوقت ({challengeQuestions.length} دقيقة)
+                </Button>
+            </DialogClose>
+            <DialogClose asChild>
+                <Button
+                    className="w-full text-lg py-4 bg-gradient-to-r from-purple-500 to-indigo-500 hover:opacity-95 transition-all duration-200 transform hover:scale-105 shadow-lg hover:shadow-purple-500/30 flex items-center justify-center gap-3"
+                    onClick={() => generateChallengeFile({ isTimed: false, questions: challengeQuestions })}
+                >
+                    <Infinity className="h-6 w-6"/>
+                    تحدي بدون وقت
+                </Button>
+            </DialogClose>
+             <DialogClose asChild>
+                 <Button
+                    variant="ghost"
+                    className="w-full text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
+                >
+                    إلغاء
+                </Button>
+             </DialogClose>
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+
+
   const renderExamInProgress = () => {
     if (!selectedExam || !questions || questions.length === 0) {
         return (
@@ -1046,6 +1118,8 @@ const QiyasExamPage: React.FC = () => {
       <div className="container py-6 max-w-4xl font-arabic animate-fadeIn">
         {renderPrayerBreakOverlay()}
         {renderFinalReviewDialog()} {/* Render the final review dialog */}
+        {renderMistakeChallengeDialog()} {/* Render the mistake challenge dialog */}
+
 
         <div className="bg-white dark:bg-slate-800 shadow-xl rounded-xl p-4 md:p-6 mb-6">
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4 gap-3">
@@ -1250,59 +1324,63 @@ const QiyasExamPage: React.FC = () => {
     );
   };
 
-  const handleDownloadIncorrectQuestions = () => {
+  const startChallengeFlow = () => {
     if (!selectedExam || !allProcessedQuestionsBySection) {
-      toast({ title: "خطأ", description: "بيانات الاختبار غير متوفرة.", variant: "destructive" });
-      return;
+        toast({ title: "خطأ", description: "بيانات الاختبار غير متوفرة.", variant: "destructive" });
+        return;
     }
 
-    const totalAnsweredQuestions = Object.keys(answers).length;
-    // Note: We want to include unanswered questions in the challenge, so this check might be too strict
-    // if (totalAnsweredQuestions === 0 && selectedExam.totalQuestions > 0) {
-    //   toast({ 
-    //     title: "لا توجد إجابات", 
-    //     description: "لم تجب على أي سؤال في هذا الاختبار. لا يمكن إنشاء تحدي للأخطاء.", 
-    //     variant: "destructive",
-    //     duration: 5000 
-    //   });
-    //   return;
-    // }
-
-    const incorrectOrUnansweredQuestionsData: Array<ProcessedExamQuestion & { userAnswerIndex: number | undefined; sectionName: string; wasUnanswered: boolean; }> = [];
+    const incorrectOrUnansweredQuestionsData: ChallengeQuestionData[] = [];
 
     Object.entries(allProcessedQuestionsBySection).forEach(([sectionNumStr, sectionQuestions]) => {
-      const sectionConfig = selectedExam.sections.find(s => s.sectionNumber === parseInt(sectionNumStr));
-      sectionQuestions.forEach(q => {
-        const userAnswerOriginalIndex = answers[q.id];
-        const isCorrect = userAnswerOriginalIndex === q.correctOptionIndex;
-        const wasUnanswered = userAnswerOriginalIndex === undefined;
+        const sectionConfig = selectedExam.sections.find(s => s.sectionNumber === parseInt(sectionNumStr));
+        sectionQuestions.forEach(q => {
+            const userAnswerOriginalIndex = answers[q.id];
+            const isCorrect = userAnswerOriginalIndex === q.correctOptionIndex;
+            const wasUnanswered = userAnswerOriginalIndex === undefined;
 
-        if (!isCorrect || wasUnanswered) { // Include incorrect and unanswered
-          incorrectOrUnansweredQuestionsData.push({
-            ...q,
-            userAnswerIndex: userAnswerOriginalIndex,
-            sectionName: sectionConfig?.name || `القسم ${sectionNumStr}`,
-            wasUnanswered: wasUnanswered,
-          });
-        }
-      });
+            if (!isCorrect || wasUnanswered) { // Include incorrect and unanswered
+                incorrectOrUnansweredQuestionsData.push({
+                    ...q,
+                    userAnswerIndex: userAnswerOriginalIndex,
+                    sectionName: sectionConfig?.name || `القسم ${sectionNumStr}`,
+                    wasUnanswered: wasUnanswered,
+                });
+            }
+        });
     });
 
     if (incorrectOrUnansweredQuestionsData.length === 0) {
-      toast({ 
-        title: "ممتاز! 🎉", 
-        description: `أجبت على جميع الأسئلة بشكل صحيح! لا توجد أسئلة خاطئة أو غير مجاب عليها للمراجعة. أداؤك كان مثالياً!`, 
-        duration: 6000, 
-        className: "bg-green-50 dark:bg-green-900/30 border-green-200 dark:border-green-700" 
-      });
-      return;
+        toast({
+            title: "ممتاز! 🎉",
+            description: `أجبت على جميع الأسئلة بشكل صحيح! لا توجد أسئلة خاطئة أو غير مجاب عليها للمراجعة. أداؤك كان مثالياً!`,
+            duration: 6000,
+            className: "bg-green-50 dark:bg-green-900/30 border-green-200 dark:border-green-700"
+        });
+        return;
     }
 
-    const examNameForFile = selectedExam.name.replace(/[^a-zA-Z0-9\u0600-\u06FF\s]/g, '_'); // Sanitize name
+    if (isMobile) {
+        // For mobile, generate the static file directly without options
+        generateChallengeFile({ isTimed: false, questions: incorrectOrUnansweredQuestionsData });
+    } else {
+        // For desktop, set questions and open the options dialog
+        setChallengeQuestions(incorrectOrUnansweredQuestionsData);
+        setIsMistakeChallengeDialogOpen(true);
+    }
+};
+
+const generateChallengeFile = ({ isTimed, questions: incorrectOrUnansweredQuestionsData }: { isTimed: boolean, questions: ChallengeQuestionData[] }) => {
+    if (!selectedExam) return;
+
+    // Close the dialog if it was open
+    setIsMistakeChallengeDialogOpen(false);
+
+    const examNameForFile = selectedExam.name.replace(/[^a-zA-Z0-9\u0600-\u06FF\s]/g, '_');
     const optionChars = ['أ', 'ب', 'ج', 'د', 'هـ', 'و'];
 
     if (isMobile) {
-        // Generate HTML for Mobile (Static Review)
+        // Generate HTML for Mobile (Static Review) - This part remains unchanged
         let mobileHtmlContent = `
 <!DOCTYPE html>
 <html dir="rtl" lang="ar">
@@ -1387,14 +1465,14 @@ const QiyasExamPage: React.FC = () => {
         a.click();
         document.body.removeChild(a);
         window.URL.revokeObjectURL(url);
-        toast({ 
-            title: "تم تحميل ملخص الأخطاء", 
-            description: `تم إنشاء ملف لمراجعة ${incorrectOrUnansweredQuestionsData.length} سؤال. افتحه في متصفحك على الجوال.`, 
-            duration: 7000 
+        toast({
+            title: "تم تحميل ملخص الأخطاء",
+            description: `تم إنشاء ملف لمراجعة ${incorrectOrUnansweredQuestionsData.length} سؤال. افتحه في متصفحك على الجوال.`,
+            duration: 7000
         });
 
     } else {
-        // Generate HTML for Desktop (Interactive Challenge)
+        // Generate HTML for Desktop (Interactive Challenge) - Now with timer option
         const questionsJson = JSON.stringify(incorrectOrUnansweredQuestionsData.map(q => ({
             id: q.id,
             text: q.text,
@@ -1462,6 +1540,31 @@ const QiyasExamPage: React.FC = () => {
             font-weight: 700;
         }
         .header p { color: #555; font-size: 1rem; line-height: 1.6; }
+
+        #timer-container {
+            text-align: center;
+            font-size: 1.2rem;
+            font-weight: bold;
+            color: var(--dark-text);
+            background-color: #f0f2f5;
+            padding: 10px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        }
+        #timer-display {
+            color: var(--primary-color);
+            padding: 0 8px;
+        }
+        #timer-display.low-time {
+            color: var(--danger-color);
+            animation: pulse 1s infinite;
+        }
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+            100% { transform: scale(1); }
+        }
 
         .controls { margin-bottom: 20px; padding: 15px; background-color: #f0f2f5; border-radius: 8px; display: flex; align-items: center; }
         .controls label { font-size: 0.95rem; color: #333; display: flex; align-items: center; cursor: pointer; }
@@ -1570,6 +1673,7 @@ const QiyasExamPage: React.FC = () => {
             font-weight: 600;
         }
         .toggleable-original-details { display: block; /* Default to show, JS will hide if checkbox is unchecked initially */ }
+        .hidden { display: none !important; }
 
         @media (max-width: 768px) {
             body { padding: 10px; font-size: 15px; }
@@ -1595,6 +1699,9 @@ const QiyasExamPage: React.FC = () => {
         <div class="header">
             <h1>🎯 تحدي الأخطاء والأسئلة غير المجابة</h1>
             <p>هذه فرصتك لمراجعة وتصحيح الأسئلة التي أخطأت بها أو لم تجب عليها. ركز جيداً!</p>
+        </div>
+        <div id="timer-container" class="hidden">
+            <p>⏳ الوقت المتبقي: <span id="timer-display"></span></p>
         </div>
         <div class="controls">
             <label for="toggle-details-cb">
@@ -1624,13 +1731,50 @@ const QiyasExamPage: React.FC = () => {
     </div>
 
     <script>
+        const IS_TIMED = ${isTimed};
+        const TIME_LIMIT_SECONDS = ${isTimed ? incorrectOrUnansweredQuestionsData.length * 60 : 0};
+        let timerInterval;
+        let timeLeft = TIME_LIMIT_SECONDS;
+
         let allIncorrectOrUnansweredQuestions = [];
         let userRetakeAnswers = {}; // { questionOriginalId: selectedOptionOriginalIndex }
         let currentRetakeQuestionDisplayIndex = 0;
         let retakeSubmitted = false;
         let mappedQuestionsForRetake = [];
         const optionDisplayChars = ['أ', 'ب', 'ج', 'د', 'هـ', 'و', 'ز', 'ح', 'ط', 'ي'];
-        let showOriginalDetails = true; // Default to show details
+        let showOriginalDetails = true;
+
+        function formatTime(seconds) {
+            const minutes = Math.floor(seconds / 60);
+            const remainingSeconds = seconds % 60;
+            return \`\${String(minutes).padStart(2, '0')}:\${String(remainingSeconds).padStart(2, '0')}\`;
+        }
+
+        function startTimer() {
+            if (!IS_TIMED) return;
+            const timerContainer = document.getElementById('timer-container');
+            const timerDisplay = document.getElementById('timer-display');
+            if (!timerContainer || !timerDisplay) return;
+
+            timerContainer.classList.remove('hidden');
+            timeLeft = TIME_LIMIT_SECONDS;
+            timerDisplay.textContent = formatTime(timeLeft);
+            timerDisplay.classList.remove('low-time');
+
+            clearInterval(timerInterval); // Clear any existing timer
+            timerInterval = setInterval(() => {
+                timeLeft--;
+                timerDisplay.textContent = formatTime(timeLeft);
+                if (timeLeft <= 60 && !timerDisplay.classList.contains('low-time')) {
+                    timerDisplay.classList.add('low-time');
+                }
+                if (timeLeft <= 0) {
+                    clearInterval(timerInterval);
+                    alert('انتهى الوقت! سيتم عرض نتيجتك الآن.');
+                    submitRetake();
+                }
+            }, 1000);
+        }
 
         function shuffleArray(array) {
             for (let i = array.length - 1; i > 0; i--) {
@@ -1645,7 +1789,6 @@ const QiyasExamPage: React.FC = () => {
                 text: optionText,
                 originalIndex: originalIndex
             }));
-            // Shuffle options for the retake to make it a better challenge
             const shuffledOptions = shuffleArray([...optionsWithOriginalIndex]); 
             return { ...question, shuffledOptions };
         }
@@ -1659,9 +1802,6 @@ const QiyasExamPage: React.FC = () => {
         }
 
         function loadRetakeQuestion(index) {
-            // Retake is not submitted yet for this question load
-            // This line was causing feedback to not show after restart: retakeSubmitted = false; 
-            // It should be set to false only when restarting the whole challenge.
             const questionArea = document.getElementById('question-area');
             const questionData = mappedQuestionsForRetake[index];
             if (!questionData) return;
@@ -1702,29 +1842,25 @@ const QiyasExamPage: React.FC = () => {
                 </div>
             \`;
 
-            // Restore selected answer for this question if already answered in this retake session
             if (userRetakeAnswers[questionData.id] !== undefined) {
                 const listItems = document.getElementById(\`options-\${questionData.id}\`).getElementsByTagName('li');
                 const selectedOriginalIndex = userRetakeAnswers[questionData.id];
                 for (let i = 0; i < listItems.length; i++) {
-                    // Compare originalIndex from shuffledOptions
                     if (questionData.shuffledOptions[i].originalIndex === selectedOriginalIndex) {
                         listItems[i].classList.add('selected');
                         break;
                     }
                 }
             }
-             // If retake was already submitted, show feedback for this question
             if (retakeSubmitted) {
                 showFeedbackForQuestion(questionData);
             }
-
 
             document.getElementById('prev-btn').disabled = index === 0;
             document.getElementById('next-btn').disabled = index === mappedQuestionsForRetake.length - 1;
             document.getElementById('submit-retake-btn').style.display = (index === mappedQuestionsForRetake.length - 1) ? 'inline-block' : 'none';
             document.getElementById('result-area').style.display = 'none';
-            if(retakeSubmitted) { // If retake is submitted, disable options
+            if(retakeSubmitted) { 
                  const qOptionsList = document.getElementById(\`options-\${questionData.id}\`);
                  if(qOptionsList) { Array.from(qOptionsList.getElementsByTagName('li')).forEach(li => li.onclick = null); }
             }
@@ -1733,12 +1869,10 @@ const QiyasExamPage: React.FC = () => {
         function showFeedbackForQuestion(qData) {
             const feedbackDiv = document.getElementById(\`feedback-\${qData.id}\`);
             if (!feedbackDiv) return;
-
             const selectedOptOriginalIndex = userRetakeAnswers[qData.id];
             const isCorrectThisTime = selectedOptOriginalIndex === qData.correctOptionIndex;
             let feedbackHtml = '';
-
-            if (selectedOptOriginalIndex !== undefined) { // Answered in retake
+            if (selectedOptOriginalIndex !== undefined) {
                 if (isCorrectThisTime) {
                     feedbackHtml = \`🎉 ممتاز! إجابة صحيحة هذه المرة.\`;
                     feedbackDiv.className = 'feedback-area correct';
@@ -1746,11 +1880,10 @@ const QiyasExamPage: React.FC = () => {
                     feedbackHtml = \`❌ للأسف، إجابة خاطئة. الإجابة الصحيحة كانت: <strong class="correct-highlight">"\${qData.options[qData.correctOptionIndex]}"</strong>.\`;
                     feedbackDiv.className = 'feedback-area incorrect';
                 }
-            } else { // Not answered in retake
+            } else {
                 feedbackHtml = \`⚠️ لم تجب على هذا السؤال في التحدي. الإجابة الصحيحة هي: <strong class="correct-highlight">"\${qData.options[qData.correctOptionIndex]}"</strong>.\`;
-                feedbackDiv.className = 'feedback-area incorrect'; // Treat as incorrect for feedback style
+                feedbackDiv.className = 'feedback-area incorrect';
             }
-
             if (qData.explanation) {
                 feedbackHtml += \`<div class="explanation-text"><strong>الشرح:</strong> \${qData.explanation}</div>\`;
             }
@@ -1758,9 +1891,8 @@ const QiyasExamPage: React.FC = () => {
             feedbackDiv.style.display = 'block';
         }
 
-
         function selectRetakeAnswer(questionId, originalOptionIndex, listItemElement) {
-            if (retakeSubmitted) return; // Don't allow changing answers after submission
+            if (retakeSubmitted) return;
             userRetakeAnswers[questionId] = originalOptionIndex;
             const optionsList = listItemElement.parentNode;
             Array.from(optionsList.getElementsByTagName('li')).forEach(li => li.classList.remove('selected'));
@@ -1782,24 +1914,23 @@ const QiyasExamPage: React.FC = () => {
         }
 
         function submitRetake() {
-            retakeSubmitted = true; // Mark as submitted
+            if (retakeSubmitted) return;
+            retakeSubmitted = true;
+            clearInterval(timerInterval);
             let score = 0;
             mappedQuestionsForRetake.forEach(qData => {
                 if (userRetakeAnswers[qData.id] === qData.correctOptionIndex) {
                     score++;
                 }
-                showFeedbackForQuestion(qData); // Show individual feedback for all questions
-                 // Disable options for all questions after submitting
+                showFeedbackForQuestion(qData);
                 const qOptionsList = document.getElementById(\`options-\${qData.id}\`);
                 if(qOptionsList) { Array.from(qOptionsList.getElementsByTagName('li')).forEach(li => li.onclick = null); }
             });
-
             const resultArea = document.getElementById('result-area');
             const scoreText = document.getElementById('score-text');
             const feedbackMsg = document.getElementById('feedback-message');
             const percentageScore = mappedQuestionsForRetake.length > 0 ? ((score / mappedQuestionsForRetake.length) * 100).toFixed(1) : 0;
             scoreText.textContent = \`نتيجتك في هذا التحدي: \${score} من \${mappedQuestionsForRetake.length} (\${percentageScore}%)\`;
-
             if (mappedQuestionsForRetake.length === 0) {
                  feedbackMsg.textContent = "لا توجد أسئلة في هذا التحدي.";
             } else if (score === mappedQuestionsForRetake.length) {
@@ -1807,17 +1938,16 @@ const QiyasExamPage: React.FC = () => {
                 feedbackMsg.style.color = "var(--success-color)";
             } else if (score >= mappedQuestionsForRetake.length * 0.7) {
                 feedbackMsg.textContent = "👍 رائع! لقد تحسنت بشكل كبير. القليل من المراجعة وستصل للكمال.";
-                feedbackMsg.style.color = "#54a0ff"; /* A positive blue */
+                feedbackMsg.style.color = "#54a0ff";
             } else if (score >= mappedQuestionsForRetake.length * 0.4) {
                 feedbackMsg.textContent = "💡 جيد! لقد قطعت شوطاً. ركز على مراجعة الأخطاء لفهم أعمق.";
-                 feedbackMsg.style.color = "#f39c12"; /* Orange for "good, but improve" */
-            }
-             else {
+                 feedbackMsg.style.color = "#f39c12";
+            } else {
                 feedbackMsg.textContent = "💪 لا تستسلم! كل محاولة هي خطوة نحو الإتقان. راجع الشروحات بعناية وحاول مجدداً.";
                 feedbackMsg.style.color = "var(--danger-color)";
             }
             resultArea.style.display = 'block';
-            document.getElementById('navigation-buttons').style.display = 'none'; // Hide nav buttons
+            document.getElementById('navigation-buttons').style.display = 'none';
             document.getElementById('submit-retake-btn').style.display = 'none';
             resultArea.scrollIntoView({ behavior: 'smooth' });
         }
@@ -1825,28 +1955,23 @@ const QiyasExamPage: React.FC = () => {
         function restartRetake() {
             currentRetakeQuestionDisplayIndex = 0;
             userRetakeAnswers = {};
-            retakeSubmitted = false; // Reset submission state
+            retakeSubmitted = false;
+            clearInterval(timerInterval);
 
-            // Re-shuffle questions or just options? For now, just reset state and re-load.
-            // If we want to re-shuffle questions themselves:
-            // mappedQuestionsForRetake = shuffleArray(allIncorrectOrUnansweredQuestions.map(q => createQuestionMapWithShuffledOptions(q)));
-            // Or if keeping the same question order but re-shuffling their options:
             mappedQuestionsForRetake.forEach(q => {
                 q.shuffledOptions = shuffleArray([...q.options.map((text, originalIndex) => ({text, originalIndex}))]);
             });
-
 
             mappedQuestionsForRetake.forEach(qData => {
                 const feedbackDiv = document.getElementById(\`feedback-\${qData.id}\`);
                 if (feedbackDiv) { feedbackDiv.innerHTML = ''; feedbackDiv.style.display = 'none';}
             });
-            document.getElementById('navigation-buttons').style.display = 'block'; // Show nav buttons
-            document.getElementById('result-area').style.display = 'none'; // Hide result area
+            document.getElementById('navigation-buttons').style.display = 'block';
+            document.getElementById('result-area').style.display = 'none';
             document.getElementById('submit-retake-btn').style.display = (mappedQuestionsForRetake.length === 1) ? 'inline-block' : 'none';
-
-            // Ensure the toggle visibility is respected on restart
             toggleOriginalDetailsVisibility(document.getElementById('toggle-details-cb').checked);
 
+            startTimer(); // Restart the timer
             loadRetakeQuestion(0);
         }
 
@@ -1854,14 +1979,15 @@ const QiyasExamPage: React.FC = () => {
             allIncorrectOrUnansweredQuestions = ${questionsJson};
             if (allIncorrectOrUnansweredQuestions.length > 0) {
                 mappedQuestionsForRetake = allIncorrectOrUnansweredQuestions.map(q => createQuestionMapWithShuffledOptions(q));
-                // Initial state of toggle: Checkbox is checked by default, so details are visible.
                 toggleOriginalDetailsVisibility(document.getElementById('toggle-details-cb').checked);
+                startTimer();
                 loadRetakeQuestion(0);
             } else {
                 document.getElementById('question-area').innerHTML = '<p class="no-questions">🎉 رائع! لم تكن لديك أي أسئلة خاطئة أو غير مجاب عليها لمراجعتها في هذا الاختبار. أداؤك كان مثالياً!</p>';
                 document.getElementById('navigation-buttons').style.display = 'none';
                 document.getElementById('progress-bar-container').style.display = 'none';
                 document.querySelector('.controls').style.display = 'none';
+                document.getElementById('timer-container').classList.add('hidden');
             }
         };
     </script>
@@ -1871,19 +1997,20 @@ const QiyasExamPage: React.FC = () => {
         const url = window.URL.createObjectURL(blob);
         const a = document.createElement('a');
         a.href = url;
-        a.download = `${examNameForFile}_تحدي_الاخطاء_تفاعلي.html`;
+        a.download = `${examNameForFile}_تحدي_الاخطاء${isTimed ? '_موقوت' : ''}.html`;
         document.body.appendChild(a);
         a.click();
         document.body.removeChild(a);
         window.URL.revokeObjectURL(url);
 
-        toast({ 
-            title: "تم تحميل تحدي الأخطاء التفاعلي", 
-            description: `تم إنشاء تحدي يحتوي على ${incorrectOrUnansweredQuestionsData.length} سؤال. افتحه في متصفحك على الحاسوب.`, 
-            duration: 7000 
+        toast({
+            title: "تم تحميل تحدي الأخطاء التفاعلي",
+            description: `تم إنشاء تحدي يحتوي على ${incorrectOrUnansweredQuestionsData.length} سؤال. افتحه في متصفحك على الحاسوب.`,
+            duration: 7000
         });
     }
 };
+
 
 
   const renderExamResults = () => {
@@ -1992,7 +2119,7 @@ const QiyasExamPage: React.FC = () => {
 
               <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
                 <Button
-                  onClick={handleDownloadIncorrectQuestions}
+                  onClick={startChallengeFlow}
                   variant="default"
                   className="gap-2 w-full sm:w-auto bg-red-600 hover:bg-red-700 text-white dark:bg-red-700 dark:hover:bg-red-800"
                 >
