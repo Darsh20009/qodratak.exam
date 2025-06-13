@@ -1118,8 +1118,6 @@ const QiyasExamPage: React.FC = () => {
       <div className="container py-6 max-w-4xl font-arabic animate-fadeIn">
         {renderPrayerBreakOverlay()}
         {renderFinalReviewDialog()} {/* Render the final review dialog */}
-        {renderMistakeChallengeDialog()} {/* Render the mistake challenge dialog */}
-
 
         <div className="bg-white dark:bg-slate-800 shadow-xl rounded-xl p-4 md:p-6 mb-6">
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4 gap-3">
@@ -2026,6 +2024,7 @@ const generateChallengeFile = ({ isTimed, questions: incorrectOrUnansweredQuesti
 
     return (
       <div className="container py-8 max-w-4xl font-arabic animate-fadeIn">
+        {renderMistakeChallengeDialog()}
         <Card className="mb-8 overflow-hidden shadow-xl dark:bg-slate-800/50">
           <div className={cn("h-3 rounded-t-lg", selectedExam.themeColor || "bg-primary")}></div>
           <CardHeader className="text-center p-6">
