@@ -121,7 +121,7 @@ const qiyasExams: QiyasExam[] = [
     totalQuestions: 120,
     totalTime: 120,
     isQiyas: true,
-    requiresSubscription: true,
+    requiresSubscription: false,
     nonScoredCount: 20,
     themeColor: "from-blue-500 to-indigo-600",
     icon: Brain,
