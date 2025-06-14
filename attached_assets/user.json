@@ -1416,5 +1416,31 @@
     ],
     "testHistory": [],
     "savedQuestions": []
+  },
+  {
+    "id": 71,
+    "name": "admin",
+    "email": "admin@gmail.com",
+    "password": "182009",
+    "subscription": {
+      "type": "free",
+      "startDate": "2025-06-14",
+      "endDate": "2025-07-14"
+    },
+    "points": 100,
+    "level": 1,
+    "testsTaken": 0,
+    "averageScore": 0,
+    "folders": [],
+    "achievements": [],
+    "pointsHistory": [
+      {
+        "points": 100,
+        "reason": "مكافأة الترحيب",
+        "date": "2025-06-14T16:23:30.921Z"
+      }
+    ],
+    "testHistory": [],
+    "savedQuestions": []
   }
 ]
