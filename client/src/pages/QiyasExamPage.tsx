@@ -80,7 +80,6 @@ interface QiyasExam {
   sections: QiyasSection[];
   isQiyas?: boolean;
   requiresSubscription?: boolean;
-  requiresEveryTwoDays?: boolean; // للاختبارات المتاحة كل يومين
   isMockExam?: boolean;
   hideQuestionReview?: boolean;
   overallCategory?: TestType; // For exams primarily of one type
@@ -117,13 +116,12 @@ const qiyasExams: QiyasExam[] = [
   {
     id: 1,
     name: "اختبار قدراتك التأهيلي",
-    description: "اختبار تأهيلي شامل يتكون من سبعة أقسام متنوعة بين اللفظي والكمي. يتضمن 20 سؤالاً تجريبياً غير محسوب للمساعدة.",
+    description: "اختبار تأهيلي شامل يتكون من سبعة أقسام متنوعة بين اللفظي والكمي. يتضمن 20 سؤالاً تجريبياً غير محسوب للمساعدة. متاح مجاناً كل يومين.",
     totalSections: 7,
     totalQuestions: 120,
     totalTime: 120,
     isQiyas: true,
-    requiresSubscription: false, // سيتم التحكم فيه عبر منطق خاص كل يومين
-    requiresEveryTwoDays: true, // خاصية جديدة للتحكم في الوصول كل يومين
+    requiresSubscription: true,
     nonScoredCount: 20,
     themeColor: "from-blue-500 to-indigo-600",
     icon: Brain,
@@ -208,7 +206,7 @@ const qiyasExams: QiyasExam[] = [
     totalQuestions: 120,
     totalTime: 120,
     isQiyas: true,
-    requiresSubscription: true,
+    requiresSubscription: false,
     themeColor: "from-blue-500 to-indigo-600",
     icon: Brain,
     sections: [
@@ -466,6 +464,12 @@ const QiyasExamPage: React.FC = () => {
 
   const startExam = async () => {
     if (!selectedExam) return;
+
+    // Record the attempt for exam 1 for non-subscribed users
+    const isUserSubscribed = user?.subscription?.type === 'Pro Live' || user?.subscription?.type === 'Pro';
+    if (selectedExam.id === 1 && !isUserSubscribed) {
+        localStorage.setItem('examAttempt_1', Date.now().toString());
+    }
 
     setCurrentSectionIdx(0);
     setCurrentQuestionIdx(0);
@@ -755,28 +759,48 @@ const QiyasExamPage: React.FC = () => {
 
   const calculateExamStats = () => examStats;
 
+  const handleStartExamClick = (exam: QiyasExam) => {
+    const isUserSubscribed = user?.subscription?.type === 'Pro Live' || user?.subscription?.type === 'Pro';
 
-  // دالة للتحقق من إمكانية الوصول للاختبار كل يومين
-  const canAccessEveryTwoDaysExam = (examId: number): boolean => {
-    const lastAccessKey = `exam_${examId}_last_access`;
-    const lastAccess = localStorage.getItem(lastAccessKey);
-    
-    if (!lastAccess) {
-      return true; // إذا لم يسبق الوصول، اسمح بالوصول
+    // Special handling for exam with id: 1 for NON-SUBSCRIBED users
+    if (exam.id === 1 && !isUserSubscribed) {
+        const lastAttemptTimestamp = localStorage.getItem('examAttempt_1');
+        if (lastAttemptTimestamp) {
+            const hoursPassed = (Date.now() - parseInt(lastAttemptTimestamp)) / (1000 * 60 * 60);
+            if (hoursPassed < 48) {
+                const hoursRemaining = 48 - hoursPassed;
+                const days = Math.floor(hoursRemaining / 24);
+                const hours = Math.round(hoursRemaining % 24);
+
+                let description = `يمكنك المحاولة مرة أخرى خلال `;
+                if (days > 0) {
+                    description += `${days} يوم و ${hours} ساعة.`;
+                } else {
+                    description += `${hours} ساعة.`;
+                }
+
+                toast({
+                    title: "الاختبار متاح كل يومين",
+                    description: description,
+                    variant: "default",
+                    duration: 5000
+                });
+                return; // Stop and show toast
+            }
+        }
+        // If cooldown passed or first time, load the exam (bypassing the subscription check)
+        loadExam(exam);
+        return;
     }
-    
-    const lastAccessDate = new Date(lastAccess);
-    const currentDate = new Date();
-    const daysDifference = Math.floor((currentDate.getTime() - lastAccessDate.getTime()) / (1000 * 60 * 60 * 24));
-    
-    return daysDifference >= 2; // السماح بالوصول إذا مرت يومين أو أكثر
+
+    // Default behavior for all other exams
+    if (exam.requiresSubscription && !isUserSubscribed) {
+        setLocation("/subscription");
+    } else {
+        loadExam(exam);
+    }
   };
 
-  // دالة لتسجيل آخر وصول للاختبار
-  const recordExamAccess = (examId: number) => {
-    const lastAccessKey = `exam_${examId}_last_access`;
-    localStorage.setItem(lastAccessKey, new Date().toISOString());
-  };
 
   const renderExamSelection = () => (
     <div className="p-4 md:p-8 min-h-screen bg-gradient-to-br from-gray-100 to-slate-200 dark:from-gray-900 dark:to-slate-950 font-arabic">
@@ -796,11 +820,6 @@ const QiyasExamPage: React.FC = () => {
           {qiyasExams.map(exam => {
             const ExamIcon = exam.icon || GraduationCapIcon;
             const isUserSubscribed = user?.subscription?.type === 'Pro Live' || user?.subscription?.type === 'Pro';
-            
-            // التحقق من إمكانية الوصول للاختبارات ذات الوصول كل يومين
-            const canAccessEveryTwoDays = exam.requiresEveryTwoDays ? canAccessEveryTwoDaysExam(exam.id) : true;
-            const isExamAccessible = !exam.requiresSubscription || isUserSubscribed || canAccessEveryTwoDays;
-            
             return (
             <Card
               key={exam.id}
@@ -845,25 +864,17 @@ const QiyasExamPage: React.FC = () => {
                     </div>
                 )}
 
-                {(exam.requiresSubscription || exam.requiresEveryTwoDays) && (
+                {exam.requiresSubscription && (
                   <div className={cn(
                       "mt-4 p-3 rounded-lg text-sm text-center flex items-center justify-center gap-2 font-medium", // Increased size/padding
-                      isExamAccessible
+                      isUserSubscribed
                         ? "bg-green-100 dark:bg-green-900/40 text-green-700 dark:text-green-300 border border-green-300 dark:border-green-700"
-                        : exam.requiresEveryTwoDays
-                        ? "bg-orange-100 dark:bg-orange-900/40 text-orange-700 dark:text-orange-400 border border-orange-300 dark:border-orange-700"
                         : "bg-yellow-100 dark:bg-yellow-900/40 text-yellow-700 dark:text-yellow-400 border border-yellow-300 dark:border-yellow-700"
                     )}>
                     {isUserSubscribed ? (
                       <> <CheckCircle size={16} /> متاح (اشتراكك فعال) </>
-                    ) : exam.requiresEveryTwoDays && canAccessEveryTwoDays ? (
-                      <> <CheckCircle size={16} /> متاح مجاناً (كل يومين) </>
-                    ) : exam.requiresEveryTwoDays && !canAccessEveryTwoDays ? (
-                      <> <Clock3 size={16} /> متاح مرة كل يومين </>
-                    ) : exam.id === 4 ? (
-                      <> <CheckCircle size={16} /> مجاني بالكامل </>
                     ) : (
-                      <> <LockIcon size={16} /> يتطلب اشتراك مدفوع </>
+                      <> <LockIcon size={16} /> {exam.id === 1 ? 'متاح مجاناً كل يومين' : 'يتطلب اشتراك مدفوع'} </>
                     )}
                   </div>
                 )}
@@ -871,23 +882,9 @@ const QiyasExamPage: React.FC = () => {
               <CardFooter className="bg-gray-50 dark:bg-slate-800 p-6"> {/* Increased padding */}
                 <Button
                   className={cn("w-full font-bold text-lg py-4 bg-gradient-to-r hover:opacity-95 transition-all duration-200 transform hover:scale-105 shadow-lg hover:shadow-blue-500/30", exam.themeColor || "from-gray-700 to-gray-800")} // Increased size/effects
-                  onClick={() => {
-                    if (exam.requiresSubscription && !isUserSubscribed && (!exam.requiresEveryTwoDays || !canAccessEveryTwoDays)) {
-                      setLocation("/subscription"); // Or your subscription page route
-                    } else {
-                      // تسجيل آخر وصول للاختبارات ذات الوصول كل يومين
-                      if (exam.requiresEveryTwoDays && !isUserSubscribed) {
-                        recordExamAccess(exam.id);
-                      }
-                      loadExam(exam);
-                    }
-                  }}
-                  disabled={exam.requiresEveryTwoDays && !isUserSubscribed && !canAccessEveryTwoDays}
+                  onClick={() => handleStartExamClick(exam)}
                 >
-                  {exam.requiresEveryTwoDays && !isUserSubscribed && !canAccessEveryTwoDays 
-                    ? "متاح كل يومين" 
-                    : "ابدأ الاختبار"
-                  }
+                  ابدأ الاختبار
                 </Button>
               </CardFooter>
             </Card>
