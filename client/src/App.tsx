@@ -23,7 +23,8 @@ import {
   UserIcon,
   CrownIcon,
   DiamondIcon,
-  Clock
+  Clock,
+  Download
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useState, useEffect } from "react";
@@ -39,6 +40,7 @@ import BooksPage from "@/pages/BooksPage";
 import FoldersPage from "@/pages/FoldersPage";
 import ChallengePage from "@/pages/ChallengePage";
 import NewTimeManagementPage from "@/pages/NewTimeManagementPage";
+import InstallPage from "@/pages/InstallPage";
 import { SubscriptionPlans } from "@/components/SubscriptionPlans";
 
 function MainLayout({ children }: { children: React.ReactNode }) {
@@ -93,6 +95,7 @@ function MainLayout({ children }: { children: React.ReactNode }) {
     { name: "اختبر قدراتك", href: "/abilities", icon: BrainCircuitIcon },
     { name: "التحديات", href: "/challenges", icon: GamepadIcon },
     { name: "وقتي", href: "/time-management", icon: Clock },
+    { name: "حمّل التطبيق", href: "/install", icon: Download },
     { name: "اسأل سؤال", href: "/ask", icon: HelpCircleIcon },
     { name: "المكتبة", href: "/library", icon: BookOpenIcon },
     { name: "مجلداتي", href: "/folders", icon: FolderIcon },
@@ -350,6 +353,9 @@ function Router({ splashDone }: { splashDone: boolean }) {
       </Route>
       <Route path="/time-management">
         {() => <ProtectedRoute><MainLayout><NewTimeManagementPage /></MainLayout></ProtectedRoute>}
+      </Route>
+      <Route path="/install">
+        {() => <MainLayout><InstallPage /></MainLayout>}
       </Route>
       <Route path="/challenges">
         {() => <ProtectedRoute><MainLayout>

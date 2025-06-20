@@ -30,7 +30,7 @@ import { PremiumNotifications } from "@/components/PremiumNotifications";
 import { GameificationSystem } from "@/components/GameificationSystem";
 import { InteractiveAnalytics } from "@/components/InteractiveAnalytics";
 import { SmartNotifications } from "@/components/SmartNotifications";
-import AppDownloadSection from "@/components/AppDownloadSection";
+
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
@@ -496,16 +496,7 @@ const Home: React.FC = () => {
         </div>
       </section>
 
-      {/* App Download Section */}
-      <section className="py-20 bg-gradient-to-br from-slate-50 to-blue-50 dark:from-gray-900 dark:to-gray-800 relative overflow-hidden">
-        <div className="absolute inset-0">
-          <div className="absolute inset-0 bg-[radial-gradient(circle_800px_at_50%_200px,rgba(59,130,246,0.1),transparent)]"></div>
-        </div>
-        
-        <div className="container px-4 md:px-6 relative">
-          <AppDownloadSection />
-        </div>
-      </section>
+
 
       {/* Gamification and Analytics sections for logged users */}
       {isLoggedIn && user && (

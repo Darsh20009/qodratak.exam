@@ -1,0 +1,73 @@
+<svg width="120" height="120" viewBox="0 0 120 120" fill="none" xmlns="http://www.w3.org/2000/svg">
+<defs>
+  <!-- Gradient للخلفية -->
+  <linearGradient id="bgGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+    <stop offset="0%" style="stop-color:#667eea;stop-opacity:1" />
+    <stop offset="50%" style="stop-color:#764ba2;stop-opacity:1" />
+    <stop offset="100%" style="stop-color:#f093fb;stop-opacity:1" />
+  </linearGradient>
+  
+  <!-- Gradient للنص -->
+  <linearGradient id="textGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+    <stop offset="0%" style="stop-color:#ffffff;stop-opacity:1" />
+    <stop offset="100%" style="stop-color:#f0f9ff;stop-opacity:0.9" />
+  </linearGradient>
+  
+  <!-- Shadow filter -->
+  <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%">
+    <feDropShadow dx="0" dy="4" stdDeviation="8" flood-color="#000000" flood-opacity="0.3"/>
+  </filter>
+  
+  <!-- Glow filter -->
+  <filter id="glow" x="-20%" y="-20%" width="140%" height="140%">
+    <feGaussianBlur stdDeviation="3" result="coloredBlur"/>
+    <feMerge> 
+      <feMergeNode in="coloredBlur"/>
+      <feMergeNode in="SourceGraphic"/>
+    </feMerge>
+  </filter>
+</defs>
+
+<!-- الخلفية الدائرية مع تأثير ثلاثي الأبعاد -->
+<circle cx="60" cy="60" r="55" fill="url(#bgGradient)" filter="url(#shadow)" stroke="rgba(255,255,255,0.2)" stroke-width="2"/>
+
+<!-- دوائر ديكور صغيرة -->
+<circle cx="25" cy="25" r="3" fill="rgba(255,255,255,0.4)" opacity="0.8">
+  <animate attributeName="opacity" values="0.4;0.8;0.4" dur="2s" repeatCount="indefinite"/>
+</circle>
+<circle cx="95" cy="30" r="2" fill="rgba(255,255,255,0.5)" opacity="0.6">
+  <animate attributeName="opacity" values="0.6;1;0.6" dur="3s" repeatCount="indefinite"/>
+</circle>
+<circle cx="30" cy="95" r="2.5" fill="rgba(255,255,255,0.3)" opacity="0.7">
+  <animate attributeName="opacity" values="0.3;0.7;0.3" dur="2.5s" repeatCount="indefinite"/>
+</circle>
+
+<!-- رمز الكتاب/المعرفة -->
+<g transform="translate(35, 35)" filter="url(#glow)">
+  <!-- صفحات الكتاب -->
+  <rect x="15" y="10" width="25" height="30" rx="2" fill="rgba(255,255,255,0.9)" stroke="rgba(255,255,255,0.5)" stroke-width="1"/>
+  <rect x="12" y="12" width="25" height="30" rx="2" fill="rgba(255,255,255,0.8)" stroke="rgba(255,255,255,0.4)" stroke-width="1"/>
+  <rect x="9" y="14" width="25" height="30" rx="2" fill="rgba(255,255,255,0.7)" stroke="rgba(255,255,255,0.3)" stroke-width="1"/>
+  
+  <!-- خطوط النص -->
+  <line x1="12" y1="20" x2="28" y2="20" stroke="rgba(100,100,100,0.6)" stroke-width="1"/>
+  <line x1="12" y1="24" x2="30" y2="24" stroke="rgba(100,100,100,0.5)" stroke-width="1"/>
+  <line x1="12" y1="28" x2="26" y2="28" stroke="rgba(100,100,100,0.4)" stroke-width="1"/>
+</g>
+
+<!-- الحرف العربي "ق" في المنتصف -->
+<text x="60" y="75" text-anchor="middle" font-family="Arial, 'Amiri', serif" font-size="36" font-weight="bold" fill="url(#textGradient)" filter="url(#glow)">ق</text>
+
+<!-- نجوم متلألئة -->
+<g opacity="0.8">
+  <polygon points="60,25 62,31 68,31 63,35 65,41 60,37 55,41 57,35 52,31 58,31" fill="rgba(255,255,255,0.7)">
+    <animateTransform attributeName="transform" attributeType="XML" type="rotate" from="0 60 30" to="360 60 30" dur="10s" repeatCount="indefinite"/>
+  </polygon>
+</g>
+
+<!-- دائرة داخلية للتأثير الإضافي -->
+<circle cx="60" cy="60" r="45" fill="none" stroke="rgba(255,255,255,0.1)" stroke-width="1" stroke-dasharray="5,5">
+  <animateTransform attributeName="transform" attributeType="XML" type="rotate" from="0 60 60" to="360 60 60" dur="20s" repeatCount="indefinite"/>
+</circle>
+
+</svg>
