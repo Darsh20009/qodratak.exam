@@ -38,7 +38,7 @@ import LibraryPage from "@/pages/LibraryPage";
 import BooksPage from "@/pages/BooksPage";
 import FoldersPage from "@/pages/FoldersPage";
 import ChallengePage from "@/pages/ChallengePage";
-import TimeManagementPage from "@/pages/TimeManagementPage";
+import AdvancedTimeManagementPage from "@/pages/AdvancedTimeManagementPage";
 import { SubscriptionPlans } from "@/components/SubscriptionPlans";
 
 function MainLayout({ children }: { children: React.ReactNode }) {
@@ -349,7 +349,7 @@ function Router({ splashDone }: { splashDone: boolean }) {
         </MainLayout></ProtectedRoute>}
       </Route>
       <Route path="/time-management">
-        {() => <ProtectedRoute><MainLayout><TimeManagementPage /></MainLayout></ProtectedRoute>}
+        {() => <ProtectedRoute><MainLayout><AdvancedTimeManagementPage /></MainLayout></ProtectedRoute>}
       </Route>
       <Route path="/challenges">
         {() => <ProtectedRoute><MainLayout>
