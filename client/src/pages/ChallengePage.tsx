@@ -7,6 +7,7 @@ import {
   LightbulbIcon, 
   ArrowRightCircleIcon,
   ClockIcon,
+  Clock,
   HeartIcon,
   StarIcon,
   LockIcon,
