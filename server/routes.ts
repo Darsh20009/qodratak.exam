@@ -23,12 +23,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // Load questions from JSON file
 
-  // Google OAuth configuration
-  passport.use(new GoogleStrategy({
-    clientID: process.env.GOOGLE_CLIENT_ID || '',
-    clientSecret: process.env.GOOGLE_CLIENT_SECRET || '',
-    callbackURL: "https://" + process.env.REPL_SLUG + "." + process.env.REPL_OWNER + ".repl.co/api/auth/google/callback"
-  }, async (accessToken, refreshToken, profile, done) => {
+  // Google OAuth configuration (only if credentials are provided)
+  if (process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET) {
+    passport.use(new GoogleStrategy({
+      clientID: process.env.GOOGLE_CLIENT_ID,
+      clientSecret: process.env.GOOGLE_CLIENT_SECRET,
+      callbackURL: "https://" + process.env.REPL_SLUG + "." + process.env.REPL_OWNER + ".repl.co/api/auth/google/callback"
+    }, async (accessToken, refreshToken, profile, done) => {
     try {
       // Create or update user
       const email = profile.emails?.[0]?.value;
@@ -61,6 +62,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       return done(error);
     }
   }));
+  }
 
   // Auth routes will be added here
 
