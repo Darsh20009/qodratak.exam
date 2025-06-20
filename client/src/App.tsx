@@ -108,7 +108,8 @@ function MainLayout({ children }: { children: React.ReactNode }) {
     <div className="flex min-h-screen bg-gray-100 dark:bg-gray-900">
       {/* Sidebar */}
       <div className="hidden md:flex w-64 flex-col bg-white dark:bg-gray-800 border-r dark:border-gray-700">
-        <div className="p-4">
+        <div className="p-4 flex items-center gap-3">
+          <div className="text-3xl">🧠</div>
           <h2 className="text-2xl font-bold text-primary">منصة قدراتك</h2>
         </div>
         <Separator />
@@ -207,7 +208,10 @@ function MainLayout({ children }: { children: React.ReactNode }) {
         {/* Header */}
         <header className="bg-white dark:bg-gray-800 border-b dark:border-gray-700 md:hidden">
           <div className="flex items-center justify-between p-4">
-            <h1 className="text-xl font-bold text-primary">منصة قدراتك</h1>
+            <div className="flex items-center gap-2">
+              <div className="text-2xl">🧠</div>
+              <h1 className="text-xl font-bold text-primary">منصة قدراتك</h1>
+            </div>
             <Link 
               href="/profile"
               className="p-2"

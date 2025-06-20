@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { Link } from "wouter";
 import { 
@@ -166,14 +165,14 @@ const Home: React.FC = () => {
           {/* Base animated background */}
           <div className="absolute inset-0 bg-gradient-to-br from-slate-950/95 via-blue-950/85 to-indigo-950/90 animate-gradient-shift"></div>
           <div className="absolute inset-0 bg-gradient-to-tr from-gray-950/70 via-blue-950/60 to-slate-950/80"></div>
-          
+
           {/* Interactive grid */}
           <div className="absolute inset-0 bg-[radial-gradient(circle_800px_at_50%_-200px,rgba(59,130,246,0.12),transparent)] animate-pulse"></div>
           <div className="absolute inset-0 bg-[conic-gradient(from_0deg_at_50%_50%,rgba(59,130,246,0.08)_0deg,transparent_60deg,rgba(37,99,235,0.06)_120deg,transparent_180deg,rgba(29,78,216,0.08)_240deg,transparent_300deg,rgba(59,130,246,0.08)_360deg)] animate-spin-slow"></div>
-          
+
           {/* Dynamic grid pattern */}
           <div className="absolute inset-0 bg-[linear-gradient(rgba(59,130,246,0.03)_1px,transparent_1px),linear-gradient(90deg,rgba(59,130,246,0.03)_1px,transparent_1px)] bg-[size:40px_40px] animate-pulse-slow"></div>
-          
+
           {/* Floating orbs with time-based colors */}
           {[...Array(60)].map((_, i) => (
             <div
@@ -194,7 +193,7 @@ const Home: React.FC = () => {
               }}
             />
           ))}
-          
+
           {/* Large flowing lights */}
           {[...Array(12)].map((_, i) => (
             <div
@@ -253,21 +252,21 @@ const Home: React.FC = () => {
                   <div className="absolute inset-0 h-12 w-12 bg-current rounded-full animate-ping opacity-30"></div>
                   <div className="absolute -inset-2 bg-gradient-to-r from-blue-400/20 to-purple-400/20 rounded-full animate-pulse"></div>
                 </div>
-                
+
                 <div className="relative group">
                   <h1 className="text-6xl md:text-8xl font-black tracking-tighter bg-gradient-to-r from-blue-300 via-cyan-200 to-indigo-300 bg-clip-text text-transparent drop-shadow-2xl group-hover:scale-105 transition-transform duration-500">
-                    منصة قدراتك
+                  🧠
                   </h1>
                   <div className="absolute inset-0 text-6xl md:text-8xl font-black bg-gradient-to-r from-blue-400/30 via-cyan-300/30 to-indigo-400/30 bg-clip-text text-transparent blur-sm animate-pulse"></div>
                 </div>
-                
+
                 <div className="relative group">
                   <Rocket className="h-12 w-12 text-cyan-400 animate-bounce drop-shadow-2xl group-hover:scale-110 transition-transform group-hover:rotate-12" />
                   <div className="absolute inset-0 h-12 w-12 bg-cyan-400/30 rounded-full animate-ping"></div>
                   <div className="absolute -inset-2 bg-gradient-to-r from-cyan-400/20 to-blue-400/20 rounded-full animate-pulse"></div>
                 </div>
               </div>
-              
+
               <div className="relative mx-auto max-w-[900px] group">
                 <p className="text-blue-100 md:text-2xl lg:text-3xl leading-relaxed font-medium drop-shadow-2xl group-hover:text-blue-50 transition-colors duration-300">
                   منصتك الشاملة للتحضير لاختبارات قياس وتطوير مهاراتك اللفظية والكمية
@@ -278,7 +277,7 @@ const Home: React.FC = () => {
                 </p>
                 <div className="absolute -inset-6 bg-gradient-to-r from-blue-500/10 via-cyan-500/5 to-indigo-500/10 rounded-2xl blur-xl animate-pulse-slow"></div>
               </div>
-              
+
               {/* Time-based greeting */}
               <div className="flex items-center gap-4 text-blue-200/80 animate-fade-in">
                 {isNightMode ? (
@@ -308,7 +307,7 @@ const Home: React.FC = () => {
                   <Sparkles className="mr-3 h-5 w-5 animate-pulse" />
                 </Link>
               </Button>
-              
+
               <Button asChild variant="outline" size="lg" className="group relative overflow-hidden border-2 border-blue-400/60 bg-blue-950/40 backdrop-blur-sm hover:bg-blue-900/60 hover:border-cyan-400/80 hover:scale-110 transition-all duration-500 shadow-xl hover:shadow-cyan-500/40 min-w-[250px] py-6 text-xl font-bold text-blue-100">
                 <Link href="/abilities">
                   <div className="absolute inset-0 bg-gradient-to-r from-cyan-500/15 to-blue-500/15 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
@@ -339,7 +338,7 @@ const Home: React.FC = () => {
           {/* Animated background pattern */}
           <div className="absolute inset-0 bg-[radial-gradient(circle_500px_at_50%_200px,rgba(59,130,246,0.1),transparent)]"></div>
           <div className="absolute inset-0 bg-grid-white/5 bg-[size:30px_30px] animate-pulse-slow" />
-          
+
           {/* Floating elements */}
           {[...Array(20)].map((_, i) => (
             <div
@@ -354,7 +353,7 @@ const Home: React.FC = () => {
             />
           ))}
         </div>
-        
+
         <div className="container px-4 md:px-6 relative">
           <div className="text-center mb-16">
             <h2 className="text-4xl md:text-5xl font-bold mb-4 bg-gradient-to-r from-primary to-primary/60 bg-clip-text text-transparent animate-fade-in">
@@ -364,7 +363,7 @@ const Home: React.FC = () => {
               أرقام تتحدث عن جودة المحتوى وتميز الخدمة
             </p>
           </div>
-          
+
           <div className="grid grid-cols-2 md:grid-cols-4 gap-8 animate-fade-in">
             {statisticsData.map((stat, index) => (
               <div key={index} 
@@ -377,7 +376,7 @@ const Home: React.FC = () => {
                 </div>
                 <h3 className="text-4xl font-black mb-2 bg-gradient-to-r from-primary to-primary/60 bg-clip-text text-transparent group-hover:scale-110 transition-transform duration-300">{stat.value}</h3>
                 <p className="text-muted-foreground text-sm font-medium group-hover:text-primary transition-colors duration-300 text-center">{stat.label}</p>
-                
+
                 {/* Sparkle effect */}
                 <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
                   <Sparkles className="h-4 w-4 text-primary animate-pulse" />
@@ -391,7 +390,7 @@ const Home: React.FC = () => {
       {/* Enhanced Features Section with Advanced Cards */}
       <section className="py-20 relative overflow-hidden">
         <div className="absolute inset-0 bg-gradient-to-br from-background via-background/90 to-background/80"></div>
-        
+
         <div className="container px-4 md:px-6 relative">
           <div className="text-center mb-16">
             <h2 className="text-4xl md:text-5xl font-bold mb-4 bg-gradient-to-r from-primary via-primary/80 to-primary/60 bg-clip-text text-transparent">
@@ -401,7 +400,7 @@ const Home: React.FC = () => {
               أدوات متطورة ومحتوى تفاعلي لرحلة تعليمية استثنائية
             </p>
           </div>
-          
+
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 animate-fade-in">
             {features.map((feature, index) => (
               <Card 
@@ -415,10 +414,10 @@ const Home: React.FC = () => {
                 {/* Animated background gradient */}
                 <div className={`absolute inset-0 bg-gradient-to-r ${feature.gradient} opacity-0 group-hover:opacity-10 transition-opacity duration-500`} />
                 <div className={`absolute inset-0 bg-gradient-to-r ${feature.hoverGradient} opacity-0 group-hover:opacity-5 transition-opacity duration-700`} />
-                
+
                 {/* Shine effect */}
                 <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000"></div>
-                
+
                 <CardHeader className="relative z-10 p-6">
                   <div className={`p-4 w-16 h-16 rounded-2xl ${feature.color} flex items-center justify-center mb-6 group-hover:scale-110 transition-transform duration-300 shadow-lg`}>
                     <feature.icon className="h-8 w-8 text-foreground group-hover:rotate-12 transition-transform duration-300" />
@@ -426,13 +425,13 @@ const Home: React.FC = () => {
                   </div>
                   <CardTitle className="text-xl font-bold group-hover:text-primary transition-colors duration-300 mb-3">{feature.title}</CardTitle>
                 </CardHeader>
-                
+
                 <CardContent className="relative z-10 px-6 pb-4">
                   <CardDescription className="text-sm text-muted-foreground group-hover:text-muted-foreground/90 transition-colors duration-300 leading-relaxed">
                     {feature.description}
                   </CardDescription>
                 </CardContent>
-                
+
                 <CardFooter className="relative z-10 p-6 pt-2">
                   <Button asChild variant="ghost" className="w-full justify-between group/btn hover:bg-primary/10 transition-all duration-300 font-medium">
                     <Link href={feature.href}>
@@ -444,7 +443,7 @@ const Home: React.FC = () => {
                     </Link>
                   </Button>
                 </CardFooter>
-                
+
                 {/* Corner decoration */}
                 <div className="absolute top-4 right-4 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
                   <div className="w-3 h-3 bg-primary/30 rounded-full animate-ping"></div>
@@ -460,7 +459,7 @@ const Home: React.FC = () => {
         <div className="absolute inset-0">
           <div className="absolute inset-0 bg-[radial-gradient(circle_600px_at_50%_300px,rgba(59,130,246,0.1),transparent)]"></div>
         </div>
-        
+
         <div className="container px-4 md:px-6 relative">
           <div className="text-center mb-16">
             <h2 className="text-4xl md:text-5xl font-bold mb-4 bg-gradient-to-r from-primary to-primary/60 bg-clip-text text-transparent">
@@ -470,7 +469,7 @@ const Home: React.FC = () => {
               شهادات حقيقية من متعلمين حققوا نجاحات مميزة
             </p>
           </div>
-          
+
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
             {testimonials.map((testimonial, index) => (
               <Card key={index} className="group relative p-6 bg-gradient-to-br from-background/95 to-background/90 hover:shadow-2xl transition-all duration-500 hover:-translate-y-2 border-2 border-border/50 hover:border-primary/30">
@@ -517,7 +516,7 @@ const Home: React.FC = () => {
                 />
               ))}
             </div>
-            
+
             <div className="container px-4 md:px-6 relative">
               <div className="text-center mb-16">
                 <h2 className="text-4xl md:text-5xl font-bold mb-4 bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
@@ -547,7 +546,7 @@ const Home: React.FC = () => {
                 />
               ))}
             </div>
-            
+
             <div className="container px-4 md:px-6 relative">
               <div className="text-center mb-16">
                 <h2 className="text-4xl md:text-5xl font-bold mb-4 bg-gradient-to-r from-green-600 to-teal-600 bg-clip-text text-transparent">
@@ -570,7 +569,7 @@ const Home: React.FC = () => {
           <div className="absolute inset-0">
             <div className="absolute inset-0 bg-[radial-gradient(circle_1200px_at_50%_-100px,rgba(255,255,255,0.3),transparent)] opacity-40" />
             <div className="absolute inset-0 bg-[conic-gradient(from_0deg_at_50%_50%,rgba(255,255,255,0.15)_0%,transparent_60%)] animate-spin-slow" />
-            
+
             {/* Premium floating elements */}
             {[...Array(30)].map((_, i) => (
               <div
@@ -604,11 +603,11 @@ const Home: React.FC = () => {
                 ) : (
                   <div className="relative">
                     <CrownIcon className="h-20 w-20 text-white animate-bounce drop-shadow-2xl" />
-                    <div className="absolute inset-0 h-20 w-20 bg-white/30 rounded-full animate-pulse"></div>
+                    <div className="absolute inset-0 h-20 w-20 bg-white/30 rounded-full animate-ping"></div>
                   </div>
                 )}
               </div>
-              
+
               <h3 className="text-3xl md:text-4xl font-bold mb-6 drop-shadow-lg">🌟 أنت مستخدم VIP</h3>
               <p className="text-xl mb-8 opacity-95 max-w-2xl mx-auto leading-relaxed">
                 {user.subscription?.type === 'Pro Life' 
@@ -616,7 +615,7 @@ const Home: React.FC = () => {
                   : "عضويتك الذهبية تفتح لك عالماً من الإمكانيات المتقدمة - اكتشف قدراتك الحقيقية"
                 }
               </p>
-              
+
               <div className="flex flex-col sm:flex-row gap-6 justify-center">
                 <Button asChild size="lg" className="min-w-[250px] bg-white text-amber-600 hover:bg-amber-50 hover:scale-105 transition-all font-bold shadow-2xl text-lg py-4">
                   <Link href="/records">
@@ -638,7 +637,7 @@ const Home: React.FC = () => {
         <section className="py-20 bg-gradient-to-br from-primary/95 to-primary text-primary-foreground relative overflow-hidden">
           <div className="absolute inset-0">
             <div className="absolute inset-0 bg-[radial-gradient(circle_800px_at_50%_-100px,var(--primary-foreground),transparent)] opacity-30" />
-            
+
             {/* Animated background elements */}
             {[...Array(40)].map((_, i) => (
               <div
@@ -653,7 +652,7 @@ const Home: React.FC = () => {
               />
             ))}
           </div>
-          
+
           <div className="container px-4 md:px-6 text-center relative">
             {isLoggedIn && user ? (
               <>
@@ -661,12 +660,12 @@ const Home: React.FC = () => {
                   <User className="h-16 w-16 mx-auto mb-6 animate-pulse text-primary-foreground/90 drop-shadow-lg" />
                   <div className="absolute inset-0 h-16 w-16 mx-auto bg-primary-foreground/20 rounded-full animate-ping"></div>
                 </div>
-                
+
                 <h2 className="text-4xl md:text-5xl font-bold mb-6 drop-shadow-lg">مرحباً بك، {user.name || user.username}! 👋</h2>
                 <p className="mb-12 max-w-[700px] mx-auto opacity-95 text-lg leading-relaxed">
                   استمر في رحلتك التعليمية واكتشف المزيد من الاختبارات والتحديات المصممة خصيصاً لك
                 </p>
-                
+
                 <div className="mb-12 p-8 bg-primary-foreground/15 rounded-2xl border border-primary-foreground/30 backdrop-blur-sm shadow-xl">
                   <h3 className="text-2xl font-bold mb-6 flex items-center justify-center gap-3">
                     <DiamondIcon className="h-8 w-8 animate-pulse" />
@@ -692,7 +691,7 @@ const Home: React.FC = () => {
                     </div>
                   </div>
                 </div>
-                
+
                 <div className="flex flex-col sm:flex-row gap-6 justify-center">
                   <Button asChild size="lg" variant="secondary" className="min-w-[250px] hover:scale-105 transition-transform text-lg py-4 font-bold shadow-xl">
                     <Link href="/records">
@@ -714,12 +713,12 @@ const Home: React.FC = () => {
                   <Zap className="h-16 w-16 mx-auto mb-6 animate-pulse text-primary-foreground/90 drop-shadow-lg" />
                   <div className="absolute inset-0 h-16 w-16 mx-auto bg-primary-foreground/30 rounded-full animate-ping"></div>
                 </div>
-                
+
                 <h2 className="text-4xl md:text-5xl font-bold mb-6 drop-shadow-lg">ابدأ رحلتك نحو التميز 🚀</h2>
                 <p className="mb-12 max-w-[700px] mx-auto opacity-95 text-lg leading-relaxed">
                   سجل حساب مجاني الآن واحصل على تجربة تعليمية متكاملة مع متابعة تقدمك وتحسين مستواك بطريقة علمية ممتعة
                 </p>
-                
+
                 <Button asChild size="lg" variant="secondary" className="min-w-[250px] hover:scale-105 transition-transform text-lg py-4 font-bold shadow-2xl">
                   <Link href="/profile">
                     <HeartIcon className="ml-3 h-6 w-6 animate-pulse" />
