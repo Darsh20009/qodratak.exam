@@ -334,7 +334,7 @@ const AppDownloadSection: React.FC = () => {
         </p>
       </div>
       {/* مميزات التطبيق */}
-      <div className="from-blue-50 to-purple-50 rounded-2xl p-8 bg-[#141e30]">
+      <div className="bg-gradient-to-r from-blue-50 to-purple-50 rounded-2xl p-8 text-[#2b3245]">
         <h3 className="text-2xl font-bold text-center bg-[#282f41] mb-6">لماذا تحمل التطبيق؟</h3>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
           <div className="text-center">
