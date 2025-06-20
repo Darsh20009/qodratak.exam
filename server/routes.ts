@@ -585,6 +585,129 @@ app.post("/api/auth/register", async (req: Request, res: Response) => {
     }
   });
 
+  // Time Management API Routes
+
+  // Task routes
+  app.get("/api/tasks/:userId", async (req: Request, res: Response) => {
+    try {
+      const userId = parseInt(req.params.userId);
+      const tasks = await storage.getTasks(userId);
+      res.json(tasks);
+    } catch (error) {
+      console.error("Error fetching tasks:", error);
+      res.status(500).json({ message: "Error fetching tasks" });
+    }
+  });
+
+  app.post("/api/tasks", async (req: Request, res: Response) => {
+    try {
+      const task = await storage.createTask(req.body);
+      res.status(201).json(task);
+    } catch (error) {
+      console.error("Error creating task:", error);
+      res.status(500).json({ message: "Error creating task" });
+    }
+  });
+
+  app.patch("/api/tasks/:id", async (req: Request, res: Response) => {
+    try {
+      const id = parseInt(req.params.id);
+      const task = await storage.updateTask(id, req.body);
+      res.json(task);
+    } catch (error) {
+      console.error("Error updating task:", error);
+      res.status(500).json({ message: "Error updating task" });
+    }
+  });
+
+  app.delete("/api/tasks/:id", async (req: Request, res: Response) => {
+    try {
+      const id = parseInt(req.params.id);
+      const deleted = await storage.deleteTask(id);
+      res.json({ success: deleted });
+    } catch (error) {
+      console.error("Error deleting task:", error);
+      res.status(500).json({ message: "Error deleting task" });
+    }
+  });
+
+  // Habit routes
+  app.get("/api/habits/:userId", async (req: Request, res: Response) => {
+    try {
+      const userId = parseInt(req.params.userId);
+      const habits = await storage.getHabits(userId);
+      res.json(habits);
+    } catch (error) {
+      console.error("Error fetching habits:", error);
+      res.status(500).json({ message: "Error fetching habits" });
+    }
+  });
+
+  app.post("/api/habits", async (req: Request, res: Response) => {
+    try {
+      const habit = await storage.createHabit(req.body);
+      res.status(201).json(habit);
+    } catch (error) {
+      console.error("Error creating habit:", error);
+      res.status(500).json({ message: "Error creating habit" });
+    }
+  });
+
+  app.post("/api/habit-logs", async (req: Request, res: Response) => {
+    try {
+      const habitLog = await storage.createHabitLog(req.body);
+      res.status(201).json(habitLog);
+    } catch (error) {
+      console.error("Error creating habit log:", error);
+      res.status(500).json({ message: "Error creating habit log" });
+    }
+  });
+
+  // Project routes
+  app.get("/api/projects/:userId", async (req: Request, res: Response) => {
+    try {
+      const userId = parseInt(req.params.userId);
+      const projects = await storage.getProjects(userId);
+      res.json(projects);
+    } catch (error) {
+      console.error("Error fetching projects:", error);
+      res.status(500).json({ message: "Error fetching projects" });
+    }
+  });
+
+  app.post("/api/projects", async (req: Request, res: Response) => {
+    try {
+      const project = await storage.createProject(req.body);
+      res.status(201).json(project);
+    } catch (error) {
+      console.error("Error creating project:", error);
+      res.status(500).json({ message: "Error creating project" });
+    }
+  });
+
+  // Pomodoro session routes
+  app.post("/api/pomodoro-sessions", async (req: Request, res: Response) => {
+    try {
+      const session = await storage.createPomodoroSession(req.body);
+      res.status(201).json(session);
+    } catch (error) {
+      console.error("Error creating pomodoro session:", error);
+      res.status(500).json({ message: "Error creating pomodoro session" });
+    }
+  });
+
+  app.get("/api/pomodoro-sessions/:userId", async (req: Request, res: Response) => {
+    try {
+      const userId = parseInt(req.params.userId);
+      const date = req.query.date ? new Date(req.query.date as string) : undefined;
+      const sessions = await storage.getPomodoroSessions(userId, date);
+      res.json(sessions);
+    } catch (error) {
+      console.error("Error fetching pomodoro sessions:", error);
+      res.status(500).json({ message: "Error fetching pomodoro sessions" });
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }

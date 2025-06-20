@@ -113,6 +113,95 @@ export interface FolderQuestion {
   notes?: string;
 }
 
+// Time Management Interfaces
+export interface Task {
+  id: number;
+  userId: number;
+  title: string;
+  description?: string;
+  priority: string; // "high", "medium", "low"
+  status: string; // "pending", "in_progress", "completed", "cancelled"
+  category: string; // "work", "personal", "study", "fitness"
+  dueDate?: Date;
+  completedAt?: Date;
+  createdAt: Date;
+  updatedAt: Date;
+  tags: string[];
+  estimatedTime?: number; // in minutes
+  actualTime?: number; // in minutes
+  projectId?: number;
+}
+
+export interface Subtask {
+  id: number;
+  taskId: number;
+  title: string;
+  completed: boolean;
+  createdAt: Date;
+  order: number;
+}
+
+export interface Habit {
+  id: number;
+  userId: number;
+  name: string;
+  description?: string;
+  frequency: string; // "daily", "weekly", "monthly"
+  targetCount: number;
+  category: string; // "health", "learning", "productivity", "social"
+  icon: string;
+  color: string;
+  isActive: boolean;
+  createdAt: Date;
+}
+
+export interface HabitLog {
+  id: number;
+  habitId: number;
+  userId: number;
+  date: Date;
+  count: number;
+  notes?: string;
+  createdAt: Date;
+}
+
+export interface Project {
+  id: number;
+  userId: number;
+  name: string;
+  description?: string;
+  status: string; // "active", "completed", "on_hold", "cancelled"
+  startDate?: Date;
+  endDate?: Date;
+  color: string;
+  createdAt: Date;
+}
+
+export interface PomodoroSession {
+  id: number;
+  userId: number;
+  taskId?: number;
+  duration: number; // in minutes
+  type: string; // "work", "short_break", "long_break"
+  startedAt: Date;
+  completedAt?: Date;
+  wasCompleted: boolean;
+  notes?: string;
+}
+
+export interface TimeBlock {
+  id: number;
+  userId: number;
+  title: string;
+  description?: string;
+  startTime: Date;
+  endTime: Date;
+  taskId?: number;
+  category: string;
+  color: string;
+  createdAt: Date;
+}
+
 // Insert types (simplified for in-memory usage)
 export type InsertUser = Omit<User, "id" | "createdAt" | "lastLogin">;
 export type InsertQuestion = Omit<Question, "id">;
@@ -124,6 +213,15 @@ export type InsertDialect = Omit<Dialect, "id">;
 export type InsertSynonym = Omit<Synonym, "id">;
 export type InsertFolder = Omit<Folder, "id" | "createdAt">;
 export type InsertFolderQuestion = Omit<FolderQuestion, "id" | "addedAt">;
+
+// Time Management Insert Types
+export type InsertTask = Omit<Task, "id" | "createdAt" | "updatedAt">;
+export type InsertSubtask = Omit<Subtask, "id" | "createdAt">;
+export type InsertHabit = Omit<Habit, "id" | "createdAt">;
+export type InsertHabitLog = Omit<HabitLog, "id" | "createdAt">;
+export type InsertProject = Omit<Project, "id" | "createdAt">;
+export type InsertPomodoroSession = Omit<PomodoroSession, "id">;
+export type InsertTimeBlock = Omit<TimeBlock, "id" | "createdAt">;
 
 // Storage interface definition
 export interface IStorage {
@@ -192,6 +290,52 @@ export interface IStorage {
   getQuestionsInFolder(folderId: number): Promise<Question[]>;
   removeQuestionFromFolder(folderId: number, questionId: number): Promise<boolean>;
   
+  // Time Management operations
+  // Task operations
+  createTask(task: InsertTask): Promise<Task>;
+  getTasks(userId: number): Promise<Task[]>;
+  getTaskById(id: number): Promise<Task | undefined>;
+  updateTask(id: number, updates: Partial<InsertTask>): Promise<Task>;
+  deleteTask(id: number): Promise<boolean>;
+  getTasksByStatus(userId: number, status: string): Promise<Task[]>;
+  getTasksByCategory(userId: number, category: string): Promise<Task[]>;
+  
+  // Subtask operations
+  createSubtask(subtask: InsertSubtask): Promise<Subtask>;
+  getSubtasksByTask(taskId: number): Promise<Subtask[]>;
+  updateSubtask(id: number, updates: Partial<InsertSubtask>): Promise<Subtask>;
+  deleteSubtask(id: number): Promise<boolean>;
+  
+  // Habit operations
+  createHabit(habit: InsertHabit): Promise<Habit>;
+  getHabits(userId: number): Promise<Habit[]>;
+  getHabitById(id: number): Promise<Habit | undefined>;
+  updateHabit(id: number, updates: Partial<InsertHabit>): Promise<Habit>;
+  deleteHabit(id: number): Promise<boolean>;
+  
+  // Habit log operations
+  createHabitLog(habitLog: InsertHabitLog): Promise<HabitLog>;
+  getHabitLogs(habitId: number, startDate?: Date, endDate?: Date): Promise<HabitLog[]>;
+  getHabitLogsByUser(userId: number, date?: Date): Promise<HabitLog[]>;
+  
+  // Project operations
+  createProject(project: InsertProject): Promise<Project>;
+  getProjects(userId: number): Promise<Project[]>;
+  getProjectById(id: number): Promise<Project | undefined>;
+  updateProject(id: number, updates: Partial<InsertProject>): Promise<Project>;
+  deleteProject(id: number): Promise<boolean>;
+  
+  // Pomodoro session operations
+  createPomodoroSession(session: InsertPomodoroSession): Promise<PomodoroSession>;
+  getPomodoroSessions(userId: number, date?: Date): Promise<PomodoroSession[]>;
+  updatePomodoroSession(id: number, updates: Partial<InsertPomodoroSession>): Promise<PomodoroSession>;
+  
+  // Time block operations
+  createTimeBlock(timeBlock: InsertTimeBlock): Promise<TimeBlock>;
+  getTimeBlocks(userId: number, startDate?: Date, endDate?: Date): Promise<TimeBlock[]>;
+  updateTimeBlock(id: number, updates: Partial<InsertTimeBlock>): Promise<TimeBlock>;
+  deleteTimeBlock(id: number): Promise<boolean>;
+  
   // Initialize with seed data
   seedData(): Promise<void>;
 }
@@ -208,6 +352,23 @@ export class MemStorage implements IStorage {
   private synonyms: Synonym[] = [];
   private folders: Folder[] = [];
   private folderQuestions: FolderQuestion[] = [];
+  
+  // Time Management Storage
+  private tasks: Task[] = [];
+  private subtasks: Subtask[] = [];
+  private habits: Habit[] = [];
+  private habitLogs: HabitLog[] = [];
+  private projects: Project[] = [];
+  private pomodoroSessions: PomodoroSession[] = [];
+  private timeBlocks: TimeBlock[] = [];
+  
+  private nextTaskId = 1;
+  private nextSubtaskId = 1;
+  private nextHabitId = 1;
+  private nextHabitLogId = 1;
+  private nextProjectId = 1;
+  private nextPomodoroId = 1;
+  private nextTimeBlockId = 1;
 
   constructor() {
     // Initialize with default data
@@ -895,6 +1056,262 @@ export class MemStorage implements IStorage {
       fq => !(fq.folderId === folderId && fq.questionId === questionId)
     );
     return initialLength > this.folderQuestions.length;
+  }
+
+  // Time Management Methods
+  // Task operations
+  async createTask(task: InsertTask): Promise<Task> {
+    const newTask: Task = {
+      id: this.nextTaskId++,
+      ...task,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+      tags: task.tags || []
+    };
+    this.tasks.push(newTask);
+    return newTask;
+  }
+
+  async getTasks(userId: number): Promise<Task[]> {
+    return this.tasks.filter(t => t.userId === userId);
+  }
+
+  async getTaskById(id: number): Promise<Task | undefined> {
+    return this.tasks.find(t => t.id === id);
+  }
+
+  async updateTask(id: number, updates: Partial<InsertTask>): Promise<Task> {
+    const taskIndex = this.tasks.findIndex(t => t.id === id);
+    if (taskIndex === -1) throw new Error('Task not found');
+    
+    this.tasks[taskIndex] = { 
+      ...this.tasks[taskIndex], 
+      ...updates, 
+      updatedAt: new Date() 
+    };
+    return this.tasks[taskIndex];
+  }
+
+  async deleteTask(id: number): Promise<boolean> {
+    const initialLength = this.tasks.length;
+    this.tasks = this.tasks.filter(t => t.id !== id);
+    this.subtasks = this.subtasks.filter(st => st.taskId !== id);
+    return initialLength > this.tasks.length;
+  }
+
+  async getTasksByStatus(userId: number, status: string): Promise<Task[]> {
+    return this.tasks.filter(t => t.userId === userId && t.status === status);
+  }
+
+  async getTasksByCategory(userId: number, category: string): Promise<Task[]> {
+    return this.tasks.filter(t => t.userId === userId && t.category === category);
+  }
+
+  // Subtask operations
+  async createSubtask(subtask: InsertSubtask): Promise<Subtask> {
+    const newSubtask: Subtask = {
+      id: this.nextSubtaskId++,
+      ...subtask,
+      createdAt: new Date()
+    };
+    this.subtasks.push(newSubtask);
+    return newSubtask;
+  }
+
+  async getSubtasksByTask(taskId: number): Promise<Subtask[]> {
+    return this.subtasks.filter(st => st.taskId === taskId).sort((a, b) => a.order - b.order);
+  }
+
+  async updateSubtask(id: number, updates: Partial<InsertSubtask>): Promise<Subtask> {
+    const subtaskIndex = this.subtasks.findIndex(st => st.id === id);
+    if (subtaskIndex === -1) throw new Error('Subtask not found');
+    
+    this.subtasks[subtaskIndex] = { ...this.subtasks[subtaskIndex], ...updates };
+    return this.subtasks[subtaskIndex];
+  }
+
+  async deleteSubtask(id: number): Promise<boolean> {
+    const initialLength = this.subtasks.length;
+    this.subtasks = this.subtasks.filter(st => st.id !== id);
+    return initialLength > this.subtasks.length;
+  }
+
+  // Habit operations
+  async createHabit(habit: InsertHabit): Promise<Habit> {
+    const newHabit: Habit = {
+      id: this.nextHabitId++,
+      ...habit,
+      createdAt: new Date()
+    };
+    this.habits.push(newHabit);
+    return newHabit;
+  }
+
+  async getHabits(userId: number): Promise<Habit[]> {
+    return this.habits.filter(h => h.userId === userId && h.isActive);
+  }
+
+  async getHabitById(id: number): Promise<Habit | undefined> {
+    return this.habits.find(h => h.id === id);
+  }
+
+  async updateHabit(id: number, updates: Partial<InsertHabit>): Promise<Habit> {
+    const habitIndex = this.habits.findIndex(h => h.id === id);
+    if (habitIndex === -1) throw new Error('Habit not found');
+    
+    this.habits[habitIndex] = { ...this.habits[habitIndex], ...updates };
+    return this.habits[habitIndex];
+  }
+
+  async deleteHabit(id: number): Promise<boolean> {
+    const initialLength = this.habits.length;
+    this.habits = this.habits.filter(h => h.id !== id);
+    this.habitLogs = this.habitLogs.filter(hl => hl.habitId !== id);
+    return initialLength > this.habits.length;
+  }
+
+  // Habit log operations
+  async createHabitLog(habitLog: InsertHabitLog): Promise<HabitLog> {
+    const newHabitLog: HabitLog = {
+      id: this.nextHabitLogId++,
+      ...habitLog,
+      createdAt: new Date()
+    };
+    this.habitLogs.push(newHabitLog);
+    return newHabitLog;
+  }
+
+  async getHabitLogs(habitId: number, startDate?: Date, endDate?: Date): Promise<HabitLog[]> {
+    let logs = this.habitLogs.filter(hl => hl.habitId === habitId);
+    
+    if (startDate) {
+      logs = logs.filter(hl => hl.date >= startDate);
+    }
+    if (endDate) {
+      logs = logs.filter(hl => hl.date <= endDate);
+    }
+    
+    return logs.sort((a, b) => b.date.getTime() - a.date.getTime());
+  }
+
+  async getHabitLogsByUser(userId: number, date?: Date): Promise<HabitLog[]> {
+    let logs = this.habitLogs.filter(hl => hl.userId === userId);
+    
+    if (date) {
+      const dayStart = new Date(date);
+      dayStart.setHours(0, 0, 0, 0);
+      const dayEnd = new Date(date);
+      dayEnd.setHours(23, 59, 59, 999);
+      
+      logs = logs.filter(hl => hl.date >= dayStart && hl.date <= dayEnd);
+    }
+    
+    return logs;
+  }
+
+  // Project operations
+  async createProject(project: InsertProject): Promise<Project> {
+    const newProject: Project = {
+      id: this.nextProjectId++,
+      ...project,
+      createdAt: new Date()
+    };
+    this.projects.push(newProject);
+    return newProject;
+  }
+
+  async getProjects(userId: number): Promise<Project[]> {
+    return this.projects.filter(p => p.userId === userId);
+  }
+
+  async getProjectById(id: number): Promise<Project | undefined> {
+    return this.projects.find(p => p.id === id);
+  }
+
+  async updateProject(id: number, updates: Partial<InsertProject>): Promise<Project> {
+    const projectIndex = this.projects.findIndex(p => p.id === id);
+    if (projectIndex === -1) throw new Error('Project not found');
+    
+    this.projects[projectIndex] = { ...this.projects[projectIndex], ...updates };
+    return this.projects[projectIndex];
+  }
+
+  async deleteProject(id: number): Promise<boolean> {
+    const initialLength = this.projects.length;
+    this.projects = this.projects.filter(p => p.id !== id);
+    this.tasks = this.tasks.filter(t => t.projectId !== id);
+    return initialLength > this.projects.length;
+  }
+
+  // Pomodoro session operations
+  async createPomodoroSession(session: InsertPomodoroSession): Promise<PomodoroSession> {
+    const newSession: PomodoroSession = {
+      id: this.nextPomodoroId++,
+      ...session
+    };
+    this.pomodoroSessions.push(newSession);
+    return newSession;
+  }
+
+  async getPomodoroSessions(userId: number, date?: Date): Promise<PomodoroSession[]> {
+    let sessions = this.pomodoroSessions.filter(ps => ps.userId === userId);
+    
+    if (date) {
+      const dayStart = new Date(date);
+      dayStart.setHours(0, 0, 0, 0);
+      const dayEnd = new Date(date);
+      dayEnd.setHours(23, 59, 59, 999);
+      
+      sessions = sessions.filter(ps => ps.startedAt >= dayStart && ps.startedAt <= dayEnd);
+    }
+    
+    return sessions.sort((a, b) => b.startedAt.getTime() - a.startedAt.getTime());
+  }
+
+  async updatePomodoroSession(id: number, updates: Partial<InsertPomodoroSession>): Promise<PomodoroSession> {
+    const sessionIndex = this.pomodoroSessions.findIndex(ps => ps.id === id);
+    if (sessionIndex === -1) throw new Error('Pomodoro session not found');
+    
+    this.pomodoroSessions[sessionIndex] = { ...this.pomodoroSessions[sessionIndex], ...updates };
+    return this.pomodoroSessions[sessionIndex];
+  }
+
+  // Time block operations
+  async createTimeBlock(timeBlock: InsertTimeBlock): Promise<TimeBlock> {
+    const newTimeBlock: TimeBlock = {
+      id: this.nextTimeBlockId++,
+      ...timeBlock,
+      createdAt: new Date()
+    };
+    this.timeBlocks.push(newTimeBlock);
+    return newTimeBlock;
+  }
+
+  async getTimeBlocks(userId: number, startDate?: Date, endDate?: Date): Promise<TimeBlock[]> {
+    let blocks = this.timeBlocks.filter(tb => tb.userId === userId);
+    
+    if (startDate) {
+      blocks = blocks.filter(tb => tb.startTime >= startDate);
+    }
+    if (endDate) {
+      blocks = blocks.filter(tb => tb.endTime <= endDate);
+    }
+    
+    return blocks.sort((a, b) => a.startTime.getTime() - b.startTime.getTime());
+  }
+
+  async updateTimeBlock(id: number, updates: Partial<InsertTimeBlock>): Promise<TimeBlock> {
+    const blockIndex = this.timeBlocks.findIndex(tb => tb.id === id);
+    if (blockIndex === -1) throw new Error('Time block not found');
+    
+    this.timeBlocks[blockIndex] = { ...this.timeBlocks[blockIndex], ...updates };
+    return this.timeBlocks[blockIndex];
+  }
+
+  async deleteTimeBlock(id: number): Promise<boolean> {
+    const initialLength = this.timeBlocks.length;
+    this.timeBlocks = this.timeBlocks.filter(tb => tb.id !== id);
+    return initialLength > this.timeBlocks.length;
   }
 }
 

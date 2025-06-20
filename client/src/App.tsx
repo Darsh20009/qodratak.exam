@@ -22,7 +22,8 @@ import {
   HomeIcon, 
   UserIcon,
   CrownIcon,
-  DiamondIcon
+  DiamondIcon,
+  Clock
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useState, useEffect } from "react";
@@ -37,6 +38,7 @@ import LibraryPage from "@/pages/LibraryPage";
 import BooksPage from "@/pages/BooksPage";
 import FoldersPage from "@/pages/FoldersPage";
 import ChallengePage from "@/pages/ChallengePage";
+import TimeManagementPage from "@/pages/TimeManagementPage";
 import { SubscriptionPlans } from "@/components/SubscriptionPlans";
 
 function MainLayout({ children }: { children: React.ReactNode }) {
@@ -90,11 +92,12 @@ function MainLayout({ children }: { children: React.ReactNode }) {
     { name: "اختبارات قياس", href: "/qiyas", icon: GraduationCapIcon },
     { name: "اختبر قدراتك", href: "/abilities", icon: BrainCircuitIcon },
     { name: "التحديات", href: "/challenges", icon: GamepadIcon },
+    { name: "وقتي", href: "/time-management", icon: Clock },
     { name: "اسأل سؤال", href: "/ask", icon: HelpCircleIcon },
     { name: "المكتبة", href: "/library", icon: BookOpenIcon },
     { name: "مجلداتي", href: "/folders", icon: FolderIcon },
     { name: "سجل الاختبارات", href: "/records", icon: ClipboardIcon },
-    { name: "كتبي", href: "/books", icon: BookOpenIcon },  // إضافة قسم "كتبي"
+    { name: "كتبي", href: "/books", icon: BookOpenIcon },
   ];
 
 
@@ -344,6 +347,9 @@ function Router({ splashDone }: { splashDone: boolean }) {
         {() => <ProtectedRoute><MainLayout>
           {isPremium ? <FoldersPage /> : <SubscriptionPlans />}
         </MainLayout></ProtectedRoute>}
+      </Route>
+      <Route path="/time-management">
+        {() => <ProtectedRoute><MainLayout><TimeManagementPage /></MainLayout></ProtectedRoute>}
       </Route>
       <Route path="/challenges">
         {() => <ProtectedRoute><MainLayout>
