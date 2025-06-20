@@ -95,12 +95,12 @@ function MainLayout({ children }: { children: React.ReactNode }) {
     { name: "اختبر قدراتك", href: "/abilities", icon: BrainCircuitIcon },
     { name: "التحديات", href: "/challenges", icon: GamepadIcon },
     { name: "وقتي", href: "/time-management", icon: Clock },
-    { name: "حمّل التطبيق", href: "/install", icon: Download },
     { name: "اسأل سؤال", href: "/ask", icon: HelpCircleIcon },
     { name: "المكتبة", href: "/library", icon: BookOpenIcon },
     { name: "مجلداتي", href: "/folders", icon: FolderIcon },
     { name: "سجل الاختبارات", href: "/records", icon: ClipboardIcon },
     { name: "كتبي", href: "/books", icon: BookOpenIcon },
+    { name: "حمّل التطبيق", href: "/install", icon: Download },
   ];
 
 
