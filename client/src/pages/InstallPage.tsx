@@ -30,15 +30,53 @@ const InstallPage: React.FC = () => {
   const [selectedPlatform, setSelectedPlatform] = useState<'android' | 'ios' | 'desktop' | null>(null);
 
   // تحميل APK مباشرة
-  const downloadAPK = () => {
-    // إنشاء رابط تحميل للـ APK
-    const apkUrl = '/app/qudratak-app.apk';
-    const link = document.createElement('a');
-    link.href = apkUrl;
-    link.download = 'قدراتك-Qudratak.apk';
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+  const downloadAPK = async () => {
+    try {
+      // عرض رسالة تحميل
+      const downloadButton = document.querySelector('#download-apk-btn') as HTMLButtonElement;
+      if (downloadButton) {
+        downloadButton.disabled = true;
+        downloadButton.innerHTML = '<svg className="animate-spin h-5 w-5 mr-2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" fill="none" stroke-dasharray="32" stroke-dashoffset="32"><animate attributeName="stroke-dasharray" dur="2s" values="0 32;16 16;0 32;0 32" repeatCount="indefinite"/><animate attributeName="stroke-dashoffset" dur="2s" values="0;-16;-32;-48" repeatCount="indefinite"/></circle></svg>جاري التحميل...';
+      }
+
+      // محاكاة وقت التحميل
+      await new Promise(resolve => setTimeout(resolve, 2000));
+      
+      // تحميل الملف
+      const apkUrl = '/app/qudratak-app.apk';
+      const response = await fetch(apkUrl);
+      const blob = await response.blob();
+      
+      // إنشاء رابط التحميل
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = 'منصة-قدراتك-v2.1.0.apk';
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+
+      // إعادة تعيين الزر
+      if (downloadButton) {
+        downloadButton.disabled = false;
+        downloadButton.innerHTML = '<svg className="h-6 w-6 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M9 19l3 3m0 0l3-3m-3 3V10"></path></svg>تحميل APK (15.2 MB) <svg className="h-5 w-5 ml-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"></path></svg>';
+      }
+
+      // عرض رسالة نجاح
+      alert('تم تحميل التطبيق بنجاح! تحقق من مجلد التحميلات واتبع تعليمات التثبيت.');
+
+    } catch (error) {
+      console.error('خطأ في التحميل:', error);
+      alert('حدث خطأ أثناء التحميل. يرجى المحاولة مرة أخرى.');
+      
+      // إعادة تعيين الزر في حالة الخطأ
+      const downloadButton = document.querySelector('#download-apk-btn') as HTMLButtonElement;
+      if (downloadButton) {
+        downloadButton.disabled = false;
+        downloadButton.innerHTML = '<svg className="h-6 w-6 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M9 19l3 3m0 0l3-3m-3 3V10"></path></svg>تحميل APK (15.2 MB) <svg className="h-5 w-5 ml-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"></path></svg>';
+      }
+    }
   };
 
   const installPWA = () => {
@@ -121,17 +159,24 @@ const InstallPage: React.FC = () => {
 
       <div className="text-center mt-8">
         <Button 
+          id="download-apk-btn"
           onClick={downloadAPK}
           size="lg"
-          className="bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white px-8 py-4 text-lg font-bold shadow-xl hover:shadow-2xl transition-all duration-300"
+          className="bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white px-8 py-4 text-lg font-bold shadow-xl hover:shadow-2xl transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
         >
           <Download className="h-6 w-6 mr-3" />
           تحميل APK (15.2 MB)
           <ExternalLink className="h-5 w-5 ml-3" />
         </Button>
         <p className="text-gray-500 text-sm mt-3">
-          نسخة 2.1.0 - آمن ومشفر 🔒
+          نسخة 2.1.0 - آمن ومشفر
         </p>
+        <div className="mt-4 p-4 bg-green-50 border border-green-200 rounded-lg">
+          <div className="flex items-center justify-center gap-2 text-green-700">
+            <Shield className="h-5 w-5" />
+            <span className="font-medium">الملف آمن ومتوافق مع Android 5.1+</span>
+          </div>
+        </div>
       </div>
     </div>
   );
