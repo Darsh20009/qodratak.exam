@@ -283,11 +283,14 @@ const InstallPage: React.FC = () => {
       <div className="text-center mb-12">
         <div className="inline-flex items-center justify-center mb-6">
           <div className="relative">
-            <img 
-              src="/app-logo.svg" 
-              alt="شعار منصة قدراتك" 
-              className="w-24 h-24 drop-shadow-2xl"
-            />
+            <div className="w-24 h-24 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center shadow-2xl">
+              <svg className="w-14 h-14 text-white" fill="currentColor" viewBox="0 0 24 24">
+                <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10c1.19 0 2.34-.21 3.41-.6.3-.11.49-.4.49-.72 0-.43-.35-.78-.78-.78-.25 0-.47.12-.61.3-.85.27-1.76.42-2.71.42-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8c0 .9-.16 1.76-.44 2.55-.27.76-.66 1.48-1.14 2.13-.48.65-1.05 1.23-1.69 1.73-.64.5-1.36.91-2.14 1.2-.78.29-1.62.44-2.5.44-.88 0-1.72-.15-2.5-.44-.78-.29-1.5-.7-2.14-1.2-.64-.5-1.21-1.08-1.69-1.73-.48-.65-.87-1.37-1.14-2.13C4.16 13.76 4 12.9 4 12c0-4.41 3.59-8 8-8s8 3.59 8 8c0 1.25-.29 2.43-.8 3.49-.51 1.06-1.23 2.01-2.12 2.8-.89.79-1.94 1.41-3.08 1.83-1.14.42-2.35.63-3.58.63h-.84c-.41 0-.75.34-.75.75s.34.75.75.75h.84c1.44 0 2.85-.25 4.19-.73 1.34-.48 2.57-1.22 3.61-2.15.52-.47.99-.99 1.41-1.56.42-.57.78-1.18 1.08-1.83.3-.65.53-1.33.69-2.04.16-.71.24-1.44.24-2.19 0-5.52-4.48-10-10-10z"/>
+                <circle cx="8.5" cy="10.5" r="1.5"/>
+                <circle cx="15.5" cy="10.5" r="1.5"/>
+                <path d="M12 17c2.21 0 4-1.79 4-4h-8c0 2.21 1.79 4 4 4z"/>
+              </svg>
+            </div>
             <div className="absolute inset-0 bg-gradient-to-r from-blue-500/20 to-purple-500/20 rounded-full blur-xl"></div>
           </div>
         </div>
