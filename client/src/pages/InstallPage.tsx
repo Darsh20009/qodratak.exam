@@ -37,22 +37,32 @@ const InstallPage: React.FC = () => {
       const downloadButton = document.querySelector('#download-apk-btn') as HTMLButtonElement;
       if (downloadButton) {
         downloadButton.disabled = true;
-        downloadButton.innerHTML = '<svg className="animate-spin h-5 w-5 mr-2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" fill="none" stroke-dasharray="32" stroke-dashoffset="32"><animate attributeName="stroke-dasharray" dur="2s" values="0 32;16 16;0 32;0 32" repeatCount="indefinite"/><animate attributeName="stroke-dashoffset" dur="2s" values="0;-16;-32;-48" repeatCount="indefinite"/></circle></svg>جاري التحميل...';
+        downloadButton.innerHTML = '<div className="flex items-center"><svg className="animate-spin h-5 w-5 mr-2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" fill="none" stroke-linecap="round" stroke-dasharray="64" stroke-dashoffset="64"></circle></svg>جاري التحميل...</div>';
       }
 
-      // محاكاة وقت التحميل
-      await new Promise(resolve => setTimeout(resolve, 2000));
+      // تحميل الملف مباشرة
+      const apkUrl = '/app/qudratak-app.apk';
+
+      // التحقق من وجود الملف أولاً
+      const response = await fetch(apkUrl, { method: 'HEAD' });
+      if (!response.ok) {
+        throw new Error('الملف غير موجود');
+      }
 
       // تحميل الملف
-      const apkUrl = '/app/qudratak-app.apk';
-      const response = await fetch(apkUrl);
-      const blob = await response.blob();
+      const downloadResponse = await fetch(apkUrl);
+      if (!downloadResponse.ok) {
+        throw new Error('فشل في تحميل الملف');
+      }
+
+      const blob = await downloadResponse.blob();
 
       // إنشاء رابط التحميل
       const url = window.URL.createObjectURL(blob);
       const link = document.createElement('a');
       link.href = url;
       link.download = 'منصة-قدراتك-v2.1.0.apk';
+      link.style.display = 'none';
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
@@ -61,21 +71,33 @@ const InstallPage: React.FC = () => {
       // إعادة تعيين الزر
       if (downloadButton) {
         downloadButton.disabled = false;
-        downloadButton.innerHTML = '<svg className="h-6 w-6 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M9 19l3 3m0 0l3-3m-3 3V10"></path></svg>تحميل APK (15.2 MB) <svg className="h-5 w-5 ml-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"></path></svg>';
+        downloadButton.innerHTML = '<Download className="h-6 w-6 mr-3" />تحميل APK (15.2 MB)<ExternalLink className="h-5 w-5 ml-3" />';
       }
 
       // عرض رسالة نجاح
-      alert('تم تحميل التطبيق بنجاح! تحقق من مجلد التحميلات واتبع تعليمات التثبيت.');
+      alert('تم تحميل التطبيق بنجاح! 🎉\n\nتحقق من مجلد التحميلات في جهازك واتبع تعليمات التثبيت.');
 
     } catch (error) {
       console.error('خطأ في التحميل:', error);
-      alert('حدث خطأ أثناء التحميل. يرجى المحاولة مرة أخرى.');
+
+      let errorMessage = 'حدث خطأ أثناء التحميل. ';
+      if (error instanceof Error) {
+        if (error.message.includes('الملف غير موجود')) {
+          errorMessage += 'الملف غير متوفر حالياً. يرجى المحاولة لاحقاً.';
+        } else if (error.message.includes('فشل في تحميل')) {
+          errorMessage += 'تحقق من اتصال الإنترنت وحاول مرة أخرى.';
+        } else {
+          errorMessage += 'يرجى المحاولة مرة أخرى.';
+        }
+      }
+
+      alert(errorMessage);
 
       // إعادة تعيين الزر في حالة الخطأ
       const downloadButton = document.querySelector('#download-apk-btn') as HTMLButtonElement;
       if (downloadButton) {
         downloadButton.disabled = false;
-        downloadButton.innerHTML = '<svg className="h-6 w-6 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M9 19l3 3m0 0l3-3m-3 3V10"></path></svg>تحميل APK (15.2 MB) <svg className="h-5 w-5 ml-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"></path></svg>';
+        downloadButton.innerHTML = '<Download className="h-6 w-6 mr-3" />تحميل APK (15.2 MB)<ExternalLink className="h-5 w-5 ml-3" />';
       }
     }
   };
@@ -282,7 +304,7 @@ const InstallPage: React.FC = () => {
     <div className="container mx-auto p-6 max-w-7xl" dir="rtl">
       {/* العنوان الرئيسي مع اللوجو */}
       <div className="text-center mb-12">
-        
+
         <div className="inline-flex items-center justify-center mb-6">
           <div className="relative">
             <div className="w-32 h-32 bg-gradient-to-r from-blue-600 to-purple-600 rounded-2xl flex items-center justify-center shadow-2xl">
@@ -310,7 +332,7 @@ const InstallPage: React.FC = () => {
           <div className="absolute inset-0 bg-gradient-to-br from-green-50/50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
 
           <CardHeader className="text-center pb-6 relative z-10">
-            
+
             <div className="inline-flex items-center justify-center mb-6">
           <div className="relative">
             <div className="w-32 h-32 bg-gradient-to-r from-blue-600 to-purple-600 rounded-2xl flex items-center justify-center shadow-2xl">
@@ -344,7 +366,7 @@ const InstallPage: React.FC = () => {
           <div className="absolute inset-0 bg-gradient-to-br from-blue-50/50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
 
           <CardHeader className="text-center pb-6 relative z-10">
-            
+
             <div className="inline-flex items-center justify-center mb-6">
           <div className="relative">
             <div className="w-32 h-32 bg-gradient-to-r from-blue-600 to-purple-600 rounded-2xl flex items-center justify-center shadow-2xl">
@@ -378,7 +400,7 @@ const InstallPage: React.FC = () => {
           <div className="absolute inset-0 bg-gradient-to-br from-purple-50/50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
 
           <CardHeader className="text-center pb-6 relative z-10">
-            
+
             <div className="inline-flex items-center justify-center mb-6">
           <div className="relative">
             <div className="w-32 h-32 bg-gradient-to-r from-blue-600 to-purple-600 rounded-2xl flex items-center justify-center shadow-2xl">

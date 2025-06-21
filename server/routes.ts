@@ -567,6 +567,38 @@ app.post("/api/auth/register", async (req: Request, res: Response) => {
     }
   });
 
+  // Download APK file
+  app.get("/app/qudratak-app.apk", async (req: Request, res: Response) => {
+    try {
+      const apkPath = path.resolve(process.cwd(), "public/app/qudratak-app.apk");
+      
+      if (!fs.existsSync(apkPath)) {
+        // إنشاء ملف APK إذا لم يكن موجوداً
+        const { exec } = require('child_process');
+        exec('node server/create-real-apk.js', (error: any) => {
+          if (error) {
+            console.error('Error creating APK:', error);
+          }
+        });
+        
+        return res.status(404).json({ message: "APK file not found. Please try again in a moment." });
+      }
+
+      // إعداد headers للتحميل
+      res.setHeader('Content-Type', 'application/vnd.android.package-archive');
+      res.setHeader('Content-Disposition', 'attachment; filename="منصة-قدراتك-v2.1.0.apk"');
+      res.setHeader('Cache-Control', 'no-cache');
+      
+      // إرسال الملف
+      const fileStream = fs.createReadStream(apkPath);
+      fileStream.pipe(res);
+      
+    } catch (error) {
+      console.error("Error serving APK file:", error);
+      res.status(500).json({ message: "Error downloading APK file" });
+    }
+  });
+
   // Get current user (for auth purposes)
   app.get("/api/user", async (req: Request, res: Response) => {
     try {
