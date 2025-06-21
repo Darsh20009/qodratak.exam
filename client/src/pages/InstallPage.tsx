@@ -22,7 +22,8 @@ import {
   ArrowRight,
   ExternalLink,
   FileDown,
-  Sparkles
+  Sparkles,
+  Brain
 } from 'lucide-react';
 
 const InstallPage: React.FC = () => {
@@ -281,14 +282,13 @@ const InstallPage: React.FC = () => {
     <div className="container mx-auto p-6 max-w-7xl" dir="rtl">
       {/* العنوان الرئيسي مع اللوجو */}
       <div className="text-center mb-12">
+        
         <div className="inline-flex items-center justify-center mb-6">
           <div className="relative">
-            <img 
-              src="/app-logo.svg" 
-              alt="شعار منصة قدراتك" 
-              className="w-24 h-24 drop-shadow-2xl"
-            />
-            <div className="absolute inset-0 bg-gradient-to-r from-blue-500/20 to-purple-500/20 rounded-full blur-xl"></div>
+            <div className="w-32 h-32 bg-gradient-to-r from-blue-600 to-purple-600 rounded-2xl flex items-center justify-center shadow-2xl">
+              <Brain className="h-16 w-16 text-white" strokeWidth={1.5} />
+            </div>
+            <div className="absolute -inset-4 bg-gradient-to-r from-blue-400 to-purple-400 rounded-2xl blur-xl opacity-30 -z-10"></div>
           </div>
         </div>
         <h1 className="text-4xl md:text-5xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent mb-4">
@@ -310,9 +310,15 @@ const InstallPage: React.FC = () => {
           <div className="absolute inset-0 bg-gradient-to-br from-green-50/50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
 
           <CardHeader className="text-center pb-6 relative z-10">
-            <div className="inline-flex items-center justify-center w-20 h-20 bg-gradient-to-r from-green-100 to-green-200 rounded-full mb-6 group-hover:scale-110 transition-transform duration-300 shadow-lg">
-              <Smartphone className="h-10 w-10 text-green-600" />
+            
+            <div className="inline-flex items-center justify-center mb-6">
+          <div className="relative">
+            <div className="w-32 h-32 bg-gradient-to-r from-blue-600 to-purple-600 rounded-2xl flex items-center justify-center shadow-2xl">
+              <Brain className="h-16 w-16 text-white" strokeWidth={1.5} />
             </div>
+            <div className="absolute -inset-4 bg-gradient-to-r from-blue-400 to-purple-400 rounded-2xl blur-xl opacity-30 -z-10"></div>
+          </div>
+        </div>
             <CardTitle className="text-2xl mb-3 group-hover:text-green-600 transition-colors">أندرويد و هواوي</CardTitle>
             <p className="text-gray-600">Samsung, Huawei, Xiaomi, Oppo</p>
           </CardHeader>
@@ -338,9 +344,15 @@ const InstallPage: React.FC = () => {
           <div className="absolute inset-0 bg-gradient-to-br from-blue-50/50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
 
           <CardHeader className="text-center pb-6 relative z-10">
-            <div className="inline-flex items-center justify-center w-20 h-20 bg-gradient-to-r from-blue-100 to-blue-200 rounded-full mb-6 group-hover:scale-110 transition-transform duration-300 shadow-lg">
-              <Apple className="h-10 w-10 text-blue-600" />
+            
+            <div className="inline-flex items-center justify-center mb-6">
+          <div className="relative">
+            <div className="w-32 h-32 bg-gradient-to-r from-blue-600 to-purple-600 rounded-2xl flex items-center justify-center shadow-2xl">
+              <Brain className="h-16 w-16 text-white" strokeWidth={1.5} />
             </div>
+            <div className="absolute -inset-4 bg-gradient-to-r from-blue-400 to-purple-400 rounded-2xl blur-xl opacity-30 -z-10"></div>
+          </div>
+        </div>
             <CardTitle className="text-2xl mb-3 group-hover:text-blue-600 transition-colors">آيفون و آيباد</CardTitle>
             <p className="text-gray-600">iPhone, iPad</p>
           </CardHeader>
@@ -366,9 +378,15 @@ const InstallPage: React.FC = () => {
           <div className="absolute inset-0 bg-gradient-to-br from-purple-50/50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
 
           <CardHeader className="text-center pb-6 relative z-10">
-            <div className="inline-flex items-center justify-center w-20 h-20 bg-gradient-to-r from-purple-100 to-purple-200 rounded-full mb-6 group-hover:scale-110 transition-transform duration-300 shadow-lg">
-              <Monitor className="h-10 w-10 text-purple-600" />
+            
+            <div className="inline-flex items-center justify-center mb-6">
+          <div className="relative">
+            <div className="w-32 h-32 bg-gradient-to-r from-blue-600 to-purple-600 rounded-2xl flex items-center justify-center shadow-2xl">
+              <Brain className="h-16 w-16 text-white" strokeWidth={1.5} />
             </div>
+            <div className="absolute -inset-4 bg-gradient-to-r from-blue-400 to-purple-400 rounded-2xl blur-xl opacity-30 -z-10"></div>
+          </div>
+        </div>
             <CardTitle className="text-2xl mb-3 group-hover:text-purple-600 transition-colors">سطح المكتب</CardTitle>
             <p className="text-gray-600">Windows, Mac, Linux</p>
           </CardHeader>
