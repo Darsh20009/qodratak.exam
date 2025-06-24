@@ -133,8 +133,9 @@ export function SubscriptionPlans() {
     if (method === 'telegram') {
       url = `https://t.me/qodratak2030?text=${message}`;
     } else { // whatsapp
-      const whatsappNumber = "201155201921";
-      url = `https://api.whatsapp.com/send/?phone=${whatsappNumber}&text=${message}&type=phone_number&app_absent=0`;
+      // استخدام رقم الهاتف الذي أدخله المستخدم
+      const userPhoneNumber = phoneCountryCode.replace('+', '') + userData.phoneNumber;
+      url = `https://api.whatsapp.com/send/?phone=${userPhoneNumber}&text=${message}&type=phone_number&app_absent=0`;
     }
 
     window.open(url, '_blank', 'noopener,noreferrer');

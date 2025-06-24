@@ -113,6 +113,11 @@ Preferred communication style: Simple, everyday language.
 
 ## Recent Changes
 
+### WhatsApp Integration Enhancement - Migration Day
+- **Direct WhatsApp Integration**: Modified subscription verification to open user's own WhatsApp
+- **User Phone Number Routing**: Now uses the phone number entered by user for verification instead of fixed number
+- **Improved User Experience**: Users are redirected to their own WhatsApp app with verification code
+
 ### Advanced Time Management System - June 20, 2025
 - **Enhanced "وقتي" (Time Management) Section**: Completely rebuilt with advanced features and local data storage
 - **Smart Local Storage**: Comprehensive data management system storing all user data locally on device
