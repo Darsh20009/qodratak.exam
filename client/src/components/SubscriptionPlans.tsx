@@ -198,307 +198,43 @@ export function SubscriptionPlans() {
   };
 
   // Email OTP Functions
-  const handleSendEmailOtp = () => {
+  const handleSendEmailOtp = async () => {
     const emailOtp = Math.floor(100000 + Math.random() * 900000).toString();
     setGeneratedEmailOtp(emailOtp);
 
-    // إنشاء بريد إلكتروني مصمم بشكل إبداعي مع CSS
-    const subject = encodeURIComponent('🔐 رمز التحقق من منصة قدراتك');
-    
-    const htmlBody = `
-<!DOCTYPE html>
-<html dir="rtl" lang="ar">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>رمز التحقق - قدراتك</title>
-    <style>
-        @import url('https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;600;700&display=swap');
-        
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-        
-        body {
-            font-family: 'Cairo', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            line-height: 1.6;
-            color: #333;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            min-height: 100vh;
-            padding: 20px;
-        }
-        
-        .email-container {
-            max-width: 600px;
-            margin: 0 auto;
-            background: white;
-            border-radius: 20px;
-            overflow: hidden;
-            box-shadow: 0 20px 60px rgba(0,0,0,0.1);
-            position: relative;
-        }
-        
-        .header {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            padding: 40px 30px;
-            text-align: center;
-            position: relative;
-            overflow: hidden;
-        }
-        
-        .header::before {
-            content: '';
-            position: absolute;
-            top: -50%;
-            left: -50%;
-            width: 200%;
-            height: 200%;
-            background: repeating-linear-gradient(
-                45deg,
-                transparent,
-                transparent 10px,
-                rgba(255,255,255,0.05) 10px,
-                rgba(255,255,255,0.05) 20px
-            );
-            animation: shimmer 3s linear infinite;
-        }
-        
-        @keyframes shimmer {
-            0% { transform: translateX(-100%) translateY(-100%) rotate(45deg); }
-            100% { transform: translateX(100%) translateY(100%) rotate(45deg); }
-        }
-        
-        .logo {
-            font-size: 2.5em;
-            font-weight: 700;
-            margin-bottom: 10px;
-            position: relative;
-            z-index: 2;
-        }
-        
-        .header-subtitle {
-            font-size: 1.1em;
-            opacity: 0.9;
-            position: relative;
-            z-index: 2;
-        }
-        
-        .content {
-            padding: 40px 30px;
-            text-align: center;
-        }
-        
-        .welcome-text {
-            font-size: 1.3em;
-            color: #333;
-            margin-bottom: 20px;
-            font-weight: 600;
-        }
-        
-        .description {
-            color: #666;
-            margin-bottom: 30px;
-            font-size: 1.1em;
-            line-height: 1.8;
-        }
-        
-        .otp-container {
-            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
-            border-radius: 15px;
-            padding: 30px;
-            margin: 30px 0;
-            position: relative;
-            overflow: hidden;
-        }
-        
-        .otp-container::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background: linear-gradient(45deg, transparent 30%, rgba(255,255,255,0.1) 50%, transparent 70%);
-            animation: shine 2s infinite;
-        }
-        
-        @keyframes shine {
-            0% { transform: translateX(-100%); }
-            100% { transform: translateX(100%); }
-        }
-        
-        .otp-label {
-            color: white;
-            font-size: 1.2em;
-            margin-bottom: 15px;
-            font-weight: 600;
-            position: relative;
-            z-index: 2;
-        }
-        
-        .otp-code {
-            background: white;
-            color: #333;
-            font-size: 3em;
-            font-weight: 700;
-            padding: 20px 30px;
-            border-radius: 10px;
-            letter-spacing: 8px;
-            margin: 0 auto;
-            display: inline-block;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
-            position: relative;
-            z-index: 2;
-            border: 3px solid #f093fb;
-        }
-        
-        .timer-info {
-            background: #fff3cd;
-            border: 2px solid #ffeaa7;
-            border-radius: 10px;
-            padding: 20px;
-            margin: 20px 0;
-            color: #856404;
-        }
-        
-        .timer-icon {
-            font-size: 1.5em;
-            margin-bottom: 10px;
-        }
-        
-        .security-note {
-            background: #d1ecf1;
-            border: 2px solid #bee5eb;
-            border-radius: 10px;
-            padding: 20px;
-            margin: 20px 0;
-            color: #0c5460;
-        }
-        
-        .footer {
-            background: #f8f9fa;
-            padding: 30px;
-            text-align: center;
-            border-top: 3px solid #e9ecef;
-        }
-        
-        .footer-logo {
-            font-size: 1.5em;
-            font-weight: 600;
-            color: #667eea;
-            margin-bottom: 10px;
-        }
-        
-        .footer-text {
-            color: #6c757d;
-            font-size: 0.9em;
-        }
-        
-        .social-links {
-            margin-top: 20px;
-        }
-        
-        .social-links a {
-            display: inline-block;
-            margin: 0 10px;
-            padding: 10px;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            text-decoration: none;
-            border-radius: 50%;
-            width: 40px;
-            height: 40px;
-            line-height: 20px;
-            transition: transform 0.3s ease;
-        }
-        
-        .social-links a:hover {
-            transform: translateY(-3px);
-        }
-        
-        @media (max-width: 600px) {
-            .email-container {
-                margin: 10px;
-                border-radius: 15px;
-            }
-            
-            .header {
-                padding: 30px 20px;
-            }
-            
-            .content {
-                padding: 30px 20px;
-            }
-            
-            .otp-code {
-                font-size: 2.5em;
-                letter-spacing: 4px;
-                padding: 15px 20px;
-            }
-        }
-    </style>
-</head>
-<body>
-    <div class="email-container">
-        <div class="header">
-            <div class="logo">قـدراتـك</div>
-            <div class="header-subtitle">منصة التدريب على اختبار القياس</div>
-        </div>
-        
-        <div class="content">
-            <div class="welcome-text">مرحباً بك! 👋</div>
-            
-            <div class="description">
-                لإكمال عملية التحقق من حسابك، يرجى استخدام الرمز التالي:
-            </div>
-            
-            <div class="otp-container">
-                <div class="otp-label">رمز التحقق الخاص بك</div>
-                <div class="otp-code">${emailOtp}</div>
-            </div>
-            
-            <div class="timer-info">
-                <div class="timer-icon">⏰</div>
-                <strong>مهم:</strong> هذا الرمز صالح لمدة 3 دقائق فقط
-            </div>
-            
-            <div class="security-note">
-                <div style="font-size: 1.5em; margin-bottom: 10px;">🔒</div>
-                <strong>ملاحظة أمنية:</strong><br>
-                لا تشارك هذا الرمز مع أي شخص آخر لحماية حسابك
-            </div>
-        </div>
-        
-        <div class="footer">
-            <div class="footer-logo">قدراتك</div>
-            <div class="footer-text">
-                منصة شاملة للتدريب على اختبارات القياس<br>
-                نساعدك على تحقيق أحلامك الأكاديمية
-            </div>
-            
-            <div class="social-links">
-                <a href="https://t.me/qodratak2030" title="تليجرام">📱</a>
-                <a href="https://www.qodratak.space" title="الموقع الرسمي">🌐</a>
-                <a href="mailto:support@qodratak.space" title="الدعم الفني">📧</a>
-            </div>
-        </div>
-    </div>
-</body>
-</html>`;
+    try {
+      const response = await fetch('/api/send-email-otp', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          email: userData.email,
+          otp: emailOtp
+        })
+      });
 
-    const encodedHtmlBody = encodeURIComponent(htmlBody);
-    const gmailUrl = `https://mail.google.com/mail/?view=cm&to=${userData.email}&su=${subject}&body=${encodedHtmlBody}`;
-    window.open(gmailUrl, '_blank', 'noopener,noreferrer');
-    
-    setIsEmailOtpSent(true);
-    setEmailCountdown(OTP_COUNTDOWN_SECONDS);
-    toast({
-      title: "📧 تم فتح Gmail مع تصميم احترافي!",
-      description: "يرجى إرسال البريد الإلكتروني المصمم بشكل جميل إلى نفسك ثم إدخال الرمز.",
-    });
+      const result = await response.json();
+
+      if (result.success) {
+        setIsEmailOtpSent(true);
+        setEmailCountdown(OTP_COUNTDOWN_SECONDS);
+        toast({
+          title: "تم إرسال البريد الإلكتروني بنجاح",
+          description: `تم إرسال رمز التحقق إلى ${userData.email}`,
+          className: "bg-green-500 text-white dark:bg-green-600 dark:text-white",
+        });
+      } else {
+        throw new Error(result.error || 'فشل في إرسال البريد الإلكتروني');
+      }
+    } catch (error) {
+      console.error('Email sending error:', error);
+      toast({
+        title: "خطأ في إرسال البريد الإلكتروني",
+        description: "حدث خطأ أثناء إرسال رمز التحقق. يرجى المحاولة مرة أخرى.",
+        variant: "destructive"
+      });
+    }
   };
 
   const handleEmailOtpInputChange = (e: React.ChangeEvent<HTMLInputElement>, index: number) => {

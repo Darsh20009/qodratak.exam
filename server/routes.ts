@@ -7,6 +7,13 @@ import path from "path";
 import fs from "fs";
 import { insertQuestionSchema } from "@shared/schema";
 import { TestType, TestDifficulty } from "@shared/types";
+import Mailjet from 'node-mailjet';
+
+// Initialize Mailjet
+const mailjet = new Mailjet({
+  apiKey: '8d789743a1c5b0154b54e45357a32783',
+  apiSecret: '0cd53ff446d8445646e6ca8eee716b04'
+});
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Initialize passport
