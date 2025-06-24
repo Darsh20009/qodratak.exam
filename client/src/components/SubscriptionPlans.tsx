@@ -224,8 +224,8 @@ export function SubscriptionPlans() {
         setIsEmailOtpSent(true);
         setEmailCountdown(OTP_COUNTDOWN_SECONDS);
         toast({
-          title: "تم إرسال البريد الإلكتروني بنجاح",
-          description: `تم إرسال رمز التحقق إلى ${userData.email}`,
+          title: "تم إرسال البريد الإلكتروني",
+          description: `تم إرسال رمز التحقق إلى ${userData.email}. في حالة عدم وصوله خلال دقائق، تحقق من مجلد الرسائل المزعجة أو استخدم عنوان بريد إلكتروني آخر.`,
           className: "bg-green-500 text-white dark:bg-green-600 dark:text-white",
         });
       } else {
@@ -512,6 +512,9 @@ ${finalNote}`
             <Button onClick={handleSendEmailOtp} className="w-full h-12 text-lg">
                 إرسال رمز التحقق عبر البريد الإلكتروني
             </Button>
+            <p className="text-xs text-muted-foreground mt-2">
+              ملاحظة: تأكد من صحة عنوان البريد الإلكتروني وتحقق من مجلد الرسائل المزعجة
+            </p>
         </>
       ) : (
         <>

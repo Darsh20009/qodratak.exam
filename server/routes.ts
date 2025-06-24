@@ -15,7 +15,22 @@ const mailjet = new Mailjet({
   apiSecret: '0cd53ff446d8445646e6ca8eee716b04'
 });
 
+// Test Mailjet connection
+async function testMailjetConnection() {
+  try {
+    const result = await mailjet.get('sender').request();
+    console.log('Mailjet connection successful. Available senders:', result.body.Data);
+    return true;
+  } catch (error) {
+    console.error('Mailjet connection failed:', error);
+    return false;
+  }
+}
+
 export async function registerRoutes(app: Express): Promise<Server> {
+  // Test Mailjet connection on startup
+  await testMailjetConnection();
+  
   // Add CORS headers for API routes first
   app.use('/api', (req, res, next) => {
     res.header('Access-Control-Allow-Origin', '*');
@@ -985,7 +1000,7 @@ app.post("/api/auth/register", async (req: Request, res: Response) => {
           Messages: [
             {
               From: {
-                Email: "noreply@qodratak.space",
+                Email: "noreply@sandbox.mailjet.com",
                 Name: "منصة قدراتك"
               },
               To: [
@@ -1002,12 +1017,25 @@ app.post("/api/auth/register", async (req: Request, res: Response) => {
         });
 
       const result = await request;
+      console.log('Full Mailjet response:', JSON.stringify(result.body, null, 2));
 
-      res.json({ 
-        success: true, 
-        message: "تم إرسال رمز التحقق إلى بريدك الإلكتروني بنجاح",
-        messageId: result.body.Messages[0].To[0].MessageID
-      });
+      // Check if email was actually sent successfully
+      const message = result.body.Messages[0];
+      const recipientInfo = message.To[0];
+      
+      console.log('Email Status:', message.Status);
+      console.log('Recipient Status:', recipientInfo.MessageUUID, recipientInfo.MessageID);
+      
+      if (message.Status === 'success') {
+        res.json({ 
+          success: true, 
+          message: "تم إرسال رمز التحقق إلى بريدك الإلكتروني بنجاح",
+          messageId: recipientInfo.MessageID,
+          messageUUID: recipientInfo.MessageUUID
+        });
+      } else {
+        throw new Error(`Mailjet returned status: ${message.Status}`);
+      }
 
     } catch (error: any) {
       console.error('Mailjet error:', error);
