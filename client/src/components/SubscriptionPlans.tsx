@@ -62,6 +62,14 @@ export function SubscriptionPlans() {
   const [isVerifying, setIsVerifying] = useState(false);
   const otpInputRefs = useRef<(HTMLInputElement | null)[]>([]);
 
+  // Step 2.5: Email Verification
+  const [generatedEmailOtp, setGeneratedEmailOtp] = useState<string | null>(null);
+  const [emailOtpInput, setEmailOtpInput] = useState<string[]>(new Array(6).fill(""));
+  const [isEmailOtpSent, setIsEmailOtpSent] = useState(false);
+  const [emailCountdown, setEmailCountdown] = useState(OTP_COUNTDOWN_SECONDS);
+  const [isVerifyingEmail, setIsVerifyingEmail] = useState(false);
+  const emailOtpInputRefs = useRef<(HTMLInputElement | null)[]>([]);
+
   // Step 3: Payment
   const [selectedPaymentMethod, setSelectedPaymentMethod] = useState<'bank' | 'stc' | 'paypal' | null>(null);
   const [copySuccess, setCopySuccess] = useState<'bank' | 'stc' | null>(null);
@@ -86,6 +94,15 @@ export function SubscriptionPlans() {
     }
   }, [isOtpSent, countdown]);
 
+  useEffect(() => {
+    if (isEmailOtpSent && emailCountdown > 0) {
+      const timer = setTimeout(() => setEmailCountdown(emailCountdown - 1), 1000);
+      return () => clearTimeout(timer);
+    } else if (emailCountdown === 0) {
+        setIsEmailOtpSent(true); 
+    }
+  }, [isEmailOtpSent, emailCountdown]);
+
 
   // Handlers
   const handleCopy = async (text: string, type: 'bank' | 'stc') => {
@@ -101,11 +118,15 @@ export function SubscriptionPlans() {
 
   const resetState = () => {
     setCurrentStep(1);
-    setTermsAccepted(false); // <-- إضافة جديدة
+    setTermsAccepted(false);
     setIsOtpSent(false);
     setGeneratedOtp(null);
     setOtpInput(new Array(6).fill(""));
     setCountdown(OTP_COUNTDOWN_SECONDS);
+    setIsEmailOtpSent(false);
+    setGeneratedEmailOtp(null);
+    setEmailOtpInput(new Array(6).fill(""));
+    setEmailCountdown(OTP_COUNTDOWN_SECONDS);
     setSelectedPaymentMethod(null);
     setUserData(prev => ({ name: prev.name, email: prev.email, password: '', phoneNumber: '' }));
   };
@@ -176,14 +197,87 @@ export function SubscriptionPlans() {
     }
   };
 
+  // Email OTP Functions
+  const handleSendEmailOtp = () => {
+    const emailOtp = Math.floor(100000 + Math.random() * 900000).toString();
+    setGeneratedEmailOtp(emailOtp);
+
+    // فتح Gmail مباشرة لإرسال البريد الإلكتروني
+    const subject = encodeURIComponent('رمز التحقق من قدراتك');
+    const body = encodeURIComponent(`
+رمز التحقق الخاص بك هو: ${emailOtp}
+
+هذا الرمز صالح لمدة 3 دقائق فقط.
+يرجى عدم مشاركة هذا الرمز مع أي شخص آخر.
+
+مع تحيات فريق قدراتك
+    `);
+    
+    const gmailUrl = `https://mail.google.com/mail/?view=cm&to=${userData.email}&su=${subject}&body=${body}`;
+    window.open(gmailUrl, '_blank', 'noopener,noreferrer');
+    
+    setIsEmailOtpSent(true);
+    setEmailCountdown(OTP_COUNTDOWN_SECONDS);
+    toast({
+      title: "📧 تم فتح Gmail!",
+      description: "يرجى إرسال البريد الإلكتروني إلى نفسك ثم إدخال الرمز المرسل.",
+    });
+  };
+
+  const handleEmailOtpInputChange = (e: React.ChangeEvent<HTMLInputElement>, index: number) => {
+    const { value } = e.target;
+    if (/^[0-9]$/.test(value) || value === "") {
+        const newEmailOtpInput = [...emailOtpInput];
+        newEmailOtpInput[index] = value;
+        setEmailOtpInput(newEmailOtpInput);
+
+        if (value && index < 5) {
+            emailOtpInputRefs.current[index + 1]?.focus();
+        }
+    }
+  };
+
+  const handleEmailOtpKeyDown = (e: React.KeyboardEvent<HTMLInputElement>, index: number) => {
+    if (e.key === 'Backspace' && !emailOtpInput[index] && index > 0) {
+      emailOtpInputRefs.current[index - 1]?.focus();
+    }
+  };
+
+  const handleEmailOtpPaste = (e: React.ClipboardEvent<HTMLInputElement>) => {
+    const pastedData = e.clipboardData.getData('text').replace(/\D/g, '');
+    if (pastedData.length === 6) {
+      e.preventDefault();
+      const newEmailOtp = pastedData.split('');
+      setEmailOtpInput(newEmailOtp);
+      emailOtpInputRefs.current[5]?.focus();
+    }
+  };
+
+  const handleVerifyEmailOtp = () => {
+    setIsVerifyingEmail(true);
+    const enteredEmailOtp = emailOtpInput.join("");
+
+    setTimeout(() => {
+        if (enteredEmailOtp === generatedEmailOtp) {
+            toast({ title: "✅ تم التحقق من البريد الإلكتروني بنجاح!", description: "تم تأكيد بريدك الإلكتروني. يرجى اختيار طريقة الدفع.", className: "bg-green-500 text-white dark:bg-green-600 dark:text-white" });
+            setCurrentStep(3);
+        } else {
+            toast({ title: "❌ رمز غير صحيح", description: "الرمز الذي أدخلته غير صحيح. يرجى المحاولة مرة أخرى.", variant: "destructive" });
+            setEmailOtpInput(new Array(6).fill(""));
+            emailOtpInputRefs.current[0]?.focus();
+        }
+        setIsVerifyingEmail(false);
+    }, 1000);
+  };
+
   const handleVerifyOtp = () => {
     setIsVerifying(true);
     const enteredOtp = otpInput.join("");
 
     setTimeout(() => {
         if (enteredOtp === generatedOtp) {
-            toast({ title: "✅ تم التحقق بنجاح!", description: "تم تأكيد رقم هاتفك. يرجى اختيار طريقة الدفع.", className: "bg-green-500 text-white dark:bg-green-600 dark:text-white" });
-            setCurrentStep(3);
+            toast({ title: "✅ تم التحقق من الهاتف بنجاح!", description: "تم تأكيد رقم هاتفك. الآن يرجى التحقق من بريدك الإلكتروني.", className: "bg-green-500 text-white dark:bg-green-600 dark:text-white" });
+            setCurrentStep(2.5);
         } else {
             toast({ title: "❌ رمز غير صحيح", description: "الرمز الذي أدخلته غير صحيح. يرجى المحاولة مرة أخرى.", variant: "destructive" });
             setOtpInput(new Array(6).fill(""));
@@ -380,6 +474,53 @@ ${finalNote}`
                   <p className="text-muted-foreground text-sm ">إعادة إرسال الرمز بعد: <span className="font-bold text-primary">{Math.floor(countdown / 60)}:{('0' + countdown % 60).slice(-2)}</span></p>
               ) : (
                   <Button variant="link" className="text-primary" onClick={() => handleSendOtp('whatsapp')}>لم تستلم الرمز؟ أعد الإرسال</Button>
+              )}
+            </div>
+        </>
+      )}
+    </div>
+  );
+
+  const renderStepTwoEmailOTP = () => (
+    <div className="space-y-6 pt-4 text-center">
+      {!isEmailOtpSent ? (
+        <>
+            <h3 className="font-semibold text-lg flex items-center justify-center">
+                <MessageSquareTextIcon className="h-5 w-5 ml-2 text-primary" />
+                التحقق من البريد الإلكتروني
+            </h3>
+            <p className="text-sm text-muted-foreground">
+                الآن نحتاج للتحقق من بريدك الإلكتروني <span className="font-bold text-primary">{userData.email}</span>
+            </p>
+            <Button onClick={handleSendEmailOtp} className="w-full h-12 text-lg">
+                إرسال رمز التحقق عبر البريد الإلكتروني
+            </Button>
+        </>
+      ) : (
+        <>
+            <h3 className="font-semibold text-lg">أدخل رمز التحقق من البريد الإلكتروني</h3>
+            <p className="text-sm text-muted-foreground">
+                تم إرسال الرمز إلى <span className="font-bold text-primary">{userData.email}</span>.
+            </p>
+            <div dir="ltr" className="flex justify-center gap-2 md:gap-3 pt-4" onPaste={handleEmailOtpPaste}>
+                {emailOtpInput.map((digit, index) => (
+                    <Input
+                        key={index}
+                        ref={el => emailOtpInputRefs.current[index] = el}
+                        type="tel"
+                        maxLength={1}
+                        value={digit}
+                        onChange={(e) => handleEmailOtpInputChange(e, index)}
+                        onKeyDown={(e) => handleEmailOtpKeyDown(e, index)}
+                        className="w-12 h-14 md:w-14 md:h-16 text-center text-2xl font-bold rounded-lg focus:ring-2 focus:ring-primary dark:bg-slate-700"
+                    />
+                ))}
+            </div>
+            <div className="h-6 pt-4">
+              {emailCountdown > 0 ? (
+                  <p className="text-muted-foreground text-sm ">إعادة إرسال الرمز بعد: <span className="font-bold text-primary">{Math.floor(emailCountdown / 60)}:{('0' + emailCountdown % 60).slice(-2)}</span></p>
+              ) : (
+                  <Button variant="link" className="text-primary" onClick={handleSendEmailOtp}>لم تستلم الرمز؟ أعد الإرسال</Button>
               )}
             </div>
         </>
@@ -609,19 +750,26 @@ ${finalNote}`
                 استمارة اشتراك: <span className="text-primary">{currentPlanDetails?.name}</span>
               </DialogTitle>
               <DialogDescription className="pt-1 dark:text-slate-400">
-                {currentStep === 1 && `الخطوة 1 من 3: المعلومات الشخصية`}
-                {currentStep === 2 && `الخطوة 2 من 3: التحقق من رقم الهاتف`}
-                {currentStep === 3 && `الخطوة 3 من 3: اختيار طريقة الدفع`}
+                {currentStep === 1 && `الخطوة 1 من 4: المعلومات الشخصية`}
+                {currentStep === 2 && `الخطوة 2 من 4: التحقق من رقم الهاتف`}
+                {currentStep === 2.5 && `الخطوة 3 من 4: التحقق من البريد الإلكتروني`}
+                {currentStep === 3 && `الخطوة 4 من 4: اختيار طريقة الدفع`}
               </DialogDescription>
             </DialogHeader>
 
             {currentStep === 1 && renderStepOneInfo()}
             {currentStep === 2 && renderStepTwoOTP()}
+            {currentStep === 2.5 && renderStepTwoEmailOTP()}
             {currentStep === 3 && renderStepThreePayment()}
 
             <DialogFooter className="pt-6 flex flex-col-reverse sm:flex-row sm:justify-between gap-2 mt-4">
-                {currentStep > 1 && (
+                {currentStep > 1 && currentStep !== 2.5 && (
                     <Button variant="outline" className="w-full sm:w-auto dark:border-slate-600" onClick={() => setCurrentStep(currentStep - 1)}>
+                         السابق <ArrowRightIcon className="mr-2 h-4 w-4" />
+                    </Button>
+                )}
+                {currentStep === 2.5 && (
+                    <Button variant="outline" className="w-full sm:w-auto dark:border-slate-600" onClick={() => setCurrentStep(2)}>
                          السابق <ArrowRightIcon className="mr-2 h-4 w-4" />
                     </Button>
                 )}
@@ -633,8 +781,20 @@ ${finalNote}`
                 )}
                 {currentStep === 2 && isOtpSent && (
                     <Button className="w-full sm:w-auto" onClick={handleVerifyOtp} disabled={otpInput.join("").length !== 6 || isVerifying}>
-                        {isVerifying ? "جارٍ التحقق..." : "تحقق وتابع للدفع"}
+                        {isVerifying ? "جارٍ التحقق..." : "تحقق وتابع للبريد الإلكتروني"}
                         {!isVerifying && <KeyRoundIcon className="mr-2 h-4 w-4" />}
+                    </Button>
+                )}
+                {currentStep === 2.5 && isEmailOtpSent && (
+                    <Button className="w-full sm:w-auto" onClick={handleVerifyEmailOtp} disabled={emailOtpInput.join("").length !== 6 || isVerifyingEmail}>
+                        {isVerifyingEmail ? "جارٍ التحقق..." : "تحقق وتابع للدفع"}
+                        {!isVerifyingEmail && <KeyRoundIcon className="mr-2 h-4 w-4" />}
+                    </Button>
+                )}
+                {currentStep === 2.5 && !isEmailOtpSent && (
+                    <Button className="w-full sm:w-auto" onClick={handleSendEmailOtp}>
+                        إرسال رمز التحقق عبر البريد الإلكتروني
+                        <MessageSquareTextIcon className="mr-2 h-4 w-4" />
                     </Button>
                 )}
             </DialogFooter>

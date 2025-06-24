@@ -118,6 +118,13 @@ Preferred communication style: Simple, everyday language.
 - **User Phone Number Routing**: Now uses the phone number entered by user for verification instead of fixed number
 - **Improved User Experience**: Users are redirected to their own WhatsApp app with verification code
 
+### Enhanced WhatsApp & Email Verification - January 24, 2025
+- **WhatsApp Integration**: Modified the subscription flow to open user's own WhatsApp instead of a fixed number
+- **Email Verification Step**: Added email verification as a required step after phone verification 
+- **Gmail Integration**: Automatic opening of Gmail compose window with pre-filled verification code
+- **Multi-Step Process**: Updated subscription flow from 3 steps to 4 steps including email verification
+- **Arabic Interface**: Fully localized verification messages and user interface
+
 ### Advanced Time Management System - June 20, 2025
 - **Enhanced "وقتي" (Time Management) Section**: Completely rebuilt with advanced features and local data storage
 - **Smart Local Storage**: Comprehensive data management system storing all user data locally on device
