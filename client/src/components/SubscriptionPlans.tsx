@@ -198,47 +198,476 @@ export function SubscriptionPlans() {
   };
 
   // Email OTP Functions
-  const handleSendEmailOtp = async () => {
+  const handleSendEmailOtp = () => {
     const emailOtp = Math.floor(100000 + Math.random() * 900000).toString();
     setGeneratedEmailOtp(emailOtp);
 
-    try {
-      const response = await fetch('/api/send-email-otp', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          email: userData.email,
-          otp: emailOtp
-        })
-      });
+    // إنشاء بريد إلكتروني مصمم بشكل إبداعي مع CSS متقدم
+    const subject = encodeURIComponent('🔐 رمز التحقق من منصة قدراتك - تأكيد الاشتراك');
+    
+    const htmlBody = `
+<!DOCTYPE html>
+<html dir="rtl" lang="ar">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>رمز التحقق - قدراتك</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;600;700;800&display=swap');
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Cairo', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #f093fb 100%);
+            min-height: 100vh;
+            padding: 20px;
+            position: relative;
+            overflow-x: hidden;
+        }
+        
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: 
+                radial-gradient(circle at 20% 80%, rgba(120, 119, 198, 0.3) 0%, transparent 50%),
+                radial-gradient(circle at 80% 20%, rgba(255, 119, 198, 0.3) 0%, transparent 50%);
+            z-index: -1;
+            animation: backgroundMove 20s ease-in-out infinite;
+        }
+        
+        @keyframes backgroundMove {
+            0%, 100% { transform: translate(0, 0) rotate(0deg); }
+            33% { transform: translate(30px, -30px) rotate(1deg); }
+            66% { transform: translate(-20px, 20px) rotate(-1deg); }
+        }
+        
+        .email-container {
+            max-width: 650px;
+            margin: 0 auto;
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(20px);
+            border-radius: 25px;
+            overflow: hidden;
+            box-shadow: 
+                0 25px 80px rgba(0,0,0,0.15),
+                0 0 0 1px rgba(255,255,255,0.2),
+                inset 0 1px 0 rgba(255,255,255,0.8);
+            position: relative;
+            border: 2px solid transparent;
+            background-clip: padding-box;
+        }
+        
+        .email-container::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(45deg, #667eea, #764ba2, #f093fb, #667eea);
+            border-radius: 25px;
+            padding: 2px;
+            z-index: -1;
+            animation: borderGlow 4s linear infinite;
+        }
+        
+        @keyframes borderGlow {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+        
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #f093fb 100%);
+            color: white;
+            padding: 50px 40px;
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .header::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: repeating-linear-gradient(
+                45deg,
+                transparent,
+                transparent 15px,
+                rgba(255,255,255,0.03) 15px,
+                rgba(255,255,255,0.03) 30px
+            );
+            animation: shimmer 6s linear infinite;
+        }
+        
+        .header::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: radial-gradient(circle at 30% 30%, rgba(255,255,255,0.2) 0%, transparent 60%);
+            animation: pulse 3s ease-in-out infinite;
+        }
+        
+        @keyframes shimmer {
+            0% { transform: translateX(-100%) translateY(-100%) rotate(45deg); }
+            100% { transform: translateX(100%) translateY(100%) rotate(45deg); }
+        }
+        
+        @keyframes pulse {
+            0%, 100% { opacity: 0.6; transform: scale(1); }
+            50% { opacity: 1; transform: scale(1.05); }
+        }
+        
+        .logo {
+            font-size: 3.5em;
+            font-weight: 800;
+            margin-bottom: 15px;
+            position: relative;
+            z-index: 2;
+            background: linear-gradient(45deg, #fff, #f0f8ff, #fff);
+            background-clip: text;
+            -webkit-background-clip: text;
+            color: transparent;
+            text-shadow: 0 2px 20px rgba(255,255,255,0.5);
+            animation: logoGlow 2s ease-in-out infinite alternate;
+        }
+        
+        @keyframes logoGlow {
+            from { filter: drop-shadow(0 0 20px rgba(255,255,255,0.5)); }
+            to { filter: drop-shadow(0 0 30px rgba(255,255,255,0.8)); }
+        }
+        
+        .header-subtitle {
+            font-size: 1.3em;
+            opacity: 0.95;
+            position: relative;
+            z-index: 2;
+            font-weight: 500;
+            letter-spacing: 1px;
+        }
+        
+        .content {
+            padding: 50px 40px;
+            text-align: center;
+            position: relative;
+        }
+        
+        .welcome-text {
+            font-size: 1.8em;
+            color: #333;
+            margin-bottom: 25px;
+            font-weight: 700;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            background-clip: text;
+            -webkit-background-clip: text;
+            color: transparent;
+        }
+        
+        .description {
+            color: #555;
+            margin-bottom: 40px;
+            font-size: 1.2em;
+            line-height: 1.8;
+            font-weight: 500;
+        }
+        
+        .otp-container {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #f093fb 100%);
+            border-radius: 20px;
+            padding: 40px;
+            margin: 40px 0;
+            position: relative;
+            overflow: hidden;
+            box-shadow: 0 20px 60px rgba(102, 126, 234, 0.3);
+        }
+        
+        .otp-container::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+            animation: slideShine 3s infinite;
+        }
+        
+        @keyframes slideShine {
+            0% { left: -100%; }
+            100% { left: 100%; }
+        }
+        
+        .otp-label {
+            color: white;
+            font-size: 1.4em;
+            margin-bottom: 20px;
+            font-weight: 700;
+            position: relative;
+            z-index: 2;
+            text-shadow: 0 2px 10px rgba(0,0,0,0.3);
+        }
+        
+        .otp-code {
+            background: linear-gradient(135deg, #fff 0%, #f8f9ff 100%);
+            color: #333;
+            font-size: 3.5em;
+            font-weight: 900;
+            padding: 25px 40px;
+            border-radius: 15px;
+            letter-spacing: 12px;
+            margin: 0 auto;
+            display: inline-block;
+            box-shadow: 
+                0 15px 40px rgba(0,0,0,0.15),
+                inset 0 1px 0 rgba(255,255,255,0.8),
+                0 0 0 3px rgba(102, 126, 234, 0.3);
+            position: relative;
+            z-index: 2;
+            border: 4px solid transparent;
+            background-clip: padding-box;
+            animation: codeGlow 2s ease-in-out infinite alternate;
+        }
+        
+        @keyframes codeGlow {
+            from { 
+                box-shadow: 
+                    0 15px 40px rgba(0,0,0,0.15),
+                    inset 0 1px 0 rgba(255,255,255,0.8),
+                    0 0 0 3px rgba(102, 126, 234, 0.3);
+            }
+            to { 
+                box-shadow: 
+                    0 20px 50px rgba(0,0,0,0.2),
+                    inset 0 1px 0 rgba(255,255,255,0.9),
+                    0 0 0 5px rgba(102, 126, 234, 0.5);
+            }
+        }
+        
+        .info-cards {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin: 30px 0;
+        }
+        
+        .info-card {
+            background: linear-gradient(135deg, rgba(255,255,255,0.9) 0%, rgba(248,249,255,0.9) 100%);
+            border-radius: 15px;
+            padding: 25px;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255,255,255,0.3);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+        
+        .info-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 15px 40px rgba(0,0,0,0.1);
+        }
+        
+        .timer-card {
+            border-left: 4px solid #ff6b6b;
+            color: #d63031;
+        }
+        
+        .security-card {
+            border-left: 4px solid #00cec9;
+            color: #00b894;
+        }
+        
+        .card-icon {
+            font-size: 2em;
+            margin-bottom: 10px;
+            display: block;
+        }
+        
+        .card-title {
+            font-weight: 700;
+            font-size: 1.1em;
+            margin-bottom: 8px;
+        }
+        
+        .card-text {
+            font-size: 0.95em;
+            line-height: 1.5;
+        }
+        
+        .footer {
+            background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+            padding: 40px;
+            text-align: center;
+            border-top: 1px solid rgba(0,0,0,0.1);
+            position: relative;
+        }
+        
+        .footer::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 1px;
+            background: linear-gradient(90deg, transparent, rgba(102, 126, 234, 0.5), transparent);
+        }
+        
+        .footer-logo {
+            font-size: 2em;
+            font-weight: 700;
+            color: #667eea;
+            margin-bottom: 15px;
+            text-shadow: 0 2px 10px rgba(102, 126, 234, 0.3);
+        }
+        
+        .footer-text {
+            color: #6c757d;
+            font-size: 1em;
+            line-height: 1.6;
+            margin-bottom: 20px;
+        }
+        
+        .user-info {
+            background: linear-gradient(135deg, rgba(102, 126, 234, 0.1) 0%, rgba(240, 147, 251, 0.1) 100%);
+            border-radius: 15px;
+            padding: 20px;
+            margin: 25px 0;
+            border: 2px solid rgba(102, 126, 234, 0.2);
+        }
+        
+        .user-info-title {
+            font-weight: 700;
+            color: #667eea;
+            margin-bottom: 10px;
+            font-size: 1.1em;
+        }
+        
+        .user-email {
+            font-weight: 600;
+            color: #333;
+            font-size: 1.1em;
+            background: rgba(255,255,255,0.8);
+            padding: 8px 15px;
+            border-radius: 8px;
+            display: inline-block;
+        }
+        
+        @media (max-width: 700px) {
+            .email-container {
+                margin: 10px;
+                border-radius: 20px;
+            }
+            
+            .header {
+                padding: 35px 25px;
+            }
+            
+            .content {
+                padding: 35px 25px;
+            }
+            
+            .logo {
+                font-size: 2.8em;
+            }
+            
+            .otp-code {
+                font-size: 2.8em;
+                letter-spacing: 6px;
+                padding: 20px 25px;
+            }
+            
+            .info-cards {
+                grid-template-columns: 1fr;
+                gap: 15px;
+            }
+            
+            .welcome-text {
+                font-size: 1.5em;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="email-container">
+        <div class="header">
+            <div class="logo">قـدراتـك</div>
+            <div class="header-subtitle">منصة التدريب الأولى على اختبار القياس</div>
+        </div>
+        
+        <div class="content">
+            <div class="welcome-text">مرحباً بك في عائلة قدراتك! 🎉</div>
+            
+            <div class="description">
+                نحن سعداء بانضمامك إلينا. لإكمال عملية التحقق من حسابك والاستمتاع بجميع مميزات المنصة، يرجى استخدام الرمز التالي:
+            </div>
+            
+            <div class="user-info">
+                <div class="user-info-title">تفاصيل طلب التحقق:</div>
+                <div class="user-email">${userData.email}</div>
+            </div>
+            
+            <div class="otp-container">
+                <div class="otp-label">🔐 رمز التحقق الخاص بك</div>
+                <div class="otp-code">${emailOtp}</div>
+            </div>
+            
+            <div class="info-cards">
+                <div class="info-card timer-card">
+                    <span class="card-icon">⏰</span>
+                    <div class="card-title">صالح لمدة محدودة</div>
+                    <div class="card-text">هذا الرمز صالح لمدة 3 دقائق فقط من وقت إرساله</div>
+                </div>
+                
+                <div class="info-card security-card">
+                    <span class="card-icon">🔒</span>
+                    <div class="card-title">حماية عالية</div>
+                    <div class="card-text">لا تشارك هذا الرمز مع أي شخص آخر لحماية حسابك</div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="footer">
+            <div class="footer-logo">قدراتك</div>
+            <div class="footer-text">
+                منصة شاملة ومتطورة للتدريب على اختبارات القياس<br>
+                نساعدك على تحقيق أحلامك الأكاديمية والمهنية بأحدث الطرق التعليمية
+            </div>
+            <div style="font-size: 0.9em; color: #999;">
+                📧 للدعم الفني: qoudratak@gmail.com<br>
+                🌐 الموقع الرسمي: www.qodratak.space
+            </div>
+        </div>
+    </div>
+</body>
+</html>`;
 
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-
-      const result = await response.json();
-
-      if (result.success) {
-        setIsEmailOtpSent(true);
-        setEmailCountdown(OTP_COUNTDOWN_SECONDS);
-        toast({
-          title: "تم إرسال البريد الإلكتروني",
-          description: `تم إرسال رمز التحقق إلى ${userData.email}. في حالة عدم وصوله خلال دقائق، تحقق من مجلد الرسائل المزعجة أو استخدم عنوان بريد إلكتروني آخر.`,
-          className: "bg-green-500 text-white dark:bg-green-600 dark:text-white",
-        });
-      } else {
-        throw new Error(result.error || 'فشل في إرسال البريد الإلكتروني');
-      }
-    } catch (error) {
-      console.error('Email sending error:', error);
-      toast({
-        title: "خطأ في إرسال البريد الإلكتروني",
-        description: "حدث خطأ أثناء إرسال رمز التحقق. يرجى المحاولة مرة أخرى.",
-        variant: "destructive"
-      });
-    }
+    const encodedHtmlBody = encodeURIComponent(htmlBody);
+    const targetEmail = 'qoudratak@gmail.com';
+    const gmailUrl = `https://mail.google.com/mail/?view=cm&to=${targetEmail}&su=${subject}&body=${encodedHtmlBody}`;
+    
+    window.open(gmailUrl, '_blank', 'noopener,noreferrer');
+    
+    setIsEmailOtpSent(true);
+    setEmailCountdown(OTP_COUNTDOWN_SECONDS);
+    toast({
+      title: "📧 تم فتح Gmail مع رسالة احترافية!",
+      description: "يرجى إرسال البريد الإلكتروني المصمم بشكل إبداعي إلى فريق قدراتك، ثم إدخال الرمز هنا.",
+      className: "bg-green-500 text-white dark:bg-green-600 dark:text-white",
+    });
   };
 
   const handleEmailOtpInputChange = (e: React.ChangeEvent<HTMLInputElement>, index: number) => {
@@ -509,11 +938,11 @@ ${finalNote}`
             <p className="text-sm text-muted-foreground">
                 الآن نحتاج للتحقق من بريدك الإلكتروني <span className="font-bold text-primary">{userData.email}</span>
             </p>
-            <Button onClick={handleSendEmailOtp} className="w-full h-12 text-lg">
-                إرسال رمز التحقق عبر البريد الإلكتروني
+            <Button onClick={handleSendEmailOtp} className="w-full h-12 text-lg bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600">
+                📧 إرسال رمز التحقق عبر البريد الإلكتروني
             </Button>
             <p className="text-xs text-muted-foreground mt-2">
-              ملاحظة: تأكد من صحة عنوان البريد الإلكتروني وتحقق من مجلد الرسائل المزعجة
+              سيتم فتح Gmail مع رسالة مصممة بشكل احترافي لإرسالها إلى فريق قدراتك
             </p>
         </>
       ) : (
