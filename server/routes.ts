@@ -16,6 +16,18 @@ const mailjet = new Mailjet({
 });
 
 export async function registerRoutes(app: Express): Promise<Server> {
+  // Add CORS headers for API routes first
+  app.use('/api', (req, res, next) => {
+    res.header('Access-Control-Allow-Origin', '*');
+    res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+    res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization');
+    if (req.method === 'OPTIONS') {
+      res.sendStatus(200);
+    } else {
+      next();
+    }
+  });
+
   // Initialize passport
   app.use(passport.initialize());
   app.use(passport.session());
@@ -744,6 +756,265 @@ app.post("/api/auth/register", async (req: Request, res: Response) => {
     } catch (error) {
       console.error("Error fetching pomodoro sessions:", error);
       res.status(500).json({ message: "Error fetching pomodoro sessions" });
+    }
+  });
+
+  // API endpoint for sending email OTP
+  app.post("/api/send-email-otp", async (req: Request, res: Response) => {
+    try {
+      const { email, otp } = req.body;
+
+      if (!email || !otp) {
+        return res.status(400).json({ error: "Email and OTP are required" });
+      }
+
+      const htmlContent = `
+<!DOCTYPE html>
+<html dir="rtl" lang="ar">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>رمز التحقق - قدراتك</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;600;700&display=swap');
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Cairo', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .email-container {
+            max-width: 600px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            overflow: hidden;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.1);
+            position: relative;
+        }
+        
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 40px 30px;
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .logo {
+            font-size: 2.5em;
+            font-weight: 700;
+            margin-bottom: 10px;
+            position: relative;
+            z-index: 2;
+        }
+        
+        .header-subtitle {
+            font-size: 1.1em;
+            opacity: 0.9;
+            position: relative;
+            z-index: 2;
+        }
+        
+        .content {
+            padding: 40px 30px;
+            text-align: center;
+        }
+        
+        .welcome-text {
+            font-size: 1.3em;
+            color: #333;
+            margin-bottom: 20px;
+            font-weight: 600;
+        }
+        
+        .description {
+            color: #666;
+            margin-bottom: 30px;
+            font-size: 1.1em;
+            line-height: 1.8;
+        }
+        
+        .otp-container {
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            border-radius: 15px;
+            padding: 30px;
+            margin: 30px 0;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .otp-label {
+            color: white;
+            font-size: 1.2em;
+            margin-bottom: 15px;
+            font-weight: 600;
+            position: relative;
+            z-index: 2;
+        }
+        
+        .otp-code {
+            background: white;
+            color: #333;
+            font-size: 3em;
+            font-weight: 700;
+            padding: 20px 30px;
+            border-radius: 10px;
+            letter-spacing: 8px;
+            margin: 0 auto;
+            display: inline-block;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            position: relative;
+            z-index: 2;
+            border: 3px solid #f093fb;
+        }
+        
+        .timer-info {
+            background: #fff3cd;
+            border: 2px solid #ffeaa7;
+            border-radius: 10px;
+            padding: 20px;
+            margin: 20px 0;
+            color: #856404;
+        }
+        
+        .security-note {
+            background: #d1ecf1;
+            border: 2px solid #bee5eb;
+            border-radius: 10px;
+            padding: 20px;
+            margin: 20px 0;
+            color: #0c5460;
+        }
+        
+        .footer {
+            background: #f8f9fa;
+            padding: 30px;
+            text-align: center;
+            border-top: 3px solid #e9ecef;
+        }
+        
+        .footer-logo {
+            font-size: 1.5em;
+            font-weight: 600;
+            color: #667eea;
+            margin-bottom: 10px;
+        }
+        
+        .footer-text {
+            color: #6c757d;
+            font-size: 0.9em;
+        }
+        
+        @media (max-width: 600px) {
+            .email-container {
+                margin: 10px;
+                border-radius: 15px;
+            }
+            
+            .header {
+                padding: 30px 20px;
+            }
+            
+            .content {
+                padding: 30px 20px;
+            }
+            
+            .otp-code {
+                font-size: 2.5em;
+                letter-spacing: 4px;
+                padding: 15px 20px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="email-container">
+        <div class="header">
+            <div class="logo">قـدراتـك</div>
+            <div class="header-subtitle">منصة التدريب على اختبار القياس</div>
+        </div>
+        
+        <div class="content">
+            <div class="welcome-text">مرحباً بك! 👋</div>
+            
+            <div class="description">
+                لإكمال عملية التحقق من حسابك، يرجى استخدام الرمز التالي:
+            </div>
+            
+            <div class="otp-container">
+                <div class="otp-label">رمز التحقق الخاص بك</div>
+                <div class="otp-code">${otp}</div>
+            </div>
+            
+            <div class="timer-info">
+                <strong>مهم:</strong> هذا الرمز صالح لمدة 3 دقائق فقط
+            </div>
+            
+            <div class="security-note">
+                <strong>ملاحظة أمنية:</strong><br>
+                لا تشارك هذا الرمز مع أي شخص آخر لحماية حسابك
+            </div>
+        </div>
+        
+        <div class="footer">
+            <div class="footer-logo">قدراتك</div>
+            <div class="footer-text">
+                منصة شاملة للتدريب على اختبارات القياس<br>
+                نساعدك على تحقيق أحلامك الأكاديمية
+            </div>
+        </div>
+    </div>
+</body>
+</html>`;
+
+      const request = mailjet
+        .post('send', { version: 'v3.1' })
+        .request({
+          Messages: [
+            {
+              From: {
+                Email: "noreply@qodratak.space",
+                Name: "منصة قدراتك"
+              },
+              To: [
+                {
+                  Email: email,
+                  Name: "مستخدم منصة قدراتك"
+                }
+              ],
+              Subject: "🔐 رمز التحقق من منصة قدراتك",
+              TextPart: `رمز التحقق الخاص بك هو: ${otp}\n\nهذا الرمز صالح لمدة 3 دقائق فقط.\nيرجى عدم مشاركة هذا الرمز مع أي شخص آخر.\n\nمع تحيات فريق قدراتك`,
+              HTMLPart: htmlContent
+            }
+          ]
+        });
+
+      const result = await request;
+
+      res.json({ 
+        success: true, 
+        message: "تم إرسال رمز التحقق إلى بريدك الإلكتروني بنجاح",
+        messageId: result.body.Messages[0].To[0].MessageID
+      });
+
+    } catch (error: any) {
+      console.error('Mailjet error:', error);
+      res.status(500).json({ 
+        error: "فشل في إرسال البريد الإلكتروني", 
+        details: error.message || error.ErrorMessage || "خطأ غير معروف"
+      });
     }
   });
 
