@@ -71,7 +71,7 @@ const InstallPage: React.FC = () => {
       // إعادة تعيين الزر
       if (downloadButton) {
         downloadButton.disabled = false;
-        downloadButton.innerHTML = '<Download className="h-6 w-6 mr-3" />تحميل APK (15.2 MB)<ExternalLink className="h-5 w-5 ml-3" />';
+        downloadButton.innerHTML = '<Download className="h-6 w-6 mr-3" />تحميل APK (87 MB)<ExternalLink className="h-5 w-5 ml-3" />';
       }
 
       // عرض رسالة نجاح
@@ -97,7 +97,7 @@ const InstallPage: React.FC = () => {
       const downloadButton = document.querySelector('#download-apk-btn') as HTMLButtonElement;
       if (downloadButton) {
         downloadButton.disabled = false;
-        downloadButton.innerHTML = '<Download className="h-6 w-6 mr-3" />تحميل APK (15.2 MB)<ExternalLink className="h-5 w-5 ml-3" />';
+        downloadButton.innerHTML = '<Download className="h-6 w-6 mr-3" />تحميل APK (87 MB)<ExternalLink className="h-5 w-5 ml-3" />';
       }
     }
   };
@@ -188,7 +188,7 @@ const InstallPage: React.FC = () => {
           className="bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white px-8 py-4 text-lg font-bold shadow-xl hover:shadow-2xl transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
         >
           <Download className="h-6 w-6 mr-3" />
-          تحميل APK (15.2 MB)
+          تحميل APK (87 MB)
           <ExternalLink className="h-5 w-5 ml-3" />
         </Button>
         <p className="text-gray-500 text-sm mt-3">

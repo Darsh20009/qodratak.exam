@@ -620,7 +620,7 @@ app.post("/api/auth/register", async (req: Request, res: Response) => {
 
       // إعداد headers للتحميل
       res.setHeader('Content-Type', 'application/vnd.android.package-archive');
-      res.setHeader('Content-Disposition', 'attachment; filename="منصة-قدراتك-v2.1.0.apk"');
+      res.setHeader('Content-Disposition', 'attachment; filename="qudratak-app-v2.1.0.apk"');
       res.setHeader('Cache-Control', 'no-cache');
       
       // إرسال الملف

@@ -2,10 +2,36 @@ import express, { type Request, Response, NextFunction } from "express";
 import session from "express-session";
 import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
+import fs from "fs";
+import path from "path";
 
 const app = express();
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
+
+// APK download route (before auth middleware)
+app.get("/app/qudratak-app.apk", (req: Request, res: Response) => {
+  try {
+    const apkPath = path.resolve(process.cwd(), "public/app/qudratak-app.apk");
+    
+    if (!fs.existsSync(apkPath)) {
+      return res.status(404).json({ message: "APK file not found" });
+    }
+
+    // Set headers for download
+    res.setHeader('Content-Type', 'application/vnd.android.package-archive');
+    res.setHeader('Content-Disposition', 'attachment; filename="qudratak-app-v2.1.0.apk"');
+    res.setHeader('Cache-Control', 'no-cache');
+    
+    // Send file
+    const fileStream = fs.createReadStream(apkPath);
+    fileStream.pipe(res);
+    
+  } catch (error) {
+    console.error("Error serving APK file:", error);
+    res.status(500).json({ message: "Error downloading APK file" });
+  }
+});
 app.use(session({
   secret: 'your-secret-key',
   resave: false,
