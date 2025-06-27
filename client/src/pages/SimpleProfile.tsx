@@ -11,7 +11,10 @@ import {
   Crown,
   Zap,
   Rocket,
-  ArrowRightIcon
+  ArrowRightIcon,
+  LogOut,
+  UserPlus,
+  Settings
 } from "lucide-react";
 
 export default function SimpleProfile() {
@@ -21,6 +24,28 @@ export default function SimpleProfile() {
     points: 1000,
     level: 10,
     achievements: 5
+  };
+
+  const handleLogout = () => {
+    localStorage.removeItem("user");
+    window.location.reload();
+  };
+
+  const handleLogin = () => {
+    const newUser = {
+      id: Date.now(),
+      name: "مستخدم جديد",
+      email: "user@qudratak.app",
+      subscription: {
+        type: "Pro Life",
+        status: "active",
+        expiresAt: "2030-12-31T23:59:59Z"
+      },
+      points: 1000,
+      level: 10
+    };
+    localStorage.setItem("user", JSON.stringify(newUser));
+    window.location.reload();
   };
 
   return (
@@ -142,6 +167,39 @@ export default function SimpleProfile() {
           </Button>
         </Link>
       </div>
+
+      {/* Account Management */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Settings className="w-6 h-6 text-gray-500" />
+            إدارة الحساب
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <Button 
+              onClick={handleLogin}
+              variant="outline" 
+              className="flex items-center gap-2 h-12"
+            >
+              <UserPlus className="w-5 h-5" />
+              تسجيل دخول جديد
+            </Button>
+            <Button 
+              onClick={handleLogout}
+              variant="destructive" 
+              className="flex items-center gap-2 h-12"
+            >
+              <LogOut className="w-5 h-5" />
+              تسجيل الخروج
+            </Button>
+          </div>
+          <p className="text-sm text-muted-foreground mt-4 text-center">
+            تسجيل الدخول الجديد سيحافظ على جميع الميزات المتقدمة
+          </p>
+        </CardContent>
+      </Card>
     </div>
   );
 }
