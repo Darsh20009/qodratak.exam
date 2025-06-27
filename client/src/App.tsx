@@ -29,7 +29,7 @@ import {
 import { cn } from "@/lib/utils";
 import { useState, useEffect } from "react";
 import AskQuestionPage from "@/pages/AskQuestionPage";
-import ProfilePage from "@/pages/SimpleProfile";
+import ProfilePage from "@/pages/WorkingProfile";
 import TestResultsPage from './pages/TestResultsPage';
 import AbilitiesTestPage from "@/pages/AbilitiesTestPage";
 import QiyasExamPage from "@/pages/QiyasExamPage";

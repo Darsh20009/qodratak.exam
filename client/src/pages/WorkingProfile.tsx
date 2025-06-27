@@ -14,76 +14,35 @@ import {
   ArrowRightIcon,
   LogOut,
   UserPlus,
-  Settings
+  Settings,
+  RefreshCw
 } from "lucide-react";
 
-interface UserType {
-  id: number;
-  name: string;
-  email: string;
-  subscription: {
-    type: string;
-    status: string;
-    expiresAt: string;
-  } | string;
-  points: number;
-  level: number;
-  achievements: number;
-}
-
-export default function SimpleProfile() {
-  const [user, setUser] = useState<UserType | null>(null);
+export default function WorkingProfile() {
+  const [user, setUser] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    const storedUser = localStorage.getItem("user");
-    if (storedUser) {
-      setUser(JSON.parse(storedUser));
-    } else {
-      // إنشاء مستخدم افتراضي
-      const defaultUser = {
-        id: 1,
-        name: "مستخدم قدراتك",
-        email: "user@qudratak.app",
-        subscription: {
-          type: "Pro Life",
-          status: "active",
-          expiresAt: "2030-12-31T23:59:59Z"
-        },
-        points: 1000,
-        level: 10,
-        achievements: 5
-      };
-      localStorage.setItem("user", JSON.stringify(defaultUser));
-      setUser(defaultUser);
-    }
-    setIsLoading(false);
+    loadUser();
   }, []);
 
-  const handleLogout = () => {
-    localStorage.removeItem("user");
-    setUser(null);
-    // إنشاء مستخدم جديد فوراً
-    setTimeout(() => {
-      const newUser = {
-        id: Date.now(),
-        name: "مستخدم جديد",
-        email: "user@qudratak.app",
-        subscription: {
-          type: "Pro Life",
-          status: "active",
-          expiresAt: "2030-12-31T23:59:59Z"
-        },
-        points: 1000,
-        level: 10,
-        achievements: 5
-      };
-      localStorage.setItem("user", JSON.stringify(newUser));
-      setUser(newUser);
-    }, 100);
+  const loadUser = () => {
+    const storedUser = localStorage.getItem("user");
+    if (storedUser) {
+      try {
+        const userData = JSON.parse(storedUser);
+        setUser(userData);
+      } catch (error) {
+        console.error("Error parsing user data:", error);
+        createNewUser();
+      }
+    } else {
+      createNewUser();
+    }
+    setIsLoading(false);
   };
 
-  const handleLogin = () => {
+  const createNewUser = () => {
     const newUser = {
       id: Date.now(),
       name: `مستخدم ${Date.now().toString().slice(-4)}`,
@@ -99,6 +58,23 @@ export default function SimpleProfile() {
     };
     localStorage.setItem("user", JSON.stringify(newUser));
     setUser(newUser);
+    
+    // إرسال حدث لتحديث باقي التطبيق
+    window.dispatchEvent(new CustomEvent('userLoggedIn', { detail: newUser }));
+  };
+
+  const handleLogout = () => {
+    localStorage.removeItem("user");
+    setUser(null);
+    
+    // إنشاء مستخدم جديد فوراً
+    setTimeout(() => {
+      createNewUser();
+    }, 500);
+  };
+
+  const handleLogin = () => {
+    createNewUser();
   };
 
   if (isLoading) {
@@ -112,15 +88,26 @@ export default function SimpleProfile() {
 
   if (!user) {
     return (
-      <div className="container mx-auto p-6 text-center">
-        <h2 className="text-2xl font-bold mb-4">مرحباً بك في قدراتك</h2>
-        <Button onClick={handleLogin} className="bg-gradient-to-r from-blue-500 to-purple-500">
-          <UserPlus className="w-5 h-5 mr-2" />
-          بدء الاستخدام
-        </Button>
+      <div className="container mx-auto p-6 text-center space-y-6">
+        <div className="bg-gradient-to-r from-blue-600 via-purple-600 to-pink-600 p-8 rounded-3xl text-white">
+          <h2 className="text-3xl font-bold mb-4">مرحباً بك في قدراتك</h2>
+          <p className="text-blue-100 mb-6">ابدأ رحلتك نحو التميز الآن</p>
+          <Button 
+            onClick={handleLogin} 
+            size="lg"
+            className="bg-white text-blue-600 hover:bg-gray-100 font-bold"
+          >
+            <UserPlus className="w-5 h-5 mr-2" />
+            بدء الاستخدام
+          </Button>
+        </div>
       </div>
     );
   }
+
+  const subscriptionType = typeof user.subscription === 'string' 
+    ? user.subscription 
+    : user.subscription?.type || 'Pro Life';
 
   return (
     <div className="container mx-auto p-6 space-y-6">
@@ -129,7 +116,7 @@ export default function SimpleProfile() {
         <div className="absolute inset-0 bg-gradient-to-r from-black/20 to-transparent"></div>
         <div className="relative z-10 flex items-center justify-between">
           <div className="space-y-2">
-            <h1 className="text-3xl font-bold">مرحباً بك في قدراتك!</h1>
+            <h1 className="text-3xl font-bold">مرحباً {user.name}!</h1>
             <p className="text-blue-100">جميع الميزات متاحة لك مجاناً</p>
           </div>
           <div className="hidden md:block">
@@ -146,7 +133,7 @@ export default function SimpleProfile() {
             <h3 className="font-bold text-lg">{user.name}</h3>
             <Badge className="mt-2 bg-gradient-to-r from-yellow-500 to-orange-500 text-white">
               <Crown className="w-3 h-3 mr-1" />
-              {user.subscription?.type || user.subscription}
+              {subscriptionType}
             </Badge>
           </CardContent>
         </Card>
@@ -154,7 +141,7 @@ export default function SimpleProfile() {
         <Card className="bg-gradient-to-br from-purple-500/10 to-purple-600/10 border-purple-500/20">
           <CardContent className="p-6 text-center">
             <Star className="w-8 h-8 mx-auto mb-3 text-purple-500" />
-            <h3 className="font-bold text-lg">{user.points}</h3>
+            <h3 className="font-bold text-lg">{user.points || 1000}</h3>
             <p className="text-sm text-muted-foreground">نقطة</p>
           </CardContent>
         </Card>
@@ -162,7 +149,7 @@ export default function SimpleProfile() {
         <Card className="bg-gradient-to-br from-green-500/10 to-green-600/10 border-green-500/20">
           <CardContent className="p-6 text-center">
             <Trophy className="w-8 h-8 mx-auto mb-3 text-green-500" />
-            <h3 className="font-bold text-lg">المستوى {user.level}</h3>
+            <h3 className="font-bold text-lg">المستوى {user.level || 10}</h3>
             <p className="text-sm text-muted-foreground">خبير</p>
           </CardContent>
         </Card>
@@ -170,7 +157,7 @@ export default function SimpleProfile() {
         <Card className="bg-gradient-to-br from-orange-500/10 to-orange-600/10 border-orange-500/20">
           <CardContent className="p-6 text-center">
             <Zap className="w-8 h-8 mx-auto mb-3 text-orange-500" />
-            <h3 className="font-bold text-lg">{user.achievements}</h3>
+            <h3 className="font-bold text-lg">{user.achievements || 5}</h3>
             <p className="text-sm text-muted-foreground">إنجاز</p>
           </CardContent>
         </Card>
@@ -251,14 +238,22 @@ export default function SimpleProfile() {
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <Button 
               onClick={handleLogin}
               variant="outline" 
               className="flex items-center gap-2 h-12"
             >
-              <UserPlus className="w-5 h-5" />
-              تسجيل دخول جديد
+              <RefreshCw className="w-5 h-5" />
+              حساب جديد
+            </Button>
+            <Button 
+              onClick={() => window.location.reload()}
+              variant="outline" 
+              className="flex items-center gap-2 h-12"
+            >
+              <RefreshCw className="w-5 h-5" />
+              تحديث البيانات
             </Button>
             <Button 
               onClick={handleLogout}
@@ -266,11 +261,11 @@ export default function SimpleProfile() {
               className="flex items-center gap-2 h-12"
             >
               <LogOut className="w-5 h-5" />
-              تسجيل الخروج
+              تغيير الحساب
             </Button>
           </div>
           <p className="text-sm text-muted-foreground mt-4 text-center">
-            تسجيل الدخول الجديد سيحافظ على جميع الميزات المتقدمة
+            جميع الحسابات تتمتع بجميع الميزات المتقدمة
           </p>
         </CardContent>
       </Card>
