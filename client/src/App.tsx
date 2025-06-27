@@ -7,7 +7,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 
 import NotFound from "@/pages/not-found";
-import Home from "@/pages/Home";
+import Home from "@/pages/NewHome";
 import ExamRecordsPage from "@/pages/ExamRecordsPage";
 import { ThemeProvider } from "next-themes";
 import { Separator } from "@/components/ui/separator";
@@ -29,7 +29,7 @@ import {
 import { cn } from "@/lib/utils";
 import { useState, useEffect } from "react";
 import AskQuestionPage from "@/pages/AskQuestionPage";
-import ProfilePage from "@/pages/ProfilePage";
+import ProfilePage from "@/pages/SimpleProfile";
 import TestResultsPage from './pages/TestResultsPage';
 import AbilitiesTestPage from "@/pages/AbilitiesTestPage";
 import QiyasExamPage from "@/pages/QiyasExamPage";
@@ -262,51 +262,50 @@ function MainLayout({ children }: { children: React.ReactNode }) {
 function Router({ splashDone }: { splashDone: boolean }) {
   const [user, setUser] = React.useState(() => {
     const storedUser = localStorage.getItem("user");
-    return storedUser ? JSON.parse(storedUser) : null;
+    if (storedUser) {
+      return JSON.parse(storedUser);
+    } else {
+      // إنشاء مستخدم برو تلقائياً
+      const autoUser = {
+        id: 1,
+        name: "مستخدم قدراتك",
+        email: "user@qudratak.app",
+        subscription: {
+          type: "Pro Life",
+          status: "active",
+          expiresAt: "2030-12-31T23:59:59Z"
+        },
+        points: 1000,
+        level: 10
+      };
+      localStorage.setItem("user", JSON.stringify(autoUser));
+      return autoUser;
+    }
   });
 
   React.useEffect(() => {
-    const handleStorageChange = () => {
-      const storedUser = localStorage.getItem("user");
-      setUser(storedUser ? JSON.parse(storedUser) : null);
-    };
-
-    const handleUserLogin = (event: any) => {
-      setUser(event.detail);
-    };
-
-    window.addEventListener('storage', handleStorageChange);
-    window.addEventListener('userLoggedIn', handleUserLogin);
-
-    return () => {
-      window.removeEventListener('storage', handleUserLogin);
-      window.removeEventListener('storage', handleStorageChange);
-    };
+    // التأكد من أن المستخدم دائماً برو
+    if (!user || user.subscription?.type === 'free') {
+      const proUser = {
+        id: 1,
+        name: "مستخدم قدراتك",
+        email: "user@qudratak.app",
+        subscription: {
+          type: "Pro Life",
+          status: "active",
+          expiresAt: "2030-12-31T23:59:59Z"
+        },
+        points: 1000,
+        level: 10
+      };
+      localStorage.setItem("user", JSON.stringify(proUser));
+      setUser(proUser);
+    }
   }, []);
 
-  const isPremium = user?.subscription?.type !== 'free' && (user?.subscription?.type === 'Pro' || user?.subscription?.type === 'Pro Life' || user?.subscription?.type === 'Pro Live');
+  const isPremium = true; // دائماً برو
 
-  const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
-    if (!user) {
-      return <MainLayout><ProfilePage /></MainLayout>;
-    }
-    return <>{children}</>;
-  };
-
-  const RestrictedRoute = ({ children }: { children: React.ReactNode }) => {
-    if (!isPremium) {
-      return <MainLayout><div className="container py-8 text-center">
-        <h2 className="text-2xl font-bold mb-4">هذه الميزة متاحة للمشتركين فقط</h2>
-        <p className="text-muted-foreground">يرجى الاشتراك للوصول إلى جميع الميزات</p>
-      </div></MainLayout>;
-    }
-    return <>{children}</>;
-  };
-
-  // If not logged in, only show login page
-  if (!user && window.location.pathname !== '/profile') {
-    return <MainLayout><ProfilePage /></MainLayout>;
-  }
+  // جميع المستخدمين لديهم وصول كامل
 
   return (
     <>
@@ -314,31 +313,25 @@ function Router({ splashDone }: { splashDone: boolean }) {
       <Switch>
       {/* Main pages */}
       <Route path="/">
-        {() => <ProtectedRoute><MainLayout><Home /></MainLayout></ProtectedRoute>}
+        {() => <MainLayout><Home /></MainLayout>}
       </Route>
       <Route path="/qiyas">
-        {() => <ProtectedRoute><MainLayout><QiyasExamPage /></MainLayout></ProtectedRoute>}
+        {() => <MainLayout><QiyasExamPage /></MainLayout>}
       </Route>
       <Route path="/custom-exam">
-        {() => <ProtectedRoute><RestrictedRoute><MainLayout><CustomExamPage /></MainLayout></RestrictedRoute></ProtectedRoute>}
+        {() => <MainLayout><CustomExamPage /></MainLayout>}
       </Route>
       <Route path="/abilities">
-        {() => <ProtectedRoute><RestrictedRoute><MainLayout><AbilitiesTestPage /></MainLayout></RestrictedRoute></ProtectedRoute>}
+        {() => <MainLayout><AbilitiesTestPage /></MainLayout>}
       </Route>
       <Route path="/ask">
-        {() => <ProtectedRoute><MainLayout>
-          {isPremium ? <AskQuestionPage /> : <SubscriptionPlans />}
-        </MainLayout></ProtectedRoute>}
+        {() => <MainLayout><AskQuestionPage /></MainLayout>}
       </Route>
       <Route path="/library">
-        {() => <ProtectedRoute><MainLayout>
-          {isPremium ? <LibraryPage /> : <SubscriptionPlans />}
-        </MainLayout></ProtectedRoute>}
+        {() => <MainLayout><LibraryPage /></MainLayout>}
       </Route>
       <Route path="/books">
-        {() => <ProtectedRoute><MainLayout>
-          {isPremium ? <BooksPage /> : <SubscriptionPlans />}
-        </MainLayout></ProtectedRoute>}
+        {() => <MainLayout><BooksPage /></MainLayout>}
       </Route>
       <Route path="/profile">
         {() => <MainLayout><ProfilePage /></MainLayout>}
@@ -347,28 +340,22 @@ function Router({ splashDone }: { splashDone: boolean }) {
         {() => <MainLayout><TestResultsPage /></MainLayout>}
       </Route>
       <Route path="/folders">
-        {() => <ProtectedRoute><MainLayout>
-          {isPremium ? <FoldersPage /> : <SubscriptionPlans />}
-        </MainLayout></ProtectedRoute>}
+        {() => <MainLayout><FoldersPage /></MainLayout>}
       </Route>
       <Route path="/time-management">
-        {() => <ProtectedRoute><MainLayout><NewTimeManagementPage /></MainLayout></ProtectedRoute>}
+        {() => <MainLayout><NewTimeManagementPage /></MainLayout>}
       </Route>
       <Route path="/install">
         {() => <MainLayout><InstallPage /></MainLayout>}
       </Route>
       <Route path="/challenges">
-        {() => <ProtectedRoute><MainLayout>
-          {isPremium ? <ChallengePage /> : <SubscriptionPlans />}
-        </MainLayout></ProtectedRoute>}
+        {() => <MainLayout><ChallengePage /></MainLayout>}
       </Route>
       <Route path="/records">
-        {() => <ProtectedRoute><MainLayout>
-          {isPremium ? <ExamRecordsPage /> : <SubscriptionPlans />}
-        </MainLayout></ProtectedRoute>}
+        {() => <MainLayout><ExamRecordsPage /></MainLayout>}
       </Route>
       <Route path="/mock-exams">
-        {() => <ProtectedRoute><RestrictedRoute><MainLayout><MockExamPage /></MainLayout></RestrictedRoute></ProtectedRoute>}
+        {() => <MainLayout><MockExamPage /></MainLayout>}
       </Route>
       {/* Fallback to 404 */}
       <Route>

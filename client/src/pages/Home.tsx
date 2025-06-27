@@ -21,15 +21,13 @@ import {
   HeartIcon,
   ShieldIcon,
   FlameIcon,
-  MoonIcon,
-  SunIcon
+  Clock,
+  FolderIcon,
+  GamepadIcon,
+  BarChart3,
+  Lightbulb,
+  Download
 } from "lucide-react";
-import { SubscriptionPlans } from "@/components/SubscriptionPlans";
-import { PremiumDashboard } from "@/components/PremiumDashboard";
-import { PremiumNotifications } from "@/components/PremiumNotifications";
-import { GameificationSystem } from "@/components/GameificationSystem";
-import { InteractiveAnalytics } from "@/components/InteractiveAnalytics";
-import { SmartNotifications } from "@/components/SmartNotifications";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
@@ -38,13 +36,11 @@ import { cn } from "@/lib/utils";
 const features = [
   {
     title: "اختبارات قياس",
-    description: "محاكاة دقيقة لاختبار هيئة تقويم التعليم - 120 سؤال في 120 دقيقة مع تقييم فوري ونصائح للتحسين",
+    description: "محاكاة دقيقة لاختبار قياس - 120 سؤال في 120 دقيقة مع تقييم فوري",
     icon: GraduationCapIcon,
     href: "/qiyas",
-    color: "bg-blue-500/10 dark:bg-blue-500/20",
-    gradient: "from-blue-500 to-blue-600",
-    hoverGradient: "from-blue-600 to-cyan-500",
-    accent: "border-blue-400"
+    gradient: "from-blue-500 via-blue-600 to-indigo-600",
+    bgGradient: "bg-gradient-to-br from-blue-500/10 via-blue-600/10 to-indigo-600/10"
   },
   {
     title: "اختبر قدراتك",
