@@ -538,7 +538,7 @@ function App() {
 
   return (
     <QueryClientProvider client={queryClient}>
-      <ThemeProvider attribute="class">
+      <ThemeProvider attribute="class" defaultTheme="dark" forcedTheme="dark">
         <TooltipProvider>
           <Toaster />
           <Router splashDone={splashDone} />
