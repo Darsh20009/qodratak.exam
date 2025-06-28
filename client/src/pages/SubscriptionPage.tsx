@@ -612,7 +612,7 @@ ${finalNote}`
                       <p className="text-sm text-muted-foreground">
                         قم بالتحويل إلى رقم STC Pay التالي (<span className="font-semibold">{currentPlanDetails?.price} ريال</span>):
                       </p>
-                      <div className="flex items-center justify-between p-3 bg-slate-100 dark:bgslate-700/50 rounded-lg border border-slate-200 dark:border-slate-600">
+                      <div className="flex items-center justify-between p-3 bg-slate-100 dark:bg-slate-700/50 rounded-lg border border-slate-200 dark:border-slate-600">
                         <code className="text-sm font-mono text-slate-700 dark:text-slate-300 tracking-wider">{STC_PAY_NUMBER}</code>
                         <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-slate-200 dark:hover:bg-slate-600" onClick={(e) => { e.preventDefault(); handleCopy(STC_PAY_NUMBER, 'stc');}}>
                           {copySuccess === 'stc' ? <CheckIcon className="h-5 w-5 text-green-500" /> : <CopyIcon className="h-4 w-4 text-slate-500 dark:text-slate-400" />}
