@@ -71,7 +71,7 @@ export function SubscriptionPlans() {
   const emailOtpInputRefs = useRef<(HTMLInputElement | null)[]>([]);
 
   // Step 3: Payment
-  const [selectedPaymentMethod, setSelectedPaymentMethod] = useState<'bank' | 'stc' | 'paypal' | null>(null);
+  const [selectedPaymentMethod, setSelectedPaymentMethod] = useState<'bank' | 'stc' | 'paypal' | 'creditcard' | 'applepay' | null>(null);
   const [copySuccess, setCopySuccess] = useState<'bank' | 'stc' | null>(null);
 
   // Effects
@@ -564,21 +564,32 @@ ${finalNote}`
 
       <RadioGroup
         value={selectedPaymentMethod || undefined}
-        onValueChange={(value: 'bank' | 'stc' | 'paypal') => setSelectedPaymentMethod(value)}
+        onValueChange={(value: 'bank' | 'stc' | 'paypal' | 'creditcard' | 'applepay') => setSelectedPaymentMethod(value as 'bank' | 'stc' | 'paypal' | 'creditcard' | 'applepay')}
         className="space-y-3"
       >
-        {['bank', 'stc', 'paypal'].map((method) => {
+        {['bank', 'stc', 'paypal', 'creditcard', 'applepay'].map((method) => {
           const isSelected = selectedPaymentMethod === method;
-          let icon, title;
+          let icon, title, subtitle = "";
           if (method === 'bank') {
             icon = <BanknoteIcon className={`h-5 w-5 ml-2 ${isSelected ? 'text-green-700 dark:text-green-400' : 'text-green-600'}`}/>;
             title = "تحويل بنكي";
+            subtitle = "تحويل مباشر من حسابك البنكي";
           } else if (method === 'stc') {
             icon = <SmartphoneNfcIcon className={`h-5 w-5 ml-2 ${isSelected ? 'text-purple-700 dark:text-purple-400' : 'text-purple-600'}`}/>;
             title = "STC Pay";
-          } else { // paypal
-            icon = <CreditCardIcon className={`h-5 w-5 ml-2 ${isSelected ? 'text-blue-700 dark:text-blue-400' : 'text-blue-600'}`}/>;
+            subtitle = "الدفع السريع عبر STC Pay";
+          } else if (method === 'paypal') {
+            icon = <div className="ml-2 text-2xl">{isSelected ? '🟦' : '🔵'}</div>;
             title = "PayPal";
+            subtitle = "الدفع الآمن عبر PayPal";
+          } else if (method === 'creditcard') {
+            icon = <CreditCardIcon className={`h-5 w-5 ml-2 ${isSelected ? 'text-blue-700 dark:text-blue-400' : 'text-blue-600'}`}/>;
+            title = "البطاقة الائتمانية";
+            subtitle = "Visa, Mastercard, Mada عبر PayPal";
+          } else { // applepay
+            icon = <div className="ml-2 text-xl">{isSelected ? '🍎' : '🍏'}</div>;
+            title = "Apple Pay";
+            subtitle = "الدفع السريع لأجهزة Apple";
           }
 
           return (
@@ -587,8 +598,15 @@ ${finalNote}`
                           ${isSelected ? 'border-primary ring-2 ring-offset-2 ring-offset-background dark:ring-offset-slate-900 ring-primary bg-primary/10 dark:bg-primary/20 shadow-2xl scale-[1.03]'
                                       : 'hover:border-slate-400 dark:hover:border-slate-500 hover:bg-slate-50 dark:hover:bg-slate-800/70'}`}>
               <div className="flex items-center justify-between">
-                <div className={`flex items-center font-medium ${isSelected ? 'text-primary dark:text-primary-foreground' : 'text-slate-800 dark:text-slate-200'}`}>
-                    {icon} {title}
+                <div className={`flex flex-col ${isSelected ? 'text-primary dark:text-primary-foreground' : 'text-slate-800 dark:text-slate-200'}`}>
+                    <div className="flex items-center font-medium">
+                        {icon} {title}
+                    </div>
+                    {subtitle && (
+                        <div className="text-xs text-muted-foreground mt-1 mr-7">
+                            {subtitle}
+                        </div>
+                    )}
                 </div>
                 <RadioGroupItem value={method} id={method} className="border-slate-400 dark:border-slate-500 data-[state=checked]:border-primary" />
               </div>
@@ -623,18 +641,65 @@ ${finalNote}`
                   {method === 'paypal' && (
                     <>
                       <p className="text-sm text-muted-foreground">
-                        سيتم توجيهك إلى صفحة PayPal الآمنة في نافذة جديدة لإتمام دفع مبلغ <span className="font-semibold">{currentPlanDetails?.price} ريال</span>.
+                        🔵 سيتم توجيهك إلى منصة PayPal الآمنة لإتمام دفع مبلغ <span className="font-semibold">{currentPlanDetails?.price} ريال</span> بأمان تام.
                       </p>
-                      <div className="text-xs text-amber-700 dark:text-amber-400 p-3 bg-amber-50 dark:bg-amber-900/40 rounded-md border border-amber-300 dark:border-amber-600/50 flex items-start gap-2">
-                        <TriangleAlertIcon className="h-5 w-5 mt-0.5 text-amber-500 flex-shrink-0" />
-                        <div>
-                          <strong>ملاحظة هامة جداً:</strong>
-                          <ol className="list-decimal list-inside mt-1 space-y-1">
-                            <li>بعد الضغط على زر "الدفع عبر PayPal وإرسال الطلب"، ستفتح لك نافذة PayPal.</li>
-                            <li>أكمل عملية الدفع في نافذة PayPal.</li>
-                            <li>خذ لقطة شاشة (Screenshot) من صفحة تأكيد الدفع في PayPal.</li>
-                            <li>سيتم فتح تليجرام تلقائياً برسالة طلب الاشتراك (إذا لم يفتح، استخدم الرابط في التنبيه الذي سيظهر). أرفق لقطة الشاشة مع هذه الرسالة ثم أرسلها.</li>
-                          </ol>
+                      <div className="grid grid-cols-1 gap-2 mt-3">
+                        <div className="flex items-center gap-2 text-xs text-blue-600 dark:text-blue-400">
+                          <div className="w-4 h-4 bg-blue-100 dark:bg-blue-900 rounded-full flex items-center justify-center">✓</div>
+                          حماية مشتري PayPal
+                        </div>
+                        <div className="flex items-center gap-2 text-xs text-green-600 dark:text-green-400">
+                          <div className="w-4 h-4 bg-green-100 dark:bg-green-900 rounded-full flex items-center justify-center">🔒</div>
+                          تشفير SSL متقدم
+                        </div>
+                      </div>
+                    </>
+                  )}
+                  {method === 'creditcard' && (
+                    <>
+                      <p className="text-sm text-muted-foreground">
+                        💳 ادفع بأمان باستخدام بطاقتك الائتمانية عبر منصة PayPal الآمنة (<span className="font-semibold">{currentPlanDetails?.price} ريال</span>).
+                      </p>
+                      <div className="grid grid-cols-2 gap-2 mt-3">
+                        <div className="flex items-center gap-2 text-xs">
+                          <span className="text-blue-600">💳</span>
+                          <span>Visa</span>
+                        </div>
+                        <div className="flex items-center gap-2 text-xs">
+                          <span className="text-red-600">💳</span>
+                          <span>Mastercard</span>
+                        </div>
+                        <div className="flex items-center gap-2 text-xs">
+                          <span className="text-green-600">💳</span>
+                          <span>مدى Mada</span>
+                        </div>
+                        <div className="flex items-center gap-2 text-xs">
+                          <span className="text-purple-600">💳</span>
+                          <span>American Express</span>
+                        </div>
+                      </div>
+                      <p className="text-xs text-muted-foreground mt-2">
+                        لا تحتاج لحساب PayPal - ادفع مباشرة ببطاقتك
+                      </p>
+                    </>
+                  )}
+                  {method === 'applepay' && (
+                    <>
+                      <p className="text-sm text-muted-foreground">
+                        🍎 ادفع بسرعة وأمان باستخدام Apple Pay عبر منصة PayPal (<span className="font-semibold">{currentPlanDetails?.price} ريال</span>).
+                      </p>
+                      <div className="grid grid-cols-1 gap-2 mt-3">
+                        <div className="flex items-center gap-2 text-xs text-gray-700 dark:text-gray-300">
+                          <span>📱</span>
+                          <span>iPhone, iPad, Mac</span>
+                        </div>
+                        <div className="flex items-center gap-2 text-xs text-gray-700 dark:text-gray-300">
+                          <span>👆</span>
+                          <span>Touch ID أو Face ID</span>
+                        </div>
+                        <div className="flex items-center gap-2 text-xs text-green-600 dark:text-green-400">
+                          <span>⚡</span>
+                          <span>دفع فوري بدون كتابة بيانات</span>
                         </div>
                       </div>
                     </>
@@ -662,19 +727,70 @@ ${finalNote}`
         </div>
       )}
 
-      {selectedPaymentMethod === 'paypal' && (
-        <div className="mt-6 text-center space-y-3">
+      {(selectedPaymentMethod === 'paypal' || selectedPaymentMethod === 'creditcard' || selectedPaymentMethod === 'applepay') && (
+        <div className="mt-6 text-center space-y-4">
           <Separator className="my-4 dark:bg-slate-700" />
-          <p className="text-sm text-muted-foreground">
-            اضغط أدناه للانتقال إلى PayPal. بعد إتمام الدفع هناك، اتبع التعليمات في التنبيه الذي سيظهر لإرسال الطلب عبر تليجرام مع <strong className="text-primary">إرفاق لقطة شاشة للدفع</strong>.
-          </p>
-          <Button
-            className="w-full md:w-auto text-base py-3 px-6 bg-blue-600 hover:bg-blue-700 text-white shadow-md hover:shadow-lg transition-all transform hover:scale-105"
-            onClick={handlePayPalPayment}
-          >
-            <ExternalLinkIcon className="ml-2 h-5 w-5" />
-            الدفع عبر PayPal وإرسال الطلب
-          </Button>
+          
+          {/* PayPal Payment Button */}
+          {selectedPaymentMethod === 'paypal' && (
+            <>
+              <p className="text-sm text-muted-foreground">
+                🔵 انقر للانتقال إلى PayPal والدفع بأمان. بعد إتمام الدفع، اتبع التعليمات لإرسال تأكيد الطلب.
+              </p>
+              <Button
+                className="w-full md:w-auto text-base py-3 px-8 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white shadow-xl hover:shadow-2xl transition-all transform hover:scale-105"
+                onClick={handlePayPalPayment}
+              >
+                🔵 الدفع عبر PayPal
+                <ExternalLinkIcon className="ml-2 h-5 w-5" />
+              </Button>
+            </>
+          )}
+
+          {/* Credit Card Payment Button */}
+          {selectedPaymentMethod === 'creditcard' && (
+            <>
+              <p className="text-sm text-muted-foreground">
+                💳 ادفع بأمان باستخدام بطاقتك الائتمانية. سيتم توجيهك إلى PayPal للدفع الآمن (لا تحتاج حساب PayPal).
+              </p>
+              <Button
+                className="w-full md:w-auto text-base py-3 px-8 bg-gradient-to-r from-green-600 to-emerald-700 hover:from-green-700 hover:to-emerald-800 text-white shadow-xl hover:shadow-2xl transition-all transform hover:scale-105"
+                onClick={handlePayPalPayment}
+              >
+                💳 الدفع بالبطاقة الائتمانية
+                <ExternalLinkIcon className="ml-2 h-5 w-5" />
+              </Button>
+            </>
+          )}
+
+          {/* Apple Pay Payment Button */}
+          {selectedPaymentMethod === 'applepay' && (
+            <>
+              <p className="text-sm text-muted-foreground">
+                🍎 ادفع بسرعة البرق باستخدام Apple Pay. مجرد لمسة أو نظرة واحدة لإتمام الدفع!
+              </p>
+              <Button
+                className="w-full md:w-auto text-base py-3 px-8 bg-gradient-to-r from-gray-800 to-black hover:from-gray-900 hover:to-gray-800 text-white shadow-xl hover:shadow-2xl transition-all transform hover:scale-105"
+                onClick={handlePayPalPayment}
+              >
+                🍎 الدفع عبر Apple Pay
+                <ExternalLinkIcon className="ml-2 h-5 w-5" />
+              </Button>
+            </>
+          )}
+
+          <div className="text-xs text-amber-700 dark:text-amber-400 p-3 bg-amber-50 dark:bg-amber-900/40 rounded-md border border-amber-300 dark:border-amber-600/50 flex items-start gap-2 mt-4">
+            <TriangleAlertIcon className="h-4 w-4 mt-0.5 text-amber-500 flex-shrink-0" />
+            <div className="text-right">
+              <strong>خطوات إتمام الاشتراك:</strong>
+              <ol className="list-decimal list-inside mt-1 space-y-1 text-xs">
+                <li>اضغط على زر الدفع أعلاه</li>
+                <li>أكمل عملية الدفع في الصفحة الآمنة</li>
+                <li>احتفظ بلقطة شاشة لتأكيد الدفع</li>
+                <li>أرسل تأكيد الطلب عبر تليجرام مع إرفاق لقطة الشاشة</li>
+              </ol>
+            </div>
+          </div>
         </div>
       )}
     </div>
