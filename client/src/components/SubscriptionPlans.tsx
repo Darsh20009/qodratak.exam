@@ -71,7 +71,7 @@ export function SubscriptionPlans() {
   const emailOtpInputRefs = useRef<(HTMLInputElement | null)[]>([]);
 
   // Step 3: Payment
-  const [selectedPaymentMethod, setSelectedPaymentMethod] = useState<'bank' | 'stc' | 'paypal' | 'creditcard' | 'applepay' | null>(null);
+  const [selectedPaymentMethod, setSelectedPaymentMethod] = useState<'bank' | 'stc' | 'paypal' | 'creditcard' | null>(null);
   const [copySuccess, setCopySuccess] = useState<'bank' | 'stc' | null>(null);
 
   // Effects
@@ -564,10 +564,10 @@ ${finalNote}`
 
       <RadioGroup
         value={selectedPaymentMethod || undefined}
-        onValueChange={(value: 'bank' | 'stc' | 'paypal' | 'creditcard' | 'applepay') => setSelectedPaymentMethod(value as 'bank' | 'stc' | 'paypal' | 'creditcard' | 'applepay')}
+        onValueChange={(value: 'bank' | 'stc' | 'paypal' | 'creditcard') => setSelectedPaymentMethod(value as 'bank' | 'stc' | 'paypal' | 'creditcard')}
         className="space-y-3"
       >
-        {['bank', 'stc', 'paypal', 'creditcard', 'applepay'].map((method) => {
+        {['bank', 'stc', 'paypal', 'creditcard'].map((method) => {
           const isSelected = selectedPaymentMethod === method;
           let icon, title, subtitle = "";
           if (method === 'bank') {
@@ -586,10 +586,6 @@ ${finalNote}`
             icon = <CreditCardIcon className={`h-5 w-5 ml-2 ${isSelected ? 'text-blue-700 dark:text-blue-400' : 'text-blue-600'}`}/>;
             title = "البطاقة الائتمانية";
             subtitle = "Visa, Mastercard, Mada عبر PayPal";
-          } else { // applepay
-            icon = <div className="ml-2 text-xl">{isSelected ? '🍎' : '🍏'}</div>;
-            title = "Apple Pay";
-            subtitle = "الدفع السريع لأجهزة Apple";
           }
 
           return (
@@ -683,27 +679,6 @@ ${finalNote}`
                       </p>
                     </>
                   )}
-                  {method === 'applepay' && (
-                    <>
-                      <p className="text-sm text-muted-foreground">
-                        🍎 ادفع بسرعة وأمان باستخدام Apple Pay عبر منصة PayPal (<span className="font-semibold">{currentPlanDetails?.price} ريال</span>).
-                      </p>
-                      <div className="grid grid-cols-1 gap-2 mt-3">
-                        <div className="flex items-center gap-2 text-xs text-gray-700 dark:text-gray-300">
-                          <span>📱</span>
-                          <span>iPhone, iPad, Mac</span>
-                        </div>
-                        <div className="flex items-center gap-2 text-xs text-gray-700 dark:text-gray-300">
-                          <span>👆</span>
-                          <span>Touch ID أو Face ID</span>
-                        </div>
-                        <div className="flex items-center gap-2 text-xs text-green-600 dark:text-green-400">
-                          <span>⚡</span>
-                          <span>دفع فوري بدون كتابة بيانات</span>
-                        </div>
-                      </div>
-                    </>
-                  )}
                 </div>
               )}
             </Label>
@@ -727,7 +702,7 @@ ${finalNote}`
         </div>
       )}
 
-      {(selectedPaymentMethod === 'paypal' || selectedPaymentMethod === 'creditcard' || selectedPaymentMethod === 'applepay') && (
+      {(selectedPaymentMethod === 'paypal' || selectedPaymentMethod === 'creditcard') && (
         <div className="mt-6 text-center space-y-4">
           <Separator className="my-4 dark:bg-slate-700" />
           
@@ -763,21 +738,7 @@ ${finalNote}`
             </>
           )}
 
-          {/* Apple Pay Payment Button */}
-          {selectedPaymentMethod === 'applepay' && (
-            <>
-              <p className="text-sm text-muted-foreground">
-                🍎 ادفع بسرعة البرق باستخدام Apple Pay. مجرد لمسة أو نظرة واحدة لإتمام الدفع!
-              </p>
-              <Button
-                className="w-full md:w-auto text-base py-3 px-8 bg-gradient-to-r from-gray-800 to-black hover:from-gray-900 hover:to-gray-800 text-white shadow-xl hover:shadow-2xl transition-all transform hover:scale-105"
-                onClick={handlePayPalPayment}
-              >
-                🍎 الدفع عبر Apple Pay
-                <ExternalLinkIcon className="ml-2 h-5 w-5" />
-              </Button>
-            </>
-          )}
+
 
           <div className="text-xs text-amber-700 dark:text-amber-400 p-3 bg-amber-50 dark:bg-amber-900/40 rounded-md border border-amber-300 dark:border-amber-600/50 flex items-start gap-2 mt-4">
             <TriangleAlertIcon className="h-4 w-4 mt-0.5 text-amber-500 flex-shrink-0" />
