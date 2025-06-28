@@ -35,6 +35,7 @@ import {
   ShieldCheckIcon, RocketIcon, ZapIcon, InfinityIcon, MedalIcon
 } from "lucide-react";
 import { Badge } from "../components/ui/badge";
+import { CaptchaVerification } from "@/components/CaptchaVerification";
 
 // Form schema for login
 const loginSchema = z.object({
@@ -101,6 +102,8 @@ const ProfilePage: React.FC = () => {
   const [user, setUser] = useState<UserData | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [activeRecoveryTab, setActiveRecoveryTab] = useState<"email" | "password">("email");
+  const [showCaptcha, setShowCaptcha] = useState(false);
+  const [pendingLoginData, setPendingLoginData] = useState<LoginFormValues | null>(null);
 
   useEffect(() => {
     const storedUser = localStorage.getItem("user");
@@ -127,12 +130,31 @@ const ProfilePage: React.FC = () => {
   });
 
   const onLoginSubmit = async (data: LoginFormValues) => {
+    // Show captcha before proceeding with login
+    setPendingLoginData(data);
+    setShowCaptcha(true);
+  };
+
+  const handleCaptchaVerification = async (success: boolean) => {
+    setShowCaptcha(false);
+    
+    if (!success || !pendingLoginData) {
+      toast({
+        title: "فشل التحقق",
+        description: "يرجى المحاولة مرة أخرى",
+        variant: "destructive",
+      });
+      setPendingLoginData(null);
+      return;
+    }
+
+    // Proceed with actual login
     setIsLoading(true);
     try {
       const response = await fetch("/api/auth/login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email: data.username, password: data.password }),
+        body: JSON.stringify({ email: pendingLoginData.username, password: pendingLoginData.password }),
       });
       const responseData = await response.json();
 
@@ -144,7 +166,7 @@ const ProfilePage: React.FC = () => {
             description = responseData.message || (responseData.isTrialExpired ? "يرجى الاشتراك للمتابعة." : "يرجى مراجعة حالة اشتراكك.");
         }
         toast({
-          title: <div className="flex items-center"><XCircle className="h-5 w-5 mr-2 text-red-500" />{title}</div>,
+          title: title,
           description: description,
           variant: "destructive",
         });
@@ -160,18 +182,19 @@ const ProfilePage: React.FC = () => {
       window.dispatchEvent(new CustomEvent('userLoggedIn', { detail: userData }));
 
       toast({
-        title: <div className="flex items-center"><CheckCircle2 className="h-5 w-5 mr-2 text-green-500" />تم بنجاح!</div>,
-        description: `مرحباً بعودتك، ${userData.name || data.username}!`,
+        title: "تم بنجاح!",
+        description: `مرحباً بعودتك، ${userData.name || pendingLoginData.username}!`,
         className: "bg-green-50 border-green-200 dark:bg-green-900/30 dark:border-green-700",
       });
     } catch (error) {
       toast({
-        title: <div className="flex items-center"><XCircle className="h-5 w-5 mr-2 text-red-500" />خطأ فني</div>,
+        title: "خطأ فني",
         description: error instanceof Error ? error.message : "حدث خطأ غير متوقع. حاول مرة أخرى.",
         variant: "destructive",
       });
     } finally {
       setIsLoading(false);
+      setPendingLoginData(null);
     }
   };
 
@@ -197,13 +220,13 @@ const ProfilePage: React.FC = () => {
       window.dispatchEvent(new CustomEvent('userLoggedIn', { detail: userData }));
 
       toast({
-        title: <div className="flex items-center"><CheckCircle2 className="h-5 w-5 mr-2 text-green-500" />تم إنشاء الحساب!</div>,
+        title: "تم إنشاء الحساب!",
         description: `مرحباً بك في فريقنا، ${userData.name || data.username}! ابدأ رحلتك الآن.`,
         className: "bg-green-50 border-green-200 dark:bg-green-900/30 dark:border-green-700",
       });
     } catch (error) {
       toast({
-        title: <div className="flex items-center"><XCircle className="h-5 w-5 mr-2 text-red-500" />خطأ في التسجيل</div>,
+        title: "خطأ في التسجيل",
         description: error instanceof Error ? error.message : "حدث خطأ غير متوقع. حاول مرة أخرى.",
         variant: "destructive",
       });
@@ -219,7 +242,7 @@ const ProfilePage: React.FC = () => {
     setIsLoggedIn(false);
     window.dispatchEvent(new CustomEvent('userLoggedOut'));
     toast({ 
-      title: <div className="flex items-center"><Info className="h-5 w-5 mr-2 text-blue-500" />تم تسجيل الخروج</div>,
+      title: "تم تسجيل الخروج",
       description: "نأمل رؤيتك قريباً!",
       className: "bg-blue-50 border-blue-200 dark:bg-blue-900/30 dark:border-blue-700",
     });
@@ -761,7 +784,7 @@ const ProfilePage: React.FC = () => {
                             const emailInput = document.getElementById('recover-email') as HTMLInputElement;
                             const email = emailInput?.value;
                             if (!email) {
-                              toast({ title: <div className="flex items-center"><XCircle className="h-5 w-5 mr-2 text-red-500" />خطأ</div>, description: "يرجى إدخال البريد الإلكتروني", variant: "destructive" });
+                              toast({ title: "خطأ", description: "يرجى إدخال البريد الإلكتروني", variant: "destructive" });
                               return;
                             }
                             setIsLoading(true);
@@ -772,17 +795,17 @@ const ProfilePage: React.FC = () => {
                               const userFound = users.find((u: any) => u.email && u.email.toLowerCase() === email.toLowerCase());
 
                               if (!userFound) {
-                                toast({ title: <div className="flex items-center"><Info className="h-5 w-5 mr-2 text-amber-500" />لم يتم العثور على حساب</div>, description: "تأكد من البريد أو تواصل معنا.", variant: "default", duration: 4000, className: "bg-amber-50 border-amber-200 dark:bg-amber-900/30 dark:border-amber-700" });
+                                toast({ title: "لم يتم العثور على حساب", description: "تأكد من البريد أو تواصل معنا.", variant: "default", duration: 4000, className: "bg-amber-50 border-amber-200 dark:bg-amber-900/30 dark:border-amber-700" });
                                 setTimeout(() => window.open("https://t.me/qodratak2030", "_blank"), 4000);
                                 return;
                               }
                               toast({
-                                title: <div className="flex items-center"><CheckCircle2 className="h-5 w-5 mr-2 text-green-500"/>معلومات الحساب (تجريبي)</div>,
-                                description: <div className="text-sm text-right">الاسم: {userFound.name}<br/>البريد: {userFound.email}<br/>المرور: {userFound.password} <br/><strong className="text-amber-500">(لا تعرض كلمة المرور هكذا في تطبيق حقيقي!)</strong></div>,
+                                title: "معلومات الحساب (تجريبي)",
+                                description: `الاسم: ${userFound.name}\nالبريد: ${userFound.email}\nالمرور: ${userFound.password}\n(لا تعرض كلمة المرور هكذا في تطبيق حقيقي!)`,
                                 duration: 20000, className: "whitespace-pre-line text-right bg-green-50 border-green-200 dark:bg-green-900/30 dark:border-green-700",
                               });
                             } catch (error) {
-                              toast({ title: <div className="flex items-center"><XCircle className="h-5 w-5 mr-2 text-red-500" />خطأ</div>, description: (error instanceof Error ? error.message : "يرجى التواصل معنا للمساعدة."), variant: "destructive" });
+                              toast({ title: "خطأ", description: (error instanceof Error ? error.message : "يرجى التواصل معنا للمساعدة."), variant: "destructive" });
                             } finally { setIsLoading(false); }
                         }} disabled={isLoading}
                       >
@@ -803,7 +826,7 @@ const ProfilePage: React.FC = () => {
                             const passwordInput = document.getElementById('recover-password') as HTMLInputElement;
                             const password = passwordInput?.value;
                             if (!password) {
-                              toast({ title: <div className="flex items-center"><XCircle className="h-5 w-5 mr-2 text-red-500" />خطأ</div>, description: "يرجى إدخال كلمة المرور", variant: "destructive" });
+                              toast({ title: "خطأ", description: "يرجى إدخال كلمة المرور", variant: "destructive" });
                               return;
                             }
                             setIsLoading(true);
@@ -811,17 +834,17 @@ const ProfilePage: React.FC = () => {
                               const users = await fetch('/user.json').then(res => { if (!res.ok) throw new Error('فشل تحميل بيانات المستخدمين (ملف تجريبي).'); return res.json(); });
                               const userFound = users.find((u: any) => u.password === password);
                               if (!userFound) {
-                                toast({ title: <div className="flex items-center"><Info className="h-5 w-5 mr-2 text-amber-500" />لم يتم العثور على حساب</div>, description: "تأكد من كلمة المرور أو تواصل معنا.", variant: "default", duration: 4000, className: "bg-amber-50 border-amber-200 dark:bg-amber-900/30 dark:border-amber-700" });
+                                toast({ title: "لم يتم العثور على حساب", description: "تأكد من كلمة المرور أو تواصل معنا.", variant: "default", duration: 4000, className: "bg-amber-50 border-amber-200 dark:bg-amber-900/30 dark:border-amber-700" });
                                 setTimeout(() => window.open("https://t.me/qodratak2030", "_blank"), 4000);
                                 return;
                               }
                               toast({
-                                title: <div className="flex items-center"><CheckCircle2 className="h-5 w-5 mr-2 text-green-500"/>معلومات الحساب (تجريبي)</div>,
-                                description: <div className="text-sm text-right">الاسم: {userFound.name}<br/>البريد: {userFound.email}<br/>المرور: {userFound.password} <br/><strong className="text-amber-500">(لا تعرض كلمة المرور هكذا في تطبيق حقيقي!)</strong></div>,
+                                title: "معلومات الحساب (تجريبي)",
+                                description: `الاسم: ${userFound.name}\nالبريد: ${userFound.email}\nالمرور: ${userFound.password}\n(لا تعرض كلمة المرور هكذا في تطبيق حقيقي!)`,
                                 duration: 20000, className: "whitespace-pre-line text-right bg-green-50 border-green-200 dark:bg-green-900/30 dark:border-green-700",
                               });
                             } catch (error) {
-                              toast({ title: <div className="flex items-center"><XCircle className="h-5 w-5 mr-2 text-red-500" />خطأ</div>, description: (error instanceof Error ? error.message : "يرجى التواصل معنا للمساعدة."), variant: "destructive" });
+                              toast({ title: "خطأ", description: (error instanceof Error ? error.message : "يرجى التواصل معنا للمساعدة."), variant: "destructive" });
                             } finally { setIsLoading(false); }
                         }} disabled={isLoading}
                       >
@@ -835,6 +858,17 @@ const ProfilePage: React.FC = () => {
           </TabsContent>
         </Tabs>
       </div>
+
+      {/* Captcha Verification Modal */}
+      {showCaptcha && (
+        <CaptchaVerification
+          onVerify={handleCaptchaVerification}
+          onClose={() => {
+            setShowCaptcha(false);
+            setPendingLoginData(null);
+          }}
+        />
+      )}
     </div>
   );
 };
