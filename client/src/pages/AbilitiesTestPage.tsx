@@ -182,11 +182,62 @@ const AbilitiesTestPage: React.FC = () => {
     setCurrentDifficulty(level);
   };
 
-  // Start the test
-  const startTest = (type: "verbal" | "quantitative") => {
-    setCurrentTestType(type);
-    loadQuestions(type, currentDifficulty);
+  const [globalLoading, setGlobalLoading] = useState(false);
+  const [loadingMessage, setLoadingMessage] = useState("");
+
+  const showLoading = (message: string) => {
+    setLoadingMessage(message);
+    setGlobalLoading(true);
   };
+
+  const hideLoading = () => {
+    setGlobalLoading(false);
+    setLoadingMessage("");
+  };
+
+  // Start a new test
+  const startTest = useCallback(async (type: "verbal" | "quantitative") => {
+    setLoading(true);
+    setCurrentTestType(type);
+    showLoading(type === "verbal" ? "جاري تحضير الاختبار اللفظي..." : "جاري تحضير الاختبار الكمي...");
+
+    try {
+      const response = await fetch(`/api/questions?category=${type}&difficulty=${currentDifficulty}`);
+      if (!response.ok) {
+        throw new Error("Failed to fetch questions");
+      }
+      const data = await response.json();
+      const shuffled = data.sort(() => 0.5 - Math.random());
+      const selectedQuestions = shuffled.slice(0, 10);
+      setQuestions(selectedQuestions);
+      setCurrentQuestionIndex(0);
+      setScore(0);
+      setSelectedAnswerIndex(null);
+      setIsAnswerLocked(false);
+
+      if (currentDifficulty === "beginner") {
+        setTimeLeft(300);
+      } else if (currentDifficulty === "intermediate") {
+        setTimeLeft(240);
+      } else {
+        setTimeLeft(180);
+      }
+
+      setCurrentView("inProgress");
+      setTestStartTime(new Date());
+      hideLoading();
+    } catch (error: any) {
+      console.error("Error starting test:", error);
+      toast({
+        title: "خطأ في بدء الاختبار",
+        description: error.message || "حدث خطأ غير متوقع",
+        variant: "destructive",
+      });
+      hideLoading();
+    } finally {
+      setLoading(false);
+    }
+  }, [toast, currentDifficulty]);
 
   // Select an answer
   const selectAnswer = (index: number) => {
@@ -867,6 +918,18 @@ const AbilitiesTestPage: React.FC = () => {
       </div>
     );
   };
+
+  const LoadingScreen: React.FC<{ message: string }> = ({ message }) => (
+    <div className="fixed inset-0 flex flex-col items-center justify-center bg-background/80 backdrop-blur-sm z-50">
+      <BrainCircuitIcon className="animate-spin h-16 w-16 text-primary mb-4" />
+      <p className="text-lg font-semibold text-muted-foreground">{message}</p>
+    </div>
+  );
+
+  // إظهار شاشة التحميل
+  if (globalLoading) {
+    return <LoadingScreen message={loadingMessage} />;
+  }
 
   return (
     <>

@@ -14,6 +14,8 @@ import {
   ArrowRight,
   UserPlus
 } from "lucide-react";
+import { LoadingScreen } from "@/components/LoadingScreen";
+import { useLoading } from "@/hooks/useLoading";
 
 export default function LoginPage() {
   const [, setLocation] = useLocation();
@@ -23,6 +25,8 @@ export default function LoginPage() {
     email: "",
     password: ""
   });
+
+  const { isLoading: isSubmitting, showLoading, hideLoading } = useLoading({ showOnInitialLoad: false });
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -42,16 +46,16 @@ export default function LoginPage() {
       if (response.ok) {
         // حفظ بيانات المستخدم في localStorage
         localStorage.setItem("user", JSON.stringify(result));
-        
+
         // إرسال حدث لتحديث باقي التطبيق
         window.dispatchEvent(new CustomEvent('userLoggedIn', { detail: result }));
-        
+
         toast({
           title: "تم تسجيل الدخول بنجاح",
           description: `مرحباً ${result.name}!`,
           variant: "default",
         });
-        
+
         // الانتقال للصفحة الرئيسية
         setLocation("/profile");
       } else {
@@ -76,6 +80,10 @@ export default function LoginPage() {
   const handleGuestLogin = () => {
     setLocation("/guest-signup");
   };
+
+    if (isSubmitting) {
+        return <LoadingScreen message="جاري تسجيل الدخول..." />;
+    }
 
   return (
     <div className="container mx-auto p-6 max-w-md">
@@ -110,7 +118,7 @@ export default function LoginPage() {
                   required
                 />
               </div>
-              
+
               <div className="space-y-2">
                 <Label htmlFor="password">كلمة المرور</Label>
                 <Input

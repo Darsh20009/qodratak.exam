@@ -1,5 +1,38 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import { Link } from "wouter";
+import { LoadingScreen } from "@/components/LoadingScreen";
+import { usePageLoading } from "@/hooks/useLoading";
+import { 
+  BookOpenIcon, 
+  BrainCircuitIcon, 
+  ClipboardIcon,
+  GamepadIcon,
+  GraduationCapIcon,
+  HelpCircleIcon, 
+  Sparkles,
+  TrophyIcon,
+  UserIcon,
+  RocketIcon,
+  CrownIcon,
+  DiamondIcon,
+  StarIcon,
+  ClockIcon,
+  TargetIcon,
+  ZapIcon,
+  TrendingUpIcon,
+  AwardIcon,
+  ShieldIcon,
+  HeartIcon,
+  LightbulbIcon,
+  FlameIcon,
+  UsersIcon,
+  CheckCircleIcon,
+  GiftIcon,
+  CalendarIcon
+} from "lucide-react";
 import { 
   GraduationCapIcon, 
   BrainCircuitIcon,
@@ -68,6 +101,18 @@ const stats = [
 ];
 
 export default function NewHome() {
+  const [user, setUser] = useState<any>(null);
+  const [currentTime, setCurrentTime] = useState(new Date());
+  const isLoading = usePageLoading(2000); // تحميل لمدة ثانيتين
+
+const isPremiumUser = user && (user.subscription?.type === 'Pro' || user.subscription?.type === 'Pro Life' || user.subscription?.type === 'Pro Live');
+  const isNightMode = currentTime.getHours() >= 18 || currentTime.getHours() <= 6;
+
+  // إظهار شاشة التحميل
+  if (isLoading) {
+    return <LoadingScreen message="جاري تحضير منصة قدراتك..." />;
+  }
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-blue-900 to-indigo-900 text-white">
       {/* Hero Section */}
@@ -77,7 +122,7 @@ export default function NewHome() {
           <div className="absolute -top-40 -right-32 w-96 h-96 bg-blue-500/30 rounded-full blur-3xl animate-pulse-slow"></div>
           <div className="absolute -bottom-40 -left-32 w-96 h-96 bg-purple-500/30 rounded-full blur-3xl animate-pulse-slow animation-delay-2000"></div>
         </div>
-        
+
         <div className="relative z-10 container mx-auto px-6 py-20">
           <div className="text-center space-y-8">
             {/* Header */}
@@ -87,11 +132,11 @@ export default function NewHome() {
                 <span className="text-sm font-medium">منصة قدراتك المطورة</span>
                 <Sparkles className="w-5 h-5 text-yellow-400" />
               </div>
-              
+
               <h1 className="text-6xl md:text-8xl font-black bg-gradient-to-r from-white via-blue-200 to-purple-200 bg-clip-text text-transparent">
                 قدراتك
               </h1>
-              
+
               <p className="text-xl md:text-2xl text-blue-100 max-w-3xl mx-auto leading-relaxed">
                 رحلتك نحو التميز في اختبارات القدرات والقياس
               </p>
