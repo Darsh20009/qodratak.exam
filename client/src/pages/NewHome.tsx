@@ -31,22 +31,14 @@ import {
   UsersIcon,
   CheckCircleIcon,
   GiftIcon,
-  CalendarIcon
-} from "lucide-react";
-import { 
-  GraduationCapIcon, 
-  BrainCircuitIcon,
-  BookOpenIcon,
+  CalendarIcon,
   Clock,
   FolderIcon,
-  HelpCircleIcon,
-  GamepadIcon,
   BarChart3,
   Lightbulb,
   Download,
   Target,
   Trophy,
-  Sparkles,
   ArrowRightIcon,
   Zap,
   Rocket
