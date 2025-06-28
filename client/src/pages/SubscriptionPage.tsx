@@ -306,7 +306,7 @@ function SubscriptionPage() {
   };
 
   const getTelegramMessage = (paymentMethod: 'PayPal' | 'Bank Transfer' | 'STC Pay') => {
-    const planDetailsData = selectedPlan ? { pro: { name: "Pro", price: "180" }, proLife: { name: "Pro Life", price: "400" } }[selectedPlan] : { name: '', price: '' };
+    const planDetailsData = selectedPlan ? { pro: { name: "Pro", price: "149" }, proLife: { name: "Pro Life", price: "299" } }[selectedPlan] : { name: '', price: '' };
     const passwordPart = userData.password ? `كلمة المرور: ${userData.password}\n` : '(لم يتم إدخال كلمة مرور جديدة)\n';
     const finalNote = paymentMethod === 'PayPal' 
       ? '✅ الرجاء إرفاق لقطة شاشة واضحة لتأكيد الدفع.' 
@@ -361,8 +361,8 @@ ${finalNote}`
 
   // Render Functions
   const planDetails = {
-    pro: { name: "Pro", price: "180", description: "باقة سنوية مميزة لكل احتياجاتك" },
-    proLife: { name: "Pro Life", price: "400", originalPrice: "500", discount: "20%", description: "الاشتراك الذهبي، مرة واحدة مدى الحياة" }
+    pro: { name: "Pro", price: "149", description: "باقة سنوية مميزة لكل احتياجاتك" },
+    proLife: { name: "Pro Life", price: "299", originalPrice: "500", discount: "40%", description: "الاشتراك الذهبي، مرة واحدة مدى الحياة" }
   };
   const currentPlanDetails = selectedPlan ? planDetails[selectedPlan] : null;
 
