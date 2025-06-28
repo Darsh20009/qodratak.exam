@@ -284,52 +284,79 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Create a new user (simple for demo purposes)
+  // تسجيل الدخول للمستخدمين
   app.post("/api/auth/login", async (req: Request, res: Response) => {
     try {
       const { email, password } = req.body;
 
       if (!email || !password) {
-        return res.status(400).json({ message: "Email and password are required" });
+        return res.status(400).json({ message: "البريد الإلكتروني وكلمة المرور مطلوبان" });
       }
 
-      const users = JSON.parse(fs.readFileSync("attached_assets/user.json", "utf-8"));
+      // قراءة ملف المستخدمين
+      let users = [];
+      try {
+        const usersData = fs.readFileSync("attached_assets/user.json", "utf-8");
+        users = JSON.parse(usersData);
+      } catch (error) {
+        console.error("Error reading users file:", error);
+        return res.status(500).json({ message: "خطأ في قراءة ملف المستخدمين" });
+      }
+
+      // البحث عن المستخدم
       const user = users.find((u: any) => u.email === email && u.password === password);
 
       if (!user) {
-        return res.status(401).json({ message: "Invalid credentials" });
+        return res.status(401).json({ message: "البريد الإلكتروني أو كلمة المرور غير صحيحة" });
       }
 
-      // Check subscription status
-      if (user.subscription.type !== 'Pro Live') {
-        const endDate = new Date(user.subscription.endDate);
-        const today = new Date();
+      // التحقق من حالة الاشتراك
+      const today = new Date();
+      let shouldUpdateUser = false;
 
-        // Handle different subscription types
-        if (user.subscription.type === 'Pro Live') {
-          // Pro Live users don't need expiry check
-          user.subscription.competitionEndDate = new Date(today.getTime() + 365 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
-        } else if (endDate < today) {
-          // Convert expired subscription to free
-          user.subscription.type = "free";
-          user.subscription.startDate = today.toISOString().split('T')[0];
-          user.subscription.endDate = new Date(today.getTime() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+      if (user.subscription) {
+        // التحقق من انتهاء الاشتراك للباقات العادية
+        if (user.subscription.type !== 'Pro Life' && user.subscription.type !== 'Pro Live' && user.subscription.endDate) {
+          const endDate = new Date(user.subscription.endDate);
+          
+          if (endDate < today) {
+            // تحويل الاشتراك المنتهي إلى مجاني
+            user.subscription.type = "free";
+            user.subscription.startDate = today.toISOString().split('T')[0];
+            user.subscription.endDate = new Date(today.getTime() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+            shouldUpdateUser = true;
+          }
+        }
+      } else {
+        // إضافة اشتراك مجاني إذا لم يكن موجوداً
+        user.subscription = {
+          type: "free",
+          startDate: today.toISOString().split('T')[0],
+          endDate: new Date(today.getTime() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]
+        };
+        shouldUpdateUser = true;
+      }
 
-          // Update user in JSON file
-          const updatedUsers = users.map((u: any) => 
-            u.email === email ? user : u
-          );
+      // تحديث ملف المستخدمين إذا لزم الأمر
+      if (shouldUpdateUser) {
+        const updatedUsers = users.map((u: any) => 
+          u.email === email ? user : u
+        );
 
+        try {
           fs.writeFileSync("attached_assets/user.json", JSON.stringify(updatedUsers, null, 2));
+        } catch (error) {
+          console.error("Error updating users file:", error);
         }
       }
 
+      // إرجاع بيانات المستخدم
       return res.json(user);
     } catch (error) {
       console.error("Error during login:", error);
-      return res.status(500).json({ message: "Error during login" });
+      return res.status(500).json({ message: "خطأ أثناء تسجيل الدخول" });
     }
-});
+  });
 
 // Account recovery endpoint
 app.post("/api/recover-account", async (req: Request, res: Response) => {

@@ -41,14 +41,14 @@ export default function LoginPage() {
 
       if (response.ok) {
         // حفظ بيانات المستخدم في localStorage
-        localStorage.setItem("user", JSON.stringify(result.user));
+        localStorage.setItem("user", JSON.stringify(result));
         
         // إرسال حدث لتحديث باقي التطبيق
-        window.dispatchEvent(new CustomEvent('userLoggedIn', { detail: result.user }));
+        window.dispatchEvent(new CustomEvent('userLoggedIn', { detail: result }));
         
         toast({
           title: "تم تسجيل الدخول بنجاح",
-          description: `مرحباً ${result.user.name}!`,
+          description: `مرحباً ${result.name}!`,
           variant: "default",
         });
         
@@ -62,6 +62,7 @@ export default function LoginPage() {
         });
       }
     } catch (error) {
+      console.error("Login error:", error);
       toast({
         title: "خطأ في الاتصال",
         description: "حدث خطأ أثناء محاولة تسجيل الدخول",
