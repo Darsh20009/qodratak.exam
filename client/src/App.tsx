@@ -31,8 +31,11 @@ import { useState, useEffect } from "react";
 import AskQuestionPage from "@/pages/AskQuestionPage";
 import ProfilePage from "@/pages/WorkingProfile";
 import LoginPage from "@/pages/LoginPage";
+import GuestSignupPage from "@/pages/GuestSignupPage";
+import SubscriptionPage from "@/pages/SubscriptionPage";
 import TestResultsPage from './pages/TestResultsPage';
 import AbilitiesTestPage from "@/pages/AbilitiesTestPage";
+import ProtectedRoute from "@/components/ProtectedRoute";
 import QiyasExamPage from "@/pages/QiyasExamPage";
 import CustomExamPage from "@/pages/CustomExamPage";
 import MockExamPage from "@/pages/MockExamPage";
@@ -264,49 +267,33 @@ function Router({ splashDone }: { splashDone: boolean }) {
   const [user, setUser] = React.useState(() => {
     const storedUser = localStorage.getItem("user");
     if (storedUser) {
-      return JSON.parse(storedUser);
-    } else {
-      // إنشاء مستخدم برو تلقائياً
-      const autoUser = {
-        id: 1,
-        name: "مستخدم قدراتك",
-        email: "user@qudratak.app",
-        subscription: {
-          type: "Pro Life",
-          status: "active",
-          expiresAt: "2030-12-31T23:59:59Z"
-        },
-        points: 1000,
-        level: 10
-      };
-      localStorage.setItem("user", JSON.stringify(autoUser));
-      return autoUser;
+      try {
+        return JSON.parse(storedUser);
+      } catch (error) {
+        console.error("Error parsing user:", error);
+        return null;
+      }
     }
+    return null;
   });
 
   React.useEffect(() => {
-    // التأكد من أن المستخدم دائماً برو
-    if (!user || user.subscription?.type === 'free') {
-      const proUser = {
-        id: 1,
-        name: "مستخدم قدراتك",
-        email: "user@qudratak.app",
-        subscription: {
-          type: "Pro Life",
-          status: "active",
-          expiresAt: "2030-12-31T23:59:59Z"
-        },
-        points: 1000,
-        level: 10
-      };
-      localStorage.setItem("user", JSON.stringify(proUser));
-      setUser(proUser);
-    }
+    // Listen for user changes
+    const handleUserChange = (event: any) => {
+      setUser(event.detail);
+    };
+
+    window.addEventListener('userLoggedIn', handleUserChange);
+    return () => window.removeEventListener('userLoggedIn', handleUserChange);
   }, []);
 
-  const isPremium = true; // دائماً برو
+  const isPremium = user && (
+    user.subscription?.type === 'Pro' || 
+    user.subscription?.type === 'Pro Life' || 
+    user.subscription?.type === 'Pro Live'
+  );
 
-  // جميع المستخدمين لديهم وصول كامل
+  // النظام الجديد: حسابات مجانية محدودة
 
   return (
     <>
@@ -316,35 +303,9 @@ function Router({ splashDone }: { splashDone: boolean }) {
       <Route path="/">
         {() => <MainLayout><Home /></MainLayout>}
       </Route>
+      {/* صفحات متاحة للحسابات المجانية */}
       <Route path="/qiyas">
         {() => <MainLayout><QiyasExamPage /></MainLayout>}
-      </Route>
-      <Route path="/custom-exam">
-        {() => <MainLayout><CustomExamPage /></MainLayout>}
-      </Route>
-      <Route path="/abilities">
-        {() => <MainLayout><AbilitiesTestPage /></MainLayout>}
-      </Route>
-      <Route path="/ask">
-        {() => <MainLayout><AskQuestionPage /></MainLayout>}
-      </Route>
-      <Route path="/library">
-        {() => <MainLayout><LibraryPage /></MainLayout>}
-      </Route>
-      <Route path="/books">
-        {() => <MainLayout><BooksPage /></MainLayout>}
-      </Route>
-      <Route path="/profile">
-        {() => <MainLayout><ProfilePage /></MainLayout>}
-      </Route>
-      <Route path="/login">
-        {() => <MainLayout><LoginPage /></MainLayout>}
-      </Route>
-      <Route path="/test-results">
-        {() => <MainLayout><TestResultsPage /></MainLayout>}
-      </Route>
-      <Route path="/folders">
-        {() => <MainLayout><FoldersPage /></MainLayout>}
       </Route>
       <Route path="/time-management">
         {() => <MainLayout><NewTimeManagementPage /></MainLayout>}
@@ -352,14 +313,48 @@ function Router({ splashDone }: { splashDone: boolean }) {
       <Route path="/install">
         {() => <MainLayout><InstallPage /></MainLayout>}
       </Route>
+      {/* صفحات مدفوعة فقط */}
+      <Route path="/custom-exam">
+        {() => <MainLayout><ProtectedRoute requiresPremium={true}><CustomExamPage /></ProtectedRoute></MainLayout>}
+      </Route>
+      <Route path="/abilities">
+        {() => <MainLayout><ProtectedRoute requiresPremium={true}><AbilitiesTestPage /></ProtectedRoute></MainLayout>}
+      </Route>
+      <Route path="/ask">
+        {() => <MainLayout><ProtectedRoute requiresPremium={true}><AskQuestionPage /></ProtectedRoute></MainLayout>}
+      </Route>
+      <Route path="/library">
+        {() => <MainLayout><ProtectedRoute requiresPremium={true}><LibraryPage /></ProtectedRoute></MainLayout>}
+      </Route>
+      <Route path="/books">
+        {() => <MainLayout><ProtectedRoute requiresPremium={true}><BooksPage /></ProtectedRoute></MainLayout>}
+      </Route>
+      <Route path="/profile">
+        {() => <MainLayout><ProfilePage /></MainLayout>}
+      </Route>
+      <Route path="/login">
+        {() => <MainLayout><LoginPage /></MainLayout>}
+      </Route>
+      <Route path="/guest-signup">
+        {() => <MainLayout><GuestSignupPage /></MainLayout>}
+      </Route>
+      <Route path="/subscription">
+        {() => <MainLayout><SubscriptionPage /></MainLayout>}
+      </Route>
+      <Route path="/test-results">
+        {() => <MainLayout><TestResultsPage /></MainLayout>}
+      </Route>
+      <Route path="/folders">
+        {() => <MainLayout><ProtectedRoute requiresPremium={true}><FoldersPage /></ProtectedRoute></MainLayout>}
+      </Route>
       <Route path="/challenges">
-        {() => <MainLayout><ChallengePage /></MainLayout>}
+        {() => <MainLayout><ProtectedRoute requiresPremium={true}><ChallengePage /></ProtectedRoute></MainLayout>}
       </Route>
       <Route path="/records">
-        {() => <MainLayout><ExamRecordsPage /></MainLayout>}
+        {() => <MainLayout><ProtectedRoute requiresPremium={true}><ExamRecordsPage /></ProtectedRoute></MainLayout>}
       </Route>
       <Route path="/mock-exams">
-        {() => <MainLayout><MockExamPage /></MainLayout>}
+        {() => <MainLayout><ProtectedRoute requiresPremium={true}><MockExamPage /></ProtectedRoute></MainLayout>}
       </Route>
       {/* Fallback to 404 */}
       <Route>

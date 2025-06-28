@@ -19,7 +19,7 @@ const mailjet = new Mailjet({
 async function testMailjetConnection() {
   try {
     const result = await mailjet.get('sender').request();
-    console.log('Mailjet connection successful. Available senders:', result.body.Data);
+    console.log('Mailjet connection successful. Available senders:', result.body);
     return true;
   } catch (error) {
     console.error('Mailjet connection failed:', error);

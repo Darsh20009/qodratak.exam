@@ -241,6 +241,8 @@ const QiyasExamPage: React.FC = () => {
   const { toast } = useToast();
   const isMobile = useIsMobile();
   const [user, setUser] = useState<any>(null); // Replace 'any' with your User type
+  const [dailyTestsTaken, setDailyTestsTaken] = useState(0);
+  const MAX_DAILY_FREE_TESTS = 5;
 
   useEffect(() => {
     const storedUser = localStorage.getItem('user');
@@ -252,7 +254,30 @@ const QiyasExamPage: React.FC = () => {
         localStorage.removeItem('user'); // Clear corrupted user data
       }
     }
+
+    // حساب عدد الاختبارات المأخوذة اليوم
+    const today = new Date().toDateString();
+    const testsToday = JSON.parse(localStorage.getItem(`dailyTests_${today}`) || '0');
+    setDailyTestsTaken(testsToday);
   }, []);
+
+  const isPremiumUser = user && (
+    user.subscription?.type === 'Pro' || 
+    user.subscription?.type === 'Pro Life' || 
+    user.subscription?.type === 'Pro Live'
+  );
+
+  const canTakeTest = isPremiumUser || dailyTestsTaken < MAX_DAILY_FREE_TESTS;
+
+  // تسجيل اختبار جديد للحسابات المجانية
+  const recordTestTaken = () => {
+    if (!isPremiumUser) {
+      const today = new Date().toDateString();
+      const newCount = dailyTestsTaken + 1;
+      localStorage.setItem(`dailyTests_${today}`, JSON.stringify(newCount));
+      setDailyTestsTaken(newCount);
+    }
+  };
 
   const [selectedExam, setSelectedExam] = useState<QiyasExam | null>(null);
   const [currentView, setCurrentView] = useState<"selection" | "instructions" | "inProgress" | "results">("selection");
@@ -760,7 +785,28 @@ const QiyasExamPage: React.FC = () => {
   const calculateExamStats = () => examStats;
 
   const handleStartExamClick = (exam: QiyasExam) => {
-    const isUserSubscribed = user?.subscription?.type === 'Pro Live' || user?.subscription?.type === 'Pro';
+    // التحقق من حالة المستخدم
+    if (!user) {
+      setLocation("/login");
+      return;
+    }
+
+    // التحقق من قيود الحسابات المجانية
+    if (!isPremiumUser && !canTakeTest) {
+      toast({
+        title: "وصلت للحد الأقصى",
+        description: `يمكن للحسابات المجانية أخذ ${MAX_DAILY_FREE_TESTS} اختبارات يومياً فقط. قم بالترقية للوصول غير المحدود!`,
+        variant: "destructive",
+        duration: 7000
+      });
+      
+      setTimeout(() => {
+        setLocation("/subscription");
+      }, 2000);
+      return;
+    }
+
+    const isUserSubscribed = user?.subscription?.type === 'Pro Live' || user?.subscription?.type === 'Pro' || user?.subscription?.type === 'Pro Life';
 
     // Special handling for exam with id: 1 for NON-SUBSCRIBED users
     if (exam.id === 1 && !isUserSubscribed) {
@@ -789,6 +835,7 @@ const QiyasExamPage: React.FC = () => {
             }
         }
         // If cooldown passed or first time, load the exam (bypassing the subscription check)
+        recordTestTaken(); // تسجيل الاختبار
         loadExam(exam);
         return;
     }
@@ -797,6 +844,7 @@ const QiyasExamPage: React.FC = () => {
     if (exam.requiresSubscription && !isUserSubscribed) {
         setLocation("/subscription");
     } else {
+        recordTestTaken(); // تسجيل الاختبار
         loadExam(exam);
     }
   };
@@ -810,9 +858,48 @@ const QiyasExamPage: React.FC = () => {
           <h1 className="text-4xl md:text-6xl font-bold mb-4 text-gray-800 dark:text-white">
             اختر <span className="bg-gradient-to-r from-blue-500 to-teal-400 text-transparent bg-clip-text">اختبارك</span>
           </h1>
-          <p className="text-lg md:text-xl text-gray-600 dark:text-gray-400">
+          <p className="text-lg md:text-xl text-gray-600 dark:text-gray-400 mb-6">
             اختبارات محاكية لاختبار القدرات العامة (قياس) لمساعدتك على التألق.
           </p>
+          
+          {/* عرض إحصائيات الحسابات المجانية */}
+          {user && !isPremiumUser && (
+            <div className="max-w-md mx-auto mb-8">
+              <Card className="bg-gradient-to-r from-blue-50 to-purple-50 dark:from-blue-900/20 dark:to-purple-900/20 border-blue-200 dark:border-blue-700">
+                <CardContent className="p-4">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <Timer className="w-5 h-5 text-blue-600 dark:text-blue-400" />
+                      <span className="font-medium text-blue-700 dark:text-blue-300">اختباراتك اليوم</span>
+                    </div>
+                    <div className="text-right">
+                      <div className="text-2xl font-bold text-blue-600 dark:text-blue-400">
+                        {dailyTestsTaken}/{MAX_DAILY_FREE_TESTS}
+                      </div>
+                      <div className="text-xs text-blue-500 dark:text-blue-400">
+                        {canTakeTest ? `متبقي ${MAX_DAILY_FREE_TESTS - dailyTestsTaken}` : 'انتهت اختباراتك اليوم'}
+                      </div>
+                    </div>
+                  </div>
+                  
+                  {!canTakeTest && (
+                    <div className="mt-3 p-2 bg-yellow-100 dark:bg-yellow-900/30 rounded-lg text-center">
+                      <p className="text-sm text-yellow-700 dark:text-yellow-300 mb-2">
+                        وصلت للحد الأقصى من الاختبارات المجانية اليوم
+                      </p>
+                      <Button 
+                        size="sm" 
+                        onClick={() => setLocation("/subscription")}
+                        className="bg-blue-500 hover:bg-blue-600 text-white"
+                      >
+                        ترقية للوصول غير المحدود
+                      </Button>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            </div>
+          )}
         </div>
 
         {/* Changed lg:grid-cols-3 to lg:grid-cols-2 for larger cards */}
@@ -881,10 +968,17 @@ const QiyasExamPage: React.FC = () => {
               </CardContent>
               <CardFooter className="bg-gray-50 dark:bg-slate-800 p-6"> {/* Increased padding */}
                 <Button
-                  className={cn("w-full font-bold text-lg py-4 bg-gradient-to-r hover:opacity-95 transition-all duration-200 transform hover:scale-105 shadow-lg hover:shadow-blue-500/30", exam.themeColor || "from-gray-700 to-gray-800")} // Increased size/effects
+                  className={cn(
+                    "w-full font-bold text-lg py-4 bg-gradient-to-r hover:opacity-95 transition-all duration-200 transform hover:scale-105 shadow-lg hover:shadow-blue-500/30",
+                    exam.themeColor || "from-gray-700 to-gray-800",
+                    (!user || (!isPremiumUser && !canTakeTest)) && "opacity-50 cursor-not-allowed"
+                  )} // Increased size/effects
                   onClick={() => handleStartExamClick(exam)}
+                  disabled={!user || (!isPremiumUser && !canTakeTest)}
                 >
-                  ابدأ الاختبار
+                  {!user ? "تسجيل دخول مطلوب" :
+                   (!isPremiumUser && !canTakeTest) ? "وصلت للحد الأقصى" :
+                   "ابدأ الاختبار"}
                 </Button>
               </CardFooter>
             </Card>

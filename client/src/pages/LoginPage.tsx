@@ -73,30 +73,7 @@ export default function LoginPage() {
   };
 
   const handleGuestLogin = () => {
-    const guestUser = {
-      id: Date.now(),
-      name: `زائر ${Date.now().toString().slice(-4)}`,
-      email: "guest@qudratak.app",
-      subscription: {
-        type: "Free",
-        status: "active",
-        expiresAt: "2030-12-31T23:59:59Z"
-      },
-      points: Math.floor(Math.random() * 500) + 100,
-      level: Math.floor(Math.random() * 3) + 1,
-      achievements: Math.floor(Math.random() * 3) + 1
-    };
-    
-    localStorage.setItem("user", JSON.stringify(guestUser));
-    window.dispatchEvent(new CustomEvent('userLoggedIn', { detail: guestUser }));
-    
-    toast({
-      title: "دخول كزائر",
-      description: "تم إنشاء حساب مجاني مؤقت",
-      variant: "default",
-    });
-    
-    setLocation("/");
+    setLocation("/guest-signup");
   };
 
   return (
