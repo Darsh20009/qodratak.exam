@@ -30,6 +30,7 @@ import { cn } from "@/lib/utils";
 import { useState, useEffect } from "react";
 import AskQuestionPage from "@/pages/AskQuestionPage";
 import ProfilePage from "@/pages/WorkingProfile";
+import LoginPage from "@/pages/LoginPage";
 import TestResultsPage from './pages/TestResultsPage';
 import AbilitiesTestPage from "@/pages/AbilitiesTestPage";
 import QiyasExamPage from "@/pages/QiyasExamPage";
@@ -335,6 +336,9 @@ function Router({ splashDone }: { splashDone: boolean }) {
       </Route>
       <Route path="/profile">
         {() => <MainLayout><ProfilePage /></MainLayout>}
+      </Route>
+      <Route path="/login">
+        {() => <MainLayout><LoginPage /></MainLayout>}
       </Route>
       <Route path="/test-results">
         {() => <MainLayout><TestResultsPage /></MainLayout>}

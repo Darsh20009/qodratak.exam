@@ -67,10 +67,8 @@ export default function WorkingProfile() {
     localStorage.removeItem("user");
     setUser(null);
     
-    // إنشاء مستخدم جديد فوراً
-    setTimeout(() => {
-      createNewUser();
-    }, 500);
+    // توجيه المستخدم لصفحة تسجيل الدخول
+    window.location.href = "/login";
   };
 
   const handleLogin = () => {
@@ -382,7 +380,7 @@ export default function WorkingProfile() {
                   className="flex items-center gap-2 h-12"
                 >
                   <LogOut className="w-5 h-5" />
-                  تغيير نوع الحساب
+                  تسجيل خروج
                 </Button>
               </div>
             </div>
