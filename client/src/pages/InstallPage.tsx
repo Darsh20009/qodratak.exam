@@ -30,74 +30,50 @@ const InstallPage: React.FC = () => {
   const [showInstructions, setShowInstructions] = useState(false);
   const [selectedPlatform, setSelectedPlatform] = useState<'android' | 'ios' | 'desktop' | null>(null);
 
-  // تحميل APK مباشرة
-  const downloadAPK = async () => {
+  // تحميل APK مباشرة - طريقة محسنة للملفات الكبيرة
+  const downloadAPK = () => {
     try {
       // عرض رسالة تحميل
       const downloadButton = document.querySelector('#download-apk-btn') as HTMLButtonElement;
       if (downloadButton) {
         downloadButton.disabled = true;
-        downloadButton.innerHTML = '<div className="flex items-center"><svg className="animate-spin h-5 w-5 mr-2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" fill="none" stroke-linecap="round" stroke-dasharray="64" stroke-dashoffset="64"></circle></svg>جاري التحميل...</div>';
+        downloadButton.innerHTML = '<div className="flex items-center"><svg className="animate-spin h-5 w-5 mr-2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" fill="none" stroke-linecap="round" stroke-dasharray="64" stroke-dashoffset="64"></circle></svg>جاري بدء التحميل...</div>';
       }
 
-      // تحميل الملف مباشرة
-      const apkUrl = '/app/qudratak-app.apk';
-
-      // التحقق من وجود الملف أولاً
-      const response = await fetch(apkUrl, { method: 'HEAD' });
-      if (!response.ok) {
-        throw new Error('الملف غير موجود');
-      }
-
-      // تحميل الملف
-      const downloadResponse = await fetch(apkUrl);
-      if (!downloadResponse.ok) {
-        throw new Error('فشل في تحميل الملف');
-      }
-
-      const blob = await downloadResponse.blob();
-
-      // إنشاء رابط التحميل
-      const url = window.URL.createObjectURL(blob);
+      // إنشاء رابط التحميل المباشر - أفضل للملفات الكبيرة
       const link = document.createElement('a');
-      link.href = url;
+      link.href = '/app/qudratak-app.apk';
       link.download = 'منصة-قدراتك-v2.1.0.apk';
+      link.target = '_blank';
       link.style.display = 'none';
+      
+      // إضافة الرابط للصفحة وتفعيله
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
-      window.URL.revokeObjectURL(url);
 
-      // إعادة تعيين الزر
-      if (downloadButton) {
-        downloadButton.disabled = false;
-        downloadButton.innerHTML = '<Download className="h-6 w-6 mr-3" />تحميل APK (87 MB)<ExternalLink className="h-5 w-5 ml-3" />';
-      }
+      // إعادة تعيين الزر بعد ثانيتين
+      setTimeout(() => {
+        if (downloadButton) {
+          downloadButton.disabled = false;
+          downloadButton.innerHTML = '<Download className="h-6 w-6 mr-3" />تحميل APK (91 MB)<ExternalLink className="h-5 w-5 ml-3" />';
+        }
+      }, 2000);
 
-      // عرض رسالة نجاح
-      alert('تم تحميل التطبيق بنجاح! 🎉\n\nتحقق من مجلد التحميلات في جهازك واتبع تعليمات التثبيت.');
+      // عرض رسالة إرشادية
+      setTimeout(() => {
+        alert('تم بدء التحميل! 🎉\n\nسيتم تحميل الملف إلى مجلد التحميلات في جهازك.\nالملف كبير (91 ميجابايت) لذا قد يستغرق بعض الوقت حسب سرعة الإنترنت.');
+      }, 1000);
 
     } catch (error) {
       console.error('خطأ في التحميل:', error);
-
-      let errorMessage = 'حدث خطأ أثناء التحميل. ';
-      if (error instanceof Error) {
-        if (error.message.includes('الملف غير موجود')) {
-          errorMessage += 'الملف غير متوفر حالياً. يرجى المحاولة لاحقاً.';
-        } else if (error.message.includes('فشل في تحميل')) {
-          errorMessage += 'تحقق من اتصال الإنترنت وحاول مرة أخرى.';
-        } else {
-          errorMessage += 'يرجى المحاولة مرة أخرى.';
-        }
-      }
-
-      alert(errorMessage);
+      alert('حدث خطأ أثناء بدء التحميل. يرجى المحاولة مرة أخرى.');
 
       // إعادة تعيين الزر في حالة الخطأ
       const downloadButton = document.querySelector('#download-apk-btn') as HTMLButtonElement;
       if (downloadButton) {
         downloadButton.disabled = false;
-        downloadButton.innerHTML = '<Download className="h-6 w-6 mr-3" />تحميل APK (87 MB)<ExternalLink className="h-5 w-5 ml-3" />';
+        downloadButton.innerHTML = '<Download className="h-6 w-6 mr-3" />تحميل APK (91 MB)<ExternalLink className="h-5 w-5 ml-3" />';
       }
     }
   };
@@ -188,7 +164,7 @@ const InstallPage: React.FC = () => {
           className="bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white px-8 py-4 text-lg font-bold shadow-xl hover:shadow-2xl transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
         >
           <Download className="h-6 w-6 mr-3" />
-          تحميل APK (87 MB)
+          تحميل APK (91 MB)
           <ExternalLink className="h-5 w-5 ml-3" />
         </Button>
         <p className="text-gray-500 text-sm mt-3">
@@ -351,7 +327,7 @@ const InstallPage: React.FC = () => {
               تحميل APK مباشر
             </Button>
             <div className="flex justify-center gap-2 mb-4">
-              <Badge className="bg-green-100 text-green-800 border border-green-200">15.2 MB</Badge>
+              <Badge className="bg-green-100 text-green-800 border border-green-200">91 MB</Badge>
               <Badge className="bg-blue-100 text-blue-800 border border-blue-200">مجاني</Badge>
               <Badge className="bg-purple-100 text-purple-800 border border-purple-200">آمن</Badge>
             </div>
