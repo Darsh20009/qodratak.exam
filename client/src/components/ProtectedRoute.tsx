@@ -171,7 +171,7 @@ export default function ProtectedRoute({
             </p>
             <Button 
               className="bg-green-500 hover:bg-green-600 text-white"
-              onClick={() => window.open('https://wa.me/+966500000000', '_blank')}
+              onClick={() => window.open('https://t.me/qodratak2030', '_blank')}
             >
               تواصل معنا
             </Button>
