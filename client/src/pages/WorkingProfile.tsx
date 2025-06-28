@@ -48,13 +48,13 @@ export default function WorkingProfile() {
       name: `مستخدم ${Date.now().toString().slice(-4)}`,
       email: "user@qudratak.app",
       subscription: {
-        type: "Pro Life",
+        type: "Free",
         status: "active",
         expiresAt: "2030-12-31T23:59:59Z"
       },
-      points: Math.floor(Math.random() * 2000) + 1000,
-      level: Math.floor(Math.random() * 10) + 5,
-      achievements: Math.floor(Math.random() * 10) + 3
+      points: Math.floor(Math.random() * 500) + 100,
+      level: Math.floor(Math.random() * 3) + 1,
+      achievements: Math.floor(Math.random() * 3) + 1
     };
     localStorage.setItem("user", JSON.stringify(newUser));
     setUser(newUser);
@@ -75,6 +75,27 @@ export default function WorkingProfile() {
 
   const handleLogin = () => {
     createNewUser();
+  };
+
+  const handlePremiumLogin = () => {
+    const premiumUser = {
+      id: Date.now(),
+      name: `عميل مميز ${Date.now().toString().slice(-4)}`,
+      email: "premium@qudratak.app",
+      subscription: {
+        type: Math.random() > 0.5 ? "Pro" : "Pro Life",
+        status: "active",
+        expiresAt: "2030-12-31T23:59:59Z"
+      },
+      points: Math.floor(Math.random() * 5000) + 2000,
+      level: Math.floor(Math.random() * 15) + 10,
+      achievements: Math.floor(Math.random() * 20) + 10
+    };
+    localStorage.setItem("user", JSON.stringify(premiumUser));
+    setUser(premiumUser);
+    
+    // إرسال حدث لتحديث باقي التطبيق
+    window.dispatchEvent(new CustomEvent('userLoggedIn', { detail: premiumUser }));
   };
 
   if (isLoading) {
@@ -112,15 +133,27 @@ export default function WorkingProfile() {
   return (
     <div className="container mx-auto p-6 space-y-6">
       {/* Welcome Banner */}
-      <div className="relative overflow-hidden rounded-3xl bg-gradient-to-r from-blue-600 via-purple-600 to-pink-600 p-8 text-white">
+      <div className={`relative overflow-hidden rounded-3xl p-8 text-white ${
+        subscriptionType === 'Free' 
+          ? 'bg-gradient-to-r from-gray-600 via-slate-600 to-gray-600' 
+          : 'bg-gradient-to-r from-blue-600 via-purple-600 to-pink-600'
+      }`}>
         <div className="absolute inset-0 bg-gradient-to-r from-black/20 to-transparent"></div>
         <div className="relative z-10 flex items-center justify-between">
           <div className="space-y-2">
             <h1 className="text-3xl font-bold">مرحباً {user.name}!</h1>
-            <p className="text-blue-100">جميع الميزات متاحة لك مجاناً</p>
+            <p className={subscriptionType === 'Free' ? "text-gray-200" : "text-blue-100"}>
+              {subscriptionType === 'Free' 
+                ? 'حساب مجاني - قم بالترقية للمزيد من الميزات' 
+                : 'جميع الميزات المتقدمة متاحة لك'}
+            </p>
           </div>
           <div className="hidden md:block">
-            <DiamondIcon className="w-16 h-16 text-yellow-300 animate-pulse" />
+            {subscriptionType === 'Free' ? (
+              <User className="w-16 h-16 text-gray-300" />
+            ) : (
+              <DiamondIcon className="w-16 h-16 text-yellow-300 animate-pulse" />
+            )}
           </div>
         </div>
       </div>
@@ -163,53 +196,111 @@ export default function WorkingProfile() {
         </Card>
       </div>
 
-      {/* Premium Features */}
+      {/* Features Section */}
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Rocket className="w-6 h-6 text-blue-500" />
-            الميزات المتاحة لك
+            {subscriptionType === 'Free' ? 'الميزات والاشتراكات' : 'الميزات المتاحة لك'}
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="space-y-3">
-              <div className="flex items-center gap-3">
-                <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-                <span>وصول غير محدود لجميع الاختبارات</span>
+          {subscriptionType === 'Free' ? (
+            <div className="space-y-6">
+              {/* Free Features */}
+              <div>
+                <h4 className="font-semibold text-green-600 mb-3">✓ الميزات المجانية المتاحة</h4>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                  <div className="flex items-center gap-3">
+                    <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                    <span className="text-sm">5 اختبارات يومياً</span>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                    <span className="text-sm">الاختبارات الأساسية</span>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                    <span className="text-sm">إدارة الوقت الأساسية</span>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                    <span className="text-sm">تحميل التطبيق</span>
+                  </div>
+                </div>
               </div>
-              <div className="flex items-center gap-3">
-                <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-                <span>المساعد الذكي لحل الأسئلة</span>
-              </div>
-              <div className="flex items-center gap-3">
-                <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-                <span>إدارة الوقت والمهام</span>
-              </div>
-              <div className="flex items-center gap-3">
-                <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-                <span>المكتبة الشاملة</span>
+
+              {/* Premium Features */}
+              <div>
+                <h4 className="font-semibold text-orange-600 mb-3">🔒 الميزات المتقدمة (Pro & Pro Life)</h4>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                  <div className="flex items-center gap-3">
+                    <div className="w-2 h-2 bg-orange-500 rounded-full"></div>
+                    <span className="text-sm text-muted-foreground">وصول غير محدود للاختبارات</span>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <div className="w-2 h-2 bg-orange-500 rounded-full"></div>
+                    <span className="text-sm text-muted-foreground">المساعد الذكي المتقدم</span>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <div className="w-2 h-2 bg-orange-500 rounded-full"></div>
+                    <span className="text-sm text-muted-foreground">تحليلات مفصلة للأداء</span>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <div className="w-2 h-2 bg-orange-500 rounded-full"></div>
+                    <span className="text-sm text-muted-foreground">المجلدات المخصصة</span>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <div className="w-2 h-2 bg-orange-500 rounded-full"></div>
+                    <span className="text-sm text-muted-foreground">التحديات والألعاب المتقدمة</span>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <div className="w-2 h-2 bg-orange-500 rounded-full"></div>
+                    <span className="text-sm text-muted-foreground">المكتبة الشاملة</span>
+                  </div>
+                </div>
               </div>
             </div>
-            <div className="space-y-3">
-              <div className="flex items-center gap-3">
-                <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-                <span>التحديات والألعاب</span>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-3">
+                <div className="flex items-center gap-3">
+                  <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                  <span>وصول غير محدود لجميع الاختبارات</span>
+                </div>
+                <div className="flex items-center gap-3">
+                  <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                  <span>المساعد الذكي لحل الأسئلة</span>
+                </div>
+                <div className="flex items-center gap-3">
+                  <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                  <span>إدارة الوقت والمهام المتقدمة</span>
+                </div>
+                <div className="flex items-center gap-3">
+                  <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                  <span>المكتبة الشاملة</span>
+                </div>
               </div>
-              <div className="flex items-center gap-3">
-                <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-                <span>تقارير مفصلة للأداء</span>
-              </div>
-              <div className="flex items-center gap-3">
-                <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-                <span>المجلدات المخصصة</span>
-              </div>
-              <div className="flex items-center gap-3">
-                <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-                <span>تحميل التطبيق</span>
+              <div className="space-y-3">
+                <div className="flex items-center gap-3">
+                  <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                  <span>التحديات والألعاب</span>
+                </div>
+                <div className="flex items-center gap-3">
+                  <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                  <span>تقارير مفصلة للأداء</span>
+                </div>
+                <div className="flex items-center gap-3">
+                  <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                  <span>المجلدات المخصصة</span>
+                </div>
+                <div className="flex items-center gap-3">
+                  <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                  <span>تحميل التطبيق</span>
+                </div>
               </div>
             </div>
-          </div>
+          )}
         </CardContent>
       </Card>
 
@@ -238,35 +329,72 @@ export default function WorkingProfile() {
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <Button 
-              onClick={handleLogin}
-              variant="outline" 
-              className="flex items-center gap-2 h-12"
-            >
-              <RefreshCw className="w-5 h-5" />
-              حساب جديد
-            </Button>
-            <Button 
-              onClick={() => window.location.reload()}
-              variant="outline" 
-              className="flex items-center gap-2 h-12"
-            >
-              <RefreshCw className="w-5 h-5" />
-              تحديث البيانات
-            </Button>
-            <Button 
-              onClick={handleLogout}
-              variant="destructive" 
-              className="flex items-center gap-2 h-12"
-            >
-              <LogOut className="w-5 h-5" />
-              تغيير الحساب
-            </Button>
+          <div className="space-y-4">
+            {/* Account Type Buttons */}
+            {subscriptionType === 'Free' && (
+              <div className="space-y-3">
+                <h4 className="font-semibold text-sm">تسجيل دخول العملاء المميزين</h4>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                  <Button 
+                    onClick={handlePremiumLogin}
+                    className="bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600 text-white h-12"
+                  >
+                    <Crown className="w-5 h-5 mr-2" />
+                    دخول عميل Pro / Pro Life
+                  </Button>
+                  <Button 
+                    onClick={handleLogin}
+                    variant="outline" 
+                    className="flex items-center gap-2 h-12"
+                  >
+                    <RefreshCw className="w-5 h-5" />
+                    حساب مجاني جديد
+                  </Button>
+                </div>
+              </div>
+            )}
+            
+            {/* General Account Management */}
+            <div className="space-y-3">
+              <h4 className="font-semibold text-sm">عمليات الحساب</h4>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                {subscriptionType !== 'Free' && (
+                  <Button 
+                    onClick={handlePremiumLogin}
+                    variant="outline" 
+                    className="flex items-center gap-2 h-12"
+                  >
+                    <RefreshCw className="w-5 h-5" />
+                    حساب مميز جديد
+                  </Button>
+                )}
+                <Button 
+                  onClick={() => window.location.reload()}
+                  variant="outline" 
+                  className="flex items-center gap-2 h-12"
+                >
+                  <RefreshCw className="w-5 h-5" />
+                  تحديث البيانات
+                </Button>
+                <Button 
+                  onClick={handleLogout}
+                  variant="destructive" 
+                  className="flex items-center gap-2 h-12"
+                >
+                  <LogOut className="w-5 h-5" />
+                  تغيير نوع الحساب
+                </Button>
+              </div>
+            </div>
           </div>
-          <p className="text-sm text-muted-foreground mt-4 text-center">
-            جميع الحسابات تتمتع بجميع الميزات المتقدمة
-          </p>
+          
+          <div className="mt-6 p-4 bg-muted rounded-lg">
+            <p className="text-sm text-muted-foreground text-center">
+              {subscriptionType === 'Free' 
+                ? 'الحساب المجاني يتضمن ميزات أساسية. قم بتسجيل الدخول كعميل مميز للوصول لجميع الميزات المتقدمة.'
+                : 'حسابك المميز يتيح لك الوصول لجميع الميزات المتقدمة في المنصة.'}
+            </p>
+          </div>
         </CardContent>
       </Card>
     </div>

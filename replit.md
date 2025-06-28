@@ -167,15 +167,16 @@ Preferred communication style: Simple, everyday language.
 - **File Serving Fix**: Added direct APK route bypassing authentication middleware
 - **Visual Consistency**: All UI components now use dark theme variables consistently
 
-### No-Auth Pro Experience - June 27, 2025
-- **Instant Pro Access**: All users automatically get Pro Life subscription without registration
-- **Removed Authentication Barriers**: Eliminated login/signup requirements completely
-- **Universal Premium Features**: All features accessible immediately to every user
-- **Simplified User Flow**: Direct access to all functionality without account creation
-- **Auto User Generation**: System creates Pro Life user automatically in localStorage
-- **Luxury Home Page**: Redesigned main interface with premium gradient designs
-- **Streamlined Profile**: Simplified profile page showing Pro status and achievements
-- **Performance Optimized**: Removed authentication checks and subscription validations
+### Freemium Subscription Model - June 27, 2025
+- **Default Free Accounts**: All new users start with Free subscription with limited features
+- **Premium Login System**: Separate login process for Pro and Pro Life customers
+- **Feature Differentiation**: Clear distinction between free and premium features
+- **Subscription Tiers**:
+  - **Free**: 5 daily tests, basic features, time management basics, app download
+  - **Pro/Pro Life**: Unlimited tests, AI assistant, advanced analytics, custom folders, full library access
+- **Visual Subscription Indicators**: Different UI themes for free vs premium accounts
+- **Account Management**: Easy switching between account types and subscription levels
+- **Upgrade Prompts**: Clear indication of premium features for free users
 
 ### Technical Implementation
 - **Local Data Storage**: All time management data stored using localStorage with structured schemas
