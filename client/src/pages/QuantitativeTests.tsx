@@ -5,7 +5,6 @@ import { motion } from 'framer-motion';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { LoadingScreen } from '@/components/LoadingScreen';
 import { 
   Calculator, 
   TrendingUp, 
@@ -56,14 +55,9 @@ export function QuantitativeTests() {
   const MAX_DAILY_FREE_TESTS = 1;
 
   // جلب بيانات المستخدم
-  const { data: user, isLoading: isUserLoading } = useQuery({
+  const { data: user } = useQuery({
     queryKey: ['/api/user'],
   });
-
-  // إظهار شاشة التحميل أثناء جلب بيانات المستخدم
-  if (isUserLoading) {
-    return <LoadingScreen message="جاري تحضير اختبارات القدرات الكمية - استعد للتميز الرياضي! 🧮✨" />;
-  }
 
   // تحديد المستخدم المميز
   const isPremiumUser = user && (

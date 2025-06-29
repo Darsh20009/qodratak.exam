@@ -5,27 +5,7 @@ interface LoadingScreenProps {
   message?: string;
 }
 
-export function LoadingScreen({ message = "جاري تحضير منصة قدراتك..." }: LoadingScreenProps) {
-  const [currentMessage, setCurrentMessage] = React.useState(message);
-  
-  React.useEffect(() => {
-    const messages = [
-      "جاري تحضير منصة قدراتك...",
-      "نقوم بإعداد اختبارات القدرات...",
-      "جاري تجهيز المحتوى التعليمي...",
-      "نحضر لك أفضل تجربة تعلم...",
-      "مرحباً بك في رحلة التميز! 🌟"
-    ];
-    
-    let messageIndex = 0;
-    const messageInterval = setInterval(() => {
-      messageIndex = (messageIndex + 1) % messages.length;
-      setCurrentMessage(messages[messageIndex]);
-    }, 800);
-    
-    return () => clearInterval(messageInterval);
-  }, []);
-
+export function LoadingScreen({ message = "جاري التحميل..." }: LoadingScreenProps) {
   return (
     <div className="fixed inset-0 z-50 bg-gradient-to-br from-slate-950 via-blue-950 to-indigo-950 flex items-center justify-center overflow-hidden">
       {/* خلفية متحركة فاخرة */}
@@ -84,11 +64,11 @@ export function LoadingScreen({ message = "جاري تحضير منصة قدرا
           </div>
 
           <div className="relative">
-            <p className="text-lg text-slate-200 font-medium tracking-wide opacity-90 transition-all duration-500">
-              {currentMessage}
+            <p className="text-lg text-slate-200 font-medium tracking-wide opacity-90">
+              {message}
             </p>
-            <div className="absolute inset-0 text-lg text-blue-300/30 blur-sm transition-all duration-500">
-              {currentMessage}
+            <div className="absolute inset-0 text-lg text-blue-300/30 blur-sm">
+              {message}
             </div>
           </div>
         </div>
