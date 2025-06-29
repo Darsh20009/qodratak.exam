@@ -73,7 +73,7 @@ interface TestResult {
 }
 
 // Main component
-const AbilitiesTestPage: React.FC = () => {
+export function AbilitiesTestPage() {
   const [, setLocation] = useLocation();
   const { toast } = useToast();
 
