@@ -29,7 +29,8 @@ export default function ProtectedRoute({
     }
 
     // Check if user has used free trial
-    const freeTrialUsed = localStorage.getItem(`freeTrial_${user?.email || 'anonymous'}`);
+    const freeTrialUsed = localStorage.getItem(`freeTrial_${user?.email || 'anonymous'}`) || 
+                         localStorage.getItem('globalFreeTrialUsed');
     setHasUsedFreeTrial(!!freeTrialUsed);
 
     // Listen for user changes
@@ -42,11 +43,13 @@ export default function ProtectedRoute({
   }, [user?.email]);
 
   const handleUseFreeTrial = () => {
-    // Mark free trial as used
+    // Mark free trial as used globally for this user
     localStorage.setItem(`freeTrial_${user?.email || 'anonymous'}`, 'true');
+    localStorage.setItem('globalFreeTrialUsed', 'true');
     setHasUsedFreeTrial(true);
     
-    // Allow access for this session
+    // Allow access for this session only
+    sessionStorage.setItem('freeTrialActive', 'true');
     window.dispatchEvent(new CustomEvent('freeTrialActivated'));
   };
 
@@ -336,18 +339,27 @@ export default function ProtectedRoute({
 
 // Hook to check if free trial is active
 export function useFreeTrialAccess() {
-  const [hasTrialAccess, setHasTrialAccess] = useState(false);
+  const [hasTrialAccess, setHasTrialAccess] = useState(() => {
+    // Check if trial is active in current session
+    return sessionStorage.getItem('freeTrialActive') === 'true';
+  });
 
   useEffect(() => {
     const handleFreeTrialActivation = () => {
       setHasTrialAccess(true);
-      // Trial access expires when page is refreshed or after 1 hour
+      // Trial access expires when page is refreshed or session ends
       const timer = setTimeout(() => {
         setHasTrialAccess(false);
+        sessionStorage.removeItem('freeTrialActive');
       }, 60 * 60 * 1000); // 1 hour
 
       return () => clearTimeout(timer);
     };
+
+    // Check if trial was already activated in this session
+    if (sessionStorage.getItem('freeTrialActive') === 'true') {
+      setHasTrialAccess(true);
+    }
 
     window.addEventListener('freeTrialActivated', handleFreeTrialActivation);
     return () => window.removeEventListener('freeTrialActivated', handleFreeTrialActivation);

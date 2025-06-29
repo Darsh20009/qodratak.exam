@@ -297,31 +297,26 @@ function Router({ splashDone }: { splashDone: boolean }) {
     user.subscription?.type === 'Pro Live'
   );
 
-  // النظام الجديد: حسابات مجانية محدودة
+  // النظام الجديد: حسابات مجانية محدودة - تجربة مجانية واحدة فقط
   const [hasAccess, setHasAccess] = useState(false);
-  const [usedFreeTrial, setUsedFreeTrial] = useState(() => {
-    return localStorage.getItem('usedFreeTrial') === 'true';
-  });
 
   useEffect(() => {
-    if (user && !isPremium && !usedFreeTrial) {
-      // For free users, check if they've used their free trial
-      setHasAccess(true); // Grant access
-      localStorage.setItem('usedFreeTrial', 'true');
-      setUsedFreeTrial(true);
-
-      // Revoke access after 24 hours (or any desired time)
-      const timer = setTimeout(() => {
-        setHasAccess(false);
-      }, 24 * 60 * 60 * 1000); // 24 hours
-
-      return () => clearTimeout(timer); // Clear timeout on unmount
-    } else if (isPremium) {
+    if (isPremium) {
       setHasAccess(true); // Premium users always have access
     } else {
-      setHasAccess(false); // No access by default
+      // Check if free trial is active in current session
+      const freeTrialActive = sessionStorage.getItem('freeTrialActive') === 'true';
+      setHasAccess(freeTrialActive);
     }
-  }, [user, isPremium, usedFreeTrial]);
+
+    // Listen for free trial activation
+    const handleFreeTrialActivated = () => {
+      setHasAccess(true);
+    };
+
+    window.addEventListener('freeTrialActivated', handleFreeTrialActivated);
+    return () => window.removeEventListener('freeTrialActivated', handleFreeTrialActivated);
+  }, [user, isPremium]);
 
 
   return (
