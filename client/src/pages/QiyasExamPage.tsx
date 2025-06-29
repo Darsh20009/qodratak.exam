@@ -1,6 +1,11 @@
 import React, { useState, useEffect, useMemo } from "react";
 import { useLocation } from "wouter";
 import { useToast } from "@/hooks/use-toast";
+import { 
+  generateBalancedQuestionSet, 
+  calculateDetailedResults, 
+  DetailedExamResult 
+} from "@/../../shared/examUtils";
 import {
   Card,
   CardContent,
@@ -55,11 +60,13 @@ import {
   MessageSquare, // For explanations or feedback
   Check, // For correct items
   X, // For incorrect items
-  Infinity // For untimed option
+  Infinity, // For untimed option
+  BarChart3
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { TestType } from "@shared/types"; // Assuming TestType is "verbal" | "quantitative" | "mixed"
+import { DetailedTestResults } from "@/components/DetailedTestResults";
 
 // Types for Qiyas exams
 interface QiyasSection {
@@ -302,6 +309,8 @@ const QiyasExamPage: React.FC = () => {
   const [isFinalReviewDialogOpen, setIsFinalReviewDialogOpen] = useState(false); // State for final review dialog
   const [isMistakeChallengeDialogOpen, setIsMistakeChallengeDialogOpen] = useState(false);
   const [challengeQuestions, setChallengeQuestions] = useState<ChallengeQuestionData[]>([]);
+  const [detailedResults, setDetailedResults] = useState<DetailedExamResult | null>(null);
+  const [showDetailedResults, setShowDetailedResults] = useState(false);
 
 
 
@@ -432,29 +441,15 @@ const QiyasExamPage: React.FC = () => {
       }
       const allAvailableQuestions: ExamQuestion[] = await response.json();
 
-      let filteredQuestions: ExamQuestion[];
+      // Use balanced distribution system for equal subcategory representation
+      const balancedQuestions = generateBalancedQuestionSet(
+        allAvailableQuestions,
+        section.questionCount,
+        section.category === "mixed" ? "mixed" : 
+        section.category === "verbal" ? "qualification" : "qiyas"
+      );
 
-      if (section.category === "mixed") {
-        const verbalCount = Math.ceil(section.questionCount * 0.55); // Slightly more verbal for typical mixed
-        const quantitativeCount = section.questionCount - verbalCount;
-
-        const verbalQuestions = allAvailableQuestions
-          .filter(q => q.category === "verbal")
-          .sort(() => 0.5 - Math.random())
-          .slice(0, verbalCount);
-
-        const quantitativeQuestions = allAvailableQuestions
-          .filter(q => q.category === "quantitative")
-          .sort(() => 0.5 - Math.random())
-          .slice(0, quantitativeCount);
-
-        filteredQuestions = [...verbalQuestions, ...quantitativeQuestions].sort(() => 0.5 - Math.random()).slice(0, section.questionCount);
-      } else {
-        filteredQuestions = allAvailableQuestions
-          .filter(q => q.category === section.category)
-          .sort(() => 0.5 - Math.random())
-          .slice(0, section.questionCount);
-      }
+      let filteredQuestions = balancedQuestions;
 
       if (filteredQuestions.length < section.questionCount) {
          console.warn(`Warning: Fetched ${filteredQuestions.length} for section ${section.name} (expected ${section.questionCount}). Padding...`);
@@ -689,6 +684,12 @@ const QiyasExamPage: React.FC = () => {
     const currentDate = new Date().toISOString();
     const examName = selectedExam?.name || "اختبار قياس";
 
+    // Calculate detailed results with subcategory breakdown
+    const allQuestions = Object.values(allProcessedQuestionsBySection).flat();
+    const timeTaken = finalStats.timeTaken * 60; // Convert to seconds
+    const detailedExamResults = calculateDetailedResults(answers, allQuestions, timeTaken);
+    setDetailedResults(detailedExamResults);
+
     const storedRecords = localStorage.getItem('examRecords') || '[]';
     let records = [];
     try {
@@ -705,10 +706,9 @@ const QiyasExamPage: React.FC = () => {
       totalQuestions: finalStats.totalScoredQuestions,
       timeTaken: finalStats.timeTaken,
       examId: selectedExam?.id,
-      // Storing allProcessedQuestionsBySection could be large, consider if needed for all records
-      // allProcessedQuestionsBySection: allProcessedQuestionsBySection,
       userAnswers: answers,
-      sectionScores: sectionScores, // Use the state which should be up-to-date
+      sectionScores: sectionScores,
+      detailedResults: detailedExamResults, // Store detailed subcategory results
     });
     try {
         localStorage.setItem('examRecords', JSON.stringify(records));
@@ -2464,8 +2464,24 @@ const generateChallengeFile = ({ isTimed, questions: incorrectOrUnansweredQuesti
 
             <Separator className="my-8 dark:bg-slate-700" />
 
+            {/* Enhanced Results Section with Detailed Analytics Button */}
+            <div className="mb-8">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="font-semibold text-xl text-gray-700 dark:text-gray-100">النتائج التفصيلية:</h3>
+                {detailedResults && (
+                  <Button
+                    onClick={() => setShowDetailedResults(true)}
+                    className="bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white shadow-lg"
+                  >
+                    <BarChart3 className="w-4 h-4 mr-2" />
+                    عرض التحليل الشامل للأقسام الفرعية
+                  </Button>
+                )}
+              </div>
+            </div>
+
             <div>
-              <h3 className="font-semibold text-xl text-gray-700 dark:text-gray-100 mb-4">النتائج التفصيلية حسب القسم:</h3>
+              <h4 className="font-semibold text-lg text-gray-700 dark:text-gray-100 mb-4">النتائج حسب القسم:</h4>
               <div className="border border-slate-200 dark:border-slate-700 rounded-lg overflow-hidden shadow-sm">
                 <table className="w-full text-sm">
                   <thead className="bg-slate-50 dark:bg-slate-800">
@@ -2865,6 +2881,15 @@ const generateChallengeFile = ({ isTimed, questions: incorrectOrUnansweredQuesti
       {currentView === "instructions" && renderExamInstructions()}
       {currentView === "inProgress" && renderExamInProgress()}
       {currentView === "results" && renderExamResults()}
+      
+      {/* Detailed Subcategory Results Modal */}
+      {showDetailedResults && detailedResults && (
+        <DetailedTestResults
+          results={detailedResults}
+          examType={selectedExam?.name || "اختبار قياس"}
+          onClose={() => setShowDetailedResults(false)}
+        />
+      )}
     </div>
   );
 };
