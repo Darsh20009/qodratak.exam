@@ -89,11 +89,21 @@ app.use((req, res, next) => {
     serveStatic(app);
   }
 
-  // ALWAYS serve the app on port 5000
-  // this serves both the API and the client.
-  // It is the only port that is not firewalled.
-  const port = process.env.NODE_ENV === 'production' ? 3000 : 5000;
-  app.listen(port, '0.0.0.0', () => {
+  // Find an available port
+  const port = process.env.PORT || process.env.NODE_ENV === 'production' ? 3000 : 5000;
+  
+  const server = app.listen(port, '0.0.0.0', () => {
     log(`serving on port ${port}`);
+  });
+
+  server.on('error', (err: any) => {
+    if (err.code === 'EADDRINUSE') {
+      log(`Port ${port} is busy, trying port ${port + 1}`);
+      app.listen(port + 1, '0.0.0.0', () => {
+        log(`serving on port ${port + 1}`);
+      });
+    } else {
+      throw err;
+    }
   });
 })();
