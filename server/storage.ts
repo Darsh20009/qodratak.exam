@@ -235,9 +235,15 @@ export interface IStorage {
   // Question operations
   getAllQuestions(): Promise<Question[]>;
   getQuestionsByCategory(category: string): Promise<Question[]>;
+  getQuestionsBySubCategory(subcategory: string): Promise<Question[]>;
   getQuestionsByCategoryAndDifficulty(
     category: string,
     difficulty: string
+  ): Promise<Question[]>;
+  getQuestionsByCategoryAndDifficultyAndSubCategory(
+    category: string,
+    difficulty: string,
+    subcategory: string
   ): Promise<Question[]>;
   getQuestionsById(id: number): Promise<Question | undefined>;
   createQuestion(question: InsertQuestion): Promise<Question>;
@@ -742,12 +748,26 @@ export class MemStorage implements IStorage {
     return this.questions.filter(q => q.category === category);
   }
 
+  async getQuestionsBySubCategory(subcategory: string): Promise<Question[]> {
+    return this.questions.filter(q => q.subcategory === subcategory);
+  }
+
   async getQuestionsByCategoryAndDifficulty(
     category: string,
     difficulty: string
   ): Promise<Question[]> {
     return this.questions.filter(
       q => q.category === category && q.difficulty === difficulty
+    );
+  }
+
+  async getQuestionsByCategoryAndDifficultyAndSubCategory(
+    category: string,
+    difficulty: string,
+    subcategory: string
+  ): Promise<Question[]> {
+    return this.questions.filter(
+      q => q.category === category && q.difficulty === difficulty && q.subcategory === subcategory
     );
   }
 

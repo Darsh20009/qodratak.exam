@@ -1095,6 +1095,535 @@ app.post("/api/auth/register", async (req: Request, res: Response) => {
     }
   });
 
+  // Download questions with creative HTML interface
+  app.get("/api/download-questions/:subcategory", async (req: Request, res: Response) => {
+    try {
+      const { subcategory } = req.params;
+      
+      if (!subcategory) {
+        return res.status(400).json({ message: "Subcategory is required" });
+      }
+
+      const questions = await storage.getQuestionsBySubCategory(subcategory);
+      
+      if (questions.length === 0) {
+        return res.status(404).json({ message: "No questions found for this subcategory" });
+      }
+
+      const creativePage = `
+<!DOCTYPE html>
+<html dir="rtl" lang="ar">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>أسئلة ${subcategory} - منصة قدراتك</title>
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Cairo', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            color: #333;
+            overflow-x: hidden;
+        }
+
+        .hero-section {
+            position: relative;
+            padding: 60px 20px;
+            text-align: center;
+            color: white;
+            overflow: hidden;
+        }
+
+        .hero-section::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.3);
+            z-index: 1;
+        }
+
+        .hero-content {
+            position: relative;
+            z-index: 2;
+            max-width: 800px;
+            margin: 0 auto;
+        }
+
+        .floating-elements {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            z-index: 0;
+        }
+
+        .floating-element {
+            position: absolute;
+            background: rgba(255,255,255,0.1);
+            border-radius: 50%;
+            animation: float 6s ease-in-out infinite;
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translateY(0px) rotate(0deg); }
+            50% { transform: translateY(-20px) rotate(180deg); }
+        }
+
+        .main-title {
+            font-size: 3.5rem;
+            font-weight: 700;
+            margin-bottom: 20px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+            animation: slideInDown 1s ease-out;
+        }
+
+        @keyframes slideInDown {
+            from { opacity: 0; transform: translateY(-50px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .subtitle {
+            font-size: 1.3rem;
+            margin-bottom: 30px;
+            opacity: 0.9;
+            animation: slideInUp 1s ease-out 0.3s both;
+        }
+
+        @keyframes slideInUp {
+            from { opacity: 0; transform: translateY(50px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .stats-container {
+            display: flex;
+            justify-content: center;
+            gap: 30px;
+            margin: 40px 0;
+            animation: fadeIn 1s ease-out 0.6s both;
+        }
+
+        .stat-card {
+            background: rgba(255,255,255,0.2);
+            backdrop-filter: blur(10px);
+            border-radius: 15px;
+            padding: 20px;
+            border: 1px solid rgba(255,255,255,0.3);
+            transition: transform 0.3s ease;
+        }
+
+        .stat-card:hover {
+            transform: translateY(-5px);
+        }
+
+        .stat-number {
+            font-size: 2.5rem;
+            font-weight: 700;
+            color: #FFD700;
+        }
+
+        .stat-label {
+            font-size: 1rem;
+            margin-top: 5px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 40px 20px;
+        }
+
+        .download-section {
+            background: white;
+            border-radius: 25px;
+            padding: 40px;
+            margin: 40px 0;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.1);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .download-section::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 5px;
+            background: linear-gradient(90deg, #667eea, #764ba2, #667eea);
+            background-size: 200% 100%;
+            animation: shimmer 3s ease-in-out infinite;
+        }
+
+        @keyframes shimmer {
+            0% { background-position: 200% 0; }
+            100% { background-position: -200% 0; }
+        }
+
+        .download-buttons {
+            display: flex;
+            gap: 20px;
+            justify-content: center;
+            margin: 30px 0;
+            flex-wrap: wrap;
+        }
+
+        .download-btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 15px 30px;
+            border: none;
+            border-radius: 50px;
+            font-size: 1.1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .download-btn::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
+            transition: left 0.5s ease;
+        }
+
+        .download-btn:hover::before {
+            left: 100%;
+        }
+
+        .download-btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 10px 30px rgba(102, 126, 234, 0.4);
+        }
+
+        .questions-preview {
+            background: #f8f9fa;
+            border-radius: 20px;
+            padding: 30px;
+            margin: 30px 0;
+        }
+
+        .question-card {
+            background: white;
+            border-radius: 15px;
+            padding: 25px;
+            margin: 20px 0;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.08);
+            border-left: 5px solid #667eea;
+            transition: transform 0.3s ease;
+        }
+
+        .question-card:hover {
+            transform: translateX(5px);
+        }
+
+        .question-text {
+            font-size: 1.1rem;
+            line-height: 1.8;
+            margin-bottom: 15px;
+            color: #2d3748;
+        }
+
+        .options-list {
+            list-style: none;
+            padding: 0;
+        }
+
+        .option {
+            background: #f7fafc;
+            padding: 12px 20px;
+            margin: 8px 0;
+            border-radius: 10px;
+            border: 2px solid transparent;
+            transition: all 0.3s ease;
+        }
+
+        .option.correct {
+            background: linear-gradient(135deg, #68d391 0%, #4fd1c7 100%);
+            color: white;
+            border-color: #38a169;
+        }
+
+        .footer {
+            text-align: center;
+            padding: 40px 20px;
+            color: white;
+            background: rgba(0,0,0,0.2);
+        }
+
+        .logo {
+            font-size: 2rem;
+            font-weight: 700;
+            margin-bottom: 10px;
+        }
+
+        @media (max-width: 768px) {
+            .main-title { font-size: 2.5rem; }
+            .stats-container { flex-direction: column; align-items: center; }
+            .download-buttons { flex-direction: column; align-items: center; }
+            .download-section { padding: 20px; }
+        }
+
+        .fade-in {
+            animation: fadeIn 0.8s ease-out;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+    </style>
+</head>
+<body>
+    <div class="hero-section">
+        <div class="floating-elements">
+            <div class="floating-element" style="width: 60px; height: 60px; top: 10%; left: 10%; animation-delay: 0s;"></div>
+            <div class="floating-element" style="width: 80px; height: 80px; top: 20%; right: 10%; animation-delay: 1s;"></div>
+            <div class="floating-element" style="width: 40px; height: 40px; top: 60%; left: 20%; animation-delay: 2s;"></div>
+            <div class="floating-element" style="width: 100px; height: 100px; top: 70%; right: 20%; animation-delay: 3s;"></div>
+        </div>
+        
+        <div class="hero-content">
+            <h1 class="main-title">🎯 قدراتك</h1>
+            <p class="subtitle">بنك أسئلة ${subcategory}</p>
+            
+            <div class="stats-container">
+                <div class="stat-card">
+                    <div class="stat-number">${questions.length}</div>
+                    <div class="stat-label">سؤال متاح</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number">${new Set(questions.map(q => q.difficulty)).size}</div>
+                    <div class="stat-label">مستوى صعوبة</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number">100%</div>
+                    <div class="stat-label">جودة الأسئلة</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="container">
+        <div class="download-section fade-in">
+            <h2 style="text-align: center; color: #2d3748; margin-bottom: 20px; font-size: 2.2rem;">
+                📥 تحميل الأسئلة
+            </h2>
+            <p style="text-align: center; color: #4a5568; font-size: 1.1rem; margin-bottom: 30px;">
+                اختر الصيغة المناسبة لتحميل أسئلة ${subcategory}
+            </p>
+            
+            <div class="download-buttons">
+                <button class="download-btn" onclick="downloadJSON()">
+                    📄 تحميل JSON
+                </button>
+                <button class="download-btn" onclick="downloadExcel()">
+                    📊 تحميل Excel  
+                </button>
+                <button class="download-btn" onclick="downloadPDF()">
+                    📋 تحميل PDF
+                </button>
+                <button class="download-btn" onclick="printQuestions()">
+                    🖨️ طباعة مباشرة
+                </button>
+            </div>
+        </div>
+
+        <div class="questions-preview fade-in">
+            <h3 style="text-align: center; color: #2d3748; margin-bottom: 25px; font-size: 1.8rem;">
+                👁️ معاينة الأسئلة
+            </h3>
+            
+            ${questions.slice(0, 3).map((q, index) => `
+                <div class="question-card">
+                    <div style="display: flex; justify-content: between; align-items: center; margin-bottom: 15px;">
+                        <span style="background: #667eea; color: white; padding: 5px 15px; border-radius: 20px; font-size: 0.9rem;">
+                            السؤال ${index + 1}
+                        </span>
+                        <span style="background: #e2e8f0; color: #4a5568; padding: 5px 15px; border-radius: 20px; font-size: 0.9rem;">
+                            ${q.difficulty === 'beginner' ? 'مبتدئ' : q.difficulty === 'intermediate' ? 'متوسط' : 'متقدم'}
+                        </span>
+                    </div>
+                    <p class="question-text">${q.text}</p>
+                    <ul class="options-list">
+                        ${q.options.map((option, optIndex) => `
+                            <li class="option ${optIndex === q.correctOptionIndex ? 'correct' : ''}">
+                                ${String.fromCharCode(65 + optIndex)}) ${option}
+                            </li>
+                        `).join('')}
+                    </ul>
+                    ${q.explanation ? `
+                        <div style="margin-top: 15px; padding: 15px; background: #e6fffa; border-radius: 10px; border-left: 4px solid #38b2ac;">
+                            <strong style="color: #2c7a7b;">💡 التفسير:</strong>
+                            <p style="margin-top: 5px; color: #2c7a7b;">${q.explanation}</p>
+                        </div>
+                    ` : ''}
+                </div>
+            `).join('')}
+            
+            ${questions.length > 3 ? `
+                <div style="text-align: center; margin-top: 30px;">
+                    <p style="color: #4a5568; font-size: 1.1rem;">
+                        ... و ${questions.length - 3} سؤال إضافي في الملف الكامل
+                    </p>
+                </div>
+            ` : ''}
+        </div>
+    </div>
+
+    <div class="footer">
+        <div class="logo">قدراتك</div>
+        <p>منصة شاملة للتدريب على اختبارات القياس</p>
+        <p style="margin-top: 10px; opacity: 0.8;">© ${new Date().getFullYear()} جميع الحقوق محفوظة</p>
+    </div>
+
+    <script>
+        const questionsData = ${JSON.stringify(questions, null, 2)};
+
+        function downloadJSON() {
+            const dataStr = JSON.stringify(questionsData, null, 2);
+            const dataBlob = new Blob([dataStr], {type: 'application/json'});
+            const url = URL.createObjectURL(dataBlob);
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = 'اسئلة_${subcategory}_${new Date().toISOString().split('T')[0]}.json';
+            link.click();
+            URL.revokeObjectURL(url);
+        }
+
+        function downloadExcel() {
+            let csvContent = "رقم السؤال,نص السؤال,الخيار أ,الخيار ب,الخيار ج,الخيار د,الإجابة الصحيحة,المستوى,التفسير\\n";
+            
+            questionsData.forEach((q, index) => {
+                const correctAnswer = String.fromCharCode(65 + q.correctOptionIndex);
+                const row = [
+                    index + 1,
+                    '"' + q.text.replace(/"/g, '""') + '"',
+                    '"' + (q.options[0] || '').replace(/"/g, '""') + '"',
+                    '"' + (q.options[1] || '').replace(/"/g, '""') + '"',
+                    '"' + (q.options[2] || '').replace(/"/g, '""') + '"',
+                    '"' + (q.options[3] || '').replace(/"/g, '""') + '"',
+                    correctAnswer,
+                    q.difficulty === 'beginner' ? 'مبتدئ' : q.difficulty === 'intermediate' ? 'متوسط' : 'متقدم',
+                    '"' + (q.explanation || '').replace(/"/g, '""') + '"'
+                ].join(',');
+                csvContent += row + "\\n";
+            });
+
+            const BOM = '\\uFEFF';
+            const dataBlob = new Blob([BOM + csvContent], {type: 'text/csv;charset=utf-8;'});
+            const url = URL.createObjectURL(dataBlob);
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = 'اسئلة_${subcategory}_${new Date().toISOString().split('T')[0]}.csv';
+            link.click();
+            URL.revokeObjectURL(url);
+        }
+
+        function downloadPDF() {
+            window.print();
+        }
+
+        function printQuestions() {
+            const printWindow = window.open('', '_blank');
+            const printContent = \`
+                <html dir="rtl">
+                <head>
+                    <title>أسئلة ${subcategory}</title>
+                    <style>
+                        body { font-family: 'Cairo', Arial, sans-serif; margin: 20px; }
+                        .question { margin-bottom: 30px; page-break-inside: avoid; }
+                        .question-header { background: #f0f0f0; padding: 10px; border-radius: 5px; margin-bottom: 10px; }
+                        .options { margin-left: 20px; }
+                        .option { margin: 5px 0; }
+                        .correct { background: #d4edda; padding: 5px; border-radius: 3px; }
+                        @page { margin: 2cm; }
+                    </style>
+                </head>
+                <body>
+                    <h1>أسئلة ${subcategory}</h1>
+                    <p>تاريخ الطباعة: \${new Date().toLocaleDateString('ar-SA')}</p>
+                    \${questionsData.map((q, index) => \`
+                        <div class="question">
+                            <div class="question-header">
+                                <strong>السؤال \${index + 1}</strong> - المستوى: \${q.difficulty === 'beginner' ? 'مبتدئ' : q.difficulty === 'intermediate' ? 'متوسط' : 'متقدم'}
+                            </div>
+                            <p><strong>\${q.text}</strong></p>
+                            <div class="options">
+                                \${q.options.map((option, optIndex) => \`
+                                    <div class="option \${optIndex === q.correctOptionIndex ? 'correct' : ''}">
+                                        \${String.fromCharCode(65 + optIndex)}) \${option}
+                                    </div>
+                                \`).join('')}
+                            </div>
+                            \${q.explanation ? \`<p><strong>التفسير:</strong> \${q.explanation}</p>\` : ''}
+                        </div>
+                    \`).join('')}
+                </body>
+                </html>
+            \`;
+            printWindow.document.write(printContent);
+            printWindow.document.close();
+            printWindow.print();
+        }
+
+        // Add smooth scrolling and animations
+        document.addEventListener('DOMContentLoaded', function() {
+            const observerOptions = {
+                threshold: 0.1,
+                rootMargin: '0px 0px -50px 0px'
+            };
+
+            const observer = new IntersectionObserver(function(entries) {
+                entries.forEach(entry => {
+                    if (entry.isIntersecting) {
+                        entry.target.style.opacity = '1';
+                        entry.target.style.transform = 'translateY(0)';
+                    }
+                });
+            }, observerOptions);
+
+            document.querySelectorAll('.fade-in').forEach(el => {
+                el.style.opacity = '0';
+                el.style.transform = 'translateY(30px)';
+                el.style.transition = 'opacity 0.8s ease, transform 0.8s ease';
+                observer.observe(el);
+            });
+        });
+    </script>
+</body>
+</html>`;
+
+      res.setHeader('Content-Type', 'text/html; charset=utf-8');
+      res.send(creativePage);
+
+    } catch (error) {
+      console.error("Error generating questions download page:", error);
+      return res.status(500).json({ message: "Error generating download page" });
+    }
+  });
+
   // New route to handle question upload for subcategories
   app.post("/api/upload-questions/:subcategory", async (req: Request, res: Response) => {
     try {
