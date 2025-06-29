@@ -671,12 +671,34 @@ app.post("/api/auth/register", async (req: Request, res: Response) => {
   // Get current user (for auth purposes)
   app.get("/api/user", async (req: Request, res: Response) => {
     try {
-      // For demo purposes, we'll use a default user
+      // Read from session or use authenticated user (defaulting to user ID 1 for demo)
+      const userId = (req.session as any)?.userId || 1;
+      
+      // Read users from JSON file
+      const users = JSON.parse(fs.readFileSync("attached_assets/user.json", "utf8"));
+      const user = users.find((u: any) => u.id === userId);
+      
+      if (user) {
+        // Return user with subscription info
+        const userData = {
+          id: user.id,
+          username: user.name,
+          name: user.name,
+          email: user.email,
+          points: user.points || 50,
+          level: user.level || 1,
+          subscription: user.subscription
+        };
+        return res.json(userData);
+      }
+
+      // Fallback default user if not found
       const defaultUser = {
         id: 1,
         username: "مستخدم",
         points: 50,
-        level: 1
+        level: 1,
+        subscription: null
       };
 
       res.json(defaultUser);
