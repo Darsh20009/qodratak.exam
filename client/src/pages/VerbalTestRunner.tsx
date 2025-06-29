@@ -68,10 +68,23 @@ export function VerbalTestRunner() {
   }, [setLocation]);
 
   // Fetch questions for the specific subcategory
-  const { data: questions = [], isLoading } = useQuery<Question[]>({
-    queryKey: [`/api/questions?subcategory=${testConfig?.subcategory}&limit=${testConfig?.questionCount}`],
+  const { data: allQuestions = [], isLoading } = useQuery<Question[]>({
+    queryKey: ['/api/questions'],
     enabled: !!testConfig,
   });
+
+  // Filter questions by subcategory and limit to required count
+  const questions = React.useMemo(() => {
+    if (!allQuestions || !Array.isArray(allQuestions) || !testConfig) return [];
+    
+    const filtered = allQuestions.filter(q => 
+      q.subcategory === testConfig.subcategory
+    );
+    
+    // Shuffle and take required amount
+    const shuffled = [...filtered].sort(() => Math.random() - 0.5);
+    return shuffled.slice(0, testConfig.questionCount);
+  }, [allQuestions, testConfig]);
 
   // Timer effect
   useEffect(() => {
@@ -109,7 +122,7 @@ export function VerbalTestRunner() {
   };
 
   const handleNextQuestion = () => {
-    if (currentQuestionIndex < questions.length - 1) {
+    if (questions && Array.isArray(questions) && currentQuestionIndex < questions.length - 1) {
       setCurrentQuestionIndex(prev => prev + 1);
     }
   };
@@ -126,20 +139,22 @@ export function VerbalTestRunner() {
     
     // Calculate results
     let correctCount = 0;
-    questions.forEach((question: Question, index: number) => {
-      if (selectedAnswers[index] === question.correct_answer) {
-        correctCount++;
-      }
-    });
+    if (questions && Array.isArray(questions)) {
+      questions.forEach((question: Question, index: number) => {
+        if (selectedAnswers[index] === question.correct_answer) {
+          correctCount++;
+        }
+      });
+    }
 
-    const percentage = Math.round((correctCount / questions.length) * 100);
+    const percentage = Math.round((correctCount / (questions?.length || 1)) * 100);
     
     // Save results
     const testResult = {
       testId: testConfig?.testId,
       testName: testConfig?.testName,
       subcategory: testConfig?.subcategory,
-      totalQuestions: questions.length,
+      totalQuestions: questions?.length || 0,
       correctAnswers: correctCount,
       percentage,
       timeTaken: (testConfig?.timeLimit || 0) * 60 - timeRemaining,
@@ -169,6 +184,7 @@ export function VerbalTestRunner() {
   };
 
   const getProgressPercentage = () => {
+    if (!questions || !Array.isArray(questions) || questions.length === 0) return 0;
     return ((currentQuestionIndex + 1) / questions.length) * 100;
   };
 
@@ -189,10 +205,10 @@ export function VerbalTestRunner() {
   }
 
   if (isFinished) {
-    const correctCount = questions.filter((q: Question, index: number) => 
+    const correctCount = questions && Array.isArray(questions) ? questions.filter((q: Question, index: number) => 
       selectedAnswers[index] === q.correct_answer
-    ).length;
-    const percentage = Math.round((correctCount / questions.length) * 100);
+    ).length : 0;
+    const percentage = Math.round((correctCount / (questions?.length || 1)) * 100);
 
     return (
       <div className="min-h-screen bg-gradient-to-br from-green-50 to-emerald-100 dark:from-green-900 dark:to-emerald-900 flex items-center justify-center">
@@ -218,7 +234,7 @@ export function VerbalTestRunner() {
               {percentage}%
             </div>
             <div className="text-gray-600 dark:text-gray-400 mb-4">
-              {correctCount} من {questions.length} إجابة صحيحة
+              {correctCount} من {questions?.length || 0} إجابة صحيحة
             </div>
             <div className="text-sm text-gray-500">
               سيتم توجيهك إلى الصفحة الرئيسية خلال ثوانٍ...
@@ -269,7 +285,7 @@ export function VerbalTestRunner() {
                 <div className="flex items-center justify-between mb-2">
                   <span className="text-sm font-medium">التقدم</span>
                   <span className="text-sm text-gray-600">
-                    {currentQuestionIndex + 1} / {questions.length}
+                    {currentQuestionIndex + 1} / {questions?.length || 0}
                   </span>
                 </div>
                 <Progress value={getProgressPercentage()} className="h-3" />
@@ -293,7 +309,7 @@ export function VerbalTestRunner() {
                   <span className="text-sm font-medium">تم الإجابة</span>
                 </div>
                 <div className="text-2xl font-bold text-green-600">
-                  {getAnsweredCount()} / {questions.length}
+                  {getAnsweredCount()} / {questions?.length || 0}
                 </div>
               </div>
             </div>
@@ -301,7 +317,7 @@ export function VerbalTestRunner() {
         </Card>
 
         {/* Question */}
-        {currentQuestion && (
+        {currentQuestion && questions && Array.isArray(questions) && questions.length > 0 && (
           <AnimatePresence mode="wait">
             <motion.div
               key={currentQuestionIndex}
@@ -386,7 +402,7 @@ export function VerbalTestRunner() {
 
           <Button
             onClick={handleNextQuestion}
-            disabled={currentQuestionIndex === questions.length - 1}
+            disabled={!questions || !Array.isArray(questions) || currentQuestionIndex === questions.length - 1}
             className="flex items-center gap-2"
           >
             السؤال التالي
