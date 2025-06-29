@@ -62,7 +62,7 @@ export function QuantitativeTests() {
 
   // إظهار شاشة التحميل أثناء جلب بيانات المستخدم
   if (isUserLoading) {
-    return <LoadingScreen message="جاري تحميل اختبارات الكمي..." />;
+    return <LoadingScreen message="جاري تحضير اختبارات القدرات الكمية - استعد للتميز الرياضي! 🧮✨" />;
   }
 
   // تحديد المستخدم المميز
