@@ -152,7 +152,7 @@ export function QuantitativeTestRunner() {
       answeredQuestions,
       correctAnswers,
       percentage,
-      timeSpent: Math.floor(timeSpent / 60), // بالدقائق
+      timeSpent: timeSpent, // بالثواني
       finishedEarly: !timeUp,
       date: new Date().toISOString(),
       answers: selectedAnswers,

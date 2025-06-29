@@ -232,10 +232,19 @@ export default function TestResultsPage() {
   };
 
   const getTimeFormatted = (seconds: number) => {
+    if (seconds === 0) {
+      return 'أقل من ثانية';
+    }
+    
     const minutes = Math.floor(seconds / 60);
     const remainingSeconds = seconds % 60;
+    
     if (minutes > 0) {
-      return `${minutes} دقيقة و ${remainingSeconds} ثانية`;
+      if (remainingSeconds > 0) {
+        return `${minutes} دقيقة و ${remainingSeconds} ثانية`;
+      } else {
+        return `${minutes} دقيقة`;
+      }
     }
     return `${seconds} ثانية`;
   };
@@ -388,7 +397,7 @@ export default function TestResultsPage() {
                     <div>
                       <div className="text-sm text-gray-600 dark:text-gray-400">الوقت المستغرق</div>
                       <div className="font-bold text-lg">
-                        {result.timeSpent > 0 ? getTimeFormatted(result.timeSpent) : 'غير محدد'}
+                        {result.timeSpent >= 0 ? getTimeFormatted(result.timeSpent) : 'غير محدد'}
                       </div>
                     </div>
                   </div>
