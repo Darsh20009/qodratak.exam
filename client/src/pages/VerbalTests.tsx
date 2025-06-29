@@ -97,7 +97,7 @@ export function VerbalTests() {
     },
     {
       id: 'errors-test',
-      name: 'اختبار الخطئ السياقي',
+      name: 'اختبار الخطأ السياقي',
       subcategory: 'الأخطاء الشائعة',
       description: 'اختبار دقيق لقياس قدرتك على تحديد وتصحيح الأخطاء اللغوية',
       questionCount: 50,
