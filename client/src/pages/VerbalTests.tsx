@@ -80,10 +80,7 @@ export function VerbalTests() {
     (user as any)?.subscription === 'pro_life'
   );
 
-  // Debug logging
-  console.log('User data:', user);
-  console.log('Subscription type:', (user as any)?.subscription?.type);
-  console.log('Is premium user:', isPremiumUser);
+
 
   const canTakeTest = !!isPremiumUser || dailyTestsTaken < MAX_DAILY_FREE_TESTS;
 

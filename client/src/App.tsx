@@ -331,12 +331,7 @@ function Router({ splashDone }: { splashDone: boolean }) {
       <Route path="/qiyas">
         {() => <MainLayout><QiyasExamPage /></MainLayout>}
       </Route>
-      <Route path="/verbal-tests">
-        {() => <MainLayout><VerbalTests /></MainLayout>}
-      </Route>
-      <Route path="/verbal-test-runner">
-        {() => <MainLayout><VerbalTestRunner /></MainLayout>}
-      </Route>
+
       <Route path="/time-management">
         {() => <MainLayout><NewTimeManagementPage /></MainLayout>}
       </Route>
@@ -344,6 +339,12 @@ function Router({ splashDone }: { splashDone: boolean }) {
         {() => <MainLayout><InstallPage /></MainLayout>}
       </Route>
       {/* صفحات مدفوعة فقط مع إمكانية التجربة المجانية */}
+      <Route path="/verbal-tests">
+        {() => <MainLayout><ProtectedRoute requiresPremium={true}>{hasAccess ? <VerbalTests /> : null}</ProtectedRoute></MainLayout>}
+      </Route>
+      <Route path="/verbal-test-runner">
+        {() => <MainLayout><ProtectedRoute requiresPremium={true}>{hasAccess ? <VerbalTestRunner /> : null}</ProtectedRoute></MainLayout>}
+      </Route>
       <Route path="/custom-exam">
         {() => <MainLayout><ProtectedRoute requiresPremium={true}>{hasAccess ? <CustomExamPage /> : null}</ProtectedRoute></MainLayout>}
       </Route>
