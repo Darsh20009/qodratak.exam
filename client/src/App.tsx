@@ -24,7 +24,8 @@ import {
   CrownIcon,
   DiamondIcon,
   Clock,
-  Download
+  Download,
+  Calculator
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useState, useEffect } from "react";
@@ -47,6 +48,8 @@ import NewTimeManagementPage from "@/pages/NewTimeManagementPage";
 import InstallPage from "@/pages/InstallPage";
 import { VerbalTests } from "@/pages/VerbalTests";
 import { VerbalTestRunner } from "@/pages/VerbalTestRunner";
+import { QuantitativeTests } from "@/pages/QuantitativeTests";
+import { QuantitativeTestRunner } from "@/pages/QuantitativeTestRunner";
 import { SubscriptionPlans } from "@/components/SubscriptionPlans";
 import MistakeChallengePage from '@/pages/MistakeChallengePage';
 
@@ -100,6 +103,7 @@ function MainLayout({ children }: { children: React.ReactNode }) {
     { name: "الرئيسية", href: "/", icon: HomeIcon },
     { name: "اختبارات قياس", href: "/qiyas", icon: GraduationCapIcon },
     { name: "اختبارات اللفظي", href: "/verbal-tests", icon: BookOpenIcon },
+    { name: "اختبارات الكمي", href: "/quantitative-tests", icon: BrainCircuitIcon },
     { name: "اختبر قدراتك", href: "/abilities", icon: BrainCircuitIcon },
     { name: "التحديات", href: "/challenges", icon: GamepadIcon },
     { name: "اسأل سؤال", href: "/ask", icon: HelpCircleIcon },
@@ -344,6 +348,12 @@ function Router({ splashDone }: { splashDone: boolean }) {
       </Route>
       <Route path="/verbal-test-runner">
         {() => <MainLayout><ProtectedRoute requiresPremium={true}>{hasAccess ? <VerbalTestRunner /> : null}</ProtectedRoute></MainLayout>}
+      </Route>
+      <Route path="/quantitative-tests">
+        {() => <MainLayout><ProtectedRoute requiresPremium={true}>{hasAccess ? <QuantitativeTests /> : null}</ProtectedRoute></MainLayout>}
+      </Route>
+      <Route path="/quantitative-test-runner">
+        {() => <MainLayout><ProtectedRoute requiresPremium={true}>{hasAccess ? <QuantitativeTestRunner /> : null}</ProtectedRoute></MainLayout>}
       </Route>
       <Route path="/custom-exam">
         {() => <MainLayout><ProtectedRoute requiresPremium={true}>{hasAccess ? <CustomExamPage /> : null}</ProtectedRoute></MainLayout>}

@@ -230,6 +230,35 @@ Preferred communication style: Simple, everyday language.
 - **Responsive Design**: Mobile-optimized interface with animated backgrounds and smooth transitions
 - **Updated API Integration**: Fixed user API to return subscription data from JSON file for proper premium verification
 
+### Quantitative Tests System - June 29, 2025
+- **Dedicated Quantitative Tests Section**: New "اختبارات الكمي" with specialized tests for quantitative subcategories
+- **Individual Test Categories**: Separate 20-question tests with 10-minute time limits for each subcategory:
+  - الحساب (Arithmetic)
+  - الجبر (Algebra) 
+  - الهندسة (Geometry)
+  - الإحصاء والاحتمالات (Statistics and Probability)
+  - المسائل اللفظية (Word Problems)
+- **Premium-Only Access Control**: 
+  - **Complete subscription requirement**: All quantitative tests restricted to premium subscribers only
+  - Same ProtectedRoute implementation as verbal tests
+  - Daily limits system for free users (1 test per day across all quantitative categories)
+- **Optimized Test Format**: 
+  - **Shorter duration**: 20 questions in 10 minutes (vs 50 questions in 30+ minutes for verbal)
+  - **Focused testing**: Each test targets specific mathematical skills
+  - **Quick assessment**: Designed for rapid skill evaluation
+- **Advanced Test Features**:
+  - Real-time countdown timer with color-coded warnings
+  - Question navigation panel with completion status
+  - Pause/resume functionality
+  - Confirmation dialogs for test completion
+  - Automatic result calculation and local storage
+- **Creative UI Design**: 
+  - Mathematics-themed icons and color schemes
+  - Animated backgrounds and smooth transitions
+  - Responsive design optimized for mathematical content
+  - Dark mode support with proper contrast for formulas
+- **Navigation Integration**: Added to main navigation menu with Calculator-themed icon
+
 ### Technical Implementation
 - **Local Data Storage**: All time management data stored using localStorage with structured schemas
 - **Data Types**: Comprehensive TypeScript interfaces for tasks, habits, projects, analytics
