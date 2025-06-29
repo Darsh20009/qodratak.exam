@@ -284,7 +284,16 @@ export function VerbalTestRunner() {
     );
   }
 
-  const currentQuestion = questions && Array.isArray(questions) && questions.length > 0 ? questions[currentQuestionIndex] : null;
+  const currentQuestion = questions && Array.isArray(questions) && questions.length > 0 && currentQuestionIndex < questions.length ? questions[currentQuestionIndex] : null;
+
+  // Debug logging
+  React.useEffect(() => {
+    console.log('Questions array:', questions);
+    console.log('Questions length:', questions?.length);
+    console.log('Current question index:', currentQuestionIndex);
+    console.log('Current question:', currentQuestion);
+    console.log('Test config:', testConfig);
+  }, [questions, currentQuestionIndex, currentQuestion, testConfig]);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-blue-900 dark:to-indigo-900">
@@ -356,8 +365,8 @@ export function VerbalTestRunner() {
         </Card>
 
         {/* Question */}
-        {currentQuestion && questions && Array.isArray(questions) && questions.length > 0 && (
-          <AnimatePresence mode="wait">
+        <AnimatePresence mode="wait">
+          {questions && Array.isArray(questions) && questions.length > 0 && currentQuestion ? (
             <motion.div
               key={currentQuestionIndex}
               initial={{ opacity: 0, x: 50 }}
@@ -374,18 +383,18 @@ export function VerbalTestRunner() {
                     <div className="flex-1">
                       <div className="text-lg">السؤال {currentQuestionIndex + 1}</div>
                       <Badge variant="outline" className="mt-1">
-                        {currentQuestion.subcategory}
+                        {currentQuestion?.subcategory || 'غير محدد'}
                       </Badge>
                     </div>
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
                   <div className="text-xl leading-relaxed mb-6 text-gray-800 dark:text-white">
-                    {currentQuestion.question}
+                    {currentQuestion?.question || 'لا يوجد نص للسؤال'}
                   </div>
 
                   <div className="grid gap-3">
-                    {currentQuestion && currentQuestion.choices && currentQuestion.choices.map((choice: string, index: number) => (
+                    {currentQuestion?.choices && Array.isArray(currentQuestion.choices) && currentQuestion.choices.map((choice: string, index: number) => (
                       <motion.button
                         key={index}
                         onClick={() => handleAnswerSelect(index.toString())}
@@ -413,8 +422,25 @@ export function VerbalTestRunner() {
                 </CardContent>
               </Card>
             </motion.div>
-          </AnimatePresence>
-        )}
+          ) : (
+            <Card className="mb-6">
+              <CardContent className="p-8 text-center">
+                <div className="text-xl text-gray-600 dark:text-gray-400 mb-4">
+                  لا يمكن تحميل السؤال الحالي
+                </div>
+                <p className="text-sm text-gray-500 dark:text-gray-500 mb-4">
+                  فهرس السؤال: {currentQuestionIndex} من {questions?.length || 0}
+                </p>
+                <Button
+                  onClick={() => setLocation('/verbal-tests')}
+                  className="bg-blue-500 hover:bg-blue-600 text-white"
+                >
+                  العودة إلى قائمة الاختبارات
+                </Button>
+              </CardContent>
+            </Card>
+          )}
+        </AnimatePresence>
 
         {/* Navigation */}
         <div className="flex items-center justify-between">
