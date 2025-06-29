@@ -1,30 +1,27 @@
-import React, { useState, useEffect, useCallback } from "react";
-import { motion, AnimatePresence } from "framer-motion";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Progress } from "@/components/ui/progress";
-import { Badge } from "@/components/ui/badge";
-import {
-  Clock,
-  ArrowLeft,
-  ArrowRight,
-  Flag,
+import React, { useState, useEffect } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { useLocation } from 'wouter';
+import { useQuery } from '@tanstack/react-query';
+import { 
+  Clock, 
+  ArrowLeft, 
+  ArrowRight, 
+  Play, 
+  Pause, 
+  Check, 
   AlertTriangle,
-  CheckCircle2,
-  XCircle,
-  Pause,
-  Play,
-  RotateCcw,
-  Target,
   Trophy,
-  BookOpen,
-  Brain
-} from "lucide-react";
-import { useQuery } from "@tanstack/react-query";
-import { useLocation } from "wouter";
+  Star,
+  Target
+} from 'lucide-react';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { Progress } from '@/components/ui/progress';
 
 interface Question {
   id: number;
+  category: string;
   question: string;
   choices: string[];
   correct_answer: string;
@@ -48,30 +45,30 @@ export function VerbalTestRunner() {
   const [selectedAnswers, setSelectedAnswers] = useState<{[key: number]: string}>({});
   const [timeRemaining, setTimeRemaining] = useState(0);
   const [isPaused, setIsPaused] = useState(false);
-  const [isFinished, setIsFinished] = useState(false);
   const [showConfirmFinish, setShowConfirmFinish] = useState(false);
   const [testConfig, setTestConfig] = useState<TestConfig | null>(null);
 
-  // Get test configuration from URL params or local storage
+  // Fetch all questions
+  const { data: allQuestions = [], isLoading } = useQuery<Question[]>({
+    queryKey: ['/api/questions'],
+  });
+
+  // Load test configuration from localStorage
   useEffect(() => {
-    const urlParams = new URLSearchParams(window.location.search);
-    const storedConfig = localStorage.getItem('currentVerbalTest');
-    
+    const storedConfig = localStorage.getItem('verbalTestConfig');
     if (storedConfig) {
-      const config = JSON.parse(storedConfig);
-      setTestConfig(config);
-      setTimeRemaining(config.timeLimit * 60); // Convert minutes to seconds
+      try {
+        const config = JSON.parse(storedConfig);
+        setTestConfig(config);
+        setTimeRemaining(config.timeLimit * 60);
+      } catch (error) {
+        console.error('Error parsing test config:', error);
+        setLocation('/verbal-tests');
+      }
     } else {
-      // Redirect back if no config
       setLocation('/verbal-tests');
     }
   }, [setLocation]);
-
-  // Fetch questions for the specific subcategory
-  const { data: allQuestions = [], isLoading } = useQuery<Question[]>({
-    queryKey: ['/api/questions'],
-    enabled: !!testConfig,
-  });
 
   // Filter questions by subcategory and limit to required count
   const questions = React.useMemo(() => {
@@ -83,7 +80,6 @@ export function VerbalTestRunner() {
     
     console.log(`Found ${filtered.length} questions for subcategory: ${testConfig.subcategory}`);
     
-    // If no questions found, try with different variations
     if (filtered.length === 0) {
       // Try with alternative names
       const alternatives = allQuestions.filter(q => 
@@ -105,20 +101,15 @@ export function VerbalTestRunner() {
 
   // Timer effect
   useEffect(() => {
-    if (timeRemaining > 0 && !isPaused && !isFinished) {
+    if (timeRemaining > 0 && !isPaused) {
       const timer = setInterval(() => {
-        setTimeRemaining((prev) => {
-          if (prev <= 1) {
-            handleFinishTest();
-            return 0;
-          }
-          return prev - 1;
-        });
+        setTimeRemaining(prev => prev - 1);
       }, 1000);
-
       return () => clearInterval(timer);
+    } else if (timeRemaining === 0) {
+      handleFinishTest();
     }
-  }, [timeRemaining, isPaused, isFinished]);
+  }, [timeRemaining, isPaused]);
 
   const formatTime = (seconds: number) => {
     const hours = Math.floor(seconds / 3600);
@@ -131,6 +122,12 @@ export function VerbalTestRunner() {
     return `${minutes}:${secs.toString().padStart(2, '0')}`;
   };
 
+  const getTimeColor = () => {
+    if (timeRemaining <= 300) return 'text-red-500'; // Last 5 minutes
+    if (timeRemaining <= 600) return 'text-orange-500'; // Last 10 minutes
+    return 'text-green-500';
+  };
+
   const handleAnswerSelect = (answerIndex: string) => {
     setSelectedAnswers(prev => ({
       ...prev,
@@ -139,7 +136,7 @@ export function VerbalTestRunner() {
   };
 
   const handleNextQuestion = () => {
-    if (questions && Array.isArray(questions) && currentQuestionIndex < questions.length - 1) {
+    if (currentQuestionIndex < questions.length - 1) {
       setCurrentQuestionIndex(prev => prev + 1);
     }
   };
@@ -150,64 +147,60 @@ export function VerbalTestRunner() {
     }
   };
 
-  const handleFinishTest = useCallback(() => {
-    setIsFinished(true);
-    setIsPaused(true);
+  const handleFinishTest = () => {
+    if (!questions || !testConfig) return;
     
     // Calculate results
     let correctCount = 0;
-    if (questions && Array.isArray(questions)) {
-      questions.forEach((question: Question, index: number) => {
-        if (selectedAnswers[index] === question.correct_answer) {
-          correctCount++;
-        }
-      });
-    }
-
-    const percentage = Math.round((correctCount / (questions?.length || 1)) * 100);
+    const totalQuestions = questions.length;
     
-    // Save results
-    const testResult = {
-      testId: testConfig?.testId,
-      testName: testConfig?.testName,
-      subcategory: testConfig?.subcategory,
-      totalQuestions: questions?.length || 0,
+    questions.forEach((question, index) => {
+      const userAnswer = selectedAnswers[index];
+      if (userAnswer === question.correct_answer) {
+        correctCount++;
+      }
+    });
+
+    const percentage = Math.round((correctCount / totalQuestions) * 100);
+    const results = {
+      testName: testConfig.testName,
+      subcategory: testConfig.subcategory,
+      totalQuestions,
       correctAnswers: correctCount,
       percentage,
-      timeTaken: (testConfig?.timeLimit || 0) * 60 - timeRemaining,
+      timeSpent: testConfig.timeLimit * 60 - timeRemaining,
       date: new Date().toISOString(),
-      answers: selectedAnswers
+      answers: selectedAnswers,
+      questions: questions
     };
 
-    // Store in local history
-    const history = JSON.parse(localStorage.getItem('verbalTestHistory') || '[]');
-    history.push(testResult);
-    localStorage.setItem('verbalTestHistory', JSON.stringify(history));
+    // Store results locally
+    const existingResults = JSON.parse(localStorage.getItem('verbalTestResults') || '[]');
+    existingResults.push(results);
+    localStorage.setItem('verbalTestResults', JSON.stringify(existingResults));
 
-    // Clear current test
-    localStorage.removeItem('currentVerbalTest');
-
-    // Redirect to results
-    setTimeout(() => {
-      setLocation('/verbal-tests');
-    }, 3000);
-  }, [questions, selectedAnswers, testConfig, timeRemaining, setLocation]);
-
-  const getTimeWarningColor = () => {
-    const percentage = (timeRemaining / ((testConfig?.timeLimit || 1) * 60)) * 100;
-    if (percentage <= 10) return 'text-red-600 dark:text-red-400';
-    if (percentage <= 25) return 'text-orange-600 dark:text-orange-400';
-    return 'text-green-600 dark:text-green-400';
-  };
-
-  const getProgressPercentage = () => {
-    if (!questions || !Array.isArray(questions) || questions.length === 0) return 0;
-    return ((currentQuestionIndex + 1) / questions.length) * 100;
+    // Clear test config
+    localStorage.removeItem('verbalTestConfig');
+    
+    // Navigate to results
+    localStorage.setItem('lastTestResult', JSON.stringify(results));
+    setLocation('/test-results');
   };
 
   const getAnsweredCount = () => {
     return Object.keys(selectedAnswers).length;
   };
+
+  const currentQuestion = questions && Array.isArray(questions) && questions.length > 0 && currentQuestionIndex < questions.length ? questions[currentQuestionIndex] : null;
+
+  // Debug logging
+  React.useEffect(() => {
+    console.log('Questions array:', questions);
+    console.log('Questions length:', questions?.length);
+    console.log('Current question index:', currentQuestionIndex);
+    console.log('Current question:', currentQuestion);
+    console.log('Test config:', testConfig);
+  }, [questions, currentQuestionIndex, currentQuestion, testConfig]);
 
   if (isLoading || !testConfig || !questions || !Array.isArray(questions) || questions.length === 0) {
     return (
@@ -243,123 +236,61 @@ export function VerbalTestRunner() {
     );
   }
 
-  if (isFinished) {
-    const correctCount = questions && Array.isArray(questions) ? questions.filter((q: Question, index: number) => 
-      selectedAnswers[index] === q.correct_answer
-    ).length : 0;
-    const percentage = Math.round((correctCount / (questions?.length || 1)) * 100);
-
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-green-50 to-emerald-100 dark:from-green-900 dark:to-emerald-900 flex items-center justify-center">
-        <motion.div
-          initial={{ scale: 0, opacity: 0 }}
-          animate={{ scale: 1, opacity: 1 }}
-          className="text-center max-w-md mx-auto p-8"
-        >
-          <motion.div
-            animate={{ scale: [1, 1.2, 1] }}
-            transition={{ duration: 2, repeat: Infinity }}
-            className="w-24 h-24 bg-green-500 rounded-full flex items-center justify-center mx-auto mb-6"
-          >
-            <Trophy className="w-12 h-12 text-white" />
-          </motion.div>
-          
-          <h2 className="text-3xl font-bold text-gray-800 dark:text-white mb-4">
-            اكتمل الاختبار!
-          </h2>
-          
-          <div className="bg-white dark:bg-gray-800 rounded-2xl p-6 shadow-xl">
-            <div className="text-4xl font-bold text-green-600 mb-2">
-              {percentage}%
-            </div>
-            <div className="text-gray-600 dark:text-gray-400 mb-4">
-              {correctCount} من {questions?.length || 0} إجابة صحيحة
-            </div>
-            <div className="text-sm text-gray-500">
-              سيتم توجيهك إلى الصفحة الرئيسية خلال ثوانٍ...
-            </div>
-          </div>
-        </motion.div>
-      </div>
-    );
-  }
-
-  const currentQuestion = questions && Array.isArray(questions) && questions.length > 0 && currentQuestionIndex < questions.length ? questions[currentQuestionIndex] : null;
-
-  // Debug logging
-  React.useEffect(() => {
-    console.log('Questions array:', questions);
-    console.log('Questions length:', questions?.length);
-    console.log('Current question index:', currentQuestionIndex);
-    console.log('Current question:', currentQuestion);
-    console.log('Test config:', testConfig);
-  }, [questions, currentQuestionIndex, currentQuestion, testConfig]);
-
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-blue-900 dark:to-indigo-900">
       <div className="container mx-auto px-4 py-6 max-w-4xl">
         {/* Header */}
-        <div className="flex items-center justify-between mb-6">
-          <Button
-            variant="outline"
-            onClick={() => setLocation('/verbal-tests')}
-            className="flex items-center gap-2"
-          >
-            <ArrowLeft className="w-4 h-4" />
-            العودة
-          </Button>
-
-          <div className="flex items-center gap-4">
-            <Badge variant="secondary" className="text-lg px-4 py-2">
-              {testConfig.testName}
-            </Badge>
-          </div>
-
-          <Button
-            onClick={() => setShowConfirmFinish(true)}
-            className="bg-red-500 hover:bg-red-600 text-white"
-          >
-            <Flag className="w-4 h-4 mr-2" />
-            إنهاء الاختبار
-          </Button>
-        </div>
-
-        {/* Progress and Timer */}
         <Card className="mb-6">
-          <CardContent className="p-6">
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              {/* Progress */}
-              <div>
-                <div className="flex items-center justify-between mb-2">
-                  <span className="text-sm font-medium">التقدم</span>
-                  <span className="text-sm text-gray-600">
-                    {currentQuestionIndex + 1} / {questions?.length || 0}
-                  </span>
+          <CardHeader>
+            <CardTitle className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <Trophy className="w-8 h-8 text-blue-500" />
+                <div>
+                  <div className="text-2xl font-bold">{testConfig.testName}</div>
+                  <Badge variant="outline" className="mt-1">
+                    {testConfig.subcategory}
+                  </Badge>
                 </div>
-                <Progress value={getProgressPercentage()} className="h-3" />
               </div>
-
-              {/* Timer */}
-              <div className="text-center">
-                <div className="flex items-center justify-center gap-2 mb-2">
-                  <Clock className={`w-5 h-5 ${getTimeWarningColor()}`} />
-                  <span className="text-sm font-medium">الوقت المتبقي</span>
-                </div>
-                <div className={`text-2xl font-bold ${getTimeWarningColor()}`}>
+              <div className="text-left">
+                <div className={`text-3xl font-bold ${getTimeColor()}`}>
                   {formatTime(timeRemaining)}
                 </div>
-              </div>
-
-              {/* Answered Count */}
-              <div className="text-center">
-                <div className="flex items-center justify-center gap-2 mb-2">
-                  <CheckCircle2 className="w-5 h-5 text-green-600" />
-                  <span className="text-sm font-medium">تم الإجابة</span>
-                </div>
-                <div className="text-2xl font-bold text-green-600">
-                  {getAnsweredCount()} / {questions?.length || 0}
+                <div className="text-sm text-gray-500 dark:text-gray-400">
+                  الوقت المتبقي
                 </div>
               </div>
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="flex items-center gap-3">
+                <Target className="w-6 h-6 text-green-500" />
+                <div>
+                  <div className="text-lg font-bold">{getAnsweredCount()} / {questions.length}</div>
+                  <div className="text-sm text-gray-500 dark:text-gray-400">الأسئلة المُجابة</div>
+                </div>
+              </div>
+              <div className="flex items-center gap-3">
+                <Star className="w-6 h-6 text-yellow-500" />
+                <div>
+                  <div className="text-lg font-bold">{Math.round((getAnsweredCount() / questions.length) * 100)}%</div>
+                  <div className="text-sm text-gray-500 dark:text-gray-400">نسبة الإكمال</div>
+                </div>
+              </div>
+              <div className="flex items-center gap-3">
+                <Clock className="w-6 h-6 text-blue-500" />
+                <div>
+                  <div className="text-lg font-bold">{testConfig.timeLimit} دقيقة</div>
+                  <div className="text-sm text-gray-500 dark:text-gray-400">وقت الاختبار</div>
+                </div>
+              </div>
+            </div>
+            <div className="mt-4">
+              <Progress 
+                value={(getAnsweredCount() / questions.length) * 100} 
+                className="h-3"
+              />
             </div>
           </CardContent>
         </Card>
@@ -463,6 +394,16 @@ export function VerbalTestRunner() {
               {isPaused ? <Play className="w-4 h-4" /> : <Pause className="w-4 h-4" />}
               {isPaused ? 'استكمال' : 'إيقاف مؤقت'}
             </Button>
+            
+            {currentQuestionIndex === questions.length - 1 ? (
+              <Button
+                onClick={() => setShowConfirmFinish(true)}
+                className="flex items-center gap-2 bg-green-500 hover:bg-green-600"
+              >
+                <Check className="w-4 h-4" />
+                إنهاء الاختبار
+              </Button>
+            ) : null}
           </div>
 
           <Button
