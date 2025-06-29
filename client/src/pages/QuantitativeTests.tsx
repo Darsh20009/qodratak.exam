@@ -60,21 +60,9 @@ export function QuantitativeTests() {
     queryKey: ['/api/user'],
   });
 
-  // إضافة حالة تحميل إضافية للتأكد من سلاسة العرض
-  const [isInitialLoading, setIsInitialLoading] = useState(true);
-
-  useEffect(() => {
-    // تأخير قصير لضمان عرض شاشة التحميل الإبداعية
-    const timer = setTimeout(() => {
-      setIsInitialLoading(false);
-    }, 1500);
-
-    return () => clearTimeout(timer);
-  }, []);
-
-  // عرض شاشة التحميل الإبداعية أثناء تحميل بيانات المستخدم أو التحميل الأولي
-  if (userLoading || isInitialLoading) {
-    return <LoadingScreen message="جاري تحضير اختبارات الكمي الذكية..." />;
+  // عرض شاشة التحميل الإبداعية أثناء تحميل بيانات المستخدم
+  if (userLoading) {
+    return <LoadingScreen message="جاري تحضير اختبارات الكمي..." />;
   }
 
   // تحديد المستخدم المميز
@@ -251,25 +239,20 @@ export function QuantitativeTests() {
       return;
     }
 
-    // عرض شاشة تحميل أثناء التحضير
-    setIsInitialLoading(true);
-
     // تسجيل الاختبار للحسابات المجانية
     recordTestTaken();
 
-    // بدء الاختبار مع تأخير قصير لعرض التحميل
-    setTimeout(() => {
-      const testData = {
-        testType: 'quantitative',
-        subcategory: test.subcategory,
-        testName: test.name,
-        questionCount: test.questionCount,
-        timeLimit: test.timeLimit
-      };
+    // بدء الاختبار
+    const testData = {
+      testType: 'quantitative',
+      subcategory: test.subcategory,
+      testName: test.name,
+      questionCount: test.questionCount,
+      timeLimit: test.timeLimit
+    };
 
-      localStorage.setItem('currentTest', JSON.stringify(testData));
-      window.location.href = '/quantitative-test-runner';
-    }, 800);
+    localStorage.setItem('currentTest', JSON.stringify(testData));
+    window.location.href = '/quantitative-test-runner';
   };
 
   // إحصائيات المستخدم

@@ -6,40 +6,6 @@ interface LoadingScreenProps {
 }
 
 export function LoadingScreen({ message = "جاري التحميل..." }: LoadingScreenProps) {
-  const [currentMessage, setCurrentMessage] = useState(message);
-  const [dots, setDots] = useState("");
-
-  // تأثير النقاط المتحركة
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setDots(prev => prev.length >= 3 ? "" : prev + ".");
-    }, 500);
-    return () => clearInterval(interval);
-  }, []);
-
-  // تحديث الرسالة مع رسائل متغيرة للاختبارات الكمية
-  useEffect(() => {
-    if (message.includes("كمي") || message.includes("الكمي")) {
-      const messages = [
-        "جاري تحضير اختبارات الكمي الذكية...",
-        "جاري تحميل المعادلات الرياضية...",
-        "جاري إعداد الأسئلة التحليلية...",
-        "جاري تجهيز البيانات الإحصائية...",
-        "جاري تحضير التحديات الرياضية..."
-      ];
-      
-      let index = 0;
-      const interval = setInterval(() => {
-        setCurrentMessage(messages[index]);
-        index = (index + 1) % messages.length;
-      }, 2000);
-      
-      return () => clearInterval(interval);
-    } else {
-      setCurrentMessage(message);
-    }
-  }, [message]);
-
   return (
     <div className="fixed inset-0 z-50 bg-gradient-to-br from-slate-950 via-blue-950 to-indigo-950 flex items-center justify-center overflow-hidden">
       {/* خلفية متحركة فاخرة */}
@@ -107,10 +73,10 @@ export function LoadingScreen({ message = "جاري التحميل..." }: Loadin
 
           <div className="relative">
             <p className="text-lg text-slate-200 font-medium tracking-wide opacity-90">
-              {currentMessage}{dots}
+              {message}
             </p>
             <div className="absolute inset-0 text-lg text-blue-300/30 blur-sm">
-              {currentMessage}{dots}
+              {message}
             </div>
           </div>
         </div>
