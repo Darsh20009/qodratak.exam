@@ -21,7 +21,9 @@ import {
   BarChart3,
   Sparkles,
   Crown,
-  Gem
+  Gem,
+  Download,
+  FileText
 } from "lucide-react";
 import { DetailedExamResult, SubcategoryResult } from "@/../../shared/examUtils";
 
@@ -36,6 +38,819 @@ export function DetailedTestResults({ results, examType, onClose }: DetailedTest
     const minutes = Math.floor(seconds / 60);
     const secs = seconds % 60;
     return `${minutes}:${secs.toString().padStart(2, '0')}`;
+  };
+
+  const generateSubcategoryHTML = async (subcategory: string, result: SubcategoryResult) => {
+    // استدعاء API للحصول على الأسئلة
+    const response = await fetch(`/api/questions?subcategory=${encodeURIComponent(subcategory)}`);
+    const questions = await response.json();
+    
+    const currentDate = new Date().toLocaleDateString('ar-SA');
+    const gradeColor = result.percentage >= 90 ? '#10b981' : 
+                      result.percentage >= 80 ? '#3b82f6' : 
+                      result.percentage >= 70 ? '#f59e0b' : '#ef4444';
+    
+    return `
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>أسئلة ${subcategory} - قدراتك</title>
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;600;700;900&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Cairo', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            position: relative;
+            overflow-x: hidden;
+        }
+        
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><defs><pattern id="grain" width="100" height="100" patternUnits="userSpaceOnUse"><circle cx="25" cy="25" r="1" fill="white" opacity="0.1"/><circle cx="75" cy="75" r="1" fill="white" opacity="0.1"/><circle cx="25" cy="75" r="1" fill="white" opacity="0.05"/><circle cx="75" cy="25" r="1" fill="white" opacity="0.05"/></pattern></defs><rect width="100" height="100" fill="url(%23grain)"/></svg>');
+            pointer-events: none;
+            z-index: 1;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            position: relative;
+            z-index: 2;
+        }
+        
+        .header {
+            text-align: center;
+            margin-bottom: 40px;
+            background: rgba(255, 255, 255, 0.95);
+            padding: 40px;
+            border-radius: 25px;
+            box-shadow: 0 25px 50px rgba(0, 0, 0, 0.15);
+            backdrop-filter: blur(10px);
+            border: 2px solid rgba(255, 255, 255, 0.2);
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .header::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: linear-gradient(45deg, transparent, rgba(255, 255, 255, 0.1), transparent);
+            animation: shimmer 3s infinite;
+        }
+        
+        @keyframes shimmer {
+            0% { transform: translateX(-100%) translateY(-100%) rotate(45deg); }
+            100% { transform: translateX(100%) translateY(100%) rotate(45deg); }
+        }
+        
+        .logo {
+            font-size: 3.5rem;
+            font-weight: 900;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.1);
+        }
+        
+        .title {
+            font-size: 2.5rem;
+            color: #2d3748;
+            margin-bottom: 10px;
+            font-weight: 700;
+        }
+        
+        .subtitle {
+            font-size: 1.2rem;
+            color: #718096;
+            margin-bottom: 20px;
+        }
+        
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin-bottom: 40px;
+        }
+        
+        .stat-card {
+            background: rgba(255, 255, 255, 0.9);
+            padding: 25px;
+            border-radius: 20px;
+            text-align: center;
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.1);
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            backdrop-filter: blur(10px);
+            position: relative;
+            overflow: hidden;
+            transition: all 0.3s ease;
+        }
+        
+        .stat-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 25px 50px rgba(0, 0, 0, 0.2);
+        }
+        
+        .stat-card::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 4px;
+            background: ${gradeColor};
+        }
+        
+        .stat-value {
+            font-size: 2.5rem;
+            font-weight: 800;
+            color: ${gradeColor};
+            margin-bottom: 5px;
+        }
+        
+        .stat-label {
+            color: #718096;
+            font-weight: 600;
+        }
+        
+        .questions-container {
+            display: grid;
+            gap: 30px;
+        }
+        
+        .question-card {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+            border: 2px solid rgba(255, 255, 255, 0.2);
+            backdrop-filter: blur(10px);
+            position: relative;
+            overflow: hidden;
+            transition: all 0.3s ease;
+        }
+        
+        .question-card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 30px 60px rgba(0, 0, 0, 0.15);
+        }
+        
+        .question-number {
+            position: absolute;
+            top: -10px;
+            right: 20px;
+            background: linear-gradient(135deg, ${gradeColor}, ${gradeColor}dd);
+            color: white;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+        }
+        
+        .question-text {
+            font-size: 1.3rem;
+            line-height: 1.8;
+            color: #2d3748;
+            margin-bottom: 25px;
+            font-weight: 500;
+        }
+        
+        .options {
+            display: grid;
+            gap: 15px;
+            margin-bottom: 25px;
+        }
+        
+        .option {
+            padding: 15px 20px;
+            border-radius: 12px;
+            border: 2px solid #e2e8f0;
+            background: #f7fafc;
+            font-size: 1.1rem;
+            transition: all 0.3s ease;
+            position: relative;
+        }
+        
+        .option.correct {
+            background: linear-gradient(135deg, #d4edda, #c3e6cb);
+            border-color: #28a745;
+            color: #155724;
+            font-weight: 600;
+        }
+        
+        .option.correct::before {
+            content: '✓';
+            position: absolute;
+            left: 10px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #28a745;
+            font-weight: bold;
+            font-size: 1.2rem;
+        }
+        
+        .explanation {
+            background: linear-gradient(135deg, #fff3cd, #ffeaa7);
+            border: 2px solid #ffc107;
+            border-radius: 15px;
+            padding: 20px;
+            margin-top: 20px;
+            position: relative;
+        }
+        
+        .explanation::before {
+            content: '💡';
+            position: absolute;
+            top: -10px;
+            right: 20px;
+            background: #ffc107;
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .explanation-title {
+            font-weight: 700;
+            color: #856404;
+            margin-bottom: 10px;
+            font-size: 1.1rem;
+        }
+        
+        .explanation-text {
+            color: #856404;
+            line-height: 1.6;
+        }
+        
+        .footer {
+            text-align: center;
+            margin-top: 50px;
+            padding: 30px;
+            background: rgba(255, 255, 255, 0.9);
+            border-radius: 20px;
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.1);
+            backdrop-filter: blur(10px);
+        }
+        
+        .footer-text {
+            color: #718096;
+            font-size: 1.1rem;
+            line-height: 1.6;
+        }
+        
+        .gradient-text {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            font-weight: 700;
+        }
+        
+        @media (max-width: 768px) {
+            .container { padding: 10px; }
+            .title { font-size: 2rem; }
+            .logo { font-size: 2.5rem; }
+            .question-text { font-size: 1.1rem; }
+        }
+        
+        .floating-particles {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 1;
+        }
+        
+        .particle {
+            position: absolute;
+            width: 4px;
+            height: 4px;
+            background: rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            animation: float 6s infinite ease-in-out;
+        }
+        
+        @keyframes float {
+            0%, 100% { transform: translateY(0px) rotate(0deg); opacity: 0; }
+            50% { transform: translateY(-100px) rotate(180deg); opacity: 1; }
+        }
+    </style>
+</head>
+<body>
+    <div class="floating-particles">
+        ${Array.from({length: 15}, (_, i) => `
+            <div class="particle" style="
+                left: ${Math.random() * 100}%; 
+                animation-delay: ${Math.random() * 6}s;
+                animation-duration: ${4 + Math.random() * 4}s;
+            "></div>
+        `).join('')}
+    </div>
+    
+    <div class="container">
+        <div class="header">
+            <div class="logo">قدراتك</div>
+            <h1 class="title">أسئلة ${subcategory}</h1>
+            <p class="subtitle">مجموعة شاملة من الأسئلة التدريبية المتقدمة</p>
+            <p class="subtitle">تم الإنشاء في: ${currentDate}</p>
+        </div>
+        
+        <div class="stats">
+            <div class="stat-card">
+                <div class="stat-value">${questions.length}</div>
+                <div class="stat-label">إجمالي الأسئلة</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value">${result.correct}/${result.total}</div>
+                <div class="stat-label">أداؤك</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value">${Math.round(result.percentage)}%</div>
+                <div class="stat-label">النسبة المئوية</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value">${result.level}</div>
+                <div class="stat-label">التقدير</div>
+            </div>
+        </div>
+        
+        <div class="questions-container">
+            ${questions.map((q: any, index: number) => `
+                <div class="question-card">
+                    <div class="question-number">${index + 1}</div>
+                    <div class="question-text">${q.question}</div>
+                    <div class="options">
+                        ${q.choices.map((choice: string, choiceIndex: number) => `
+                            <div class="option ${choiceIndex === parseInt(q.correct_answer) ? 'correct' : ''}">
+                                ${String.fromCharCode(65 + choiceIndex)}) ${choice}
+                            </div>
+                        `).join('')}
+                    </div>
+                    ${q.explanation ? `
+                        <div class="explanation">
+                            <div class="explanation-title">الشرح والتوضيح:</div>
+                            <div class="explanation-text">${q.explanation}</div>
+                        </div>
+                    ` : ''}
+                </div>
+            `).join('')}
+        </div>
+        
+        <div class="footer">
+            <div class="footer-text">
+                تم إنشاء هذا الملف بواسطة منصة <span class="gradient-text">قدراتك</span> 
+                <br>
+                منصة شاملة لتطوير القدرات والاستعداد للاختبارات المعيارية
+                <br>
+                <strong>التعليم حق للجميع</strong>
+            </div>
+        </div>
+    </div>
+</body>
+</html>
+    `;
+  };
+
+  const downloadSubcategoryQuestions = async (subcategory: string, result: SubcategoryResult) => {
+    try {
+      const htmlContent = await generateSubcategoryHTML(subcategory, result);
+      const blob = new Blob([htmlContent], { type: 'text/html;charset=utf-8' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `اسئلة_${subcategory.replace(/\s+/g, '_')}_${new Date().getTime()}.html`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+    } catch (error) {
+      console.error('خطأ في تحميل الأسئلة:', error);
+    }
+  };
+
+  const downloadCompleteReport = async () => {
+    try {
+      const currentDate = new Date().toLocaleDateString('ar-SA');
+      const overallGradeColor = results.overallPercentage >= 90 ? '#10b981' : 
+                               results.overallPercentage >= 80 ? '#3b82f6' : 
+                               results.overallPercentage >= 70 ? '#f59e0b' : '#ef4444';
+      
+      const htmlContent = `
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>التقرير الشامل - ${examType} - قدراتك</title>
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;600;700;900&display=swap" rel="stylesheet">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        
+        body {
+            font-family: 'Cairo', sans-serif;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f0f3d 100%);
+            min-height: 100vh;
+            color: white;
+            position: relative;
+            overflow-x: hidden;
+        }
+        
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: radial-gradient(circle at 25% 25%, rgba(120, 119, 198, 0.1) 0%, transparent 50%),
+                        radial-gradient(circle at 75% 75%, rgba(255, 119, 198, 0.1) 0%, transparent 50%);
+            pointer-events: none;
+            z-index: 1;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 30px;
+            position: relative;
+            z-index: 2;
+        }
+        
+        .header {
+            text-align: center;
+            margin-bottom: 50px;
+            background: rgba(255, 255, 255, 0.1);
+            padding: 50px;
+            border-radius: 30px;
+            backdrop-filter: blur(20px);
+            border: 2px solid rgba(255, 255, 255, 0.2);
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .header::before {
+            content: '';
+            position: absolute;
+            top: -50%; left: -50%; width: 200%; height: 200%;
+            background: linear-gradient(45deg, transparent, rgba(255, 255, 255, 0.05), transparent);
+            animation: shimmer 4s infinite;
+        }
+        
+        @keyframes shimmer {
+            0% { transform: translateX(-100%) translateY(-100%) rotate(45deg); }
+            100% { transform: translateX(100%) translateY(100%) rotate(45deg); }
+        }
+        
+        .logo {
+            font-size: 4rem;
+            font-weight: 900;
+            background: linear-gradient(135deg, #667eea, #764ba2, #f093fb);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 20px;
+            filter: drop-shadow(0 0 10px rgba(255, 255, 255, 0.3));
+        }
+        
+        .title {
+            font-size: 3rem;
+            margin-bottom: 15px;
+            font-weight: 800;
+            background: linear-gradient(135deg, #fff, #e0e0e0);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        
+        .subtitle {
+            font-size: 1.4rem;
+            opacity: 0.8;
+            margin-bottom: 10px;
+        }
+        
+        .exam-info {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 25px;
+            margin: 50px 0;
+        }
+        
+        .info-card {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 30px;
+            border-radius: 20px;
+            text-align: center;
+            backdrop-filter: blur(15px);
+            border: 2px solid rgba(255, 255, 255, 0.2);
+            position: relative;
+            overflow: hidden;
+            transition: all 0.3s ease;
+        }
+        
+        .info-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+        }
+        
+        .info-card::after {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 4px;
+            background: ${overallGradeColor};
+        }
+        
+        .info-value {
+            font-size: 3rem;
+            font-weight: 900;
+            color: ${overallGradeColor};
+            margin-bottom: 10px;
+            text-shadow: 0 0 20px rgba(255, 255, 255, 0.3);
+        }
+        
+        .info-label {
+            font-size: 1.1rem;
+            opacity: 0.9;
+            font-weight: 600;
+        }
+        
+        .section {
+            margin-bottom: 50px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 25px;
+            padding: 40px;
+            backdrop-filter: blur(15px);
+            border: 2px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        .section-title {
+            font-size: 2.5rem;
+            font-weight: 800;
+            margin-bottom: 30px;
+            text-align: center;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        
+        .subcategory-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 25px;
+        }
+        
+        .subcategory-card {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 20px;
+            padding: 25px;
+            backdrop-filter: blur(10px);
+            border: 2px solid rgba(255, 255, 255, 0.2);
+            position: relative;
+            transition: all 0.3s ease;
+        }
+        
+        .subcategory-card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 15px 30px rgba(0, 0, 0, 0.2);
+        }
+        
+        .subcategory-name {
+            font-size: 1.4rem;
+            font-weight: 700;
+            margin-bottom: 15px;
+            color: #fff;
+        }
+        
+        .performance-bar {
+            width: 100%;
+            height: 12px;
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 6px;
+            overflow: hidden;
+            margin: 15px 0;
+        }
+        
+        .performance-fill {
+            height: 100%;
+            background: linear-gradient(90deg, ${overallGradeColor}, ${overallGradeColor}aa);
+            border-radius: 6px;
+            transition: width 2s ease;
+        }
+        
+        .stats {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 15px;
+        }
+        
+        .stat {
+            text-align: center;
+        }
+        
+        .stat-value {
+            font-size: 1.2rem;
+            font-weight: 700;
+            color: ${overallGradeColor};
+        }
+        
+        .stat-label {
+            font-size: 0.9rem;
+            opacity: 0.7;
+        }
+        
+        .achievements {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+            margin-top: 30px;
+        }
+        
+        .achievement {
+            background: linear-gradient(135deg, #ffd700, #ffed4e);
+            color: #333;
+            padding: 10px 20px;
+            border-radius: 25px;
+            font-weight: 600;
+            font-size: 0.9rem;
+            box-shadow: 0 5px 15px rgba(255, 215, 0, 0.3);
+        }
+        
+        .footer {
+            text-align: center;
+            margin-top: 60px;
+            padding: 40px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 25px;
+            backdrop-filter: blur(15px);
+            border: 2px solid rgba(255, 255, 255, 0.2);
+        }
+        
+        .footer-text {
+            font-size: 1.2rem;
+            line-height: 1.8;
+            opacity: 0.9;
+        }
+        
+        .gradient-text {
+            background: linear-gradient(135deg, #667eea, #764ba2, #f093fb);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            font-weight: 800;
+        }
+        
+        @media (max-width: 768px) {
+            .container { padding: 15px; }
+            .title { font-size: 2rem; }
+            .logo { font-size: 2.5rem; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <div class="logo">قدراتك</div>
+            <h1 class="title">التقرير الشامل - ${examType}</h1>
+            <p class="subtitle">تحليل مفصل وشامل للأداء والنتائج</p>
+            <p class="subtitle">تم الإنشاء في: ${currentDate}</p>
+        </div>
+        
+        <div class="exam-info">
+            <div class="info-card">
+                <div class="info-value">${results.totalScore}/${results.totalQuestions}</div>
+                <div class="info-label">إجمالي النقاط</div>
+            </div>
+            <div class="info-card">
+                <div class="info-value">${Math.round(results.overallPercentage)}%</div>
+                <div class="info-label">النسبة المئوية</div>
+            </div>
+            <div class="info-card">
+                <div class="info-value">${results.level}</div>
+                <div class="info-label">التقدير العام</div>
+            </div>
+            <div class="info-card">
+                <div class="info-value">${formatTime(results.timeTaken)}</div>
+                <div class="info-label">الوقت المستغرق</div>
+            </div>
+        </div>
+        
+        ${results.verbalResults.length > 0 ? `
+        <div class="section">
+            <h2 class="section-title">🎯 القسم اللفظي</h2>
+            <div class="subcategory-grid">
+                ${results.verbalResults.map(result => `
+                    <div class="subcategory-card">
+                        <div class="subcategory-name">${result.subcategory}</div>
+                        <div class="performance-bar">
+                            <div class="performance-fill" style="width: ${result.percentage}%"></div>
+                        </div>
+                        <div class="stats">
+                            <div class="stat">
+                                <div class="stat-value">${result.correct}</div>
+                                <div class="stat-label">صحيح</div>
+                            </div>
+                            <div class="stat">
+                                <div class="stat-value">${Math.round(result.percentage)}%</div>
+                                <div class="stat-label">النسبة</div>
+                            </div>
+                            <div class="stat">
+                                <div class="stat-value">${result.total - result.correct}</div>
+                                <div class="stat-label">خطأ</div>
+                            </div>
+                        </div>
+                    </div>
+                `).join('')}
+            </div>
+        </div>
+        ` : ''}
+        
+        ${results.quantitativeResults.length > 0 ? `
+        <div class="section">
+            <h2 class="section-title">🔢 القسم الكمي</h2>
+            <div class="subcategory-grid">
+                ${results.quantitativeResults.map(result => `
+                    <div class="subcategory-card">
+                        <div class="subcategory-name">${result.subcategory}</div>
+                        <div class="performance-bar">
+                            <div class="performance-fill" style="width: ${result.percentage}%"></div>
+                        </div>
+                        <div class="stats">
+                            <div class="stat">
+                                <div class="stat-value">${result.correct}</div>
+                                <div class="stat-label">صحيح</div>
+                            </div>
+                            <div class="stat">
+                                <div class="stat-value">${Math.round(result.percentage)}%</div>
+                                <div class="stat-label">النسبة</div>
+                            </div>
+                            <div class="stat">
+                                <div class="stat-value">${result.total - result.correct}</div>
+                                <div class="stat-label">خطأ</div>
+                            </div>
+                        </div>
+                    </div>
+                `).join('')}
+            </div>
+        </div>
+        ` : ''}
+        
+        ${results.achievements.length > 0 ? `
+        <div class="section">
+            <h2 class="section-title">🏆 الإنجازات المحققة</h2>
+            <div class="achievements">
+                ${results.achievements.map(achievement => `
+                    <div class="achievement">✨ ${achievement}</div>
+                `).join('')}
+            </div>
+        </div>
+        ` : ''}
+        
+        <div class="footer">
+            <div class="footer-text">
+                تم إنشاء هذا التقرير بواسطة منصة <span class="gradient-text">قدراتك</span> 
+                <br>
+                منصة شاملة لتطوير القدرات والاستعداد للاختبارات المعيارية
+                <br>
+                <strong>التعليم حق للجميع</strong>
+            </div>
+        </div>
+    </div>
+</body>
+</html>
+      `;
+      
+      const blob = new Blob([htmlContent], { type: 'text/html;charset=utf-8' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `تقرير_شامل_${examType.replace(/\s+/g, '_')}_${new Date().getTime()}.html`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+    } catch (error) {
+      console.error('خطأ في تحميل التقرير الشامل:', error);
+    }
   };
 
   const getGradeColor = (percentage: number) => {
@@ -128,7 +943,7 @@ export function DetailedTestResults({ results, examType, onClose }: DetailedTest
               {result.correct}/{result.total}
             </motion.div>
             <div className="text-lg text-gray-600 dark:text-gray-300 font-semibold">
-              {result.percentage}%
+              {Math.round(result.percentage)}%
             </div>
           </div>
         </div>
@@ -146,7 +961,7 @@ export function DetailedTestResults({ results, examType, onClose }: DetailedTest
               transition={{ duration: 1.5, ease: "easeOut" }}
             />
           </div>
-          <div className="flex justify-between text-sm">
+          <div className="flex justify-between text-sm mb-4">
             <motion.span 
               className="flex items-center gap-2 text-green-600 dark:text-green-400 font-medium"
               whileHover={{ scale: 1.05 }}
@@ -162,6 +977,31 @@ export function DetailedTestResults({ results, examType, onClose }: DetailedTest
               {result.total - result.correct} خطأ
             </motion.span>
           </div>
+          
+          {/* زر التحميل الإبداعي */}
+          <motion.button
+            onClick={() => downloadSubcategoryQuestions(result.subcategory, result)}
+            className={`w-full p-3 rounded-xl bg-gradient-to-r ${getGradeColor(result.percentage)} text-white font-semibold text-sm flex items-center justify-center gap-3 shadow-lg hover:shadow-xl transition-all duration-300 relative overflow-hidden group`}
+            whileHover={{ scale: 1.02, y: -2 }}
+            whileTap={{ scale: 0.98 }}
+          >
+            <div className="absolute inset-0 bg-white/20 transform -skew-x-12 -translate-x-full group-hover:translate-x-full transition-transform duration-700"></div>
+            <motion.div
+              animate={{ rotate: [0, 360] }}
+              transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
+              className="relative z-10"
+            >
+              <Download className="w-4 h-4" />
+            </motion.div>
+            <span className="relative z-10">تحميل ملف الأسئلة الإبداعي</span>
+            <motion.div
+              animate={{ scale: [1, 1.2, 1] }}
+              transition={{ duration: 1.5, repeat: Infinity }}
+              className="relative z-10"
+            >
+              <FileText className="w-4 h-4" />
+            </motion.div>
+          </motion.button>
         </div>
       </div>
     </motion.div>
@@ -312,7 +1152,7 @@ export function DetailedTestResults({ results, examType, onClose }: DetailedTest
                   <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
                     {[
                       { value: `${results.totalScore}/${results.totalQuestions}`, label: "إجمالي النقاط", icon: Target, color: "text-gray-800 dark:text-white" },
-                      { value: `${results.overallPercentage}%`, label: "النسبة المئوية", icon: BarChart3, color: "text-blue-600 dark:text-blue-400" },
+                      { value: `${Math.round(results.overallPercentage)}%`, label: "النسبة المئوية", icon: BarChart3, color: "text-blue-600 dark:text-blue-400" },
                       { value: results.level, label: "المستوى", icon: Crown, color: "text-green-600 dark:text-green-400" },
                       { value: formatTime(results.timeTaken), label: "الوقت المستغرق", icon: Clock, color: "text-purple-600 dark:text-purple-400" }
                     ].map((item, index) => (
@@ -353,6 +1193,45 @@ export function DetailedTestResults({ results, examType, onClose }: DetailedTest
                     </motion.div>
                   </div>
                   
+                  {/* زر تحميل التقرير الشامل */}
+                  <div className="mt-8">
+                    <motion.button
+                      onClick={() => downloadCompleteReport()}
+                      className="w-full p-4 rounded-2xl bg-gradient-to-r from-purple-600 via-blue-600 to-indigo-600 text-white font-bold text-lg flex items-center justify-center gap-4 shadow-2xl hover:shadow-3xl transition-all duration-300 relative overflow-hidden group"
+                      whileHover={{ scale: 1.02, y: -3 }}
+                      whileTap={{ scale: 0.98 }}
+                    >
+                      <div className="absolute inset-0 bg-white/20 transform -skew-x-12 -translate-x-full group-hover:translate-x-full transition-transform duration-1000"></div>
+                      <motion.div
+                        animate={{ 
+                          rotate: [0, 360],
+                          scale: [1, 1.1, 1] 
+                        }}
+                        transition={{ 
+                          rotate: { duration: 3, repeat: Infinity, ease: "linear" },
+                          scale: { duration: 2, repeat: Infinity }
+                        }}
+                        className="relative z-10"
+                      >
+                        <Download className="w-6 h-6" />
+                      </motion.div>
+                      <span className="relative z-10">تحميل التقرير الشامل الإبداعي</span>
+                      <motion.div
+                        animate={{ 
+                          rotate: [0, -360],
+                          scale: [1, 1.2, 1] 
+                        }}
+                        transition={{ 
+                          rotate: { duration: 2.5, repeat: Infinity, ease: "linear" },
+                          scale: { duration: 1.8, repeat: Infinity }
+                        }}
+                        className="relative z-10"
+                      >
+                        <FileText className="w-6 h-6" />
+                      </motion.div>
+                    </motion.button>
+                  </div>
+
                   {/* الإنجازات الفاخرة */}
                   {results.achievements.length > 0 && (
                     <div className="mt-8">
