@@ -180,11 +180,142 @@ export function QuantitativeTestRunner() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-center space-y-4">
-          <Calculator className="w-12 h-12 animate-spin mx-auto text-blue-600" />
-          <p className="text-lg">جاري تحضير الاختبار...</p>
+      <div className="fixed inset-0 z-50 bg-gradient-to-br from-blue-950 via-purple-950 to-indigo-950 flex items-center justify-center overflow-hidden">
+        {/* خلفية متحركة رياضية */}
+        <div className="absolute inset-0">
+          {/* تأثير الأرقام المتحركة */}
+          <div className="absolute top-10 left-10 text-4xl text-blue-400/30 animate-pulse font-mono">π</div>
+          <div className="absolute top-20 right-20 text-3xl text-purple-400/30 animate-bounce delay-500 font-mono">∫</div>
+          <div className="absolute bottom-20 left-20 text-5xl text-indigo-400/30 animate-ping delay-1000 font-mono">∑</div>
+          <div className="absolute bottom-10 right-10 text-3xl text-cyan-400/30 animate-pulse delay-1500 font-mono">∞</div>
+          <div className="absolute top-1/3 left-1/4 text-2xl text-pink-400/30 animate-bounce delay-700 font-mono">√</div>
+          <div className="absolute top-2/3 right-1/3 text-4xl text-violet-400/30 animate-ping delay-2000 font-mono">%</div>
+          <div className="absolute bottom-1/3 left-1/2 text-3xl text-yellow-400/30 animate-pulse delay-300 font-mono">≠</div>
+          <div className="absolute top-1/2 right-10 text-2xl text-green-400/30 animate-bounce delay-1200 font-mono">≈</div>
+          
+          {/* معادلات رياضية متحركة */}
+          <div className="absolute top-16 left-1/3 text-lg text-blue-300/20 animate-pulse delay-800 font-mono">x² + y² = z²</div>
+          <div className="absolute bottom-16 right-1/4 text-lg text-purple-300/20 animate-bounce delay-1600 font-mono">a² - b² = (a+b)(a-b)</div>
+          
+          {/* شبكة هندسية متحركة */}
+          <div className="absolute inset-0 bg-[radial-gradient(circle_600px_at_50%_200px,rgba(59,130,246,0.1),transparent)] animate-pulse"></div>
+          <div className="absolute inset-0 bg-[radial-gradient(circle_400px_at_80%_80%,rgba(168,85,247,0.08),transparent)] animate-pulse delay-1000"></div>
         </div>
+
+        {/* المحتوى الرئيسي */}
+        <div className="relative z-10 flex flex-col items-center justify-center text-center space-y-8">
+          {/* أيقونة الآلة الحاسبة مع تأثيرات رياضية */}
+          <div className="relative">
+            {/* هالة ضوئية رياضية */}
+            <div className="absolute inset-0 w-32 h-32 bg-gradient-to-r from-blue-500/30 via-purple-500/30 to-pink-500/30 rounded-full blur-xl animate-spin"></div>
+            <div className="absolute inset-2 w-28 h-28 bg-gradient-to-r from-cyan-400/20 via-blue-400/20 to-indigo-400/20 rounded-full blur-lg animate-spin-reverse"></div>
+
+            {/* الآلة الحاسبة المركزية */}
+            <div className="relative w-24 h-24 mx-auto bg-gradient-to-br from-blue-600 via-purple-600 to-indigo-700 rounded-3xl flex items-center justify-center shadow-2xl shadow-blue-500/50 border border-blue-400/30 backdrop-blur-sm">
+              <div className="absolute inset-0 bg-gradient-to-br from-white/20 to-transparent rounded-3xl"></div>
+              <Calculator className="w-12 h-12 text-white animate-pulse" />
+
+              {/* تأثير البريق */}
+              <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent rounded-3xl animate-shimmer"></div>
+            </div>
+
+            {/* رموز رياضية دائرية حول الأيقونة */}
+            <div className="absolute -top-2 -right-2 w-6 h-6 bg-gradient-to-r from-yellow-400 to-orange-500 rounded-full flex items-center justify-center animate-bounce opacity-80">
+              <span className="text-xs font-bold text-white">+</span>
+            </div>
+            <div className="absolute -bottom-2 -left-2 w-6 h-6 bg-gradient-to-r from-pink-400 to-rose-500 rounded-full flex items-center justify-center animate-ping opacity-70">
+              <span className="text-xs font-bold text-white">×</span>
+            </div>
+            <div className="absolute top-1/2 -right-3 w-5 h-5 bg-gradient-to-r from-cyan-400 to-blue-500 rounded-full flex items-center justify-center animate-pulse opacity-90">
+              <span className="text-xs font-bold text-white">÷</span>
+            </div>
+            <div className="absolute top-1/2 -left-3 w-5 h-5 bg-gradient-to-r from-purple-400 to-violet-500 rounded-full flex items-center justify-center animate-bounce delay-500 opacity-80">
+              <span className="text-xs font-bold text-white">-</span>
+            </div>
+          </div>
+
+          {/* العنوان */}
+          <div className="space-y-4">
+            <div className="relative">
+              <h1 className="text-4xl font-black bg-gradient-to-r from-blue-400 via-purple-400 to-pink-400 bg-clip-text text-transparent animate-shimmer drop-shadow-2xl">
+                جاري تحضير اختبار الكمي
+              </h1>
+            </div>
+
+            <div className="relative">
+              <p className="text-lg text-slate-200 font-medium tracking-wide opacity-90 animate-pulse">
+                نقوم بإعداد الأسئلة الرياضية لك...
+              </p>
+            </div>
+          </div>
+
+          {/* شريط التحميل الرياضي */}
+          <div className="w-64 mx-auto space-y-4">
+            <div className="relative">
+              {/* الخلفية المضيئة */}
+              <div className="absolute inset-0 bg-gradient-to-r from-blue-500/20 via-purple-500/20 to-pink-500/20 rounded-full blur-sm"></div>
+
+              {/* شريط التحميل الرئيسي */}
+              <div className="relative w-full h-3 bg-slate-800/50 rounded-full overflow-hidden border border-blue-400/30 backdrop-blur-sm">
+                <div className="h-full bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500 rounded-full animate-loading-bar shadow-lg shadow-blue-500/50"></div>
+
+                {/* تأثير البريق المتحرك */}
+                <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent animate-shimmer"></div>
+              </div>
+            </div>
+
+            {/* رموز رياضية متحركة */}
+            <div className="flex items-center justify-center space-x-4">
+              <div className="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center animate-bounce">
+                <span className="text-white font-bold text-sm">1</span>
+              </div>
+              <div className="w-8 h-8 bg-purple-500 rounded-full flex items-center justify-center animate-bounce delay-150">
+                <span className="text-white font-bold text-sm">2</span>
+              </div>
+              <div className="w-8 h-8 bg-pink-500 rounded-full flex items-center justify-center animate-bounce delay-300">
+                <span className="text-white font-bold text-sm">3</span>
+              </div>
+            </div>
+
+            {/* رسائل تحفيزية متغيرة */}
+            <div className="text-center">
+              <p className="text-sm text-blue-300 animate-pulse">
+                استعد لتحدي قدراتك الرياضية! 🧮
+              </p>
+            </div>
+          </div>
+        </div>
+
+        {/* أنماط CSS مخصصة */}
+        <style>{`
+          @keyframes loading-bar {
+            0% { width: 0%; }
+            50% { width: 60%; }
+            100% { width: 100%; }
+          }
+
+          @keyframes shimmer {
+            0% { transform: translateX(-100%); }
+            100% { transform: translateX(100%); }
+          }
+
+          @keyframes spin-reverse {
+            from { transform: rotate(360deg); }
+            to { transform: rotate(0deg); }
+          }
+
+          .animate-loading-bar {
+            animation: loading-bar 3s ease-in-out infinite;
+          }
+
+          .animate-shimmer {
+            animation: shimmer 2s ease-in-out infinite;
+          }
+
+          .animate-spin-reverse {
+            animation: spin-reverse 8s linear infinite;
+          }
+        `}</style>
       </div>
     );
   }
