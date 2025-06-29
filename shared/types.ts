@@ -13,6 +13,7 @@ export type DialectType = 'standard' | 'saudi' | 'egyptian' | 'gulf' | 'levantin
 
 export interface TestQuestion extends QuestionItem {
   category: TestType;
+  subcategory?: string; // Arabic subcategory like "التناظر اللفظي", "الهندسة"
   difficulty: TestDifficulty;
   topic?: string;
   dialect?: DialectType;

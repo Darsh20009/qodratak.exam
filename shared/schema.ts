@@ -16,6 +16,7 @@ export const users = pgTable("users", {
 export const questions = pgTable("questions", {
   id: serial("id").primaryKey(),
   category: text("category").notNull(), // "verbal", "quantitative", "general", etc.
+  subcategory: text("subcategory").default("عام"), // Specific Arabic subcategory like "التناظر اللفظي", "الهندسة", etc.
   text: text("text").notNull(),
   options: jsonb("options").notNull(), // Array of strings
   correctOptionIndex: integer("correct_option_index").notNull(),

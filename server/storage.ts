@@ -23,6 +23,7 @@ export interface User {
 export interface Question {
   id: number;
   category: string;
+  subcategory?: string; // Arabic subcategory like "التناظر اللفظي", "الهندسة"
   text: string;
   options: string[];
   correctOptionIndex: number;
@@ -240,6 +241,7 @@ export interface IStorage {
   ): Promise<Question[]>;
   getQuestionsById(id: number): Promise<Question | undefined>;
   createQuestion(question: InsertQuestion): Promise<Question>;
+  clearAllQuestions(): Promise<void>;
   searchQuestions(query: string): Promise<Question[]>;
   searchQuestionsAdvanced(query: string, options?: {
     category?: string;
@@ -574,7 +576,7 @@ export class MemStorage implements IStorage {
       // Load questions from JSON file
       const questionsPath = path.resolve(
         process.cwd(),
-        "attached_assets/questions_all.json"
+        "attached_assets/questions_comprehensive.json"
       );
       
       if (fs.existsSync(questionsPath)) {
@@ -594,9 +596,10 @@ export class MemStorage implements IStorage {
               // Generate keywords from question text
               const keywords = this.extractKeywords(question.text);
               
-              // Add the question
+              // Add the question with comprehensive structure
               await this.createQuestion({
                 category: "verbal",
+                subcategory: question.category || "التناظر اللفظي", // Use Arabic subcategory
                 text: question.text,
                 options: question.options,
                 correctOptionIndex: question.correctOptionIndex,
@@ -604,7 +607,8 @@ export class MemStorage implements IStorage {
                 topic: "general",
                 dialect: "standard",
                 keywords: keywords,
-                section: Math.floor(count / 20) + 1
+                section: Math.floor(count / 20) + 1,
+                explanation: question.explanation || "" // Include explanation
               });
               count++;
               
@@ -630,9 +634,10 @@ export class MemStorage implements IStorage {
               // Generate keywords from question text
               const keywords = this.extractKeywords(question.text);
               
-              // Add the question
+              // Add the question with comprehensive structure
               await this.createQuestion({
                 category: "quantitative",
+                subcategory: question.category || "عمليات حسابية", // Use Arabic subcategory
                 text: question.text,
                 options: question.options,
                 correctOptionIndex: question.correctOptionIndex,
@@ -640,7 +645,8 @@ export class MemStorage implements IStorage {
                 topic: "general",
                 dialect: "standard",
                 keywords: keywords,
-                section: Math.floor(count / 20) + 1
+                section: Math.floor(count / 20) + 1,
+                explanation: question.explanation || "" // Include explanation
               });
               count++;
               
@@ -754,6 +760,11 @@ export class MemStorage implements IStorage {
     const newQuestion: Question = { id, ...question };
     this.questions.push(newQuestion);
     return newQuestion;
+  }
+
+  async clearAllQuestions(): Promise<void> {
+    this.questions = [];
+    console.log("All questions cleared from memory storage");
   }
 
   async searchQuestions(query: string): Promise<Question[]> {

@@ -415,6 +415,11 @@ const QuestionsList: React.FC<QuestionsListProps> = ({
               <Badge variant="outline">
                 {formatDialect(question.dialect)}
               </Badge>
+              {question.subcategory && (
+                <Badge variant="secondary" className="bg-blue-100 dark:bg-blue-900/20 text-blue-800 dark:text-blue-200">
+                  {question.subcategory}
+                </Badge>
+              )}
               {question.topic && (
                 <Badge variant="outline">
                   {question.topic}

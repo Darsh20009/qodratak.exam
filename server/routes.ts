@@ -102,9 +102,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.get("/api/seed-questions", async (req: Request, res: Response) => {
     try {
+      // Clear existing questions first
+      await storage.clearAllQuestions();
+      console.log("Cleared existing questions");
+      
       const questionsPath = path.resolve(
         process.cwd(),
-        "attached_assets/questions_all.json"
+        "attached_assets/questions_comprehensive.json"
       );
 
       if (!fs.existsSync(questionsPath)) {
@@ -118,12 +122,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (questionsData.verbal && Array.isArray(questionsData.verbal)) {
         for (const question of questionsData.verbal) {
           try {
-            // Validate question format
+            // Validate question format with the new comprehensive structure
             const questionData = {
               category: "verbal",
+              subcategory: question.category || "التناظر اللفظي", // Use the specific Arabic category
               text: question.text,
               options: question.options,
               correctOptionIndex: question.correctOptionIndex,
+              explanation: question.explanation || "", // Include explanation
               difficulty: "beginner" // Default to beginner, can be adjusted later
             };
 
@@ -140,9 +146,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
           try {
             const questionData = {
               category: "quantitative",
+              subcategory: question.category || "عمليات حسابية", // Use the specific Arabic category
               text: question.text,
               options: question.options,
               correctOptionIndex: question.correctOptionIndex,
+              explanation: question.explanation || "", // Include explanation
               difficulty: "beginner" // Default to beginner
             };
 

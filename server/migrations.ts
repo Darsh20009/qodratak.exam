@@ -21,6 +21,7 @@ async function runMigrations() {
       CREATE TABLE IF NOT EXISTS "questions" (
         "id" SERIAL PRIMARY KEY,
         "category" TEXT NOT NULL,
+        "subcategory" TEXT DEFAULT 'عام',
         "text" TEXT NOT NULL,
         "options" JSONB NOT NULL,
         "correct_option_index" INTEGER NOT NULL,
@@ -92,6 +93,17 @@ async function runMigrations() {
         "dialect" TEXT DEFAULT 'standard'
       );
     `);
+    
+    // Add subcategory column if it doesn't exist
+    try {
+      await db.execute(sql`
+        ALTER TABLE "questions" 
+        ADD COLUMN IF NOT EXISTS "subcategory" TEXT DEFAULT 'عام';
+      `);
+      console.log('Added subcategory column to questions table');
+    } catch (error) {
+      console.log('Subcategory column already exists or error:', error);
+    }
     
     console.log('Database migrations completed successfully');
     return true;
