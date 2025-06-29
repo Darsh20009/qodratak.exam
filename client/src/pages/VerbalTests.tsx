@@ -55,6 +55,37 @@ export function VerbalTests() {
     queryKey: ['/api/user'],
   });
 
+  // Load user history from localStorage on component mount
+  useEffect(() => {
+    const storedResults = localStorage.getItem('verbalTestResults');
+    if (storedResults) {
+      try {
+        const results = JSON.parse(storedResults);
+        const historyData = results.map((result: any) => ({
+          testId: getTestIdFromSubcategory(result.subcategory),
+          date: result.date,
+          score: result.correctAnswers,
+          percentage: result.percentage,
+          completedToday: new Date(result.date).toDateString() === new Date().toDateString()
+        }));
+        setUserHistory(historyData);
+      } catch (error) {
+        console.error('Error loading test history:', error);
+      }
+    }
+  }, []);
+
+  // Helper function to get test ID from subcategory
+  const getTestIdFromSubcategory = (subcategory: string): string => {
+    switch (subcategory) {
+      case 'التناظر اللفظي': return 'analogy-test';
+      case 'إكمال الجمل': return 'completion-test';
+      case 'استيعاب المقروء': return 'comprehension-test';
+      case 'الخطأ السياقي': return 'context-error-test';
+      default: return '';
+    }
+  };
+
   const verbalTests: VerbalTest[] = [
     {
       id: 'analogy-test',
@@ -111,10 +142,28 @@ export function VerbalTests() {
   ];
 
   const checkDailyLimit = (testId: string): boolean => {
+    // Always allow premium users
     if ((user as any)?.subscription !== 'free') return true;
 
+    // For free users, check if they've taken this specific test today
     const today = new Date().toDateString();
-    return !userHistory.some(h => h.testId === testId && new Date(h.date).toDateString() === today);
+    const storedResults = localStorage.getItem('verbalTestResults');
+    
+    if (storedResults) {
+      try {
+        const results = JSON.parse(storedResults);
+        return !results.some((result: any) => {
+          const resultTestId = getTestIdFromSubcategory(result.subcategory);
+          const resultDate = new Date(result.date).toDateString();
+          return resultTestId === testId && resultDate === today;
+        });
+      } catch (error) {
+        console.error('Error checking daily limit:', error);
+        return true;
+      }
+    }
+    
+    return true; // Allow if no history exists
   };
 
   const getDifficultyColor = (difficulty: string) => {
@@ -127,7 +176,10 @@ export function VerbalTests() {
   };
 
   const startTest = (test: VerbalTest) => {
+    // Check daily limit for free users
     if (!checkDailyLimit(test.id)) {
+      // Show a message to the user
+      alert('لقد أكملت هذا الاختبار اليوم. يمكن للمستخدمين المجانيين أخذ اختبار واحد يومياً لكل قسم.');
       return;
     }
 
@@ -254,17 +306,37 @@ export function VerbalTests() {
                         <Lock className="w-3 h-3" />
                         <span>مكتمل اليوم</span>
                       </div>
-                    ) : testHistory ? (
-                      <div className="flex items-center gap-1 bg-green-100 text-green-800 dark:bg-green-900/30 px-2 py-1 rounded-full text-xs">
-                        <CheckCircle2 className="w-3 h-3" />
-                        <span>{Math.round(testHistory.percentage)}%</span>
-                      </div>
-                    ) : (
-                      <div className="flex items-center gap-1 bg-blue-100 text-blue-800 dark:bg-blue-900/30 px-2 py-1 rounded-full text-xs">
-                        <Sparkles className="w-3 h-3" />
-                        <span>جديد</span>
-                      </div>
-                    )}
+                    ) : (() => {
+                        // Get latest result for this test
+                        const storedResults = localStorage.getItem('verbalTestResults');
+                        let latestResult = null;
+                        
+                        if (storedResults) {
+                          try {
+                            const results = JSON.parse(storedResults);
+                            const testResults = results.filter((result: any) => 
+                              getTestIdFromSubcategory(result.subcategory) === test.id
+                            );
+                            if (testResults.length > 0) {
+                              latestResult = testResults[testResults.length - 1];
+                            }
+                          } catch (error) {
+                            console.error('Error loading test results:', error);
+                          }
+                        }
+
+                        return latestResult ? (
+                          <div className="flex items-center gap-1 bg-green-100 text-green-800 dark:bg-green-900/30 px-2 py-1 rounded-full text-xs">
+                            <CheckCircle2 className="w-3 h-3" />
+                            <span>{Math.round(latestResult.percentage)}%</span>
+                          </div>
+                        ) : (
+                          <div className="flex items-center gap-1 bg-blue-100 text-blue-800 dark:bg-blue-900/30 px-2 py-1 rounded-full text-xs">
+                            <Sparkles className="w-3 h-3" />
+                            <span>جديد</span>
+                          </div>
+                        );
+                      })()}
                   </div>
 
                   <CardHeader className="pb-4">
@@ -305,15 +377,35 @@ export function VerbalTests() {
                     </div>
 
                     {/* إحصائيات الأداء */}
-                    {testHistory && (
-                      <div className="mb-6 p-4 bg-white/50 dark:bg-gray-700/50 rounded-xl border">
-                        <div className="flex items-center justify-between mb-2">
-                          <span className="text-sm font-medium text-gray-700 dark:text-gray-300">آخر نتيجة</span>
-                          <span className="text-sm font-bold text-gray-800 dark:text-white">{Math.round(testHistory.percentage)}%</span>
+                    {(() => {
+                      // Get latest result for this test
+                      const storedResults = localStorage.getItem('verbalTestResults');
+                      let latestResult = null;
+                      
+                      if (storedResults) {
+                        try {
+                          const results = JSON.parse(storedResults);
+                          const testResults = results.filter((result: any) => 
+                            getTestIdFromSubcategory(result.subcategory) === test.id
+                          );
+                          if (testResults.length > 0) {
+                            latestResult = testResults[testResults.length - 1];
+                          }
+                        } catch (error) {
+                          console.error('Error loading test results:', error);
+                        }
+                      }
+
+                      return latestResult ? (
+                        <div className="mb-6 p-4 bg-white/50 dark:bg-gray-700/50 rounded-xl border">
+                          <div className="flex items-center justify-between mb-2">
+                            <span className="text-sm font-medium text-gray-700 dark:text-gray-300">آخر نتيجة</span>
+                            <span className="text-sm font-bold text-gray-800 dark:text-white">{Math.round(latestResult.percentage)}%</span>
+                          </div>
+                          <Progress value={latestResult.percentage} className="h-2" />
                         </div>
-                        <Progress value={testHistory.percentage} className="h-2" />
-                      </div>
-                    )}
+                      ) : null;
+                    })()}
 
                     {/* زر بدء الاختبار */}
                     <Button
