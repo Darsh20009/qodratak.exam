@@ -1494,14 +1494,9 @@ const QiyasExamPage: React.FC = () => {
         return;
     }
 
-    if (isMobile) {
-        // For mobile, generate the static file directly without options
-        generateChallengeFile({ isTimed: false, questions: incorrectOrUnansweredQuestionsData });
-    } else {
-        // For desktop, set questions and open the options dialog
-        setChallengeQuestions(incorrectOrUnansweredQuestionsData);
-        setIsMistakeChallengeDialogOpen(true);
-    }
+    // Always show the creative challenge options dialog
+    setChallengeQuestions(incorrectOrUnansweredQuestionsData);
+    setIsMistakeChallengeDialogOpen(true);
 };
 
 const generateChallengeFile = ({ isTimed, questions: incorrectOrUnansweredQuestionsData }: { isTimed: boolean, questions: ChallengeQuestionData[] }) => {

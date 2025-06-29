@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   Clock, 
@@ -10,7 +10,21 @@ import {
   AlertTriangle,
   Brain,
   Timer,
-  X
+  X,
+  Sparkles,
+  Flame,
+  Shield,
+  Star,
+  Award,
+  Gamepad2,
+  Rocket,
+  Bolt,
+  Crown,
+  Swords,
+  Trophy,
+  Diamond,
+  Heart,
+  Gauge
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
@@ -27,45 +41,138 @@ const MistakeChallengeModal: React.FC<MistakeChallengeModalProps> = ({
   onClose,
   onSelectMode
 }) => {
-  const [selectedMode, setSelectedMode] = useState<'timed' | 'untimed' | null>(null);
+  const [selectedMode, setSelectedMode] = useState<'timed' | 'untimed' | 'lightning' | 'mastery' | 'survival' | null>(null);
+  const [hoveredMode, setHoveredMode] = useState<string | null>(null);
+  const [animationPhase, setAnimationPhase] = useState(0);
+
+  useEffect(() => {
+    if (isOpen) {
+      const interval = setInterval(() => {
+        setAnimationPhase(prev => (prev + 1) % 3);
+      }, 2000);
+      return () => clearInterval(interval);
+    }
+  }, [isOpen]);
 
   const challengeModes = [
     {
       id: 'untimed',
-      title: 'التحدي المفتوح',
+      title: 'رحلة الاستكشاف',
       subtitle: 'بدون ضغط الوقت',
-      description: 'راجع أخطاءك بهدوء وتعلم منها دون قيود زمنية',
+      description: 'اكتشف أخطاءك في رحلة هادئة ومثيرة مع شروحات تفاعلية وتحليلات عميقة',
       icon: <Infinity className="w-8 h-8" />,
-      color: 'from-blue-500 to-cyan-500',
-      borderColor: 'border-blue-200 hover:border-blue-400',
-      bgColor: 'bg-blue-50 hover:bg-blue-100',
+      secondaryIcon: <Star className="w-4 h-4" />,
+      color: 'from-blue-500 via-cyan-500 to-teal-500',
+      bgGradient: 'from-blue-50 via-cyan-50 to-teal-50',
+      darkBgGradient: 'from-blue-900/20 via-cyan-900/20 to-teal-900/20',
+      borderColor: 'border-blue-300 hover:border-cyan-400',
+      glowColor: 'shadow-blue-500/25',
+      difficulty: 'مريح',
+      difficultyColor: 'bg-green-100 text-green-800',
       features: [
-        'وقت غير محدود للمراجعة',
-        'فهم عميق للأخطاء',
-        'تعلم بدون ضغط'
-      ]
+        '⏰ وقت غير محدود للتفكير والمراجعة',
+        '📚 شروحات تفصيلية ونصائح ذكية',
+        '🎯 تركيز على الفهم العميق والتعلم المستدام',
+        '💡 اقتراحات شخصية لتحسين الأداء'
+      ],
+      rewards: ['نقاط التعلم المضاعفة', 'شارات الاستكشاف', 'إحصائيات مفصلة']
     },
     {
       id: 'timed',
-      title: 'تحدي السرعة',
+      title: 'تحدي الزمن',
       subtitle: 'دقيقة واحدة لكل خطأ',
-      description: 'اختبر سرعة فهمك وقدرتك على التعلم السريع',
+      description: 'اختبر سرعة بديهتك وقدرتك على التعلم تحت الضغط مع نظام نقاط متقدم',
       icon: <Timer className="w-8 h-8" />,
-      color: 'from-orange-500 to-red-500',
-      borderColor: 'border-orange-200 hover:border-orange-400',
-      bgColor: 'bg-orange-50 hover:bg-orange-100',
+      secondaryIcon: <Bolt className="w-4 h-4" />,
+      color: 'from-orange-500 via-red-500 to-pink-500',
+      bgGradient: 'from-orange-50 via-red-50 to-pink-50',
+      darkBgGradient: 'from-orange-900/20 via-red-900/20 to-pink-900/20',
+      borderColor: 'border-orange-300 hover:border-red-400',
+      glowColor: 'shadow-orange-500/25',
+      difficulty: 'متوسط',
+      difficultyColor: 'bg-yellow-100 text-yellow-800',
       features: [
-        'دقيقة واحدة لكل خطأ',
-        'تحدي الوقت والتركيز',
-        'نقاط إضافية للسرعة'
-      ]
+        '⚡ 60 ثانية لكل سؤال خاطئ',
+        '🏆 مضاعف نقاط السرعة (x1.5)',
+        '⏱️ عداد زمني تفاعلي مع تأثيرات بصرية',
+        '🎖️ تحديات سرعة إضافية للمحترفين'
+      ],
+      rewards: ['نقاط السرعة المضاعفة', 'شارات البرق', 'لوحة شرف السرعة']
+    },
+    {
+      id: 'lightning',
+      title: 'عاصفة البرق',
+      subtitle: '30 ثانية لكل خطأ',
+      description: 'التحدي الأقصى! سرعة خاطفة ونقاط مضاعفة لأبطال التعلم السريع',
+      icon: <Bolt className="w-8 h-8" />,
+      secondaryIcon: <Flame className="w-4 h-4" />,
+      color: 'from-purple-500 via-violet-500 to-indigo-500',
+      bgGradient: 'from-purple-50 via-violet-50 to-indigo-50',
+      darkBgGradient: 'from-purple-900/20 via-violet-900/20 to-indigo-900/20',
+      borderColor: 'border-purple-300 hover:border-violet-400',
+      glowColor: 'shadow-purple-500/25',
+      difficulty: 'خبير',
+      difficultyColor: 'bg-purple-100 text-purple-800',
+      features: [
+        '⚡ 30 ثانية فقط لكل سؤال',
+        '🚀 مضاعف نقاط فائق (x2.5)',
+        '💥 تأثيرات بصرية مذهلة ومؤثرات صوتية',
+        '👑 حصرياً للمتفوقين والطامحين'
+      ],
+      rewards: ['نقاط البرق الذهبية', 'تاج السرعة', 'مكانة الأسطورة']
+    },
+    {
+      id: 'mastery',
+      title: 'طريق الإتقان',
+      subtitle: 'لا أخطاء مسموحة',
+      description: 'تحدي الكمال المطلق! لا تخطئ أبداً واحصل على جوائز استثنائية',
+      icon: <Crown className="w-8 h-8" />,
+      secondaryIcon: <Diamond className="w-4 h-4" />,
+      color: 'from-yellow-500 via-amber-500 to-orange-500',
+      bgGradient: 'from-yellow-50 via-amber-50 to-orange-50',
+      darkBgGradient: 'from-yellow-900/20 via-amber-900/20 to-orange-900/20',
+      borderColor: 'border-yellow-300 hover:border-amber-400',
+      glowColor: 'shadow-yellow-500/25',
+      difficulty: 'أسطوري',
+      difficultyColor: 'bg-gradient-to-r from-yellow-400 to-orange-400 text-white',
+      features: [
+        '👑 يجب الإجابة الصحيحة من المحاولة الأولى',
+        '💎 مضاعف الإتقان الأسطوري (x3.0)',
+        '🏆 شارات نادرة وحصرية للمتفوقين',
+        '🎖️ مكانة خاصة في قاعة المجد'
+      ],
+      rewards: ['نقاط الإتقان الماسية', 'تاج الكمال', 'لقب الأسطورة']
+    },
+    {
+      id: 'survival',
+      title: 'معركة البقاء',
+      subtitle: 'ثلاث محاولات فقط',
+      description: 'اختبار الأعصاب الحقيقي! لديك ثلاث محاولات فقط لتصحيح جميع أخطائك',
+      icon: <Shield className="w-8 h-8" />,
+      secondaryIcon: <Heart className="w-4 h-4" />,
+      color: 'from-emerald-500 via-green-500 to-teal-500',
+      bgGradient: 'from-emerald-50 via-green-50 to-teal-50',
+      darkBgGradient: 'from-emerald-900/20 via-green-900/20 to-teal-900/20',
+      borderColor: 'border-emerald-300 hover:border-green-400',
+      glowColor: 'shadow-emerald-500/25',
+      difficulty: 'تحدي',
+      difficultyColor: 'bg-red-100 text-red-800',
+      features: [
+        '💚 ثلاث حيوات فقط لكامل التحدي',
+        '⚔️ تتناقص النقاط مع كل خطأ إضافي',
+        '🛡️ استراتيجية ضرورية للنجاح',
+        '🏅 جوائز خاصة للناجين'
+      ],
+      rewards: ['نقاط البقاء', 'شارة المحارب', 'لقب الناجي']
     }
   ];
 
-  const handleModeSelect = (mode: 'timed' | 'untimed') => {
+  const handleModeSelect = (mode: 'timed' | 'untimed' | 'lightning' | 'mastery' | 'survival') => {
     setSelectedMode(mode);
     setTimeout(() => {
-      onSelectMode(mode === 'timed');
+      // For now, map all new modes to appropriate timing behavior
+      const isTimed = ['timed', 'lightning', 'mastery', 'survival'].includes(mode);
+      onSelectMode(isTimed);
       onClose();
       setSelectedMode(null);
     }, 300);
@@ -96,38 +203,63 @@ const MistakeChallengeModal: React.FC<MistakeChallengeModalProps> = ({
             <div className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-white/20 mb-4">
               <Target className="w-10 h-10" />
             </div>
-            <h2 className="text-3xl font-bold mb-2">تحدي مراجعة الأخطاء</h2>
-            <p className="text-white/90 text-lg">
-              اختر طريقتك المفضلة لمراجعة الأخطاء والتعلم منها
+            <h2 className="text-3xl font-bold mb-2">🎯 تحدي مراجعة الأخطاء الإبداعي</h2>
+            <p className="text-white/90 text-lg mb-4">
+              اختر من 5 أنماط تحدي مبتكرة ومثيرة لمراجعة أخطائك والتعلم منها
             </p>
+            <motion.div
+              animate={{ 
+                scale: [1, 1.1, 1],
+                rotate: [0, 5, -5, 0]
+              }}
+              transition={{ 
+                duration: 2,
+                repeat: Infinity,
+                repeatType: "reverse"
+              }}
+              className="inline-flex items-center gap-2 bg-white/20 px-4 py-2 rounded-full text-sm"
+            >
+              <Sparkles className="w-4 h-4" />
+              <span>تجربة تعلم تفاعلية وممتعة</span>
+            </motion.div>
           </motion.div>
         </div>
 
         {/* Content */}
         <div className="p-8">
-          <div className="grid md:grid-cols-2 gap-6">
+          <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
             {challengeModes.map((mode, index) => (
               <motion.div
                 key={mode.id}
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: index * 0.1 }}
-                className={`relative group cursor-pointer rounded-2xl border-2 transition-all duration-300 ${mode.borderColor} ${mode.bgColor} dark:bg-slate-800/50 dark:border-slate-600 dark:hover:border-slate-500`}
-                onClick={() => handleModeSelect(mode.id as 'timed' | 'untimed')}
+                className={`relative group cursor-pointer rounded-2xl border-2 transition-all duration-300 ${mode.borderColor} bg-gradient-to-br ${mode.bgGradient} dark:bg-gradient-to-br dark:${mode.darkBgGradient} hover:shadow-xl hover:${mode.glowColor} hover:scale-[1.02]`}
+                onClick={() => handleModeSelect(mode.id as 'timed' | 'untimed' | 'lightning' | 'mastery' | 'survival')}
+                onMouseEnter={() => setHoveredMode(mode.id)}
+                onMouseLeave={() => setHoveredMode(null)}
               >
                 <div className="p-6">
                   {/* Icon and Title */}
                   <div className="flex items-center gap-4 mb-4">
-                    <div className={`flex items-center justify-center w-16 h-16 rounded-2xl bg-gradient-to-br ${mode.color} text-white shadow-lg group-hover:scale-110 transition-transform`}>
+                    <div className={`relative flex items-center justify-center w-16 h-16 rounded-2xl bg-gradient-to-br ${mode.color} text-white shadow-lg group-hover:scale-110 transition-transform`}>
                       {mode.icon}
+                      <div className={`absolute -top-1 -right-1 w-6 h-6 rounded-full bg-gradient-to-br ${mode.color} flex items-center justify-center shadow-md`}>
+                        {mode.secondaryIcon}
+                      </div>
                     </div>
-                    <div>
-                      <h3 className="text-xl font-bold text-gray-800 dark:text-white mb-1">
-                        {mode.title}
-                      </h3>
-                      <Badge variant="outline" className="text-sm">
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2 mb-1">
+                        <h3 className="text-xl font-bold text-gray-800 dark:text-white">
+                          {mode.title}
+                        </h3>
+                        <Badge className={`text-xs px-2 py-1 ${mode.difficultyColor}`}>
+                          {mode.difficulty}
+                        </Badge>
+                      </div>
+                      <p className="text-sm text-gray-600 dark:text-gray-400">
                         {mode.subtitle}
-                      </Badge>
+                      </p>
                     </div>
                   </div>
 
@@ -137,15 +269,36 @@ const MistakeChallengeModal: React.FC<MistakeChallengeModalProps> = ({
                   </p>
 
                   {/* Features */}
-                  <div className="space-y-3 mb-6">
+                  <div className="space-y-3 mb-4">
                     {mode.features.map((feature, idx) => (
-                      <div key={idx} className="flex items-center gap-3">
-                        <div className={`w-2 h-2 rounded-full bg-gradient-to-r ${mode.color}`}></div>
-                        <span className="text-sm text-gray-700 dark:text-gray-300">
+                      <motion.div 
+                        key={idx} 
+                        initial={{ opacity: 0, x: -10 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        transition={{ delay: 0.1 * idx }}
+                        className="flex items-start gap-3"
+                      >
+                        <div className={`w-2 h-2 rounded-full bg-gradient-to-r ${mode.color} mt-2 flex-shrink-0`}></div>
+                        <span className="text-sm text-gray-700 dark:text-gray-300 leading-relaxed">
                           {feature}
                         </span>
-                      </div>
+                      </motion.div>
                     ))}
+                  </div>
+
+                  {/* Rewards Section */}
+                  <div className="mb-6 p-3 bg-white/50 dark:bg-slate-700/30 rounded-lg border border-gray-200/50 dark:border-slate-600/50">
+                    <div className="flex items-center gap-2 mb-2">
+                      <Award className="w-4 h-4 text-yellow-600 dark:text-yellow-400" />
+                      <span className="text-sm font-medium text-gray-700 dark:text-gray-300">المكافآت والجوائز</span>
+                    </div>
+                    <div className="flex flex-wrap gap-1">
+                      {mode.rewards.map((reward, idx) => (
+                        <Badge key={idx} variant="secondary" className="text-xs bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300">
+                          {reward}
+                        </Badge>
+                      ))}
+                    </div>
                   </div>
 
                   {/* Select Button */}
