@@ -30,7 +30,7 @@ async function testMailjetConnection() {
 export async function registerRoutes(app: Express): Promise<Server> {
   // Test Mailjet connection on startup
   await testMailjetConnection();
-  
+
   // Add CORS headers for API routes first
   app.use('/api', (req, res, next) => {
     res.header('Access-Control-Allow-Origin', '*');
@@ -46,11 +46,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Initialize passport
   app.use(passport.initialize());
   app.use(passport.session());
-  
+
   passport.serializeUser((user: any, done) => {
     done(null, user);
   });
-  
+
   passport.deserializeUser((user: any, done) => {
     done(null, user);
   });
@@ -68,7 +68,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Create or update user
       const email = profile.emails?.[0]?.value;
       const name = profile.displayName;
-      
+
       if (!email) {
         return done(new Error('No email found'));
       }
@@ -105,7 +105,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Clear existing questions first
       await storage.clearAllQuestions();
       console.log("Cleared existing questions");
-      
+
       const questionsPath = path.resolve(
         process.cwd(),
         "attached_assets/questions_comprehensive.json"
@@ -171,9 +171,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Get questions by category and difficulty
   app.get("/api/questions", async (req: Request, res: Response) => {
     try {
-      const { category, difficulty } = req.query;
+      const { category, difficulty, subcategory } = req.query;
 
-      if (category && difficulty) {
+      if (category && difficulty && subcategory) {
+        const questions = await storage.getQuestionsByCategoryAndDifficultyAndSubCategory(
+          category as string,
+          difficulty as string,
+          subcategory as string
+        );
+        return res.json(questions);
+      }
+      else if (category && difficulty) {
         const questions = await storage.getQuestionsByCategoryAndDifficulty(
           category as string,
           difficulty as string
@@ -182,7 +190,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
       } else if (category) {
         const questions = await storage.getQuestionsByCategory(category as string);
         return res.json(questions);
-      } else {
+      } else if (subcategory){
+          const questions = await storage.getQuestionsBySubCategory(subcategory as string);
+          return res.json(questions);
+      }
+      
+      else {
         const questions = await storage.getAllQuestions();
         return res.json(questions);
       }
@@ -254,13 +267,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "Missing required fields" });
       }
 
+      const roundedScore = Math.round(score); // تقريب النسبة المئوية
       const result = await storage.createTestResult({
         userId,
         testType,
         difficulty,
-        score,
+        score: roundedScore,
         totalQuestions,
-        pointsEarned: Math.round(score * 10)
+        pointsEarned: Math.round(roundedScore * 10)
       });
 
       return res.status(201).json(result);
@@ -326,7 +340,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         // التحقق من انتهاء الاشتراك للباقات العادية
         if (user.subscription.type !== 'Pro Life' && user.subscription.type !== 'Pro Live' && user.subscription.endDate) {
           const endDate = new Date(user.subscription.endDate);
-          
+
           if (endDate < today) {
             // تحويل الاشتراك المنتهي إلى مجاني
             user.subscription.type = "free";
@@ -488,7 +502,7 @@ app.post("/api/auth/register", async (req: Request, res: Response) => {
 
       const user = users[userIndex];
       user.points = (user.points || 0) + points;
-      
+
       // Update level based on points
       if (user.points >= 10000) user.level = 5;
       else if (user.points >= 6000) user.level = 4;
@@ -640,7 +654,7 @@ app.post("/api/auth/register", async (req: Request, res: Response) => {
   app.get("/app/qudratak-app.apk", async (req: Request, res: Response) => {
     try {
       const apkPath = path.resolve(process.cwd(), "public/app/qudratak-app.apk");
-      
+
       if (!fs.existsSync(apkPath)) {
         // إنشاء ملف APK إذا لم يكن موجوداً
         const { exec } = require('child_process');
@@ -649,7 +663,7 @@ app.post("/api/auth/register", async (req: Request, res: Response) => {
             console.error('Error creating APK:', error);
           }
         });
-        
+
         return res.status(404).json({ message: "APK file not found. Please try again in a moment." });
       }
 
@@ -657,11 +671,11 @@ app.post("/api/auth/register", async (req: Request, res: Response) => {
       res.setHeader('Content-Type', 'application/vnd.android.package-archive');
       res.setHeader('Content-Disposition', 'attachment; filename="qudratak-app-v2.1.0.apk"');
       res.setHeader('Cache-Control', 'no-cache');
-      
+
       // إرسال الملف
       const fileStream = fs.createReadStream(apkPath);
       fileStream.pipe(res);
-      
+
     } catch (error) {
       console.error("Error serving APK file:", error);
       res.status(500).json({ message: "Error downloading APK file" });
@@ -827,13 +841,13 @@ app.post("/api/auth/register", async (req: Request, res: Response) => {
     <title>رمز التحقق - قدراتك</title>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;600;700&display=swap');
-        
+
         * {
             margin: 0;
             padding: 0;
             box-sizing: border-box;
         }
-        
+
         body {
             font-family: 'Cairo', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             line-height: 1.6;
@@ -842,7 +856,7 @@ app.post("/api/auth/register", async (req: Request, res: Response) => {
             min-height: 100vh;
             padding: 20px;
         }
-        
+
         .email-container {
             max-width: 600px;
             margin: 0 auto;
@@ -852,7 +866,7 @@ app.post("/api/auth/register", async (req: Request, res: Response) => {
             box-shadow: 0 20px 60px rgba(0,0,0,0.1);
             position: relative;
         }
-        
+
         .header {
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             color: white;
@@ -861,7 +875,7 @@ app.post("/api/auth/register", async (req: Request, res: Response) => {
             position: relative;
             overflow: hidden;
         }
-        
+
         .logo {
             font-size: 2.5em;
             font-weight: 700;
@@ -869,33 +883,33 @@ app.post("/api/auth/register", async (req: Request, res: Response) => {
             position: relative;
             z-index: 2;
         }
-        
+
         .header-subtitle {
             font-size: 1.1em;
             opacity: 0.9;
             position: relative;
             z-index: 2;
         }
-        
+
         .content {
             padding: 40px 30px;
             text-align: center;
         }
-        
+
         .welcome-text {
             font-size: 1.3em;
             color: #333;
             margin-bottom: 20px;
             font-weight: 600;
         }
-        
+
         .description {
             color: #666;
             margin-bottom: 30px;
             font-size: 1.1em;
             line-height: 1.8;
         }
-        
+
         .otp-container {
             background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
             border-radius: 15px;
@@ -904,7 +918,7 @@ app.post("/api/auth/register", async (req: Request, res: Response) => {
             position: relative;
             overflow: hidden;
         }
-        
+
         .otp-label {
             color: white;
             font-size: 1.2em;
@@ -913,7 +927,7 @@ app.post("/api/auth/register", async (req: Request, res: Response) => {
             position: relative;
             z-index: 2;
         }
-        
+
         .otp-code {
             background: white;
             color: #333;
@@ -929,7 +943,7 @@ app.post("/api/auth/register", async (req: Request, res: Response) => {
             z-index: 2;
             border: 3px solid #f093fb;
         }
-        
+
         .timer-info {
             background: #fff3cd;
             border: 2px solid #ffeaa7;
@@ -938,7 +952,7 @@ app.post("/api/auth/register", async (req: Request, res: Response) => {
             margin: 20px 0;
             color: #856404;
         }
-        
+
         .security-note {
             background: #d1ecf1;
             border: 2px solid #bee5eb;
@@ -947,40 +961,40 @@ app.post("/api/auth/register", async (req: Request, res: Response) => {
             margin: 20px 0;
             color: #0c5460;
         }
-        
+
         .footer {
             background: #f8f9fa;
             padding: 30px;
             text-align: center;
             border-top: 3px solid #e9ecef;
         }
-        
+
         .footer-logo {
             font-size: 1.5em;
             font-weight: 600;
             color: #667eea;
             margin-bottom: 10px;
         }
-        
+
         .footer-text {
             color: #6c757d;
             font-size: 0.9em;
         }
-        
+
         @media (max-width: 600px) {
             .email-container {
                 margin: 10px;
                 border-radius: 15px;
             }
-            
+
             .header {
                 padding: 30px 20px;
             }
-            
+
             .content {
                 padding: 30px 20px;
             }
-            
+
             .otp-code {
                 font-size: 2.5em;
                 letter-spacing: 4px;
@@ -995,29 +1009,29 @@ app.post("/api/auth/register", async (req: Request, res: Response) => {
             <div class="logo">قـدراتـك</div>
             <div class="header-subtitle">منصة التدريب على اختبار القياس</div>
         </div>
-        
+
         <div class="content">
             <div class="welcome-text">مرحباً بك! 👋</div>
-            
+
             <div class="description">
                 لإكمال عملية التحقق من حسابك، يرجى استخدام الرمز التالي:
             </div>
-            
+
             <div class="otp-container">
                 <div class="otp-label">رمز التحقق الخاص بك</div>
                 <div class="otp-code">${otp}</div>
             </div>
-            
+
             <div class="timer-info">
                 <strong>مهم:</strong> هذا الرمز صالح لمدة 3 دقائق فقط
             </div>
-            
+
             <div class="security-note">
                 <strong>ملاحظة أمنية:</strong><br>
                 لا تشارك هذا الرمز مع أي شخص آخر لحماية حسابك
             </div>
         </div>
-        
+
         <div class="footer">
             <div class="footer-logo">قدراتك</div>
             <div class="footer-text">
@@ -1057,10 +1071,10 @@ app.post("/api/auth/register", async (req: Request, res: Response) => {
       // Check if email was actually sent successfully
       const message = result.body.Messages[0];
       const recipientInfo = message.To[0];
-      
+
       console.log('Email Status:', message.Status);
       console.log('Recipient Status:', recipientInfo.MessageUUID, recipientInfo.MessageID);
-      
+
       if (message.Status === 'success') {
         res.json({ 
           success: true, 
@@ -1078,6 +1092,81 @@ app.post("/api/auth/register", async (req: Request, res: Response) => {
         error: "فشل في إرسال البريد الإلكتروني", 
         details: error.message || error.ErrorMessage || "خطأ غير معروف"
       });
+    }
+  });
+
+  // New route to handle question upload for subcategories
+  app.post("/api/upload-questions/:subcategory", async (req: Request, res: Response) => {
+    try {
+      const { subcategory } = req.params;
+
+      // Check if subcategory is provided
+      if (!subcategory) {
+        return res.status(400).json({ message: "Subcategory is required" });
+      }
+
+      // Check if files are uploaded
+      if (!req.files || Object.keys(req.files).length === 0) {
+        return res.status(400).json({ message: "No files were uploaded." });
+      }
+
+      // Assuming only one file is uploaded with key 'questionsFile'
+      const questionsFile = req.files.questionsFile as any;
+
+      if (!questionsFile) {
+        return res.status(400).json({ message: "No questionsFile found in the uploaded files." });
+      }
+
+      // Move the file to a specific location (e.g., attached_assets directory)
+      const uploadPath = path.join(process.cwd(), "attached_assets", `${subcategory}_questions.json`);
+
+      questionsFile.mv(uploadPath, async (err: any) => {
+        if (err) {
+          console.error("Error moving the uploaded file:", err);
+          return res.status(500).json({ message: "Error uploading the file" });
+        }
+
+        // File is uploaded successfully
+        console.log(`File uploaded successfully to ${uploadPath}`);
+
+        // Optionally, process the JSON file here (e.g., read and seed questions)
+        try {
+          const fileContent = fs.readFileSync(uploadPath, "utf-8");
+          const questionsData = JSON.parse(fileContent);
+
+          if (Array.isArray(questionsData)) {
+            for (const question of questionsData) {
+              try {
+                const questionData = {
+                  category: question.category || "verbal", // Default category
+                  subcategory: subcategory,
+                  text: question.text,
+                  options: question.options,
+                  correctOptionIndex: question.correctOptionIndex,
+                  explanation: question.explanation || "",
+                  difficulty: question.difficulty || "beginner" // Default difficulty
+                };
+
+                await storage.createQuestion(questionData);
+              } catch (error) {
+                console.error("Error seeding question:", error);
+              }
+            }
+          } else {
+            console.warn("Uploaded file does not contain an array of questions.");
+            return res.status(400).json({ message: "Uploaded file should contain an array of questions." });
+          }
+
+          return res.status(200).json({ message: "Questions uploaded and seeded successfully" });
+        } catch (error) {
+          console.error("Error processing the uploaded JSON file:", error);
+          return res.status(500).json({ message: "Error processing the uploaded JSON file" });
+        }
+      });
+
+    } catch (error) {
+      console.error("Error uploading questions:", error);
+      return res.status(500).json({ message: "Error uploading questions" });
     }
   });
 

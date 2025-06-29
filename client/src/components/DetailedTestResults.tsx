@@ -21,7 +21,8 @@ import {
   BarChart3,
   Sparkles,
   Crown,
-  Gem
+  Gem,
+  Download
 } from "lucide-react";
 import { DetailedExamResult, SubcategoryResult } from "@/../../shared/examUtils";
 
@@ -38,6 +39,31 @@ export function DetailedTestResults({ results, examType, onClose }: DetailedTest
     return `${minutes}:${secs.toString().padStart(2, '0')}`;
   };
 
+  const roundPercentage = (percentage: number) => {
+    return Math.round(percentage);
+  };
+
+  const downloadSubcategoryQuestions = async (subcategory: string) => {
+    try {
+      const response = await fetch(`/api/questions?subcategory=${encodeURIComponent(subcategory)}`);
+      const questions = await response.json();
+      
+      const dataStr = JSON.stringify(questions, null, 2);
+      const blob = new Blob([dataStr], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `اسئلة_${subcategory.replace(/\s+/g, '_')}.json`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+    } catch (error) {
+      console.error('فشل في تحميل الأسئلة:', error);
+    }
+  };
+
   const getGradeColor = (percentage: number) => {
     if (percentage >= 90) return "from-emerald-500 via-green-400 to-teal-400";
     if (percentage >= 80) return "from-blue-500 via-cyan-400 to-indigo-400";
@@ -52,120 +78,135 @@ export function DetailedTestResults({ results, examType, onClose }: DetailedTest
     return "bg-gradient-to-br from-red-50 via-pink-50 to-rose-50 dark:from-red-950/20 dark:via-pink-950/20 dark:to-rose-950/20";
   };
 
-  const SubcategoryCard = ({ result, icon }: { result: SubcategoryResult; icon: React.ReactNode }) => (
-    <motion.div
-      initial={{ opacity: 0, y: 30, scale: 0.9 }}
-      animate={{ opacity: 1, y: 0, scale: 1 }}
-      whileHover={{ 
-        scale: 1.02, 
-        y: -5,
-        transition: { duration: 0.2 }
-      }}
-      className={`${getGradientBackground(result.percentage)} relative overflow-hidden backdrop-blur-xl rounded-2xl p-6 border border-white/20 shadow-xl hover:shadow-2xl transition-all duration-300`}
-    >
-      {/* Floating particles effect */}
-      <div className="absolute inset-0 overflow-hidden">
-        {[...Array(5)].map((_, i) => (
-          <motion.div
-            key={i}
-            className="absolute w-1 h-1 bg-white/30 rounded-full"
-            animate={{
-              x: [0, Math.random() * 100, 0],
-              y: [0, Math.random() * 100, 0],
-              opacity: [0.3, 0.8, 0.3],
-            }}
-            transition={{
-              duration: 3 + Math.random() * 2,
-              repeat: Infinity,
-              ease: "easeInOut",
-            }}
-            style={{
-              left: `${Math.random() * 100}%`,
-              top: `${Math.random() * 100}%`,
-            }}
-          />
-        ))}
-      </div>
+  const SubcategoryCard = ({ result, icon }: { result: SubcategoryResult; icon: React.ReactNode }) => {
+    const roundedPercentage = roundPercentage(result.percentage);
+    
+    return (
+      <motion.div
+        initial={{ opacity: 0, y: 30, scale: 0.9 }}
+        animate={{ opacity: 1, y: 0, scale: 1 }}
+        whileHover={{ 
+          scale: 1.02, 
+          y: -5,
+          transition: { duration: 0.2 }
+        }}
+        className={`${getGradientBackground(result.percentage)} relative overflow-hidden backdrop-blur-xl rounded-2xl p-6 border border-white/20 shadow-xl hover:shadow-2xl transition-all duration-300`}
+      >
+        {/* زر التحميل الفاخر */}
+        <motion.button
+          onClick={() => downloadSubcategoryQuestions(result.subcategory)}
+          className="absolute top-4 left-4 w-10 h-10 rounded-full bg-white/20 hover:bg-white/30 flex items-center justify-center transition-all duration-300 backdrop-blur-sm z-20"
+          whileHover={{ scale: 1.1, rotate: 180 }}
+          whileTap={{ scale: 0.9 }}
+          title={`تحميل أسئلة ${result.subcategory}`}
+        >
+          <Download className="w-4 h-4 text-white" />
+        </motion.button>
 
-      <div className="relative z-10">
-        <div className="flex items-center justify-between mb-4">
-          <div className="flex items-center gap-4">
-            <motion.div 
-              className={`w-14 h-14 rounded-2xl bg-gradient-to-br ${getGradeColor(result.percentage)} flex items-center justify-center text-white shadow-2xl`}
-              whileHover={{ rotate: 360 }}
-              transition={{ duration: 0.6 }}
-            >
-              <div className="relative">
-                {icon}
-                <motion.div
-                  className="absolute -top-1 -right-1 w-2 h-2 bg-yellow-400 rounded-full"
-                  animate={{ scale: [1, 1.3, 1] }}
-                  transition={{ duration: 2, repeat: Infinity }}
-                />
-              </div>
-            </motion.div>
-            <div>
-              <h4 className="font-bold text-gray-800 dark:text-white text-lg mb-1">
-                {result.subcategory}
-              </h4>
-              <Badge className={`text-sm font-semibold px-3 py-1 ${
-                result.percentage >= 90 ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 border-emerald-300' :
-                result.percentage >= 80 ? 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 border-blue-300' :
-                result.percentage >= 70 ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 border-yellow-300' :
-                'bg-red-100 text-red-800 dark:bg-red-900/30 border-red-300'
-              }`}>
-                {result.level}
-              </Badge>
-            </div>
-          </div>
-          <div className="text-right">
-            <motion.div 
-              className="text-2xl font-bold text-gray-800 dark:text-white mb-1"
-              initial={{ scale: 0 }}
-              animate={{ scale: 1 }}
-              transition={{ delay: 0.3, type: "spring" }}
-            >
-              {result.correct}/{result.total}
-            </motion.div>
-            <div className="text-lg text-gray-600 dark:text-gray-300 font-semibold">
-              {result.percentage}%
-            </div>
-          </div>
-        </div>
-        
-        <div className="space-y-3">
-          <div className="relative">
-            <Progress 
-              value={result.percentage} 
-              className="h-3 bg-white/50"
-            />
+        {/* Floating particles effect */}
+        <div className="absolute inset-0 overflow-hidden">
+          {[...Array(5)].map((_, i) => (
             <motion.div
-              className="absolute top-0 left-0 h-3 rounded-full bg-gradient-to-r from-purple-400 to-pink-400 opacity-50"
-              initial={{ width: 0 }}
-              animate={{ width: `${result.percentage}%` }}
-              transition={{ duration: 1.5, ease: "easeOut" }}
+              key={i}
+              className="absolute w-1 h-1 bg-white/30 rounded-full"
+              animate={{
+                x: [0, Math.random() * 100, 0],
+                y: [0, Math.random() * 100, 0],
+                opacity: [0.3, 0.8, 0.3],
+              }}
+              transition={{
+                duration: 3 + Math.random() * 2,
+                repeat: Infinity,
+                ease: "easeInOut",
+              }}
+              style={{
+                left: `${Math.random() * 100}%`,
+                top: `${Math.random() * 100}%`,
+              }}
             />
+          ))}
+        </div>
+
+        <div className="relative z-10">
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center gap-4">
+              <motion.div 
+                className={`w-14 h-14 rounded-2xl bg-gradient-to-br ${getGradeColor(result.percentage)} flex items-center justify-center text-white shadow-2xl`}
+                whileHover={{ rotate: 360 }}
+                transition={{ duration: 0.6 }}
+              >
+                <div className="relative">
+                  {icon}
+                  <motion.div
+                    className="absolute -top-1 -right-1 w-2 h-2 bg-yellow-400 rounded-full"
+                    animate={{ scale: [1, 1.3, 1] }}
+                    transition={{ duration: 2, repeat: Infinity }}
+                  />
+                </div>
+              </motion.div>
+              <div>
+                <h4 className="font-bold text-gray-800 dark:text-white text-lg mb-1">
+                  {result.subcategory}
+                </h4>
+                <Badge className={`text-sm font-semibold px-3 py-1 ${
+                  result.percentage >= 90 ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 border-emerald-300' :
+                  result.percentage >= 80 ? 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 border-blue-300' :
+                  result.percentage >= 70 ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 border-yellow-300' :
+                  'bg-red-100 text-red-800 dark:bg-red-900/30 border-red-300'
+                }`}>
+                  {result.level}
+                </Badge>
+              </div>
+            </div>
+            <div className="text-right">
+              <motion.div 
+                className="text-2xl font-bold text-gray-800 dark:text-white mb-1"
+                initial={{ scale: 0 }}
+                animate={{ scale: 1 }}
+                transition={{ delay: 0.3, type: "spring" }}
+              >
+                {result.correct}/{result.total}
+              </motion.div>
+              <div className="text-lg text-gray-600 dark:text-gray-300 font-semibold">
+                {roundedPercentage}%
+              </div>
+            </div>
           </div>
-          <div className="flex justify-between text-sm">
-            <motion.span 
-              className="flex items-center gap-2 text-green-600 dark:text-green-400 font-medium"
-              whileHover={{ scale: 1.05 }}
-            >
-              <CheckCircle2 className="w-4 h-4" />
-              {result.correct} صحيح
-            </motion.span>
-            <motion.span 
-              className="flex items-center gap-2 text-red-600 dark:text-red-400 font-medium"
-              whileHover={{ scale: 1.05 }}
-            >
-              <XCircle className="w-4 h-4" />
-              {result.total - result.correct} خطأ
-            </motion.span>
+          
+          <div className="space-y-3">
+            <div className="relative">
+              <Progress 
+                value={roundedPercentage} 
+                className="h-3 bg-white/50"
+              />
+              <motion.div
+                className="absolute top-0 left-0 h-3 rounded-full bg-gradient-to-r from-purple-400 to-pink-400 opacity-50"
+                initial={{ width: 0 }}
+                animate={{ width: `${roundedPercentage}%` }}
+                transition={{ duration: 1.5, ease: "easeOut" }}
+              />
+            </div>
+            <div className="flex justify-between text-sm">
+              <motion.span 
+                className="flex items-center gap-2 text-green-600 dark:text-green-400 font-medium"
+                whileHover={{ scale: 1.05 }}
+              >
+                <CheckCircle2 className="w-4 h-4" />
+                {result.correct} صحيح
+              </motion.span>
+              <motion.span 
+                className="flex items-center gap-2 text-red-600 dark:text-red-400 font-medium"
+                whileHover={{ scale: 1.05 }}
+              >
+                <XCircle className="w-4 h-4" />
+                {result.total - result.correct} خطأ
+              </motion.span>
+            </div>
           </div>
         </div>
-      </div>
-    </motion.div>
-  );
+      </motion.div>
+    );
+  };
 
   return (
     <div className="fixed inset-0 z-50 overflow-hidden">
@@ -312,7 +353,7 @@ export function DetailedTestResults({ results, examType, onClose }: DetailedTest
                   <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
                     {[
                       { value: `${results.totalScore}/${results.totalQuestions}`, label: "إجمالي النقاط", icon: Target, color: "text-gray-800 dark:text-white" },
-                      { value: `${results.overallPercentage}%`, label: "النسبة المئوية", icon: BarChart3, color: "text-blue-600 dark:text-blue-400" },
+                      { value: `${roundPercentage(results.overallPercentage)}%`, label: "النسبة المئوية", icon: BarChart3, color: "text-blue-600 dark:text-blue-400" },
                       { value: results.level, label: "المستوى", icon: Crown, color: "text-green-600 dark:text-green-400" },
                       { value: formatTime(results.timeTaken), label: "الوقت المستغرق", icon: Clock, color: "text-purple-600 dark:text-purple-400" }
                     ].map((item, index) => (
@@ -347,7 +388,7 @@ export function DetailedTestResults({ results, examType, onClose }: DetailedTest
                       className="origin-left"
                     >
                       <Progress 
-                        value={results.overallPercentage} 
+                        value={roundPercentage(results.overallPercentage)} 
                         className="h-6 bg-gradient-to-r from-gray-200 to-gray-300"
                       />
                     </motion.div>
