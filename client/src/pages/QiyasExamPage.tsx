@@ -1317,10 +1317,27 @@ const QiyasExamPage: React.FC = () => {
 
         <Card className="mb-6 shadow-xl dark:bg-slate-800">
           <CardHeader className="p-5 md:p-6">
+            <div className="flex items-start justify-between mb-3">
+              <div className="flex flex-wrap gap-2">
+                {currentQuestionData.subcategory && (
+                  <Badge variant="secondary" className="text-xs bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300">
+                    {currentQuestionData.subcategory}
+                  </Badge>
+                )}
+                {currentQuestionData.category && (
+                  <Badge variant="outline" className="text-xs">
+                    {currentQuestionData.category === "verbal" ? "لفظي" : 
+                     currentQuestionData.category === "quantitative" ? "كمي" : "مختلط"}
+                  </Badge>
+                )}
+              </div>
+              <Badge variant="outline" className="text-xs shrink-0">
+                سؤال {currentQuestionIdx + 1} من {questions.length}
+              </Badge>
+            </div>
             <CardTitle className="text-lg md:text-xl text-gray-800 dark:text-white leading-relaxed font-semibold" dir="auto">
               {currentQuestionData.text}
             </CardTitle>
-            {/* Removed the non-scored badge as per request */}
           </CardHeader>
         </Card>
 
