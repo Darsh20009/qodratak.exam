@@ -85,7 +85,7 @@ export function VerbalTests() {
     {
       id: 'comprehension-test',
       name: 'اختبار الاستيعاب المقروء',
-      subcategory: 'الاستيعاب المقروء',
+      subcategory: 'استيعاب المقروء',
       description: 'اختبار شامل لقياس قدرتك على فهم النصوص المكتوبة وتحليلها',
       questionCount: 50,
       timeLimit: 45,
@@ -96,9 +96,9 @@ export function VerbalTests() {
       gradientTo: 'to-pink-50'
     },
     {
-      id: 'errors-test',
+      id: 'context-error-test',
       name: 'اختبار الخطأ السياقي',
-      subcategory: 'الأخطاء الشائعة',
+      subcategory: 'الخطأ السياقي',
       description: 'اختبار دقيق لقياس قدرتك على تحديد وتصحيح الأخطاء اللغوية',
       questionCount: 50,
       timeLimit: 40,
@@ -112,7 +112,7 @@ export function VerbalTests() {
 
   const checkDailyLimit = (testId: string): boolean => {
     if ((user as any)?.subscription !== 'free') return true;
-    
+
     const today = new Date().toDateString();
     return !userHistory.some(h => h.testId === testId && new Date(h.date).toDateString() === today);
   };
@@ -130,7 +130,7 @@ export function VerbalTests() {
     if (!checkDailyLimit(test.id)) {
       return;
     }
-    
+
     // Store test configuration
     const testConfig = {
       testId: test.id,
@@ -140,9 +140,9 @@ export function VerbalTests() {
       timeLimit: test.timeLimit,
       difficulty: test.difficulty
     };
-    
+
     localStorage.setItem('currentVerbalTest', JSON.stringify(testConfig));
-    
+
     // Navigate to test runner
     setLocation('/verbal-test-runner');
   };
@@ -226,7 +226,7 @@ export function VerbalTests() {
           {verbalTests.map((test, index) => {
             const canTakeTest = checkDailyLimit(test.id);
             const testHistory = userHistory.find(h => h.testId === test.id);
-            
+
             return (
               <motion.div
                 key={test.id}
@@ -239,7 +239,7 @@ export function VerbalTests() {
                 <Card className={`relative overflow-hidden bg-gradient-to-br ${test.gradientFrom} ${test.gradientTo} dark:from-gray-800 dark:to-gray-700 border-2 border-white/20 shadow-xl hover:shadow-2xl transition-all duration-300 backdrop-blur-sm h-full`}>
                   {/* تأثير الإضاءة */}
                   <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-transparent -skew-x-12 -translate-x-full group-hover:translate-x-full transition-transform duration-1000"></div>
-                  
+
                   {/* أيقونة الصعوبة */}
                   <div className="absolute top-4 left-4">
                     <Badge className={`${getDifficultyColor(test.difficulty)} text-xs font-semibold`}>
@@ -376,7 +376,7 @@ export function VerbalTests() {
                   </p>
                 </div>
               </div>
-              
+
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                 <div className="text-center">
                   <div className="w-12 h-12 bg-blue-100 dark:bg-blue-900/30 rounded-xl flex items-center justify-center mx-auto mb-3">
@@ -385,7 +385,7 @@ export function VerbalTests() {
                   <h4 className="font-semibold text-gray-800 dark:text-white mb-2">دقة عالية</h4>
                   <p className="text-sm text-gray-600 dark:text-gray-400">أسئلة مطابقة لامتحانات قياس الفعلية</p>
                 </div>
-                
+
                 <div className="text-center">
                   <div className="w-12 h-12 bg-green-100 dark:bg-green-900/30 rounded-xl flex items-center justify-center mx-auto mb-3">
                     <Brain className="w-6 h-6 text-green-600" />
@@ -393,7 +393,7 @@ export function VerbalTests() {
                   <h4 className="font-semibold text-gray-800 dark:text-white mb-2">تطوير مهارات</h4>
                   <p className="text-sm text-gray-600 dark:text-gray-400">تحسين مستمر لقدراتك اللفظية</p>
                 </div>
-                
+
                 <div className="text-center">
                   <div className="w-12 h-12 bg-purple-100 dark:bg-purple-900/30 rounded-xl flex items-center justify-center mx-auto mb-3">
                     <Award className="w-6 h-6 text-purple-600" />

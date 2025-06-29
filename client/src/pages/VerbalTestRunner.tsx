@@ -215,11 +215,11 @@ export function VerbalTestRunner() {
             transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
             className="w-16 h-16 border-4 border-blue-500 border-t-transparent rounded-full mx-auto mb-4"
           />
-          <p className="text-lg font-semibold text-gray-700 dark:text-gray-300">
-            {isLoading ? 'جاري تحميل الأسئلة...' : 
-             !allQuestions || allQuestions.length === 0 ? 'جاري تحميل قاعدة البيانات...' :
-             'لا توجد أسئلة متوفرة لهذا القسم حالياً'}
-          </p>
+          <p className="text-lg font-semibold text-gray-700 dark:text-gray-300 leading-relaxed">
+              {isLoading ? 'جاري تحميل الأسئلة...' : 
+               !allQuestions || allQuestions.length === 0 ? 'جاري تحميل قاعدة البيانات...' :
+               `لا توجد أسئلة متوفرة لقسم "${testConfig?.subcategory}" حالياً. يرجى اختيار قسم آخر أو المحاولة لاحقاً.`}
+            </p>
           {!isLoading && testConfig && (
             <div className="mt-4 text-center">
               <p className="text-sm text-gray-500 dark:text-gray-400 mb-3">
