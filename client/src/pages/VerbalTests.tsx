@@ -45,6 +45,12 @@ interface UserTestHistory {
   completedToday: boolean;
 }
 
+interface StatItem {
+  value: string;
+  label: string;
+  icon: React.ComponentType<{ className?: string }>;
+}
+
 export function VerbalTests() {
   const [, setLocation] = useLocation();
   const [selectedTest, setSelectedTest] = useState<VerbalTest | null>(null);
@@ -145,7 +151,7 @@ export function VerbalTests() {
     // Always allow premium users
     if ((user as any)?.subscription !== 'free') return true;
 
-    // For free users, check if they've taken this specific test today
+    // For free users, check if they've taken ANY verbal test today (limit 1 test per day total)
     const today = new Date().toDateString();
     const storedResults = localStorage.getItem('verbalTestResults');
 
@@ -153,9 +159,8 @@ export function VerbalTests() {
       try {
         const results = JSON.parse(storedResults);
         return !results.some((result: any) => {
-          const resultTestId = getTestIdFromSubcategory(result.subcategory);
           const resultDate = new Date(result.date).toDateString();
-          return resultTestId === testId && resultDate === today;
+          return resultDate === today;
         });
       } catch (error) {
         console.error('Error checking daily limit:', error);
@@ -179,7 +184,7 @@ export function VerbalTests() {
     // Check daily limit for free users
     if (!checkDailyLimit(test.id)) {
       // Show a message to the user
-      alert('لقد أكملت هذا الاختبار اليوم. يمكن للمستخدمين المجانيين أخذ اختبار واحد يومياً لكل قسم.');
+      alert('لقد أكملت اختبارك اليومي المجاني. يمكن للمستخدمين المجانيين أخذ اختبار واحد فقط يومياً من جميع اختبارات اللفظي.');
       return;
     }
 
@@ -263,12 +268,12 @@ export function VerbalTests() {
 
           {/* إحصائيات سريعة */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4 max-w-4xl mx-auto">
-            {[
+            {([
               { value: "250+", label: "سؤال لكل اختبار", icon: Target },
               { value: "5", label: "اختبارات متخصصة", icon: Trophy },
               { value: "قياس", label: "معايير حقيقية", icon: Star },
-              { value: "مجاني", label: "اختبار يومي", icon: Calendar }
-            ].map((stat, index) => (
+              { value: "1", label: "اختبار مجاني يومياً", icon: Calendar }
+            ] as StatItem[]).map((stat, index) => (
               <motion.div
                 key={index}
                 initial={{ opacity: 0, scale: 0 }}
@@ -296,18 +301,18 @@ export function VerbalTests() {
                   </div>
                   <div className="text-right">
                     <div className="text-2xl font-bold text-blue-600 dark:text-blue-400">
-                      {getTodayTestCount()}/4
+                      {getTodayTestCount()}/1
                     </div>
                     <div className="text-xs text-blue-500 dark:text-blue-400">
-                      متبقي {4 - getTodayTestCount()}
+                      متبقي {1 - getTodayTestCount()}
                     </div>
                   </div>
                 </div>
 
-                {getTodayTestCount() >= 4 && (
+                {getTodayTestCount() >= 1 && (
                   <div className="mt-3 p-2 bg-yellow-100 dark:bg-yellow-900/30 rounded-lg text-center">
                     <p className="text-sm text-yellow-700 dark:text-yellow-300 mb-2">
-                      لقد أكملت جميع الاختبارات المجانية لليوم
+                      لقد أكملت اختبارك المجاني لليوم
                     </p>
                     <Button
                       size="sm"
@@ -483,7 +488,7 @@ export function VerbalTests() {
                     {/* رسالة للمستخدمين المجانيين */}
                     {(user as any)?.subscription === 'free' && !canTakeTest && (
                       <p className="text-xs text-center text-gray-500 dark:text-gray-400 mt-2">
-                        يمكن للمستخدمين المجانيين أخذ اختبار واحد يومياً لكل قسم
+                        يمكن للمستخدمين المجانيين أخذ اختبار واحد فقط يومياً من جميع اختبارات اللفظي
                       </p>
                     )}
                   </CardContent>
