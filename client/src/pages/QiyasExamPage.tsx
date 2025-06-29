@@ -4,7 +4,7 @@ import { useToast } from "@/hooks/use-toast";
 import { 
   generateBalancedQuestionSet, 
   calculateDetailedResults, 
-  DetailedExamResult 
+  type DetailedExamResult 
 } from "@/../../shared/examUtils";
 import {
   Card,
@@ -101,6 +101,7 @@ interface ExamQuestion {
   options: string[];
   correctOptionIndex: number;
   category: TestType;
+  subcategory?: string;
   section: number;
   explanation?: string;
 }
@@ -108,6 +109,7 @@ interface ExamQuestion {
 interface ProcessedExamQuestion extends ExamQuestion {
   _isNonScored?: boolean;
   _globalIndex?: number;
+  subcategory?: string;
 }
 
 // Type for questions passed to challenge generator
@@ -686,8 +688,8 @@ const QiyasExamPage: React.FC = () => {
 
     // Calculate detailed results with subcategory breakdown
     const allQuestions = Object.values(allProcessedQuestionsBySection).flat();
-    const timeTaken = finalStats.timeTaken * 60; // Convert to seconds
-    const detailedExamResults = calculateDetailedResults(answers, allQuestions, timeTaken);
+    const timeTakenMinutes = finalStats.timeTaken;
+    const detailedExamResults = calculateDetailedResults(allQuestions, answers, timeTakenMinutes);
     setDetailedResults(detailedExamResults);
 
     const storedRecords = localStorage.getItem('examRecords') || '[]';
