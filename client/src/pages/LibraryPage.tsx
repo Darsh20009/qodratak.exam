@@ -44,7 +44,7 @@ const LibraryPage: React.FC = () => {
   const [search, setSearch] = useState<string>("");
   const [category, setCategory] = useState<string | null>(null);
   const [difficulty, setDifficulty] = useState<string | null>(null);
-  const [dialect, setDialect] = useState<string | null>(null);
+  const [subcategory, setSubcategory] = useState<string | null>(null);
   const [expandedQuestion, setExpandedQuestion] = useState<number | null>(null);
 
   // Get all questions
@@ -73,8 +73,8 @@ const LibraryPage: React.FC = () => {
       match = false;
     }
     
-    // Dialect filter
-    if (dialect && q.dialect !== dialect) {
+    // Subcategory filter
+    if (subcategory && q.subcategory !== subcategory) {
       match = false;
     }
     
@@ -148,20 +148,18 @@ const LibraryPage: React.FC = () => {
     }
   };
 
-  // Format dialect label
-  const formatDialect = (dialect?: string) => {
-    if (!dialect) return 'الفصحى';
-    
-    switch(dialect) {
-      case 'standard': return 'الفصحى';
-      case 'saudi': return 'السعودية';
-      case 'egyptian': return 'المصرية';
-      case 'gulf': return 'الخليجية';
-      case 'levantine': return 'الشامية';
-      case 'maghrebi': return 'المغاربية';
-      default: return dialect;
-    }
+  // Format subcategory label
+  const formatSubcategory = (subcategory?: string) => {
+    if (!subcategory) return 'عام';
+    return subcategory; // Arabic subcategories are already in Arabic
   };
+
+  // Get unique subcategories from questions
+  const uniqueSubcategories = React.useMemo(() => {
+    if (!questions) return [];
+    const subcats = questions.map(q => q.subcategory).filter((sub): sub is string => Boolean(sub));
+    return Array.from(new Set(subcats));
+  }, [questions]);
 
   return (
     <div className="container py-8">
@@ -253,20 +251,21 @@ const LibraryPage: React.FC = () => {
               </div>
 
               <div>
-                <label className="text-sm font-medium block mb-2">اللهجة</label>
+                <label className="text-sm font-medium block mb-2">القسم</label>
                 <Select
-                  value={dialect || "all"}
-                  onValueChange={(value) => setDialect(value === "all" ? null : value)}
+                  value={subcategory || "all"}
+                  onValueChange={(value) => setSubcategory(value === "all" ? null : value)}
                 >
                   <SelectTrigger>
-                    <SelectValue placeholder="جميع اللهجات" />
+                    <SelectValue placeholder="جميع الأقسام" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="all">جميع اللهجات</SelectItem>
-                    <SelectItem value="standard">الفصحى</SelectItem>
-                    <SelectItem value="saudi">السعودية</SelectItem>
-                    <SelectItem value="egyptian">المصرية</SelectItem>
-                    <SelectItem value="gulf">الخليجية</SelectItem>
+                    <SelectItem value="all">جميع الأقسام</SelectItem>
+                    {uniqueSubcategories.map((sub) => (
+                      <SelectItem key={sub} value={sub}>
+                        {formatSubcategory(sub)}
+                      </SelectItem>
+                    ))}
                   </SelectContent>
                 </Select>
               </div>
@@ -308,7 +307,7 @@ const LibraryPage: React.FC = () => {
                   الأسئلة ({filteredQuestions.length})
                 </h2>
                 <div className="text-sm text-muted-foreground">
-                  {search || category || difficulty || dialect ? "نتائج الفلترة" : "جميع الأسئلة"}
+                  {search || category || difficulty || subcategory ? "نتائج الفلترة" : "جميع الأسئلة"}
                 </div>
               </div>
 
@@ -332,7 +331,7 @@ const LibraryPage: React.FC = () => {
                         expandedQuestion={expandedQuestion}
                         toggleQuestion={toggleQuestion}
                         formatDifficulty={formatDifficulty}
-                        formatDialect={formatDialect}
+                        formatSubcategory={formatSubcategory}
                       />
                     </div>
                   ))}
@@ -345,7 +344,7 @@ const LibraryPage: React.FC = () => {
                       expandedQuestion={expandedQuestion}
                       toggleQuestion={toggleQuestion}
                       formatDifficulty={formatDifficulty}
-                      formatDialect={formatDialect}
+                      formatSubcategory={formatSubcategory}
                     />
                   )}
                 </TabsContent>
@@ -357,7 +356,7 @@ const LibraryPage: React.FC = () => {
                       expandedQuestion={expandedQuestion}
                       toggleQuestion={toggleQuestion}
                       formatDifficulty={formatDifficulty}
-                      formatDialect={formatDialect}
+                      formatSubcategory={formatSubcategory}
                     />
                   )}
                 </TabsContent>
@@ -384,7 +383,7 @@ interface QuestionsListProps {
   expandedQuestion: number | null;
   toggleQuestion: (id: number) => void;
   formatDifficulty: (difficulty: string) => string;
-  formatDialect: (dialect?: string) => string;
+  formatSubcategory: (subcategory?: string) => string;
 }
 
 const QuestionsList: React.FC<QuestionsListProps> = ({ 
@@ -392,7 +391,7 @@ const QuestionsList: React.FC<QuestionsListProps> = ({
   expandedQuestion, 
   toggleQuestion,
   formatDifficulty,
-  formatDialect
+  formatSubcategory
 }) => {
   return (
     <div className="space-y-2">
@@ -412,12 +411,9 @@ const QuestionsList: React.FC<QuestionsListProps> = ({
               <Badge variant="outline">
                 {formatDifficulty(question.difficulty)}
               </Badge>
-              <Badge variant="outline">
-                {formatDialect(question.dialect)}
-              </Badge>
               {question.subcategory && (
                 <Badge variant="secondary" className="bg-blue-100 dark:bg-blue-900/20 text-blue-800 dark:text-blue-200">
-                  {question.subcategory}
+                  {formatSubcategory(question.subcategory)}
                 </Badge>
               )}
               {question.topic && (
