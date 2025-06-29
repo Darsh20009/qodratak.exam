@@ -209,8 +209,17 @@ Preferred communication style: Simple, everyday language.
   - الاستيعاب المقروء (Reading Comprehension)
   - المترادفات والأضداد (Synonyms and Antonyms)
   - الأخطاء الشائعة (Common Errors)
-- **Qiyas Standards**: All tests follow official Qiyas examination standards and timing
-- **Daily Limits for Free Users**: Free accounts limited to one test per day per category
+- **Enhanced Security & Access Control**: 
+  - Authentication required for all verbal tests
+  - Comprehensive login enforcement with elegant prompts
+  - Strong validation preventing unauthorized access
+- **Qiyas-Style Daily Limits**: Free users limited to ONE test per day total across all verbal categories (like real Qiyas restrictions)
+- **Premium Qiyas Features**:
+  - Enhanced progress tracking with gradient displays
+  - Professional test status indicators with animations
+  - Advanced daily usage analytics and warnings
+  - Creative button designs with hover effects and animations
+  - Qiyas-standard timing and difficulty indicators
 - **Advanced Test Runner**: Professional test-taking interface with:
   - Real-time timer with color-coded warnings
   - Progress tracking and question navigation

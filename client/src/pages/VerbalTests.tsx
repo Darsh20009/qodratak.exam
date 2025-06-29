@@ -148,6 +148,9 @@ export function VerbalTests() {
   ];
 
   const checkDailyLimit = (testId: string): boolean => {
+    // Must be logged in to take tests
+    if (!user) return false;
+
     // Always allow premium users
     if ((user as any)?.subscription !== 'free') return true;
 
@@ -164,11 +167,11 @@ export function VerbalTests() {
         });
       } catch (error) {
         console.error('Error checking daily limit:', error);
-        return true;
+        return false; // Block on error for security
       }
     }
 
-    return true; // Allow if no history exists
+    return true; // Allow if no history exists but user is logged in
   };
 
   const getDifficultyColor = (difficulty: string) => {
@@ -181,11 +184,19 @@ export function VerbalTests() {
   };
 
   const startTest = (test: VerbalTest) => {
+    // Must be logged in
+    if (!user) {
+      alert('يجب عليك تسجيل الدخول أولاً للوصول إلى الاختبارات المتخصصة');
+      setLocation('/login');
+      return;
+    }
+
     // Check daily limit for free users
     if (!checkDailyLimit(test.id)) {
-      // Show a message to the user
-      alert('لقد أكملت اختبارك اليومي المجاني. يمكن للمستخدمين المجانيين أخذ اختبار واحد فقط يومياً من جميع اختبارات اللفظي.');
-      return;
+      if ((user as any)?.subscription === 'free') {
+        alert('لقد أكملت اختبارك اليومي المجاني. يمكن للمستخدمين المجانيين أخذ اختبار واحد فقط يومياً من جميع اختبارات اللفظي.');
+        return;
+      }
     }
 
     // Store test configuration
@@ -214,6 +225,35 @@ export function VerbalTests() {
     });
     return count;
   };
+
+  // Show login prompt for non-authenticated users
+  if (!user) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-gray-50 via-blue-50 to-indigo-100 dark:from-gray-900 dark:via-blue-900 dark:to-indigo-900 relative overflow-hidden flex items-center justify-center">
+        <motion.div
+          initial={{ opacity: 0, y: 50 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="text-center p-8 bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm rounded-3xl border border-white/20 shadow-2xl max-w-md mx-4"
+        >
+          <div className="w-20 h-20 bg-gradient-to-br from-red-500 to-orange-500 rounded-2xl flex items-center justify-center mx-auto mb-6">
+            <Lock className="w-10 h-10 text-white" />
+          </div>
+          <h2 className="text-3xl font-bold text-gray-800 dark:text-white mb-4">
+            تسجيل الدخول مطلوب
+          </h2>
+          <p className="text-gray-600 dark:text-gray-300 mb-6 leading-relaxed">
+            للوصول إلى اختبارات اللفظي المتخصصة وفقاً لمعايير قياس الحقيقية، يجب عليك تسجيل الدخول أولاً
+          </p>
+          <Button
+            onClick={() => setLocation('/login')}
+            className="w-full bg-gradient-to-r from-blue-500 to-purple-600 text-white font-semibold py-3 px-6 rounded-xl hover:shadow-lg transition-all duration-300"
+          >
+            تسجيل الدخول الآن
+          </Button>
+        </motion.div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 via-blue-50 to-indigo-100 dark:from-gray-900 dark:via-blue-900 dark:to-indigo-900 relative overflow-hidden">
@@ -269,7 +309,7 @@ export function VerbalTests() {
           {/* إحصائيات سريعة */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4 max-w-4xl mx-auto">
             {([
-              { value: "250+", label: "سؤال لكل اختبار", icon: Target },
+              { value: "50", label: "سؤال لكل اختبار", icon: Target },
               { value: "5", label: "اختبارات متخصصة", icon: Trophy },
               { value: "قياس", label: "معايير حقيقية", icon: Star },
               { value: "1", label: "اختبار مجاني يومياً", icon: Calendar }
@@ -289,18 +329,23 @@ export function VerbalTests() {
           </div>
         </motion.div>
 
-        {/* عرض إحصائيات الحسابات المجانية */}
+        {/* عرض إحصائيات الحسابات المجانية مع ميزات قياس */}
         {user && (user as any)?.subscription === 'free' && (
-          <div className="max-w-md mx-auto mb-8">
-            <Card className="bg-gradient-to-r from-blue-50 to-purple-50 dark:from-blue-900/20 dark:to-purple-900/20 border-blue-200 dark:border-blue-700">
-              <CardContent className="p-4">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <Calendar className="w-5 h-5 text-blue-600 dark:text-blue-400" />
-                    <span className="font-medium text-blue-700 dark:text-blue-300">اختباراتك اليوم</span>
+          <div className="max-w-lg mx-auto mb-8">
+            <Card className="bg-gradient-to-r from-blue-50 to-purple-50 dark:from-blue-900/20 dark:to-purple-900/20 border-blue-200 dark:border-blue-700 shadow-lg">
+              <CardContent className="p-6">
+                <div className="flex items-center justify-between mb-4">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 bg-gradient-to-r from-blue-500 to-purple-600 rounded-xl flex items-center justify-center">
+                      <Calendar className="w-5 h-5 text-white" />
+                    </div>
+                    <div>
+                      <span className="font-bold text-blue-700 dark:text-blue-300">اختباراتك اليوم</span>
+                      <p className="text-xs text-gray-500 dark:text-gray-400">حسب معايير قياس</p>
+                    </div>
                   </div>
                   <div className="text-right">
-                    <div className="text-2xl font-bold text-blue-600 dark:text-blue-400">
+                    <div className="text-3xl font-bold text-blue-600 dark:text-blue-400">
                       {getTodayTestCount()}/1
                     </div>
                     <div className="text-xs text-blue-500 dark:text-blue-400">
@@ -309,18 +354,49 @@ export function VerbalTests() {
                   </div>
                 </div>
 
-                {getTodayTestCount() >= 1 && (
-                  <div className="mt-3 p-2 bg-yellow-100 dark:bg-yellow-900/30 rounded-lg text-center">
-                    <p className="text-sm text-yellow-700 dark:text-yellow-300 mb-2">
-                      لقد أكملت اختبارك المجاني لليوم
-                    </p>
+                {/* شريط التقدم */}
+                <div className="mb-4">
+                  <div className="flex justify-between text-xs text-gray-600 dark:text-gray-400 mb-1">
+                    <span>الاستخدام اليومي</span>
+                    <span>{Math.round((getTodayTestCount() / 1) * 100)}%</span>
+                  </div>
+                  <Progress value={(getTodayTestCount() / 1) * 100} className="h-2" />
+                </div>
+
+                {getTodayTestCount() >= 1 ? (
+                  <div className="p-4 bg-gradient-to-r from-red-50 to-orange-50 dark:from-red-900/20 dark:to-orange-900/20 rounded-xl border border-red-200 dark:border-red-800">
+                    <div className="flex items-center gap-2 mb-3">
+                      <div className="w-8 h-8 bg-red-100 dark:bg-red-900/50 rounded-full flex items-center justify-center">
+                        <Lock className="w-4 h-4 text-red-600 dark:text-red-400" />
+                      </div>
+                      <div>
+                        <p className="text-sm font-bold text-red-700 dark:text-red-300">
+                          وصلت للحد الأقصى اليومي
+                        </p>
+                        <p className="text-xs text-red-600 dark:text-red-400">
+                          عد غداً أو قم بالترقية
+                        </p>
+                      </div>
+                    </div>
                     <Button
                       size="sm"
                       onClick={() => setLocation("/subscription")}
-                      className="bg-blue-500 hover:bg-blue-600 text-white"
+                      className="w-full bg-gradient-to-r from-blue-500 to-purple-600 text-white font-bold shadow-lg hover:shadow-xl transition-all duration-300"
                     >
+                      <Zap className="w-4 h-4 mr-2" />
                       ترقية للوصول غير المحدود
                     </Button>
+                  </div>
+                ) : (
+                  <div className="p-3 bg-gradient-to-r from-green-50 to-blue-50 dark:from-green-900/20 dark:to-blue-900/20 rounded-xl border border-green-200 dark:border-green-800">
+                    <div className="flex items-center gap-2">
+                      <div className="w-6 h-6 bg-green-100 dark:bg-green-900/50 rounded-full flex items-center justify-center">
+                        <CheckCircle2 className="w-3 h-3 text-green-600 dark:text-green-400" />
+                      </div>
+                      <p className="text-sm font-medium text-green-700 dark:text-green-300">
+                        اختبار مجاني متاح اليوم
+                      </p>
+                    </div>
                   </div>
                 )}
               </CardContent>
@@ -354,13 +430,17 @@ export function VerbalTests() {
                     </Badge>
                   </div>
 
-                  {/* حالة الاختبار */}
+                  {/* حالة الاختبار مع ميزات قياس */}
                   <div className="absolute top-4 right-4">
                     {!canTakeTest ? (
-                      <div className="flex items-center gap-1 bg-red-100 text-red-800 dark:bg-red-900/30 px-2 py-1 rounded-full text-xs">
+                      <motion.div 
+                        initial={{ scale: 0 }}
+                        animate={{ scale: 1 }}
+                        className="flex items-center gap-1 bg-gradient-to-r from-red-100 to-red-200 text-red-800 dark:from-red-900/30 dark:to-red-800/30 dark:text-red-300 px-3 py-2 rounded-full text-xs font-bold shadow-lg border border-red-300 dark:border-red-700"
+                      >
                         <Lock className="w-3 h-3" />
-                        <span>مكتمل اليوم</span>
-                      </div>
+                        <span>محظور - مكتمل</span>
+                      </motion.div>
                     ) : (() => {
                         // Get latest result for this test
                         const storedResults = localStorage.getItem('verbalTestResults');
@@ -381,15 +461,23 @@ export function VerbalTests() {
                         }
 
                         return latestResult ? (
-                          <div className="flex items-center gap-1 bg-green-100 text-green-800 dark:bg-green-900/30 px-2 py-1 rounded-full text-xs">
+                          <motion.div 
+                            initial={{ scale: 0 }}
+                            animate={{ scale: 1 }}
+                            className="flex items-center gap-1 bg-gradient-to-r from-green-100 to-emerald-100 text-green-800 dark:from-green-900/30 dark:to-emerald-900/30 dark:text-green-300 px-3 py-2 rounded-full text-xs font-bold shadow-lg border border-green-300 dark:border-green-700"
+                          >
                             <CheckCircle2 className="w-3 h-3" />
-                            <span>{Math.round(latestResult.percentage)}%</span>
-                          </div>
+                            <span>مكتمل: {Math.round(latestResult.percentage)}%</span>
+                          </motion.div>
                         ) : (
-                          <div className="flex items-center gap-1 bg-blue-100 text-blue-800 dark:bg-blue-900/30 px-2 py-1 rounded-full text-xs">
+                          <motion.div 
+                            initial={{ scale: 0 }}
+                            animate={{ scale: 1 }}
+                            className="flex items-center gap-1 bg-gradient-to-r from-blue-100 to-indigo-100 text-blue-800 dark:from-blue-900/30 dark:to-indigo-900/30 dark:text-blue-300 px-3 py-2 rounded-full text-xs font-bold shadow-lg border border-blue-300 dark:border-blue-700"
+                          >
                             <Sparkles className="w-3 h-3" />
-                            <span>جديد</span>
-                          </div>
+                            <span>جديد - متاح</span>
+                          </motion.div>
                         );
                       })()}
                   </div>
@@ -462,34 +550,71 @@ export function VerbalTests() {
                       ) : null;
                     })()}
 
-                    {/* زر بدء الاختبار */}
-                    <Button
-                      onClick={() => startTest(test)}
-                      disabled={!canTakeTest}
-                      className={`w-full py-3 text-lg font-semibold transition-all duration-300 ${
-                        canTakeTest
-                          ? `bg-gradient-to-r ${test.color} text-white hover:shadow-lg hover:scale-105 active:scale-95`
-                          : 'bg-gray-300 text-gray-500 cursor-not-allowed'
-                      }`}
-                    >
-                      {!canTakeTest ? (
-                        <div className="flex items-center gap-2">
-                          <Lock className="w-5 h-5" />
-                          <span>مكتمل لليوم</span>
-                        </div>
-                      ) : (
-                        <div className="flex items-center gap-2">
-                          <TrendingUp className="w-5 h-5" />
-                          <span>ابدأ الاختبار</span>
-                        </div>
-                      )}
-                    </Button>
+                    {/* زر بدء الاختبار مع ميزات قياس */}
+                    <div className="space-y-3">
+                      <Button
+                        onClick={() => startTest(test)}
+                        disabled={!canTakeTest}
+                        className={`w-full py-4 text-lg font-bold transition-all duration-300 relative overflow-hidden ${
+                          canTakeTest
+                            ? `bg-gradient-to-r ${test.color} text-white hover:shadow-2xl hover:scale-105 active:scale-95 border-2 border-white/20`
+                            : 'bg-gradient-to-r from-gray-400 to-gray-500 text-gray-200 cursor-not-allowed border-2 border-gray-400'
+                        }`}
+                      >
+                        {!canTakeTest && (
+                          <div className="absolute inset-0 bg-black/30 backdrop-blur-sm"></div>
+                        )}
+                        {!canTakeTest ? (
+                          <div className="flex items-center justify-center gap-2 relative z-10">
+                            <Lock className="w-6 h-6" />
+                            <span>محظور - مكتمل اليوم</span>
+                          </div>
+                        ) : (
+                          <div className="flex items-center justify-center gap-2 relative z-10">
+                            <motion.div
+                              animate={{ scale: [1, 1.2, 1] }}
+                              transition={{ duration: 2, repeat: Infinity }}
+                            >
+                              <TrendingUp className="w-6 h-6" />
+                            </motion.div>
+                            <span>ابدأ الاختبار الآن</span>
+                            <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent -skew-x-12 -translate-x-full group-hover:translate-x-full transition-transform duration-1000"></div>
+                          </div>
+                        )}
+                      </Button>
 
-                    {/* رسالة للمستخدمين المجانيين */}
+                      {/* معلومات إضافية للاختبار */}
+                      <div className="flex items-center justify-between text-xs text-gray-500 dark:text-gray-400 px-2">
+                        <div className="flex items-center gap-1">
+                          <Clock className="w-3 h-3" />
+                          <span>وقت الاختبار: {test.timeLimit} دقيقة</span>
+                        </div>
+                        <div className="flex items-center gap-1">
+                          <Target className="w-3 h-3" />
+                          <span>معايير قياس</span>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* رسالة للمستخدمين المجانيين مع ميزات قياس */}
                     {(user as any)?.subscription === 'free' && !canTakeTest && (
-                      <p className="text-xs text-center text-gray-500 dark:text-gray-400 mt-2">
-                        يمكن للمستخدمين المجانيين أخذ اختبار واحد فقط يومياً من جميع اختبارات اللفظي
-                      </p>
+                      <motion.div
+                        initial={{ opacity: 0, y: 10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        className="mt-3 p-3 bg-gradient-to-r from-yellow-50 to-orange-50 dark:from-yellow-900/20 dark:to-orange-900/20 rounded-xl border border-yellow-200 dark:border-yellow-800"
+                      >
+                        <div className="flex items-center gap-2 mb-2">
+                          <div className="w-5 h-5 bg-yellow-100 dark:bg-yellow-900/50 rounded-full flex items-center justify-center">
+                            <Calendar className="w-3 h-3 text-yellow-600 dark:text-yellow-400" />
+                          </div>
+                          <p className="text-xs font-bold text-yellow-700 dark:text-yellow-300">
+                            نظام قياس - حد يومي
+                          </p>
+                        </div>
+                        <p className="text-xs text-yellow-600 dark:text-yellow-400 leading-relaxed">
+                          حسب معايير هيئة قياس: المستخدمون المجانيون لديهم اختبار واحد فقط يومياً من جميع اختبارات اللفظي
+                        </p>
+                      </motion.div>
                     )}
                   </CardContent>
                 </Card>
