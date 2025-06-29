@@ -61,6 +61,37 @@ export function VerbalTests() {
     queryKey: ['/api/user'],
   });
 
+  // نظام التحكم الفعال للحد اليومي مثل قياس
+  const [dailyTestsTaken, setDailyTestsTaken] = useState(0);
+  const MAX_DAILY_FREE_TESTS = 1; // اختبار واحد فقط يومياً
+
+  useEffect(() => {
+    // حساب عدد الاختبارات المأخوذة اليوم للمستخدمين المجانيين
+    const today = new Date().toDateString();
+    const testsToday = JSON.parse(localStorage.getItem(`dailyVerbalTests_${today}`) || '0');
+    setDailyTestsTaken(testsToday);
+  }, []);
+
+  const isPremiumUser = user && (
+    (user as any)?.subscription?.type === 'Pro' || 
+    (user as any)?.subscription?.type === 'Pro Life' || 
+    (user as any)?.subscription?.type === 'Pro Live' ||
+    (user as any)?.subscription === 'pro' ||
+    (user as any)?.subscription === 'pro_life'
+  );
+
+  const canTakeTest = !!isPremiumUser || dailyTestsTaken < MAX_DAILY_FREE_TESTS;
+
+  // تسجيل اختبار جديد للحسابات المجانية
+  const recordTestTaken = () => {
+    if (!isPremiumUser) {
+      const today = new Date().toDateString();
+      const newCount = dailyTestsTaken + 1;
+      localStorage.setItem(`dailyVerbalTests_${today}`, JSON.stringify(newCount));
+      setDailyTestsTaken(newCount);
+    }
+  };
+
   // Load user history from localStorage on component mount
   useEffect(() => {
     const storedResults = localStorage.getItem('verbalTestResults');
@@ -151,27 +182,11 @@ export function VerbalTests() {
     // Must be logged in to take tests
     if (!user) return false;
 
-    // Always allow premium users
-    if ((user as any)?.subscription !== 'free') return true;
+    // Always allow premium users (using same logic as Qiyas page)
+    if (!!isPremiumUser) return true;
 
-    // For free users, check if they've taken ANY verbal test today (limit 1 test per day total)
-    const today = new Date().toDateString();
-    const storedResults = localStorage.getItem('verbalTestResults');
-
-    if (storedResults) {
-      try {
-        const results = JSON.parse(storedResults);
-        return !results.some((result: any) => {
-          const resultDate = new Date(result.date).toDateString();
-          return resultDate === today;
-        });
-      } catch (error) {
-        console.error('Error checking daily limit:', error);
-        return false; // Block on error for security
-      }
-    }
-
-    return true; // Allow if no history exists but user is logged in
+    // For free users, use the same robust system as Qiyas page
+    return canTakeTest;
   };
 
   const getDifficultyColor = (difficulty: string) => {
@@ -184,20 +199,21 @@ export function VerbalTests() {
   };
 
   const startTest = (test: VerbalTest) => {
-    // Must be logged in
+    // Must be logged in (same as Qiyas page)
     if (!user) {
       alert('يجب عليك تسجيل الدخول أولاً للوصول إلى الاختبارات المتخصصة');
       setLocation('/login');
       return;
     }
 
-    // Check daily limit for free users
+    // Check daily limit for free users (same robust system as Qiyas page)
     if (!checkDailyLimit(test.id)) {
-      if ((user as any)?.subscription === 'free') {
-        alert('لقد أكملت اختبارك اليومي المجاني. يمكن للمستخدمين المجانيين أخذ اختبار واحد فقط يومياً من جميع اختبارات اللفظي.');
-        return;
-      }
+      alert(`لقد أكملت اختبارك اليومي المجاني. يمكن للحسابات المجانية أخذ ${MAX_DAILY_FREE_TESTS} اختبار يومياً فقط من جميع اختبارات اللفظي. قم بالترقية للوصول غير المحدود!`);
+      return;
     }
+
+    // Record the test attempt for free users (same as Qiyas page)
+    recordTestTaken();
 
     // Store test configuration
     const testConfig = {
@@ -216,14 +232,8 @@ export function VerbalTests() {
   };
 
   const getTodayTestCount = (): number => {
-    const today = new Date().toDateString();
-    let count = 0;
-    userHistory.forEach(h => {
-      if (new Date(h.date).toDateString() === today) {
-        count++;
-      }
-    });
-    return count;
+    // Use the same robust system as Qiyas page
+    return dailyTestsTaken;
   };
 
   // Show login prompt for non-authenticated users
@@ -329,8 +339,8 @@ export function VerbalTests() {
           </div>
         </motion.div>
 
-        {/* عرض إحصائيات الحسابات المجانية مع ميزات قياس */}
-        {user && (user as any)?.subscription === 'free' && (
+        {/* عرض إحصائيات الحسابات المجانية مع ميزات قياس (نفس نظام قياس) */}
+        {user && !isPremiumUser && (
           <div className="max-w-lg mx-auto mb-8">
             <Card className="bg-gradient-to-r from-blue-50 to-purple-50 dark:from-blue-900/20 dark:to-purple-900/20 border-blue-200 dark:border-blue-700 shadow-lg">
               <CardContent className="p-6">
@@ -346,10 +356,10 @@ export function VerbalTests() {
                   </div>
                   <div className="text-right">
                     <div className="text-3xl font-bold text-blue-600 dark:text-blue-400">
-                      {getTodayTestCount()}/1
+                      {dailyTestsTaken}/{MAX_DAILY_FREE_TESTS}
                     </div>
                     <div className="text-xs text-blue-500 dark:text-blue-400">
-                      متبقي {1 - getTodayTestCount()}
+                      {canTakeTest ? `متبقي ${MAX_DAILY_FREE_TESTS - dailyTestsTaken}` : 'انتهت اختباراتك اليوم'}
                     </div>
                   </div>
                 </div>
@@ -358,12 +368,12 @@ export function VerbalTests() {
                 <div className="mb-4">
                   <div className="flex justify-between text-xs text-gray-600 dark:text-gray-400 mb-1">
                     <span>الاستخدام اليومي</span>
-                    <span>{Math.round((getTodayTestCount() / 1) * 100)}%</span>
+                    <span>{Math.round((dailyTestsTaken / MAX_DAILY_FREE_TESTS) * 100)}%</span>
                   </div>
-                  <Progress value={(getTodayTestCount() / 1) * 100} className="h-2" />
+                  <Progress value={(dailyTestsTaken / MAX_DAILY_FREE_TESTS) * 100} className="h-2" />
                 </div>
 
-                {getTodayTestCount() >= 1 ? (
+                {!canTakeTest ? (
                   <div className="p-4 bg-gradient-to-r from-red-50 to-orange-50 dark:from-red-900/20 dark:to-orange-900/20 rounded-xl border border-red-200 dark:border-red-800">
                     <div className="flex items-center gap-2 mb-3">
                       <div className="w-8 h-8 bg-red-100 dark:bg-red-900/50 rounded-full flex items-center justify-center">
@@ -407,7 +417,7 @@ export function VerbalTests() {
         {/* قائمة الاختبارات */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
           {verbalTests.map((test, index) => {
-            const canTakeTest = checkDailyLimit(test.id);
+            const canTakeThisTest = checkDailyLimit(test.id);
             const testHistory = userHistory.find(h => h.testId === test.id);
 
             return (
@@ -432,7 +442,7 @@ export function VerbalTests() {
 
                   {/* حالة الاختبار مع ميزات قياس */}
                   <div className="absolute top-4 right-4">
-                    {!canTakeTest ? (
+                    {!canTakeThisTest ? (
                       <motion.div 
                         initial={{ scale: 0 }}
                         animate={{ scale: 1 }}
@@ -554,17 +564,17 @@ export function VerbalTests() {
                     <div className="space-y-3">
                       <Button
                         onClick={() => startTest(test)}
-                        disabled={!canTakeTest}
+                        disabled={!canTakeThisTest}
                         className={`w-full py-4 text-lg font-bold transition-all duration-300 relative overflow-hidden ${
-                          canTakeTest
+                          canTakeThisTest
                             ? `bg-gradient-to-r ${test.color} text-white hover:shadow-2xl hover:scale-105 active:scale-95 border-2 border-white/20`
                             : 'bg-gradient-to-r from-gray-400 to-gray-500 text-gray-200 cursor-not-allowed border-2 border-gray-400'
                         }`}
                       >
-                        {!canTakeTest && (
+                        {!canTakeThisTest && (
                           <div className="absolute inset-0 bg-black/30 backdrop-blur-sm"></div>
                         )}
-                        {!canTakeTest ? (
+                        {!canTakeThisTest ? (
                           <div className="flex items-center justify-center gap-2 relative z-10">
                             <Lock className="w-6 h-6" />
                             <span>محظور - مكتمل اليوم</span>
@@ -597,7 +607,7 @@ export function VerbalTests() {
                     </div>
 
                     {/* رسالة للمستخدمين المجانيين مع ميزات قياس */}
-                    {(user as any)?.subscription === 'free' && !canTakeTest && (
+                    {!isPremiumUser && !canTakeThisTest && (
                       <motion.div
                         initial={{ opacity: 0, y: 10 }}
                         animate={{ opacity: 1, y: 0 }}
