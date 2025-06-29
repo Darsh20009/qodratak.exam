@@ -298,6 +298,31 @@ function Router({ splashDone }: { splashDone: boolean }) {
   );
 
   // النظام الجديد: حسابات مجانية محدودة
+  const [hasAccess, setHasAccess] = useState(false);
+  const [usedFreeTrial, setUsedFreeTrial] = useState(() => {
+    return localStorage.getItem('usedFreeTrial') === 'true';
+  });
+
+  useEffect(() => {
+    if (user && !isPremium && !usedFreeTrial) {
+      // For free users, check if they've used their free trial
+      setHasAccess(true); // Grant access
+      localStorage.setItem('usedFreeTrial', 'true');
+      setUsedFreeTrial(true);
+
+      // Revoke access after 24 hours (or any desired time)
+      const timer = setTimeout(() => {
+        setHasAccess(false);
+      }, 24 * 60 * 60 * 1000); // 24 hours
+
+      return () => clearTimeout(timer); // Clear timeout on unmount
+    } else if (isPremium) {
+      setHasAccess(true); // Premium users always have access
+    } else {
+      setHasAccess(false); // No access by default
+    }
+  }, [user, isPremium, usedFreeTrial]);
+
 
   return (
     <>
@@ -323,21 +348,36 @@ function Router({ splashDone }: { splashDone: boolean }) {
       <Route path="/install">
         {() => <MainLayout><InstallPage /></MainLayout>}
       </Route>
-      {/* صفحات مدفوعة فقط */}
+      {/* صفحات مدفوعة فقط مع إمكانية التجربة المجانية */}
       <Route path="/custom-exam">
-        {() => <MainLayout><ProtectedRoute requiresPremium={true}><CustomExamPage /></ProtectedRoute></MainLayout>}
+        {() => <MainLayout><ProtectedRoute requiresPremium={true}>{hasAccess ? <CustomExamPage /> : null}</ProtectedRoute></MainLayout>}
       </Route>
       <Route path="/abilities">
-        {() => <MainLayout><ProtectedRoute requiresPremium={true}><AbilitiesTestPage /></ProtectedRoute></MainLayout>}
+        {() => <MainLayout><ProtectedRoute requiresPremium={true}>{hasAccess ? <AbilitiesTestPage /> : null}</ProtectedRoute></MainLayout>}
       </Route>
       <Route path="/ask">
-        {() => <MainLayout><ProtectedRoute requiresPremium={true}><AskQuestionPage /></ProtectedRoute></MainLayout>}
+        {() => <MainLayout><ProtectedRoute requiresPremium={true}>{hasAccess ? <AskQuestionPage /> : null}</ProtectedRoute></MainLayout>}
       </Route>
       <Route path="/library">
-        {() => <MainLayout><ProtectedRoute requiresPremium={true}><LibraryPage /></ProtectedRoute></MainLayout>}
+        {() => <MainLayout><ProtectedRoute requiresPremium={true}>{hasAccess ? <LibraryPage /> : null}</ProtectedRoute></MainLayout>}
       </Route>
       <Route path="/books">
-        {() => <MainLayout><ProtectedRoute requiresPremium={true}><BooksPage /></ProtectedRoute></MainLayout>}
+        {() => <MainLayout><ProtectedRoute requiresPremium={true}>{hasAccess ? <BooksPage /> : null}</ProtectedRoute></MainLayout>}
+      </Route>
+      <Route path="/challenges">
+        {() => <MainLayout><ProtectedRoute requiresPremium={true}>{hasAccess ? <ChallengePage /> : null}</ProtectedRoute></MainLayout>}
+      </Route>
+      <Route path="/folders">
+        {() => <MainLayout><ProtectedRoute requiresPremium={true}>{hasAccess ? <FoldersPage /> : null}</ProtectedRoute></MainLayout>}
+      </Route>
+      <Route path="/records">
+        {() => <MainLayout><ProtectedRoute requiresPremium={true}>{hasAccess ? <ExamRecordsPage /> : null}</ProtectedRoute></MainLayout>}
+      </Route>
+      <Route path="/mock-exams">
+        {() => <MainLayout><ProtectedRoute requiresPremium={true}>{hasAccess ? <MockExamPage /> : null}</ProtectedRoute></MainLayout>}
+      </Route>
+      <Route path="/mistake-challenge">
+        {() => <MainLayout><MistakeChallengePage /></MainLayout>}
       </Route>
       <Route path="/profile">
         {() => <MainLayout><ProfilePage /></MainLayout>}
@@ -353,21 +393,6 @@ function Router({ splashDone }: { splashDone: boolean }) {
       </Route>
       <Route path="/test-results">
         {() => <MainLayout><TestResultsPage /></MainLayout>}
-      </Route>
-      <Route path="/folders">
-        {() => <MainLayout><ProtectedRoute requiresPremium={true}><FoldersPage /></ProtectedRoute></MainLayout>}
-      </Route>
-      <Route path="/challenges">
-        {() => <MainLayout><ProtectedRoute requiresPremium={true}><ChallengePage /></ProtectedRoute></MainLayout>}
-      </Route>
-      <Route path="/records">
-        {() => <MainLayout><ProtectedRoute requiresPremium={true}><ExamRecordsPage /></ProtectedRoute></MainLayout>}
-      </Route>
-      <Route path="/mock-exams">
-        {() => <MainLayout><ProtectedRoute requiresPremium={true}><MockExamPage /></ProtectedRoute></MainLayout>}
-      </Route>
-      <Route path="/mistake-challenge">
-        {() => <MainLayout><MistakeChallengePage /></MainLayout>}
       </Route>
       {/* Fallback to 404 */}
       <Route>
