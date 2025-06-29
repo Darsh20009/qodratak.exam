@@ -48,6 +48,7 @@ import InstallPage from "@/pages/InstallPage";
 import { VerbalTests } from "@/pages/VerbalTests";
 import { VerbalTestRunner } from "@/pages/VerbalTestRunner";
 import { SubscriptionPlans } from "@/components/SubscriptionPlans";
+import MistakeChallengePage from '@/pages/MistakeChallengePage';
 
 function MainLayout({ children }: { children: React.ReactNode }) {
   const [location] = useLocation();
@@ -364,6 +365,9 @@ function Router({ splashDone }: { splashDone: boolean }) {
       </Route>
       <Route path="/mock-exams">
         {() => <MainLayout><ProtectedRoute requiresPremium={true}><MockExamPage /></ProtectedRoute></MainLayout>}
+      </Route>
+      <Route path="/mistake-challenge">
+        {() => <MainLayout><MistakeChallengePage /></MainLayout>}
       </Route>
       {/* Fallback to 404 */}
       <Route>

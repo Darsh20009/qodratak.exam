@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { useLocation } from 'wouter';
+import MistakeChallengeModal from '@/components/MistakeChallengeModal';
 import { 
   Trophy, 
   Clock, 
@@ -25,7 +26,11 @@ import {
   Sparkles,
   Medal,
   Crown,
-  Flame
+  Flame,
+  Swords,
+  Shield,
+  Gamepad2,
+  RefreshCw
 } from 'lucide-react';
 
 interface TestResult {
@@ -47,10 +52,64 @@ export default function TestResultsPage() {
   const [, setLocation] = useLocation();
   const [result, setResult] = useState<TestResult | null>(null);
   const [isAnimating, setIsAnimating] = useState(true);
+  const [isChallengeModalOpen, setIsChallengeModalOpen] = useState(false);
 
   const handleBackToRecords = () => {
     setLocation('/records');
   };
+
+  const handleChallengeMode = (timed: boolean) => {
+    if (!result) return;
+    
+    // تحضير بيانات الأخطاء للتحدي
+    const wrongAnswers = [];
+    if (result.answers && result.questions) {
+      result.questions.forEach((question, index) => {
+        const userAnswer = result.answers![index.toString()];
+        const correctAnswer = question.correctOptionIndex?.toString() || question.correct_answer;
+        if (userAnswer !== correctAnswer) {
+          wrongAnswers.push({
+            ...question,
+            userAnswer,
+            index
+          });
+        }
+      });
+    }
+
+    // حفظ بيانات التحدي
+    const challengeData = {
+      type: 'mistake_challenge',
+      mode: timed ? 'timed' : 'untimed',
+      questions: wrongAnswers,
+      originalTest: {
+        testName: result.testName,
+        subcategory: result.subcategory,
+        originalScore: result.correctAnswers,
+        originalTotal: result.totalQuestions
+      },
+      timeLimit: timed ? Math.max(wrongAnswers.length * 60, 300) : null // دقيقة لكل سؤال، بحد أدنى 5 دقائق
+    };
+
+    localStorage.setItem('mistakeChallenge', JSON.stringify(challengeData));
+    setLocation('/mistake-challenge');
+  };
+
+  const getWrongAnswersCount = () => {
+    if (!result || !result.answers || !result.questions) return 0;
+    
+    let wrongCount = 0;
+    result.questions.forEach((question, index) => {
+      const userAnswer = result.answers![index.toString()];
+      const correctAnswer = question.correctOptionIndex?.toString() || question.correct_answer;
+      if (userAnswer !== correctAnswer) {
+        wrongCount++;
+      }
+    });
+    return wrongCount;
+  };
+
+  const wrongAnswersCount = getWrongAnswersCount();
 
   useEffect(() => {
     console.log('TestResultsPage: Checking for stored result...');
@@ -402,6 +461,35 @@ export default function TestResultsPage() {
                   </Button>
                 </motion.div>
 
+                {/* زر تحدي الأخطاء */}
+                {wrongAnswersCount > 0 && (
+                  <motion.div
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 1.2 }}
+                  >
+                    <Button
+                      onClick={() => setIsChallengeModalOpen(true)}
+                      className="relative bg-gradient-to-r from-red-500 via-orange-500 to-yellow-500 hover:from-red-600 hover:via-orange-600 hover:to-yellow-600 text-white px-8 py-3 text-lg shadow-lg hover:shadow-xl transition-all duration-300 overflow-hidden"
+                    >
+                      <motion.div
+                        className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent"
+                        animate={{ x: [-100, 200] }}
+                        transition={{ duration: 2, repeat: Infinity, repeatDelay: 3 }}
+                      />
+                      <div className="relative flex items-center gap-2">
+                        <Swords className="w-5 h-5" />
+                        <span>تحدي الأخطاء</span>
+                        <Badge className="bg-white/20 text-white text-xs px-2 py-1">
+                          {wrongAnswersCount}
+                        </Badge>
+                      </div>
+                    </Button>
+                  </motion.div>
+                )}
+
                 <motion.div
                   whileHover={{ scale: 1.05 }}
                   whileTap={{ scale: 0.95 }}
@@ -467,6 +555,13 @@ export default function TestResultsPage() {
             </CardContent>
           </Card>
         </motion.div>
+
+        {/* Modal تحدي الأخطاء */}
+        <MistakeChallengeModal
+          isOpen={isChallengeModalOpen}
+          onClose={() => setIsChallengeModalOpen(false)}
+          onSelectMode={handleChallengeMode}
+        />
       </div>
     </div>
   );
