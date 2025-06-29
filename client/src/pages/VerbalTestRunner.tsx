@@ -153,26 +153,34 @@ export function VerbalTestRunner() {
   const handleFinishTest = () => {
     if (!questions || !testConfig) return;
 
-    // Calculate results
+    // Calculate results only for answered questions
     let correctCount = 0;
+    const answeredQuestions = Object.keys(selectedAnswers).length;
     const totalQuestions = questions.length;
 
     questions.forEach((question, index) => {
       const userAnswer = selectedAnswers[index];
-      const correctAnswer = question.correctOptionIndex?.toString() || question.correct_answer;
-      if (userAnswer === correctAnswer) {
-        correctCount++;
+      if (userAnswer !== undefined) {
+        const correctAnswer = question.correctOptionIndex?.toString() || question.correct_answer;
+        if (userAnswer === correctAnswer) {
+          correctCount++;
+        }
       }
     });
 
-    const percentage = Math.round((correctCount / totalQuestions) * 100);
+    // Calculate percentage based on answered questions or total questions
+    const percentage = answeredQuestions > 0 ? 
+      Math.round((correctCount / answeredQuestions) * 100) : 0;
+
     const results = {
       testName: testConfig.testName,
       subcategory: testConfig.subcategory,
       totalQuestions,
+      answeredQuestions,
       correctAnswers: correctCount,
       percentage,
       timeSpent: testConfig.timeLimit * 60 - timeRemaining,
+      finishedEarly: timeRemaining > 0,
       date: new Date().toISOString(),
       answers: selectedAnswers,
       questions: questions
@@ -447,15 +455,13 @@ export function VerbalTestRunner() {
               {isPaused ? 'استكمال' : 'إيقاف مؤقت'}
             </Button>
 
-            {currentQuestionIndex === questions.length - 1 ? (
-              <Button
-                onClick={() => setShowConfirmFinish(true)}
-                className="flex items-center gap-2 bg-green-500 hover:bg-green-600"
-              >
-                <Check className="w-4 h-4" />
-                إنهاء الاختبار
-              </Button>
-            ) : null}
+            <Button
+              onClick={() => setShowConfirmFinish(true)}
+              className="flex items-center gap-2 bg-red-500 hover:bg-red-600 text-white"
+            >
+              <Trophy className="w-4 h-4" />
+              إنهاء الاختبار
+            </Button>
           </div>
 
           <Button
@@ -489,7 +495,7 @@ export function VerbalTestRunner() {
                   <AlertTriangle className="w-16 h-16 text-orange-500 mx-auto mb-4" />
                   <h3 className="text-xl font-bold mb-2">تأكيد إنهاء الاختبار</h3>
                   <p className="text-gray-600 dark:text-gray-400 mb-6">
-                    هل أنت متأكد من رغبتك في إنهاء الاختبار؟ لن تتمكن من العودة إليه مرة أخرى.
+                    هل أنت متأكد من رغبتك في إنهاء الاختبار؟ سيتم حساب النتيجة بناءً على الأسئلة التي أجبت عليها فقط.
                   </p>
                   <div className="flex gap-3">
                     <Button
