@@ -76,27 +76,27 @@ export function VerbalTestRunner() {
   // Filter questions by subcategory and limit to required count
   const questions = React.useMemo(() => {
     if (!allQuestions || !Array.isArray(allQuestions) || !testConfig) return [];
-    
+
     const filtered = allQuestions.filter(q => 
       q.subcategory === testConfig.subcategory || q.category === testConfig.subcategory
     );
-    
+
     console.log(`Found ${filtered.length} questions for subcategory: ${testConfig.subcategory}`);
-    
+
     if (filtered.length === 0) {
       // Try with alternative names
       const alternatives = allQuestions.filter(q => 
         q.subcategory && q.subcategory.includes(testConfig.subcategory.split(' ')[0])
       );
       console.log(`Found ${alternatives.length} alternative questions`);
-      
+
       if (alternatives.length > 0) {
         const shuffled = [...alternatives].sort(() => Math.random() - 0.5);
         return shuffled.slice(0, Math.min(testConfig.questionCount, alternatives.length));
       }
       return [];
     }
-    
+
     // Shuffle and take required amount
     const shuffled = [...filtered].sort(() => Math.random() - 0.5);
     return shuffled.slice(0, testConfig.questionCount);
@@ -118,7 +118,7 @@ export function VerbalTestRunner() {
     const hours = Math.floor(seconds / 3600);
     const minutes = Math.floor((seconds % 3600) / 60);
     const secs = seconds % 60;
-    
+
     if (hours > 0) {
       return `${hours}:${minutes.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
     }
@@ -152,11 +152,11 @@ export function VerbalTestRunner() {
 
   const handleFinishTest = () => {
     if (!questions || !testConfig) return;
-    
+
     // Calculate results
     let correctCount = 0;
     const totalQuestions = questions.length;
-    
+
     questions.forEach((question, index) => {
       const userAnswer = selectedAnswers[index];
       const correctAnswer = question.correctOptionIndex?.toString() || question.correct_answer;
@@ -185,7 +185,7 @@ export function VerbalTestRunner() {
 
     // Clear test config
     localStorage.removeItem('currentVerbalTest');
-    
+
     // Navigate to results
     localStorage.setItem('lastTestResult', JSON.stringify(results));
     setLocation('/test-results');
@@ -239,6 +239,54 @@ export function VerbalTestRunner() {
       </div>
     );
   }
+
+  const submitTest = async () => {
+    if (!testConfig || !questions || answers) return;
+
+    const finalScore = calculateScore();
+    const timeTakenInSeconds = Math.floor((Date.now() - startTime) / 1000);
+
+    const testResult = {
+      date: new Date().toISOString(),
+      examType: testConfig.subcategory === "التناظر اللفظي" ? "verbal" : "mixed",
+      score: finalScore,
+      totalQuestions: questions.length,
+      timeTaken: timeTakenInSeconds
+    };
+
+    console.log('Submitting test result:', testResult);
+
+    // Save to localStorage immediately with multiple keys for fallback
+    localStorage.setItem('currentTestResult', JSON.stringify(testResult));
+    localStorage.setItem('testResult', JSON.stringify(testResult));
+    localStorage.setItem('lastTestResult', JSON.stringify(testResult));
+
+    try {
+      const response = await fetch("/api/test-results", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(testResult),
+      });
+
+      if (response.ok) {
+        console.log('Test result saved successfully to server');
+      } else {
+        console.warn('Failed to save test result to server, but stored locally');
+      }
+    } catch (error) {
+      console.error("Error saving test result to server:", error);
+    }
+
+    // Navigate with URL params as backup
+    const params = new URLSearchParams({
+      score: finalScore.toString(),
+      total: questions.length.toString(),
+      examType: testResult.examType,
+      timeTaken: timeTakenInSeconds.toString()
+    });
+
+    setLocation(`/test-results?${params.toString()}`);
+  };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-blue-900 dark:to-indigo-900">
@@ -398,7 +446,7 @@ export function VerbalTestRunner() {
               {isPaused ? <Play className="w-4 h-4" /> : <Pause className="w-4 h-4" />}
               {isPaused ? 'استكمال' : 'إيقاف مؤقت'}
             </Button>
-            
+
             {currentQuestionIndex === questions.length - 1 ? (
               <Button
                 onClick={() => setShowConfirmFinish(true)}
