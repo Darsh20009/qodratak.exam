@@ -180,15 +180,15 @@ export function QuantitativeTestRunner() {
   };
 
   if (isLoading) {
-    return <LoadingScreen message="جاري تحضير أسئلة الاختبار الكمي..." />;
+    return <LoadingScreen message="جاري تحضير أسئلة الكمي المتقدمة..." />;
   }
 
   if (!testData) {
-    return <LoadingScreen message="جاري تحميل بيانات الاختبار..." />;
+    return <LoadingScreen message="جاري تحميل معايير الاختبار..." />;
   }
 
   if (questions.length === 0) {
-    return <LoadingScreen message="جاري تحضير الأسئلة..." />;
+    return <LoadingScreen message="جاري تجهيز الأسئلة الذكية..." />;
   }
 
   if (!testStarted) {
