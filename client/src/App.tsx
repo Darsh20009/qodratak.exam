@@ -35,7 +35,7 @@ import LoginPage from "@/pages/LoginPage";
 import GuestSignupPage from "@/pages/GuestSignupPage";
 import SubscriptionPage from "@/pages/SubscriptionPage";
 import TestResultsPage from './pages/TestResultsPage';
-import { AbilitiesTestPage } from "@/pages/AbilitiesTestPage";
+import AbilitiesTestPage from "@/pages/AbilitiesTestPage";
 import ProtectedRoute from "@/components/ProtectedRoute";
 import QiyasExamPage from "@/pages/QiyasExamPage";
 import CustomExamPage from "@/pages/CustomExamPage";
