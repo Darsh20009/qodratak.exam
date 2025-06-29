@@ -233,11 +233,15 @@ Preferred communication style: Simple, everyday language.
 ### Quantitative Tests System - June 29, 2025
 - **Dedicated Quantitative Tests Section**: New "اختبارات الكمي" with specialized tests for quantitative subcategories
 - **Individual Test Categories**: Separate 20-question tests with 10-minute time limits for each subcategory:
-  - الحساب (Arithmetic)
-  - الجبر (Algebra) 
+  - الإحصاء (Statistics)
+  - عمليات حسابية (Arithmetic Operations)
+  - الحركة والأنماط (Movement and Patterns)
+  - النسبة والتناسب (Ratio and Proportion)
+  - المعادلات (Equations)
   - الهندسة (Geometry)
-  - الإحصاء والاحتمالات (Statistics and Probability)
-  - المسائل اللفظية (Word Problems)
+  - النسبة المئوية (Percentages)
+  - أفكار متنوعة (Mixed Ideas)
+  - المقارنات (Comparisons)
 - **Premium-Only Access Control**: 
   - **Complete subscription requirement**: All quantitative tests restricted to premium subscribers only
   - Same ProtectedRoute implementation as verbal tests
