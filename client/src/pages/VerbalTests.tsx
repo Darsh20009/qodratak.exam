@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { motion } from "framer-motion";
+import { useLocation } from "wouter";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -45,6 +46,7 @@ interface UserTestHistory {
 }
 
 export function VerbalTests() {
+  const [, setLocation] = useLocation();
   const [selectedTest, setSelectedTest] = useState<VerbalTest | null>(null);
   const [userHistory, setUserHistory] = useState<UserTestHistory[]>([]);
 
@@ -155,7 +157,7 @@ export function VerbalTests() {
     localStorage.setItem('currentVerbalTest', JSON.stringify(testConfig));
     
     // Navigate to test runner
-    window.location.href = '/verbal-test-runner';
+    setLocation('/verbal-test-runner');
   };
 
   return (

@@ -55,7 +55,7 @@ export function VerbalTestRunner() {
 
   // Load test configuration from localStorage
   useEffect(() => {
-    const storedConfig = localStorage.getItem('verbalTestConfig');
+    const storedConfig = localStorage.getItem('currentVerbalTest');
     if (storedConfig) {
       try {
         const config = JSON.parse(storedConfig);
@@ -180,7 +180,7 @@ export function VerbalTestRunner() {
     localStorage.setItem('verbalTestResults', JSON.stringify(existingResults));
 
     // Clear test config
-    localStorage.removeItem('verbalTestConfig');
+    localStorage.removeItem('currentVerbalTest');
     
     // Navigate to results
     localStorage.setItem('lastTestResult', JSON.stringify(results));
