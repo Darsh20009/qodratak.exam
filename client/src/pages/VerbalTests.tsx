@@ -351,7 +351,7 @@ export function VerbalTests() {
                     </div>
                     <div>
                       <span className="font-bold text-blue-700 dark:text-blue-300">اختباراتك اليوم</span>
-                      <p className="text-xs text-gray-500 dark:text-gray-400">حسب معايير قياس</p>
+                      <p className="text-xs text-gray-500 dark:text-gray-400">حسب معايير قدراتك</p>
                     </div>
                   </div>
                   <div className="text-right">
@@ -601,7 +601,7 @@ export function VerbalTests() {
                         </div>
                         <div className="flex items-center gap-1">
                           <Target className="w-3 h-3" />
-                          <span>معايير قياس</span>
+                          <span>معايير قدراتك</span>
                         </div>
                       </div>
                     </div>
@@ -618,7 +618,7 @@ export function VerbalTests() {
                             <Calendar className="w-3 h-3 text-yellow-600 dark:text-yellow-400" />
                           </div>
                           <p className="text-xs font-bold text-yellow-700 dark:text-yellow-300">
-                            نظام قياس - حد يومي
+                            نظام قدراتك - حد يومي
                           </p>
                         </div>
                         <p className="text-xs text-yellow-600 dark:text-yellow-400 leading-relaxed">
@@ -651,10 +651,10 @@ export function VerbalTests() {
                 </motion.div>
                 <div>
                   <h3 className="text-2xl font-bold text-gray-800 dark:text-white mb-2">
-                    اختبارات بمعايير قياس الحقيقية
+                    اختبارات بمعايير قدراتك الحقيقية
                   </h3>
                   <p className="text-gray-600 dark:text-gray-300">
-                    جميع اختباراتنا مصممة وفقاً لمعايير هيئة تقويم التعليم والتدريب
+                    جميع اختباراتنا مصممة وفقاً لمعايير منصة قدراتك للتميز
                   </p>
                 </div>
               </div>
@@ -665,7 +665,7 @@ export function VerbalTests() {
                     <Target className="w-6 h-6 text-blue-600" />
                   </div>
                   <h4 className="font-semibold text-gray-800 dark:text-white mb-2">دقة عالية</h4>
-                  <p className="text-sm text-gray-600 dark:text-gray-400">أسئلة مطابقة لامتحانات قياس الفعلية</p>
+                  <p className="text-sm text-gray-600 dark:text-gray-400">أسئلة مطابقة لمعايير قدراتك</p>
                 </div>
 
                 <div className="text-center">
