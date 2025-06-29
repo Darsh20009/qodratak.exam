@@ -22,12 +22,15 @@ import { Progress } from '@/components/ui/progress';
 interface Question {
   id: number;
   category: string;
-  question: string;
-  choices: string[];
-  correct_answer: string;
+  text?: string;
+  question?: string;
+  options?: string[];
+  choices?: string[];
+  correctOptionIndex?: number;
+  correct_answer?: string;
   explanation?: string;
-  subcategory: string;
-  difficulty: string;
+  subcategory?: string;
+  difficulty?: string;
 }
 
 interface TestConfig {
@@ -75,7 +78,7 @@ export function VerbalTestRunner() {
     if (!allQuestions || !Array.isArray(allQuestions) || !testConfig) return [];
     
     const filtered = allQuestions.filter(q => 
-      q.subcategory === testConfig.subcategory
+      q.subcategory === testConfig.subcategory || q.category === testConfig.subcategory
     );
     
     console.log(`Found ${filtered.length} questions for subcategory: ${testConfig.subcategory}`);
@@ -156,7 +159,8 @@ export function VerbalTestRunner() {
     
     questions.forEach((question, index) => {
       const userAnswer = selectedAnswers[index];
-      if (userAnswer === question.correct_answer) {
+      const correctAnswer = question.correctOptionIndex?.toString() || question.correct_answer;
+      if (userAnswer === correctAnswer) {
         correctCount++;
       }
     });
@@ -321,11 +325,11 @@ export function VerbalTestRunner() {
                 </CardHeader>
                 <CardContent>
                   <div className="text-xl leading-relaxed mb-6 text-gray-800 dark:text-white">
-                    {currentQuestion?.question || 'لا يوجد نص للسؤال'}
+                    {currentQuestion?.text || currentQuestion?.question || 'لا يوجد نص للسؤال'}
                   </div>
 
                   <div className="grid gap-3">
-                    {currentQuestion?.choices && Array.isArray(currentQuestion.choices) && currentQuestion.choices.map((choice: string, index: number) => (
+                    {(currentQuestion?.options || currentQuestion?.choices) && Array.isArray(currentQuestion?.options || currentQuestion?.choices) && (currentQuestion?.options || currentQuestion?.choices)!.map((choice: string, index: number) => (
                       <motion.button
                         key={index}
                         onClick={() => handleAnswerSelect(index.toString())}
