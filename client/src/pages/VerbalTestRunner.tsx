@@ -81,6 +81,23 @@ export function VerbalTestRunner() {
       q.subcategory === testConfig.subcategory
     );
     
+    console.log(`Found ${filtered.length} questions for subcategory: ${testConfig.subcategory}`);
+    
+    // If no questions found, try with different variations
+    if (filtered.length === 0) {
+      // Try with alternative names
+      const alternatives = allQuestions.filter(q => 
+        q.subcategory && q.subcategory.includes(testConfig.subcategory.split(' ')[0])
+      );
+      console.log(`Found ${alternatives.length} alternative questions`);
+      
+      if (alternatives.length > 0) {
+        const shuffled = [...alternatives].sort(() => Math.random() - 0.5);
+        return shuffled.slice(0, Math.min(testConfig.questionCount, alternatives.length));
+      }
+      return [];
+    }
+    
     // Shuffle and take required amount
     const shuffled = [...filtered].sort(() => Math.random() - 0.5);
     return shuffled.slice(0, testConfig.questionCount);
@@ -192,14 +209,36 @@ export function VerbalTestRunner() {
     return Object.keys(selectedAnswers).length;
   };
 
-  if (isLoading || !testConfig) {
+  if (isLoading || !testConfig || !questions || !Array.isArray(questions) || questions.length === 0) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-blue-900 dark:to-indigo-900 flex items-center justify-center">
-        <motion.div
-          animate={{ rotate: 360 }}
-          transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
-          className="w-16 h-16 border-4 border-blue-500 border-t-transparent rounded-full"
-        />
+        <div className="text-center">
+          <motion.div
+            animate={{ rotate: 360 }}
+            transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+            className="w-16 h-16 border-4 border-blue-500 border-t-transparent rounded-full mx-auto mb-4"
+          />
+          <p className="text-lg font-semibold text-gray-700 dark:text-gray-300">
+            {isLoading ? 'جاري تحميل الأسئلة...' : 
+             !allQuestions || allQuestions.length === 0 ? 'جاري تحميل قاعدة البيانات...' :
+             'لا توجد أسئلة متوفرة لهذا القسم حالياً'}
+          </p>
+          {!isLoading && testConfig && (
+            <div className="mt-4 text-center">
+              <p className="text-sm text-gray-500 dark:text-gray-400 mb-3">
+                اختبار {testConfig.testName}
+              </p>
+              {!questions || questions.length === 0 ? (
+                <Button
+                  onClick={() => setLocation('/verbal-tests')}
+                  className="bg-blue-500 hover:bg-blue-600 text-white px-6 py-2 rounded-lg"
+                >
+                  العودة إلى قائمة الاختبارات
+                </Button>
+              ) : null}
+            </div>
+          )}
+        </div>
       </div>
     );
   }
@@ -245,7 +284,7 @@ export function VerbalTestRunner() {
     );
   }
 
-  const currentQuestion = questions[currentQuestionIndex];
+  const currentQuestion = questions && Array.isArray(questions) && questions.length > 0 ? questions[currentQuestionIndex] : null;
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-blue-900 dark:to-indigo-900">
@@ -346,7 +385,7 @@ export function VerbalTestRunner() {
                   </div>
 
                   <div className="grid gap-3">
-                    {currentQuestion.choices.map((choice: string, index: number) => (
+                    {currentQuestion && currentQuestion.choices && currentQuestion.choices.map((choice: string, index: number) => (
                       <motion.button
                         key={index}
                         onClick={() => handleAnswerSelect(index.toString())}
