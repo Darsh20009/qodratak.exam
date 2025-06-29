@@ -148,7 +148,7 @@ export function VerbalTests() {
     // For free users, check if they've taken this specific test today
     const today = new Date().toDateString();
     const storedResults = localStorage.getItem('verbalTestResults');
-    
+
     if (storedResults) {
       try {
         const results = JSON.parse(storedResults);
@@ -162,7 +162,7 @@ export function VerbalTests() {
         return true;
       }
     }
-    
+
     return true; // Allow if no history exists
   };
 
@@ -197,6 +197,17 @@ export function VerbalTests() {
 
     // Navigate to test runner
     setLocation('/verbal-test-runner');
+  };
+
+  const getTodayTestCount = (): number => {
+    const today = new Date().toDateString();
+    let count = 0;
+    userHistory.forEach(h => {
+      if (new Date(h.date).toDateString() === today) {
+        count++;
+      }
+    });
+    return count;
   };
 
   return (
@@ -273,6 +284,45 @@ export function VerbalTests() {
           </div>
         </motion.div>
 
+        {/* عرض إحصائيات الحسابات المجانية */}
+        {user && (user as any)?.subscription === 'free' && (
+          <div className="max-w-md mx-auto mb-8">
+            <Card className="bg-gradient-to-r from-blue-50 to-purple-50 dark:from-blue-900/20 dark:to-purple-900/20 border-blue-200 dark:border-blue-700">
+              <CardContent className="p-4">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <Calendar className="w-5 h-5 text-blue-600 dark:text-blue-400" />
+                    <span className="font-medium text-blue-700 dark:text-blue-300">اختباراتك اليوم</span>
+                  </div>
+                  <div className="text-right">
+                    <div className="text-2xl font-bold text-blue-600 dark:text-blue-400">
+                      {getTodayTestCount()}/4
+                    </div>
+                    <div className="text-xs text-blue-500 dark:text-blue-400">
+                      متبقي {4 - getTodayTestCount()}
+                    </div>
+                  </div>
+                </div>
+
+                {getTodayTestCount() >= 4 && (
+                  <div className="mt-3 p-2 bg-yellow-100 dark:bg-yellow-900/30 rounded-lg text-center">
+                    <p className="text-sm text-yellow-700 dark:text-yellow-300 mb-2">
+                      لقد أكملت جميع الاختبارات المجانية لليوم
+                    </p>
+                    <Button
+                      size="sm"
+                      onClick={() => setLocation("/subscription")}
+                      className="bg-blue-500 hover:bg-blue-600 text-white"
+                    >
+                      ترقية للوصول غير المحدود
+                    </Button>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </div>
+        )}
+
         {/* قائمة الاختبارات */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
           {verbalTests.map((test, index) => {
@@ -310,7 +360,7 @@ export function VerbalTests() {
                         // Get latest result for this test
                         const storedResults = localStorage.getItem('verbalTestResults');
                         let latestResult = null;
-                        
+
                         if (storedResults) {
                           try {
                             const results = JSON.parse(storedResults);
@@ -381,7 +431,7 @@ export function VerbalTests() {
                       // Get latest result for this test
                       const storedResults = localStorage.getItem('verbalTestResults');
                       let latestResult = null;
-                      
+
                       if (storedResults) {
                         try {
                           const results = JSON.parse(storedResults);
