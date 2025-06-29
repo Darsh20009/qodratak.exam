@@ -45,6 +45,8 @@ import FoldersPage from "@/pages/FoldersPage";
 import ChallengePage from "@/pages/ChallengePage";
 import NewTimeManagementPage from "@/pages/NewTimeManagementPage";
 import InstallPage from "@/pages/InstallPage";
+import { VerbalTests } from "@/pages/VerbalTests";
+import { VerbalTestRunner } from "@/pages/VerbalTestRunner";
 import { SubscriptionPlans } from "@/components/SubscriptionPlans";
 
 function MainLayout({ children }: { children: React.ReactNode }) {
@@ -96,6 +98,7 @@ function MainLayout({ children }: { children: React.ReactNode }) {
   const navItems = [
     { name: "الرئيسية", href: "/", icon: HomeIcon },
     { name: "اختبارات قياس", href: "/qiyas", icon: GraduationCapIcon },
+    { name: "اختبارات اللفظي", href: "/verbal-tests", icon: BookOpenIcon },
     { name: "اختبر قدراتك", href: "/abilities", icon: BrainCircuitIcon },
     { name: "التحديات", href: "/challenges", icon: GamepadIcon },
     { name: "اسأل سؤال", href: "/ask", icon: HelpCircleIcon },
@@ -306,6 +309,12 @@ function Router({ splashDone }: { splashDone: boolean }) {
       {/* صفحات متاحة للحسابات المجانية */}
       <Route path="/qiyas">
         {() => <MainLayout><QiyasExamPage /></MainLayout>}
+      </Route>
+      <Route path="/verbal-tests">
+        {() => <MainLayout><VerbalTests /></MainLayout>}
+      </Route>
+      <Route path="/verbal-test-runner">
+        {() => <MainLayout><VerbalTestRunner /></MainLayout>}
       </Route>
       <Route path="/time-management">
         {() => <MainLayout><NewTimeManagementPage /></MainLayout>}

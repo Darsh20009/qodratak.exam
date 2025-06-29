@@ -197,6 +197,28 @@ Preferred communication style: Simple, everyday language.
 - **Enhanced PDF Experience**: Modern CSS variables, smooth transitions, and responsive design
 - **Library Categories Update**: Replaced "dialects" filter with "sections/categories" for better content organization
 - **Subcategory Display**: Arabic subject classifications like "التناظر اللفظي" and "الهندسة" properly displayed
+- **Rounded Percentages**: Percentages now display as rounded numbers instead of precise decimals
+- **Creative HTML Question Downloads**: Advanced HTML file downloads for individual subcategories with stunning visual design
+- **Complete Report Downloads**: Comprehensive test reports with dark theme and animated elements
+
+### Specialized Verbal Tests System - June 29, 2025
+- **Dedicated Verbal Tests Section**: New "اختبارات اللفظي" with specialized tests for each verbal subcategory
+- **Individual Test Categories**: Separate 50-question tests for each subcategory:
+  - التناظر اللفظي (Verbal Analogy)
+  - إكمال الجمل (Sentence Completion)
+  - الاستيعاب المقروء (Reading Comprehension)
+  - المترادفات والأضداد (Synonyms and Antonyms)
+  - الأخطاء الشائعة (Common Errors)
+- **Qiyas Standards**: All tests follow official Qiyas examination standards and timing
+- **Daily Limits for Free Users**: Free accounts limited to one test per day per category
+- **Advanced Test Runner**: Professional test-taking interface with:
+  - Real-time timer with color-coded warnings
+  - Progress tracking and question navigation
+  - Pause/resume functionality
+  - Confirmation dialogs for test completion
+  - Automatic result calculation and storage
+- **Local History Tracking**: Test results stored locally with performance analytics
+- **Responsive Design**: Mobile-optimized interface with animated backgrounds and smooth transitions
 
 ### Technical Implementation
 - **Local Data Storage**: All time management data stored using localStorage with structured schemas
