@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Link } from 'wouter';
 import { motion } from 'framer-motion';
-import { LoadingScreen } from '@/components/LoadingScreen';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -56,14 +55,9 @@ export function QuantitativeTests() {
   const MAX_DAILY_FREE_TESTS = 1;
 
   // جلب بيانات المستخدم
-  const { data: user, isLoading: userLoading } = useQuery({
+  const { data: user } = useQuery({
     queryKey: ['/api/user'],
   });
-
-  // عرض شاشة التحميل الإبداعية أثناء تحميل بيانات المستخدم
-  if (userLoading) {
-    return <LoadingScreen message="جاري تحضير اختبارات الكمي..." />;
-  }
 
   // تحديد المستخدم المميز
   const isPremiumUser = user && (

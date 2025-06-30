@@ -1,7 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { motion, AnimatePresence } from 'framer-motion';
-import { LoadingScreen } from '@/components/LoadingScreen';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
@@ -180,15 +179,31 @@ export function QuantitativeTestRunner() {
   };
 
   if (isLoading) {
-    return <LoadingScreen message="جاري تحضير أسئلة الاختبار الكمي..." />;
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center space-y-4">
+          <Calculator className="w-12 h-12 animate-spin mx-auto text-blue-600" />
+          <p className="text-lg">جاري تحضير الاختبار...</p>
+        </div>
+      </div>
+    );
   }
 
-  if (!testData) {
-    return <LoadingScreen message="جاري تحميل بيانات الاختبار..." />;
-  }
-
-  if (questions.length === 0) {
-    return <LoadingScreen message="جاري تحضير الأسئلة..." />;
+  if (!testData || questions.length === 0) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <Card className="max-w-md">
+          <CardContent className="p-8 text-center space-y-4">
+            <AlertTriangle className="w-12 h-12 text-yellow-500 mx-auto" />
+            <h2 className="text-xl font-bold">خطأ في تحميل الاختبار</h2>
+            <p className="text-gray-600">لم يتم العثور على بيانات الاختبار أو الأسئلة</p>
+            <Button onClick={() => window.location.href = '/quantitative-tests'}>
+              العودة للاختبارات
+            </Button>
+          </CardContent>
+        </Card>
+      </div>
+    );
   }
 
   if (!testStarted) {

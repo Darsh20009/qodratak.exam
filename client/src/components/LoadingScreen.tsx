@@ -21,14 +21,6 @@ export function LoadingScreen({ message = "جاري التحميل..." }: Loadin
         <div className="absolute top-1/3 left-1/4 w-1 h-1 bg-pink-400 rounded-full animate-pulse delay-1500 opacity-90"></div>
         <div className="absolute top-2/3 right-1/3 w-2 h-2 bg-violet-400 rounded-full animate-bounce delay-700 opacity-60"></div>
         
-        {/* رموز رياضية متحركة للاختبارات الكمية */}
-        <div className="absolute top-16 left-1/3 text-blue-400/40 text-lg animate-float delay-300">π</div>
-        <div className="absolute bottom-16 right-1/4 text-purple-400/40 text-xl animate-bounce delay-1000">∑</div>
-        <div className="absolute top-1/2 left-16 text-cyan-400/40 text-base animate-pulse delay-1500">√</div>
-        <div className="absolute bottom-1/3 right-16 text-pink-400/40 text-lg animate-float delay-2000">∞</div>
-        <div className="absolute top-1/4 right-1/2 text-indigo-400/40 text-sm animate-bounce delay-500">∆</div>
-        <div className="absolute bottom-1/4 left-1/2 text-violet-400/40 text-base animate-pulse delay-800">∫</div>
-        
         {/* تأثير الشبكة المضيئة */}
         <div className="absolute inset-0 bg-[radial-gradient(circle_800px_at_50%_200px,rgba(59,130,246,0.1),transparent)] animate-pulse"></div>
         <div className="absolute inset-0 bg-[radial-gradient(circle_600px_at_80%_80%,rgba(168,85,247,0.08),transparent)] animate-pulse delay-1000"></div>
@@ -141,15 +133,6 @@ export function LoadingScreen({ message = "جاري التحميل..." }: Loadin
 
         .animate-spin-reverse {
           animation: spin-reverse 12s linear infinite;
-        }
-
-        @keyframes float {
-          0%, 100% { transform: translateY(0px) rotate(0deg); }
-          50% { transform: translateY(-10px) rotate(5deg); }
-        }
-
-        .animate-float {
-          animation: float 3s ease-in-out infinite;
         }
       `}</style>
     </div>
