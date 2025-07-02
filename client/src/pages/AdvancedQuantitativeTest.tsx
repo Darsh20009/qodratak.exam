@@ -26,6 +26,7 @@ import {
   Sigma,
   Square
 } from 'lucide-react';
+import { useLocation } from 'wouter';
 
 interface TestQuestion {
   id: number;
@@ -528,111 +529,900 @@ export function AdvancedQuantitativeTest() {
     );
   }
 
-  // Show results (similar structure to verbal test but with math-themed styling)
+  // Show results (enhanced math-themed styling with mistake challenge)
   if (showResults && testResults) {
+    const getPerformanceLevel = (percentage: number) => {
+      if (percentage >= 90) return { label: 'عبقري رياضي', color: 'text-green-600', bgColor: 'bg-green-100', emoji: '🧮' };
+      if (percentage >= 80) return { label: 'محلل ممتاز', color: 'text-blue-600', bgColor: 'bg-blue-100', emoji: '📊' };
+      if (percentage >= 70) return { label: 'حاسب جيد', color: 'text-yellow-600', bgColor: 'bg-yellow-100', emoji: '🔢' };
+      if (percentage >= 60) return { label: 'مفكر منطقي', color: 'text-orange-600', bgColor: 'bg-orange-100', emoji: '🎯' };
+      return { label: 'يحتاج تدريب', color: 'text-red-600', bgColor: 'bg-red-100', emoji: '💪' };
+    };
+
+    const performanceLevel = getPerformanceLevel(testResults.overallPercentage);
+    const wrongAnswersCount = 55 - testResults.totalScore;
+
+    const generateMistakesHTML = () => {
+      const currentDate = new Date().toLocaleDateString('ar-SA', {
+        weekday: 'long',
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric'
+      });
+
+      // جمع الأخطاء من جميع الأقسام
+      const wrongAnswers: any[] = [];
+      testSections.forEach((section, sectionIndex) => {
+        section.questions.forEach((question, questionIndex) => {
+          const userAnswer = selectedAnswers[`${sectionIndex}-${question.id}`];
+          if (userAnswer === undefined || userAnswer !== question.correctOptionIndex) {
+            wrongAnswers.push({
+              ...question,
+              userAnswer: userAnswer !== undefined ? question.options[userAnswer] : 'لم تتم الإجابة',
+              correctAnswer: question.options[question.correctOptionIndex],
+              sectionNumber: section.sectionNumber,
+              questionNumber: questionIndex + 1
+            });
+          }
+        });
+      });
+
+      return `<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>تقرير مراجعة الأخطاء - الاختبار الكمي المتقدم</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Tajawal:wght@300;400;500;700;900&display=swap');
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Tajawal', Arial, sans-serif;
+            line-height: 1.8;
+            background: linear-gradient(135deg, #ff9a56 0%, #ff6b9d 50%, #c44569 100%);
+            min-height: 100vh;
+            padding: 20px;
+            color: #333;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 25px;
+            padding: 40px;
+            box-shadow: 0 25px 50px rgba(0, 0, 0, 0.2);
+            backdrop-filter: blur(10px);
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .container::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: linear-gradient(45deg, transparent, rgba(255, 255, 255, 0.1), transparent);
+            transform: rotate(45deg);
+            animation: shimmer 3s ease-in-out infinite;
+        }
+        
+        @keyframes shimmer {
+            0%, 100% { transform: translateX(-100%) translateY(-100%) rotate(45deg); }
+            50% { transform: translateX(100%) translateY(100%) rotate(45deg); }
+        }
+        
+        .math-decoration {
+            position: absolute;
+            font-size: 2rem;
+            opacity: 0.1;
+            color: #ff6b9d;
+            animation: mathFloat 8s ease-in-out infinite;
+        }
+        
+        .math-decoration:nth-child(1) { top: 10%; right: 10%; content: '∑'; }
+        .math-decoration:nth-child(2) { bottom: 20%; left: 15%; content: '∫'; }
+        .math-decoration:nth-child(3) { top: 60%; right: 20%; content: '√'; }
+        .math-decoration:nth-child(4) { bottom: 40%; left: 80%; content: 'π'; }
+        
+        @keyframes mathFloat {
+            0%, 100% { transform: translateY(0px) rotate(0deg); }
+            25% { transform: translateY(-15px) rotate(90deg); }
+            50% { transform: translateY(-30px) rotate(180deg); }
+            75% { transform: translateY(-15px) rotate(270deg); }
+        }
+        
+        .decoration {
+            position: absolute;
+            background: linear-gradient(45deg, #ff9a56, #ff6b9d);
+            border-radius: 50%;
+            opacity: 0.15;
+        }
+        
+        .decoration:nth-child(1) {
+            width: 120px;
+            height: 120px;
+            top: 5%;
+            right: 5%;
+            animation: float 7s ease-in-out infinite;
+        }
+        
+        .decoration:nth-child(2) {
+            width: 80px;
+            height: 80px;
+            bottom: 15%;
+            left: 5%;
+            animation: float 9s ease-in-out infinite reverse;
+        }
+        
+        @keyframes float {
+            0%, 100% { transform: translateY(0px) rotate(0deg); }
+            50% { transform: translateY(-25px) rotate(180deg); }
+        }
+        
+        .date-stamp {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            background: linear-gradient(45deg, #ff9a56, #ff6b9d);
+            color: white;
+            padding: 10px 20px;
+            border-radius: 20px;
+            font-size: 0.95rem;
+            font-weight: 600;
+            z-index: 10;
+            box-shadow: 0 4px 15px rgba(255, 107, 157, 0.3);
+        }
+        
+        .header {
+            text-align: center;
+            margin-bottom: 50px;
+            position: relative;
+            z-index: 5;
+        }
+        
+        .math-emoji {
+            font-size: 5rem;
+            margin-bottom: 20px;
+            display: block;
+            animation: mathBounce 2s ease-in-out infinite;
+        }
+        
+        @keyframes mathBounce {
+            0%, 20%, 50%, 80%, 100% { transform: translateY(0) scale(1); }
+            40% { transform: translateY(-15px) scale(1.1); }
+            60% { transform: translateY(-8px) scale(1.05); }
+        }
+        
+        h1 {
+            font-size: 3.2rem;
+            font-weight: 900;
+            background: linear-gradient(45deg, #ff9a56, #ff6b9d, #c44569);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 15px;
+            text-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        }
+        
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 25px;
+            margin-bottom: 50px;
+            position: relative;
+            z-index: 5;
+        }
+        
+        .stat-card {
+            background: linear-gradient(135deg, #ff9a56 0%, #ff6b9d 50%, #c44569 100%);
+            padding: 35px;
+            border-radius: 25px;
+            text-align: center;
+            box-shadow: 0 20px 40px rgba(255, 107, 157, 0.2);
+            border: 3px solid rgba(255, 255, 255, 0.3);
+            transition: all 0.4s ease;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .stat-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.4), transparent);
+            transition: left 0.6s ease;
+        }
+        
+        .stat-card:hover::before {
+            left: 100%;
+        }
+        
+        .stat-card:hover {
+            transform: translateY(-15px) scale(1.05);
+            box-shadow: 0 30px 60px rgba(255, 107, 157, 0.3);
+        }
+        
+        .stat-number {
+            font-size: 3rem;
+            font-weight: 900;
+            color: #fff;
+            text-shadow: 0 3px 6px rgba(0, 0, 0, 0.3);
+            margin-bottom: 12px;
+        }
+        
+        .stat-label {
+            font-size: 1.2rem;
+            font-weight: 700;
+            color: rgba(255, 255, 255, 0.95);
+            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+        }
+        
+        .questions-container {
+            position: relative;
+            z-index: 5;
+        }
+        
+        .section-title {
+            font-size: 2.5rem;
+            font-weight: 800;
+            text-align: center;
+            margin-bottom: 40px;
+            background: linear-gradient(45deg, #ff9a56, #ff6b9d);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        
+        .mistake-card {
+            background: #fff;
+            border-radius: 25px;
+            padding: 35px;
+            margin-bottom: 35px;
+            box-shadow: 0 15px 35px rgba(255, 107, 157, 0.15);
+            border-left: 6px solid #ff6b9d;
+            position: relative;
+            transition: all 0.4s ease;
+        }
+        
+        .mistake-card:hover {
+            transform: translateX(15px);
+            box-shadow: 0 20px 45px rgba(255, 107, 157, 0.25);
+        }
+        
+        .mistake-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 25px;
+            padding-bottom: 20px;
+            border-bottom: 3px solid #f5f5f5;
+        }
+        
+        .question-number {
+            background: linear-gradient(45deg, #ff6b9d, #c44569);
+            color: white;
+            padding: 12px 25px;
+            border-radius: 20px;
+            font-weight: 800;
+            font-size: 1.2rem;
+            box-shadow: 0 4px 15px rgba(255, 107, 157, 0.3);
+        }
+        
+        .section-badge {
+            background: linear-gradient(45deg, #ff9a56, #ff6b9d);
+            color: white;
+            padding: 10px 20px;
+            border-radius: 15px;
+            font-size: 1rem;
+            font-weight: 700;
+            box-shadow: 0 3px 10px rgba(255, 154, 86, 0.3);
+        }
+        
+        .question-text {
+            font-size: 1.4rem;
+            font-weight: 600;
+            color: #2c3e50;
+            margin-bottom: 30px;
+            line-height: 1.8;
+            padding: 25px;
+            background: linear-gradient(135deg, #fff5f5, #ffe0e0);
+            border-radius: 20px;
+            border-right: 5px solid #ff6b9d;
+            box-shadow: inset 0 2px 5px rgba(255, 107, 157, 0.1);
+        }
+        
+        .answer-section {
+            display: grid;
+            gap: 20px;
+        }
+        
+        .answer-item {
+            padding: 20px 25px;
+            border-radius: 15px;
+            font-weight: 700;
+            border: 3px solid transparent;
+            transition: all 0.3s ease;
+            font-size: 1.1rem;
+        }
+        
+        .user-answer {
+            background: linear-gradient(135deg, #ff6b9d, #c44569);
+            color: white;
+            border-color: #ff6b9d;
+            box-shadow: 0 5px 15px rgba(255, 107, 157, 0.3);
+        }
+        
+        .correct-answer {
+            background: linear-gradient(135deg, #26de81, #20bf6b);
+            color: white;
+            border-color: #26de81;
+            box-shadow: 0 5px 15px rgba(38, 222, 129, 0.3);
+        }
+        
+        .unanswered {
+            background: linear-gradient(135deg, #fed330, #f39801);
+            color: white;
+            border-color: #fed330;
+            box-shadow: 0 5px 15px rgba(254, 211, 48, 0.3);
+        }
+        
+        .explanation {
+            background: linear-gradient(135deg, #e3f2fd, #bbdefb);
+            padding: 25px;
+            border-radius: 20px;
+            margin-top: 25px;
+            border-right: 5px solid #2196f3;
+            box-shadow: 0 5px 15px rgba(33, 150, 243, 0.1);
+        }
+        
+        .explanation-title {
+            font-weight: 800;
+            color: #1976d2;
+            margin-bottom: 15px;
+            font-size: 1.2rem;
+        }
+        
+        .explanation-text {
+            color: #0d47a1;
+            line-height: 1.8;
+            font-size: 1.1rem;
+        }
+        
+        .footer {
+            text-align: center;
+            margin-top: 70px;
+            padding-top: 50px;
+            border-top: 4px solid rgba(255, 154, 86, 0.3);
+            position: relative;
+            z-index: 5;
+        }
+        
+        .footer h2 {
+            font-size: 2rem;
+            font-weight: 800;
+            background: linear-gradient(45deg, #ff9a56, #ff6b9d);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 20px;
+        }
+        
+        .theme-toggle {
+            position: fixed;
+            top: 25px;
+            left: 25px;
+            background: linear-gradient(45deg, #ff9a56, #ff6b9d);
+            color: white;
+            border: none;
+            border-radius: 50%;
+            width: 55px;
+            height: 55px;
+            font-size: 1.3rem;
+            cursor: pointer;
+            box-shadow: 0 6px 20px rgba(255, 107, 157, 0.3);
+            transition: all 0.3s ease;
+            z-index: 1000;
+        }
+        
+        .theme-toggle:hover {
+            transform: scale(1.15) rotate(360deg);
+            box-shadow: 0 8px 25px rgba(255, 107, 157, 0.4);
+        }
+        
+        @media (max-width: 768px) {
+            .container { padding: 25px; }
+            h1 { font-size: 2.2rem; }
+            .stats { grid-template-columns: repeat(2, 1fr); }
+            .stat-number { font-size: 2.2rem; }
+            .question-text { font-size: 1.2rem; }
+        }
+        
+        body.dark-mode {
+            background: linear-gradient(135deg, #2c3e50 0%, #34495e 50%, #2c3e50 100%);
+        }
+        
+        body.dark-mode .container {
+            background: rgba(52, 73, 94, 0.95);
+            color: #ecf0f1;
+        }
+        
+        body.dark-mode .mistake-card {
+            background: #34495e;
+            border-left-color: #e74c3c;
+        }
+        
+        body.dark-mode .question-text {
+            background: linear-gradient(135deg, #34495e, #2c3e50);
+            color: #ecf0f1;
+            border-right-color: #e74c3c;
+        }
+    </style>
+</head>
+<body>
+    <button class="theme-toggle" onclick="toggleDarkMode()" title="تبديل الوضع الليلي">🌙</button>
+    
+    <script>
+        function toggleDarkMode() {
+            const body = document.body;
+            const toggle = document.querySelector('.theme-toggle');
+            
+            body.classList.toggle('dark-mode');
+            
+            if (body.classList.contains('dark-mode')) {
+                toggle.innerHTML = '☀️';
+                localStorage.setItem('darkMode', 'enabled');
+            } else {
+                toggle.innerHTML = '🌙';
+                localStorage.setItem('darkMode', 'disabled');
+            }
+        }
+        
+        document.addEventListener('DOMContentLoaded', function() {
+            const darkMode = localStorage.getItem('darkMode');
+            const toggle = document.querySelector('.theme-toggle');
+            
+            if (darkMode === 'enabled') {
+                document.body.classList.add('dark-mode');
+                toggle.innerHTML = '☀️';
+            }
+        });
+    </script>
+
+    <div class="container">
+        <div class="decoration"></div>
+        <div class="decoration"></div>
+        <div class="math-decoration">∑</div>
+        <div class="math-decoration">∫</div>
+        <div class="math-decoration">√</div>
+        <div class="math-decoration">π</div>
+        
+        <div class="date-stamp">${currentDate}</div>
+        
+        <div class="header">
+            <div class="math-emoji">🧮</div>
+            <h1>تقرير مراجعة الأخطاء - الاختبار الكمي المتقدم</h1>
+            <p style="font-size: 1.4rem; opacity: 0.8; margin-top: 15px;">
+                تحليل رياضي تفصيلي لنقاط التحسين والتطوير الكمي
+            </p>
+        </div>
+
+        <div class="stats">
+            <div class="stat-card">
+                <div class="stat-number">${wrongAnswersCount}</div>
+                <div class="stat-label">أخطاء رياضية</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number">55</div>
+                <div class="stat-label">إجمالي المسائل</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number">${testResults.totalScore}</div>
+                <div class="stat-label">حلول صحيحة</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number">${testResults.overallPercentage}%</div>
+                <div class="stat-label">النسبة الكمية</div>
+            </div>
+        </div>
+
+        <div class="questions-container">
+            <h2 class="section-title">🔢 تفاصيل المسائل للمراجعة</h2>
+
+            ${wrongAnswers.map((question, index) => `
+                <div class="mistake-card">
+                    <div class="mistake-header">
+                        <div class="question-number">مسألة ${index + 1}</div>
+                        <div class="section-badge">القسم ${question.sectionNumber}</div>
+                    </div>
+                    
+                    <div class="question-text">
+                        ${question.text}
+                    </div>
+                    
+                    <div class="answer-section">
+                        <div class="answer-item user-answer">
+                            <strong>🔴 حلك:</strong> ${question.userAnswer}
+                        </div>
+                        <div class="answer-item correct-answer">
+                            <strong>✅ الحل الصحيح:</strong> ${question.correctAnswer}
+                        </div>
+                    </div>
+                    
+                    ${question.explanation ? `
+                        <div class="explanation">
+                            <div class="explanation-title">📐 الشرح الرياضي:</div>
+                            <div class="explanation-text">${question.explanation}</div>
+                        </div>
+                    ` : ''}
+                </div>
+            `).join('')}
+        </div>
+
+        <div class="footer">
+            <h2>🌟 رحلة الإتقان الرياضي</h2>
+            <p style="font-size: 1.3rem; opacity: 0.8; margin-bottom: 25px;">
+                كل خطأ رياضي هو بوابة لفهم أعمق وحلول أذكى
+            </p>
+            <p style="font-size: 1.1rem; opacity: 0.6;">
+                تم إنشاء هذا التقرير بواسطة منصة <strong>قدراتك</strong> - منصة شاملة لتطوير القدرات الكمية
+            </p>
+        </div>
+    </div>
+</body>
+</html>`;
+    };
+
+    const downloadMistakesHTML = () => {
+      const htmlContent = generateMistakesHTML();
+      const blob = new Blob([htmlContent], { type: 'text/html;charset=utf-8' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `أخطاء-الاختبار-الكمي-المتقدم-${new Date().toLocaleDateString('ar-EG')}.html`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+    };
+
+    const startMistakeChallenge = () => {
+      // جمع الأخطاء من جميع الأقسام
+      const wrongAnswers: any[] = [];
+      testSections.forEach((section, sectionIndex) => {
+        section.questions.forEach((question, questionIndex) => {
+          const userAnswer = selectedAnswers[`${sectionIndex}-${question.id}`];
+          if (userAnswer === undefined || userAnswer !== question.correctOptionIndex) {
+            wrongAnswers.push({
+              ...question,
+              userAnswer: userAnswer,
+              sectionNumber: section.sectionNumber,
+              originalIndex: `${sectionIndex}-${questionIndex}`
+            });
+          }
+        });
+      });
+
+      if (wrongAnswers.length === 0) {
+        alert('لا توجد أخطاء للمراجعة! أداء رياضي ممتاز 🎉');
+        return;
+      }
+
+      // حفظ بيانات التحدي
+      const challengeData = {
+        type: 'mistake_challenge',
+        mode: 'advanced_quantitative',
+        questions: wrongAnswers,
+        originalTest: {
+          testName: 'الاختبار الكمي المتقدم',
+          subcategory: 'شامل - 5 أقسام',
+          originalScore: testResults.totalScore,
+          originalTotal: 55
+        },
+        timeLimit: wrongAnswers.length * 90 // دقيقة ونصف لكل سؤال كمي
+      };
+
+      localStorage.setItem('mistakeChallenge', JSON.stringify(challengeData));
+      setLocation('/mistake-challenge');
+    };
+
     return (
-      <div className="min-h-screen bg-gradient-to-br from-orange-50 to-red-50 dark:from-gray-900 dark:to-orange-900/20 p-4">
-        <div className="max-w-6xl mx-auto">
+      <div className="min-h-screen bg-gradient-to-br from-orange-50 via-red-50 to-pink-50 dark:from-gray-900 dark:via-orange-900/20 dark:to-red-900/20 p-4">
+        {/* خلفية رياضية متحركة */}
+        <div className="fixed inset-0 overflow-hidden pointer-events-none">
+          {['∑', '∫', '√', 'π', '∞', 'Δ', 'α', 'β', 'γ', 'θ'].map((symbol, i) => (
+            <motion.div
+              key={i}
+              className="absolute text-6xl font-bold text-orange-300/20 dark:text-orange-500/10"
+              animate={{
+                x: [0, Math.random() * window.innerWidth],
+                y: [0, Math.random() * window.innerHeight],
+                rotate: [0, 360],
+                scale: [0.5, 1.5, 0.5],
+              }}
+              transition={{
+                duration: Math.random() * 15 + 20,
+                repeat: Infinity,
+                ease: "linear",
+              }}
+              style={{
+                left: Math.random() * window.innerWidth,
+                top: Math.random() * window.innerHeight,
+              }}
+            >
+              {symbol}
+            </motion.div>
+          ))}
+        </div>
+
+        <div className="max-w-7xl mx-auto relative z-10">
           <motion.div
             initial={{ opacity: 0, y: -50 }}
             animate={{ opacity: 1, y: 0 }}
-            className="text-center mb-8"
+            className="text-center mb-12"
           >
-            <Trophy className="w-16 h-16 text-yellow-500 mx-auto mb-4" />
-            <h1 className="text-4xl font-bold text-gray-800 dark:text-white mb-2">
-              نتائج الاختبار الكمي المتقدم
+            <motion.div
+              animate={{ rotate: [0, 360], scale: [1, 1.2, 1] }}
+              transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
+              className="inline-block mb-6"
+            >
+              <Trophy className="w-20 h-20 text-yellow-500 drop-shadow-lg" />
+            </motion.div>
+            <h1 className="text-5xl font-bold bg-gradient-to-r from-orange-600 via-red-600 to-pink-600 bg-clip-text text-transparent mb-4">
+              🧮 نتائج الاختبار الكمي المتقدم
             </h1>
-            <p className="text-xl text-gray-600 dark:text-gray-300">
-              تحليل شامل لأدائك الرياضي والكمي
+            <p className="text-2xl text-gray-600 dark:text-gray-300">
+              تحليل رياضي شامل مع استراتيجيات تطوير ذكية
             </p>
           </motion.div>
 
-          {/* Overall Score */}
-          <Card className="mb-8 bg-gradient-to-r from-orange-500 to-red-600 text-white">
-            <CardContent className="p-8 text-center">
-              <div className="text-6xl font-bold mb-2">{testResults.overallPercentage}%</div>
-              <div className="text-2xl font-semibold mb-4">النتيجة الإجمالية</div>
-              <div className="text-lg opacity-90">
-                {testResults.totalScore} من 55 سؤال صحيح
-              </div>
-            </CardContent>
-          </Card>
+          {/* النتيجة الإجمالية المحسّنة */}
+          <motion.div
+            initial={{ opacity: 0, scale: 0.9 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ delay: 0.2 }}
+            className="mb-8"
+          >
+            <Card className="relative overflow-hidden bg-gradient-to-r from-orange-500 via-red-600 to-pink-600 text-white shadow-2xl">
+              <div className="absolute inset-0 bg-gradient-to-r from-black/20 to-transparent" />
+              <CardContent className="relative p-12 text-center">
+                <motion.div
+                  initial={{ scale: 0 }}
+                  animate={{ scale: 1 }}
+                  transition={{ delay: 0.5, type: "spring", stiffness: 200 }}
+                  className="text-8xl font-bold mb-4 drop-shadow-lg"
+                >
+                  {testResults.overallPercentage}%
+                </motion.div>
+                <div className="text-3xl font-semibold mb-4">النتيجة الكمية الإجمالية</div>
+                <div className="text-xl opacity-90 mb-6">
+                  {testResults.totalScore} من 55 مسألة رياضية صحيحة
+                </div>
+                <div className={`inline-flex items-center gap-3 px-6 py-3 rounded-full text-xl font-bold ${performanceLevel.bgColor} ${performanceLevel.color} bg-white/20 backdrop-blur-sm`}>
+                  <span className="text-2xl">{performanceLevel.emoji}</span>
+                  {performanceLevel.label}
+                </div>
+              </CardContent>
+            </Card>
+          </motion.div>
 
-          {/* Section Results */}
-          <Card className="mb-8">
-            <CardHeader>
-              <CardTitle className="text-2xl">نتائج الأقسام الكمية</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
-                {testResults.sectionResults.map((section, index) => (
-                  <motion.div
-                    key={section.sectionNumber}
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: index * 0.1 }}
-                    className="text-center p-4 bg-gradient-to-br from-orange-50 to-red-50 dark:from-orange-900/20 dark:to-red-900/20 rounded-xl border border-orange-200 dark:border-orange-700"
-                  >
-                    <div className="text-3xl font-bold text-orange-600 dark:text-orange-400 mb-2">
-                      {section.percentage}%
-                    </div>
-                    <div className="text-sm text-gray-600 dark:text-gray-300 mb-1">
-                      القسم {section.sectionNumber}
-                    </div>
-                    <div className="text-xs text-gray-500 dark:text-gray-400">
-                      {section.score}/11 صحيح
-                    </div>
-                  </motion.div>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
+          {/* نتائج الأقسام الكمية المحسّنة */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.4 }}
+            className="mb-8"
+          >
+            <Card className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm shadow-xl">
+              <CardHeader>
+                <CardTitle className="text-3xl flex items-center gap-3">
+                  <PieChart className="w-8 h-8 text-orange-600" />
+                  نتائج الأقسام الرياضية الخمسة
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-1 md:grid-cols-5 gap-6">
+                  {testResults.sectionResults.map((section, index) => (
+                    <motion.div
+                      key={section.sectionNumber}
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: 0.1 * index }}
+                      className="relative group"
+                    >
+                      <div className="text-center p-6 bg-gradient-to-br from-orange-50 to-red-50 dark:from-orange-900/20 dark:to-red-900/20 rounded-2xl border-2 border-orange-200 dark:border-orange-700 hover:shadow-lg transition-all duration-300 hover:scale-105">
+                        <motion.div
+                          initial={{ scale: 0 }}
+                          animate={{ scale: 1 }}
+                          transition={{ delay: 0.5 + index * 0.1, type: "spring" }}
+                          className="text-4xl font-bold text-orange-600 dark:text-orange-400 mb-3"
+                        >
+                          {section.percentage}%
+                        </motion.div>
+                        <div className="text-lg font-semibold text-gray-700 dark:text-gray-300 mb-2">
+                          القسم {section.sectionNumber}
+                        </div>
+                        <div className="text-sm text-gray-500 dark:text-gray-400 mb-3">
+                          {section.score}/11 صحيح
+                        </div>
+                        <Progress value={section.percentage} className="h-2" />
+                      </div>
+                    </motion.div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          </motion.div>
 
-          {/* Subcategory Breakdown */}
-          <Card className="mb-8">
-            <CardHeader>
-              <CardTitle className="text-2xl flex items-center gap-2">
-                <BarChart3 className="w-6 h-6" />
-                تحليل المجالات الرياضية
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                {Object.entries(testResults.subcategoryBreakdown).map(([subcategory, data]) => (
-                  <div key={subcategory} className="flex items-center justify-between p-4 bg-gradient-to-r from-orange-50 to-red-50 dark:from-orange-900/20 dark:to-red-900/20 rounded-lg border border-orange-200 dark:border-orange-700">
-                    <div>
-                      <div className="font-semibold text-gray-800 dark:text-white">{subcategory}</div>
-                      <div className="text-sm text-gray-600 dark:text-gray-300">
-                        {data.correct} من {data.total} صحيح
+          {/* تحليل المجالات الرياضية المحسّن */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.6 }}
+            className="mb-8"
+          >
+            <Card className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm shadow-xl">
+              <CardHeader>
+                <CardTitle className="text-3xl flex items-center gap-3">
+                  <Sigma className="w-8 h-8 text-green-600" />
+                  تحليل المجالات الرياضية
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="grid gap-6">
+                  {Object.entries(testResults.subcategoryBreakdown).map(([subcategory, data], index) => (
+                    <motion.div
+                      key={subcategory}
+                      initial={{ opacity: 0, x: -20 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      transition={{ delay: 0.1 * index }}
+                      className="flex items-center justify-between p-6 bg-gradient-to-r from-orange-50 to-red-50 dark:from-orange-900/20 dark:to-red-900/20 rounded-2xl border border-orange-200 dark:border-orange-700 hover:shadow-lg transition-all duration-300"
+                    >
+                      <div className="flex-1">
+                        <div className="text-xl font-bold text-gray-800 dark:text-white mb-2">{subcategory}</div>
+                        <div className="text-gray-600 dark:text-gray-300">
+                          {data.correct} من {data.total} مسألة صحيحة
+                        </div>
+                      </div>
+                      <div className="text-center">
+                        <div className="text-3xl font-bold text-orange-600 dark:text-orange-400 mb-2">
+                          {data.percentage}%
+                        </div>
+                        <Progress value={data.percentage} className="w-32 h-3" />
+                      </div>
+                    </motion.div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          </motion.div>
+
+          {/* قسم التحديات الرياضية والمميزات الجديد */}
+          {wrongAnswersCount > 0 && (
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.8 }}
+              className="mb-8"
+            >
+              <Card className="bg-gradient-to-r from-red-50 to-orange-50 dark:from-red-900/20 dark:to-orange-900/20 border-2 border-red-200 dark:border-red-700 shadow-xl">
+                <CardHeader>
+                  <CardTitle className="text-3xl text-center flex items-center justify-center gap-3">
+                    <Calculator className="w-8 h-8 text-red-600" />
+                    🎯 تحدي المراجعة الرياضية الذكي
+                  </CardTitle>
+                  <p className="text-center text-gray-600 dark:text-gray-300 text-lg">
+                    حوّل أخطاءك الرياضية إلى مهارات قوية مع نظام التدريب التفاعلي
+                  </p>
+                </CardHeader>
+                <CardContent>
+                  <div className="grid md:grid-cols-2 gap-6">
+                    <div className="space-y-4">
+                      <div className="flex items-center gap-3">
+                        <div className="w-12 h-12 bg-red-500 rounded-full flex items-center justify-center text-white font-bold text-lg">
+                          {wrongAnswersCount}
+                        </div>
+                        <div>
+                          <div className="font-bold text-lg">مسائل تحتاج مراجعة</div>
+                          <div className="text-gray-600 dark:text-gray-400">فرصة لتطوير مهاراتك الرياضية</div>
+                        </div>
+                      </div>
+                      
+                      <div className="space-y-2">
+                        <div className="flex items-center gap-2 text-green-600">
+                          <Square className="w-5 h-5" />
+                          <span>حلول خطوة بخطوة مع شروحات مفصلة</span>
+                        </div>
+                        <div className="flex items-center gap-2 text-blue-600">
+                          <Star className="w-5 h-5" />
+                          <span>نقاط مضاعفة للمسائل الصعبة</span>
+                        </div>
+                        <div className="flex items-center gap-2 text-purple-600">
+                          <Award className="w-5 h-5" />
+                          <span>شارات الإتقان الرياضي</span>
+                        </div>
                       </div>
                     </div>
-                    <div className="text-right">
-                      <div className="text-2xl font-bold text-orange-600 dark:text-orange-400">
-                        {data.percentage}%
-                      </div>
-                      <Progress value={data.percentage} className="w-24 h-2" />
+
+                    <div className="space-y-4">
+                      <Button
+                        onClick={startMistakeChallenge}
+                        className="w-full bg-gradient-to-r from-red-500 via-orange-500 to-yellow-500 hover:from-red-600 hover:via-orange-600 hover:to-yellow-600 text-white text-lg py-4 shadow-lg hover:shadow-xl transition-all duration-300"
+                      >
+                        <motion.div
+                          animate={{ scale: [1, 1.1, 1] }}
+                          transition={{ duration: 2, repeat: Infinity }}
+                          className="flex items-center gap-2"
+                        >
+                          <Calculator className="w-6 h-6" />
+                          ابدأ التحدي الرياضي الآن
+                        </motion.div>
+                      </Button>
+
+                      <Button
+                        onClick={downloadMistakesHTML}
+                        variant="outline"
+                        className="w-full border-2 border-orange-300 hover:bg-orange-50 text-orange-700 text-lg py-4"
+                      >
+                        <motion.div
+                          animate={{ rotate: [0, 15, -15, 0] }}
+                          transition={{ duration: 2, repeat: Infinity }}
+                          className="flex items-center gap-2"
+                        >
+                          <BookOpen className="w-6 h-6" />
+                          تحميل تقرير الأخطاء الرياضي
+                        </motion.div>
+                      </Button>
                     </div>
                   </div>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
+                </CardContent>
+              </Card>
+            </motion.div>
+          )}
 
-          <div className="text-center space-x-4 space-x-reverse">
-            <Button
-              onClick={() => setLocation('/quantitative-tests')}
-              className="bg-gradient-to-r from-orange-600 to-red-600 text-white px-6 py-3"
-            >
-              العودة للاختبارات
-            </Button>
-            <Button
-              onClick={() => window.location.reload()}
-              variant="outline"
-              className="px-6 py-3"
-            >
-              إعادة الاختبار
-            </Button>
-          </div>
+          {/* الأزرار الرئيسية */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 1.0 }}
+            className="text-center space-y-4"
+          >
+            <div className="flex flex-wrap justify-center gap-4">
+              <Button
+                onClick={() => setLocation('/quantitative-tests')}
+                className="bg-gradient-to-r from-orange-600 to-red-600 hover:from-orange-700 hover:to-red-700 text-white px-8 py-4 text-lg shadow-lg hover:shadow-xl transition-all duration-300"
+              >
+                <ArrowRight className="w-6 h-6 mr-2" />
+                العودة للاختبارات الكمية
+              </Button>
+              
+              <Button
+                onClick={() => window.location.reload()}
+                variant="outline"
+                className="border-2 border-orange-300 hover:bg-orange-50 text-orange-700 px-8 py-4 text-lg"
+              >
+                <motion.div
+                  animate={{ rotate: [0, 360] }}
+                  transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
+                  className="mr-2"
+                >
+                  <ArrowLeft className="w-6 h-6" />
+                </motion.div>
+                إعادة الاختبار
+              </Button>
+            </div>
+          </motion.div>
         </div>
       </div>
     );
