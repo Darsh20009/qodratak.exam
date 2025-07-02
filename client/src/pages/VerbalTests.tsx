@@ -19,7 +19,8 @@ import {
   Zap,
   Award,
   Sparkles,
-  TrendingUp
+  TrendingUp,
+  PlayCircle
 } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 
@@ -30,7 +31,7 @@ interface VerbalTest {
   description: string;
   questionCount: number;
   timeLimit: number;
-  difficulty: 'سهل' | 'متوسط' | 'صعب';
+  difficulty: 'سهل' | 'متوسط' | 'صعب' | 'متقدم';
   icon: React.ReactNode;
   color: string;
   gradientFrom: string;
@@ -177,6 +178,19 @@ export function VerbalTests() {
       color: 'from-indigo-500 to-blue-500',
       gradientFrom: 'from-indigo-50',
       gradientTo: 'to-blue-50'
+    },
+    {
+      id: 'advanced-verbal-test',
+      name: 'الاختبار اللفظي المتقدم',
+      subcategory: 'شامل - 5 أقسام',
+      description: 'اختبار متقدم مكون من 5 أقسام منفصلة - 65 سؤال في 65 دقيقة مع تحليل تفصيلي للأداء',
+      questionCount: 65,
+      timeLimit: 65,
+      difficulty: 'متقدم',
+      icon: <Award className="w-6 h-6" />,
+      color: 'from-purple-500 to-pink-500',
+      gradientFrom: 'from-purple-50',
+      gradientTo: 'to-pink-50'
     }
   ];
 
@@ -196,6 +210,7 @@ export function VerbalTests() {
       case 'سهل': return 'bg-green-100 text-green-800 dark:bg-green-900/30 border-green-300';
       case 'متوسط': return 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 border-yellow-300';
       case 'صعب': return 'bg-red-100 text-red-800 dark:bg-red-900/30 border-red-300';
+      case 'متقدم': return 'bg-purple-100 text-purple-800 dark:bg-purple-900/30 border-purple-300';
       default: return 'bg-gray-100 text-gray-800 dark:bg-gray-900/30 border-gray-300';
     }
   };
@@ -229,8 +244,12 @@ export function VerbalTests() {
 
     localStorage.setItem('currentVerbalTest', JSON.stringify(testConfig));
 
-    // Navigate to test runner
-    setLocation('/verbal-test-runner');
+    // Navigate to appropriate test runner
+    if (test.id === 'advanced-verbal-test') {
+      setLocation('/advanced-verbal-test');
+    } else {
+      setLocation('/verbal-test-runner');
+    }
   };
 
   const getTodayTestCount = (): number => {
@@ -339,6 +358,55 @@ export function VerbalTests() {
               </motion.div>
             ))}
           </div>
+        </motion.div>
+
+        {/* اختبار متقدم مميز */}
+        <motion.div
+          initial={{ opacity: 0, scale: 0.9 }}
+          animate={{ opacity: 1, scale: 1 }}
+          className="mb-8 max-w-6xl mx-auto"
+        >
+          <Card className="bg-gradient-to-r from-purple-600 via-pink-600 to-indigo-600 text-white shadow-2xl border-0 overflow-hidden relative">
+            <div className="absolute inset-0 bg-gradient-to-r from-purple-400/20 via-pink-400/20 to-indigo-400/20 animate-pulse"></div>
+            <CardContent className="p-8 relative z-10">
+              <div className="flex flex-col md:flex-row items-center justify-between gap-6">
+                <div className="flex items-center gap-6">
+                  <motion.div
+                    className="w-20 h-20 bg-white/20 rounded-2xl flex items-center justify-center backdrop-blur-sm"
+                    whileHover={{ rotate: 360 }}
+                    transition={{ duration: 0.6 }}
+                  >
+                    <Brain className="w-10 h-10 text-white" />
+                  </motion.div>
+                  <div>
+                    <h3 className="text-2xl font-bold mb-2">الاختبار المتقدم للقدرات اللفظية</h3>
+                    <p className="text-white/90 mb-4">اختبار شامل بـ 5 أقسام - 65 سؤال في 65 دقيقة</p>
+                    <div className="flex items-center gap-4 text-sm">
+                      <div className="flex items-center gap-1">
+                        <Clock className="w-4 h-4" />
+                        <span>65 دقيقة</span>
+                      </div>
+                      <div className="flex items-center gap-1">
+                        <Target className="w-4 h-4" />
+                        <span>65 سؤال</span>
+                      </div>
+                      <div className="flex items-center gap-1">
+                        <Award className="w-4 h-4" />
+                        <span>5 أقسام</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                <Button 
+                  onClick={() => window.location.href = '/advanced-verbal-test'}
+                  className="bg-white text-purple-600 hover:bg-white/90 px-8 py-3 rounded-xl font-bold text-lg shadow-lg hover:shadow-xl transition-all duration-300 whitespace-nowrap"
+                >
+                  ابدأ الاختبار المتقدم
+                  <PlayCircle className="w-5 h-5 mr-2" />
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
         </motion.div>
 
         {/* عرض إحصائيات الحسابات المجانية مع ميزات قياس (نفس نظام قياس) */}

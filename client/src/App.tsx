@@ -50,6 +50,8 @@ import { VerbalTests } from "@/pages/VerbalTests";
 import { VerbalTestRunner } from "@/pages/VerbalTestRunner";
 import { QuantitativeTests } from "@/pages/QuantitativeTests";
 import { QuantitativeTestRunner } from "@/pages/QuantitativeTestRunner";
+import { AdvancedVerbalTest } from "@/pages/AdvancedVerbalTest";
+import { AdvancedQuantitativeTest } from "@/pages/AdvancedQuantitativeTest";
 import { SubscriptionPlans } from "@/components/SubscriptionPlans";
 import MistakeChallengePage from '@/pages/MistakeChallengePage';
 
@@ -354,6 +356,12 @@ function Router({ splashDone }: { splashDone: boolean }) {
       </Route>
       <Route path="/quantitative-test-runner">
         {() => <MainLayout><ProtectedRoute requiresPremium={true}>{hasAccess ? <QuantitativeTestRunner /> : null}</ProtectedRoute></MainLayout>}
+      </Route>
+      <Route path="/advanced-verbal-test">
+        {() => <MainLayout><ProtectedRoute requiresPremium={true}>{hasAccess ? <AdvancedVerbalTest /> : null}</ProtectedRoute></MainLayout>}
+      </Route>
+      <Route path="/advanced-quantitative-test">
+        {() => <MainLayout><ProtectedRoute requiresPremium={true}>{hasAccess ? <AdvancedQuantitativeTest /> : null}</ProtectedRoute></MainLayout>}
       </Route>
       <Route path="/custom-exam">
         {() => <MainLayout><ProtectedRoute requiresPremium={true}>{hasAccess ? <CustomExamPage /> : null}</ProtectedRoute></MainLayout>}
