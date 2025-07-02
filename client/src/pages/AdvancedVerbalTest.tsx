@@ -114,7 +114,27 @@ export function AdvancedVerbalTest() {
   // Initialize test sections
   useEffect(() => {
     if (allQuestions.length > 0 && testSections.length === 0) {
-      const verbalQuestions = allQuestions.filter(q => q.category === 'verbal');
+      // Get current test configuration from localStorage
+      const currentTest = localStorage.getItem('currentVerbalTest');
+      let targetSubcategory = 'شامل - 5 أقسام'; // default to comprehensive
+      
+      if (currentTest) {
+        const testConfig = JSON.parse(currentTest);
+        targetSubcategory = testConfig.subcategory;
+      }
+      
+      let verbalQuestions;
+      
+      if (targetSubcategory === 'شامل - 5 أقسام') {
+        // For comprehensive test, use all verbal questions
+        verbalQuestions = allQuestions.filter(q => q.category === 'verbal');
+      } else {
+        // For specific subcategory tests, filter by exact subcategory
+        const specificSubcategory = targetSubcategory.replace(' - 5 أقسام', '');
+        verbalQuestions = allQuestions.filter(q => 
+          q.category === 'verbal' && q.subcategory === specificSubcategory
+        );
+      }
       
       if (verbalQuestions.length >= 65) {
         // Shuffle questions for randomness
@@ -128,7 +148,7 @@ export function AdvancedVerbalTest() {
           const endIndex = startIndex + 13;
           sections.push({
             sectionNumber: i + 1,
-            name: `القسم ${i + 1} - اللفظي`,
+            name: `القسم ${i + 1} - ${targetSubcategory.replace(' - 5 أقسام', '')}`,
             questionCount: 13,
             timeLimit: 13, // 13 minutes per section
             questions: selectedQuestions.slice(startIndex, endIndex),
