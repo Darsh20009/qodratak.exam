@@ -94,8 +94,8 @@ export function QuantitativeTests() {
       name: 'اختبار الإحصاء',
       subcategory: 'الإحصاء',
       description: 'التحليل الإحصائي والاحتمالات والبيانات',
-      questionCount: 20,
-      timeLimit: 10,
+      questionCount: 55,
+      timeLimit: 55,
       difficulty: 'صعب',
       icon: <PieChart className="w-6 h-6" />,
       color: 'purple',
@@ -107,8 +107,8 @@ export function QuantitativeTests() {
       name: 'اختبار العمليات الحسابية',
       subcategory: 'عمليات حسابية',
       description: 'العمليات الحسابية الأساسية والمتقدمة',
-      questionCount: 20,
-      timeLimit: 10,
+      questionCount: 55,
+      timeLimit: 55,
       difficulty: 'متوسط',
       icon: <Calculator className="w-6 h-6" />,
       color: 'blue',
@@ -120,8 +120,8 @@ export function QuantitativeTests() {
       name: 'اختبار الحركة والأنماط',
       subcategory: 'الحركة والأنماط',
       description: 'التسلسلات والأنماط الرقمية والحركة',
-      questionCount: 20,
-      timeLimit: 10,
+      questionCount: 55,
+      timeLimit: 55,
       difficulty: 'متوسط',
       icon: <TrendingUp className="w-6 h-6" />,
       color: 'green',
@@ -133,8 +133,8 @@ export function QuantitativeTests() {
       name: 'اختبار النسبة والتناسب',
       subcategory: 'النسبة والتناسب',
       description: 'النسب والتناسبات والعلاقات الرياضية',
-      questionCount: 20,
-      timeLimit: 10,
+      questionCount: 55,
+      timeLimit: 55,
       difficulty: 'متوسط',
       icon: <BarChart3 className="w-6 h-6" />,
       color: 'teal',
@@ -146,8 +146,8 @@ export function QuantitativeTests() {
       name: 'اختبار المعادلات',
       subcategory: 'المعادلات',
       description: 'حل المعادلات والمتباينات الرياضية',
-      questionCount: 20,
-      timeLimit: 10,
+      questionCount: 55,
+      timeLimit: 55,
       difficulty: 'صعب',
       icon: <Brain className="w-6 h-6" />,
       color: 'red',
@@ -159,8 +159,8 @@ export function QuantitativeTests() {
       name: 'اختبار الهندسة',
       subcategory: 'الهندسة',
       description: 'الأشكال الهندسية والمساحات والحجوم',
-      questionCount: 20,
-      timeLimit: 10,
+      questionCount: 55,
+      timeLimit: 55,
       difficulty: 'متوسط',
       icon: <Target className="w-6 h-6" />,
       color: 'orange',
@@ -172,8 +172,8 @@ export function QuantitativeTests() {
       name: 'اختبار النسبة المئوية',
       subcategory: 'النسبة المئوية',
       description: 'حساب النسب المئوية والتطبيقات العملية',
-      questionCount: 20,
-      timeLimit: 10,
+      questionCount: 55,
+      timeLimit: 55,
       difficulty: 'سهل',
       icon: <Award className="w-6 h-6" />,
       color: 'amber',
@@ -185,8 +185,8 @@ export function QuantitativeTests() {
       name: 'اختبار أفكار متنوعة',
       subcategory: 'أفكار متنوعة',
       description: 'مجموعة متنوعة من المسائل الرياضية',
-      questionCount: 20,
-      timeLimit: 10,
+      questionCount: 55,
+      timeLimit: 55,
       difficulty: 'متوسط',
       icon: <Trophy className="w-6 h-6" />,
       color: 'violet',
@@ -198,8 +198,8 @@ export function QuantitativeTests() {
       name: 'اختبار المقارنات',
       subcategory: 'المقارنات',
       description: 'مقارنة الأرقام والكميات والعلاقات',
-      questionCount: 20,
-      timeLimit: 10,
+      questionCount: 55,
+      timeLimit: 55,
       difficulty: 'متوسط',
       icon: <Clock className="w-6 h-6" />,
       color: 'slate',
@@ -262,12 +262,12 @@ export function QuantitativeTests() {
       icon: Target
     },
     {
-      value: "20",
+      value: "55",
       label: "أسئلة لكل اختبار",
       icon: Brain
     },
     {
-      value: "10",
+      value: "55",
       label: "دقائق لكل اختبار",
       icon: Clock
     }
@@ -294,7 +294,7 @@ export function QuantitativeTests() {
             </h1>
           </div>
           <p className="text-lg text-gray-600 dark:text-gray-300 max-w-2xl mx-auto">
-            اختبارات متخصصة في القدرات الكمية وفقاً لمعايير قدراتك - 20 سؤال في 10 دقائق لكل قسم
+            اختبارات متخصصة في القدرات الكمية وفقاً لمعايير قدراتك - 55 سؤال في 55 دقيقة لكل قسم
           </p>
         </motion.div>
 
