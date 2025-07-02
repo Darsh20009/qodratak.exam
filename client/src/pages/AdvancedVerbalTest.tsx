@@ -25,7 +25,6 @@ import {
   Eye,
   BarChart3
 } from 'lucide-react';
-import { useLocation } from 'wouter';
 
 interface TestQuestion {
   id: number;
