@@ -107,9 +107,7 @@ function MainLayout({ children }: { children: React.ReactNode }) {
     { name: "الرئيسية", href: "/", icon: HomeIcon },
     { name: "اختبارات قياس", href: "/qiyas", icon: GraduationCapIcon },
     { name: "اختبارات اللفظي", href: "/verbal-tests", icon: BookOpenIcon },
-    { name: "اللفظي المتقدم", href: "/enhanced-verbal", icon: DiamondIcon },
     { name: "اختبارات الكمي", href: "/quantitative-tests", icon: Calculator },
-    { name: "الكمي المتقدم", href: "/enhanced-quantitative", icon: CrownIcon },
     { name: "اختبر قدراتك", href: "/abilities", icon: BrainCircuitIcon },
     { name: "التحديات", href: "/challenges", icon: GamepadIcon },
     { name: "اسأل سؤال", href: "/ask", icon: HelpCircleIcon },
@@ -367,14 +365,7 @@ function Router({ splashDone }: { splashDone: boolean }) {
       <Route path="/advanced-quantitative-test">
         {() => <MainLayout><ProtectedRoute requiresPremium={true}>{hasAccess ? <AdvancedQuantitativeTest /> : null}</ProtectedRoute></MainLayout>}
       </Route>
-      
-      {/* Enhanced Test Pages */}
-      <Route path="/enhanced-verbal">
-        {() => <MainLayout><EnhancedVerbalTests /></MainLayout>}
-      </Route>
-      <Route path="/enhanced-quantitative">
-        {() => <MainLayout><EnhancedQuantitativeTests /></MainLayout>}
-      </Route>
+
       <Route path="/custom-exam">
         {() => <MainLayout><ProtectedRoute requiresPremium={true}>{hasAccess ? <CustomExamPage /> : null}</ProtectedRoute></MainLayout>}
       </Route>
