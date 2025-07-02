@@ -45,7 +45,7 @@ import {
   BookOpen,
   PenTool
 } from 'lucide-react';
-import { calculateDetailedResults, generatePerformanceInsights, VERBAL_SUBCATEGORIES_5_SECTIONS, QUANTITATIVE_SUBCATEGORIES_5_SECTIONS } from '../../shared/examUtils';
+import { calculateDetailedResults, generatePerformanceInsights, VERBAL_SUBCATEGORIES_5_SECTIONS, QUANTITATIVE_SUBCATEGORIES_5_SECTIONS } from '../../../shared/examUtils';
 
 interface TestResult {
   testName?: string;
@@ -830,7 +830,7 @@ export default function TestResultsPage() {
               repeat: Infinity,
               ease: "easeInOut",
             }}
-            style={{
+            initial={{
               left: `${Math.random() * 100}%`,
               top: `${Math.random() * 100}%`,
             }}
