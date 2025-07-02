@@ -292,6 +292,326 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Advanced Test Results API for specialized tests
+  app.post("/api/test-results/advanced", async (req: Request, res: Response) => {
+    try {
+      const {
+        userId,
+        testId,
+        testName,
+        testCategory,
+        subcategory,
+        totalQuestions,
+        correctAnswers,
+        wrongAnswers,
+        skippedQuestions,
+        percentage,
+        timeTaken,
+        timeLimit,
+        difficulty,
+        pointsEarned,
+        streakBonus,
+        performanceLevel,
+        weakAreas,
+        strongAreas,
+        questionDetails,
+        improvements,
+        sessionId
+      } = req.body;
+
+      if (!userId || !testId || !testName || !testCategory || !subcategory) {
+        return res.status(400).json({ 
+          message: "Missing required fields for advanced test result" 
+        });
+      }
+
+      const advancedResult = {
+        userId,
+        testId,
+        testName,
+        testCategory,
+        subcategory,
+        totalQuestions: totalQuestions || 0,
+        correctAnswers: correctAnswers || 0,
+        wrongAnswers: wrongAnswers || 0,
+        skippedQuestions: skippedQuestions || 0,
+        percentage: percentage || 0,
+        timeTaken: timeTaken || 0,
+        timeLimit: timeLimit || 0,
+        difficulty: difficulty || 'متوسط',
+        pointsEarned: pointsEarned || 0,
+        streakBonus: streakBonus || 0,
+        performanceLevel: performanceLevel || 'مقبول',
+        weakAreas: weakAreas || [],
+        strongAreas: strongAreas || [],
+        questionDetails: questionDetails || [],
+        improvements: improvements || [],
+        sessionId: sessionId || null,
+        completedAt: new Date().toISOString()
+      };
+
+      // Save to file-based storage
+      try {
+        const filePath = path.join(process.cwd(), 'server/data/advanced_results.json');
+        let existingResults = [];
+        
+        try {
+          const data = fs.readFileSync(filePath, 'utf8');
+          existingResults = JSON.parse(data);
+        } catch (error) {
+          // File doesn't exist, create empty array
+          existingResults = [];
+        }
+        
+        existingResults.push({
+          id: Date.now(),
+          ...advancedResult
+        });
+
+        // Ensure directory exists
+        const dirPath = path.dirname(filePath);
+        if (!fs.existsSync(dirPath)) {
+          fs.mkdirSync(dirPath, { recursive: true });
+        }
+
+        fs.writeFileSync(filePath, JSON.stringify(existingResults, null, 2));
+
+        // Update user achievements and stats
+        await updateUserAchievements(userId, advancedResult);
+        await updatePerformanceAnalytics(userId, advancedResult);
+
+        res.status(201).json({ 
+          success: true, 
+          message: "Advanced test result saved successfully",
+          result: advancedResult 
+        });
+        
+      } catch (fileError) {
+        console.error("Error saving to file:", fileError);
+        res.status(500).json({ message: "Error saving advanced test result" });
+      }
+      
+    } catch (error) {
+      console.error("Error saving advanced test result:", error);
+      res.status(500).json({ message: "Error saving advanced test result" });
+    }
+  });
+
+  // Get advanced test results for a user
+  app.get("/api/test-results/advanced/:userId", async (req: Request, res: Response) => {
+    try {
+      const userId = parseInt(req.params.userId);
+      
+      const filePath = path.join(process.cwd(), 'server/data/advanced_results.json');
+      let existingResults = [];
+      
+      try {
+        const data = fs.readFileSync(filePath, 'utf8');
+        existingResults = JSON.parse(data);
+      } catch (error) {
+        existingResults = [];
+      }
+      
+      const userResults = existingResults.filter((result: any) => result.userId === userId);
+      
+      res.json(userResults);
+    } catch (error) {
+      console.error("Error fetching advanced test results:", error);
+      res.status(500).json({ message: "Error fetching advanced test results" });
+    }
+  });
+
+  // Get user achievements
+  app.get("/api/achievements/:userId", async (req: Request, res: Response) => {
+    try {
+      const userId = parseInt(req.params.userId);
+      
+      const filePath = path.join(process.cwd(), 'server/data/achievements.json');
+      let achievements = [];
+      
+      try {
+        const data = fs.readFileSync(filePath, 'utf8');
+        achievements = JSON.parse(data);
+      } catch (error) {
+        achievements = [];
+      }
+      
+      const userAchievements = achievements.filter((achievement: any) => achievement.userId === userId);
+      
+      res.json(userAchievements);
+    } catch (error) {
+      console.error("Error fetching user achievements:", error);
+      res.status(500).json({ message: "Error fetching user achievements" });
+    }
+  });
+
+  // Get performance analytics
+  app.get("/api/analytics/:userId", async (req: Request, res: Response) => {
+    try {
+      const userId = parseInt(req.params.userId);
+      const { category, days } = req.query;
+      
+      const filePath = path.join(process.cwd(), 'server/data/analytics.json');
+      let analytics = [];
+      
+      try {
+        const data = fs.readFileSync(filePath, 'utf8');
+        analytics = JSON.parse(data);
+      } catch (error) {
+        analytics = [];
+      }
+      
+      let userAnalytics = analytics.filter((item: any) => item.userId === userId);
+      
+      if (category) {
+        userAnalytics = userAnalytics.filter((item: any) => item.category === category);
+      }
+      
+      if (days) {
+        const daysAgo = new Date();
+        daysAgo.setDate(daysAgo.getDate() - parseInt(days as string));
+        userAnalytics = userAnalytics.filter((item: any) => 
+          new Date(item.date) >= daysAgo
+        );
+      }
+      
+      res.json(userAnalytics);
+    } catch (error) {
+      console.error("Error fetching performance analytics:", error);
+      res.status(500).json({ message: "Error fetching performance analytics" });
+    }
+  });
+
+  // Helper function to update user achievements
+  async function updateUserAchievements(userId: number, testResult: any) {
+    try {
+      const filePath = path.join(process.cwd(), 'server/data/achievements.json');
+      let achievements = [];
+      
+      try {
+        const data = fs.readFileSync(filePath, 'utf8');
+        achievements = JSON.parse(data);
+      } catch (error) {
+        achievements = [];
+      }
+
+      const newAchievements = [];
+
+      // Perfect score achievement
+      if (testResult.percentage === 100) {
+        newAchievements.push({
+          id: Date.now(),
+          userId,
+          achievementType: 'perfect_score',
+          achievementName: 'الكمالي',
+          description: 'حصل على 100% في اختبار متقدم',
+          iconName: 'Star',
+          color: '#4f46e5',
+          pointsAwarded: 50,
+          earnedAt: new Date().toISOString(),
+          category: testResult.testCategory,
+          level: 1
+        });
+      }
+
+      // Speed achievement
+      if (testResult.timeTaken < (testResult.timeLimit * 0.7)) {
+        newAchievements.push({
+          id: Date.now() + 1,
+          userId,
+          achievementType: 'speed',
+          achievementName: 'سرعة البرق',
+          description: 'أكمل الاختبار في وقت قياسي',
+          iconName: 'Zap',
+          color: '#f59e0b',
+          pointsAwarded: 30,
+          earnedAt: new Date().toISOString(),
+          category: testResult.testCategory,
+          level: 1
+        });
+      }
+
+      if (newAchievements.length > 0) {
+        achievements.push(...newAchievements);
+        
+        // Ensure directory exists
+        const dirPath = path.dirname(filePath);
+        if (!fs.existsSync(dirPath)) {
+          fs.mkdirSync(dirPath, { recursive: true });
+        }
+        
+        fs.writeFileSync(filePath, JSON.stringify(achievements, null, 2));
+      }
+    } catch (error) {
+      console.error("Error updating achievements:", error);
+    }
+  }
+
+  // Helper function to update performance analytics
+  async function updatePerformanceAnalytics(userId: number, testResult: any) {
+    try {
+      const filePath = path.join(process.cwd(), 'server/data/analytics.json');
+      let analytics = [];
+      
+      try {
+        const data = fs.readFileSync(filePath, 'utf8');
+        analytics = JSON.parse(data);
+      } catch (error) {
+        analytics = [];
+      }
+
+      const today = new Date().toISOString().split('T')[0];
+      
+      // Find or create today's analytics entry
+      let todayAnalytics = analytics.find((item: any) => 
+        item.userId === userId && 
+        item.date.startsWith(today) && 
+        item.category === testResult.testCategory
+      );
+
+      if (!todayAnalytics) {
+        todayAnalytics = {
+          id: Date.now(),
+          userId,
+          date: new Date().toISOString(),
+          category: testResult.testCategory,
+          subcategory: testResult.subcategory,
+          averageScore: testResult.percentage,
+          testsCompleted: 1,
+          timeSpent: Math.round(testResult.timeTaken / 60), // convert to minutes
+          improvementRate: 0,
+          consistencyScore: 100,
+          challengesCompleted: 1,
+          streakCount: 1,
+          weeklyGoalProgress: 1
+        };
+        analytics.push(todayAnalytics);
+      } else {
+        // Update existing analytics
+        const newAverage = Math.round(
+          (todayAnalytics.averageScore * todayAnalytics.testsCompleted + testResult.percentage) / 
+          (todayAnalytics.testsCompleted + 1)
+        );
+        
+        todayAnalytics.averageScore = newAverage;
+        todayAnalytics.testsCompleted += 1;
+        todayAnalytics.timeSpent += Math.round(testResult.timeTaken / 60);
+        todayAnalytics.challengesCompleted += 1;
+        todayAnalytics.weeklyGoalProgress += 1;
+      }
+
+      // Ensure directory exists
+      const dirPath = path.dirname(filePath);
+      if (!fs.existsSync(dirPath)) {
+        fs.mkdirSync(dirPath, { recursive: true });
+      }
+
+      fs.writeFileSync(filePath, JSON.stringify(analytics, null, 2));
+    } catch (error) {
+      console.error("Error updating analytics:", error);
+    }
+  }
+
   // تسجيل الدخول للمستخدمين
   app.post("/api/auth/login", async (req: Request, res: Response) => {
     try {

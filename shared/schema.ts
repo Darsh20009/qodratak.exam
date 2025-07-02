@@ -41,6 +41,80 @@ export const userTestResults = pgTable("user_test_results", {
   isOfficial: boolean("is_official").default(false), // Whether this was an official test
 });
 
+// Advanced Test Results Table for specialized tests
+export const advancedTestResults = pgTable("advanced_test_results", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").notNull(),
+  testId: text("test_id").notNull(), // Unique identifier for specific test
+  testName: text("test_name").notNull(),
+  testCategory: text("test_category").notNull(), // "verbal_specialized", "quantitative_specialized"
+  subcategory: text("subcategory").notNull(), // "التناظر اللفظي", "الهندسة", etc.
+  totalQuestions: integer("total_questions").notNull(),
+  correctAnswers: integer("correct_answers").notNull(),
+  wrongAnswers: integer("wrong_answers").notNull(),
+  skippedQuestions: integer("skipped_questions").default(0),
+  percentage: integer("percentage").notNull(),
+  timeTaken: integer("time_taken").notNull(), // in seconds
+  timeLimit: integer("time_limit").notNull(), // in seconds
+  difficulty: text("difficulty").notNull(),
+  pointsEarned: integer("points_earned").default(0),
+  streakBonus: integer("streak_bonus").default(0),
+  performanceLevel: text("performance_level").notNull(), // "ممتاز", "جيد", etc.
+  weakAreas: jsonb("weak_areas").default([]), // Areas needing improvement
+  strongAreas: jsonb("strong_areas").default([]), // Areas of strength
+  questionDetails: jsonb("question_details").default([]), // Detailed answer analysis
+  improvements: jsonb("improvements").default([]), // Suggested improvements
+  completedAt: timestamp("completed_at").defaultNow().notNull(),
+  sessionId: text("session_id"), // For tracking test sessions
+});
+
+// Test Sessions for comprehensive tracking
+export const testSessions = pgTable("test_sessions", {
+  id: text("id").primaryKey(), // UUID
+  userId: integer("user_id").notNull(),
+  sessionType: text("session_type").notNull(), // "practice", "timed", "challenge"
+  startedAt: timestamp("started_at").defaultNow().notNull(),
+  endedAt: timestamp("ended_at"),
+  totalTests: integer("total_tests").default(0),
+  totalCorrect: integer("total_correct").default(0),
+  totalTime: integer("total_time").default(0), // in seconds
+  overallPerformance: text("overall_performance"), // "ممتاز", "جيد", etc.
+  notes: text("notes"), // User or system notes
+  isActive: boolean("is_active").default(true),
+});
+
+// Achievement System for gamification
+export const userAchievements = pgTable("user_achievements", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").notNull(),
+  achievementType: text("achievement_type").notNull(), // "streak", "perfect_score", "improvement"
+  achievementName: text("achievement_name").notNull(),
+  description: text("description").notNull(),
+  iconName: text("icon_name").notNull(),
+  color: text("color").default("#4f46e5"),
+  pointsAwarded: integer("points_awarded").default(0),
+  earnedAt: timestamp("earned_at").defaultNow().notNull(),
+  category: text("category").notNull(), // "verbal", "quantitative", "general"
+  level: integer("level").default(1), // Achievement level (1-5)
+});
+
+// Performance Analytics
+export const performanceAnalytics = pgTable("performance_analytics", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").notNull(),
+  date: timestamp("date").defaultNow().notNull(),
+  category: text("category").notNull(), // "verbal", "quantitative", "overall"
+  subcategory: text("subcategory"), // Specific area
+  averageScore: integer("average_score").notNull(),
+  testsCompleted: integer("tests_completed").notNull(),
+  timeSpent: integer("time_spent").notNull(), // in minutes
+  improvementRate: integer("improvement_rate").default(0), // percentage
+  consistencyScore: integer("consistency_score").default(0), // 0-100
+  challengesCompleted: integer("challenges_completed").default(0),
+  streakCount: integer("streak_count").default(0),
+  weeklyGoalProgress: integer("weekly_goal_progress").default(0),
+});
+
 export const examTemplates = pgTable("exam_templates", {
   id: serial("id").primaryKey(),
   name: text("name").notNull(),
