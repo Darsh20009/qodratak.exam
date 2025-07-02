@@ -45,6 +45,7 @@ import {
   BookOpen,
   PenTool
 } from 'lucide-react';
+import { calculateDetailedResults, generatePerformanceInsights, VERBAL_SUBCATEGORIES_5_SECTIONS, QUANTITATIVE_SUBCATEGORIES_5_SECTIONS } from '../../shared/examUtils';
 
 interface TestResult {
   testName?: string;
@@ -67,6 +68,7 @@ export default function TestResultsPage() {
   const [isAnimating, setIsAnimating] = useState(true);
   const [isChallengeModalOpen, setIsChallengeModalOpen] = useState(false);
   const [showConfetti, setShowConfetti] = useState(false);
+  const [detailedResults, setDetailedResults] = useState<any>(null); // State for detailed results
 
   const handleBackToRecords = () => {
     setLocation('/records');
@@ -691,6 +693,14 @@ export default function TestResultsPage() {
         setShowConfetti(true);
         setTimeout(() => setShowConfetti(false), 3000);
       }
+       // حساب النتائج التفصيلية بنظام الـ 5 أقسام
+      const detailed = calculateDetailedResults(
+        formattedResult.questions || [],
+        formattedResult.answers || {},
+        formattedResult.timeSpent || 0,
+        true // استخدام نظام الـ 5 أقسام
+      );
+      setDetailedResults(detailed);
     } else {
       // محاولة إنشاء نتيجة من URL params
       const urlParams = new URLSearchParams(window.location.search);
@@ -1223,6 +1233,195 @@ export default function TestResultsPage() {
           onClose={() => setIsChallengeModalOpen(false)}
           onSelectMode={handleChallengeMode}
         />
+
+        {/* التحليل التفصيلي للأقسام الخمسة */}
+            {detailedResults && (
+              <motion.div
+                initial={{ opacity: 0, y: 30 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.6 }}
+                className="mb-12"
+              >
+                <Card className="bg-gradient-to-br from-indigo-50 via-blue-50 to-cyan-50 dark:from-indigo-900/20 dark:via-blue-900/20 dark:to-cyan-900/20 border-2 border-indigo-200 dark:border-indigo-800 shadow-2xl">
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-3 text-2xl text-indigo-700 dark:text-indigo-300">
+                      <motion.div
+                        animate={{ rotate: [0, 360] }}
+                        transition={{ duration: 8, repeat: Infinity, ease: "linear" }}
+                      >
+                        <BarChart3 className="w-8 h-8" />
+                      </motion.div>
+                      التحليل التفصيلي للأقسام الخمسة
+                      <motion.div
+                        animate={{ scale: [1, 1.2, 1] }}
+                        transition={{ duration: 2, repeat: Infinity }}
+                      >
+                        <Sparkles className="w-6 h-6 text-blue-500" />
+                      </motion.div>
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    {/* عرض النتائج بنظام الـ 5 أقسام */}
+                    {detailedResults.sectionResults && detailedResults.sectionResults.length > 0 ? (
+                      <div className="mb-8">
+                        <h3 className="text-xl font-bold text-gray-800 dark:text-white mb-6 flex items-center gap-2">
+                          <Target className="w-6 h-6 text-emerald-600" />
+                          نتائج الأقسام الخمسة
+                        </h3>
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
+                          {detailedResults.sectionResults.map((section, index) => (
+                            <motion.div
+                              key={section.sectionNumber}
+                              initial={{ opacity: 0, scale: 0.8 }}
+                              animate={{ opacity: 1, scale: 1 }}
+                              transition={{ delay: 0.1 * index }}
+                              className="relative"
+                            >
+                              <Card className="bg-gradient-to-br from-emerald-50 to-teal-50 dark:from-emerald-900/20 dark:to-teal-900/20 border-2 border-emerald-200 dark:border-emerald-800 hover:shadow-lg transition-all duration-300 overflow-hidden group">
+                                <div className="absolute inset-0 bg-gradient-to-r from-emerald-400/10 via-teal-400/10 to-emerald-400/10 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+                                <CardContent className="p-4 relative z-10">
+                                  <div className="text-center mb-3">
+                                    <div className="w-10 h-10 bg-gradient-to-br from-emerald-500 to-teal-500 rounded-full flex items-center justify-center mx-auto mb-2">
+                                      <span className="text-white font-bold text-lg">{section.sectionNumber}</span>
+                                    </div>
+                                    <h4 className="font-bold text-xs text-gray-700 dark:text-gray-300">
+                                      {section.sectionName}
+                                    </h4>
+                                  </div>
+                                  <div className="space-y-2">
+                                    <div className="text-center">
+                                      <span className={`font-bold text-2xl ${section.color}`}>
+                                        {section.percentage.toFixed(0)}%
+                                      </span>
+                                    </div>
+                                    <div className="text-center text-sm text-gray-600 dark:text-gray-400">
+                                      {section.correct}/{section.total} صحيح
+                                    </div>
+                                    <Progress value={section.percentage} className="h-2" />
+                                    <Badge className={`w-full text-center ${section.level === 'ممتاز' ? 'bg-green-100 text-green-800' : 
+                                                          section.level === 'جيد جداً' ? 'bg-blue-100 text-blue-800' :
+                                                          section.level === 'جيد' ? 'bg-yellow-100 text-yellow-800' : 
+                                                          'bg-red-100 text-red-800'} text-xs`}>
+                                      {section.level}
+                                    </Badge>
+                                  </div>
+                                </CardContent>
+                              </Card>
+                            </motion.div>
+                          ))}
+                        </div>
+                      </div>
+                    ) : (
+                      <>
+                        {/* الأقسام اللفظية */}
+                        {detailedResults.verbalResults.length > 0 && (
+                          <div className="mb-8">
+                            <h3 className="text-xl font-bold text-gray-800 dark:text-white mb-6 flex items-center gap-2">
+                              <BookOpen className="w-6 h-6 text-purple-600" />
+                              الأقسام اللفظية (5 أقسام)
+                            </h3>
+                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
+                              {detailedResults.verbalResults.map((result, index) => (
+                                <motion.div
+                                  key={result.subcategory}
+                                  initial={{ opacity: 0, scale: 0.8 }}
+                                  animate={{ opacity: 1, scale: 1 }}
+                                  transition={{ delay: 0.1 * index }}
+                                  className="relative"
+                                >
+                                  <Card className="bg-gradient-to-br from-purple-50 to-pink-50 dark:from-purple-900/20 dark:to-pink-900/20 border-2 border-purple-200 dark:border-purple-800 hover:shadow-lg transition-all duration-300 overflow-hidden group">
+                                    <div className="absolute inset-0 bg-gradient-to-r from-purple-400/10 via-pink-400/10 to-purple-400/10 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+                                    <CardContent className="p-4 relative z-10">
+                                      <div className="text-center mb-3">
+                                        <div className="w-8 h-8 bg-gradient-to-br from-purple-500 to-pink-500 rounded-full flex items-center justify-center mx-auto mb-2">
+                                          <span className="text-white font-bold text-sm">{index + 1}</span>
+                                        </div>
+                                        <h4 className="font-bold text-xs text-gray-700 dark:text-gray-300">
+                                          {result.subcategory}
+                                        </h4>
+                                      </div>
+                                      <div className="space-y-2">
+                                        <div className="text-center">
+                                          <span className={`font-bold text-xl ${result.color}`}>
+                                            {result.percentage.toFixed(0)}%
+                                          </span>
+                                        </div>
+                                        <div className="text-center text-sm text-gray-600 dark:text-gray-400">
+                                          {result.correct}/{result.total} صحيح
+                                        </div>
+                                        <Progress value={result.percentage} className="h-2" />
+                                        <Badge className={`w-full text-center ${result.level === 'ممتاز' ? 'bg-green-100 text-green-800' : 
+                                                              result.level === 'جيد جداً' ? 'bg-blue-100 text-blue-800' :
+                                                              result.level === 'جيد' ? 'bg-yellow-100 text-yellow-800' : 
+                                                              'bg-red-100 text-red-800'} text-xs`}>
+                                          {result.level}
+                                        </Badge>
+                                      </div>
+                                    </CardContent>
+                                  </Card>
+                                </motion.div>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+
+                        {/* الأقسام الكمية */}
+                        {detailedResults.quantitativeResults.length > 0 && (
+                          <div>
+                            <h3 className="text-xl font-bold text-gray-800 dark:text-white mb-6 flex items-center gap-2">
+                              <Calculator className="w-6 h-6 text-blue-600" />
+                              الأقسام الكمية (5 أقسام)
+                            </h3>
+                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
+                              {detailedResults.quantitativeResults.map((result, index) => (
+                                <motion.div
+                                  key={result.subcategory}
+                                  initial={{ opacity: 0, scale: 0.8 }}
+                                  animate={{ opacity: 1, scale: 1 }}
+                                  transition={{ delay: 0.1 * index }}
+                                  className="relative"
+                                >
+                                  <Card className="bg-gradient-to-br from-blue-50 to-cyan-50 dark:from-blue-900/20 dark:to-cyan-900/20 border-2 border-blue-200 dark:border-blue-800 hover:shadow-lg transition-all duration-300 overflow-hidden group">
+                                    <div className="absolute inset-0 bg-gradient-to-r from-blue-400/10 via-cyan-400/10 to-blue-400/10 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+                                    <CardContent className="p-4 relative z-10">
+                                      <div className="text-center mb-3">
+                                        <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-cyan-500 rounded-full flex items-center justify-center mx-auto mb-2">
+                                          <span className="text-white font-bold text-sm">{index + 1}</span>
+                                        </div>
+                                        <h4 className="font-bold text-xs text-gray-700 dark:text-gray-300">
+                                          {result.subcategory}
+                                        </h4>
+                                      </div>
+                                      <div className="space-y-2">
+                                        <div className="text-center">
+                                          <span className={`font-bold text-xl ${result.color}`}>
+                                            {result.percentage.toFixed(0)}%
+                                          </span>
+                                        </div>
+                                        <div className="text-center text-sm text-gray-600 dark:text-gray-400">
+                                          {result.correct}/{result.total} صحيح
+                                        </div>
+                                        <Progress value={result.percentage} className="h-2" />
+                                        <Badge className={`w-full text-center ${result.level === 'ممتاز' ? 'bg-green-100 text-green-800' : 
+                                                              result.level === 'جيد جداً' ? 'bg-blue-100 text-blue-800' :
+                                                              result.level === 'جيد' ? 'bg-yellow-100 text-yellow-800' : 
+                                                              'bg-red-100 text-red-800'} text-xs`}>
+                                          {result.level}
+                                        </Badge>
+                                      </div>
+                                    </CardContent>
+                                  </Card>
+                                </motion.div>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+                      </>
+                    )}
+                  </CardContent>
+                </Card>
+              </motion.div>
+            )}
       </div>
     </div>
   );

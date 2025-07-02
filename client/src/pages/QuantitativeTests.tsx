@@ -88,80 +88,15 @@ export function QuantitativeTests() {
     }
   };
 
-  // اختبارات الكمي المتاحة
+  // اختبارات الكمي المتاحة (نظام الـ 5 أقسام)
   const quantitativeTests: QuantitativeTest[] = [
-    {
-      id: 'statistics',
-      name: 'اختبار الإحصاء',
-      subcategory: 'الإحصاء',
-      description: 'التحليل الإحصائي والاحتمالات والبيانات',
-      questionCount: 55,
-      timeLimit: 55,
-      difficulty: 'صعب',
-      icon: <PieChart className="w-6 h-6" />,
-      color: 'purple',
-      gradientFrom: 'from-purple-500',
-      gradientTo: 'to-indigo-500'
-    },
-    {
-      id: 'arithmetic',
-      name: 'اختبار العمليات الحسابية',
-      subcategory: 'عمليات حسابية',
-      description: 'العمليات الحسابية الأساسية والمتقدمة',
-      questionCount: 55,
-      timeLimit: 55,
-      difficulty: 'متوسط',
-      icon: <Calculator className="w-6 h-6" />,
-      color: 'blue',
-      gradientFrom: 'from-blue-500',
-      gradientTo: 'to-cyan-500'
-    },
-    {
-      id: 'patterns',
-      name: 'اختبار الحركة والأنماط',
-      subcategory: 'الحركة والأنماط',
-      description: 'التسلسلات والأنماط الرقمية والحركة',
-      questionCount: 55,
-      timeLimit: 55,
-      difficulty: 'متوسط',
-      icon: <TrendingUp className="w-6 h-6" />,
-      color: 'green',
-      gradientFrom: 'from-green-500',
-      gradientTo: 'to-emerald-500'
-    },
-    {
-      id: 'proportions',
-      name: 'اختبار النسبة والتناسب',
-      subcategory: 'النسبة والتناسب',
-      description: 'النسب والتناسبات والعلاقات الرياضية',
-      questionCount: 55,
-      timeLimit: 55,
-      difficulty: 'متوسط',
-      icon: <BarChart3 className="w-6 h-6" />,
-      color: 'teal',
-      gradientFrom: 'from-teal-500',
-      gradientTo: 'to-cyan-500'
-    },
-    {
-      id: 'equations',
-      name: 'اختبار المعادلات',
-      subcategory: 'المعادلات',
-      description: 'حل المعادلات والمتباينات الرياضية',
-      questionCount: 55,
-      timeLimit: 55,
-      difficulty: 'صعب',
-      icon: <Brain className="w-6 h-6" />,
-      color: 'red',
-      gradientFrom: 'from-red-500',
-      gradientTo: 'to-pink-500'
-    },
     {
       id: 'geometry',
       name: 'اختبار الهندسة',
       subcategory: 'الهندسة',
-      description: 'الأشكال الهندسية والمساحات والحجوم',
-      questionCount: 55,
-      timeLimit: 55,
+      description: 'القسم الأول من نظام الـ 5 أقسام - 11 سؤال في 11 دقيقة مع تحليل تفصيلي',
+      questionCount: 11,
+      timeLimit: 11,
       difficulty: 'متوسط',
       icon: <Target className="w-6 h-6" />,
       color: 'orange',
@@ -169,43 +104,56 @@ export function QuantitativeTests() {
       gradientTo: 'to-yellow-500'
     },
     {
-      id: 'percentages',
-      name: 'اختبار النسبة المئوية',
-      subcategory: 'النسبة المئوية',
-      description: 'حساب النسب المئوية والتطبيقات العملية',
-      questionCount: 55,
-      timeLimit: 55,
-      difficulty: 'سهل',
-      icon: <Award className="w-6 h-6" />,
-      color: 'amber',
-      gradientFrom: 'from-amber-500',
-      gradientTo: 'to-orange-500'
+      id: 'arithmetic',
+      name: 'اختبار العمليات الحسابية',
+      subcategory: 'عمليات حسابية',
+      description: 'القسم الثاني من نظام الـ 5 أقسام - 11 سؤال في 11 دقيقة مع تحليل تفصيلي',
+      questionCount: 11,
+      timeLimit: 11,
+      difficulty: 'متوسط',
+      icon: <Calculator className="w-6 h-6" />,
+      color: 'blue',
+      gradientFrom: 'from-blue-500',
+      gradientTo: 'to-cyan-500'
     },
     {
-      id: 'mixed',
-      name: 'اختبار أفكار متنوعة',
-      subcategory: 'أفكار متنوعة',
-      description: 'مجموعة متنوعة من المسائل الرياضية',
-      questionCount: 55,
-      timeLimit: 55,
+      id: 'comparisons-proportions',
+      name: 'اختبار المقارنات والتناسب',
+      subcategory: 'المقارنات والتناسب',
+      description: 'القسم الثالث من نظام الـ 5 أقسام - 11 سؤال في 11 دقيقة مع تحليل تفصيلي',
+      questionCount: 11,
+      timeLimit: 11,
       difficulty: 'متوسط',
-      icon: <Trophy className="w-6 h-6" />,
-      color: 'violet',
-      gradientFrom: 'from-violet-500',
-      gradientTo: 'to-purple-500'
+      icon: <BarChart3 className="w-6 h-6" />,
+      color: 'teal',
+      gradientFrom: 'from-teal-500',
+      gradientTo: 'to-cyan-500'
     },
     {
-      id: 'comparisons',
-      name: 'اختبار المقارنات',
-      subcategory: 'المقارنات',
-      description: 'مقارنة الأرقام والكميات والعلاقات',
-      questionCount: 55,
-      timeLimit: 55,
-      difficulty: 'متوسط',
-      icon: <Clock className="w-6 h-6" />,
-      color: 'slate',
-      gradientFrom: 'from-slate-500',
-      gradientTo: 'to-gray-500'
+      id: 'statistics-probability',
+      name: 'اختبار الإحصاء والاحتمالات',
+      subcategory: 'الإحصاء والاحتمالات',
+      description: 'القسم الرابع من نظام الـ 5 أقسام - 11 سؤال في 11 دقيقة مع تحليل تفصيلي',
+      questionCount: 11,
+      timeLimit: 11,
+      difficulty: 'صعب',
+      icon: <PieChart className="w-6 h-6" />,
+      color: 'purple',
+      gradientFrom: 'from-purple-500',
+      gradientTo: 'to-indigo-500'
+    },
+    {
+      id: 'equations-patterns',
+      name: 'اختبار المعادلات والأنماط',
+      subcategory: 'المعادلات والأنماط',
+      description: 'القسم الخامس من نظام الـ 5 أقسام - 11 سؤال في 11 دقيقة مع تحليل تفصيلي',
+      questionCount: 11,
+      timeLimit: 11,
+      difficulty: 'صعب',
+      icon: <Brain className="w-6 h-6" />,
+      color: 'red',
+      gradientFrom: 'from-red-500',
+      gradientTo: 'to-pink-500'
     },
     {
       id: 'advanced-quantitative-test',
@@ -282,13 +230,13 @@ export function QuantitativeTests() {
       icon: Target
     },
     {
-      value: "55",
-      label: "أسئلة لكل اختبار",
+      value: "11",
+      label: "أسئلة لكل قسم",
       icon: Brain
     },
     {
-      value: "55",
-      label: "دقائق لكل اختبار",
+      value: "5",
+      label: "أقسام متخصصة",
       icon: Clock
     }
   ];
