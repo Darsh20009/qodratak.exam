@@ -54,6 +54,7 @@ import { AdvancedVerbalTest } from "@/pages/AdvancedVerbalTest";
 import { AdvancedQuantitativeTest } from "@/pages/AdvancedQuantitativeTest";
 import { SubscriptionPlans } from "@/components/SubscriptionPlans";
 import MistakeChallengePage from '@/pages/MistakeChallengePage';
+import EnhancedMistakeChallenge from '@/pages/EnhancedMistakeChallenge';
 import { EnhancedVerbalTests } from "@/pages/EnhancedVerbalTests";
 import { EnhancedQuantitativeTests } from "@/pages/EnhancedQuantitativeTests";
 
@@ -394,7 +395,7 @@ function Router({ splashDone }: { splashDone: boolean }) {
         {() => <MainLayout><ProtectedRoute requiresPremium={true}>{hasAccess ? <MockExamPage /> : null}</ProtectedRoute></MainLayout>}
       </Route>
       <Route path="/mistake-challenge">
-        {() => <MainLayout><MistakeChallengePage /></MainLayout>}
+        {() => <MainLayout><EnhancedMistakeChallenge /></MainLayout>}
       </Route>
       <Route path="/profile">
         {() => <MainLayout><ProfilePage /></MainLayout>}
