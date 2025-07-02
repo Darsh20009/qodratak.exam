@@ -1,5 +1,3 @@
-
-
 import { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -76,7 +74,7 @@ export default function TestResultsPage() {
 
   const handleChallengeMode = (timed: boolean) => {
     if (!result) return;
-    
+
     // تحضير بيانات الأخطاء للتحدي
     const wrongAnswers = [];
     if (result.answers && result.questions) {
@@ -113,7 +111,7 @@ export default function TestResultsPage() {
 
   const getWrongAnswersCount = () => {
     if (!result || !result.answers || !result.questions) return 0;
-    
+
     let wrongCount = 0;
     result.questions.forEach((question, index) => {
       const userAnswer = result.answers![index.toString()];
@@ -160,13 +158,13 @@ export default function TestResultsPage() {
     <title>تقرير الأخطاء - ${result.testName}</title>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Tajawal:wght@300;400;500;700;900&display=swap');
-        
+
         * {
             margin: 0;
             padding: 0;
             box-sizing: border-box;
         }
-        
+
         body {
             font-family: 'Tajawal', Arial, sans-serif;
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
@@ -174,7 +172,7 @@ export default function TestResultsPage() {
             padding: 20px;
             color: #333;
         }
-        
+
         .container {
             max-width: 1200px;
             margin: 0 auto;
@@ -184,7 +182,7 @@ export default function TestResultsPage() {
             overflow: hidden;
             position: relative;
         }
-        
+
         .header {
             background: linear-gradient(135deg, #ff6b6b, #feca57, #48dbfb, #ff9ff3);
             background-size: 400% 400%;
@@ -195,13 +193,13 @@ export default function TestResultsPage() {
             position: relative;
             overflow: hidden;
         }
-        
+
         @keyframes gradientShift {
             0% { background-position: 0% 50%; }
             50% { background-position: 100% 50%; }
             100% { background-position: 0% 50%; }
         }
-        
+
         .header::before {
             content: '';
             position: absolute;
@@ -213,12 +211,12 @@ export default function TestResultsPage() {
             background-size: 30px 30px;
             animation: floating 20s linear infinite;
         }
-        
+
         @keyframes floating {
             0% { transform: translate(-50%, -50%) rotate(0deg); }
             100% { transform: translate(-50%, -50%) rotate(360deg); }
         }
-        
+
         .header h1 {
             font-size: 3rem;
             font-weight: 900;
@@ -227,19 +225,19 @@ export default function TestResultsPage() {
             position: relative;
             z-index: 1;
         }
-        
+
         .header .emoji {
             font-size: 4rem;
             margin-bottom: 20px;
             animation: bounce 2s infinite;
         }
-        
+
         @keyframes bounce {
             0%, 20%, 50%, 80%, 100% { transform: translateY(0); }
             40% { transform: translateY(-10px); }
             60% { transform: translateY(-5px); }
         }
-        
+
         .stats {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
@@ -247,7 +245,7 @@ export default function TestResultsPage() {
             padding: 40px;
             background: linear-gradient(45deg, #f8f9fa, #e9ecef);
         }
-        
+
         .stat-card {
             background: white;
             padding: 30px;
@@ -259,11 +257,11 @@ export default function TestResultsPage() {
             position: relative;
             transition: transform 0.3s ease;
         }
-        
+
         .stat-card:hover {
             transform: translateY(-5px);
         }
-        
+
         .stat-card::before {
             content: '';
             position: absolute;
@@ -275,24 +273,24 @@ export default function TestResultsPage() {
             border-radius: 18px;
             z-index: -1;
         }
-        
+
         .stat-number {
             font-size: 2.5rem;
             font-weight: 900;
             color: #ff6b6b;
             margin-bottom: 10px;
         }
-        
+
         .stat-label {
             font-size: 1.1rem;
             color: #666;
             font-weight: 500;
         }
-        
+
         .questions-container {
             padding: 40px;
         }
-        
+
         .section-title {
             font-size: 2.5rem;
             font-weight: 700;
@@ -303,7 +301,7 @@ export default function TestResultsPage() {
             -webkit-text-fill-color: transparent;
             background-clip: text;
         }
-        
+
         .question-card {
             background: white;
             border-radius: 20px;
@@ -314,7 +312,7 @@ export default function TestResultsPage() {
             position: relative;
             overflow: hidden;
         }
-        
+
         .question-card::before {
             content: '';
             position: absolute;
@@ -324,7 +322,7 @@ export default function TestResultsPage() {
             height: 4px;
             background: linear-gradient(90deg, #ff6b6b, #feca57, #48dbfb);
         }
-        
+
         .question-number {
             position: absolute;
             top: -10px;
@@ -336,7 +334,7 @@ export default function TestResultsPage() {
             font-weight: 700;
             font-size: 1.1rem;
         }
-        
+
         .question-text {
             font-size: 1.3rem;
             font-weight: 600;
@@ -345,30 +343,30 @@ export default function TestResultsPage() {
             color: #333;
             line-height: 1.6;
         }
-        
+
         .answers-grid {
             display: grid;
             grid-template-columns: 1fr 1fr;
             gap: 20px;
             margin-bottom: 20px;
         }
-        
+
         .answer-section {
             padding: 20px;
             border-radius: 15px;
             position: relative;
         }
-        
+
         .user-answer {
             background: linear-gradient(135deg, #ff6b6b20, #ff8e5320);
             border: 2px solid #ff6b6b;
         }
-        
+
         .correct-answer {
             background: linear-gradient(135deg, #4ecdc420, #44a08d20);
             border: 2px solid #4ecdc4;
         }
-        
+
         .answer-label {
             font-weight: 700;
             font-size: 1.1rem;
@@ -377,13 +375,13 @@ export default function TestResultsPage() {
             align-items: center;
             gap: 10px;
         }
-        
+
         .answer-text {
             font-size: 1.1rem;
             font-weight: 500;
             color: #555;
         }
-        
+
         .explanation {
             background: linear-gradient(135deg, #667eea20, #764ba220);
             border: 2px solid #667eea;
@@ -391,62 +389,62 @@ export default function TestResultsPage() {
             padding: 20px;
             margin-top: 20px;
         }
-        
+
         .explanation h4 {
             color: #667eea;
             font-weight: 700;
             margin-bottom: 10px;
             font-size: 1.2rem;
         }
-        
+
         .explanation p {
             color: #555;
             line-height: 1.6;
             font-size: 1rem;
         }
-        
+
         .footer {
             background: linear-gradient(135deg, #2c3e50, #3498db);
             color: white;
             padding: 40px;
             text-align: center;
         }
-        
+
         .footer h3 {
             font-size: 2rem;
             margin-bottom: 20px;
         }
-        
+
         .tips {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
             gap: 20px;
             margin-top: 30px;
         }
-        
+
         .tip {
             background: rgba(255,255,255,0.1);
             padding: 20px;
             border-radius: 15px;
             backdrop-filter: blur(10px);
         }
-        
+
         .tip h4 {
             font-size: 1.2rem;
             margin-bottom: 10px;
             color: #ecf0f1;
         }
-        
+
         .tip p {
             color: #bdc3c7;
             line-height: 1.5;
         }
-        
+
         .emoji-icon {
             font-size: 1.5rem;
             margin-left: 10px;
         }
-        
+
         .date-stamp {
             position: absolute;
             top: 20px;
@@ -458,7 +456,7 @@ export default function TestResultsPage() {
             color: #333;
             font-size: 0.9rem;
         }
-        
+
         .decoration {
             position: absolute;
             width: 100px;
@@ -467,26 +465,65 @@ export default function TestResultsPage() {
             background: linear-gradient(45deg, rgba(255,107,107,0.3), rgba(72,219,251,0.3));
             animation: float 6s ease-in-out infinite;
         }
-        
+
         .decoration:nth-child(1) { top: 10%; right: 10%; animation-delay: 0s; }
         .decoration:nth-child(2) { bottom: 10%; left: 10%; animation-delay: 2s; }
         .decoration:nth-child(3) { top: 50%; right: 5%; animation-delay: 4s; }
-        
+
         @keyframes float {
             0%, 100% { transform: translateY(0px); }
             50% { transform: translateY(-20px); }
         }
-        
+
         @media print {
             body { background: white; }
             .container { box-shadow: none; }
             .decoration { display: none; }
         }
-        
+
         @media (max-width: 768px) {
             .answers-grid { grid-template-columns: 1fr; }
             .header h1 { font-size: 2rem; }
             .stats { grid-template-columns: 1fr; }
+        }
+
+        .wrong {
+            color: var(--wrong-text) !important;
+            background-color: var(--wrong-bg) !important;
+            border-color: var(--wrong-border) !important;
+            font-weight: bold;
+        }
+
+        .options p.wrong::before {
+            content: "✗";
+            position: absolute;
+            left: 15px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--wrong-text);
+            font-size: 1.2em;
+        }
+
+        .unanswered-answer {
+            background: linear-gradient(135deg, #fff3cd20, #ffc10720);
+            border: 2px solid #ffc107;
+        }
+
+        .no-answer {
+            color: #856404;
+            font-style: italic;
+            font-weight: 600;
+        }
+
+        .missed-points {
+            background: #dc354520;
+            color: #dc3545;
+            padding: 8px;
+            border-radius: 8px;
+            margin-top: 10px;
+            font-size: 0.9rem;
+            font-weight: 600;
+            text-align: center;
         }
     </style>
 </head>
@@ -495,9 +532,9 @@ export default function TestResultsPage() {
         <div class="decoration"></div>
         <div class="decoration"></div>
         <div class="decoration"></div>
-        
+
         <div class="date-stamp">${currentDate}</div>
-        
+
         <div class="header">
             <div class="emoji">🎯</div>
             <h1>تقرير مراجعة الأخطاء</h1>
@@ -505,7 +542,7 @@ export default function TestResultsPage() {
                 ${result.testName} - ${result.subcategory}
             </p>
         </div>
-        
+
         <div class="stats">
             <div class="stat-card">
                 <div class="stat-number">${wrongAnswers.length}</div>
@@ -524,15 +561,15 @@ export default function TestResultsPage() {
                 <div class="stat-label">النسبة المئوية</div>
             </div>
         </div>
-        
+
         <div class="questions-container">
             <h2 class="section-title">📝 تفاصيل الأخطاء للمراجعة</h2>
-            
+
             ${wrongAnswers.map((question, index) => `
                 <div class="question-card">
                     <div class="question-number">السؤال ${question.questionNumber}</div>
                     <div class="question-text">${question.text}</div>
-                    
+
                     <div class="answers-grid">
                         <div class="answer-section user-answer">
                             <div class="answer-label">
@@ -541,7 +578,7 @@ export default function TestResultsPage() {
                             </div>
                             <div class="answer-text">${question.userAnswerText}</div>
                         </div>
-                        
+
                         <div class="answer-section correct-answer">
                             <div class="answer-label">
                                 <span class="emoji-icon">✅</span>
@@ -550,7 +587,7 @@ export default function TestResultsPage() {
                             <div class="answer-text">${question.correctAnswerText}</div>
                         </div>
                     </div>
-                    
+
                     ${question.explanation ? `
                         <div class="explanation">
                             <h4>💡 الشرح والتوضيح</h4>
@@ -560,7 +597,7 @@ export default function TestResultsPage() {
                 </div>
             `).join('')}
         </div>
-        
+
         <div class="footer">
             <h3>🚀 نصائح للتحسن</h3>
             <div class="tips">
@@ -581,7 +618,7 @@ export default function TestResultsPage() {
                     <p>حل المزيد من الأسئلة المشابهة واستخدم استراتيجيات مختلفة للوصول للحل.</p>
                 </div>
             </div>
-            
+
             <div style="margin-top: 40px; padding-top: 30px; border-top: 2px solid rgba(255,255,255,0.3);">
                 <p style="font-size: 1.2rem; opacity: 0.8;">
                     تم إنشاء هذا التقرير بواسطة منصة <strong>قدراتك</strong> 🌟
@@ -613,14 +650,14 @@ export default function TestResultsPage() {
 
   useEffect(() => {
     console.log('TestResultsPage: Checking for stored result...');
-    
+
     const possibleKeys = ['lastTestResult', 'currentTestResult', 'testResult'];
     let foundResult = null;
-    
+
     for (const key of possibleKeys) {
       const storedResult = localStorage.getItem(key);
       console.log(`Checking key '${key}':`, storedResult);
-      
+
       if (storedResult) {
         try {
           foundResult = JSON.parse(storedResult);
@@ -631,7 +668,7 @@ export default function TestResultsPage() {
         }
       }
     }
-    
+
     if (foundResult) {
       // تنسيق البيانات لضمان التوافق
       const formattedResult: TestResult = {
@@ -646,9 +683,9 @@ export default function TestResultsPage() {
         answers: foundResult.answers,
         questions: foundResult.questions
       };
-      
+
       setResult(formattedResult);
-      
+
       // إظهار تأثير الكونفيتي إذا كانت النتيجة جيدة
       if (formattedResult.percentage >= 80) {
         setShowConfetti(true);
@@ -661,7 +698,7 @@ export default function TestResultsPage() {
       const total = urlParams.get('total');
       const examType = urlParams.get('examType');
       const timeTaken = urlParams.get('timeTaken');
-      
+
       if (score && total) {
         const mockResult: TestResult = {
           testName: 'اختبار القدرات',
@@ -696,15 +733,15 @@ export default function TestResultsPage() {
           >
             <Clock className="h-10 w-10 text-white" />
           </motion.div>
-          
+
           <h2 className="text-2xl font-bold mb-4 text-gray-800 dark:text-white">
             لا توجد نتيجة للعرض
           </h2>
-          
+
           <p className="text-gray-600 dark:text-gray-300 mb-6 leading-relaxed">
             يبدو أن بيانات النتيجة غير متوفرة. قد يكون السبب انتهاء صلاحية البيانات أو عدم إكمال الاختبار بشكل صحيح.
           </p>
-          
+
           <div className="space-y-3">
             <Button 
               onClick={handleBackToRecords} 
@@ -713,7 +750,7 @@ export default function TestResultsPage() {
               <Trophy className="w-4 h-4 mr-2" />
               العودة لسجل الاختبارات
             </Button>
-            
+
             <Button 
               onClick={() => setLocation('/verbal-tests')} 
               variant="outline"
@@ -741,10 +778,10 @@ export default function TestResultsPage() {
     if (seconds === 0) {
       return 'أقل من ثانية';
     }
-    
+
     const minutes = Math.floor(seconds / 60);
     const remainingSeconds = seconds % 60;
-    
+
     if (minutes > 0) {
       if (remainingSeconds > 0) {
         return `${minutes} دقيقة و ${remainingSeconds} ثانية`;
@@ -876,7 +913,7 @@ export default function TestResultsPage() {
                   {new Date(result.date).toLocaleDateString('ar-EG')}
                 </Badge>
               </div>
-              
+
               <div className="flex items-center justify-center gap-4 mb-6">
                 <motion.div
                   animate={{ scale: [1, 1.1, 1], rotateY: [0, 360, 0] }}
@@ -891,11 +928,11 @@ export default function TestResultsPage() {
                   />
                 </motion.div>
               </div>
-              
+
               <CardTitle className="text-5xl md:text-6xl font-bold mb-4 bg-gradient-to-r from-gray-800 to-gray-600 dark:from-white dark:to-gray-300 bg-clip-text text-transparent">
                 {result.correctAnswers}/{result.totalQuestions}
               </CardTitle>
-              
+
               <motion.div
                 className={`text-4xl font-bold ${performance.color} mb-4`}
                 initial={{ scale: 0 }}
@@ -904,7 +941,7 @@ export default function TestResultsPage() {
               >
                 {result.percentage}%
               </motion.div>
-              
+
               <Badge className={`${performance.bg} ${performance.color} text-xl px-6 py-3 border-2 shadow-lg`}>
                 {performance.level}
               </Badge>
@@ -1188,4 +1225,3 @@ export default function TestResultsPage() {
     </div>
   );
 }
-
