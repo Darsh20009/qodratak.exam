@@ -129,12 +129,12 @@ export function VerbalTests() {
   const verbalTests: VerbalTest[] = [
     {
       id: 'analogy-test',
-      name: 'اختبار التناظر اللفظي',
-      subcategory: 'التناظر اللفظي',
-      description: 'اختبار متخصص في قياس قدرتك على إيجاد العلاقات بين الكلمات والمفاهيم',
+      name: 'اختبار التناظر اللفظي المتقدم',
+      subcategory: 'التناظر اللفظي - 5 أقسام',
+      description: 'اختبار متقدم مكون من 5 أقسام في قياس قدرتك على إيجاد العلاقات بين الكلمات والمفاهيم - 65 سؤال في 65 دقيقة',
       questionCount: 65,
       timeLimit: 65,
-      difficulty: 'متوسط',
+      difficulty: 'متقدم',
       icon: <Target className="w-6 h-6" />,
       color: 'from-blue-500 to-cyan-500',
       gradientFrom: 'from-blue-50',
@@ -142,12 +142,12 @@ export function VerbalTests() {
     },
     {
       id: 'completion-test',
-      name: 'اختبار إكمال الجمل',
-      subcategory: 'إكمال الجمل',
-      description: 'اختبار يقيس قدرتك على فهم السياق اللغوي واختيار الكلمة المناسبة',
+      name: 'اختبار إكمال الجمل المتقدم',
+      subcategory: 'إكمال الجمل - 5 أقسام',
+      description: 'اختبار متقدم مكون من 5 أقسام يقيس قدرتك على فهم السياق اللغوي واختيار الكلمة المناسبة - 65 سؤال في 65 دقيقة',
       questionCount: 65,
       timeLimit: 65,
-      difficulty: 'سهل',
+      difficulty: 'متقدم',
       icon: <BookOpen className="w-6 h-6" />,
       color: 'from-green-500 to-emerald-500',
       gradientFrom: 'from-green-50',
@@ -155,12 +155,12 @@ export function VerbalTests() {
     },
     {
       id: 'comprehension-test',
-      name: 'اختبار الاستيعاب المقروء',
-      subcategory: 'استيعاب المقروء',
-      description: 'اختبار شامل لقياس قدرتك على فهم النصوص المكتوبة وتحليلها',
+      name: 'اختبار الاستيعاب المقروء المتقدم',
+      subcategory: 'استيعاب المقروء - 5 أقسام',
+      description: 'اختبار متقدم مكون من 5 أقسام لقياس قدرتك على فهم النصوص المكتوبة وتحليلها - 65 سؤال في 65 دقيقة',
       questionCount: 65,
       timeLimit: 65,
-      difficulty: 'صعب',
+      difficulty: 'متقدم',
       icon: <Brain className="w-6 h-6" />,
       color: 'from-purple-500 to-pink-500',
       gradientFrom: 'from-purple-50',
@@ -168,12 +168,12 @@ export function VerbalTests() {
     },
     {
       id: 'context-error-test',
-      name: 'اختبار الخطأ السياقي',
-      subcategory: 'الخطأ السياقي',
-      description: 'اختبار دقيق لقياس قدرتك على تحديد وتصحيح الأخطاء اللغوية',
+      name: 'اختبار الخطأ السياقي المتقدم',
+      subcategory: 'الخطأ السياقي - 5 أقسام',
+      description: 'اختبار متقدم مكون من 5 أقسام لقياس قدرتك على تحديد وتصحيح الأخطاء اللغوية - 65 سؤال في 65 دقيقة',
       questionCount: 65,
       timeLimit: 65,
-      difficulty: 'صعب',
+      difficulty: 'متقدم',
       icon: <Award className="w-6 h-6" />,
       color: 'from-indigo-500 to-blue-500',
       gradientFrom: 'from-indigo-50',
@@ -181,9 +181,9 @@ export function VerbalTests() {
     },
     {
       id: 'advanced-verbal-test',
-      name: 'الاختبار اللفظي المتقدم',
+      name: 'الاختبار اللفظي المتقدم الشامل',
       subcategory: 'شامل - 5 أقسام',
-      description: 'اختبار متقدم مكون من 5 أقسام منفصلة - 65 سؤال في 65 دقيقة مع تحليل تفصيلي للأداء',
+      description: 'اختبار متقدم شامل مكون من 5 أقسام منفصلة - 65 سؤال في 65 دقيقة مع تحليل تفصيلي للأداء',
       questionCount: 65,
       timeLimit: 65,
       difficulty: 'متقدم',
@@ -244,12 +244,8 @@ export function VerbalTests() {
 
     localStorage.setItem('currentVerbalTest', JSON.stringify(testConfig));
 
-    // Navigate to appropriate test runner
-    if (test.id === 'advanced-verbal-test') {
-      setLocation('/advanced-verbal-test');
-    } else {
-      setLocation('/verbal-test-runner');
-    }
+    // Navigate to advanced test runner for all verbal tests
+    setLocation('/advanced-verbal-test');
   };
 
   const getTodayTestCount = (): number => {
@@ -332,7 +328,7 @@ export function VerbalTests() {
                 اختبارات اللفظي المتخصصة
               </h1>
               <p className="text-xl text-gray-600 dark:text-gray-300">
-                اختبارات دقيقة ومتخصصة لكل قسم من أقسام القدرات اللفظية
+                اختبارات متقدمة مقسمة إلى 5 أقسام لكل نوع من أقسام القدرات اللفظية
               </p>
             </div>
           </div>
@@ -340,8 +336,8 @@ export function VerbalTests() {
           {/* إحصائيات سريعة */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4 max-w-4xl mx-auto">
             {([
-              { value: "50", label: "سؤال لكل اختبار", icon: Target },
-              { value: "5", label: "اختبارات متخصصة", icon: Trophy },
+              { value: "65", label: "سؤال لكل اختبار", icon: Target },
+              { value: "5", label: "أقسام لكل اختبار", icon: Trophy },
               { value: "قياس", label: "معايير حقيقية", icon: Star },
               { value: "1", label: "اختبار مجاني يومياً", icon: Calendar }
             ] as StatItem[]).map((stat, index) => (

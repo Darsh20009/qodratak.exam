@@ -92,12 +92,12 @@ export function QuantitativeTests() {
   const quantitativeTests: QuantitativeTest[] = [
     {
       id: 'statistics',
-      name: 'اختبار الإحصاء',
-      subcategory: 'الإحصاء',
-      description: 'التحليل الإحصائي والاحتمالات والبيانات',
+      name: 'اختبار الإحصاء المتقدم',
+      subcategory: 'الإحصاء - 5 أقسام',
+      description: 'اختبار متقدم مكون من 5 أقسام في التحليل الإحصائي والاحتمالات والبيانات - 55 سؤال في 55 دقيقة',
       questionCount: 55,
       timeLimit: 55,
-      difficulty: 'صعب',
+      difficulty: 'متقدم',
       icon: <PieChart className="w-6 h-6" />,
       color: 'purple',
       gradientFrom: 'from-purple-500',
@@ -105,12 +105,12 @@ export function QuantitativeTests() {
     },
     {
       id: 'arithmetic',
-      name: 'اختبار العمليات الحسابية',
-      subcategory: 'عمليات حسابية',
-      description: 'العمليات الحسابية الأساسية والمتقدمة',
+      name: 'اختبار العمليات الحسابية المتقدم',
+      subcategory: 'عمليات حسابية - 5 أقسام',
+      description: 'اختبار متقدم مكون من 5 أقسام في العمليات الحسابية الأساسية والمتقدمة - 55 سؤال في 55 دقيقة',
       questionCount: 55,
       timeLimit: 55,
-      difficulty: 'متوسط',
+      difficulty: 'متقدم',
       icon: <Calculator className="w-6 h-6" />,
       color: 'blue',
       gradientFrom: 'from-blue-500',
@@ -118,12 +118,12 @@ export function QuantitativeTests() {
     },
     {
       id: 'patterns',
-      name: 'اختبار الحركة والأنماط',
-      subcategory: 'الحركة والأنماط',
-      description: 'التسلسلات والأنماط الرقمية والحركة',
+      name: 'اختبار الحركة والأنماط المتقدم',
+      subcategory: 'الحركة والأنماط - 5 أقسام',
+      description: 'اختبار متقدم مكون من 5 أقسام في التسلسلات والأنماط الرقمية والحركة - 55 سؤال في 55 دقيقة',
       questionCount: 55,
       timeLimit: 55,
-      difficulty: 'متوسط',
+      difficulty: 'متقدم',
       icon: <TrendingUp className="w-6 h-6" />,
       color: 'green',
       gradientFrom: 'from-green-500',
@@ -131,12 +131,12 @@ export function QuantitativeTests() {
     },
     {
       id: 'proportions',
-      name: 'اختبار النسبة والتناسب',
-      subcategory: 'النسبة والتناسب',
-      description: 'النسب والتناسبات والعلاقات الرياضية',
+      name: 'اختبار النسبة والتناسب المتقدم',
+      subcategory: 'النسبة والتناسب - 5 أقسام',
+      description: 'اختبار متقدم مكون من 5 أقسام في النسب والتناسبات والعلاقات الرياضية - 55 سؤال في 55 دقيقة',
       questionCount: 55,
       timeLimit: 55,
-      difficulty: 'متوسط',
+      difficulty: 'متقدم',
       icon: <BarChart3 className="w-6 h-6" />,
       color: 'teal',
       gradientFrom: 'from-teal-500',
@@ -144,12 +144,12 @@ export function QuantitativeTests() {
     },
     {
       id: 'equations',
-      name: 'اختبار المعادلات',
-      subcategory: 'المعادلات',
-      description: 'حل المعادلات والمتباينات الرياضية',
+      name: 'اختبار المعادلات المتقدم',
+      subcategory: 'المعادلات - 5 أقسام',
+      description: 'اختبار متقدم مكون من 5 أقسام في حل المعادلات والمتباينات الرياضية - 55 سؤال في 55 دقيقة',
       questionCount: 55,
       timeLimit: 55,
-      difficulty: 'صعب',
+      difficulty: 'متقدم',
       icon: <Brain className="w-6 h-6" />,
       color: 'red',
       gradientFrom: 'from-red-500',
@@ -157,12 +157,12 @@ export function QuantitativeTests() {
     },
     {
       id: 'geometry',
-      name: 'اختبار الهندسة',
-      subcategory: 'الهندسة',
-      description: 'الأشكال الهندسية والمساحات والحجوم',
+      name: 'اختبار الهندسة المتقدم',
+      subcategory: 'الهندسة - 5 أقسام',
+      description: 'اختبار متقدم مكون من 5 أقسام في الأشكال الهندسية والمساحات والحجوم - 55 سؤال في 55 دقيقة',
       questionCount: 55,
       timeLimit: 55,
-      difficulty: 'متوسط',
+      difficulty: 'متقدم',
       icon: <Target className="w-6 h-6" />,
       color: 'orange',
       gradientFrom: 'from-orange-500',
@@ -170,12 +170,12 @@ export function QuantitativeTests() {
     },
     {
       id: 'percentages',
-      name: 'اختبار النسبة المئوية',
-      subcategory: 'النسبة المئوية',
-      description: 'حساب النسب المئوية والتطبيقات العملية',
+      name: 'اختبار النسبة المئوية المتقدم',
+      subcategory: 'النسبة المئوية - 5 أقسام',
+      description: 'اختبار متقدم مكون من 5 أقسام في حساب النسب المئوية والتطبيقات العملية - 55 سؤال في 55 دقيقة',
       questionCount: 55,
       timeLimit: 55,
-      difficulty: 'سهل',
+      difficulty: 'متقدم',
       icon: <Award className="w-6 h-6" />,
       color: 'amber',
       gradientFrom: 'from-amber-500',
@@ -183,12 +183,12 @@ export function QuantitativeTests() {
     },
     {
       id: 'mixed',
-      name: 'اختبار أفكار متنوعة',
-      subcategory: 'أفكار متنوعة',
-      description: 'مجموعة متنوعة من المسائل الرياضية',
+      name: 'اختبار أفكار متنوعة المتقدم',
+      subcategory: 'أفكار متنوعة - 5 أقسام',
+      description: 'اختبار متقدم مكون من 5 أقسام في مجموعة متنوعة من المسائل الرياضية - 55 سؤال في 55 دقيقة',
       questionCount: 55,
       timeLimit: 55,
-      difficulty: 'متوسط',
+      difficulty: 'متقدم',
       icon: <Trophy className="w-6 h-6" />,
       color: 'violet',
       gradientFrom: 'from-violet-500',
@@ -196,12 +196,12 @@ export function QuantitativeTests() {
     },
     {
       id: 'comparisons',
-      name: 'اختبار المقارنات',
-      subcategory: 'المقارنات',
-      description: 'مقارنة الأرقام والكميات والعلاقات',
+      name: 'اختبار المقارنات المتقدم',
+      subcategory: 'المقارنات - 5 أقسام',
+      description: 'اختبار متقدم مكون من 5 أقسام في مقارنة الأرقام والكميات والعلاقات - 55 سؤال في 55 دقيقة',
       questionCount: 55,
       timeLimit: 55,
-      difficulty: 'متوسط',
+      difficulty: 'متقدم',
       icon: <Clock className="w-6 h-6" />,
       color: 'slate',
       gradientFrom: 'from-slate-500',
@@ -209,9 +209,9 @@ export function QuantitativeTests() {
     },
     {
       id: 'advanced-quantitative-test',
-      name: 'الاختبار الكمي المتقدم',
+      name: 'الاختبار الكمي المتقدم الشامل',
       subcategory: 'شامل - 5 أقسام',
-      description: 'اختبار متقدم مكون من 5 أقسام منفصلة - 55 سؤال في 55 دقيقة مع تحليل رياضي تفصيلي',
+      description: 'اختبار متقدم شامل مكون من 5 أقسام منفصلة - 55 سؤال في 55 دقيقة مع تحليل رياضي تفصيلي',
       questionCount: 55,
       timeLimit: 55,
       difficulty: 'متقدم',
@@ -261,12 +261,8 @@ export function QuantitativeTests() {
 
     localStorage.setItem('currentTest', JSON.stringify(testData));
     
-    // Navigate to appropriate test runner
-    if (test.id === 'advanced-quantitative-test') {
-      window.location.href = '/advanced-quantitative-test';
-    } else {
-      window.location.href = '/quantitative-test-runner';
-    }
+    // Navigate to advanced test runner for all quantitative tests
+    window.location.href = '/advanced-quantitative-test';
   };
 
   // إحصائيات المستخدم
@@ -314,7 +310,7 @@ export function QuantitativeTests() {
             </h1>
           </div>
           <p className="text-lg text-gray-600 dark:text-gray-300 max-w-2xl mx-auto">
-            اختبارات متخصصة في القدرات الكمية وفقاً لمعايير قدراتك - 55 سؤال في 55 دقيقة لكل قسم
+            اختبارات متقدمة مقسمة إلى 5 أقسام في القدرات الكمية وفقاً لمعايير قدراتك - 55 سؤال في 55 دقيقة
           </p>
         </motion.div>
 
