@@ -26,7 +26,6 @@ import {
   Sigma,
   Square
 } from 'lucide-react';
-import { useLocation } from 'wouter';
 
 interface TestQuestion {
   id: number;
