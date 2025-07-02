@@ -1049,24 +1049,26 @@ export default function TestResultsPage() {
                   <div className={`w-14 h-14 ${performance.color.replace('text-', 'bg-').replace('-600', '-500')} rounded-xl flex items-center justify-center shadow-lg`}>
                     <Sparkles className="w-7 h-7 text-white" />
                   </div>
-                  <div className="flex-1">
-                    <h3 className={`font-bold text-xl ${performance.color} mb-3`}>
-                      {result.percentage >= 90 ? 'إنجاز استثنائي! 🎉✨' :
-                       result.percentage >= 80 ? 'أداء ممتاز! 👏🌟' :
-                       result.percentage >= 70 ? 'عمل رائع! 💪🔥' :
-                       result.percentage >= 60 ? 'تقدم جيد! 📈⭐' :
-                       result.percentage >= 50 ? 'بداية إيجابية! 🌟💫' :
-                       'لا تيأس، استمر في المحاولة! 💯🚀'}
-                    </h3>
-                    <p className="text-gray-700 dark:text-gray-300 leading-relaxed">
-                      {result.percentage >= 90 ? 'أداؤك متفوق ويضعك في المقدمة. استمر في هذا المستوى الرائع وكن مصدر إلهام للآخرين!' :
-                       result.percentage >= 80 ? 'أداء ممتاز يظهر فهماً عميقاً للمادة. أنت على الطريق الصحيح نحو التميز!' :
-                       result.percentage >= 70 ? 'أداء جيد جداً يدل على استيعاب قوي. بقليل من التحسين ستصل للتميز بإذن الله!' :
-                       result.percentage >= 60 ? 'أداء جيد يظهر تقدماً واضحاً. ركز على نقاط الضعف للوصول لمستوى أفضل!' :
-                       result.percentage >= 50 ? 'بداية مقبولة تحتاج لمزيد من التدريب. لا تتوقف، النجاح يحتاج للمثابرة والصبر!' :
-                       'لا تقلق، كل خبير كان مبتدئاً يوماً ما. راجع الأخطاء وتدرب أكثر، والنجاح حليفك!'}
-                    </p>
-                  </div>
+                  <h3 className={`font-bold text-xl ${performance.color} mb-3`}>
+                    {result.correctAnswers === 0 && result.totalQuestions > 0 ? 
+                      'لم تجب على أي سؤال! 🤔💭' :
+                      result.percentage >= 90 ? 'إنجاز استثنائي! 🎉✨' :
+                      result.percentage >= 80 ? 'أداء ممتاز! 👏🌟' :
+                      result.percentage >= 70 ? 'عمل رائع! 💪🔥' :
+                      result.percentage >= 60 ? 'تقدم جيد! 📈⭐' :
+                      result.percentage >= 50 ? 'بداية إيجابية! 🌟💫' :
+                      'لا تيأس، استمر في المحاولة! 💯🚀'}
+                  </h3>
+                  <p className="text-gray-700 dark:text-gray-300 leading-relaxed">
+                    {result.correctAnswers === 0 && result.totalQuestions > 0 ? 
+                      'يبدو أنك لم تجب على الأسئلة أو خرجت من الاختبار مبكراً. لا تقلق، هذا يحدث أحياناً! جرب مرة أخرى وخذ وقتك في قراءة الأسئلة والإجابة عليها. كل البدايات صعبة، والمهم أن تستمر في المحاولة! 💪' :
+                      result.percentage >= 90 ? 'أداؤك متفوق ويضعك في المقدمة. استمر في هذا المستوى الرائع وكن مصدر إلهام للآخرين!' :
+                      result.percentage >= 80 ? 'أداء ممتاز يظهر فهماً عميقاً للمادة. أنت على الطريق الصحيح نحو التميز!' :
+                      result.percentage >= 70 ? 'أداء جيد جداً يدل على استيعاب قوي. بقليل من التحسين ستصل للتميز بإذن الله!' :
+                      result.percentage >= 60 ? 'أداء جيد يظهر تقدماً واضحاً. ركز على نقاط الضعف للوصول لمستوى أفضل!' :
+                      result.percentage >= 50 ? 'بداية مقبولة تحتاج لمزيد من التدريب. لا تتوقف، النجاح يحتاج للمثابرة والصبر!' :
+                      'لا تقلق، كل خبير كان مبتدئاً يوماً ما. راجع الأخطاء وتدرب أكثر، والنجاح حليفك!'}
+                  </p>
                 </div>
               </motion.div>
 
