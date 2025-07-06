@@ -110,7 +110,6 @@ function MainLayout({ children }: { children: React.ReactNode }) {
   const navItems = [
     { name: "الرئيسية", href: "/", icon: HomeIcon },
     { name: "اختبارات قياس", href: "/qiyas", icon: GraduationCapIcon },
-    { name: "قياس المستوى", href: "/level-assessment", icon: DiamondIcon },
     { name: "المختبر المتقدم", href: "/advanced-assessments", icon: CrownIcon },
     { name: "اختبارات اللفظي", href: "/verbal-tests", icon: BookOpenIcon },
     { name: "اختبارات الكمي", href: "/quantitative-tests", icon: Calculator },
@@ -354,9 +353,6 @@ function Router({ splashDone }: { splashDone: boolean }) {
       </Route>
       
       {/* صفحات الاختبارات المتقدمة الجديدة */}
-      <Route path="/level-assessment">
-        {() => <MainLayout><LevelAssessmentPage /></MainLayout>}
-      </Route>
       <Route path="/advanced-assessments">
         {() => <MainLayout><AdvancedAssessmentsPage /></MainLayout>}
       </Route>
