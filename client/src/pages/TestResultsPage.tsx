@@ -808,6 +808,8 @@ export default function TestResultsPage() {
               height: Math.random() * 6 + 2,
               backgroundColor: `hsl(${Math.random() * 360}, 70%, 70%)`,
               opacity: 0.3,
+              left: `${Math.random() * 100}%`,
+              top: `${Math.random() * 100}%`,
             }}
             animate={{
               x: [0, Math.random() * 200 - 100, 0],
@@ -819,10 +821,6 @@ export default function TestResultsPage() {
               duration: Math.random() * 10 + 5,
               repeat: Infinity,
               ease: "easeInOut",
-            }}
-            style={{
-              left: `${Math.random() * 100}%`,
-              top: `${Math.random() * 100}%`,
             }}
           />
         ))}
