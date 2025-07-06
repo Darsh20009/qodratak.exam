@@ -76,7 +76,7 @@ export default function TestResultsPage() {
     if (!result) return;
 
     // تحضير بيانات الأخطاء للتحدي
-    const wrongAnswers = [];
+    const wrongAnswers: any[] = [];
     if (result.answers && result.questions) {
       result.questions.forEach((question, index) => {
         const userAnswer = result.answers![index.toString()];
@@ -126,7 +126,7 @@ export default function TestResultsPage() {
   const generateMistakesHTML = () => {
     if (!result || !result.answers || !result.questions) return '';
 
-    const wrongAnswers = [];
+    const wrongAnswers: any[] = [];
     result.questions.forEach((question, index) => {
       const userAnswer = result.answers![index.toString()];
       const correctAnswer = question.correctOptionIndex?.toString() || question.correct_answer;

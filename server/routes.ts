@@ -108,7 +108,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       const questionsPath = path.resolve(
         process.cwd(),
-        "server/data/questions_new.json"
+        "server/questions.json"
       );
 
       if (!fs.existsSync(questionsPath)) {

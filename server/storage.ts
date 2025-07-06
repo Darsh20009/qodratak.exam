@@ -576,7 +576,7 @@ export class MemStorage implements IStorage {
       // Load questions from JSON file
       const questionsPath = path.resolve(
         process.cwd(),
-        "server/data/questions_new.json"
+        "server/questions.json"
       );
       
       if (fs.existsSync(questionsPath)) {
