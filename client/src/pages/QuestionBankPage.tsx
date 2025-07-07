@@ -28,6 +28,7 @@ export default function QuestionBankPage() {
 
   const [verbalQuestionCount, setVerbalQuestionCount] = useState(0);
   const [quantitativeQuestionCount, setQuantitativeQuestionCount] = useState(0);
+  const [loading, setLoading] = useState(true);
 
   // Load question counts and progress from localStorage
   useEffect(() => {
@@ -47,10 +48,43 @@ export default function QuestionBankPage() {
         const quantitativeTestCount = Math.ceil(quantitativeCount / 50);
 
         const savedState = localStorage.getItem('questionBankProgress');
+        let newState: QuestionBankState;
+        
         if (savedState) {
-          setQuestionBankState(JSON.parse(savedState));
+          try {
+            const parsedState = JSON.parse(savedState);
+            // Ensure we have the correct number of tests based on current question counts
+            newState = {
+              verbal: Array.from({ length: verbalTestCount }, (_, i) => {
+                const existingTest = parsedState.verbal?.find((t: any) => t.testNumber === i + 1);
+                return existingTest || {
+                  testNumber: i + 1,
+                  completed: false
+                };
+              }),
+              quantitative: Array.from({ length: quantitativeTestCount }, (_, i) => {
+                const existingTest = parsedState.quantitative?.find((t: any) => t.testNumber === i + 1);
+                return existingTest || {
+                  testNumber: i + 1,
+                  completed: false
+                };
+              })
+            };
+          } catch (e) {
+            // If parsing fails, create fresh state
+            newState = {
+              verbal: Array.from({ length: verbalTestCount }, (_, i) => ({
+                testNumber: i + 1,
+                completed: false
+              })),
+              quantitative: Array.from({ length: quantitativeTestCount }, (_, i) => ({
+                testNumber: i + 1,
+                completed: false
+              }))
+            };
+          }
         } else {
-          const initialState: QuestionBankState = {
+          newState = {
             verbal: Array.from({ length: verbalTestCount }, (_, i) => ({
               testNumber: i + 1,
               completed: false
@@ -60,10 +94,16 @@ export default function QuestionBankPage() {
               completed: false
             }))
           };
-          setQuestionBankState(initialState);
         }
+        
+        setQuestionBankState(newState);
+        console.log('Question Bank State initialized:', newState);
+        console.log('Verbal count:', verbalCount, 'Quantitative count:', quantitativeCount);
+        console.log('Verbal tests:', verbalTestCount, 'Quantitative tests:', quantitativeTestCount);
+        setLoading(false);
       } catch (error) {
         console.error('Error loading question counts:', error);
+        setLoading(false);
       }
     };
 
@@ -501,6 +541,17 @@ export default function QuestionBankPage() {
     if (completedTests.length === 0) return 0;
     return completedTests.reduce((sum, test) => sum + (test.score || 0), 0) / completedTests.length;
   };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50 dark:from-gray-900 dark:to-slate-900 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+          <p className="text-lg text-gray-600 dark:text-gray-300">جاري تحميل بنك الأسئلة...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50 dark:from-gray-900 dark:to-slate-900">
