@@ -161,23 +161,30 @@ export default function QuestionBankTestRunner() {
     setIsCompleted(true);
     setIsPaused(true);
     
-    // Calculate results
+    // Calculate results - only count answered questions as correct
     const answers: TestAnswer[] = questions.map((question, index) => {
       const selectedAnswer = selectedAnswers[index];
-      const correct = selectedAnswer === question.correctAnswer;
+      // Only count as correct if answered AND correct
+      const correct = selectedAnswer !== undefined && selectedAnswer === question.correctAnswer;
       
       return {
         questionNumber: index + 1,
         selectedAnswer: selectedAnswer ?? -1,
         correct,
         question,
-        timeSpent: 0 // We'll calculate this later if needed
+        timeSpent: 0
       };
     });
 
     setTestAnswers(answers);
     
-    const score = Math.round((answers.filter(a => a.correct).length / questions.length) * 100);
+    // Only count answered questions for score calculation
+    const answeredQuestions = answers.filter(a => a.selectedAnswer !== -1);
+    const correctAnswers = answers.filter(a => a.correct);
+    
+    // Calculate score based on answered questions or total if all answered
+    const score = answeredQuestions.length === 0 ? 0 : 
+                  Math.round((correctAnswers.length / questions.length) * 100);
     
     // Save results to localStorage
     const questionBankResults = JSON.parse(localStorage.getItem('questionBankResults') || '{}');
@@ -786,10 +793,19 @@ export default function QuestionBankTestRunner() {
                         </DialogHeader>
                         <div className="space-y-4">
                           <p>هل أنت متأكد من إنهاء الاختبار؟</p>
-                          <div className="flex gap-4">
-                            <p className="text-sm text-gray-600">
-                              الأسئلة المجابة: {Object.keys(selectedAnswers).length} / {questions.length}
+                          <div className="bg-yellow-50 dark:bg-yellow-900/20 p-4 rounded-lg">
+                            <p className="text-sm text-yellow-700 dark:text-yellow-400 mb-2">
+                              📊 إحصائيات الاختبار:
                             </p>
+                            <div className="space-y-1 text-sm">
+                              <p>الأسئلة المجابة: {Object.keys(selectedAnswers).length} / {questions.length}</p>
+                              <p>الأسئلة المتبقية: {questions.length - Object.keys(selectedAnswers).length}</p>
+                              {Object.keys(selectedAnswers).length < questions.length && (
+                                <p className="text-red-600 dark:text-red-400 font-semibold">
+                                  ⚠️ الأسئلة غير المجابة ستحسب خطأ
+                                </p>
+                              )}
+                            </div>
                           </div>
                           <div className="flex gap-4 justify-end">
                             <Button variant="outline" onClick={() => {}}>

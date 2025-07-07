@@ -242,11 +242,15 @@ export default function QuestionBankPage() {
       const testKey = `${type}_${testNumber}`;
       const testData = testResults[testKey];
       
-      if (!testData) return;
+      if (!testData) {
+        alert('لم يتم العثور على نتائج هذا الاختبار. يرجى إعادة الاختبار أولاً.');
+        return;
+      }
 
       const mistakes = testData.answers.filter((answer: any) => !answer.correct);
+      const unanswered = testData.answers.filter((answer: any) => answer.selectedAnswer === -1);
       
-      if (mistakes.length === 0) {
+      if (mistakes.length === 0 && unanswered.length === 0) {
         alert('تهانينا! لم ترتكب أي أخطاء في هذا الاختبار 🎉');
         return;
       }
@@ -469,19 +473,23 @@ export default function QuestionBankPage() {
         <div class="stats">
             <div class="stat-card">
                 <div class="stat-number">${mistakes.length}</div>
-                <div class="stat-label">عدد الأخطاء</div>
+                <div class="stat-label">الأخطاء</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number">${unanswered.length}</div>
+                <div class="stat-label">الأسئلة غير المجابة</div>
             </div>
             <div class="stat-card">
                 <div class="stat-number">${testData.score}%</div>
                 <div class="stat-label">النتيجة النهائية</div>
             </div>
             <div class="stat-card">
-                <div class="stat-number">${testData.answers.length - mistakes.length}</div>
+                <div class="stat-number">${testData.answers.filter((a: any) => a.correct).length}</div>
                 <div class="stat-label">الإجابات الصحيحة</div>
             </div>
         </div>
         
-        ${mistakes.map((mistake: any, index: number) => `
+        ${[...mistakes, ...unanswered].map((mistake: any, index: number) => `
             <div class="question-card">
                 <div class="question-number">السؤال ${mistake.questionNumber}</div>
                 <div class="question-text">${mistake.question.text}</div>
@@ -491,8 +499,9 @@ export default function QuestionBankPage() {
                         <div class="option ${optionIndex === mistake.question.correctAnswer ? 'correct' : 
                             optionIndex === mistake.selectedAnswer ? 'incorrect' : 'normal'}">
                             ${String.fromCharCode(65 + optionIndex)}) ${option}
-                            ${optionIndex === mistake.question.correctAnswer ? ' ✓' : ''}
-                            ${optionIndex === mistake.selectedAnswer ? ' ✗' : ''}
+                            ${optionIndex === mistake.question.correctAnswer ? ' ✓ (الإجابة الصحيحة)' : ''}
+                            ${optionIndex === mistake.selectedAnswer && mistake.selectedAnswer !== -1 ? ' ✗ (اختيارك)' : ''}
+                            ${mistake.selectedAnswer === -1 && optionIndex === 0 ? ' (لم يتم الإجابة)' : ''}
                         </div>
                     `).join('')}
                 </div>
@@ -669,22 +678,40 @@ export default function QuestionBankPage() {
               </CardHeader>
               <CardContent>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                  {questionBankState.verbal.map((test) => (
-                    <TestCard
-                      key={test.testNumber}
-                      type="verbal"
-                      testNumber={test.testNumber}
-                      completed={test.completed}
-                      score={test.score}
-                      totalQuestions={verbalQuestionCount}
-                      onStart={() => {
-                        window.location.href = `/question-bank/verbal/${test.testNumber}`;
-                      }}
-                      onRetry={() => {
-                        window.location.href = `/question-bank/verbal/${test.testNumber}`;
-                      }}
-                    />
-                  ))}
+                  {questionBankState.verbal.map((test) => {
+                    // Check if previous test is completed (except for test 1)
+                    const previousTestCompleted = test.testNumber === 1 || 
+                      questionBankState.verbal.find(t => t.testNumber === test.testNumber - 1)?.completed;
+                    
+                    return (
+                      <div key={test.testNumber} className="relative">
+                        {!previousTestCompleted && (
+                          <div className="absolute inset-0 bg-gray-500/50 rounded-lg z-10 flex items-center justify-center backdrop-blur-sm">
+                            <div className="text-center text-white">
+                              <Lock className="h-8 w-8 mx-auto mb-2" />
+                              <p className="font-semibold">مؤمّن</p>
+                              <p className="text-sm">اكمل الاختبار السابق</p>
+                            </div>
+                          </div>
+                        )}
+                        <TestCard
+                          type="verbal"
+                          testNumber={test.testNumber}
+                          completed={test.completed}
+                          score={test.score}
+                          totalQuestions={verbalQuestionCount}
+                          onStart={() => {
+                            if (previousTestCompleted) {
+                              window.location.href = `/question-bank/verbal/${test.testNumber}`;
+                            }
+                          }}
+                          onRetry={() => {
+                            window.location.href = `/question-bank/verbal/${test.testNumber}`;
+                          }}
+                        />
+                      </div>
+                    );
+                  })}
                 </div>
               </CardContent>
             </Card>
@@ -718,22 +745,40 @@ export default function QuestionBankPage() {
               </CardHeader>
               <CardContent>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                  {questionBankState.quantitative.map((test) => (
-                    <TestCard
-                      key={test.testNumber}
-                      type="quantitative"
-                      testNumber={test.testNumber}
-                      completed={test.completed}
-                      score={test.score}
-                      totalQuestions={quantitativeQuestionCount}
-                      onStart={() => {
-                        window.location.href = `/question-bank/quantitative/${test.testNumber}`;
-                      }}
-                      onRetry={() => {
-                        window.location.href = `/question-bank/quantitative/${test.testNumber}`;
-                      }}
-                    />
-                  ))}
+                  {questionBankState.quantitative.map((test) => {
+                    // Check if previous test is completed (except for test 1)
+                    const previousTestCompleted = test.testNumber === 1 || 
+                      questionBankState.quantitative.find(t => t.testNumber === test.testNumber - 1)?.completed;
+                    
+                    return (
+                      <div key={test.testNumber} className="relative">
+                        {!previousTestCompleted && (
+                          <div className="absolute inset-0 bg-gray-500/50 rounded-lg z-10 flex items-center justify-center backdrop-blur-sm">
+                            <div className="text-center text-white">
+                              <Lock className="h-8 w-8 mx-auto mb-2" />
+                              <p className="font-semibold">مؤمّن</p>
+                              <p className="text-sm">اكمل الاختبار السابق</p>
+                            </div>
+                          </div>
+                        )}
+                        <TestCard
+                          type="quantitative"
+                          testNumber={test.testNumber}
+                          completed={test.completed}
+                          score={test.score}
+                          totalQuestions={quantitativeQuestionCount}
+                          onStart={() => {
+                            if (previousTestCompleted) {
+                              window.location.href = `/question-bank/quantitative/${test.testNumber}`;
+                            }
+                          }}
+                          onRetry={() => {
+                            window.location.href = `/question-bank/quantitative/${test.testNumber}`;
+                          }}
+                        />
+                      </div>
+                    );
+                  })}
                 </div>
               </CardContent>
             </Card>
