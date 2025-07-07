@@ -41,16 +41,16 @@ export default function QuestionBankPage() {
   // Check access code and unlock tests
   const checkAccessCode = (inputCode: string) => {
     if (!inputCode || inputCode.length < 4) return false;
-    
+
     const accessCodes = JSON.parse(localStorage.getItem('testAccessCodes') || '{}');
-    
+
     // Check if code matches any test
     for (const [testKey, code] of Object.entries(accessCodes)) {
       if (code === inputCode.toUpperCase()) {
         // Unlock all tests up to this point
         const [category, testNum] = testKey.split('_');
         const testNumber = parseInt(testNum);
-        
+
         setQuestionBankState(prev => {
           const updated = { ...prev };
           updated[category] = updated[category].map(test => 
@@ -58,19 +58,19 @@ export default function QuestionBankPage() {
               ? { ...test, completed: true, score: test.score || 75 }
               : test
           );
-          
+
           // Save to localStorage
           localStorage.setItem('questionBankProgress', JSON.stringify(updated));
-          
+
           return updated;
         });
-        
+
         alert(`✅ تم فتح الاختبارات بنجاح!\nتم فتح جميع اختبارات ${category === 'verbal' ? 'اللفظي' : 'الكمي'} حتى الاختبار رقم ${testNumber}`);
         setAccessCodeInput('');
         return true;
       }
     }
-    
+
     alert('❌ كود الوصول غير صحيح. يرجى المحاولة مرة أخرى.');
     return false;
   };
@@ -81,10 +81,10 @@ export default function QuestionBankPage() {
       try {
         const response = await fetch('/api/questions');
         const questions = await response.json();
-        
+
         const verbalCount = questions.filter((q: any) => q.category === 'verbal').length;
         const quantitativeCount = questions.filter((q: any) => q.category === 'quantitative').length;
-        
+
         setVerbalQuestionCount(verbalCount);
         setQuantitativeQuestionCount(quantitativeCount);
 
@@ -94,7 +94,7 @@ export default function QuestionBankPage() {
 
         const savedState = localStorage.getItem('questionBankProgress');
         let newState: QuestionBankState;
-        
+
         if (savedState) {
           try {
             const parsedState = JSON.parse(savedState);
@@ -140,7 +140,7 @@ export default function QuestionBankPage() {
             }))
           };
         }
-        
+
         setQuestionBankState(newState);
         console.log('Question Bank State initialized:', newState);
         console.log('Verbal count:', verbalCount, 'Quantitative count:', quantitativeCount);
@@ -180,7 +180,7 @@ export default function QuestionBankPage() {
     const startRange = (testNumber - 1) * 50 + 1;
     const endRange = Math.min(testNumber * 50, totalQuestions);
     const questionsInTest = endRange - startRange + 1;
-    
+
     const getScoreColor = (score?: number) => {
       if (!score) return 'text-gray-500';
       if (score >= 90) return 'text-green-500';
@@ -222,7 +222,7 @@ export default function QuestionBankPage() {
             الأسئلة {startRange} - {endRange} ({questionsInTest} سؤال)
           </CardDescription>
         </CardHeader>
-        
+
         <CardContent className="pt-0">
           <div className="space-y-4">
             {completed && score && (
@@ -243,7 +243,7 @@ export default function QuestionBankPage() {
                 </div>
               </div>
             )}
-            
+
             <div className="flex gap-2">
               {!completed ? (
                 <Button 
@@ -286,7 +286,7 @@ export default function QuestionBankPage() {
       const testResults = JSON.parse(localStorage.getItem('questionBankResults') || '{}');
       const testKey = `${type}_${testNumber}`;
       const testData = testResults[testKey];
-      
+
       if (!testData) {
         alert('لم يتم العثور على نتائج هذا الاختبار. يرجى إعادة الاختبار أولاً.');
         return;
@@ -294,7 +294,7 @@ export default function QuestionBankPage() {
 
       const mistakes = testData.answers.filter((answer: any) => !answer.correct);
       const unanswered = testData.answers.filter((answer: any) => answer.selectedAnswer === -1);
-      
+
       if (mistakes.length === 0 && unanswered.length === 0) {
         alert('تهانينا! لم ترتكب أي أخطاء في هذا الاختبار 🎉');
         return;
@@ -310,13 +310,13 @@ export default function QuestionBankPage() {
     <title>أخطاء الاختبار - ${type === 'verbal' ? 'اللفظي' : 'الكمي'} - اختبار ${testNumber}</title>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700&display=swap');
-        
+
         * {
             margin: 0;
             padding: 0;
             box-sizing: border-box;
         }
-        
+
         body {
             font-family: 'Cairo', sans-serif;
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
@@ -324,13 +324,13 @@ export default function QuestionBankPage() {
             color: white;
             line-height: 1.6;
         }
-        
+
         .container {
             max-width: 1200px;
             margin: 0 auto;
             padding: 20px;
         }
-        
+
         .header {
             text-align: center;
             margin-bottom: 40px;
@@ -340,26 +340,26 @@ export default function QuestionBankPage() {
             padding: 30px;
             border: 1px solid rgba(255, 255, 255, 0.2);
         }
-        
+
         .header h1 {
             font-size: 2.5em;
             font-weight: 700;
             margin-bottom: 10px;
             text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
         }
-        
+
         .header p {
             font-size: 1.2em;
             opacity: 0.9;
         }
-        
+
         .stats {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
             gap: 20px;
             margin-bottom: 40px;
         }
-        
+
         .stat-card {
             background: rgba(255, 255, 255, 0.15);
             backdrop-filter: blur(10px);
@@ -368,20 +368,20 @@ export default function QuestionBankPage() {
             text-align: center;
             border: 1px solid rgba(255, 255, 255, 0.2);
         }
-        
+
         .stat-number {
             font-size: 2.5em;
             font-weight: 700;
             color: #ffeb3b;
             text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
         }
-        
+
         .stat-label {
             font-size: 1.1em;
             opacity: 0.9;
             margin-top: 5px;
         }
-        
+
         .question-card {
             background: rgba(255, 255, 255, 0.1);
             backdrop-filter: blur(10px);
@@ -391,11 +391,11 @@ export default function QuestionBankPage() {
             border: 1px solid rgba(255, 255, 255, 0.2);
             transition: transform 0.3s ease;
         }
-        
+
         .question-card:hover {
             transform: translateY(-5px);
         }
-        
+
         .question-number {
             background: linear-gradient(45deg, #ff6b6b, #ee5a6f);
             color: white;
@@ -405,7 +405,7 @@ export default function QuestionBankPage() {
             display: inline-block;
             margin-bottom: 20px;
         }
-        
+
         .question-text {
             font-size: 1.3em;
             font-weight: 600;
@@ -415,37 +415,37 @@ export default function QuestionBankPage() {
             border-radius: 10px;
             border-right: 4px solid #ffeb3b;
         }
-        
+
         .options {
             display: grid;
             gap: 15px;
             margin-bottom: 25px;
         }
-        
+
         .option {
             padding: 15px 20px;
             border-radius: 10px;
             border: 2px solid transparent;
             transition: all 0.3s ease;
         }
-        
+
         .option.correct {
             background: rgba(76, 175, 80, 0.3);
             border-color: #4caf50;
             color: #e8f5e8;
         }
-        
+
         .option.incorrect {
             background: rgba(244, 67, 54, 0.3);
             border-color: #f44336;
             color: #ffebee;
         }
-        
+
         .option.normal {
             background: rgba(255, 255, 255, 0.1);
             border-color: rgba(255, 255, 255, 0.2);
         }
-        
+
         .explanation {
             background: rgba(255, 255, 255, 0.15);
             border-radius: 10px;
@@ -453,13 +453,13 @@ export default function QuestionBankPage() {
             border-right: 4px solid #2196f3;
             margin-top: 20px;
         }
-        
+
         .explanation h4 {
             color: #81c784;
             margin-bottom: 10px;
             font-weight: 600;
         }
-        
+
         .footer {
             text-align: center;
             margin-top: 50px;
@@ -469,7 +469,7 @@ export default function QuestionBankPage() {
             border-radius: 20px;
             border: 1px solid rgba(255, 255, 255, 0.2);
         }
-        
+
         .retry-button {
             background: linear-gradient(45deg, #ff6b6b, #ee5a6f);
             color: white;
@@ -484,24 +484,24 @@ export default function QuestionBankPage() {
             display: inline-block;
             margin: 10px;
         }
-        
+
         .retry-button:hover {
             transform: translateY(-2px);
         }
-        
+
         @media (max-width: 768px) {
             .container {
                 padding: 10px;
             }
-            
+
             .header h1 {
                 font-size: 2em;
             }
-            
+
             .stats {
                 grid-template-columns: 1fr;
             }
-            
+
             .question-card {
                 padding: 20px;
             }
@@ -514,7 +514,7 @@ export default function QuestionBankPage() {
             <h1>🎯 تحليل الأخطاء</h1>
             <p>اختبار ${type === 'verbal' ? 'اللفظي' : 'الكمي'} - الاختبار رقم ${testNumber}</p>
         </div>
-        
+
         <div class="stats">
             <div class="stat-card">
                 <div class="stat-number">${mistakes.length}</div>
@@ -533,12 +533,12 @@ export default function QuestionBankPage() {
                 <div class="stat-label">الإجابات الصحيحة</div>
             </div>
         </div>
-        
+
         ${[...mistakes, ...unanswered].map((mistake: any, index: number) => `
             <div class="question-card">
                 <div class="question-number">السؤال ${mistake.questionNumber}</div>
                 <div class="question-text">${mistake.question.text}</div>
-                
+
                 <div class="options">
                     ${mistake.question.options.map((option: string, optionIndex: number) => `
                         <div class="option ${optionIndex === mistake.question.correctAnswer ? 'correct' : 
@@ -550,7 +550,7 @@ export default function QuestionBankPage() {
                         </div>
                     `).join('')}
                 </div>
-                
+
                 ${mistake.question.explanation ? `
                     <div class="explanation">
                         <h4>💡 التفسير:</h4>
@@ -559,7 +559,7 @@ export default function QuestionBankPage() {
                 ` : ''}
             </div>
         `).join('')}
-        
+
         <div class="footer">
             <h3>💪 استمر في التحسين!</h3>
             <p>راجع هذه الأخطاء وتعلم منها لتحسين أدائك في الاختبارات القادمة</p>
@@ -575,7 +575,7 @@ export default function QuestionBankPage() {
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = `اخطاء_${type === 'verbal' ? 'لفظي' : 'كمي'}_اختبار_${testNumber}.html`;
+      a.download = `اخطاء_${type === 'verbal' ? 'لفظي' : 'الكمي'}_اختبار_${testNumber}.html`;
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);
@@ -615,7 +615,7 @@ export default function QuestionBankPage() {
         <div className="absolute -bottom-40 -left-40 w-80 h-80 bg-yellow-500 rounded-full mix-blend-multiply filter blur-xl opacity-20 animate-pulse delay-1000"></div>
         <div className="absolute top-40 left-40 w-80 h-80 bg-purple-500 rounded-full mix-blend-multiply filter blur-xl opacity-20 animate-pulse delay-2000"></div>
       </div>
-      
+
       <div className="container mx-auto px-4 py-8 relative z-10">
         {/* Header */}
         <div className="text-center mb-8">
@@ -696,7 +696,7 @@ export default function QuestionBankPage() {
               </CardContent>
             </Card>
           </div>
-          
+
           <div className="relative group">
             <div className="absolute inset-0 bg-gradient-to-r from-purple-400 to-pink-400 rounded-2xl blur-lg opacity-30 group-hover:opacity-50 transition-all duration-300"></div>
             <Card className="relative bg-black/20 backdrop-blur-xl border border-white/20 text-white transform hover:scale-105 transition-all duration-300">
@@ -714,7 +714,7 @@ export default function QuestionBankPage() {
               </CardContent>
             </Card>
           </div>
-          
+
           <div className="relative group">
             <div className="absolute inset-0 bg-gradient-to-r from-emerald-400 to-green-400 rounded-2xl blur-lg opacity-30 group-hover:opacity-50 transition-all duration-300"></div>
             <Card className="relative bg-black/20 backdrop-blur-xl border border-white/20 text-white transform hover:scale-105 transition-all duration-300">
@@ -728,14 +728,15 @@ export default function QuestionBankPage() {
                     </p>
                   </div>
                   <div className="relative">
-                    <Trophy className="h-10 w-10 text-emerald-300 animate-pulse" />
+                    <Trophy```javascript
+ className="h-10 w-10 text-emerald-300 animate-pulse" />
                     <div className="absolute inset-0 bg-emerald-400 rounded-full blur-md opacity-30"></div>
                   </div>
                 </div>
               </CardContent>
             </Card>
           </div>
-          
+
           <div className="relative group">
             <div className="absolute inset-0 bg-gradient-to-r from-yellow-400 to-orange-400 rounded-2xl blur-lg opacity-30 group-hover:opacity-50 transition-all duration-300"></div>
             <Card className="relative bg-black/20 backdrop-blur-xl border border-white/20 text-white transform hover:scale-105 transition-all duration-300">
@@ -809,7 +810,7 @@ export default function QuestionBankPage() {
                     const previousTest = questionBankState.verbal.find(t => t.testNumber === test.testNumber - 1);
                     const previousTestPassed = test.testNumber === 1 || 
                       (previousTest?.completed && (previousTest?.score || 0) >= 50);
-                    
+
                     return (
                       <div key={test.testNumber} className="relative">
                         {!previousTestPassed && (
@@ -818,24 +819,7 @@ export default function QuestionBankPage() {
                               <Lock className="h-12 w-12 mx-auto mb-3 animate-pulse" />
                               <p className="font-bold text-lg mb-1">مؤمّن 🔒</p>
                               <p className="text-sm mb-2">اجتز الاختبار السابق بدرجة 50+</p>
-                              <div className="mt-3 p-2 bg-white/20 rounded-lg">
-                                <p className="text-xs font-medium">أدخل كود الوصول:</p>
-                                <input
-                                  type="text"
-                                  value={accessCodeInput}
-                                  onChange={(e) => setAccessCodeInput(e.target.value)}
-                                  placeholder="أدخل الكود"
-                                  className="mt-1 px-2 py-1 text-black rounded text-center text-sm w-20"
-                                  maxLength={6}
-                                />
-                                <Button
-                                  size="sm"
-                                  className="mt-1 ml-2 bg-blue-600 hover:bg-blue-700 text-white text-xs"
-                                  onClick={() => checkAccessCode(accessCodeInput)}
-                                >
-                                  تحقق
-                                </Button>
-                              </div>
+                              
                             </div>
                           </div>
                         )}
@@ -895,7 +879,7 @@ export default function QuestionBankPage() {
                     const previousTest = questionBankState.quantitative.find(t => t.testNumber === test.testNumber - 1);
                     const previousTestPassed = test.testNumber === 1 || 
                       (previousTest?.completed && (previousTest?.score || 0) >= 50);
-                    
+
                     return (
                       <div key={test.testNumber} className="relative">
                         {!previousTestPassed && (
@@ -904,24 +888,7 @@ export default function QuestionBankPage() {
                               <Lock className="h-12 w-12 mx-auto mb-3 animate-pulse" />
                               <p className="font-bold text-lg mb-1">مؤمّن 🔒</p>
                               <p className="text-sm mb-2">اجتز الاختبار السابق بدرجة 50+</p>
-                              <div className="mt-3 p-2 bg-white/20 rounded-lg">
-                                <p className="text-xs font-medium">أدخل كود الوصول:</p>
-                                <input
-                                  type="text"
-                                  value={accessCodeInput}
-                                  onChange={(e) => setAccessCodeInput(e.target.value)}
-                                  placeholder="أدخل الكود"
-                                  className="mt-1 px-2 py-1 text-black rounded text-center text-sm w-20"
-                                  maxLength={6}
-                                />
-                                <Button
-                                  size="sm"
-                                  className="mt-1 ml-2 bg-blue-600 hover:bg-blue-700 text-white text-xs"
-                                  onClick={() => checkAccessCode(accessCodeInput)}
-                                >
-                                  تحقق
-                                </Button>
-                              </div>
+                              
                             </div>
                           </div>
                         )}
