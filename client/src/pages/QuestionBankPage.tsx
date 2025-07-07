@@ -728,8 +728,7 @@ export default function QuestionBankPage() {
                     </p>
                   </div>
                   <div className="relative">
-                    <Trophy```javascript
- className="h-10 w-10 text-emerald-300 animate-pulse" />
+                    <Trophy className="h-10 w-10 text-emerald-300 animate-pulse" />
                     <div className="absolute inset-0 bg-emerald-400 rounded-full blur-md opacity-30"></div>
                   </div>
                 </div>
