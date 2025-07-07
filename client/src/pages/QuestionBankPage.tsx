@@ -29,6 +29,51 @@ export default function QuestionBankPage() {
   const [verbalQuestionCount, setVerbalQuestionCount] = useState(0);
   const [quantitativeQuestionCount, setQuantitativeQuestionCount] = useState(0);
   const [loading, setLoading] = useState(true);
+  const [accessCodeInput, setAccessCodeInput] = useState('');
+
+  // Generate access code for a test
+  const generateAccessCode = (type: string, testNumber: number) => {
+    const base = `${type.toUpperCase()}${testNumber}${new Date().getFullYear()}`;
+    const hash = btoa(base).replace(/[^A-Z0-9]/g, '').substring(0, 6);
+    return hash;
+  };
+
+  // Check access code and unlock tests
+  const checkAccessCode = (inputCode: string) => {
+    if (!inputCode || inputCode.length < 4) return false;
+    
+    const accessCodes = JSON.parse(localStorage.getItem('testAccessCodes') || '{}');
+    
+    // Check if code matches any test
+    for (const [testKey, code] of Object.entries(accessCodes)) {
+      if (code === inputCode.toUpperCase()) {
+        // Unlock all tests up to this point
+        const [category, testNum] = testKey.split('_');
+        const testNumber = parseInt(testNum);
+        
+        setQuestionBankState(prev => {
+          const updated = { ...prev };
+          updated[category] = updated[category].map(test => 
+            test.testNumber <= testNumber 
+              ? { ...test, completed: true, score: test.score || 75 }
+              : test
+          );
+          
+          // Save to localStorage
+          localStorage.setItem('questionBankProgress', JSON.stringify(updated));
+          
+          return updated;
+        });
+        
+        alert(`✅ تم فتح الاختبارات بنجاح!\nتم فتح جميع اختبارات ${category === 'verbal' ? 'اللفظي' : 'الكمي'} حتى الاختبار رقم ${testNumber}`);
+        setAccessCodeInput('');
+        return true;
+      }
+    }
+    
+    alert('❌ كود الوصول غير صحيح. يرجى المحاولة مرة أخرى.');
+    return false;
+  };
 
   // Load question counts and progress from localStorage
   useEffect(() => {
@@ -568,16 +613,49 @@ export default function QuestionBankPage() {
         {/* Header */}
         <div className="text-center mb-8">
           <div className="flex items-center justify-center gap-3 mb-4">
-            <div className="p-3 bg-gradient-to-r from-blue-600 to-purple-600 rounded-full">
+            <div className="p-3 bg-gradient-to-r from-blue-600 to-purple-600 rounded-full animate-pulse">
               <Brain className="h-8 w-8 text-white" />
             </div>
             <h1 className="text-4xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
               بنك الأسئلة
             </h1>
           </div>
-          <p className="text-lg text-gray-600 dark:text-gray-300 max-w-2xl mx-auto">
-            اختبارات منظمة ومرتبة لتطوير مهاراتك في الأقسام اللفظية والكمية
+          <p className="text-lg text-gray-600 dark:text-gray-300 max-w-2xl mx-auto mb-6">
+            اختبارات منظمة ومرتبة لتطوير مهاراتك في الأقسام اللفظية والكمية 🎯
           </p>
+
+          {/* Access Code Section */}
+          <Card className="max-w-md mx-auto mb-6 bg-gradient-to-r from-green-50 to-blue-50 dark:from-green-900/20 dark:to-blue-900/20 border-green-200 dark:border-green-700">
+            <CardHeader className="pb-3">
+              <CardTitle className="text-lg text-center flex items-center justify-center gap-2">
+                <Zap className="h-5 w-5 text-yellow-500" />
+                كود الوصول السريع
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="flex gap-2">
+                <input
+                  type="text"
+                  value={accessCodeInput}
+                  onChange={(e) => setAccessCodeInput(e.target.value.toUpperCase())}
+                  placeholder="أدخل كود الوصول (6 أحرف)"
+                  className="flex-1 px-3 py-2 border border-gray-300 rounded-lg text-center font-mono text-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  maxLength={6}
+                />
+                <Button
+                  onClick={() => checkAccessCode(accessCodeInput)}
+                  className="bg-gradient-to-r from-green-600 to-blue-600 hover:from-green-700 hover:to-blue-700 text-white px-6"
+                  disabled={accessCodeInput.length < 4}
+                >
+                  <CheckCircle className="h-4 w-4 mr-2" />
+                  تحقق
+                </Button>
+              </div>
+              <p className="text-xs text-gray-500 text-center mt-2">
+                استخدم كود الوصول لفتح الاختبارات على أي جهاز
+              </p>
+            </CardContent>
+          </Card>
         </div>
 
         {/* Statistics Cards */}
@@ -679,18 +757,37 @@ export default function QuestionBankPage() {
               <CardContent>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                   {questionBankState.verbal.map((test) => {
-                    // Check if previous test is completed (except for test 1)
-                    const previousTestCompleted = test.testNumber === 1 || 
-                      questionBankState.verbal.find(t => t.testNumber === test.testNumber - 1)?.completed;
+                    // Check if previous test is completed with 50+ score (except for test 1)
+                    const previousTest = questionBankState.verbal.find(t => t.testNumber === test.testNumber - 1);
+                    const previousTestPassed = test.testNumber === 1 || 
+                      (previousTest?.completed && (previousTest?.score || 0) >= 50);
                     
                     return (
                       <div key={test.testNumber} className="relative">
-                        {!previousTestCompleted && (
-                          <div className="absolute inset-0 bg-gray-500/50 rounded-lg z-10 flex items-center justify-center backdrop-blur-sm">
-                            <div className="text-center text-white">
-                              <Lock className="h-8 w-8 mx-auto mb-2" />
-                              <p className="font-semibold">مؤمّن</p>
-                              <p className="text-sm">اكمل الاختبار السابق</p>
+                        {!previousTestPassed && (
+                          <div className="absolute inset-0 bg-gradient-to-br from-gray-500/80 to-gray-600/80 rounded-lg z-10 flex items-center justify-center backdrop-blur-sm">
+                            <div className="text-center text-white p-4">
+                              <Lock className="h-12 w-12 mx-auto mb-3 animate-pulse" />
+                              <p className="font-bold text-lg mb-1">مؤمّن 🔒</p>
+                              <p className="text-sm mb-2">اجتز الاختبار السابق بدرجة 50+</p>
+                              <div className="mt-3 p-2 bg-white/20 rounded-lg">
+                                <p className="text-xs font-medium">أدخل كود الوصول:</p>
+                                <input
+                                  type="text"
+                                  value={accessCodeInput}
+                                  onChange={(e) => setAccessCodeInput(e.target.value)}
+                                  placeholder="أدخل الكود"
+                                  className="mt-1 px-2 py-1 text-black rounded text-center text-sm w-20"
+                                  maxLength={6}
+                                />
+                                <Button
+                                  size="sm"
+                                  className="mt-1 ml-2 bg-blue-600 hover:bg-blue-700 text-white text-xs"
+                                  onClick={() => checkAccessCode(accessCodeInput)}
+                                >
+                                  تحقق
+                                </Button>
+                              </div>
                             </div>
                           </div>
                         )}
@@ -701,7 +798,7 @@ export default function QuestionBankPage() {
                           score={test.score}
                           totalQuestions={verbalQuestionCount}
                           onStart={() => {
-                            if (previousTestCompleted) {
+                            if (previousTestPassed) {
                               window.location.href = `/question-bank/verbal/${test.testNumber}`;
                             }
                           }}
@@ -746,18 +843,37 @@ export default function QuestionBankPage() {
               <CardContent>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                   {questionBankState.quantitative.map((test) => {
-                    // Check if previous test is completed (except for test 1)
-                    const previousTestCompleted = test.testNumber === 1 || 
-                      questionBankState.quantitative.find(t => t.testNumber === test.testNumber - 1)?.completed;
+                    // Check if previous test is completed with 50+ score (except for test 1)
+                    const previousTest = questionBankState.quantitative.find(t => t.testNumber === test.testNumber - 1);
+                    const previousTestPassed = test.testNumber === 1 || 
+                      (previousTest?.completed && (previousTest?.score || 0) >= 50);
                     
                     return (
                       <div key={test.testNumber} className="relative">
-                        {!previousTestCompleted && (
-                          <div className="absolute inset-0 bg-gray-500/50 rounded-lg z-10 flex items-center justify-center backdrop-blur-sm">
-                            <div className="text-center text-white">
-                              <Lock className="h-8 w-8 mx-auto mb-2" />
-                              <p className="font-semibold">مؤمّن</p>
-                              <p className="text-sm">اكمل الاختبار السابق</p>
+                        {!previousTestPassed && (
+                          <div className="absolute inset-0 bg-gradient-to-br from-gray-500/80 to-gray-600/80 rounded-lg z-10 flex items-center justify-center backdrop-blur-sm">
+                            <div className="text-center text-white p-4">
+                              <Lock className="h-12 w-12 mx-auto mb-3 animate-pulse" />
+                              <p className="font-bold text-lg mb-1">مؤمّن 🔒</p>
+                              <p className="text-sm mb-2">اجتز الاختبار السابق بدرجة 50+</p>
+                              <div className="mt-3 p-2 bg-white/20 rounded-lg">
+                                <p className="text-xs font-medium">أدخل كود الوصول:</p>
+                                <input
+                                  type="text"
+                                  value={accessCodeInput}
+                                  onChange={(e) => setAccessCodeInput(e.target.value)}
+                                  placeholder="أدخل الكود"
+                                  className="mt-1 px-2 py-1 text-black rounded text-center text-sm w-20"
+                                  maxLength={6}
+                                />
+                                <Button
+                                  size="sm"
+                                  className="mt-1 ml-2 bg-blue-600 hover:bg-blue-700 text-white text-xs"
+                                  onClick={() => checkAccessCode(accessCodeInput)}
+                                >
+                                  تحقق
+                                </Button>
+                              </div>
                             </div>
                           </div>
                         )}
@@ -768,7 +884,7 @@ export default function QuestionBankPage() {
                           score={test.score}
                           totalQuestions={quantitativeQuestionCount}
                           onStart={() => {
-                            if (previousTestCompleted) {
+                            if (previousTestPassed) {
                               window.location.href = `/question-bank/quantitative/${test.testNumber}`;
                             }
                           }}

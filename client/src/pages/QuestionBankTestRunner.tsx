@@ -189,9 +189,12 @@ export default function QuestionBankTestRunner() {
     // Save results to localStorage
     const questionBankResults = JSON.parse(localStorage.getItem('questionBankResults') || '{}');
     const testKey = `${testType}_${testNumber}`;
+    const passed = score >= 50;
+    
     questionBankResults[testKey] = {
       score,
       answers,
+      passed,
       completedAt: new Date().toISOString(),
       timeSpent: 50 * 60 - timeLeft
     };
@@ -207,6 +210,34 @@ export default function QuestionBankTestRunner() {
         progressState[testType][testIndex].completedAt = new Date().toISOString();
         localStorage.setItem('questionBankProgress', JSON.stringify(progressState));
       }
+    }
+
+    // Generate access code for next test if this one passed
+    if (passed) {
+      const nextTestNumber = testNumber + 1;
+      const generateAccessCode = (type: string, testNum: number) => {
+        const base = `${type.toUpperCase()}${testNum}${new Date().getFullYear()}`;
+        const hash = btoa(base).replace(/[^A-Z0-9]/g, '').substring(0, 6);
+        return hash;
+      };
+      
+      const accessCode = generateAccessCode(testType, nextTestNumber);
+      
+      // Store access codes
+      const accessCodes = JSON.parse(localStorage.getItem('testAccessCodes') || '{}');
+      accessCodes[`${testType}_${nextTestNumber}`] = accessCode;
+      localStorage.setItem('testAccessCodes', JSON.stringify(accessCodes));
+      
+      // Show success message with access code after a delay
+      setTimeout(() => {
+        if (score >= 90) {
+          alert(`🏆 ممتاز! أداء استثنائي!\n\nنتيجتك: ${score}%\nكود الوصول للاختبار التالي: ${accessCode}\n\n📝 احتفظ بهذا الكود للوصول من أي جهاز.`);
+        } else if (score >= 70) {
+          alert(`🎯 أداء جيد جداً!\n\nنتيجتك: ${score}%\nكود الوصول للاختبار التالي: ${accessCode}\n\n📝 احتفظ بهذا الكود للوصول من أي جهاز.`);
+        } else {
+          alert(`✅ تهانينا! لقد نجحت!\n\nنتيجتك: ${score}%\nكود الوصول للاختبار التالي: ${accessCode}\n\n📝 احتفظ بهذا الكود للوصول من أي جهاز.`);
+        }
+      }, 3000);
     }
     
     setShowResults(true);
