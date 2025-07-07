@@ -608,125 +608,173 @@ export default function QuestionBankPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50 dark:from-gray-900 dark:to-slate-900">
-      <div className="container mx-auto px-4 py-8">
+    <div className="min-h-screen bg-gradient-to-br from-purple-900 via-blue-900 to-indigo-900 relative overflow-hidden">
+      {/* Animated Background Elements */}
+      <div className="absolute inset-0 overflow-hidden">
+        <div className="absolute -top-40 -right-40 w-80 h-80 bg-pink-500 rounded-full mix-blend-multiply filter blur-xl opacity-20 animate-pulse"></div>
+        <div className="absolute -bottom-40 -left-40 w-80 h-80 bg-yellow-500 rounded-full mix-blend-multiply filter blur-xl opacity-20 animate-pulse delay-1000"></div>
+        <div className="absolute top-40 left-40 w-80 h-80 bg-purple-500 rounded-full mix-blend-multiply filter blur-xl opacity-20 animate-pulse delay-2000"></div>
+      </div>
+      
+      <div className="container mx-auto px-4 py-8 relative z-10">
         {/* Header */}
         <div className="text-center mb-8">
           <div className="flex items-center justify-center gap-3 mb-4">
-            <div className="p-3 bg-gradient-to-r from-blue-600 to-purple-600 rounded-full animate-pulse">
-              <Brain className="h-8 w-8 text-white" />
+            <div className="relative">
+              <div className="absolute inset-0 bg-gradient-to-r from-pink-500 to-cyan-500 rounded-full blur-lg opacity-50 animate-pulse"></div>
+              <div className="relative p-4 bg-gradient-to-r from-emerald-400 via-blue-500 to-purple-600 rounded-full shadow-2xl transform hover:scale-110 transition-all duration-300">
+                <Brain className="h-10 w-10 text-white animate-bounce" />
+              </div>
             </div>
-            <h1 className="text-4xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
-              بنك الأسئلة
+            <h1 className="text-5xl font-bold bg-gradient-to-r from-emerald-400 via-cyan-400 to-purple-400 bg-clip-text text-transparent animate-pulse">
+              🧠 بنك الأسئلة السحري ✨
             </h1>
           </div>
-          <p className="text-lg text-gray-600 dark:text-gray-300 max-w-2xl mx-auto mb-6">
-            اختبارات منظمة ومرتبة لتطوير مهاراتك في الأقسام اللفظية والكمية 🎯
+          <p className="text-xl text-white/80 max-w-2xl mx-auto mb-6 font-medium">
+            رحلة تعليمية مذهلة مع اختبارات تفاعلية وأكواد وصول سرية 🎯🔮
           </p>
 
-          {/* Access Code Section */}
-          <Card className="max-w-md mx-auto mb-6 bg-gradient-to-r from-green-50 to-blue-50 dark:from-green-900/20 dark:to-blue-900/20 border-green-200 dark:border-green-700">
-            <CardHeader className="pb-3">
-              <CardTitle className="text-lg text-center flex items-center justify-center gap-2">
-                <Zap className="h-5 w-5 text-yellow-500" />
-                كود الوصول السريع
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="flex gap-2">
-                <input
-                  type="text"
-                  value={accessCodeInput}
-                  onChange={(e) => setAccessCodeInput(e.target.value.toUpperCase())}
-                  placeholder="أدخل كود الوصول (6 أحرف)"
-                  className="flex-1 px-3 py-2 border border-gray-300 rounded-lg text-center font-mono text-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                  maxLength={6}
-                />
-                <Button
-                  onClick={() => checkAccessCode(accessCodeInput)}
-                  className="bg-gradient-to-r from-green-600 to-blue-600 hover:from-green-700 hover:to-blue-700 text-white px-6"
-                  disabled={accessCodeInput.length < 4}
-                >
-                  <CheckCircle className="h-4 w-4 mr-2" />
-                  تحقق
-                </Button>
-              </div>
-              <p className="text-xs text-gray-500 text-center mt-2">
-                استخدم كود الوصول لفتح الاختبارات على أي جهاز
-              </p>
-            </CardContent>
-          </Card>
+          {/* Access Code Section - Magical Design */}
+          <div className="relative max-w-lg mx-auto mb-8">
+            <div className="absolute inset-0 bg-gradient-to-r from-pink-500 via-purple-500 to-cyan-500 rounded-2xl blur-lg opacity-30 animate-pulse"></div>
+            <Card className="relative bg-black/30 backdrop-blur-xl border border-white/20 rounded-2xl shadow-2xl">
+              <CardHeader className="pb-4">
+                <CardTitle className="text-2xl text-center flex items-center justify-center gap-3 text-white">
+                  <div className="relative">
+                    <Zap className="h-6 w-6 text-yellow-400 animate-bounce" />
+                    <div className="absolute inset-0 bg-yellow-400 rounded-full blur-md opacity-50"></div>
+                  </div>
+                  🔮 كود الوصول السحري ⚡
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="flex gap-3">
+                  <div className="relative flex-1">
+                    <input
+                      type="text"
+                      value={accessCodeInput}
+                      onChange={(e) => setAccessCodeInput(e.target.value.toUpperCase())}
+                      placeholder="أدخل الكود السري..."
+                      className="w-full px-4 py-3 bg-white/10 backdrop-blur-sm border border-white/30 rounded-xl text-center font-mono text-xl text-white placeholder-white/60 focus:ring-2 focus:ring-cyan-400 focus:border-cyan-400 focus:bg-white/20 transition-all duration-300"
+                      maxLength={6}
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-r from-purple-500/20 to-cyan-500/20 rounded-xl pointer-events-none"></div>
+                  </div>
+                  <Button
+                    onClick={() => checkAccessCode(accessCodeInput)}
+                    className="bg-gradient-to-r from-emerald-500 via-cyan-500 to-purple-500 hover:from-emerald-600 hover:via-cyan-600 hover:to-purple-600 text-white px-6 py-3 rounded-xl shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-300"
+                    disabled={accessCodeInput.length < 4}
+                  >
+                    <CheckCircle className="h-5 w-5 mr-2" />
+                    ✨ تحقق
+                  </Button>
+                </div>
+                <p className="text-white/70 text-center mt-3 text-sm">
+                  🎮 استخدم الكود السحري لفتح الاختبارات المحمية على أي جهاز
+                </p>
+              </CardContent>
+            </Card>
+          </div>
         </div>
 
-        {/* Statistics Cards */}
+        {/* Statistics Cards - Magical Design */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-          <Card className="bg-gradient-to-r from-blue-500 to-blue-600 text-white">
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-blue-100">الأسئلة اللفظية</p>
-                  <p className="text-3xl font-bold">{verbalQuestionCount}</p>
+          <div className="relative group">
+            <div className="absolute inset-0 bg-gradient-to-r from-blue-400 to-cyan-400 rounded-2xl blur-lg opacity-30 group-hover:opacity-50 transition-all duration-300"></div>
+            <Card className="relative bg-black/20 backdrop-blur-xl border border-white/20 text-white transform hover:scale-105 transition-all duration-300">
+              <CardContent className="p-6">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-cyan-200 mb-1">📚 الأسئلة اللفظية</p>
+                    <p className="text-4xl font-bold text-white">{verbalQuestionCount}</p>
+                  </div>
+                  <div className="relative">
+                    <BookOpen className="h-10 w-10 text-cyan-300 animate-pulse" />
+                    <div className="absolute inset-0 bg-cyan-400 rounded-full blur-md opacity-30"></div>
+                  </div>
                 </div>
-                <BookOpen className="h-8 w-8 text-blue-200" />
-              </div>
-            </CardContent>
-          </Card>
+              </CardContent>
+            </Card>
+          </div>
           
-          <Card className="bg-gradient-to-r from-purple-500 to-purple-600 text-white">
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-purple-100">الأسئلة الكمية</p>
-                  <p className="text-3xl font-bold">{quantitativeQuestionCount}</p>
+          <div className="relative group">
+            <div className="absolute inset-0 bg-gradient-to-r from-purple-400 to-pink-400 rounded-2xl blur-lg opacity-30 group-hover:opacity-50 transition-all duration-300"></div>
+            <Card className="relative bg-black/20 backdrop-blur-xl border border-white/20 text-white transform hover:scale-105 transition-all duration-300">
+              <CardContent className="p-6">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-purple-200 mb-1">🔢 الأسئلة الكمية</p>
+                    <p className="text-4xl font-bold text-white">{quantitativeQuestionCount}</p>
+                  </div>
+                  <div className="relative">
+                    <Calculator className="h-10 w-10 text-purple-300 animate-pulse" />
+                    <div className="absolute inset-0 bg-purple-400 rounded-full blur-md opacity-30"></div>
+                  </div>
                 </div>
-                <Calculator className="h-8 w-8 text-purple-200" />
-              </div>
-            </CardContent>
-          </Card>
+              </CardContent>
+            </Card>
+          </div>
           
-          <Card className="bg-gradient-to-r from-green-500 to-green-600 text-white">
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-green-100">الاختبارات المكتملة</p>
-                  <p className="text-3xl font-bold">
-                    {questionBankState.verbal.filter(t => t.completed).length + 
-                     questionBankState.quantitative.filter(t => t.completed).length}
-                  </p>
+          <div className="relative group">
+            <div className="absolute inset-0 bg-gradient-to-r from-emerald-400 to-green-400 rounded-2xl blur-lg opacity-30 group-hover:opacity-50 transition-all duration-300"></div>
+            <Card className="relative bg-black/20 backdrop-blur-xl border border-white/20 text-white transform hover:scale-105 transition-all duration-300">
+              <CardContent className="p-6">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-emerald-200 mb-1">🏆 الاختبارات المكتملة</p>
+                    <p className="text-4xl font-bold text-white">
+                      {questionBankState.verbal.filter(t => t.completed).length + 
+                       questionBankState.quantitative.filter(t => t.completed).length}
+                    </p>
+                  </div>
+                  <div className="relative">
+                    <Trophy className="h-10 w-10 text-emerald-300 animate-pulse" />
+                    <div className="absolute inset-0 bg-emerald-400 rounded-full blur-md opacity-30"></div>
+                  </div>
                 </div>
-                <Trophy className="h-8 w-8 text-green-200" />
-              </div>
-            </CardContent>
-          </Card>
+              </CardContent>
+            </Card>
+          </div>
           
-          <Card className="bg-gradient-to-r from-yellow-500 to-yellow-600 text-white">
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-yellow-100">متوسط النتائج</p>
-                  <p className="text-3xl font-bold">
-                    {Math.round((getAverageScore(questionBankState.verbal) + 
-                                getAverageScore(questionBankState.quantitative)) / 2)}%
-                  </p>
+          <div className="relative group">
+            <div className="absolute inset-0 bg-gradient-to-r from-yellow-400 to-orange-400 rounded-2xl blur-lg opacity-30 group-hover:opacity-50 transition-all duration-300"></div>
+            <Card className="relative bg-black/20 backdrop-blur-xl border border-white/20 text-white transform hover:scale-105 transition-all duration-300">
+              <CardContent className="p-6">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-yellow-200 mb-1">⚡ متوسط النتائج</p>
+                    <p className="text-4xl font-bold text-white">
+                      {Math.round((getAverageScore(questionBankState.verbal) + 
+                                  getAverageScore(questionBankState.quantitative)) / 2)}%
+                    </p>
+                  </div>
+                  <div className="relative">
+                    <Zap className="h-10 w-10 text-yellow-300 animate-pulse" />
+                    <div className="absolute inset-0 bg-yellow-400 rounded-full blur-md opacity-30"></div>
+                  </div>
                 </div>
-                <Zap className="h-8 w-8 text-yellow-200" />
-              </div>
-            </CardContent>
-          </Card>
+              </CardContent>
+            </Card>
+          </div>
         </div>
 
-        {/* Main Content */}
+        {/* Magical Tabs */}
         <Tabs defaultValue="verbal" className="w-full">
-          <TabsList className="grid w-full grid-cols-2 mb-8">
-            <TabsTrigger value="verbal" className="flex items-center gap-2">
-              <BookOpen className="h-4 w-4" />
-              بنك الأسئلة اللفظية
-            </TabsTrigger>
-            <TabsTrigger value="quantitative" className="flex items-center gap-2">
-              <Calculator className="h-4 w-4" />
-              بنك الأسئلة الكمية
-            </TabsTrigger>
-          </TabsList>
+          <div className="flex justify-center mb-8">
+            <div className="relative">
+              <div className="absolute inset-0 bg-gradient-to-r from-purple-500 to-cyan-500 rounded-2xl blur-lg opacity-30"></div>
+              <TabsList className="relative grid grid-cols-2 bg-black/30 backdrop-blur-xl border border-white/20 p-2 rounded-2xl">
+                <TabsTrigger value="verbal" className="flex items-center gap-3 px-8 py-4 text-white data-[state=active]:bg-gradient-to-r data-[state=active]:from-cyan-500 data-[state=active]:to-blue-500 data-[state=active]:text-white rounded-xl transition-all duration-300 transform hover:scale-105">
+                  <BookOpen className="h-5 w-5" />
+                  📚 بنك الأسئلة اللفظية
+                </TabsTrigger>
+                <TabsTrigger value="quantitative" className="flex items-center gap-3 px-8 py-4 text-white data-[state=active]:bg-gradient-to-r data-[state=active]:from-purple-500 data-[state=active]:to-pink-500 data-[state=active]:text-white rounded-xl transition-all duration-300 transform hover:scale-105">
+                  <Calculator className="h-5 w-5" />
+                  🔢 بنك الأسئلة الكمية
+                </TabsTrigger>
+              </TabsList>
+            </div>
+          </div>
 
           {/* Verbal Tests */}
           <TabsContent value="verbal" className="space-y-6">

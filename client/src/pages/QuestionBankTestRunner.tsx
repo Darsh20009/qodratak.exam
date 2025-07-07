@@ -165,7 +165,7 @@ export default function QuestionBankTestRunner() {
     const answers: TestAnswer[] = questions.map((question, index) => {
       const selectedAnswer = selectedAnswers[index];
       // Only count as correct if answered AND correct
-      const correct = selectedAnswer !== undefined && selectedAnswer === question.correctAnswer;
+      const correct = selectedAnswer !== undefined && selectedAnswer === question.correctOptionIndex;
       
       return {
         questionNumber: index + 1,
@@ -423,10 +423,10 @@ export default function QuestionBankTestRunner() {
                         <div class="question-text">السؤال ${mistake.questionNumber}: ${mistake.question.text}</div>
                         <div class="options">
                             ${mistake.question.options.map((option, optionIndex) => `
-                                <div class="option ${optionIndex === mistake.question.correctAnswer ? 'correct' : 
+                                <div class="option ${optionIndex === mistake.question.correctOptionIndex ? 'correct' : 
                                     optionIndex === mistake.selectedAnswer ? 'incorrect' : ''}">
                                     ${String.fromCharCode(65 + optionIndex)}) ${option}
-                                    ${optionIndex === mistake.question.correctAnswer ? ' ✓' : ''}
+                                    ${optionIndex === mistake.question.correctOptionIndex ? ' ✓' : ''}
                                     ${optionIndex === mistake.selectedAnswer ? ' ✗' : ''}
                                 </div>
                             `).join('')}
