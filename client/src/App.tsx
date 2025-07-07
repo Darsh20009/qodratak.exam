@@ -60,6 +60,8 @@ import { EnhancedQuantitativeTests } from "@/pages/EnhancedQuantitativeTests";
 import { LevelAssessmentPage } from "@/pages/LevelAssessmentPage";
 import { AdvancedAssessmentsPage } from "@/pages/AdvancedAssessmentsPage";
 import { SkillProgressPage } from "@/pages/SkillProgressPage";
+import QuestionBankPage from "@/pages/QuestionBankPage";
+import QuestionBankTestRunner from "@/pages/QuestionBankTestRunner";
 
 function MainLayout({ children }: { children: React.ReactNode }) {
   const [location] = useLocation();
@@ -113,6 +115,7 @@ function MainLayout({ children }: { children: React.ReactNode }) {
     { name: "المختبر المتقدم", href: "/advanced-assessments", icon: CrownIcon },
     { name: "اختبارات اللفظي", href: "/verbal-tests", icon: BookOpenIcon },
     { name: "اختبارات الكمي", href: "/quantitative-tests", icon: Calculator },
+    { name: "بنك الأسئلة", href: "/question-bank", icon: Brain },
     { name: "اختبر قدراتك", href: "/abilities", icon: BrainCircuitIcon },
     { name: "التحديات", href: "/challenges", icon: GamepadIcon },
     { name: "اسأل سؤال", href: "/ask", icon: HelpCircleIcon },
@@ -409,6 +412,14 @@ function Router({ splashDone }: { splashDone: boolean }) {
       </Route>
       <Route path="/mistake-challenge">
         {() => <MainLayout><EnhancedMistakeChallenge /></MainLayout>}
+      </Route>
+      
+      {/* Question Bank Routes */}
+      <Route path="/question-bank">
+        {() => <MainLayout><QuestionBankPage /></MainLayout>}
+      </Route>
+      <Route path="/question-bank/:type/:testNumber">
+        {() => <MainLayout><QuestionBankTestRunner /></MainLayout>}
       </Route>
       <Route path="/profile">
         {() => <MainLayout><ProfilePage /></MainLayout>}
