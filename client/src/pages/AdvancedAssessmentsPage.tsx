@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { 
-  CrownIcon, 
+  Crown, 
   Settings, 
   Target, 
   Brain, 
@@ -584,7 +584,7 @@ export function AdvancedAssessmentsPage() {
                 <CardContent className="p-4">
                   <div className="flex items-center justify-center gap-3">
                     <div className="w-8 h-8 bg-gradient-to-r from-green-500 to-emerald-600 rounded-full flex items-center justify-center">
-                      <CrownIcon className="w-4 h-4 text-white" />
+                      <Crown className="w-4 h-4 text-white" />
                     </div>
                     <span className="font-bold text-green-700 dark:text-green-300">مشترك مميز</span>
                     <Badge className="bg-gradient-to-r from-green-500 to-emerald-600 text-white">
