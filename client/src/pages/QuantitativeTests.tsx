@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { Link } from 'wouter';
+import { Link, useLocation } from 'wouter';
 import { motion } from 'framer-motion';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -53,6 +53,7 @@ interface StatItem {
 }
 
 export function QuantitativeTests() {
+  const [, setLocation] = useLocation();
   const [dailyTestsTaken, setDailyTestsTaken] = useState(0);
   const MAX_DAILY_FREE_TESTS = 1;
 
@@ -256,6 +257,7 @@ export function QuantitativeTests() {
     // Must be logged in first
     if (!user) {
       alert('يجب عليك تسجيل الدخول أولاً للوصول إلى اختبارات الكمي');
+      setLocation('/login');
       return;
     }
 
@@ -317,6 +319,35 @@ export function QuantitativeTests() {
       icon: Clock
     }
   ];
+
+  // Show login prompt for non-authenticated users
+  if (!user) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-gray-50 via-blue-50 to-indigo-100 dark:from-gray-900 dark:via-blue-900 dark:to-indigo-900 relative overflow-hidden flex items-center justify-center">
+        <motion.div
+          initial={{ opacity: 0, y: 50 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="text-center p-8 bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm rounded-3xl border border-white/20 shadow-2xl max-w-md mx-4"
+        >
+          <div className="w-20 h-20 bg-gradient-to-br from-red-500 to-orange-500 rounded-2xl flex items-center justify-center mx-auto mb-6">
+            <Lock className="w-10 h-10 text-white" />
+          </div>
+          <h2 className="text-3xl font-bold text-gray-800 dark:text-white mb-4">
+            تسجيل الدخول مطلوب
+          </h2>
+          <p className="text-gray-600 dark:text-gray-300 mb-6 leading-relaxed">
+            يجب تسجيل الدخول للوصول إلى اختبارات الكمي. الحسابات المجانية تحصل على اختبار واحد يومياً (20 سؤال)، والحسابات المميزة تحصل على وصول غير محدود لجميع الاختبارات المتقدمة
+          </p>
+          <Button
+            onClick={() => setLocation('/login')}
+            className="w-full bg-gradient-to-r from-blue-500 to-purple-600 text-white font-semibold py-3 px-6 rounded-xl hover:shadow-lg transition-all duration-300"
+          >
+            تسجيل الدخول الآن
+          </Button>
+        </motion.div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 dark:from-gray-900 dark:via-blue-900/20 dark:to-indigo-900/20">

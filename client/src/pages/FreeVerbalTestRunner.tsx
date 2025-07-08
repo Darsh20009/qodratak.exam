@@ -48,10 +48,15 @@ export function FreeVerbalTestRunner() {
   const [testResults, setTestResults] = useState<TestResult[]>([]);
   const [showResults, setShowResults] = useState(false);
 
+  // Get user data to check authentication
+  const { data: user } = useQuery({
+    queryKey: ['/api/user'],
+  });
+
   // Fetch questions for free verbal test
   const { data: questions, isLoading, error } = useQuery({
     queryKey: ['/api/questions/free-test/verbal'],
-    enabled: true,
+    enabled: !!user, // Only fetch if user is authenticated
   });
 
   // Start test
@@ -180,6 +185,44 @@ export function FreeVerbalTestRunner() {
     setTestResults([]);
     setShowResults(false);
   };
+
+  // Show login prompt for non-authenticated users
+  if (!user) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-gray-50 via-blue-50 to-indigo-100 dark:from-gray-900 dark:via-blue-900 dark:to-indigo-900 relative overflow-hidden flex items-center justify-center">
+        <motion.div
+          initial={{ opacity: 0, y: 50 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="text-center p-8 bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm rounded-3xl border border-white/20 shadow-2xl max-w-md mx-4"
+        >
+          <div className="w-20 h-20 bg-gradient-to-br from-red-500 to-orange-500 rounded-2xl flex items-center justify-center mx-auto mb-6">
+            <XCircle className="w-10 h-10 text-white" />
+          </div>
+          <h2 className="text-3xl font-bold text-gray-800 dark:text-white mb-4">
+            تسجيل الدخول مطلوب
+          </h2>
+          <p className="text-gray-600 dark:text-gray-300 mb-6 leading-relaxed">
+            يجب تسجيل الدخول أولاً للوصول إلى الاختبار المجاني. قم بالتسجيل للحصول على اختبار مجاني يومياً (20 سؤال) أو ترقية للحصول على وصول غير محدود
+          </p>
+          <div className="flex gap-3">
+            <Button
+              onClick={() => setLocation('/login')}
+              className="flex-1 bg-gradient-to-r from-blue-500 to-purple-600 text-white font-semibold py-3 px-6 rounded-xl hover:shadow-lg transition-all duration-300"
+            >
+              تسجيل الدخول
+            </Button>
+            <Button
+              onClick={() => setLocation('/verbal-tests')}
+              variant="outline"
+              className="flex-1 py-3 px-6 rounded-xl"
+            >
+              العودة
+            </Button>
+          </div>
+        </motion.div>
+      </div>
+    );
+  }
 
   if (isLoading) {
     return (
