@@ -80,6 +80,7 @@ export const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
     const baseItems = [
       { name: "الرئيسية", href: "/", icon: HomeIcon },
       { name: "اختبارات قياس", href: "/qiyas", icon: GraduationCapIcon },
+      { name: "دليل الاستخدام", href: "/usage-guide", icon: HelpCircleIcon },
       { name: "الملف الشخصي", href: "/profile", icon: UserIcon },
     ];
 

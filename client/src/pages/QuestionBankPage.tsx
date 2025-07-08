@@ -667,12 +667,12 @@ export default function QuestionBankPage() {
                 <Brain className="h-10 w-10 text-white animate-bounce" />
               </div>
             </div>
-            <h1 className="text-5xl font-bold bg-gradient-to-r from-emerald-400 via-cyan-400 to-purple-400 bg-clip-text text-transparent animate-pulse">
-              🧠 بنك الأسئلة السحري ✨
+            <h1 className="text-5xl font-bold bg-gradient-to-r from-emerald-400 via-cyan-400 to-purple-400 bg-clip-text text-transparent">
+              بنك الأسئلة الشامل
             </h1>
           </div>
           <p className="text-xl text-white/80 max-w-2xl mx-auto mb-6 font-medium">
-            رحلة تعليمية مذهلة مع اختبارات تفاعلية وأكواد وصول سرية 🎯🔮
+            منصة تعليمية متقدمة مع اختبارات تفاعلية وتحليلات ذكية لتطوير قدراتك الأكاديمية
           </p>
 
           {/* Premium Access Status */}
@@ -723,47 +723,7 @@ export default function QuestionBankPage() {
             </div>
           )}
 
-          {/* Access Code Section - Magical Design */}
-          <div className="relative max-w-lg mx-auto mb-8">
-            <div className="absolute inset-0 bg-gradient-to-r from-pink-500 via-purple-500 to-cyan-500 rounded-2xl blur-lg opacity-30 animate-pulse"></div>
-            <Card className="relative bg-black/30 backdrop-blur-xl border border-white/20 rounded-2xl shadow-2xl">
-              <CardHeader className="pb-4">
-                <CardTitle className="text-2xl text-center flex items-center justify-center gap-3 text-white">
-                  <div className="relative">
-                    <Zap className="h-6 w-6 text-yellow-400 animate-bounce" />
-                    <div className="absolute inset-0 bg-yellow-400 rounded-full blur-md opacity-50"></div>
-                  </div>
-                  🔮 كود الوصول السحري ⚡
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="flex gap-3">
-                  <div className="relative flex-1">
-                    <input
-                      type="text"
-                      value={accessCodeInput}
-                      onChange={(e) => setAccessCodeInput(e.target.value.toUpperCase())}
-                      placeholder="أدخل الكود السري..."
-                      className="w-full px-4 py-3 bg-white/10 backdrop-blur-sm border border-white/30 rounded-xl text-center font-mono text-xl text-white placeholder-white/60 focus:ring-2 focus:ring-cyan-400 focus:border-cyan-400 focus:bg-white/20 transition-all duration-300"
-                      maxLength={6}
-                    />
-                    <div className="absolute inset-0 bg-gradient-to-r from-purple-500/20 to-cyan-500/20 rounded-xl pointer-events-none"></div>
-                  </div>
-                  <Button
-                    onClick={() => checkAccessCode(accessCodeInput)}
-                    className="bg-gradient-to-r from-emerald-500 via-cyan-500 to-purple-500 hover:from-emerald-600 hover:via-cyan-600 hover:to-purple-600 text-white px-6 py-3 rounded-xl shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-300"
-                    disabled={accessCodeInput.length < 4}
-                  >
-                    <CheckCircle className="h-5 w-5 mr-2" />
-                    ✨ تحقق
-                  </Button>
-                </div>
-                <p className="text-white/70 text-center mt-3 text-sm">
-                  🎮 استخدم الكود السحري لفتح الاختبارات المحمية على أي جهاز
-                </p>
-              </CardContent>
-            </Card>
-          </div>
+
         </div>
 
         {/* Statistics Cards - Magical Design */}

@@ -47,6 +47,7 @@ import FoldersPage from "@/pages/FoldersPage";
 import ChallengePage from "@/pages/ChallengePage";
 import NewTimeManagementPage from "@/pages/NewTimeManagementPage";
 import InstallPage from "@/pages/InstallPage";
+import { UsageGuidePage } from "@/pages/UsageGuidePage";
 import { VerbalTests } from "@/pages/VerbalTests";
 import { VerbalTestRunner } from "@/pages/VerbalTestRunner";
 import { QuantitativeTests } from "@/pages/QuantitativeTests";
@@ -356,6 +357,9 @@ function Router({ splashDone }: { splashDone: boolean }) {
       </Route>
       <Route path="/install">
         {() => <MainLayout><InstallPage /></MainLayout>}
+      </Route>
+      <Route path="/usage-guide">
+        {() => <MainLayout><UsageGuidePage /></MainLayout>}
       </Route>
       
       {/* الاختبارات المجانية - متاحة للحسابات المسجلة */}

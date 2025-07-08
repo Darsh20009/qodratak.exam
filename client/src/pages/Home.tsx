@@ -266,10 +266,10 @@ const Home: React.FC = () => {
               
               <div className="relative mx-auto max-w-[900px] group">
                 <p className="text-blue-100 md:text-2xl lg:text-3xl leading-relaxed font-medium drop-shadow-2xl group-hover:text-blue-50 transition-colors duration-300">
-                  منصتك الشاملة للتحضير لاختبارات قياس وتطوير مهاراتك اللفظية والكمية
+                  منصة تعليمية متطورة ومبتكرة للتحضير لاختبارات القدرات الأكاديمية
                   <br />
-                  <span className="bg-gradient-to-r from-cyan-200 to-blue-200 bg-clip-text text-transparent font-bold drop-shadow-xl animate-shimmer">
-                    بأسلوب تفاعلي ومتطور مع تقنيات الذكاء الاصطناعي
+                  <span className="bg-gradient-to-r from-cyan-200 to-blue-200 bg-clip-text text-transparent font-bold drop-shadow-xl">
+                    بتقنيات الذكاء الاصطناعي وواجهة عربية فاخرة
                   </span>
                 </p>
                 <div className="absolute -inset-6 bg-gradient-to-r from-blue-500/10 via-cyan-500/5 to-indigo-500/10 rounded-2xl blur-xl animate-pulse-slow"></div>
