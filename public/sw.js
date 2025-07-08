@@ -2,8 +2,6 @@
 const CACHE_NAME = 'qudratak-app-v1';
 const urlsToCache = [
   '/',
-  '/static/css/main.css',
-  '/static/js/main.js',
   '/manifest.json'
 ];
 
@@ -13,6 +11,9 @@ self.addEventListener('install', (event) => {
     caches.open(CACHE_NAME)
       .then((cache) => {
         return cache.addAll(urlsToCache);
+      })
+      .catch((error) => {
+        console.error('Service Worker installation failed:', error);
       })
   );
 });
@@ -27,8 +28,11 @@ self.addEventListener('fetch', (event) => {
           return response;
         }
         return fetch(event.request);
-      }
-    )
+      })
+      .catch((error) => {
+        console.error('Fetch failed:', error);
+        throw error;
+      })
   );
 });
 

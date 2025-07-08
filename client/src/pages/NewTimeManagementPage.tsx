@@ -234,8 +234,12 @@ const NewTimeManagementPage: React.FC = () => {
       }
     }
 
-    return () => clearInterval(interval);
-  }, [pomodoroTimer.isActive, pomodoroTimer.timeLeft]);
+    return () => {
+      if (interval) {
+        clearInterval(interval);
+      }
+    };
+  }, [pomodoroTimer.isActive, pomodoroTimer.timeLeft, pomodoroTimer.isBreak]);
 
   // دوال إدارة المهام
   const addTask = () => {
@@ -372,6 +376,26 @@ const NewTimeManagementPage: React.FC = () => {
       default: return <Circle className="h-4 w-4" />;
     }
   };
+
+  // معالجة الأخطاء العامة
+  useEffect(() => {
+    const handleError = (event: ErrorEvent) => {
+      console.error('Runtime error:', event.error);
+    };
+
+    const handleUnhandledRejection = (event: PromiseRejectionEvent) => {
+      console.error('Unhandled promise rejection:', event.reason);
+      event.preventDefault();
+    };
+
+    window.addEventListener('error', handleError);
+    window.addEventListener('unhandledrejection', handleUnhandledRejection);
+
+    return () => {
+      window.removeEventListener('error', handleError);
+      window.removeEventListener('unhandledrejection', handleUnhandledRejection);
+    };
+  }, []);
 
   return (
     <div className="container mx-auto p-6 max-w-7xl" dir="rtl">
@@ -849,7 +873,8 @@ const NewTimeManagementPage: React.FC = () => {
                     </>
                   )}
                 </Button>
-                <Button onClick={resetPomodoro} variant="outline" size="lg" className="px-8">
+                ```
+<Button onClick={resetPomodoro} variant="outline" size="lg" className="px-8">
                   <RotateCcw className="h-5 w-5 mr-2" />
                   إعادة تعيين
                 </Button>
