@@ -105,8 +105,8 @@ export function UsageGuidePage() {
       color: "from-blue-500 to-cyan-500"
     },
     {
-      name: "المميز",
-      price: "99 ريال",
+      name: "برو",
+      price: "149 ريال",
       description: "شهرياً",
       features: [
         "اختبارات غير محدودة",
@@ -120,8 +120,8 @@ export function UsageGuidePage() {
       popular: true
     },
     {
-      name: "مدى الحياة",
-      price: "999 ريال",
+      name: "برو لايف",
+      price: "299 ريال",
       description: "دفعة واحدة",
       features: [
         "جميع مميزات الباقة المميزة",
