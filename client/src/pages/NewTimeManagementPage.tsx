@@ -210,7 +210,7 @@ const NewTimeManagementPage: React.FC = () => {
   // مؤقت البومودورو
   useEffect(() => {
     let interval: NodeJS.Timeout;
-    
+
     if (pomodoroTimer.isActive && pomodoroTimer.timeLeft > 0) {
       interval = setInterval(() => {
         setPomodoroTimer(prev => ({
@@ -227,7 +227,7 @@ const NewTimeManagementPage: React.FC = () => {
         timeLeft: prev.isBreak ? 25 * 60 : 5 * 60,
         sessionsCompleted: prev.isBreak ? prev.sessionsCompleted : prev.sessionsCompleted + 1
       }));
-      
+
       // إشعار صوتي (اختياري)
       if ('Notification' in window) {
         new Notification(pomodoroTimer.isBreak ? 'وقت العمل!' : 'وقت الراحة!');
@@ -347,7 +347,7 @@ const NewTimeManagementPage: React.FC = () => {
     const today = new Date().toISOString().split('T')[0];
     return task.createdAt.split('T')[0] === today;
   });
-  
+
   const completedTasks = tasks.filter(task => task.completed);
   const productivityScore = Math.round((completedTasks.length / Math.max(tasks.length, 1)) * 100);
   const activeHabits = habits.filter(habit => habit.completedToday);
