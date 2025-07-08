@@ -243,6 +243,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Get questions for free tests (20 mixed questions)
+  app.get("/api/questions/free-test/:category", async (req: Request, res: Response) => {
+    try {
+      const { category } = req.params;
+      
+      if (category !== 'verbal' && category !== 'quantitative') {
+        return res.status(400).json({ message: "Category must be 'verbal' or 'quantitative'" });
+      }
+
+      const allQuestions = await storage.getQuestionsByCategory(category);
+      
+      // Shuffle and select 20 random questions
+      const shuffled = [...allQuestions].sort(() => Math.random() - 0.5);
+      const selectedQuestions = shuffled.slice(0, 20);
+
+      return res.json(selectedQuestions);
+    } catch (error) {
+      console.error("Error fetching free test questions:", error);
+      return res.status(500).json({ message: "Error fetching free test questions" });
+    }
+  });
+
   // Custom exam creation removed
 
   // Save test result

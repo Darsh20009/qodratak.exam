@@ -63,6 +63,8 @@ import { AdvancedAssessmentsPage } from "@/pages/AdvancedAssessmentsPage";
 import { SkillProgressPage } from "@/pages/SkillProgressPage";
 import QuestionBankPage from "@/pages/QuestionBankPage";
 import QuestionBankTestRunner from "@/pages/QuestionBankTestRunner";
+import { FreeVerbalTestRunner } from "@/pages/FreeVerbalTestRunner";
+import { FreeQuantitativeTestRunner } from "@/pages/FreeQuantitativeTestRunner";
 
 function MainLayout({ children }: { children: React.ReactNode }) {
   const [location] = useLocation();
@@ -356,6 +358,14 @@ function Router({ splashDone }: { splashDone: boolean }) {
         {() => <MainLayout><InstallPage /></MainLayout>}
       </Route>
       
+      {/* الاختبارات المجانية - متاحة للحسابات المسجلة */}
+      <Route path="/free-verbal-test">
+        {() => <MainLayout><FreeVerbalTestRunner /></MainLayout>}
+      </Route>
+      <Route path="/free-quantitative-test">
+        {() => <MainLayout><FreeQuantitativeTestRunner /></MainLayout>}
+      </Route>
+      
       {/* صفحات الاختبارات المتقدمة الجديدة */}
       <Route path="/advanced-assessments">
         {() => <MainLayout><AdvancedAssessmentsPage /></MainLayout>}
@@ -364,15 +374,15 @@ function Router({ splashDone }: { splashDone: boolean }) {
         {() => <MainLayout><SkillProgressPage /></MainLayout>}
       </Route>
       
-      {/* صفحات مدفوعة فقط مع إمكانية التجربة المجانية */}
+      {/* صفحات اختبارات اللفظي والكمي - تتطلب تسجيل الدخول (تحتوي على اختبارات مجانية ومميزة) */}
       <Route path="/verbal-tests">
-        {() => <MainLayout><ProtectedRoute requiresPremium={true}>{hasAccess ? <VerbalTests /> : null}</ProtectedRoute></MainLayout>}
+        {() => <MainLayout><VerbalTests /></MainLayout>}
       </Route>
       <Route path="/verbal-test-runner">
         {() => <MainLayout><ProtectedRoute requiresPremium={true}>{hasAccess ? <VerbalTestRunner /> : null}</ProtectedRoute></MainLayout>}
       </Route>
       <Route path="/quantitative-tests">
-        {() => <MainLayout><ProtectedRoute requiresPremium={true}>{hasAccess ? <QuantitativeTests /> : null}</ProtectedRoute></MainLayout>}
+        {() => <MainLayout><QuantitativeTests /></MainLayout>}
       </Route>
       <Route path="/quantitative-test-runner">
         {() => <MainLayout><ProtectedRoute requiresPremium={true}>{hasAccess ? <QuantitativeTestRunner /> : null}</ProtectedRoute></MainLayout>}

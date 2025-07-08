@@ -128,6 +128,19 @@ export function VerbalTests() {
 
   const verbalTests: VerbalTest[] = [
     {
+      id: 'free-verbal-test',
+      name: 'الاختبار اللفظي المجاني',
+      subcategory: 'اختبار مجاني - 20 سؤال',
+      description: 'اختبار مجاني للحسابات المسجلة - 20 سؤال متنوع في 20 دقيقة (مرة واحدة يومياً)',
+      questionCount: 20,
+      timeLimit: 20,
+      difficulty: 'متوسط',
+      icon: <Star className="w-6 h-6" />,
+      color: 'from-green-500 to-emerald-500',
+      gradientFrom: 'from-green-50',
+      gradientTo: 'to-emerald-50'
+    },
+    {
       id: 'analogy-test',
       name: 'اختبار التناظر اللفظي المتقدم',
       subcategory: 'التناظر اللفظي - 5 أقسام',
@@ -198,11 +211,13 @@ export function VerbalTests() {
     // Must be logged in to take tests
     if (!user) return false;
 
-    // Always allow premium users (using same logic as Qiyas page)
-    if (!!isPremiumUser) return true;
+    // For the free test, allow only one per day for free users
+    if (testId === 'free-verbal-test') {
+      return canTakeTest;
+    }
 
-    // For free users, use the same robust system as Qiyas page
-    return canTakeTest;
+    // All other tests require premium subscription
+    return !!isPremiumUser;
   };
 
   const getDifficultyColor = (difficulty: string) => {
@@ -216,21 +231,27 @@ export function VerbalTests() {
   };
 
   const startTest = (test: VerbalTest) => {
-    // Must be logged in (same as Qiyas page)
+    // Must be logged in first
     if (!user) {
-      alert('يجب عليك تسجيل الدخول أولاً للوصول إلى الاختبارات المتخصصة');
+      alert('يجب عليك تسجيل الدخول أولاً للوصول إلى اختبارات اللفظي');
       setLocation('/login');
       return;
     }
 
-    // Check daily limit for free users (same robust system as Qiyas page)
+    // Check permissions for the specific test
     if (!checkDailyLimit(test.id)) {
-      alert(`لقد أكملت اختبارك اليومي المجاني. يمكن للحسابات المجانية أخذ ${MAX_DAILY_FREE_TESTS} اختبار يومياً فقط من جميع اختبارات اللفظي. قم بالترقية للوصول غير المحدود!`);
+      if (test.id === 'free-verbal-test') {
+        alert(`لقد أكملت اختبارك المجاني اليوم. يمكن للحسابات المجانية أخذ اختبار واحد يومياً فقط. قم بالترقية للوصول غير المحدود!`);
+      } else {
+        alert('هذا الاختبار متاح للحسابات المميزة فقط. قم بالترقية للوصول إلى جميع الاختبارات المتقدمة!');
+      }
       return;
     }
 
-    // Record the test attempt for free users (same as Qiyas page)
-    recordTestTaken();
+    // Record the test attempt for free users on free test only
+    if (test.id === 'free-verbal-test' && !isPremiumUser) {
+      recordTestTaken();
+    }
 
     // Store test configuration
     const testConfig = {
@@ -244,8 +265,12 @@ export function VerbalTests() {
 
     localStorage.setItem('currentVerbalTest', JSON.stringify(testConfig));
 
-    // Navigate to advanced test runner for all verbal tests
-    setLocation('/advanced-verbal-test');
+    // Navigate to appropriate test runner
+    if (test.id === 'free-verbal-test') {
+      setLocation('/free-verbal-test');
+    } else {
+      setLocation('/advanced-verbal-test');
+    }
   };
 
   const getTodayTestCount = (): number => {
@@ -269,7 +294,7 @@ export function VerbalTests() {
             تسجيل الدخول مطلوب
           </h2>
           <p className="text-gray-600 dark:text-gray-300 mb-6 leading-relaxed">
-            للوصول إلى اختبارات اللفظي المتخصصة وفقاً لمعايير قياس الحقيقية، يجب عليك تسجيل الدخول أولاً
+            يجب تسجيل الدخول للوصول إلى اختبارات اللفظي. الحسابات المجانية تحصل على اختبار واحد يومياً (20 سؤال)، والحسابات المميزة تحصل على وصول غير محدود لجميع الاختبارات المتقدمة
           </p>
           <Button
             onClick={() => setLocation('/login')}

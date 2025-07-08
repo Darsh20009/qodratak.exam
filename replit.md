@@ -113,6 +113,26 @@ Preferred communication style: Simple, everyday language.
 
 ## Recent Changes
 
+### Free Test System for Registered Users - January 8, 2025
+- **Free Test Integration**: Added free test option (20 questions) for both verbal and quantitative sections
+- **Daily Free Access**: Free registered users get one test per day in each category (verbal/quantitative)
+- **Authentication Required**: Non-registered users cannot access any tests - must register/login first
+- **Premium Differentiation**: 
+  - Free users: One 20-question test daily per category
+  - Premium users: Unlimited access to all advanced test suites
+- **Enhanced Backend Support**: 
+  - New API endpoint `/api/questions/free-test/:category` for mixed 20-question tests
+  - Automatic question shuffling for variety
+- **New Test Runners**: 
+  - `FreeVerbalTestRunner`: 20-minute verbal test with mixed questions
+  - `FreeQuantitativeTestRunner`: 20-minute quantitative test with mixed questions
+- **Improved User Experience**:
+  - Clear messaging for authentication requirements
+  - Different error messages for free vs premium test access
+  - Results saved to local storage with proper categorization
+- **Routing Updates**: Added `/free-verbal-test` and `/free-quantitative-test` routes
+- **Access Control**: Verbal and quantitative test pages now accessible to all registered users
+
 ### Enhanced Advanced Laboratory with Full Dark Mode & Quick Assessment - January 2, 2025
 - **Complete Dark Mode Integration**: Enhanced Advanced Laboratory with full dark theme support for all UI components
 - **Quick Level Assessment**: Integrated former Level Assessment features into Advanced Laboratory as "قياس المستوى السريع"

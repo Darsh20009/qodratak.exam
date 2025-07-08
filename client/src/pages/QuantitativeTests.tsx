@@ -20,7 +20,8 @@ import {
   PlayCircle,
   Lock,
   CheckCircle,
-  AlertTriangle
+  AlertTriangle,
+  Star
 } from 'lucide-react';
 
 interface QuantitativeTest {
@@ -90,6 +91,19 @@ export function QuantitativeTests() {
 
   // اختبارات الكمي المتاحة
   const quantitativeTests: QuantitativeTest[] = [
+    {
+      id: 'free-quantitative-test',
+      name: 'الاختبار الكمي المجاني',
+      subcategory: 'اختبار مجاني - 20 سؤال',
+      description: 'اختبار مجاني للحسابات المسجلة - 20 سؤال متنوع في 20 دقيقة (مرة واحدة يومياً)',
+      questionCount: 20,
+      timeLimit: 20,
+      difficulty: 'متوسط',
+      icon: <Star className="w-6 h-6" />,
+      color: 'green',
+      gradientFrom: 'from-green-500',
+      gradientTo: 'to-emerald-500'
+    },
     {
       id: 'statistics',
       name: 'اختبار الإحصاء المتقدم',
@@ -227,28 +241,38 @@ export function QuantitativeTests() {
     // Must be logged in to take tests
     if (!user) return false;
 
-    // Always allow premium users (using same logic as Qiyas page)
-    if (!!isPremiumUser) return true;
+    // For the free test, allow only one per day for free users
+    if (testId === 'free-quantitative-test') {
+      return canTakeTest;
+    }
 
-    // For free users, use the same robust system as Qiyas page
-    return canTakeTest;
+    // All other tests require premium subscription
+    return !!isPremiumUser;
   };
 
   const canTakeThisTest = canTakeTest;
 
   const startTest = (test: QuantitativeTest) => {
+    // Must be logged in first
     if (!user) {
-      alert('يجب تسجيل الدخول أولاً');
+      alert('يجب عليك تسجيل الدخول أولاً للوصول إلى اختبارات الكمي');
       return;
     }
 
+    // Check permissions for the specific test
     if (!checkDailyLimit(test.id)) {
-      alert('لقد وصلت للحد الأقصى اليومي من الاختبارات');
+      if (test.id === 'free-quantitative-test') {
+        alert(`لقد أكملت اختبارك المجاني اليوم. يمكن للحسابات المجانية أخذ اختبار واحد يومياً فقط. قم بالترقية للوصول غير المحدود!`);
+      } else {
+        alert('هذا الاختبار متاح للحسابات المميزة فقط. قم بالترقية للوصول إلى جميع الاختبارات المتقدمة!');
+      }
       return;
     }
 
-    // تسجيل الاختبار للحسابات المجانية
-    recordTestTaken();
+    // Record the test attempt for free users on free test only
+    if (test.id === 'free-quantitative-test' && !isPremiumUser) {
+      recordTestTaken();
+    }
 
     // بدء الاختبار مع التكوين الصحيح
     const testData = {
@@ -262,8 +286,12 @@ export function QuantitativeTests() {
 
     localStorage.setItem('currentTest', JSON.stringify(testData));
     
-    // Navigate to advanced test runner for all quantitative tests
-    window.location.href = '/advanced-quantitative-test';
+    // Navigate to appropriate test runner
+    if (test.id === 'free-quantitative-test') {
+      window.location.href = '/free-quantitative-test';
+    } else {
+      window.location.href = '/advanced-quantitative-test';
+    }
   };
 
   // إحصائيات المستخدم
