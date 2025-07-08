@@ -87,6 +87,47 @@ export function AdvancedAssessmentsPage() {
   const [showHint, setShowHint] = useState(false);
   const [streak, setStreak] = useState(0);
   const [totalXP, setTotalXP] = useState(0);
+  
+  // Premium and daily limit state
+  const [user, setUser] = useState<any>(null);
+  const [dailyTestsTaken, setDailyTestsTaken] = useState(0);
+  const MAX_DAILY_FREE_TESTS = 1;
+
+  // Load user data and daily limits
+  useEffect(() => {
+    const storedUser = localStorage.getItem('user');
+    if (storedUser) {
+      try {
+        setUser(JSON.parse(storedUser));
+      } catch (error) {
+        console.error("Error parsing user:", error);
+      }
+    }
+
+    // Load daily test count
+    const today = new Date().toDateString();
+    const testsToday = JSON.parse(localStorage.getItem(`dailyAdvancedLabTests_${today}`) || '0');
+    setDailyTestsTaken(testsToday);
+  }, []);
+
+  // Check premium status
+  const isPremiumUser = user && (
+    user.subscription?.type === 'Pro' || 
+    user.subscription?.type === 'Pro Life' || 
+    user.subscription?.type === 'Pro Live'
+  );
+
+  const canTakeTest = isPremiumUser || dailyTestsTaken < MAX_DAILY_FREE_TESTS;
+
+  // Record test taken for free users
+  const recordTestTaken = () => {
+    if (!isPremiumUser) {
+      const today = new Date().toDateString();
+      const newCount = dailyTestsTaken + 1;
+      localStorage.setItem(`dailyAdvancedLabTests_${today}`, JSON.stringify(newCount));
+      setDailyTestsTaken(newCount);
+    }
+  };
 
   // Fetch questions from the API
   const { data: questions, isLoading } = useQuery({
@@ -130,6 +171,15 @@ export function AdvancedAssessmentsPage() {
 
   const startQuickAssessment = (category: 'verbal' | 'quantitative', subcategory: string) => {
     if (!questions) return;
+    
+    // Check premium access and daily limits
+    if (!canTakeTest) {
+      alert('🚫 لقد وصلت إلى الحد الأقصى للاختبارات المجانية اليوم (1 اختبار). اشترك في الباقة المدفوعة للوصول الكامل!');
+      return;
+    }
+    
+    // Record test taken for free users
+    recordTestTaken();
 
     let filteredQuestions = questions
       .filter((q: any) => q.category === category && q.subcategory === subcategory)
@@ -169,6 +219,15 @@ export function AdvancedAssessmentsPage() {
 
   const startAssessment = (subcategory: any, type: 'verbal' | 'quantitative') => {
     if (!questions) return;
+    
+    // Check premium access and daily limits
+    if (!canTakeTest) {
+      alert('🚫 لقد وصلت إلى الحد الأقصى للاختبارات المجانية اليوم (1 اختبار). اشترك في الباقة المدفوعة للوصول الكامل!');
+      return;
+    }
+    
+    // Record test taken for free users
+    recordTestTaken();
 
     let filteredQuestions = questions
       .filter((q: any) => q.category === type && q.subcategory === subcategory.id)
@@ -488,6 +547,54 @@ export function AdvancedAssessmentsPage() {
           <p className="text-2xl text-gray-600 dark:text-gray-400 max-w-4xl mx-auto mb-8">
             تجربة اختبار ثورية مع تحليل ذكي، مقاييس أداء متقدمة، وتجربة تفاعلية لا مثيل لها
           </p>
+
+          {/* Premium Access Status */}
+          {user && !isPremiumUser && (
+            <div className="max-w-md mx-auto mb-6">
+              <Card className="bg-gradient-to-r from-orange-50 to-red-50 dark:from-orange-900/20 dark:to-red-900/20 border-orange-200 dark:border-orange-700">
+                <CardContent className="p-4">
+                  <div className="flex items-center justify-center gap-3 mb-2">
+                    <div className="w-8 h-8 bg-gradient-to-r from-orange-500 to-red-600 rounded-full flex items-center justify-center">
+                      <Target className="w-4 h-4 text-white" />
+                    </div>
+                    <span className="font-bold text-orange-700 dark:text-orange-300">حساب مجاني</span>
+                  </div>
+                  <p className="text-sm text-gray-600 dark:text-gray-300 mb-2">
+                    اختبار واحد يومياً • {dailyTestsTaken}/{MAX_DAILY_FREE_TESTS} اليوم
+                  </p>
+                  <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
+                    <div 
+                      className="bg-gradient-to-r from-orange-500 to-red-600 h-2 rounded-full transition-all duration-500"
+                      style={{ width: `${(dailyTestsTaken / MAX_DAILY_FREE_TESTS) * 100}%` }}
+                    />
+                  </div>
+                  {!canTakeTest && (
+                    <p className="text-xs text-red-600 dark:text-red-400 mt-2 font-medium">
+                      🔒 تم الوصول للحد الأقصى اليوم
+                    </p>
+                  )}
+                </CardContent>
+              </Card>
+            </div>
+          )}
+
+          {user && isPremiumUser && (
+            <div className="max-w-md mx-auto mb-6">
+              <Card className="bg-gradient-to-r from-green-50 to-emerald-50 dark:from-green-900/20 dark:to-emerald-900/20 border-green-200 dark:border-green-700">
+                <CardContent className="p-4">
+                  <div className="flex items-center justify-center gap-3">
+                    <div className="w-8 h-8 bg-gradient-to-r from-green-500 to-emerald-600 rounded-full flex items-center justify-center">
+                      <CrownIcon className="w-4 h-4 text-white" />
+                    </div>
+                    <span className="font-bold text-green-700 dark:text-green-300">مشترك مميز</span>
+                    <Badge className="bg-gradient-to-r from-green-500 to-emerald-600 text-white">
+                      وصول كامل
+                    </Badge>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+          )}
           
           {/* Quick Level Assessment Section */}
           <Card className="max-w-6xl mx-auto mb-8 bg-gradient-to-r from-green-500/10 to-emerald-500/10 dark:from-green-500/20 dark:to-emerald-500/20 border-green-200 dark:border-green-700">
