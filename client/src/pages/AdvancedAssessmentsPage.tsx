@@ -533,124 +533,308 @@ export function AdvancedAssessmentsPage() {
 
   // Main Interface
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100 dark:from-slate-900 dark:via-blue-900 dark:to-indigo-900 p-6">
-      <div className="max-w-7xl mx-auto">
-        {/* Hero Section */}
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100 dark:from-slate-900 dark:via-blue-900 dark:to-indigo-900 p-6 relative overflow-hidden">
+      {/* Animated Background Elements */}
+      <div className="absolute inset-0 overflow-hidden">
+        <div className="absolute -top-10 -right-10 w-40 h-40 bg-blue-500/10 rounded-full blur-3xl animate-pulse"></div>
+        <div className="absolute top-1/3 -left-10 w-60 h-60 bg-purple-500/10 rounded-full blur-3xl animate-pulse delay-1000"></div>
+        <div className="absolute bottom-1/4 right-1/4 w-32 h-32 bg-pink-500/10 rounded-full blur-3xl animate-pulse delay-2000"></div>
+      </div>
+      
+      <div className="max-w-7xl mx-auto relative z-10">
+        {/* Enhanced Hero Section */}
         <motion.div 
           initial={{ opacity: 0, y: -30 }}
           animate={{ opacity: 1, y: 0 }}
-          className="text-center mb-12"
+          className="text-center mb-16"
         >
-          <h1 className="text-6xl font-bold bg-gradient-to-r from-blue-600 via-purple-600 to-pink-600 bg-clip-text text-transparent mb-6">
-            مختبر القدرات المتقدم
-          </h1>
-          <p className="text-2xl text-gray-600 dark:text-gray-400 max-w-4xl mx-auto mb-8">
-            تجربة اختبار ثورية مع تحليل ذكي، مقاييس أداء متقدمة، وتجربة تفاعلية لا مثيل لها
-          </p>
+          {/* Main Title with Enhanced Design */}
+          <div className="relative mb-8">
+            <motion.div
+              initial={{ scale: 0.8, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              transition={{ duration: 0.8, ease: "easeOut" }}
+              className="inline-block"
+            >
+              <h1 className="text-7xl md:text-8xl font-black bg-gradient-to-r from-blue-600 via-purple-600 to-pink-600 bg-clip-text text-transparent mb-6 relative">
+                مختبر القدرات المتقدم
+                {/* Decorative Elements */}
+                <div className="absolute -top-4 -right-4 w-8 h-8 bg-gradient-to-r from-yellow-400 to-orange-500 rounded-full opacity-80 animate-bounce"></div>
+                <div className="absolute -bottom-2 -left-2 w-6 h-6 bg-gradient-to-r from-green-400 to-blue-500 rounded-full opacity-80 animate-bounce delay-500"></div>
+              </h1>
+            </motion.div>
+          </div>
+          
+          {/* Enhanced Subtitle */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.3 }}
+            className="relative"
+          >
+            <div className="max-w-5xl mx-auto">
+              <p className="text-2xl md:text-3xl text-gray-600 dark:text-gray-300 mb-8 leading-relaxed font-medium">
+                <span className="bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent font-bold">تجربة اختبار ثورية</span> مع 
+                <span className="mx-2 px-3 py-1 bg-gradient-to-r from-purple-500/20 to-pink-500/20 rounded-full border border-purple-300/30">تحليل ذكي</span>، 
+                <span className="mx-2 px-3 py-1 bg-gradient-to-r from-blue-500/20 to-cyan-500/20 rounded-full border border-blue-300/30">مقاييس أداء متقدمة</span>، 
+                وتجربة تفاعلية لا مثيل لها
+              </p>
+              
+              {/* Animated Stats */}
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-2xl mx-auto mb-8">
+                <motion.div
+                  initial={{ opacity: 0, scale: 0.8 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  transition={{ delay: 0.5 }}
+                  className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm rounded-2xl p-4 border border-white/20 shadow-lg"
+                >
+                  <div className="text-3xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">1500+</div>
+                  <div className="text-sm text-gray-600 dark:text-gray-400">سؤال متنوع</div>
+                </motion.div>
+                
+                <motion.div
+                  initial={{ opacity: 0, scale: 0.8 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  transition={{ delay: 0.7 }}
+                  className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm rounded-2xl p-4 border border-white/20 shadow-lg"
+                >
+                  <div className="text-3xl font-bold bg-gradient-to-r from-green-600 to-emerald-600 bg-clip-text text-transparent">6</div>
+                  <div className="text-sm text-gray-600 dark:text-gray-400">أنماط اختبار</div>
+                </motion.div>
+                
+                <motion.div
+                  initial={{ opacity: 0, scale: 0.8 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  transition={{ delay: 0.9 }}
+                  className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm rounded-2xl p-4 border border-white/20 shadow-lg"
+                >
+                  <div className="text-3xl font-bold bg-gradient-to-r from-orange-600 to-red-600 bg-clip-text text-transparent">AI</div>
+                  <div className="text-sm text-gray-600 dark:text-gray-400">تحليل ذكي</div>
+                </motion.div>
+              </div>
+            </div>
+          </motion.div>
 
-          {/* Premium Access Status */}
+          {/* Enhanced Premium Access Status */}
           {user && !isPremiumUser && (
-            <div className="max-w-md mx-auto mb-6">
-              <Card className="bg-gradient-to-r from-orange-50 to-red-50 dark:from-orange-900/20 dark:to-red-900/20 border-orange-200 dark:border-orange-700">
-                <CardContent className="p-4">
-                  <div className="flex items-center justify-center gap-3 mb-2">
-                    <div className="w-8 h-8 bg-gradient-to-r from-orange-500 to-red-600 rounded-full flex items-center justify-center">
-                      <Target className="w-4 h-4 text-white" />
+            <motion.div 
+              initial={{ opacity: 0, scale: 0.9 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ delay: 1.1 }}
+              className="max-w-lg mx-auto mb-8"
+            >
+              <Card className="bg-gradient-to-r from-orange-50 via-red-50 to-pink-50 dark:from-orange-900/20 dark:via-red-900/20 dark:to-pink-900/20 border-orange-200 dark:border-orange-700 shadow-xl overflow-hidden relative">
+                <div className="absolute inset-0 bg-gradient-to-r from-orange-500/5 to-red-500/5 animate-pulse"></div>
+                <CardContent className="p-6 relative z-10">
+                  <div className="flex items-center justify-center gap-4 mb-4">
+                    <div className="w-12 h-12 bg-gradient-to-r from-orange-500 to-red-600 rounded-full flex items-center justify-center shadow-lg">
+                      <Target className="w-6 h-6 text-white" />
                     </div>
-                    <span className="font-bold text-orange-700 dark:text-orange-300">حساب مجاني</span>
+                    <div className="text-center">
+                      <span className="font-bold text-xl text-orange-700 dark:text-orange-300">حساب مجاني</span>
+                      <div className="text-sm text-orange-600 dark:text-orange-400 mt-1">اختبار واحد يومياً</div>
+                    </div>
                   </div>
-                  <p className="text-sm text-gray-600 dark:text-gray-300 mb-2">
-                    اختبار واحد يومياً • {dailyTestsTaken}/{MAX_DAILY_FREE_TESTS} اليوم
-                  </p>
-                  <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
-                    <div 
-                      className="bg-gradient-to-r from-orange-500 to-red-600 h-2 rounded-full transition-all duration-500"
-                      style={{ width: `${(dailyTestsTaken / MAX_DAILY_FREE_TESTS) * 100}%` }}
-                    />
+                  
+                  <div className="bg-white/50 dark:bg-gray-800/50 rounded-lg p-4 mb-4">
+                    <div className="flex justify-between items-center mb-2">
+                      <span className="text-sm font-medium text-gray-700 dark:text-gray-300">الاستخدام اليومي</span>
+                      <span className="text-sm font-bold text-orange-600 dark:text-orange-400">{dailyTestsTaken}/{MAX_DAILY_FREE_TESTS}</span>
+                    </div>
+                    <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-3 overflow-hidden">
+                      <motion.div 
+                        initial={{ width: 0 }}
+                        animate={{ width: `${(dailyTestsTaken / MAX_DAILY_FREE_TESTS) * 100}%` }}
+                        transition={{ duration: 1, delay: 1.5 }}
+                        className="bg-gradient-to-r from-orange-500 to-red-600 h-3 rounded-full relative"
+                      >
+                        <div className="absolute inset-0 bg-white/30 animate-pulse"></div>
+                      </motion.div>
+                    </div>
                   </div>
+                  
                   {!canTakeTest && (
-                    <p className="text-xs text-red-600 dark:text-red-400 mt-2 font-medium">
-                      🔒 تم الوصول للحد الأقصى اليوم
-                    </p>
+                    <motion.div
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      className="text-center p-3 bg-red-50 dark:bg-red-900/20 rounded-lg border border-red-200 dark:border-red-700"
+                    >
+                      <p className="text-sm text-red-600 dark:text-red-400 font-medium">
+                        🔒 تم الوصول للحد الأقصى اليوم
+                      </p>
+                      <p className="text-xs text-red-500 dark:text-red-500 mt-1">
+                        اشترك للحصول على وصول غير محدود
+                      </p>
+                    </motion.div>
                   )}
                 </CardContent>
               </Card>
-            </div>
+            </motion.div>
           )}
 
           {user && isPremiumUser && (
-            <div className="max-w-md mx-auto mb-6">
-              <Card className="bg-gradient-to-r from-green-50 to-emerald-50 dark:from-green-900/20 dark:to-emerald-900/20 border-green-200 dark:border-green-700">
-                <CardContent className="p-4">
-                  <div className="flex items-center justify-center gap-3">
-                    <div className="w-8 h-8 bg-gradient-to-r from-green-500 to-emerald-600 rounded-full flex items-center justify-center">
-                      <Crown className="w-4 h-4 text-white" />
+            <motion.div 
+              initial={{ opacity: 0, scale: 0.9 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ delay: 1.1 }}
+              className="max-w-lg mx-auto mb-8"
+            >
+              <Card className="bg-gradient-to-r from-green-50 via-emerald-50 to-teal-50 dark:from-green-900/20 dark:via-emerald-900/20 dark:to-teal-900/20 border-green-200 dark:border-green-700 shadow-xl overflow-hidden relative">
+                <div className="absolute inset-0 bg-gradient-to-r from-green-500/5 to-emerald-500/5 animate-pulse"></div>
+                <CardContent className="p-6 relative z-10">
+                  <div className="flex items-center justify-center gap-4">
+                    <div className="w-12 h-12 bg-gradient-to-r from-green-500 to-emerald-600 rounded-full flex items-center justify-center shadow-lg relative">
+                      <Crown className="w-6 h-6 text-white" />
+                      <div className="absolute -top-1 -right-1 w-4 h-4 bg-yellow-400 rounded-full animate-ping"></div>
                     </div>
-                    <span className="font-bold text-green-700 dark:text-green-300">مشترك مميز</span>
-                    <Badge className="bg-gradient-to-r from-green-500 to-emerald-600 text-white">
-                      وصول كامل
-                    </Badge>
+                    <div className="text-center">
+                      <span className="font-bold text-xl text-green-700 dark:text-green-300">مشترك مميز</span>
+                      <div className="flex items-center gap-2 mt-1">
+                        <Badge className="bg-gradient-to-r from-green-500 to-emerald-600 text-white shadow-lg">
+                          وصول كامل
+                        </Badge>
+                        <Badge className="bg-gradient-to-r from-yellow-500 to-orange-500 text-white shadow-lg">
+                          ∞ اختبار
+                        </Badge>
+                      </div>
+                    </div>
                   </div>
                 </CardContent>
               </Card>
-            </div>
+            </motion.div>
           )}
           
-          {/* Quick Level Assessment Section */}
-          <Card className="max-w-6xl mx-auto mb-8 bg-gradient-to-r from-green-500/10 to-emerald-500/10 dark:from-green-500/20 dark:to-emerald-500/20 border-green-200 dark:border-green-700">
-            <CardHeader className="text-center">
-              <div className="flex items-center justify-center gap-3 mb-2">
-                <div className="p-2 bg-gradient-to-r from-green-500 to-emerald-600 rounded-full">
-                  <Zap className="h-6 w-6 text-white" />
-                </div>
-                <h2 className="text-2xl font-bold text-green-700 dark:text-green-300">
-                  قياس المستوى السريع
-                </h2>
-              </div>
-              <p className="text-green-600 dark:text-green-400">
-                اختبارات سريعة لكل فئة - 15 سؤال في 15 دقيقة
-              </p>
-            </CardHeader>
-            <CardContent>
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {[
-                  { name: "التناظر اللفظي", category: "verbal", subcategory: "التناظر اللفظي", icon: "📚", color: "from-blue-500 to-blue-600" },
-                  { name: "إكمال الجمل", category: "verbal", subcategory: "إكمال الجمل", icon: "✏️", color: "from-purple-500 to-purple-600" },
-                  { name: "الاستيعاب المقروء", category: "verbal", subcategory: "استيعاب المقروء", icon: "📖", color: "from-indigo-500 to-indigo-600" },
-                  { name: "المترادفات والأضداد", category: "verbal", subcategory: "المترادفات والأضداد", icon: "🔤", color: "from-pink-500 to-pink-600" },
-                  { name: "الأخطاء الشائعة", category: "verbal", subcategory: "الخطأ السياقي", icon: "🎯", color: "from-rose-500 to-rose-600" },
-                  { name: "الهندسة", category: "quantitative", subcategory: "الهندسة", icon: "📐", color: "from-orange-500 to-orange-600" },
-                  { name: "العمليات الحسابية", category: "quantitative", subcategory: "عمليات حسابية", icon: "➕", color: "from-yellow-500 to-yellow-600" },
-                  { name: "النسب والتناسب", category: "quantitative", subcategory: "النسبة والتناسب", icon: "📊", color: "from-teal-500 to-teal-600" },
-                  { name: "الإحصاء", category: "quantitative", subcategory: "الإحصاء", icon: "📈", color: "from-cyan-500 to-cyan-600" },
-                ].map((test) => (
-                  <Button
-                    key={test.name}
-                    variant="outline"
-                    className={`h-auto p-4 bg-gradient-to-r ${test.color} text-white border-0 hover:scale-105 transition-all duration-300 shadow-lg hover:shadow-xl`}
-                    onClick={() => startQuickAssessment(test.category as 'verbal' | 'quantitative', test.subcategory)}
-                  >
-                    <div className="flex flex-col items-center gap-2">
-                      <div className="text-2xl">{test.icon}</div>
-                      <div className="text-sm font-medium">{test.name}</div>
-                      <div className="text-xs opacity-90">15 سؤال • 15 دقيقة</div>
+          {/* Enhanced Quick Level Assessment Section */}
+          <motion.div
+            initial={{ opacity: 0, y: 30 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 1.3 }}
+          >
+            <Card className="max-w-7xl mx-auto mb-12 bg-gradient-to-r from-green-500/10 via-emerald-500/10 to-teal-500/10 dark:from-green-500/20 dark:via-emerald-500/20 dark:to-teal-500/20 border-green-200 dark:border-green-700 shadow-2xl overflow-hidden relative">
+              <div className="absolute inset-0 bg-gradient-to-r from-green-400/5 to-emerald-400/5 animate-pulse"></div>
+              
+              <CardHeader className="text-center pb-8 relative z-10">
+                <motion.div
+                  initial={{ scale: 0.8, opacity: 0 }}
+                  animate={{ scale: 1, opacity: 1 }}
+                  transition={{ delay: 1.5 }}
+                  className="flex items-center justify-center gap-4 mb-4"
+                >
+                  <div className="p-3 bg-gradient-to-r from-green-500 to-emerald-600 rounded-2xl shadow-lg relative">
+                    <Zap className="h-8 w-8 text-white" />
+                    <div className="absolute -top-1 -right-1 w-4 h-4 bg-yellow-400 rounded-full animate-bounce"></div>
+                  </div>
+                  <div>
+                    <h2 className="text-3xl font-bold bg-gradient-to-r from-green-600 to-emerald-600 bg-clip-text text-transparent">
+                      قياس المستوى السريع
+                    </h2>
+                    <div className="text-green-600 dark:text-green-400 font-medium">⚡ نتائج فورية مع تحليل ذكي</div>
+                  </div>
+                </motion.div>
+                
+                <motion.div
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  transition={{ delay: 1.7 }}
+                  className="max-w-2xl mx-auto"
+                >
+                  <p className="text-lg text-green-700 dark:text-green-300 mb-4">
+                    اختبارات سريعة ومتخصصة لكل فئة - 15 سؤال في 15 دقيقة
+                  </p>
+                  <div className="flex items-center justify-center gap-6 text-sm text-green-600 dark:text-green-400">
+                    <div className="flex items-center gap-2">
+                      <Clock className="w-4 h-4" />
+                      <span>15 دقيقة</span>
                     </div>
-                  </Button>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
+                    <div className="flex items-center gap-2">
+                      <BookOpen className="w-4 h-4" />
+                      <span>15 سؤال</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Brain className="w-4 h-4" />
+                      <span>تحليل ذكي</span>
+                    </div>
+                  </div>
+                </motion.div>
+              </CardHeader>
+              
+              <CardContent className="relative z-10">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                  {[
+                    { name: "التناظر اللفظي", category: "verbal", subcategory: "التناظر اللفظي", icon: "📚", color: "from-blue-500 to-blue-600", description: "تحليل العلاقات" },
+                    { name: "إكمال الجمل", category: "verbal", subcategory: "إكمال الجمل", icon: "✏️", color: "from-purple-500 to-purple-600", description: "فهم السياق" },
+                    { name: "الاستيعاب المقروء", category: "verbal", subcategory: "استيعاب المقروء", icon: "📖", color: "from-indigo-500 to-indigo-600", description: "فهم النصوص" },
+                    { name: "المترادفات والأضداد", category: "verbal", subcategory: "المترادفات والأضداد", icon: "🔤", color: "from-pink-500 to-pink-600", description: "المعاني والألفاظ" },
+                    { name: "الأخطاء الشائعة", category: "verbal", subcategory: "الخطأ السياقي", icon: "🎯", color: "from-rose-500 to-rose-600", description: "دقة اللغة" },
+                    { name: "الهندسة", category: "quantitative", subcategory: "الهندسة", icon: "📐", color: "from-orange-500 to-orange-600", description: "الأشكال والمساحات" },
+                    { name: "العمليات الحسابية", category: "quantitative", subcategory: "عمليات حسابية", icon: "➕", color: "from-yellow-500 to-yellow-600", description: "الحسابات الأساسية" },
+                    { name: "النسب والتناسب", category: "quantitative", subcategory: "النسبة والتناسب", icon: "📊", color: "from-teal-500 to-teal-600", description: "العلاقات الرقمية" },
+                    { name: "الإحصاء", category: "quantitative", subcategory: "الإحصاء", icon: "📈", color: "from-cyan-500 to-cyan-600", description: "تحليل البيانات" },
+                  ].map((test, index) => (
+                    <motion.div
+                      key={test.name}
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: 1.8 + index * 0.1 }}
+                    >
+                      <Button
+                        variant="outline"
+                        className={`h-auto p-6 bg-gradient-to-r ${test.color} text-white border-0 hover:scale-105 transition-all duration-500 shadow-lg hover:shadow-2xl w-full relative overflow-hidden group`}
+                        onClick={() => startQuickAssessment(test.category as 'verbal' | 'quantitative', test.subcategory)}
+                      >
+                        <div className="absolute inset-0 bg-white/10 translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-700"></div>
+                        <div className="flex flex-col items-center gap-3 relative z-10">
+                          <div className="text-3xl mb-1 transform group-hover:scale-110 transition-transform duration-300">
+                            {test.icon}
+                          </div>
+                          <div className="text-center">
+                            <div className="text-base font-bold mb-1">{test.name}</div>
+                            <div className="text-xs opacity-90 mb-2">{test.description}</div>
+                            <div className="text-xs bg-white/20 px-3 py-1 rounded-full">
+                              15 سؤال • 15 دقيقة
+                            </div>
+                          </div>
+                        </div>
+                      </Button>
+                    </motion.div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          </motion.div>
 
-          {/* Configuration Panel */}
-          <Card className="max-w-4xl mx-auto mb-12">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2 justify-center">
-                <Settings className="h-6 w-6" />
-                إعدادات الاختبار المتقدمة
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {/* Enhanced Configuration Panel */}
+          <motion.div
+            initial={{ opacity: 0, y: 30 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 2.5 }}
+          >
+            <Card className="max-w-6xl mx-auto mb-16 bg-gradient-to-r from-slate-50 to-gray-50 dark:from-gray-800 dark:to-gray-900 shadow-2xl border-0 overflow-hidden relative">
+              <div className="absolute inset-0 bg-gradient-to-r from-blue-500/5 to-purple-500/5"></div>
+              
+              <CardHeader className="text-center pb-8 relative z-10">
+                <motion.div
+                  initial={{ scale: 0.8, opacity: 0 }}
+                  animate={{ scale: 1, opacity: 1 }}
+                  transition={{ delay: 2.7 }}
+                  className="flex items-center justify-center gap-4 mb-4"
+                >
+                  <div className="p-3 bg-gradient-to-r from-blue-500 to-purple-600 rounded-2xl shadow-lg">
+                    <Settings className="h-8 w-8 text-white" />
+                  </div>
+                  <div>
+                    <h2 className="text-3xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+                      إعدادات الاختبار المتقدمة
+                    </h2>
+                    <p className="text-gray-600 dark:text-gray-400 mt-2">
+                      خصص تجربة الاختبار لتناسب مستواك وأهدافك
+                    </p>
+                  </div>
+                </motion.div>
+              </CardHeader>
+              
+              <CardContent className="relative z-10">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
                 {/* Assessment Mode */}
                 <div className="space-y-3">
                   <label className="text-sm font-medium">نمط الاختبار</label>
