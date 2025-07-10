@@ -31,7 +31,7 @@ const InstallPage: React.FC = () => {
   const [selectedPlatform, setSelectedPlatform] = useState<'android' | 'ios' | 'desktop' | null>(null);
 
   // تحميل APK مباشرة - طريقة محسنة للملفات الكبيرة
-  const downloadAPK = () => {
+  const downloadAPK = async () => {
     try {
       // عرض رسالة تحميل
       const downloadButton = document.querySelector('#download-apk-btn') as HTMLButtonElement;
@@ -40,17 +40,29 @@ const InstallPage: React.FC = () => {
         downloadButton.innerHTML = '<div className="flex items-center"><svg className="animate-spin h-5 w-5 mr-2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" fill="none" stroke-linecap="round" stroke-dasharray="64" stroke-dashoffset="64"></circle></svg>جاري بدء التحميل...</div>';
       }
 
-      // إنشاء رابط التحميل المباشر - أفضل للملفات الكبيرة
+      // طريقة محسنة للتحميل باستخدام fetch
+      const response = await fetch('/app/qudratak-app.apk');
+      
+      if (!response.ok) {
+        throw new Error('فشل في تحميل الملف');
+      }
+
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      
+      // إنشاء رابط التحميل
       const link = document.createElement('a');
-      link.href = '/app/qudratak-app.apk';
+      link.href = url;
       link.download = 'منصة-قدراتك-v2.1.0.apk';
-      link.target = '_blank';
       link.style.display = 'none';
       
       // إضافة الرابط للصفحة وتفعيله
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
+      
+      // تنظيف الرابط المؤقت
+      window.URL.revokeObjectURL(url);
 
       // إعادة تعيين الزر بعد ثانيتين
       setTimeout(() => {
@@ -67,7 +79,24 @@ const InstallPage: React.FC = () => {
 
     } catch (error) {
       console.error('خطأ في التحميل:', error);
-      alert('حدث خطأ أثناء بدء التحميل. يرجى المحاولة مرة أخرى.');
+      
+      // محاولة التحميل المباشر كخيار احتياطي
+      try {
+        const link = document.createElement('a');
+        link.href = '/app/qudratak-app.apk';
+        link.download = 'منصة-قدراتك-v2.1.0.apk';
+        link.target = '_blank';
+        link.style.display = 'none';
+        
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        
+        alert('تم بدء التحميل المباشر! 🎉\n\nسيتم تحميل الملف إلى مجلد التحميلات في جهازك.');
+      } catch (fallbackError) {
+        console.error('خطأ في التحميل الاحتياطي:', fallbackError);
+        alert('حدث خطأ أثناء بدء التحميل. يرجى المحاولة مرة أخرى أو استخدام الرابط المباشر: /app/qudratak-app.apk');
+      }
 
       // إعادة تعيين الزر في حالة الخطأ
       const downloadButton = document.querySelector('#download-apk-btn') as HTMLButtonElement;
@@ -171,9 +200,20 @@ const InstallPage: React.FC = () => {
           نسخة 2.1.0 - آمن ومشفر
         </p>
         <div className="mt-4 p-4 bg-green-50 border border-green-200 rounded-lg">
-          <div className="flex items-center justify-center gap-2 text-green-700">
+          <div className="flex items-center justify-center gap-2 text-green-700 mb-3">
             <Shield className="h-5 w-5" />
             <span className="font-medium">الملف آمن ومتوافق مع Android 5.1+</span>
+          </div>
+          <div className="text-center">
+            <p className="text-sm text-gray-600 mb-2">إذا لم يعمل التحميل، استخدم الرابط المباشر:</p>
+            <a 
+              href="/app/qudratak-app.apk" 
+              download="منصة-قدراتك-v2.1.0.apk"
+              className="inline-flex items-center gap-2 text-blue-600 hover:text-blue-800 font-medium text-sm underline"
+            >
+              <Download className="h-4 w-4" />
+              تحميل مباشر
+            </a>
           </div>
         </div>
       </div>
