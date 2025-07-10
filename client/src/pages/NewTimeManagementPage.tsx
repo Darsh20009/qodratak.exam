@@ -516,7 +516,7 @@ const NewTimeManagementPage: React.FC = () => {
               <CardContent>
                 <div className="space-y-3">
                   {habits.slice(0, 3).map(habit => (
-                    <div key={habit.id} className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
+                    <div key={habit.id} className="flex items-center gap-3 p-3 rounded-lg bg-[#03050b]">
                       <div className="text-2xl">{habit.icon}</div>
                       <div className="flex-1">
                         <p className="font-medium">{habit.name}</p>
