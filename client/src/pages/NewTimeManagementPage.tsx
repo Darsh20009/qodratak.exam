@@ -403,7 +403,6 @@ const NewTimeManagementPage: React.FC = () => {
         <h1 className="text-3xl font-bold text-gray-900 mb-2">🕐 إدارة وقتي</h1>
         <p className="text-gray-600">نظم وقتك واحقق أهدافك بكفاءة</p>
       </div>
-
       {/* إحصائيات سريعة */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
         <Card className="bg-gradient-to-r from-blue-500 to-blue-600 text-white">
@@ -454,7 +453,6 @@ const NewTimeManagementPage: React.FC = () => {
           </CardContent>
         </Card>
       </div>
-
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
         <TabsList className="grid w-full grid-cols-4">
           <TabsTrigger value="dashboard">لوحة التحكم</TabsTrigger>
@@ -477,7 +475,7 @@ const NewTimeManagementPage: React.FC = () => {
               <CardContent>
                 <div className="space-y-3">
                   {tasks.slice(0, 3).map(task => (
-                    <div key={task.id} className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
+                    <div key={task.id} className="flex items-center gap-3 p-3 rounded-lg bg-[#03060c]">
                       <Button
                         variant="ghost"
                         size="sm"
