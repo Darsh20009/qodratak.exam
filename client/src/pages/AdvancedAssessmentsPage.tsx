@@ -929,7 +929,8 @@ export function AdvancedAssessmentsPage() {
             </CardContent>
           </Card>
         </motion.div>
-      </div>
+      </motion.div>
     </div>
+  );
   );
 }
