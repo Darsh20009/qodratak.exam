@@ -56,13 +56,13 @@ const InstallPage: React.FC = () => {
       setTimeout(() => {
         if (downloadButton) {
           downloadButton.disabled = false;
-          downloadButton.innerHTML = '<Download className="h-6 w-6 mr-3" />تحميل APK (91 MB)<ExternalLink className="h-5 w-5 ml-3" />';
+          downloadButton.innerHTML = '<Download className="h-6 w-6 mr-3" />تحميل APK (89 MB)<ExternalLink className="h-5 w-5 ml-3" />';
         }
       }, 2000);
 
       // عرض رسالة إرشادية
       setTimeout(() => {
-        alert('تم بدء التحميل! 🎉\n\nسيتم تحميل الملف إلى مجلد التحميلات في جهازك.\nالملف كبير (91 ميجابايت) لذا قد يستغرق بعض الوقت حسب سرعة الإنترنت.');
+        alert('تم بدء التحميل! 🎉\n\nسيتم تحميل الملف إلى مجلد التحميلات في جهازك.\nالملف كبير (89 ميجابايت) لذا قد يستغرق بعض الوقت حسب سرعة الإنترنت.');
       }, 1000);
 
     } catch (error) {
@@ -73,7 +73,7 @@ const InstallPage: React.FC = () => {
       const downloadButton = document.querySelector('#download-apk-btn') as HTMLButtonElement;
       if (downloadButton) {
         downloadButton.disabled = false;
-        downloadButton.innerHTML = '<Download className="h-6 w-6 mr-3" />تحميل APK (91 MB)<ExternalLink className="h-5 w-5 ml-3" />';
+        downloadButton.innerHTML = '<Download className="h-6 w-6 mr-3" />تحميل APK (89 MB)<ExternalLink className="h-5 w-5 ml-3" />';
       }
     }
   };
@@ -164,7 +164,7 @@ const InstallPage: React.FC = () => {
           className="bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white px-8 py-4 text-lg font-bold shadow-xl hover:shadow-2xl transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
         >
           <Download className="h-6 w-6 mr-3" />
-          تحميل APK (91 MB)
+          تحميل APK (89 MB)
           <ExternalLink className="h-5 w-5 ml-3" />
         </Button>
         <p className="text-gray-500 text-sm mt-3">
@@ -327,7 +327,7 @@ const InstallPage: React.FC = () => {
               تحميل APK مباشر
             </Button>
             <div className="flex justify-center gap-2 mb-4">
-              <Badge className="bg-green-100 text-green-800 border border-green-200">91 MB</Badge>
+              <Badge className="bg-green-100 text-green-800 border border-green-200">89 MB</Badge>
               <Badge className="bg-blue-100 text-blue-800 border border-blue-200">مجاني</Badge>
               <Badge className="bg-purple-100 text-purple-800 border border-purple-200">آمن</Badge>
             </div>
