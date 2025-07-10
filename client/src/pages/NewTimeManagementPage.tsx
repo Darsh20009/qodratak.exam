@@ -398,55 +398,55 @@ const NewTimeManagementPage: React.FC = () => {
   }, []);
 
   return (
-    <div className="container mx-auto p-6 max-w-7xl" dir="rtl">
+    <div className="container mx-auto p-6 max-w-7xl bg-black min-h-screen text-white" dir="rtl">
       <div className="mb-8">
-        <h1 className="text-3xl font-bold text-gray-900 mb-2">🕐 إدارة وقتي</h1>
-        <p className="text-gray-600">نظم وقتك واحقق أهدافك بكفاءة</p>
+        <h1 className="text-3xl font-bold text-white mb-2">🕐 إدارة وقتي</h1>
+        <p className="text-gray-300">نظم وقتك واحقق أهدافك بكفاءة</p>
       </div>
       {/* إحصائيات سريعة */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-        <Card className="bg-gradient-to-r from-blue-500 to-blue-600 text-white">
+        <Card className="bg-gradient-to-r from-blue-600 to-blue-700 text-white border-gray-700">
           <CardContent className="p-6">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-blue-100">المهام اليوم</p>
-                <p className="text-2xl font-bold">{todayTasks.length}</p>
+                <p className="text-2xl font-bold text-white">{todayTasks.length}</p>
               </div>
               <CheckSquare className="h-8 w-8 text-blue-200" />
             </div>
           </CardContent>
         </Card>
 
-        <Card className="bg-gradient-to-r from-green-500 to-green-600 text-white">
+        <Card className="bg-gradient-to-r from-green-600 to-green-700 text-white border-gray-700">
           <CardContent className="p-6">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-green-100">معدل الإنجاز</p>
-                <p className="text-2xl font-bold">{productivityScore}%</p>
+                <p className="text-2xl font-bold text-white">{productivityScore}%</p>
               </div>
               <TrendingUp className="h-8 w-8 text-green-200" />
             </div>
           </CardContent>
         </Card>
 
-        <Card className="bg-gradient-to-r from-purple-500 to-purple-600 text-white">
+        <Card className="bg-gradient-to-r from-purple-600 to-purple-700 text-white border-gray-700">
           <CardContent className="p-6">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-purple-100">العادات النشطة</p>
-                <p className="text-2xl font-bold">{activeHabits.length}</p>
+                <p className="text-2xl font-bold text-white">{activeHabits.length}</p>
               </div>
               <Star className="h-8 w-8 text-purple-200" />
             </div>
           </CardContent>
         </Card>
 
-        <Card className="bg-gradient-to-r from-orange-500 to-orange-600 text-white">
+        <Card className="bg-gradient-to-r from-orange-600 to-orange-700 text-white border-gray-700">
           <CardContent className="p-6">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-orange-100">جلسات بومودورو</p>
-                <p className="text-2xl font-bold">{pomodoroTimer.sessionsCompleted}</p>
+                <p className="text-2xl font-bold text-white">{pomodoroTimer.sessionsCompleted}</p>
               </div>
               <Timer className="h-8 w-8 text-orange-200" />
             </div>
@@ -454,20 +454,20 @@ const NewTimeManagementPage: React.FC = () => {
         </Card>
       </div>
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-        <TabsList className="grid w-full grid-cols-4">
-          <TabsTrigger value="dashboard">لوحة التحكم</TabsTrigger>
-          <TabsTrigger value="tasks">المهام</TabsTrigger>
-          <TabsTrigger value="habits">العادات</TabsTrigger>
-          <TabsTrigger value="pomodoro">بومودورو</TabsTrigger>
+        <TabsList className="grid w-full grid-cols-4 bg-gray-800 border-gray-700">
+          <TabsTrigger value="dashboard" className="data-[state=active]:bg-gray-700 data-[state=active]:text-white text-gray-300">لوحة التحكم</TabsTrigger>
+          <TabsTrigger value="tasks" className="data-[state=active]:bg-gray-700 data-[state=active]:text-white text-gray-300">المهام</TabsTrigger>
+          <TabsTrigger value="habits" className="data-[state=active]:bg-gray-700 data-[state=active]:text-white text-gray-300">العادات</TabsTrigger>
+          <TabsTrigger value="pomodoro" className="data-[state=active]:bg-gray-700 data-[state=active]:text-white text-gray-300">بومودورو</TabsTrigger>
         </TabsList>
 
         {/* لوحة التحكم */}
         <TabsContent value="dashboard" className="space-y-6">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             {/* المهام القادمة */}
-            <Card>
+            <Card className="bg-gray-900 border-gray-700">
               <CardHeader>
-                <CardTitle className="flex items-center gap-2">
+                <CardTitle className="flex items-center gap-2 text-white">
                   <CheckSquare className="h-5 w-5" />
                   المهام القادمة
                 </CardTitle>
@@ -475,7 +475,7 @@ const NewTimeManagementPage: React.FC = () => {
               <CardContent>
                 <div className="space-y-3">
                   {tasks.slice(0, 3).map(task => (
-                    <div key={task.id} className="flex items-center gap-3 p-3 rounded-lg bg-[#03060c]">
+                    <div key={task.id} className="flex items-center gap-3 p-3 rounded-lg bg-[#03050b]">
                       <Button
                         variant="ghost"
                         size="sm"
@@ -489,7 +489,7 @@ const NewTimeManagementPage: React.FC = () => {
                         )}
                       </Button>
                       <div className="flex-1">
-                        <p className={`font-medium ${task.completed ? 'line-through text-gray-500' : ''}`}>
+                        <p className={`font-medium ${task.completed ? 'line-through text-gray-500' : 'text-white'}`}>
                           {task.title}
                         </p>
                         <div className="flex items-center gap-2 mt-1">
@@ -506,9 +506,9 @@ const NewTimeManagementPage: React.FC = () => {
             </Card>
 
             {/* العادات اليومية */}
-            <Card>
+            <Card className="bg-gray-900 border-gray-700">
               <CardHeader>
-                <CardTitle className="flex items-center gap-2">
+                <CardTitle className="flex items-center gap-2 text-white">
                   <Target className="h-5 w-5" />
                   العادات اليومية
                 </CardTitle>
@@ -519,16 +519,17 @@ const NewTimeManagementPage: React.FC = () => {
                     <div key={habit.id} className="flex items-center gap-3 p-3 rounded-lg bg-[#03050b]">
                       <div className="text-2xl">{habit.icon}</div>
                       <div className="flex-1">
-                        <p className="font-medium">{habit.name}</p>
+                        <p className="font-medium text-white">{habit.name}</p>
                         <div className="flex items-center gap-2 mt-1">
                           <Flame className="h-4 w-4 text-orange-500" />
-                          <span className="text-sm text-gray-600">{habit.streak} يوم</span>
+                          <span className="text-sm text-gray-300">{habit.streak} يوم</span>
                         </div>
                       </div>
                       <Button
                         onClick={() => toggleHabit(habit.id)}
                         variant={habit.completedToday ? "default" : "outline"}
                         size="sm"
+                        className="text-white border-gray-600"
                       >
                         {habit.completedToday ? 'مكتمل ✓' : 'إكمال'}
                       </Button>
@@ -540,26 +541,26 @@ const NewTimeManagementPage: React.FC = () => {
           </div>
 
           {/* مؤقت البومودورو المدمج */}
-          <Card className="bg-gradient-to-r from-red-50 to-pink-50">
+          <Card className="bg-gradient-to-r from-red-900 to-pink-900 border-gray-700">
             <CardHeader>
-              <CardTitle className="flex items-center gap-2">
+              <CardTitle className="flex items-center gap-2 text-white">
                 <Timer className="h-5 w-5" />
                 مؤقت البومودورو
               </CardTitle>
             </CardHeader>
             <CardContent>
               <div className="text-center">
-                <div className="text-6xl font-bold text-red-600 mb-4">
+                <div className="text-6xl font-bold text-red-400 mb-4">
                   {formatTime(pomodoroTimer.timeLeft)}
                 </div>
-                <p className="text-lg text-gray-600 mb-4">
+                <p className="text-lg text-gray-300 mb-4">
                   {pomodoroTimer.isBreak ? 'وقت الراحة' : 'وقت العمل'}
                 </p>
                 <div className="flex justify-center gap-4">
                   <Button
                     onClick={togglePomodoro}
                     size="lg"
-                    className={pomodoroTimer.isActive ? 'bg-red-500 hover:bg-red-600' : 'bg-green-500 hover:bg-green-600'}
+                    className={pomodoroTimer.isActive ? 'bg-red-500 hover:bg-red-600 text-white' : 'bg-green-500 hover:bg-green-600 text-white'}
                   >
                     {pomodoroTimer.isActive ? (
                       <>
@@ -573,7 +574,7 @@ const NewTimeManagementPage: React.FC = () => {
                       </>
                     )}
                   </Button>
-                  <Button onClick={resetPomodoro} variant="outline" size="lg">
+                  <Button onClick={resetPomodoro} variant="outline" size="lg" className="text-white border-gray-500 hover:bg-gray-800">
                     <RotateCcw className="h-4 w-4 mr-2" />
                     إعادة تعيين
                   </Button>
@@ -586,37 +587,39 @@ const NewTimeManagementPage: React.FC = () => {
         {/* تبويب المهام */}
         <TabsContent value="tasks" className="space-y-6">
           <div className="flex justify-between items-center">
-            <h2 className="text-2xl font-bold">إدارة المهام</h2>
+            <h2 className="text-2xl font-bold text-white">إدارة المهام</h2>
             <Dialog open={showTaskDialog} onOpenChange={setShowTaskDialog}>
               <DialogTrigger asChild>
-                <Button>
+                <Button className="bg-blue-600 hover:bg-blue-700 text-white">
                   <Plus className="h-4 w-4 mr-2" />
                   إضافة مهمة
                 </Button>
               </DialogTrigger>
-              <DialogContent className="max-w-md">
+              <DialogContent className="max-w-md bg-gray-900 border-gray-700 text-white">
                 <DialogHeader>
-                  <DialogTitle>إضافة مهمة جديدة</DialogTitle>
+                  <DialogTitle className="text-white">إضافة مهمة جديدة</DialogTitle>
                 </DialogHeader>
                 <div className="space-y-4">
                   <Input
                     placeholder="عنوان المهمة"
                     value={newTask.title}
                     onChange={(e) => setNewTask(prev => ({ ...prev, title: e.target.value }))}
+                    className="bg-gray-800 border-gray-600 text-white placeholder-gray-400"
                   />
                   <Textarea
                     placeholder="وصف المهمة (اختياري)"
                     value={newTask.description}
                     onChange={(e) => setNewTask(prev => ({ ...prev, description: e.target.value }))}
+                    className="bg-gray-800 border-gray-600 text-white placeholder-gray-400"
                   />
                   <Select
                     value={newTask.category}
                     onValueChange={(value: any) => setNewTask(prev => ({ ...prev, category: value }))}
                   >
-                    <SelectTrigger>
+                    <SelectTrigger className="bg-gray-800 border-gray-600 text-white">
                       <SelectValue placeholder="الفئة" />
                     </SelectTrigger>
-                    <SelectContent>
+                    <SelectContent className="bg-gray-800 border-gray-600 text-white">
                       <SelectItem value="work">عمل</SelectItem>
                       <SelectItem value="personal">شخصي</SelectItem>
                       <SelectItem value="study">دراسة</SelectItem>
@@ -627,10 +630,10 @@ const NewTimeManagementPage: React.FC = () => {
                     value={newTask.priority}
                     onValueChange={(value: any) => setNewTask(prev => ({ ...prev, priority: value }))}
                   >
-                    <SelectTrigger>
+                    <SelectTrigger className="bg-gray-800 border-gray-600 text-white">
                       <SelectValue placeholder="الأولوية" />
                     </SelectTrigger>
-                    <SelectContent>
+                    <SelectContent className="bg-gray-800 border-gray-600 text-white">
                       <SelectItem value="high">عالية</SelectItem>
                       <SelectItem value="medium">متوسطة</SelectItem>
                       <SelectItem value="low">منخفضة</SelectItem>
@@ -640,12 +643,13 @@ const NewTimeManagementPage: React.FC = () => {
                     type="date"
                     value={newTask.dueDate}
                     onChange={(e) => setNewTask(prev => ({ ...prev, dueDate: e.target.value }))}
+                    className="bg-gray-800 border-gray-600 text-white"
                   />
                   <div className="flex justify-end gap-2">
-                    <Button variant="outline" onClick={() => setShowTaskDialog(false)}>
+                    <Button variant="outline" onClick={() => setShowTaskDialog(false)} className="text-white border-gray-500 hover:bg-gray-800">
                       إلغاء
                     </Button>
-                    <Button onClick={addTask}>
+                    <Button onClick={addTask} className="bg-blue-600 hover:bg-blue-700 text-white">
                       إضافة
                     </Button>
                   </div>
@@ -656,7 +660,7 @@ const NewTimeManagementPage: React.FC = () => {
 
           <div className="grid gap-4">
             {tasks.map(task => (
-              <Card key={task.id} className={task.completed ? 'opacity-60' : ''}>
+              <Card key={task.id} className={`${task.completed ? 'opacity-60' : ''} bg-gray-900 border-gray-700`}>
                 <CardContent className="p-4">
                   <div className="flex items-start gap-4">
                     <Button
@@ -672,11 +676,11 @@ const NewTimeManagementPage: React.FC = () => {
                       )}
                     </Button>
                     <div className="flex-1">
-                      <h3 className={`font-semibold ${task.completed ? 'line-through text-gray-500' : ''}`}>
+                      <h3 className={`font-semibold ${task.completed ? 'line-through text-gray-500' : 'text-white'}`}>
                         {task.title}
                       </h3>
                       {task.description && (
-                        <p className="text-gray-600 text-sm mt-1">{task.description}</p>
+                        <p className="text-gray-300 text-sm mt-1">{task.description}</p>
                       )}
                       <div className="flex items-center gap-2 mt-2">
                         {getCategoryIcon(task.category)}
@@ -684,13 +688,13 @@ const NewTimeManagementPage: React.FC = () => {
                           {task.priority === 'high' ? 'عالية' : task.priority === 'medium' ? 'متوسطة' : 'منخفضة'}
                         </Badge>
                         {task.dueDate && (
-                          <Badge variant="outline">
+                          <Badge variant="outline" className="text-gray-300 border-gray-500">
                             <CalendarIcon className="h-3 w-3 mr-1" />
                             {new Date(task.dueDate).toLocaleDateString('ar-SA')}
                           </Badge>
                         )}
                         {task.estimatedTime && (
-                          <Badge variant="outline">
+                          <Badge variant="outline" className="text-gray-300 border-gray-500">
                             <Clock className="h-3 w-3 mr-1" />
                             {task.estimatedTime} دقيقة
                           </Badge>
@@ -701,7 +705,7 @@ const NewTimeManagementPage: React.FC = () => {
                       variant="ghost"
                       size="sm"
                       onClick={() => deleteTask(task.id)}
-                      className="text-red-500 hover:text-red-600"
+                      className="text-red-400 hover:text-red-300"
                     >
                       <Trash2 className="h-4 w-4" />
                     </Button>
@@ -715,44 +719,47 @@ const NewTimeManagementPage: React.FC = () => {
         {/* تبويب العادات */}
         <TabsContent value="habits" className="space-y-6">
           <div className="flex justify-between items-center">
-            <h2 className="text-2xl font-bold">تتبع العادات</h2>
+            <h2 className="text-2xl font-bold text-white">تتبع العادات</h2>
             <Dialog open={showHabitDialog} onOpenChange={setShowHabitDialog}>
               <DialogTrigger asChild>
-                <Button>
+                <Button className="bg-green-600 hover:bg-green-700 text-white">
                   <Plus className="h-4 w-4 mr-2" />
                   إضافة عادة
                 </Button>
               </DialogTrigger>
-              <DialogContent className="max-w-md">
+              <DialogContent className="max-w-md bg-gray-900 border-gray-700 text-white">
                 <DialogHeader>
-                  <DialogTitle>إضافة عادة جديدة</DialogTitle>
+                  <DialogTitle className="text-white">إضافة عادة جديدة</DialogTitle>
                 </DialogHeader>
                 <div className="space-y-4">
                   <Input
                     placeholder="اسم العادة"
                     value={newHabit.name}
                     onChange={(e) => setNewHabit(prev => ({ ...prev, name: e.target.value }))}
+                    className="bg-gray-800 border-gray-600 text-white placeholder-gray-400"
                   />
                   <div className="grid grid-cols-2 gap-4">
                     <Input
                       placeholder="الأيقونة (إيموجي)"
                       value={newHabit.icon}
                       onChange={(e) => setNewHabit(prev => ({ ...prev, icon: e.target.value }))}
+                      className="bg-gray-800 border-gray-600 text-white placeholder-gray-400"
                     />
                     <Input
                       type="color"
                       value={newHabit.color}
                       onChange={(e) => setNewHabit(prev => ({ ...prev, color: e.target.value }))}
+                      className="bg-gray-800 border-gray-600 text-white h-10"
                     />
                   </div>
                   <Select
                     value={newHabit.category}
                     onValueChange={(value: any) => setNewHabit(prev => ({ ...prev, category: value }))}
                   >
-                    <SelectTrigger>
+                    <SelectTrigger className="bg-gray-800 border-gray-600 text-white">
                       <SelectValue placeholder="الفئة" />
                     </SelectTrigger>
-                    <SelectContent>
+                    <SelectContent className="bg-gray-800 border-gray-600 text-white">
                       <SelectItem value="health">صحة</SelectItem>
                       <SelectItem value="learning">تعلم</SelectItem>
                       <SelectItem value="productivity">إنتاجية</SelectItem>
@@ -765,18 +772,20 @@ const NewTimeManagementPage: React.FC = () => {
                       placeholder="الهدف"
                       value={newHabit.target}
                       onChange={(e) => setNewHabit(prev => ({ ...prev, target: parseInt(e.target.value) || 1 }))}
+                      className="bg-gray-800 border-gray-600 text-white placeholder-gray-400"
                     />
                     <Input
                       placeholder="الوحدة"
                       value={newHabit.unit}
                       onChange={(e) => setNewHabit(prev => ({ ...prev, unit: e.target.value }))}
+                      className="bg-gray-800 border-gray-600 text-white placeholder-gray-400"
                     />
                   </div>
                   <div className="flex justify-end gap-2">
-                    <Button variant="outline" onClick={() => setShowHabitDialog(false)}>
+                    <Button variant="outline" onClick={() => setShowHabitDialog(false)} className="text-white border-gray-500 hover:bg-gray-800">
                       إلغاء
                     </Button>
-                    <Button onClick={addHabit}>
+                    <Button onClick={addHabit} className="bg-green-600 hover:bg-green-700 text-white">
                       إضافة
                     </Button>
                   </div>
@@ -787,7 +796,7 @@ const NewTimeManagementPage: React.FC = () => {
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {habits.map(habit => (
-              <Card key={habit.id} className="relative overflow-hidden">
+              <Card key={habit.id} className="relative overflow-hidden bg-gray-900 border-gray-700">
                 <div 
                   className="absolute top-0 left-0 w-full h-1"
                   style={{ backgroundColor: habit.color }}
@@ -795,12 +804,12 @@ const NewTimeManagementPage: React.FC = () => {
                 <CardContent className="p-6">
                   <div className="text-center">
                     <div className="text-4xl mb-3">{habit.icon}</div>
-                    <h3 className="font-semibold text-lg mb-2">{habit.name}</h3>
+                    <h3 className="font-semibold text-lg mb-2 text-white">{habit.name}</h3>
                     <div className="flex items-center justify-center gap-2 mb-4">
                       <Flame className="h-4 w-4 text-orange-500" />
-                      <span className="font-medium">{habit.streak} يوم متتالي</span>
+                      <span className="font-medium text-gray-300">{habit.streak} يوم متتالي</span>
                     </div>
-                    <p className="text-sm text-gray-600 mb-4">
+                    <p className="text-sm text-gray-300 mb-4">
                       الهدف: {habit.target} {habit.unit} {habit.frequency === 'daily' ? 'يومياً' : 'أسبوعياً'}
                     </p>
                     <Button
@@ -834,17 +843,17 @@ const NewTimeManagementPage: React.FC = () => {
 
         {/* تبويب البومودورو */}
         <TabsContent value="pomodoro" className="space-y-6">
-          <Card className="max-w-lg mx-auto">
+          <Card className="max-w-lg mx-auto bg-gray-900 border-gray-700">
             <CardHeader className="text-center">
-              <CardTitle className="text-2xl">🍅 تقنية البومودورو</CardTitle>
-              <p className="text-gray-600">25 دقيقة تركيز + 5 دقائق راحة</p>
+              <CardTitle className="text-2xl text-white">🍅 تقنية البومودورو</CardTitle>
+              <p className="text-gray-300">25 دقيقة تركيز + 5 دقائق راحة</p>
             </CardHeader>
             <CardContent className="text-center">
               <div className="mb-8">
-                <div className="text-8xl font-bold text-red-600 mb-4">
+                <div className="text-8xl font-bold text-red-400 mb-4">
                   {formatTime(pomodoroTimer.timeLeft)}
                 </div>
-                <p className="text-xl text-gray-600 mb-2">
+                <p className="text-xl text-gray-300 mb-2">
                   {pomodoroTimer.isBreak ? '☕ وقت الراحة' : '💪 وقت العمل'}
                 </p>
                 <Progress 
@@ -857,7 +866,7 @@ const NewTimeManagementPage: React.FC = () => {
                 <Button
                   onClick={togglePomodoro}
                   size="lg"
-                  className={`px-8 ${pomodoroTimer.isActive ? 'bg-red-500 hover:bg-red-600' : 'bg-green-500 hover:bg-green-600'}`}
+                  className={`px-8 ${pomodoroTimer.isActive ? 'bg-red-500 hover:bg-red-600' : 'bg-green-500 hover:bg-green-600'} text-white`}
                 >
                   {pomodoroTimer.isActive ? (
                     <>
@@ -871,24 +880,23 @@ const NewTimeManagementPage: React.FC = () => {
                     </>
                   )}
                 </Button>
-                ```
-<Button onClick={resetPomodoro} variant="outline" size="lg" className="px-8">
+                <Button onClick={resetPomodoro} variant="outline" size="lg" className="px-8 text-white border-gray-500 hover:bg-gray-800">
                   <RotateCcw className="h-5 w-5 mr-2" />
                   إعادة تعيين
                 </Button>
               </div>
 
-              <div className="bg-gray-50 rounded-lg p-4">
+              <div className="bg-gray-800 rounded-lg p-4 border border-gray-700">
                 <div className="grid grid-cols-2 gap-4 text-center">
                   <div>
                     <Trophy className="h-6 w-6 text-yellow-500 mx-auto mb-2" />
-                    <p className="text-2xl font-bold">{pomodoroTimer.sessionsCompleted}</p>
-                    <p className="text-sm text-gray-600">جلسة مكتملة</p>
+                    <p className="text-2xl font-bold text-white">{pomodoroTimer.sessionsCompleted}</p>
+                    <p className="text-sm text-gray-300">جلسة مكتملة</p>
                   </div>
                   <div>
                     <Clock className="h-6 w-6 text-blue-500 mx-auto mb-2" />
-                    <p className="text-2xl font-bold">{Math.round(pomodoroTimer.sessionsCompleted * 25 / 60 * 10) / 10}</p>
-                    <p className="text-sm text-gray-600">ساعة عمل</p>
+                    <p className="text-2xl font-bold text-white">{Math.round(pomodoroTimer.sessionsCompleted * 25 / 60 * 10) / 10}</p>
+                    <p className="text-sm text-gray-300">ساعة عمل</p>
                   </div>
                 </div>
               </div>
