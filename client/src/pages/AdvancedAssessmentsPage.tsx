@@ -57,6 +57,15 @@ interface PerformanceMetrics {
   adaptability: number;
 }
 
+interface TestResults {
+  correctAnswers: any[];
+  wrongAnswers: any[];
+  totalQuestions: number;
+  correctCount: number;
+  wrongCount: number;
+  accuracy: number;
+}
+
 interface Assessment {
   questions: AdvancedQuestion[];
   currentIndex: number;
@@ -65,6 +74,7 @@ interface Assessment {
   metrics: PerformanceMetrics;
   subcategory: string;
   type: 'verbal' | 'quantitative';
+  results?: TestResults;
 }
 
 export function AdvancedAssessmentsPage() {
@@ -302,7 +312,12 @@ export function AdvancedAssessmentsPage() {
       return answer === questions[questionIndex]?.correctOptionIndex;
     }).length;
 
-    const accuracy = (correctAnswers / questions.length) * 100;
+    const wrongAnswers = Object.entries(answers).filter(([index, answer]) => {
+      const questionIndex = parseInt(index);
+      return answer !== questions[questionIndex]?.correctOptionIndex;
+    }).length;
+
+    const accuracy = questions.length > 0 ? (correctAnswers / questions.length) * 100 : 0;
     
     return {
       accuracy,
@@ -318,8 +333,58 @@ export function AdvancedAssessmentsPage() {
     if (!currentAssessment) return;
     
     const metrics = calculateMetrics(currentAssessment.answers, currentAssessment.questions);
-    setCurrentAssessment(prev => prev ? { ...prev, metrics, totalXP } : null);
+    const results = generateDetailedResults(currentAssessment.answers, currentAssessment.questions);
+    
+    // Save results to localStorage
+    const testResult = {
+      subcategory: currentAssessment.subcategory,
+      type: currentAssessment.type,
+      results,
+      metrics,
+      totalXP,
+      timestamp: new Date().toISOString()
+    };
+    
+    const existingResults = JSON.parse(localStorage.getItem('advancedLabResults') || '[]');
+    existingResults.push(testResult);
+    localStorage.setItem('advancedLabResults', JSON.stringify(existingResults));
+    
+    setCurrentAssessment(prev => prev ? { ...prev, metrics, results } : null);
     setShowResults(true);
+  };
+
+  const generateDetailedResults = (answers: { [key: number]: number }, questions: AdvancedQuestion[]) => {
+    const correctAnswers: any[] = [];
+    const wrongAnswers: any[] = [];
+
+    Object.entries(answers).forEach(([index, answer]) => {
+      const questionIndex = parseInt(index);
+      const question = questions[questionIndex];
+      if (!question) return;
+
+      const questionWithUserAnswer = {
+        ...question,
+        userAnswer: answer,
+        userAnswerText: question.options[answer],
+        correctAnswerText: question.options[question.correctOptionIndex],
+        isCorrect: answer === question.correctOptionIndex
+      };
+
+      if (answer === question.correctOptionIndex) {
+        correctAnswers.push(questionWithUserAnswer);
+      } else {
+        wrongAnswers.push(questionWithUserAnswer);
+      }
+    });
+
+    return {
+      correctAnswers,
+      wrongAnswers,
+      totalQuestions: questions.length,
+      correctCount: correctAnswers.length,
+      wrongCount: wrongAnswers.length,
+      accuracy: questions.length > 0 ? (correctAnswers.length / questions.length) * 100 : 0
+    };
   };
 
   const togglePause = () => {
@@ -332,6 +397,205 @@ export function AdvancedAssessmentsPage() {
     setSelectedAnswer(null);
     setShowHint(false);
     setStreak(0);
+  };
+
+  const startMistakeChallenge = (mistakes: any[]) => {
+    if (mistakes.length === 0) return;
+    
+    // Navigate to mistake challenge with data
+    localStorage.setItem('mistakeChallenge', JSON.stringify({
+      questions: mistakes,
+      source: 'advanced_lab',
+      subcategory: currentAssessment?.subcategory,
+      type: currentAssessment?.type
+    }));
+    
+    window.location.href = '/enhanced-mistake-challenge';
+  };
+
+  const downloadMistakes = (mistakes: any[]) => {
+    if (mistakes.length === 0) return;
+
+    const htmlContent = `
+<!DOCTYPE html>
+<html dir="rtl" lang="ar">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>الأخطاء - ${currentAssessment?.subcategory}</title>
+    <style>
+        body {
+            font-family: 'Cairo', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            margin: 0;
+            padding: 20px;
+            min-height: 100vh;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+        .header {
+            background: linear-gradient(135deg, #ff6b6b, #ee5a52);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+        .header h1 {
+            margin: 0;
+            font-size: 2.5em;
+            font-weight: bold;
+        }
+        .header p {
+            margin: 10px 0 0 0;
+            opacity: 0.9;
+        }
+        .content {
+            padding: 30px;
+        }
+        .question {
+            background: #f8f9ff;
+            border-radius: 15px;
+            padding: 25px;
+            margin-bottom: 25px;
+            border-right: 5px solid #ff6b6b;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.05);
+        }
+        .question-number {
+            background: linear-gradient(135deg, #ff6b6b, #ee5a52);
+            color: white;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            margin-bottom: 15px;
+        }
+        .question-text {
+            font-size: 1.2em;
+            font-weight: bold;
+            margin-bottom: 15px;
+            line-height: 1.6;
+        }
+        .answer-wrong {
+            background: #ffebee;
+            color: #c62828;
+            padding: 10px 15px;
+            border-radius: 10px;
+            margin: 10px 0;
+            border-right: 3px solid #f44336;
+        }
+        .answer-correct {
+            background: #e8f5e8;
+            color: #2e7d32;
+            padding: 10px 15px;
+            border-radius: 10px;
+            margin: 10px 0;
+            border-right: 3px solid #4caf50;
+        }
+        .explanation {
+            background: #fff3e0;
+            padding: 15px;
+            border-radius: 10px;
+            margin-top: 15px;
+            border-right: 3px solid #ff9800;
+        }
+        .stats {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            padding: 20px;
+            border-radius: 15px;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 20px;
+            margin-top: 15px;
+        }
+        .stat-item {
+            background: rgba(255,255,255,0.2);
+            padding: 15px;
+            border-radius: 10px;
+        }
+        .stat-number {
+            font-size: 2em;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+        @media print {
+            body { background: white; }
+            .container { box-shadow: none; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>📚 الأخطاء - المختبر المتقدم</h1>
+            <p>${currentAssessment?.subcategory} - ${new Date().toLocaleDateString('ar-SA')}</p>
+        </div>
+        
+        <div class="content">
+            <div class="stats">
+                <h2>📊 إحصائيات الأخطاء</h2>
+                <div class="stats-grid">
+                    <div class="stat-item">
+                        <div class="stat-number">${mistakes.length}</div>
+                        <div>إجمالي الأخطاء</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-number">${currentAssessment?.type === 'verbal' ? 'لفظي' : 'كمي'}</div>
+                        <div>نوع الاختبار</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-number">${new Date().toLocaleDateString('ar-SA')}</div>
+                        <div>تاريخ الاختبار</div>
+                    </div>
+                </div>
+            </div>
+
+            ${mistakes.map((mistake, index) => `
+                <div class="question">
+                    <div class="question-number">${index + 1}</div>
+                    <div class="question-text">${mistake.text}</div>
+                    
+                    <div class="answer-wrong">
+                        <strong>❌ إجابتك:</strong> ${mistake.userAnswerText}
+                    </div>
+                    
+                    <div class="answer-correct">
+                        <strong>✅ الإجابة الصحيحة:</strong> ${mistake.correctAnswerText}
+                    </div>
+                    
+                    ${mistake.explanation ? `
+                        <div class="explanation">
+                            <strong>💡 التوضيح:</strong> ${mistake.explanation}
+                        </div>
+                    ` : ''}
+                </div>
+            `).join('')}
+        </div>
+    </div>
+</body>
+</html>`;
+
+    const blob = new Blob([htmlContent], { type: 'text/html;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `أخطاء_${currentAssessment?.subcategory}_${new Date().getDate()}-${new Date().getMonth() + 1}-${new Date().getFullYear()}.html`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
   };
 
   // Assessment Interface
@@ -488,7 +752,7 @@ export function AdvancedAssessmentsPage() {
               </div>
             </CardHeader>
             <CardContent>
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
                 <div className="text-center p-6 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
                   <div className="text-3xl font-bold text-blue-600 dark:text-blue-400">
                     {currentAssessment.metrics.accuracy.toFixed(0)}%
@@ -497,9 +761,15 @@ export function AdvancedAssessmentsPage() {
                 </div>
                 <div className="text-center p-6 bg-green-50 dark:bg-green-900/20 rounded-lg">
                   <div className="text-3xl font-bold text-green-600 dark:text-green-400">
-                    {streak}
+                    {currentAssessment.results?.correctCount || 0}
                   </div>
-                  <div className="text-muted-foreground">أطول تسلسل صحيح</div>
+                  <div className="text-muted-foreground">إجابات صحيحة</div>
+                </div>
+                <div className="text-center p-6 bg-red-50 dark:bg-red-900/20 rounded-lg">
+                  <div className="text-3xl font-bold text-red-600 dark:text-red-400">
+                    {currentAssessment.results?.wrongCount || 0}
+                  </div>
+                  <div className="text-muted-foreground">إجابات خاطئة</div>
                 </div>
                 <div className="text-center p-6 bg-purple-50 dark:bg-purple-900/20 rounded-lg">
                   <div className="text-3xl font-bold text-purple-600 dark:text-purple-400">
@@ -508,6 +778,71 @@ export function AdvancedAssessmentsPage() {
                   <div className="text-muted-foreground">نقاط الخبرة</div>
                 </div>
               </div>
+
+              {/* Detailed Results and Actions */}
+              {currentAssessment.results && (
+                <div className="space-y-6 mb-8">
+                  {/* Mistake Challenge Button */}
+                  {currentAssessment.results.wrongCount > 0 && (
+                    <Card className="bg-gradient-to-r from-red-50 to-orange-50 dark:from-red-900/20 dark:to-orange-900/20 border-red-200 dark:border-red-700">
+                      <CardContent className="p-6 text-center">
+                        <h3 className="text-xl font-bold text-red-700 dark:text-red-300 mb-4">
+                          💪 تحدي الأخطاء
+                        </h3>
+                        <p className="text-red-600 dark:text-red-400 mb-4">
+                          لديك {currentAssessment.results.wrongCount} أسئلة خاطئة. هل تريد إعادة محاولتها؟
+                        </p>
+                        <div className="flex justify-center gap-4">
+                          <Button
+                            onClick={() => startMistakeChallenge(currentAssessment.results.wrongAnswers)}
+                            className="bg-gradient-to-r from-red-500 to-orange-600 hover:from-red-600 hover:to-orange-700 text-white"
+                          >
+                            🎯 بدء تحدي الأخطاء
+                          </Button>
+                          <Button
+                            onClick={() => downloadMistakes(currentAssessment.results.wrongAnswers)}
+                            variant="outline"
+                            className="border-red-300 text-red-700 hover:bg-red-50 dark:border-red-600 dark:text-red-300 dark:hover:bg-red-900/20"
+                          >
+                            📥 تحميل الأخطاء
+                          </Button>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  )}
+
+                  {/* Results Summary */}
+                  <Card className="bg-gradient-to-r from-blue-50 to-purple-50 dark:from-blue-900/20 dark:to-purple-900/20 border-blue-200 dark:border-blue-700">
+                    <CardContent className="p-6">
+                      <h3 className="text-xl font-bold text-blue-700 dark:text-blue-300 mb-4 text-center">
+                        📊 ملخص النتائج
+                      </h3>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div className="space-y-3">
+                          <div className="flex justify-between items-center p-3 bg-white/60 dark:bg-gray-800/60 rounded-lg">
+                            <span className="font-medium">إجمالي الأسئلة:</span>
+                            <span className="font-bold text-blue-600 dark:text-blue-400">{currentAssessment.results.totalQuestions}</span>
+                          </div>
+                          <div className="flex justify-between items-center p-3 bg-white/60 dark:bg-gray-800/60 rounded-lg">
+                            <span className="font-medium">الإجابات الصحيحة:</span>
+                            <span className="font-bold text-green-600 dark:text-green-400">{currentAssessment.results.correctCount}</span>
+                          </div>
+                        </div>
+                        <div className="space-y-3">
+                          <div className="flex justify-between items-center p-3 bg-white/60 dark:bg-gray-800/60 rounded-lg">
+                            <span className="font-medium">الإجابات الخاطئة:</span>
+                            <span className="font-bold text-red-600 dark:text-red-400">{currentAssessment.results.wrongCount}</span>
+                          </div>
+                          <div className="flex justify-between items-center p-3 bg-white/60 dark:bg-gray-800/60 rounded-lg">
+                            <span className="font-medium">نسبة النجاح:</span>
+                            <span className="font-bold text-purple-600 dark:text-purple-400">{currentAssessment.results.accuracy.toFixed(1)}%</span>
+                          </div>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                </div>
+              )}
 
               <div className="flex justify-center gap-4">
                 <Button
