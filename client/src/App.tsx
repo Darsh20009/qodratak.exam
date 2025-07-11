@@ -428,6 +428,9 @@ function Router({ splashDone }: { splashDone: boolean }) {
       <Route path="/mistake-challenge">
         {() => <MainLayout><EnhancedMistakeChallenge /></MainLayout>}
       </Route>
+      <Route path="/enhanced-mistake-challenge">
+        {() => <MainLayout><EnhancedMistakeChallenge /></MainLayout>}
+      </Route>
       
       {/* Question Bank Routes */}
       <Route path="/question-bank">
