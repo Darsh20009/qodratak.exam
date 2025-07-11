@@ -975,6 +975,7 @@ export default function QuestionBankPage() {
                 </div>
               </CardContent>
             </Card>
+            </div>
           </TabsContent>
 
           {/* Enhanced Quantitative Tests */}
@@ -1064,6 +1065,7 @@ export default function QuestionBankPage() {
                 </div>
               </CardContent>
             </Card>
+            </div>
           </TabsContent>
         </Tabs>
       </div>
