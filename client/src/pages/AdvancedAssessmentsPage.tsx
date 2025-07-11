@@ -1167,7 +1167,6 @@ export function AdvancedAssessmentsPage() {
                       { name: "التناظر اللفظي", subcategory: "التناظر اللفظي", icon: "📚", color: "from-blue-500 to-blue-600", description: "تحليل العلاقات بين الكلمات" },
                       { name: "إكمال الجمل", subcategory: "إكمال الجمل", icon: "✏️", color: "from-purple-500 to-purple-600", description: "فهم السياق والمعنى" },
                       { name: "الاستيعاب المقروء", subcategory: "استيعاب المقروء", icon: "📖", color: "from-indigo-500 to-indigo-600", description: "فهم وتحليل النصوص" },
-                      { name: "المترادفات والأضداد", subcategory: "المترادفات والأضداد", icon: "🔤", color: "from-pink-500 to-pink-600", description: "المعاني والألفاظ المتشابهة" },
                       { name: "الأخطاء الشائعة", subcategory: "الخطأ السياقي", icon: "🎯", color: "from-rose-500 to-rose-600", description: "دقة الاستخدام اللغوي" },
                     ].map((test, index) => (
                       <motion.div
