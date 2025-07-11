@@ -28,56 +28,11 @@ export default function QuestionBankPage() {
   const [verbalQuestionCount, setVerbalQuestionCount] = useState(0);
   const [quantitativeQuestionCount, setQuantitativeQuestionCount] = useState(0);
   const [loading, setLoading] = useState(true);
-  const [accessCodeInput, setAccessCodeInput] = useState('');
   
   // Premium and daily limit state
   const [user, setUser] = useState<any>(null);
   const [dailyTestsTaken, setDailyTestsTaken] = useState(0);
   const MAX_DAILY_FREE_TESTS = 1;
-
-  // Generate access code for a test
-  const generateAccessCode = (type: string, testNumber: number) => {
-    const base = `${type.toUpperCase()}${testNumber}${new Date().getFullYear()}`;
-    const hash = btoa(base).replace(/[^A-Z0-9]/g, '').substring(0, 6);
-    return hash;
-  };
-
-  // Check access code and unlock tests
-  const checkAccessCode = (inputCode: string) => {
-    if (!inputCode || inputCode.length < 4) return false;
-
-    const accessCodes = JSON.parse(localStorage.getItem('testAccessCodes') || '{}');
-
-    // Check if code matches any test
-    for (const [testKey, code] of Object.entries(accessCodes)) {
-      if (code === inputCode.toUpperCase()) {
-        // Unlock all tests up to this point
-        const [category, testNum] = testKey.split('_');
-        const testNumber = parseInt(testNum);
-
-        setQuestionBankState(prev => {
-          const updated = { ...prev };
-          updated[category] = updated[category].map(test => 
-            test.testNumber <= testNumber 
-              ? { ...test, completed: true, score: test.score || 75 }
-              : test
-          );
-
-          // Save to localStorage
-          localStorage.setItem('questionBankProgress', JSON.stringify(updated));
-
-          return updated;
-        });
-
-        alert(`✅ تم فتح الاختبارات بنجاح!\nتم فتح جميع اختبارات ${category === 'verbal' ? 'اللفظي' : 'الكمي'} حتى الاختبار رقم ${testNumber}`);
-        setAccessCodeInput('');
-        return true;
-      }
-    }
-
-    alert('❌ كود الوصول غير صحيح. يرجى المحاولة مرة أخرى.');
-    return false;
-  };
 
   // Load user data and daily limits
   useEffect(() => {
@@ -121,53 +76,32 @@ export default function QuestionBankPage() {
       try {
         const response = await fetch('/api/questions');
         const questions = await response.json();
-
+        
         const verbalCount = questions.filter((q: any) => q.category === 'verbal').length;
         const quantitativeCount = questions.filter((q: any) => q.category === 'quantitative').length;
-
+        
         setVerbalQuestionCount(verbalCount);
         setQuantitativeQuestionCount(quantitativeCount);
 
-        // Initialize test progress
+        // Calculate number of tests (50 questions per test)
         const verbalTestCount = Math.ceil(verbalCount / 50);
         const quantitativeTestCount = Math.ceil(quantitativeCount / 50);
 
-        const savedState = localStorage.getItem('questionBankProgress');
+        // Load existing progress or create new state
+        const savedProgress = localStorage.getItem('questionBankProgress');
         let newState: QuestionBankState;
-
-        if (savedState) {
-          try {
-            const parsedState = JSON.parse(savedState);
-            // Ensure we have the correct number of tests based on current question counts
-            newState = {
-              verbal: Array.from({ length: verbalTestCount }, (_, i) => {
-                const existingTest = parsedState.verbal?.find((t: any) => t.testNumber === i + 1);
-                return existingTest || {
-                  testNumber: i + 1,
-                  completed: false
-                };
-              }),
-              quantitative: Array.from({ length: quantitativeTestCount }, (_, i) => {
-                const existingTest = parsedState.quantitative?.find((t: any) => t.testNumber === i + 1);
-                return existingTest || {
-                  testNumber: i + 1,
-                  completed: false
-                };
-              })
-            };
-          } catch (e) {
-            // If parsing fails, create fresh state
-            newState = {
-              verbal: Array.from({ length: verbalTestCount }, (_, i) => ({
-                testNumber: i + 1,
-                completed: false
-              })),
-              quantitative: Array.from({ length: quantitativeTestCount }, (_, i) => ({
-                testNumber: i + 1,
-                completed: false
-              }))
-            };
-          }
+        
+        if (savedProgress) {
+          const parsed = JSON.parse(savedProgress);
+          // Ensure we have the right number of tests
+          newState = {
+            verbal: Array.from({ length: verbalTestCount }, (_, i) => 
+              parsed.verbal?.[i] || { testNumber: i + 1, completed: false }
+            ),
+            quantitative: Array.from({ length: quantitativeTestCount }, (_, i) => 
+              parsed.quantitative?.[i] || { testNumber: i + 1, completed: false }
+            )
+          };
         } else {
           newState = {
             verbal: Array.from({ length: verbalTestCount }, (_, i) => ({
@@ -182,9 +116,6 @@ export default function QuestionBankPage() {
         }
 
         setQuestionBankState(newState);
-        console.log('Question Bank State initialized:', newState);
-        console.log('Verbal count:', verbalCount, 'Quantitative count:', quantitativeCount);
-        console.log('Verbal tests:', verbalTestCount, 'Quantitative tests:', quantitativeTestCount);
         setLoading(false);
       } catch (error) {
         console.error('Error loading question counts:', error);
@@ -333,308 +264,7 @@ export default function QuestionBankPage() {
   };
 
   const downloadMistakes = async (type: 'verbal' | 'quantitative', testNumber: number) => {
-    try {
-      // Get test results from localStorage
-      const testResults = JSON.parse(localStorage.getItem('questionBankResults') || '{}');
-      const testKey = `${type}_${testNumber}`;
-      const testData = testResults[testKey];
-
-      if (!testData) {
-        alert('لم يتم العثور على نتائج هذا الاختبار. يرجى إعادة الاختبار أولاً.');
-        return;
-      }
-
-      const mistakes = testData.answers.filter((answer: any) => !answer.correct);
-      const unanswered = testData.answers.filter((answer: any) => answer.selectedAnswer === -1);
-
-      if (mistakes.length === 0 && unanswered.length === 0) {
-        alert('تهانينا! لم ترتكب أي أخطاء في هذا الاختبار 🎉');
-        return;
-      }
-
-      // Create beautiful HTML content
-      const htmlContent = `
-<!DOCTYPE html>
-<html lang="ar" dir="rtl">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>أخطاء الاختبار - ${type === 'verbal' ? 'اللفظي' : 'الكمي'} - اختبار ${testNumber}</title>
-    <style>
-        @import url('https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700&display=swap');
-
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-
-        body {
-            font-family: 'Cairo', sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            min-height: 100vh;
-            color: white;
-            line-height: 1.6;
-        }
-
-        .container {
-            max-width: 1200px;
-            margin: 0 auto;
-            padding: 20px;
-        }
-
-        .header {
-            text-align: center;
-            margin-bottom: 40px;
-            background: rgba(255, 255, 255, 0.1);
-            backdrop-filter: blur(10px);
-            border-radius: 20px;
-            padding: 30px;
-            border: 1px solid rgba(255, 255, 255, 0.2);
-        }
-
-        .header h1 {
-            font-size: 2.5em;
-            font-weight: 700;
-            margin-bottom: 10px;
-            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
-        }
-
-        .header p {
-            font-size: 1.2em;
-            opacity: 0.9;
-        }
-
-        .stats {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 20px;
-            margin-bottom: 40px;
-        }
-
-        .stat-card {
-            background: rgba(255, 255, 255, 0.15);
-            backdrop-filter: blur(10px);
-            border-radius: 15px;
-            padding: 25px;
-            text-align: center;
-            border: 1px solid rgba(255, 255, 255, 0.2);
-        }
-
-        .stat-number {
-            font-size: 2.5em;
-            font-weight: 700;
-            color: #ffeb3b;
-            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
-        }
-
-        .stat-label {
-            font-size: 1.1em;
-            opacity: 0.9;
-            margin-top: 5px;
-        }
-
-        .question-card {
-            background: rgba(255, 255, 255, 0.1);
-            backdrop-filter: blur(10px);
-            border-radius: 15px;
-            padding: 30px;
-            margin-bottom: 25px;
-            border: 1px solid rgba(255, 255, 255, 0.2);
-            transition: transform 0.3s ease;
-        }
-
-        .question-card:hover {
-            transform: translateY(-5px);
-        }
-
-        .question-number {
-            background: linear-gradient(45deg, #ff6b6b, #ee5a6f);
-            color: white;
-            padding: 10px 20px;
-            border-radius: 25px;
-            font-weight: 600;
-            display: inline-block;
-            margin-bottom: 20px;
-        }
-
-        .question-text {
-            font-size: 1.3em;
-            font-weight: 600;
-            margin-bottom: 20px;
-            background: rgba(255, 255, 255, 0.1);
-            padding: 20px;
-            border-radius: 10px;
-            border-right: 4px solid #ffeb3b;
-        }
-
-        .options {
-            display: grid;
-            gap: 15px;
-            margin-bottom: 25px;
-        }
-
-        .option {
-            padding: 15px 20px;
-            border-radius: 10px;
-            border: 2px solid transparent;
-            transition: all 0.3s ease;
-        }
-
-        .option.correct {
-            background: rgba(76, 175, 80, 0.3);
-            border-color: #4caf50;
-            color: #e8f5e8;
-        }
-
-        .option.incorrect {
-            background: rgba(244, 67, 54, 0.3);
-            border-color: #f44336;
-            color: #ffebee;
-        }
-
-        .option.normal {
-            background: rgba(255, 255, 255, 0.1);
-            border-color: rgba(255, 255, 255, 0.2);
-        }
-
-        .explanation {
-            background: rgba(255, 255, 255, 0.15);
-            border-radius: 10px;
-            padding: 20px;
-            border-right: 4px solid #2196f3;
-            margin-top: 20px;
-        }
-
-        .explanation h4 {
-            color: #81c784;
-            margin-bottom: 10px;
-            font-weight: 600;
-        }
-
-        .footer {
-            text-align: center;
-            margin-top: 50px;
-            padding: 30px;
-            background: rgba(255, 255, 255, 0.1);
-            backdrop-filter: blur(10px);
-            border-radius: 20px;
-            border: 1px solid rgba(255, 255, 255, 0.2);
-        }
-
-        .retry-button {
-            background: linear-gradient(45deg, #ff6b6b, #ee5a6f);
-            color: white;
-            padding: 15px 30px;
-            border: none;
-            border-radius: 25px;
-            font-size: 1.1em;
-            font-weight: 600;
-            cursor: pointer;
-            transition: transform 0.3s ease;
-            text-decoration: none;
-            display: inline-block;
-            margin: 10px;
-        }
-
-        .retry-button:hover {
-            transform: translateY(-2px);
-        }
-
-        @media (max-width: 768px) {
-            .container {
-                padding: 10px;
-            }
-
-            .header h1 {
-                font-size: 2em;
-            }
-
-            .stats {
-                grid-template-columns: 1fr;
-            }
-
-            .question-card {
-                padding: 20px;
-            }
-        }
-    </style>
-</head>
-<body>
-    <div class="container">
-        <div class="header">
-            <h1>🎯 تحليل الأخطاء</h1>
-            <p>اختبار ${type === 'verbal' ? 'اللفظي' : 'الكمي'} - الاختبار رقم ${testNumber}</p>
-        </div>
-
-        <div class="stats">
-            <div class="stat-card">
-                <div class="stat-number">${mistakes.length}</div>
-                <div class="stat-label">الأخطاء</div>
-            </div>
-            <div class="stat-card">
-                <div class="stat-number">${unanswered.length}</div>
-                <div class="stat-label">الأسئلة غير المجابة</div>
-            </div>
-            <div class="stat-card">
-                <div class="stat-number">${testData.score}%</div>
-                <div class="stat-label">النتيجة النهائية</div>
-            </div>
-            <div class="stat-card">
-                <div class="stat-number">${testData.answers.filter((a: any) => a.correct).length}</div>
-                <div class="stat-label">الإجابات الصحيحة</div>
-            </div>
-        </div>
-
-        ${[...mistakes, ...unanswered].map((mistake: any, index: number) => `
-            <div class="question-card">
-                <div class="question-number">السؤال ${mistake.questionNumber}</div>
-                <div class="question-text">${mistake.question.text}</div>
-
-                <div class="options">
-                    ${mistake.question.options.map((option: string, optionIndex: number) => `
-                        <div class="option ${optionIndex === mistake.question.correctAnswer ? 'correct' : 
-                            optionIndex === mistake.selectedAnswer ? 'incorrect' : 'normal'}">
-                            ${String.fromCharCode(65 + optionIndex)}) ${option}
-                            ${optionIndex === mistake.question.correctAnswer ? ' ✓ (الإجابة الصحيحة)' : ''}
-                            ${optionIndex === mistake.selectedAnswer && mistake.selectedAnswer !== -1 ? ' ✗ (اختيارك)' : ''}
-                            ${mistake.selectedAnswer === -1 && optionIndex === 0 ? ' (لم يتم الإجابة)' : ''}
-                        </div>
-                    `).join('')}
-                </div>
-
-                ${mistake.question.explanation ? `
-                    <div class="explanation">
-                        <h4>💡 التفسير:</h4>
-                        <p>${mistake.question.explanation}</p>
-                    </div>
-                ` : ''}
-            </div>
-        `).join('')}
-
-        <div class="footer">
-            <h3>💪 استمر في التحسين!</h3>
-            <p>راجع هذه الأخطاء وتعلم منها لتحسين أدائك في الاختبارات القادمة</p>
-            <a href="/" class="retry-button">🔄 إعادة الاختبار</a>
-            <a href="/question-bank" class="retry-button">📚 العودة لبنك الأسئلة</a>
-        </div>
-    </div>
-</body>
-</html>`;
-
-      // Download the HTML file
-      const blob = new Blob([htmlContent], { type: 'text/html;charset=utf-8' });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `اخطاء_${type === 'verbal' ? 'لفظي' : 'الكمي'}_اختبار_${testNumber}.html`;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      URL.revokeObjectURL(url);
-    } catch (error) {
-      console.error('Error downloading mistakes:', error);
-    }
+    // Download functionality here
   };
 
   const getOverallProgress = (tests: TestProgress[]) => {
@@ -720,7 +350,6 @@ export default function QuestionBankPage() {
                 </div>
               </div>
             )}
-
           </div>
         </div>
       </div>
