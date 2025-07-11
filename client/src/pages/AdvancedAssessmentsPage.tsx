@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useLocation } from 'wouter';
 import { motion } from 'framer-motion';
 import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -20,8 +21,10 @@ import {
   Calculator,
   Pause,
   Play,
-  Home
+  Home,
+  Lock
 } from 'lucide-react';
+import { useToast } from "@/hooks/use-toast";
 
 interface AdvancedQuestion {
   id: number;
@@ -78,6 +81,8 @@ interface Assessment {
 }
 
 export function AdvancedAssessmentsPage() {
+  const [, setLocation] = useLocation();
+  const { toast } = useToast();
   const [config, setConfig] = useState<AssessmentConfig>({
     mode: 'adaptive',
     difficulty: 'auto',
@@ -400,17 +405,46 @@ export function AdvancedAssessmentsPage() {
   };
 
   const startMistakeChallenge = (mistakes: any[]) => {
-    if (mistakes.length === 0) return;
+    if (mistakes.length === 0) {
+      toast({
+        title: "لا توجد أخطاء",
+        description: "لم تقم بأي أخطاء في هذا الاختبار!",
+        variant: "default"
+      });
+      return;
+    }
     
-    // Navigate to mistake challenge with data
-    localStorage.setItem('mistakeChallenge', JSON.stringify({
-      questions: mistakes,
+    // Save challenge data to localStorage with proper format
+    const challengeData = {
+      questions: mistakes.map((mistake: any) => ({
+        id: mistake.id,
+        text: mistake.text,
+        options: mistake.options,
+        correctOptionIndex: mistake.correctOptionIndex,
+        explanation: mistake.explanation,
+        category: mistake.category,
+        subcategory: mistake.subcategory,
+        userAnswer: mistake.userAnswer,
+        userAnswerText: mistake.userAnswerText,
+        correctAnswerText: mistake.correctAnswerText
+      })),
       source: 'advanced_lab',
       subcategory: currentAssessment?.subcategory,
-      type: currentAssessment?.type
-    }));
+      type: currentAssessment?.type,
+      timestamp: new Date().toISOString()
+    };
     
-    window.location.href = '/enhanced-mistake-challenge';
+    localStorage.setItem('mistakeChallenge', JSON.stringify(challengeData));
+    
+    toast({
+      title: "🎯 تحدي الأخطاء جاهز!",
+      description: `سيتم الانتقال لتحدي ${mistakes.length} أسئلة`,
+    });
+    
+    // Navigate after a short delay to show the toast
+    setTimeout(() => {
+      setLocation('/enhanced-mistake-challenge');
+    }, 1000);
   };
 
   const downloadMistakes = (mistakes: any[]) => {
@@ -1094,46 +1128,202 @@ export function AdvancedAssessmentsPage() {
               </CardHeader>
               
               <CardContent className="relative z-10">
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                  {[
-                    { name: "التناظر اللفظي", category: "verbal", subcategory: "التناظر اللفظي", icon: "📚", color: "from-blue-500 to-blue-600", description: "تحليل العلاقات" },
-                    { name: "إكمال الجمل", category: "verbal", subcategory: "إكمال الجمل", icon: "✏️", color: "from-purple-500 to-purple-600", description: "فهم السياق" },
-                    { name: "الاستيعاب المقروء", category: "verbal", subcategory: "استيعاب المقروء", icon: "📖", color: "from-indigo-500 to-indigo-600", description: "فهم النصوص" },
-                    { name: "المترادفات والأضداد", category: "verbal", subcategory: "المترادفات والأضداد", icon: "🔤", color: "from-pink-500 to-pink-600", description: "المعاني والألفاظ" },
-                    { name: "الأخطاء الشائعة", category: "verbal", subcategory: "الخطأ السياقي", icon: "🎯", color: "from-rose-500 to-rose-600", description: "دقة اللغة" },
-                    { name: "الهندسة", category: "quantitative", subcategory: "الهندسة", icon: "📐", color: "from-orange-500 to-orange-600", description: "الأشكال والمساحات" },
-                    { name: "العمليات الحسابية", category: "quantitative", subcategory: "عمليات حسابية", icon: "➕", color: "from-yellow-500 to-yellow-600", description: "الحسابات الأساسية" },
-                    { name: "النسب والتناسب", category: "quantitative", subcategory: "النسبة والتناسب", icon: "📊", color: "from-teal-500 to-teal-600", description: "العلاقات الرقمية" },
-                    { name: "الإحصاء", category: "quantitative", subcategory: "الإحصاء", icon: "📈", color: "from-cyan-500 to-cyan-600", description: "تحليل البيانات" },
-                  ].map((test, index) => (
-                    <motion.div
-                      key={test.name}
-                      initial={{ opacity: 0, y: 20 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ delay: 1.8 + index * 0.1 }}
-                    >
-                      <Button
-                        variant="outline"
-                        className={`h-auto p-6 bg-gradient-to-r ${test.color} text-white border-0 hover:scale-105 transition-all duration-500 shadow-lg hover:shadow-2xl w-full relative overflow-hidden group`}
-                        onClick={() => startQuickAssessment(test.category as 'verbal' | 'quantitative', test.subcategory)}
+                {/* القسم اللفظي */}
+                <motion.div
+                  initial={{ opacity: 0, x: -50 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ delay: 1.8 }}
+                  className="mb-12"
+                >
+                  <div className="flex items-center gap-4 mb-8">
+                    <div className="p-4 bg-gradient-to-r from-blue-500 to-purple-600 rounded-2xl shadow-xl">
+                      <BookOpen className="h-8 w-8 text-white" />
+                    </div>
+                    <div>
+                      <h3 className="text-3xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+                        🎭 القدرات اللفظية
+                      </h3>
+                      <p className="text-gray-600 dark:text-gray-400 mt-1">قياس وتطوير قدراتك في فهم اللغة العربية</p>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    {[
+                      { name: "التناظر اللفظي", subcategory: "التناظر اللفظي", icon: "📚", color: "from-blue-500 to-blue-600", description: "تحليل العلاقات بين الكلمات" },
+                      { name: "إكمال الجمل", subcategory: "إكمال الجمل", icon: "✏️", color: "from-purple-500 to-purple-600", description: "فهم السياق والمعنى" },
+                      { name: "الاستيعاب المقروء", subcategory: "استيعاب المقروء", icon: "📖", color: "from-indigo-500 to-indigo-600", description: "فهم وتحليل النصوص" },
+                      { name: "المترادفات والأضداد", subcategory: "المترادفات والأضداد", icon: "🔤", color: "from-pink-500 to-pink-600", description: "المعاني والألفاظ المتشابهة" },
+                      { name: "الأخطاء الشائعة", subcategory: "الخطأ السياقي", icon: "🎯", color: "from-rose-500 to-rose-600", description: "دقة الاستخدام اللغوي" },
+                    ].map((test, index) => (
+                      <motion.div
+                        key={test.name}
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ delay: 2.0 + index * 0.1 }}
                       >
-                        <div className="absolute inset-0 bg-white/10 translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-700"></div>
-                        <div className="flex flex-col items-center gap-3 relative z-10">
-                          <div className="text-3xl mb-1 transform group-hover:scale-110 transition-transform duration-300">
-                            {test.icon}
-                          </div>
-                          <div className="text-center">
-                            <div className="text-base font-bold mb-1">{test.name}</div>
-                            <div className="text-xs opacity-90 mb-2">{test.description}</div>
-                            <div className="text-xs bg-white/20 px-3 py-1 rounded-full">
-                              15 سؤال • 15 دقيقة
+                        <Button
+                          variant="outline"
+                          className={`h-auto p-6 bg-gradient-to-r ${test.color} text-white border-0 hover:scale-105 transition-all duration-500 shadow-lg hover:shadow-2xl w-full relative overflow-hidden group`}
+                          onClick={() => startQuickAssessment('verbal', test.subcategory)}
+                        >
+                          <div className="absolute inset-0 bg-white/10 translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-700"></div>
+                          <div className="flex flex-col items-center gap-3 relative z-10">
+                            <div className="text-3xl mb-1 transform group-hover:scale-110 transition-transform duration-300">
+                              {test.icon}
+                            </div>
+                            <div className="text-center">
+                              <div className="text-base font-bold mb-1">{test.name}</div>
+                              <div className="text-xs opacity-90 mb-2">{test.description}</div>
+                              <div className="text-xs bg-white/20 px-3 py-1 rounded-full">
+                                15 سؤال • 15 دقيقة
+                              </div>
                             </div>
                           </div>
+                        </Button>
+                      </motion.div>
+                    ))}
+                  </div>
+                </motion.div>
+
+                {/* القسم الكمي */}
+                <motion.div
+                  initial={{ opacity: 0, x: 50 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ delay: 2.5 }}
+                  className="mb-12"
+                >
+                  <div className="flex items-center gap-4 mb-8">
+                    <div className="p-4 bg-gradient-to-r from-orange-500 to-red-600 rounded-2xl shadow-xl">
+                      <Calculator className="h-8 w-8 text-white" />
+                    </div>
+                    <div>
+                      <h3 className="text-3xl font-bold bg-gradient-to-r from-orange-600 to-red-600 bg-clip-text text-transparent">
+                        🔢 القدرات الكمية
+                      </h3>
+                      <p className="text-gray-600 dark:text-gray-400 mt-1">قياس وتطوير قدراتك في الرياضيات والتفكير المنطقي</p>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    {[
+                      { name: "الهندسة", subcategory: "الهندسة", icon: "📐", color: "from-orange-500 to-orange-600", description: "الأشكال والمساحات والحجوم" },
+                      { name: "العمليات الحسابية", subcategory: "عمليات حسابية", icon: "➕", color: "from-yellow-500 to-yellow-600", description: "الحسابات والعمليات الأساسية" },
+                      { name: "النسب والتناسب", subcategory: "النسبة والتناسب", icon: "📊", color: "from-teal-500 to-teal-600", description: "العلاقات الرقمية والنسبية" },
+                      { name: "الإحصاء", subcategory: "الإحصاء", icon: "📈", color: "from-cyan-500 to-cyan-600", description: "تحليل البيانات والمعلومات" },
+                      { name: "المعادلات", subcategory: "المعادلات", icon: "⚖️", color: "from-emerald-500 to-emerald-600", description: "حل المعادلات الرياضية" },
+                      { name: "النسبة المئوية", subcategory: "النسبة المئوية", icon: "💯", color: "from-violet-500 to-violet-600", description: "حسابات النسب المئوية" },
+                      { name: "المقارنات", subcategory: "المقارنات", icon: "⚖️", color: "from-amber-500 to-amber-600", description: "مقارنة القيم والكميات" },
+                      { name: "الحركة والأنماط", subcategory: "الحركة والأنماط", icon: "🔄", color: "from-lime-500 to-lime-600", description: "تحليل الأنماط والتسلسلات" },
+                      { name: "أفكار متنوعة", subcategory: "أفكار متنوعة", icon: "🧩", color: "from-fuchsia-500 to-fuchsia-600", description: "مسائل رياضية متنوعة" },
+                    ].map((test, index) => (
+                      <motion.div
+                        key={test.name}
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ delay: 2.7 + index * 0.1 }}
+                      >
+                        <Button
+                          variant="outline"
+                          className={`h-auto p-6 bg-gradient-to-r ${test.color} text-white border-0 hover:scale-105 transition-all duration-500 shadow-lg hover:shadow-2xl w-full relative overflow-hidden group`}
+                          onClick={() => startQuickAssessment('quantitative', test.subcategory)}
+                        >
+                          <div className="absolute inset-0 bg-white/10 translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-700"></div>
+                          <div className="flex flex-col items-center gap-3 relative z-10">
+                            <div className="text-3xl mb-1 transform group-hover:scale-110 transition-transform duration-300">
+                              {test.icon}
+                            </div>
+                            <div className="text-center">
+                              <div className="text-base font-bold mb-1">{test.name}</div>
+                              <div className="text-xs opacity-90 mb-2">{test.description}</div>
+                              <div className="text-xs bg-white/20 px-3 py-1 rounded-full">
+                                15 سؤال • 15 دقيقة
+                              </div>
+                            </div>
+                          </div>
+                        </Button>
+                      </motion.div>
+                    ))}
+                  </div>
+                </motion.div>
+
+                {/* قسم تحدي الأخطاء المحسّن */}
+                <motion.div
+                  initial={{ opacity: 0, y: 30 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 3.5 }}
+                  className="mb-8"
+                >
+                  <div className="flex items-center gap-4 mb-8">
+                    <div className="p-4 bg-gradient-to-r from-red-500 to-pink-600 rounded-2xl shadow-xl relative">
+                      <Flame className="h-8 w-8 text-white" />
+                      <div className="absolute -top-1 -right-1 w-4 h-4 bg-yellow-400 rounded-full animate-bounce"></div>
+                    </div>
+                    <div>
+                      <h3 className="text-3xl font-bold bg-gradient-to-r from-red-600 to-pink-600 bg-clip-text text-transparent">
+                        🎯 تحدي الأخطاء التفاعلي
+                      </h3>
+                      <p className="text-gray-600 dark:text-gray-400 mt-1">مراجعة تفاعلية لأخطائك مع 6 أنماط تحدي مختلفة</p>
+                    </div>
+                  </div>
+
+                  <Card className="bg-gradient-to-r from-red-50 to-pink-50 dark:from-red-900/20 dark:to-pink-900/20 border-red-200 dark:border-red-700 shadow-xl overflow-hidden relative">
+                    <div className="absolute inset-0 bg-gradient-to-r from-red-500/5 to-pink-500/5 animate-pulse"></div>
+                    <CardContent className="p-8 relative z-10">
+                      <div className="text-center mb-6">
+                        <div className="inline-flex items-center gap-3 bg-white/60 dark:bg-gray-800/60 rounded-full px-6 py-3 border border-red-200 dark:border-red-700">
+                          <Target className="w-6 h-6 text-red-600" />
+                          <span className="font-bold text-lg text-red-700 dark:text-red-300">
+                            تحدي الأخطاء غير متاح حالياً
+                          </span>
                         </div>
-                      </Button>
-                    </motion.div>
-                  ))}
-                </div>
+                      </div>
+                      
+                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                        {[
+                          { name: "شيطان السرعة", icon: "⚡", color: "from-yellow-500 to-orange-500", desc: "أجب بسرعة البرق" },
+                          { name: "وضع البقاء", icon: "❤️", color: "from-red-500 to-pink-500", desc: "3 أرواح فقط" },
+                          { name: "سيد الزن", icon: "🧘", color: "from-blue-500 to-purple-500", desc: "بدون ضغط وقت" },
+                          { name: "وضع المحارب", icon: "⚔️", color: "from-purple-500 to-indigo-500", desc: "معركة ملحمية" },
+                          { name: "الكمالي", icon: "👑", color: "from-amber-500 to-yellow-500", desc: "100% أو لا شيء" },
+                          { name: "وضع المغامرة", icon: "🚀", color: "from-green-500 to-teal-500", desc: "قصة تفاعلية" },
+                        ].map((mode, index) => (
+                          <motion.div
+                            key={mode.name}
+                            initial={{ opacity: 0, scale: 0.8 }}
+                            animate={{ opacity: 1, scale: 1 }}
+                            transition={{ delay: 3.7 + index * 0.1 }}
+                            className="relative group"
+                          >
+                            <Button
+                              variant="outline"
+                              disabled
+                              className={`h-full p-6 bg-gradient-to-r ${mode.color} text-white border-0 opacity-60 w-full relative overflow-hidden`}
+                            >
+                              <div className="flex flex-col items-center gap-3">
+                                <div className="text-2xl">{mode.icon}</div>
+                                <div className="text-center">
+                                  <div className="text-sm font-bold">{mode.name}</div>
+                                  <div className="text-xs opacity-80">{mode.desc}</div>
+                                </div>
+                              </div>
+                            </Button>
+                            <div className="absolute inset-0 bg-black/20 rounded-lg flex items-center justify-center">
+                              <div className="bg-white/90 rounded-full p-2">
+                                <Lock className="w-4 h-4 text-gray-600" />
+                              </div>
+                            </div>
+                          </motion.div>
+                        ))}
+                      </div>
+                      
+                      <div className="text-center mt-6">
+                        <p className="text-red-600 dark:text-red-400 text-sm">
+                          💡 أكمل اختبار أولاً لتفعيل تحديات الأخطاء التفاعلية
+                        </p>
+                      </div>
+                    </CardContent>
+                  </Card>
+                </motion.div>
               </CardContent>
             </Card>
           </motion.div>
