@@ -471,14 +471,23 @@ export default function EnhancedMistakeChallenge() {
     setIsCompleted(true);
     setGameMode('results');
 
+    // Safety checks for challengeData
+    if (!challengeData || !challengeData.questions || challengeData.questions.length === 0) {
+      console.error('Challenge data is missing or invalid');
+      return;
+    }
+
     // Calculate final results
-    const correctAnswers = challengeData.questions.filter((q: any) => 
-      selectedAnswers[q.id] === q.correctOptionIndex?.toString()
-    ).length;
+    const correctAnswers = challengeData.questions.filter((q: any) => {
+      const userAnswer = selectedAnswers[q.id];
+      const correctAnswer = q.correctOptionIndex?.toString() || q.correct_answer?.toString();
+      return userAnswer === correctAnswer;
+    }).length;
 
-    const percentage = Math.round((correctAnswers / challengeData.questions.length) * 100);
+    const totalQuestions = challengeData.questions.length;
+    const percentage = totalQuestions > 0 ? Math.round((correctAnswers / totalQuestions) * 100) : 0;
 
-    // Update achievements
+    // Update achievements safely
     const updatedAchievements = achievements.map(achievement => {
       if (achievement.id === 'first_challenge' && !achievement.unlocked) {
         return { ...achievement, unlocked: true, progress: 1 };
@@ -496,11 +505,11 @@ export default function EnhancedMistakeChallenge() {
 
     // Save results
     const challengeResult = {
-      mode: selectedMode?.name || '',
-      score: playerStats.score,
+      mode: selectedMode?.name || 'غير محدد',
+      score: playerStats.score || 0,
       percentage,
       questionsAnswered: Object.keys(selectedAnswers).length,
-      totalQuestions: challengeData.questions.length,
+      totalQuestions,
       timeSpent: selectedMode?.timeLimit ? selectedMode.timeLimit - timeRemaining : 0,
       achievements: updatedAchievements.filter(a => a.unlocked).length,
       completedAt: new Date().toISOString()
@@ -667,8 +676,20 @@ export default function EnhancedMistakeChallenge() {
 
   // Game Playing Screen
   if (gameMode === 'playing' && challengeData && selectedMode) {
-    const currentQuestion = challengeData.questions[currentQuestionIndex];
-    const progress = ((currentQuestionIndex + 1) / challengeData.questions.length) * 100;
+    const currentQuestion = challengeData.questions?.[currentQuestionIndex];
+    if (!currentQuestion) {
+      return (
+        <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-indigo-900 p-4 flex items-center justify-center">
+          <div className="text-center text-white">
+            <p className="text-xl mb-4">خطأ في تحميل السؤال</p>
+            <Button onClick={() => setLocation('/test-results')} variant="outline">
+              العودة للنتائج
+            </Button>
+          </div>
+        </div>
+      );
+    }
+    const progress = challengeData.questions?.length > 0 ? ((currentQuestionIndex + 1) / challengeData.questions.length) * 100 : 0;
 
     return (
       <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-indigo-900 p-4">
@@ -921,10 +942,16 @@ export default function EnhancedMistakeChallenge() {
 
   // Results Screen
   if (gameMode === 'results') {
-    const correctAnswers = challengeData.questions.filter((q: any) => 
-      selectedAnswers[q.id] === q.correctOptionIndex?.toString()
-    ).length;
-    const percentage = Math.round((correctAnswers / challengeData.questions.length) * 100);
+    // Safety checks for results calculation
+    const questions = challengeData?.questions || [];
+    const correctAnswers = questions.filter((q: any) => {
+      const userAnswer = selectedAnswers[q.id];
+      const correctAnswer = q.correctOptionIndex?.toString() || q.correct_answer?.toString();
+      return userAnswer === correctAnswer;
+    }).length;
+    
+    const totalQuestions = questions.length;
+    const percentage = totalQuestions > 0 ? Math.round((correctAnswers / totalQuestions) * 100) : 0;
     const unlockedAchievements = achievements.filter(a => a.unlocked);
 
     // Determine victory level
@@ -1051,7 +1078,7 @@ export default function EnhancedMistakeChallenge() {
             <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.4 }}>
               <Card className="bg-blue-500/10 backdrop-blur-sm border-blue-400/30 text-blue-100 text-center">
                 <CardContent className="p-6">
-                  <div className="text-4xl font-bold text-blue-400 mb-2">{correctAnswers}/{challengeData.questions.length}</div>
+                  <div className="text-4xl font-bold text-blue-400 mb-2">{correctAnswers}/{totalQuestions}</div>
                   <div className="text-sm">الإجابات الصحيحة</div>
                 </CardContent>
               </Card>
