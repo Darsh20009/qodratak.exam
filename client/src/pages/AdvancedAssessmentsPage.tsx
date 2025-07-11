@@ -49,8 +49,6 @@ interface AssessmentConfig {
   showProgress: boolean;
   enableSounds: boolean;
   focusMode: boolean;
-  mainCategory?: 'verbal' | 'quantitative';
-  subcategory?: string;
 }
 
 interface PerformanceMetrics {
@@ -1399,226 +1397,99 @@ export function AdvancedAssessmentsPage() {
               </CardHeader>
               
               <CardContent className="relative z-10">
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 mb-8">
-                  {/* Main Category Selection */}
-                  <div className="space-y-3">
-                    <label className="text-sm font-medium text-gray-700 dark:text-gray-300">القسم الرئيسي</label>
-                    <select 
-                      value={config.mainCategory || ''}
-                      onChange={(e) => setConfig(prev => ({ ...prev, mainCategory: e.target.value as 'verbal' | 'quantitative', subcategory: '' }))}
-                      className="w-full p-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 transition-all"
-                    >
-                      <option value="">اختر القسم</option>
-                      <option value="verbal">🎭 القدرات اللفظية</option>
-                      <option value="quantitative">🔢 القدرات الكمية</option>
-                    </select>
-                  </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                {/* Assessment Mode */}
+                <div className="space-y-3">
+                  <label className="text-sm font-medium">نمط الاختبار</label>
+                  <select 
+                    value={config.mode}
+                    onChange={(e) => setConfig(prev => ({ ...prev, mode: e.target.value as any }))}
+                    className="w-full p-3 border rounded-lg bg-white dark:bg-gray-800"
+                  >
+                    <option value="adaptive">تكيفي ذكي</option>
+                    <option value="timed">محدود الوقت</option>
+                    <option value="endurance">اختبار التحمل</option>
+                    <option value="speed">سريع البرق</option>
+                    <option value="precision">عالي الدقة</option>
+                    <option value="marathon">الماراثون</option>
+                  </select>
+                </div>
 
-                  {/* Subcategory Selection */}
-                  <div className="space-y-3">
-                    <label className="text-sm font-medium text-gray-700 dark:text-gray-300">القسم الفرعي</label>
-                    <select 
-                      value={config.subcategory || ''}
-                      onChange={(e) => setConfig(prev => ({ ...prev, subcategory: e.target.value }))}
-                      disabled={!config.mainCategory}
-                      className="w-full p-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
-                      <option value="">اختر القسم الفرعي</option>
-                      {config.mainCategory === 'verbal' && (
-                        <>
-                          <option value="التناظر اللفظي">📚 التناظر اللفظي</option>
-                          <option value="إكمال الجمل">✏️ إكمال الجمل</option>
-                          <option value="استيعاب المقروء">📖 الاستيعاب المقروء</option>
-                          <option value="الخطأ السياقي">🎯 الأخطاء الشائعة</option>
-                        </>
-                      )}
-                      {config.mainCategory === 'quantitative' && (
-                        <>
-                          <option value="الهندسة">📐 الهندسة</option>
-                          <option value="عمليات حسابية">➕ العمليات الحسابية</option>
-                          <option value="النسبة والتناسب">📊 النسب والتناسب</option>
-                          <option value="الإحصاء">📈 الإحصاء</option>
-                          <option value="المعادلات">⚖️ المعادلات</option>
-                          <option value="النسبة المئوية">💯 النسبة المئوية</option>
-                          <option value="المقارنات">⚖️ المقارنات</option>
-                          <option value="الحركة والأنماط">🔄 الحركة والأنماط</option>
-                          <option value="أفكار متنوعة">🧩 أفكار متنوعة</option>
-                        </>
-                      )}
-                    </select>
-                  </div>
+                {/* Difficulty Level */}
+                <div className="space-y-3">
+                  <label className="text-sm font-medium">مستوى الصعوبة</label>
+                  <select 
+                    value={config.difficulty}
+                    onChange={(e) => setConfig(prev => ({ ...prev, difficulty: e.target.value as any }))}
+                    className="w-full p-3 border rounded-lg bg-white dark:bg-gray-800"
+                  >
+                    <option value="auto">تلقائي</option>
+                    <option value="beginner">مبتدئ</option>
+                    <option value="intermediate">متوسط</option>
+                    <option value="advanced">متقدم</option>
+                    <option value="expert">خبير</option>
+                  </select>
+                </div>
 
-                  {/* Assessment Mode */}
-                  <div className="space-y-3">
-                    <label className="text-sm font-medium text-gray-700 dark:text-gray-300">نمط الاختبار</label>
-                    <select 
-                      value={config.mode}
-                      onChange={(e) => setConfig(prev => ({ ...prev, mode: e.target.value as any }))}
-                      className="w-full p-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 transition-all"
-                    >
-                      <option value="adaptive">⚡ تكيفي ذكي</option>
-                      <option value="timed">⏰ محدود الوقت</option>
-                      <option value="endurance">💪 اختبار التحمل</option>
-                      <option value="speed">🚀 سريع البرق</option>
-                      <option value="precision">🎯 عالي الدقة</option>
-                      <option value="marathon">🏃 الماراثون</option>
-                    </select>
-                  </div>
+                {/* Question Count */}
+                <div className="space-y-3">
+                  <label className="text-sm font-medium">عدد الأسئلة</label>
+                  <select 
+                    value={config.questionCount}
+                    onChange={(e) => setConfig(prev => ({ ...prev, questionCount: parseInt(e.target.value) }))}
+                    className="w-full p-3 border rounded-lg bg-white dark:bg-gray-800"
+                  >
+                    <option value={10}>10 أسئلة</option>
+                    <option value={20}>20 سؤال</option>
+                    <option value={30}>30 سؤال</option>
+                    <option value={50}>50 سؤال</option>
+                  </select>
+                </div>
 
-                  {/* Difficulty Level */}
-                  <div className="space-y-3">
-                    <label className="text-sm font-medium text-gray-700 dark:text-gray-300">مستوى الصعوبة</label>
-                    <select 
-                      value={config.difficulty}
-                      onChange={(e) => setConfig(prev => ({ ...prev, difficulty: e.target.value as any }))}
-                      className="w-full p-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 transition-all"
-                    >
-                      <option value="auto">🤖 تلقائي</option>
-                      <option value="beginner">🌱 مبتدئ</option>
-                      <option value="intermediate">📈 متوسط</option>
-                      <option value="advanced">🎓 متقدم</option>
-                      <option value="expert">👑 خبير</option>
-                    </select>
-                  </div>
+                {/* Time Limit */}
+                <div className="space-y-3">
+                  <label className="text-sm font-medium">الحد الزمني (دقيقة)</label>
+                  <select 
+                    value={config.timeLimit}
+                    onChange={(e) => setConfig(prev => ({ ...prev, timeLimit: parseInt(e.target.value) }))}
+                    className="w-full p-3 border rounded-lg bg-white dark:bg-gray-800"
+                  >
+                    <option value={600}>10 دقائق</option>
+                    <option value={1200}>20 دقيقة</option>
+                    <option value={1800}>30 دقيقة</option>
+                    <option value={3600}>60 دقيقة</option>
+                  </select>
+                </div>
 
-                  {/* Question Count */}
-                  <div className="space-y-3">
-                    <label className="text-sm font-medium text-gray-700 dark:text-gray-300">عدد الأسئلة</label>
-                    <select 
-                      value={config.questionCount}
-                      onChange={(e) => setConfig(prev => ({ ...prev, questionCount: parseInt(e.target.value) }))}
-                      className="w-full p-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 transition-all"
-                    >
-                      <option value={10}>📝 10 أسئلة</option>
-                      <option value={20}>📚 20 سؤال</option>
-                      <option value={30}>📖 30 سؤال</option>
-                      <option value={50}>📑 50 سؤال</option>
-                    </select>
-                  </div>
-
-                  {/* Time Limit */}
-                  <div className="space-y-3">
-                    <label className="text-sm font-medium text-gray-700 dark:text-gray-300">الحد الزمني</label>
-                    <select 
-                      value={config.timeLimit}
-                      onChange={(e) => setConfig(prev => ({ ...prev, timeLimit: parseInt(e.target.value) }))}
-                      className="w-full p-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 transition-all"
-                    >
-                      <option value={600}>⏰ 10 دقائق</option>
-                      <option value={1200}>⏱️ 20 دقيقة</option>
-                      <option value={1800}>⏲️ 30 دقيقة</option>
-                      <option value={3600}>🕐 60 دقيقة</option>
-                    </select>
-                  </div>
-
-                  {/* Show Hints */}
-                  <div className="space-y-3">
-                    <label className="text-sm font-medium text-gray-700 dark:text-gray-300">إظهار التلميحات</label>
-                    <div className="flex items-center gap-3 p-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800">
-                      <input
-                        type="checkbox"
-                        checked={config.showHints}
-                        onChange={(e) => setConfig(prev => ({ ...prev, showHints: e.target.checked }))}
-                        className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 dark:focus:ring-blue-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600"
-                      />
-                      <span className="text-sm text-gray-700 dark:text-gray-300">💡 تفعيل التلميحات</span>
-                    </div>
-                  </div>
-
-                  {/* Focus Mode */}
-                  <div className="space-y-3">
-                    <label className="text-sm font-medium text-gray-700 dark:text-gray-300">وضع التركيز</label>
-                    <div className="flex items-center gap-3 p-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800">
-                      <input
-                        type="checkbox"
-                        checked={config.focusMode}
-                        onChange={(e) => setConfig(prev => ({ ...prev, focusMode: e.target.checked }))}
-                        className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 dark:focus:ring-blue-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600"
-                      />
-                      <span className="text-sm text-gray-700 dark:text-gray-300">🎯 تفعيل وضع التركيز</span>
-                    </div>
-                  </div>
-
-                  {/* Dark Mode Toggle */}
-                  <div className="space-y-3">
-                    <label className="text-sm font-medium text-gray-700 dark:text-gray-300">الوضع الليلي</label>
-                    <div className="flex items-center gap-3 p-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800">
-                      <input
-                        type="checkbox"
-                        checked={document.documentElement.classList.contains('dark')}
-                        onChange={(e) => {
-                          if (e.target.checked) {
-                            document.documentElement.classList.add('dark');
-                            localStorage.setItem('theme', 'dark');
-                          } else {
-                            document.documentElement.classList.remove('dark');
-                            localStorage.setItem('theme', 'light');
-                          }
-                        }}
-                        className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 dark:focus:ring-blue-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600"
-                      />
-                      <span className="text-sm text-gray-700 dark:text-gray-300">🌙 تفعيل الوضع الليلي</span>
-                    </div>
+                {/* Show Hints */}
+                <div className="space-y-3">
+                  <label className="text-sm font-medium">إظهار التلميحات</label>
+                  <div className="flex items-center space-x-2">
+                    <input
+                      type="checkbox"
+                      checked={config.showHints}
+                      onChange={(e) => setConfig(prev => ({ ...prev, showHints: e.target.checked }))}
+                      className="rounded"
+                    />
+                    <span className="text-sm">تفعيل</span>
                   </div>
                 </div>
 
-                {/* Start Test Button */}
-                <div className="border-t border-gray-200 dark:border-gray-700 pt-8">
-                  <div className="text-center">
-                    <Button
-                      onClick={() => {
-                        if (!config.mainCategory || !config.subcategory) {
-                          toast({
-                            title: "⚠️ اختر القسم والقسم الفرعي",
-                            description: "يرجى اختيار القسم الرئيسي والقسم الفرعي لبدء الاختبار",
-                            variant: "destructive"
-                          });
-                          return;
-                        }
-                        
-                        if (!canTakeTest) {
-                          toast({
-                            title: "🚫 الحد الأقصى للاختبارات",
-                            description: "لقد وصلت إلى الحد الأقصى للاختبارات المجانية اليوم (1 اختبار). اشترك في الباقة المدفوعة للوصول الكامل!",
-                            variant: "destructive"
-                          });
-                          return;
-                        }
-                        
-                        startAssessment(
-                          { id: config.subcategory }, 
-                          config.mainCategory as 'verbal' | 'quantitative'
-                        );
-                      }}
-                      disabled={!config.mainCategory || !config.subcategory || !canTakeTest}
-                      className="bg-gradient-to-r from-blue-500 via-purple-600 to-pink-600 hover:from-blue-600 hover:via-purple-700 hover:to-pink-700 text-white px-12 py-4 text-lg font-bold rounded-xl shadow-2xl hover:shadow-3xl transform hover:scale-105 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none relative overflow-hidden group"
-                    >
-                      <div className="absolute inset-0 bg-white/20 translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-700"></div>
-                      <div className="relative z-10 flex items-center gap-3">
-                        <Lightning className="w-6 h-6" />
-                        <span>🚀 بدء الاختبار المتقدم</span>
-                        <Star className="w-6 h-6" />
-                      </div>
-                    </Button>
-                    
-                    {!canTakeTest && (
-                      <p className="text-red-500 dark:text-red-400 text-sm mt-4 bg-red-50 dark:bg-red-900/20 p-3 rounded-lg border border-red-200 dark:border-red-700">
-                        🔒 تم الوصول للحد الأقصى للاختبارات المجانية اليوم. اشترك للحصول على وصول غير محدود!
-                      </p>
-                    )}
-                    
-                    {!config.mainCategory || !config.subcategory ? (
-                      <p className="text-orange-500 dark:text-orange-400 text-sm mt-4 bg-orange-50 dark:bg-orange-900/20 p-3 rounded-lg border border-orange-200 dark:border-orange-700">
-                        ⚠️ يرجى اختيار القسم الرئيسي والقسم الفرعي لبدء الاختبار
-                      </p>
-                    ) : (
-                      <p className="text-green-600 dark:text-green-400 text-sm mt-4 bg-green-50 dark:bg-green-900/20 p-3 rounded-lg border border-green-200 dark:border-green-700">
-                        ✅ جاهز للبدء! اختبار {config.subcategory} - {config.questionCount} سؤال في {config.timeLimit / 60} دقيقة
-                      </p>
-                    )}
+                {/* Focus Mode */}
+                <div className="space-y-3">
+                  <label className="text-sm font-medium">وضع التركيز</label>
+                  <div className="flex items-center space-x-2">
+                    <input
+                      type="checkbox"
+                      checked={config.focusMode}
+                      onChange={(e) => setConfig(prev => ({ ...prev, focusMode: e.target.checked }))}
+                      className="rounded"
+                    />
+                    <span className="text-sm">تفعيل</span>
                   </div>
                 </div>
-              </CardContent>
+              </div>
+            </CardContent>
           </Card>
         </motion.div>
       </motion.div>
