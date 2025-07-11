@@ -102,7 +102,7 @@ interface Achievement {
 export default function EnhancedMistakeChallenge() {
   const [, setLocation] = useLocation();
   const { toast } = useToast();
-  
+
   // Game State
   const [gameMode, setGameMode] = useState<'selection' | 'playing' | 'results'>('selection');
   const [selectedMode, setSelectedMode] = useState<ChallengeMode | null>(null);
@@ -112,7 +112,7 @@ export default function EnhancedMistakeChallenge() {
   const [timeRemaining, setTimeRemaining] = useState(0);
   const [isPaused, setIsPaused] = useState(false);
   const [isCompleted, setIsCompleted] = useState(false);
-  
+
   // Enhanced Features
   const [playerStats, setPlayerStats] = useState({
     health: 100,
@@ -123,7 +123,7 @@ export default function EnhancedMistakeChallenge() {
     experience: 0,
     powerUps: [] as PowerUp[]
   });
-  
+
   const [achievements, setAchievements] = useState<Achievement[]>([]);
   const [showHint, setShowHint] = useState(false);
   const [currentHint, setCurrentHint] = useState('');
@@ -323,7 +323,7 @@ export default function EnhancedMistakeChallenge() {
     if (mode.timeLimit) {
       setTimeRemaining(mode.timeLimit);
     }
-    
+
     // Initialize player stats based on mode
     setPlayerStats(prev => ({
       ...prev,
@@ -343,7 +343,7 @@ export default function EnhancedMistakeChallenge() {
     if (!currentQuestion) return;
 
     const isCorrect = answerIndex === currentQuestion.correctOptionIndex;
-    
+
     setSelectedAnswers(prev => ({
       ...prev,
       [currentQuestion.id]: answerIndex.toString()
@@ -369,7 +369,7 @@ export default function EnhancedMistakeChallenge() {
         experience: prev.experience + 15,
         energy: Math.min(100, prev.energy + 5)
       }));
-      
+
       // Different success messages based on mode
       const successMessages = {
         speed_demon: `برق! ⚡ +${totalPoints} نقطة (مكافأة السرعة: +${speedBonus})`,
@@ -395,7 +395,7 @@ export default function EnhancedMistakeChallenge() {
     } else {
       const healthLoss = selectedMode?.id === 'survival_mode' ? 1 : 
                         selectedMode?.id === 'perfectionist' ? 100 : 10;
-      
+
       setPlayerStats(prev => ({
         ...prev,
         streak: 0,
@@ -470,14 +470,14 @@ export default function EnhancedMistakeChallenge() {
   const finishChallenge = () => {
     setIsCompleted(true);
     setGameMode('results');
-    
+
     // Calculate final results
     const correctAnswers = challengeData.questions.filter((q: any) => 
       selectedAnswers[q.id] === q.correctOptionIndex?.toString()
     ).length;
-    
+
     const percentage = Math.round((correctAnswers / challengeData.questions.length) * 100);
-    
+
     // Update achievements
     const updatedAchievements = achievements.map(achievement => {
       if (achievement.id === 'first_challenge' && !achievement.unlocked) {
@@ -491,9 +491,9 @@ export default function EnhancedMistakeChallenge() {
       }
       return achievement;
     });
-    
+
     setAchievements(updatedAchievements);
-    
+
     // Save results
     const challengeResult = {
       mode: selectedMode?.name || '',
@@ -505,7 +505,7 @@ export default function EnhancedMistakeChallenge() {
       achievements: updatedAchievements.filter(a => a.unlocked).length,
       completedAt: new Date().toISOString()
     };
-    
+
     localStorage.setItem('lastChallengeResult', JSON.stringify(challengeResult));
   };
 
@@ -584,7 +584,7 @@ export default function EnhancedMistakeChallenge() {
                 onClick={() => startChallenge(mode)}
               >
                 <Card className={`h-full bg-gradient-to-br ${mode.color} text-white border-none shadow-xl hover:shadow-2xl transition-all duration-300 relative overflow-hidden`}>
-                  
+
                   {/* Background Effects */}
                   {mode.specialEffects && (
                     <div className="absolute inset-0 opacity-20">
@@ -592,7 +592,7 @@ export default function EnhancedMistakeChallenge() {
                       <div className="absolute bottom-0 left-0 w-24 h-24 bg-white rounded-full translate-y-12 -translate-x-12" />
                     </div>
                   )}
-                  
+
                   <CardHeader className="relative">
                     <div className="flex items-center justify-between mb-4">
                       <div className="p-3 bg-white/20 rounded-xl backdrop-blur-sm">
@@ -605,7 +605,7 @@ export default function EnhancedMistakeChallenge() {
                     <CardTitle className="text-xl font-bold mb-2">{mode.name}</CardTitle>
                     <p className="text-white/90 text-sm mb-4">{mode.description}</p>
                   </CardHeader>
-                  
+
                   <CardContent className="relative">
                     {/* Time Limit */}
                     {mode.timeLimit && (
@@ -614,7 +614,7 @@ export default function EnhancedMistakeChallenge() {
                         <span className="text-sm">{formatTime(mode.timeLimit)}</span>
                       </div>
                     )}
-                    
+
                     {/* Features */}
                     <div className="space-y-2">
                       <h4 className="font-semibold text-sm text-white/90">الميزات:</h4>
@@ -627,7 +627,7 @@ export default function EnhancedMistakeChallenge() {
                         ))}
                       </ul>
                     </div>
-                    
+
                     {/* Action Button */}
                     <Button
                       className="w-full mt-4 bg-white/20 hover:bg-white/30 text-white border-white/30"
@@ -673,7 +673,7 @@ export default function EnhancedMistakeChallenge() {
     return (
       <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-indigo-900 p-4">
         <div className="max-w-4xl mx-auto">
-          
+
           {/* Game HUD */}
           <motion.div
             initial={{ opacity: 0, y: -20 }}
@@ -698,7 +698,7 @@ export default function EnhancedMistakeChallenge() {
                         {selectedMode?.id === 'survival_mode' ? playerStats.health : `${playerStats.health}%`}
                       </span>
                     </motion.div>
-                    
+
                     <motion.div 
                       className="flex items-center gap-2"
                       animate={{ 
@@ -718,7 +718,7 @@ export default function EnhancedMistakeChallenge() {
                         </motion.div>
                       )}
                     </motion.div>
-                    
+
                     <motion.div 
                       className="flex items-center gap-2"
                       animate={{ 
@@ -729,7 +729,7 @@ export default function EnhancedMistakeChallenge() {
                       <Star className="w-5 h-5 text-yellow-400" />
                       <span className="font-bold">{playerStats.score}</span>
                     </motion.div>
-                    
+
                     {/* Energy Bar for Warrior Mode */}
                     {selectedMode?.id === 'warrior_mode' && (
                       <div className="flex items-center gap-2">
@@ -746,7 +746,7 @@ export default function EnhancedMistakeChallenge() {
                       </div>
                     )}
                   </div>
-                  
+
                   {/* Timer and Controls */}
                   <div className="flex items-center gap-4">
                     {selectedMode.timeLimit && (
@@ -765,7 +765,7 @@ export default function EnhancedMistakeChallenge() {
                     </Button>
                   </div>
                 </div>
-                
+
                 {/* Progress */}
                 <div className="mb-4">
                   <div className="flex justify-between text-sm mb-2">
@@ -774,7 +774,7 @@ export default function EnhancedMistakeChallenge() {
                   </div>
                   <Progress value={progress} className="h-2" />
                 </div>
-                
+
                 {/* Power-ups */}
                 {selectedMode.id === 'warrior_mode' && playerStats.powerUps.length > 0 && (
                   <div className="flex items-center gap-2">
@@ -824,7 +824,7 @@ export default function EnhancedMistakeChallenge() {
                 <div className="text-xl font-semibold mb-6 leading-relaxed">
                   {currentQuestion.text || currentQuestion.question}
                 </div>
-                
+
                 <div className="space-y-3">
                   {(currentQuestion.options || currentQuestion.choices || []).map((option: string, index: number) => (
                     <motion.button
@@ -899,12 +899,12 @@ export default function EnhancedMistakeChallenge() {
               <ArrowRight className="w-4 h-4 mr-2" />
               السابق
             </Button>
-            
+
             <div className="text-center">
               <div className="text-sm text-gray-300 mb-1">تقدم التحدي</div>
               <div className="text-lg font-bold text-white">{Math.round(progress)}%</div>
             </div>
-            
+
             <Button
               onClick={nextQuestion}
               disabled={isPaused}
@@ -970,7 +970,7 @@ export default function EnhancedMistakeChallenge() {
 
     return (
       <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-indigo-900 p-4 relative overflow-hidden">
-        
+
         {/* Animated Background Particles */}
         {victoryData.particles && (
           <div className="absolute inset-0 pointer-events-none">
@@ -1000,7 +1000,7 @@ export default function EnhancedMistakeChallenge() {
         )}
 
         <div className="max-w-4xl mx-auto relative z-10">
-          
+
           {/* Victory Header */}
           <motion.div
             initial={{ opacity: 0, scale: 0.8 }}
@@ -1021,7 +1021,7 @@ export default function EnhancedMistakeChallenge() {
             >
               {victoryData.icon}
             </motion.div>
-            
+
             <motion.h1 
               className="text-4xl font-bold text-white mb-2"
               animate={{ scale: [1, 1.05, 1] }}
@@ -1047,7 +1047,7 @@ export default function EnhancedMistakeChallenge() {
                 </CardContent>
               </Card>
             </motion.div>
-            
+
             <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.4 }}>
               <Card className="bg-blue-500/10 backdrop-blur-sm border-blue-400/30 text-blue-100 text-center">
                 <CardContent className="p-6">
@@ -1056,7 +1056,7 @@ export default function EnhancedMistakeChallenge() {
                 </CardContent>
               </Card>
             </motion.div>
-            
+
             <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.5 }}>
               <Card className="bg-purple-500/10 backdrop-blur-sm border-purple-400/30 text-purple-100 text-center">
                 <CardContent className="p-6">
@@ -1113,7 +1113,7 @@ export default function EnhancedMistakeChallenge() {
               <RefreshCw className="w-4 h-4 mr-2" />
               تحدي جديد
             </Button>
-            
+
             <Button
               onClick={() => setLocation('/test-results')}
               variant="outline"
