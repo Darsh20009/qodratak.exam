@@ -145,7 +145,7 @@ export function AdvancedAssessmentsPage() {
   };
 
   // Fetch questions from the API
-  const { data: questions, isLoading } = useQuery({
+  const { data: questions = [], isLoading } = useQuery({
     queryKey: ['/api/questions'],
     enabled: true,
   });
@@ -185,11 +185,22 @@ export function AdvancedAssessmentsPage() {
   };
 
   const startQuickAssessment = (category: 'verbal' | 'quantitative', subcategory: string) => {
-    if (!questions) return;
+    if (!questions || questions.length === 0) {
+      toast({
+        title: "خطأ في تحميل الأسئلة",
+        description: "يرجى إعادة تحميل الصفحة والمحاولة مرة أخرى",
+        variant: "destructive"
+      });
+      return;
+    }
     
     // Check premium access and daily limits
     if (!canTakeTest) {
-      alert('🚫 لقد وصلت إلى الحد الأقصى للاختبارات المجانية اليوم (1 اختبار). اشترك في الباقة المدفوعة للوصول الكامل!');
+      toast({
+        title: "🚫 الحد الأقصى للاختبارات",
+        description: "لقد وصلت إلى الحد الأقصى للاختبارات المجانية اليوم (1 اختبار). اشترك في الباقة المدفوعة للوصول الكامل!",
+        variant: "destructive"
+      });
       return;
     }
     
@@ -237,7 +248,11 @@ export function AdvancedAssessmentsPage() {
     
     // Check premium access and daily limits
     if (!canTakeTest) {
-      alert('🚫 لقد وصلت إلى الحد الأقصى للاختبارات المجانية اليوم (1 اختبار). اشترك في الباقة المدفوعة للوصول الكامل!');
+      toast({
+        title: "🚫 الحد الأقصى للاختبارات",
+        description: "لقد وصلت إلى الحد الأقصى للاختبارات المجانية اليوم (1 اختبار). اشترك في الباقة المدفوعة للوصول الكامل!",
+        variant: "destructive"
+      });
       return;
     }
     
@@ -1273,19 +1288,37 @@ export function AdvancedAssessmentsPage() {
                         <div className="inline-flex items-center gap-3 bg-white/60 dark:bg-gray-800/60 rounded-full px-6 py-3 border border-red-200 dark:border-red-700">
                           <Target className="w-6 h-6 text-red-600" />
                           <span className="font-bold text-lg text-red-700 dark:text-red-300">
-                            تحدي الأخطاء غير متاح حالياً
+                            {currentAssessment?.results?.wrongAnswers?.length > 0 
+                              ? `تحدي الأخطاء جاهز - ${currentAssessment.results.wrongAnswers.length} أسئلة`
+                              : "أكمل اختبار أولاً لتفعيل تحدي الأخطاء"
+                            }
                           </span>
                         </div>
                       </div>
                       
                       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                         {[
-                          { name: "شيطان السرعة", icon: "⚡", color: "from-yellow-500 to-orange-500", desc: "أجب بسرعة البرق" },
-                          { name: "وضع البقاء", icon: "❤️", color: "from-red-500 to-pink-500", desc: "3 أرواح فقط" },
-                          { name: "سيد الزن", icon: "🧘", color: "from-blue-500 to-purple-500", desc: "بدون ضغط وقت" },
-                          { name: "وضع المحارب", icon: "⚔️", color: "from-purple-500 to-indigo-500", desc: "معركة ملحمية" },
-                          { name: "الكمالي", icon: "👑", color: "from-amber-500 to-yellow-500", desc: "100% أو لا شيء" },
-                          { name: "وضع المغامرة", icon: "🚀", color: "from-green-500 to-teal-500", desc: "قصة تفاعلية" },
+                          { 
+                            name: "مراجعة الأخطاء", 
+                            icon: "🎯", 
+                            color: "from-red-500 to-pink-500", 
+                            desc: "راجع إجاباتك الخاطئة",
+                            available: currentAssessment?.results?.wrongAnswers?.length > 0
+                          },
+                          { 
+                            name: "تحدي سريع", 
+                            icon: "⚡", 
+                            color: "from-yellow-500 to-orange-500", 
+                            desc: "أجب بسرعة البرق",
+                            available: currentAssessment?.results?.wrongAnswers?.length > 0
+                          },
+                          { 
+                            name: "مراجعة شاملة", 
+                            icon: "📚", 
+                            color: "from-blue-500 to-purple-500", 
+                            desc: "مراجعة مفصلة مع الشرح",
+                            available: currentAssessment?.results?.wrongAnswers?.length > 0
+                          },
                         ].map((mode, index) => (
                           <motion.div
                             key={mode.name}
@@ -1296,8 +1329,9 @@ export function AdvancedAssessmentsPage() {
                           >
                             <Button
                               variant="outline"
-                              disabled
-                              className={`h-full p-6 bg-gradient-to-r ${mode.color} text-white border-0 opacity-60 w-full relative overflow-hidden`}
+                              disabled={!mode.available}
+                              onClick={() => mode.available && startMistakeChallenge(currentAssessment?.results?.wrongAnswers || [])}
+                              className={`h-full p-6 bg-gradient-to-r ${mode.color} text-white border-0 ${!mode.available ? 'opacity-60' : 'hover:scale-105'} w-full relative overflow-hidden transition-all duration-300`}
                             >
                               <div className="flex flex-col items-center gap-3">
                                 <div className="text-2xl">{mode.icon}</div>
@@ -1307,18 +1341,23 @@ export function AdvancedAssessmentsPage() {
                                 </div>
                               </div>
                             </Button>
-                            <div className="absolute inset-0 bg-black/20 rounded-lg flex items-center justify-center">
-                              <div className="bg-white/90 rounded-full p-2">
-                                <Lock className="w-4 h-4 text-gray-600" />
+                            {!mode.available && (
+                              <div className="absolute inset-0 bg-black/20 rounded-lg flex items-center justify-center">
+                                <div className="bg-white/90 rounded-full p-2">
+                                  <Lock className="w-4 h-4 text-gray-600" />
+                                </div>
                               </div>
-                            </div>
+                            )}
                           </motion.div>
                         ))}
                       </div>
                       
                       <div className="text-center mt-6">
                         <p className="text-red-600 dark:text-red-400 text-sm">
-                          💡 أكمل اختبار أولاً لتفعيل تحديات الأخطاء التفاعلية
+                          {currentAssessment?.results?.wrongAnswers?.length > 0 
+                            ? "🎯 اختر نمط التحدي المناسب لك"
+                            : "💡 أكمل اختبار أولاً لتفعيل تحديات الأخطاء التفاعلية"
+                          }
                         </p>
                       </div>
                     </CardContent>
