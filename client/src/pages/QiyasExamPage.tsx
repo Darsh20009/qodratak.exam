@@ -434,53 +434,72 @@ const QiyasExamPage: React.FC = () => {
     setCurrentView("instructions");
   };
 
-  const fetchRawQuestionsForSectionConfig = async (section: QiyasSection): Promise<ExamQuestion[]> => {
+  const fetchRawQuestionsForSectionConfig = async (section: QiyasSection, usedQuestionIds: Set<number> = new Set()): Promise<ExamQuestion[]> => {
     try {
-      // In a real app, this endpoint would be more sophisticated, e.g., /api/questions?category=X&count=Y
       const response = await fetch('/api/questions');
       if (!response.ok) {
         throw new Error(`فشل في جلب الأسئلة من الخادم: ${response.status}`);
       }
       const allAvailableQuestions: ExamQuestion[] = await response.json();
 
-      // Use balanced distribution system for equal subcategory representation
+      // فلترة الأسئلة لتجنب التكرار
+      const availableQuestions = allAvailableQuestions.filter(q => !usedQuestionIds.has(q.id));
+      
+      // استخدام نظام التوزيع المتوازن
       const balancedQuestions = generateBalancedQuestionSet(
-        allAvailableQuestions,
-        section.questionCount,
-        section.category === "mixed" ? "mixed" : 
-        section.category === "verbal" ? "qualification" : "qiyas"
+        availableQuestions,
+        section.category,
+        section.questionCount
       );
 
       let filteredQuestions = balancedQuestions;
 
+      // إذا لم نحصل على أسئلة كافية من الأسئلة غير المستخدمة
       if (filteredQuestions.length < section.questionCount) {
-         console.warn(`Warning: Fetched ${filteredQuestions.length} for section ${section.name} (expected ${section.questionCount}). Padding...`);
-         while (filteredQuestions.length < section.questionCount && allAvailableQuestions.length > 0) { // Pad with random from available
-            const randomQ = allAvailableQuestions[Math.floor(Math.random() * allAvailableQuestions.length)];
-            // Ensure unique ID if adding duplicates for padding in a real scenario
-            filteredQuestions.push({...randomQ, id: Math.random() * 1000000 + (randomQ.id || 0) });
+         console.warn(`تحذير: تم العثور على ${filteredQuestions.length} سؤال فقط لقسم ${section.name} (مطلوب ${section.questionCount})`);
+         
+         // إذا لم نجد أي أسئلة متاحة، استخدم من جميع الأسئلة
+         if (filteredQuestions.length === 0) {
+           const fallbackQuestions = generateBalancedQuestionSet(
+             allAvailableQuestions,
+             section.category,
+             section.questionCount
+           );
+           filteredQuestions = fallbackQuestions;
+           
+           toast({
+             title: `تحذير: قسم ${section.name}`,
+             description: "تم إعادة استخدام بعض الأسئلة بسبب عدم توفر أسئلة جديدة كافية",
+             variant: "default"
+           });
          }
-         if (filteredQuestions.length === 0 && section.questionCount > 0) {
-            // Create placeholder questions if API fails completely for a section
-            return Array.from({ length: section.questionCount }, (_, i) => ({
-                id: Date.now() + i, // Unique ID
-                text: `نص سؤال تجريبي ${i + 1} (فئة: ${section.category}) - حدث خطأ في التحميل`,
-                options: ["خيار 1", "خيار 2", "خيار 3", "خيار 4"],
-                correctOptionIndex: 0,
-                category: section.category,
-                section: section.sectionNumber,
-                explanation: "هذا سؤال تجريبي بسبب خطأ في تحميل الأسئلة الأصلية."
-            }));
+         
+         // إذا لا تزال الأسئلة غير كافية، املأ بأسئلة عشوائية
+         while (filteredQuestions.length < section.questionCount && allAvailableQuestions.length > 0) {
+            const randomQ = allAvailableQuestions[Math.floor(Math.random() * allAvailableQuestions.length)];
+            if (!filteredQuestions.find(q => q.id === randomQ.id)) {
+              filteredQuestions.push({...randomQ, id: randomQ.id + Math.random() * 1000});
+            }
          }
       }
-      return filteredQuestions.map(q => ({...q, section: section.sectionNumber, id: q.id || Date.now() + Math.random()})); // Ensure ID
-    } catch (error) {
-      console.error(`Error fetching raw questions for section ${section.name}:`, error);
-      toast({ title: "خطأ في تحميل الأسئلة", description: `لم نتمكن من تحميل أسئلة قسم "${section.name}".`, variant: "destructive"});
-      // Return placeholder questions on error to prevent crash
-      return Array.from({ length: section.questionCount }, (_, i) => ({
-        id: Date.now() + i, text: `Placeholder Question ${i+1} for ${section.name}`, options: ["A","B","C","D"], correctOptionIndex:0, category: section.category, section: section.sectionNumber
+      
+      // تحديث مجموعة الأسئلة المستخدمة
+      filteredQuestions.forEach(q => usedQuestionIds.add(q.id));
+      
+      return filteredQuestions.map(q => ({
+        ...q, 
+        section: section.sectionNumber, 
+        id: q.id || Date.now() + Math.random()
       }));
+      
+    } catch (error) {
+      console.error(`خطأ في تحميل أسئلة قسم ${section.name}:`, error);
+      toast({ 
+        title: "خطأ في تحميل الأسئلة", 
+        description: `لم نتمكن من تحميل أسئلة قسم "${section.name}".`, 
+        variant: "destructive"
+      });
+      return [];
     }
   };
 
@@ -503,12 +522,34 @@ const QiyasExamPage: React.FC = () => {
     setIsFinalReviewDialogOpen(false); // Reset on start
     setHasPrayerBreakBeenUsed(false); // Reset prayer break usage for new exam
 
-
     try {
       let flatListOfAllRawQuestions: ExamQuestion[] = [];
+      const usedQuestionIds = new Set<number>(); // تتبع الأسئلة المستخدمة
+      
       for (const section of selectedExam.sections) {
-        const rawQs = await fetchRawQuestionsForSectionConfig(section);
+        const rawQs = await fetchRawQuestionsForSectionConfig(section, usedQuestionIds);
         flatListOfAllRawQuestions.push(...rawQs);
+      }
+      
+      // التحقق من وجود أسئلة كافية
+      if (flatListOfAllRawQuestions.length === 0) {
+        toast({
+          title: "خطأ: لا توجد أسئلة",
+          description: "لم يتم تحميل أي أسئلة للاختبار. يرجى المحاولة مرة أخرى.",
+          variant: "destructive"
+        });
+        setCurrentView("selection");
+        return;
+      }
+      
+      // تحذير إذا كانت الأسئلة أقل من المطلوب
+      if (flatListOfAllRawQuestions.length < selectedExam.totalQuestions) {
+        toast({
+          title: "تحذير: أسئلة محدودة",
+          description: `تم تحميل ${flatListOfAllRawQuestions.length} سؤال فقط من أصل ${selectedExam.totalQuestions} مطلوب. سيتم المتابعة بالأسئلة المتاحة.`,
+          variant: "default",
+          duration: 6000
+        });
       }
 
       // Ensure total fetched questions match totalQuestions for accurate non-scored distribution
@@ -617,6 +658,23 @@ const QiyasExamPage: React.FC = () => {
         if (!selectedExam) return;
 
         calculateSectionScore(); // Calculate score for the *current* section before moving/finishing
+        
+        // التحقق من وجود أسئلة غير مجابة في القسم الحالي
+        const currentSectionQuestions = questions || [];
+        const unansweredQuestions = currentSectionQuestions.filter((q, index) => {
+          return answers[q.id] === undefined;
+        });
+        
+        // إذا كان هناك أسئلة غير مجابة ولم ينته الوقت، تحذير المستخدم
+        if (unansweredQuestions.length > 0 && !isTimeOut) {
+          const shouldContinue = window.confirm(
+            `لديك ${unansweredQuestions.length} أسئلة غير مجابة في هذا القسم. هل تريد المتابعة؟ (الأسئلة غير المجابة ستُحسب كإجابات خاطئة)`
+          );
+          
+          if (!shouldContinue) {
+            return; // البقاء في القسم الحالي
+          }
+        }
 
         // Check if we are on the last section
         if (currentSectionIdx >= selectedExam.sections.length - 1) {
@@ -641,6 +699,13 @@ const QiyasExamPage: React.FC = () => {
             setTimeLeft(nextSectionData.timeLimit * 60);
             const firstQuestionId = nextSectionQuestions[0]?.id;
             setSelectedAnswer(answers[firstQuestionId] ?? null); // Restore answer if exists
+            
+            // إشعار للمستخدم
+            toast({
+                title: `انتقلت للقسم ${nextSectionIndex + 1}`,
+                description: `${nextSectionData.name} - ${nextSectionQuestions.length} أسئلة، ${nextSectionData.timeLimit} دقيقة`,
+                variant: "default"
+            });
         } else {
             toast({
                 title: "خطأ في تحميل القسم",
@@ -786,7 +851,7 @@ const QiyasExamPage: React.FC = () => {
 
   const calculateExamStats = () => examStats;
 
-  const handleStartExamClick = (exam: QiyasExam) => {
+  const handleStartExamClick = async (exam: QiyasExam) => {
     // التحقق من حالة المستخدم
     if (!user) {
       setLocation("/login");
@@ -805,6 +870,52 @@ const QiyasExamPage: React.FC = () => {
       setTimeout(() => {
         setLocation("/subscription");
       }, 2000);
+      return;
+    }
+
+    // التحقق من توفر الأسئلة قبل بدء الاختبار
+    try {
+      const response = await fetch('/api/questions');
+      if (!response.ok) {
+        toast({
+          title: "خطأ في الاتصال",
+          description: "لا يمكن الوصول إلى قاعدة الأسئلة. تأكد من اتصالك بالإنترنت.",
+          variant: "destructive"
+        });
+        return;
+      }
+      
+      const allQuestions = await response.json();
+      if (!allQuestions || allQuestions.length === 0) {
+        toast({
+          title: "خطأ: لا توجد أسئلة",
+          description: "قاعدة الأسئلة فارغة. يرجى المحاولة لاحقاً أو التواصل مع الدعم الفني.",
+          variant: "destructive"
+        });
+        return;
+      }
+
+      // التحقق من توفر أسئلة كافية لكل قسم
+      let totalRequiredQuestions = 0;
+      for (const section of exam.sections) {
+        totalRequiredQuestions += section.questionCount;
+      }
+
+      if (allQuestions.length < totalRequiredQuestions * 0.5) {
+        toast({
+          title: "تحذير: أسئلة محدودة",
+          description: `قاعدة الأسئلة تحتوي على ${allQuestions.length} سؤال فقط. قد تواجه تكرار في الأسئلة.`,
+          variant: "default",
+          duration: 5000
+        });
+      }
+
+    } catch (error) {
+      toast({
+        title: "خطأ في التحقق من الأسئلة",
+        description: "فشل في التحقق من قاعدة الأسئلة. يرجى إعادة المحاولة.",
+        variant: "destructive"
+      });
       return;
     }
 

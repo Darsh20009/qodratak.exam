@@ -173,21 +173,106 @@ export function calculateDetailedResults(
   };
 }
 
-// Generate balanced question set for exam sections
+// Generate balanced question set for exam sections with no-repeat logic
 export function generateBalancedQuestionSet(
   allQuestions: any[],
-  sectionConfig: any,
-  requestedCount: number
+  category: TestType,
+  requestedCount: number,
+  usedQuestionIds: Set<number> = new Set()
 ): any[] {
-  const sectionQuestions = allQuestions.filter(q => q.category === sectionConfig.category);
+  console.log(`Generating balanced question set: category=${category}, count=${requestedCount}, total=${allQuestions.length}`);
+  
+  // Filter by category and exclude used questions
+  let sectionQuestions = allQuestions.filter(q => {
+    // Skip questions that have been used before
+    if (usedQuestionIds.has(q.id)) {
+      return false;
+    }
+    
+    // التحقق من صحة السؤال (وجود 4 خيارات على الأقل)
+    if (!q.options || q.options.length < 4) {
+      console.warn(`تخطي السؤال ${q.id}: عدد الخيارات غير كافي (${q.options?.length || 0})`);
+      return false;
+    }
+    
+    const qCategory = q.category?.toLowerCase();
+    const qSubcategory = q.subcategory?.toLowerCase();
+    
+    if (category === 'verbal') {
+      return qCategory === 'verbal' || 
+             VERBAL_SUBCATEGORIES.some(sub => 
+               qCategory === sub.toLowerCase() || 
+               qSubcategory === sub.toLowerCase() ||
+               q.category === sub || 
+               q.subcategory === sub
+             );
+    } else if (category === 'quantitative') {
+      return qCategory === 'quantitative' || 
+             QUANTITATIVE_SUBCATEGORIES.some(sub => 
+               qCategory === sub.toLowerCase() || 
+               qSubcategory === sub.toLowerCase() ||
+               q.category === sub || 
+               q.subcategory === sub
+             );
+    } else if (category === 'mixed') {
+      return true; // Include all questions for mixed tests
+    }
+    return false;
+  });
+  
+  console.log(`Filtered questions: ${sectionQuestions.length} for category ${category} (excluding ${usedQuestionIds.size} used questions)`);
   
   if (sectionQuestions.length === 0) {
-    console.warn(`Warning: No questions found for category ${sectionConfig.category}`);
-    return [];
+    console.warn(`No unused questions found for category: ${category}. Trying without exclusions...`);
+    // If no unused questions available, try without exclusions
+    sectionQuestions = allQuestions.filter(q => {
+      // Still check for valid options
+      if (!q.options || q.options.length < 4) {
+        return false;
+      }
+      
+      const qCategory = q.category?.toLowerCase();
+      const qSubcategory = q.subcategory?.toLowerCase();
+      
+      if (category === 'verbal') {
+        return qCategory === 'verbal' || 
+               VERBAL_SUBCATEGORIES.some(sub => 
+                 qCategory === sub.toLowerCase() || 
+                 qSubcategory === sub.toLowerCase() ||
+                 q.category === sub || 
+                 q.subcategory === sub
+               );
+      } else if (category === 'quantitative') {
+        return qCategory === 'quantitative' || 
+               QUANTITATIVE_SUBCATEGORIES.some(sub => 
+                 qCategory === sub.toLowerCase() || 
+                 qSubcategory === sub.toLowerCase() ||
+                 q.category === sub || 
+                 q.subcategory === sub
+               );
+      } else if (category === 'mixed') {
+        return true;
+      }
+      return false;
+    });
+    
+    if (sectionQuestions.length === 0) {
+      console.error(`No valid questions found for category: ${category}`);
+      return [];
+    }
+  }
+  
+  // If we don't have enough questions, return all available ones shuffled
+  if (sectionQuestions.length <= requestedCount) {
+    const result = [...sectionQuestions].sort(() => 0.5 - Math.random());
+    // Mark selected questions as used
+    result.forEach(q => usedQuestionIds.add(q.id));
+    console.log(`Generated balanced set: ${result.length} questions (all available)`);
+    return result;
   }
   
   // Calculate balanced distribution for this section
-  const distribution = calculateBalancedDistribution(requestedCount, sectionConfig.category);
+  const distribution = calculateBalancedDistribution(requestedCount, category);
   
   // Get balanced questions
   const balancedQuestions = getBalancedQuestions(sectionQuestions, distribution);
@@ -204,7 +289,13 @@ export function generateBalancedQuestionSet(
     balancedQuestions.push(randomQuestion);
   }
   
-  return balancedQuestions.slice(0, requestedCount);
+  const result = balancedQuestions.slice(0, requestedCount);
+  
+  // Mark selected questions as used
+  result.forEach(q => usedQuestionIds.add(q.id));
+  
+  console.log(`Generated balanced set: ${result.length} questions`);
+  return result;
 }
 
 // Enhanced result analysis with creative insights
