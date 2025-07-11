@@ -657,89 +657,137 @@ export default function QuestionBankPage() {
         <div className="absolute top-40 left-40 w-80 h-80 bg-purple-500 rounded-full mix-blend-multiply filter blur-xl opacity-20 animate-pulse delay-2000"></div>
       </div>
 
-      <div className="container mx-auto px-4 py-8 relative z-10">
-        {/* Header */}
-        <div className="text-center mb-8">
-          <div className="flex items-center justify-center gap-3 mb-4">
-            <div className="relative">
-              <div className="absolute inset-0 bg-gradient-to-r from-pink-500 to-cyan-500 rounded-full blur-lg opacity-50 animate-pulse"></div>
-              <div className="relative p-4 bg-gradient-to-r from-emerald-400 via-blue-500 to-purple-600 rounded-full shadow-2xl transform hover:scale-110 transition-all duration-300">
-                <Brain className="h-10 w-10 text-white animate-bounce" />
+      <div className="container mx-auto px-6 py-12 relative z-10 max-w-7xl">
+        {/* Enhanced Header */}
+        <div className="text-center mb-16">
+          <div className="flex items-center justify-center gap-4 mb-8">
+            <div className="relative group">
+              <div className="absolute inset-0 bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500 rounded-3xl blur-xl opacity-40 group-hover:opacity-60 transition-all duration-500 animate-pulse"></div>
+              <div className="relative p-6 bg-gradient-to-br from-indigo-500 via-purple-600 to-pink-600 rounded-3xl shadow-2xl transform hover:scale-110 transition-all duration-500 border border-white/20">
+                <Brain className="h-12 w-12 text-white animate-bounce" />
+                <div className="absolute -top-2 -right-2 w-6 h-6 bg-yellow-400 rounded-full animate-ping"></div>
               </div>
             </div>
-            <h1 className="text-5xl font-bold bg-gradient-to-r from-emerald-400 via-cyan-400 to-purple-400 bg-clip-text text-transparent">
-              بنك الأسئلة الشامل
-            </h1>
+            <div className="text-center">
+              <h1 className="text-6xl md:text-7xl font-black bg-gradient-to-r from-blue-400 via-purple-400 to-pink-400 bg-clip-text text-transparent mb-2 leading-tight">
+                بنك الأسئلة الشامل
+              </h1>
+              <div className="flex items-center justify-center gap-3 mt-4">
+                <div className="w-16 h-1 bg-gradient-to-r from-blue-500 to-purple-500 rounded-full"></div>
+                <div className="w-8 h-8 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full flex items-center justify-center">
+                  <Trophy className="h-4 w-4 text-white" />
+                </div>
+                <div className="w-16 h-1 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full"></div>
+              </div>
+            </div>
           </div>
-          <p className="text-xl text-white/80 max-w-2xl mx-auto mb-6 font-medium">
-            منصة تعليمية متقدمة مع اختبارات تفاعلية وتحليلات ذكية لتطوير قدراتك الأكاديمية
-          </p>
+          <div className="max-w-4xl mx-auto">
+            <p className="text-2xl text-white/90 mb-8 font-medium leading-relaxed">
+              منصة تعليمية متقدمة مع 
+              <span className="px-3 py-1 mx-2 bg-gradient-to-r from-blue-500/20 to-purple-500/20 rounded-full border border-blue-300/30">1,500+ سؤال</span>
+              و
+              <span className="px-3 py-1 mx-2 bg-gradient-to-r from-purple-500/20 to-pink-500/20 rounded-full border border-purple-300/30">تحليلات ذكية</span>
+              لتطوير قدراتك الأكاديمية
+            </p>
+          </div>
 
-          {/* Premium Access Status */}
+          {/* Enhanced Premium Access Status */}
           {user && !isPremiumUser && (
-            <div className="max-w-md mx-auto mb-6">
-              <Card className="bg-gradient-to-r from-orange-50 to-red-50 dark:from-orange-900/20 dark:to-red-900/20 border-orange-200 dark:border-orange-700">
-                <CardContent className="p-4">
-                  <div className="flex items-center justify-center gap-3 mb-2">
-                    <div className="w-8 h-8 bg-gradient-to-r from-orange-500 to-red-600 rounded-full flex items-center justify-center">
-                      <Target className="w-4 h-4 text-white" />
+            <div className="max-w-lg mx-auto mb-8">
+              <div className="relative group">
+                <div className="absolute inset-0 bg-gradient-to-r from-orange-400 to-red-500 rounded-2xl blur-lg opacity-20 group-hover:opacity-30 transition-all duration-300"></div>
+                <Card className="relative bg-black/20 backdrop-blur-xl border border-orange-200/30 shadow-2xl">
+                  <CardContent className="p-6">
+                    <div className="flex items-center justify-center gap-4 mb-4">
+                      <div className="relative">
+                        <div className="w-12 h-12 bg-gradient-to-r from-orange-500 to-red-600 rounded-full flex items-center justify-center shadow-lg">
+                          <Target className="w-6 h-6 text-white" />
+                        </div>
+                        <div className="absolute -top-1 -right-1 w-4 h-4 bg-yellow-400 rounded-full animate-pulse"></div>
+                      </div>
+                      <div className="text-center">
+                        <span className="font-bold text-xl text-orange-100">حساب مجاني</span>
+                        <p className="text-sm text-orange-200/80">اختبار واحد يومياً</p>
+                      </div>
                     </div>
-                    <span className="font-bold text-orange-700 dark:text-orange-300">حساب مجاني</span>
-                  </div>
-                  <p className="text-sm text-gray-600 dark:text-gray-300 mb-2">
-                    اختبار واحد يومياً • {dailyTestsTaken}/{MAX_DAILY_FREE_TESTS} اليوم
-                  </p>
-                  <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
-                    <div 
-                      className="bg-gradient-to-r from-orange-500 to-red-600 h-2 rounded-full transition-all duration-500"
-                      style={{ width: `${(dailyTestsTaken / MAX_DAILY_FREE_TESTS) * 100}%` }}
-                    />
-                  </div>
-                  {!canTakeTest && (
-                    <p className="text-xs text-red-600 dark:text-red-400 mt-2 font-medium">
-                      🔒 تم الوصول للحد الأقصى اليوم
-                    </p>
-                  )}
-                </CardContent>
-              </Card>
+                    <div className="bg-white/10 rounded-xl p-4 mb-4 backdrop-blur-sm">
+                      <div className="flex justify-between items-center mb-2">
+                        <span className="text-sm font-medium text-white/90">الاستخدام اليومي</span>
+                        <span className="text-sm font-bold text-orange-200">{dailyTestsTaken}/{MAX_DAILY_FREE_TESTS}</span>
+                      </div>
+                      <div className="w-full bg-white/20 rounded-full h-3 overflow-hidden">
+                        <div 
+                          className="bg-gradient-to-r from-orange-400 to-red-500 h-3 rounded-full transition-all duration-700 relative"
+                          style={{ width: `${(dailyTestsTaken / MAX_DAILY_FREE_TESTS) * 100}%` }}
+                        >
+                          <div className="absolute inset-0 bg-white/30 animate-pulse"></div>
+                        </div>
+                      </div>
+                    </div>
+                    {!canTakeTest && (
+                      <div className="text-center p-3 bg-red-500/20 rounded-lg border border-red-400/30">
+                        <p className="text-sm text-red-200 font-medium">
+                          🔒 تم الوصول للحد الأقصى اليوم
+                        </p>
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+              </div>
             </div>
           )}
 
           {user && isPremiumUser && (
-            <div className="max-w-md mx-auto mb-6">
-              <Card className="bg-gradient-to-r from-green-50 to-emerald-50 dark:from-green-900/20 dark:to-emerald-900/20 border-green-200 dark:border-green-700">
-                <CardContent className="p-4">
-                  <div className="flex items-center justify-center gap-3">
-                    <div className="w-8 h-8 bg-gradient-to-r from-green-500 to-emerald-600 rounded-full flex items-center justify-center">
-                      <CrownIcon className="w-4 h-4 text-white" />
+            <div className="max-w-lg mx-auto mb-8">
+              <div className="relative group">
+                <div className="absolute inset-0 bg-gradient-to-r from-green-400 to-emerald-500 rounded-2xl blur-lg opacity-20 group-hover:opacity-30 transition-all duration-300"></div>
+                <Card className="relative bg-black/20 backdrop-blur-xl border border-green-200/30 shadow-2xl">
+                  <CardContent className="p-6">
+                    <div className="flex items-center justify-center gap-4">
+                      <div className="relative">
+                        <div className="w-12 h-12 bg-gradient-to-r from-green-500 to-emerald-600 rounded-full flex items-center justify-center shadow-lg">
+                          <CrownIcon className="w-6 h-6 text-white" />
+                        </div>
+                        <div className="absolute -top-1 -right-1 w-4 h-4 bg-yellow-400 rounded-full animate-bounce"></div>
+                      </div>
+                      <div className="text-center">
+                        <span className="font-bold text-xl text-green-100">مشترك مميز</span>
+                        <div className="flex items-center gap-2 mt-1">
+                          <Badge className="bg-gradient-to-r from-green-500 to-emerald-600 text-white shadow-lg">
+                            وصول كامل
+                          </Badge>
+                          <Badge className="bg-gradient-to-r from-yellow-500 to-orange-500 text-white shadow-lg">
+                            ∞ اختبار
+                          </Badge>
+                        </div>
+                      </div>
                     </div>
-                    <span className="font-bold text-green-700 dark:text-green-300">مشترك مميز</span>
-                    <Badge className="bg-gradient-to-r from-green-500 to-emerald-600 text-white">
-                      وصول كامل
-                    </Badge>
-                  </div>
-                </CardContent>
-              </Card>
+                  </CardContent>
+                </Card>
+              </div>
             </div>
           )}
 
 
         </div>
 
-        {/* Statistics Cards - Magical Design */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+        {/* Enhanced Statistics Cards */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 mb-16">
           <div className="relative group">
-            <div className="absolute inset-0 bg-gradient-to-r from-blue-400 to-cyan-400 rounded-2xl blur-lg opacity-30 group-hover:opacity-50 transition-all duration-300"></div>
-            <Card className="relative bg-black/20 backdrop-blur-xl border border-white/20 text-white transform hover:scale-105 transition-all duration-300">
-              <CardContent className="p-6">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-cyan-200 mb-1">📚 الأسئلة اللفظية</p>
-                    <p className="text-4xl font-bold text-white">{verbalQuestionCount}</p>
-                  </div>
+            <div className="absolute inset-0 bg-gradient-to-r from-blue-500 to-cyan-500 rounded-3xl blur-xl opacity-20 group-hover:opacity-40 transition-all duration-500"></div>
+            <Card className="relative bg-black/30 backdrop-blur-2xl border border-blue-200/20 text-white transform hover:scale-105 hover:-translate-y-2 transition-all duration-500 shadow-2xl">
+              <CardContent className="p-8">
+                <div className="flex flex-col items-center text-center space-y-4">
                   <div className="relative">
-                    <BookOpen className="h-10 w-10 text-cyan-300 animate-pulse" />
-                    <div className="absolute inset-0 bg-cyan-400 rounded-full blur-md opacity-30"></div>
+                    <div className="absolute inset-0 bg-blue-400 rounded-full blur-lg opacity-40 animate-pulse"></div>
+                    <div className="relative p-4 bg-gradient-to-r from-blue-500 to-cyan-500 rounded-full">
+                      <BookOpen className="h-8 w-8 text-white" />
+                    </div>
+                  </div>
+                  <div>
+                    <p className="text-blue-200 text-sm font-medium mb-2">📚 الأسئلة اللفظية</p>
+                    <p className="text-4xl font-black text-white mb-1">{verbalQuestionCount}</p>
+                    <p className="text-blue-200/80 text-xs">سؤال متاح</p>
                   </div>
                 </div>
               </CardContent>
@@ -747,17 +795,20 @@ export default function QuestionBankPage() {
           </div>
 
           <div className="relative group">
-            <div className="absolute inset-0 bg-gradient-to-r from-purple-400 to-pink-400 rounded-2xl blur-lg opacity-30 group-hover:opacity-50 transition-all duration-300"></div>
-            <Card className="relative bg-black/20 backdrop-blur-xl border border-white/20 text-white transform hover:scale-105 transition-all duration-300">
-              <CardContent className="p-6">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-purple-200 mb-1">🔢 الأسئلة الكمية</p>
-                    <p className="text-4xl font-bold text-white">{quantitativeQuestionCount}</p>
-                  </div>
+            <div className="absolute inset-0 bg-gradient-to-r from-purple-500 to-pink-500 rounded-3xl blur-xl opacity-20 group-hover:opacity-40 transition-all duration-500"></div>
+            <Card className="relative bg-black/30 backdrop-blur-2xl border border-purple-200/20 text-white transform hover:scale-105 hover:-translate-y-2 transition-all duration-500 shadow-2xl">
+              <CardContent className="p-8">
+                <div className="flex flex-col items-center text-center space-y-4">
                   <div className="relative">
-                    <Calculator className="h-10 w-10 text-purple-300 animate-pulse" />
-                    <div className="absolute inset-0 bg-purple-400 rounded-full blur-md opacity-30"></div>
+                    <div className="absolute inset-0 bg-purple-400 rounded-full blur-lg opacity-40 animate-pulse"></div>
+                    <div className="relative p-4 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full">
+                      <Calculator className="h-8 w-8 text-white" />
+                    </div>
+                  </div>
+                  <div>
+                    <p className="text-purple-200 text-sm font-medium mb-2">🔢 الأسئلة الكمية</p>
+                    <p className="text-4xl font-black text-white mb-1">{quantitativeQuestionCount}</p>
+                    <p className="text-purple-200/80 text-xs">سؤال متاح</p>
                   </div>
                 </div>
               </CardContent>
@@ -765,20 +816,23 @@ export default function QuestionBankPage() {
           </div>
 
           <div className="relative group">
-            <div className="absolute inset-0 bg-gradient-to-r from-emerald-400 to-green-400 rounded-2xl blur-lg opacity-30 group-hover:opacity-50 transition-all duration-300"></div>
-            <Card className="relative bg-black/20 backdrop-blur-xl border border-white/20 text-white transform hover:scale-105 transition-all duration-300">
-              <CardContent className="p-6">
-                <div className="flex items-center justify-between">
+            <div className="absolute inset-0 bg-gradient-to-r from-emerald-500 to-green-500 rounded-3xl blur-xl opacity-20 group-hover:opacity-40 transition-all duration-500"></div>
+            <Card className="relative bg-black/30 backdrop-blur-2xl border border-emerald-200/20 text-white transform hover:scale-105 hover:-translate-y-2 transition-all duration-500 shadow-2xl">
+              <CardContent className="p-8">
+                <div className="flex flex-col items-center text-center space-y-4">
+                  <div className="relative">
+                    <div className="absolute inset-0 bg-emerald-400 rounded-full blur-lg opacity-40 animate-pulse"></div>
+                    <div className="relative p-4 bg-gradient-to-r from-emerald-500 to-green-500 rounded-full">
+                      <Trophy className="h-8 w-8 text-white" />
+                    </div>
+                  </div>
                   <div>
-                    <p className="text-emerald-200 mb-1">🏆 الاختبارات المكتملة</p>
-                    <p className="text-4xl font-bold text-white">
+                    <p className="text-emerald-200 text-sm font-medium mb-2">🏆 الاختبارات المكتملة</p>
+                    <p className="text-4xl font-black text-white mb-1">
                       {questionBankState.verbal.filter(t => t.completed).length + 
                        questionBankState.quantitative.filter(t => t.completed).length}
                     </p>
-                  </div>
-                  <div className="relative">
-                    <Trophy className="h-10 w-10 text-emerald-300 animate-pulse" />
-                    <div className="absolute inset-0 bg-emerald-400 rounded-full blur-md opacity-30"></div>
+                    <p className="text-emerald-200/80 text-xs">اختبار مكتمل</p>
                   </div>
                 </div>
               </CardContent>
@@ -786,20 +840,23 @@ export default function QuestionBankPage() {
           </div>
 
           <div className="relative group">
-            <div className="absolute inset-0 bg-gradient-to-r from-yellow-400 to-orange-400 rounded-2xl blur-lg opacity-30 group-hover:opacity-50 transition-all duration-300"></div>
-            <Card className="relative bg-black/20 backdrop-blur-xl border border-white/20 text-white transform hover:scale-105 transition-all duration-300">
-              <CardContent className="p-6">
-                <div className="flex items-center justify-between">
+            <div className="absolute inset-0 bg-gradient-to-r from-yellow-500 to-orange-500 rounded-3xl blur-xl opacity-20 group-hover:opacity-40 transition-all duration-500"></div>
+            <Card className="relative bg-black/30 backdrop-blur-2xl border border-yellow-200/20 text-white transform hover:scale-105 hover:-translate-y-2 transition-all duration-500 shadow-2xl">
+              <CardContent className="p-8">
+                <div className="flex flex-col items-center text-center space-y-4">
+                  <div className="relative">
+                    <div className="absolute inset-0 bg-yellow-400 rounded-full blur-lg opacity-40 animate-pulse"></div>
+                    <div className="relative p-4 bg-gradient-to-r from-yellow-500 to-orange-500 rounded-full">
+                      <Zap className="h-8 w-8 text-white" />
+                    </div>
+                  </div>
                   <div>
-                    <p className="text-yellow-200 mb-1">⚡ متوسط النتائج</p>
-                    <p className="text-4xl font-bold text-white">
+                    <p className="text-yellow-200 text-sm font-medium mb-2">⚡ متوسط النتائج</p>
+                    <p className="text-4xl font-black text-white mb-1">
                       {Math.round((getAverageScore(questionBankState.verbal) + 
                                   getAverageScore(questionBankState.quantitative)) / 2)}%
                     </p>
-                  </div>
-                  <div className="relative">
-                    <Zap className="h-10 w-10 text-yellow-300 animate-pulse" />
-                    <div className="absolute inset-0 bg-yellow-400 rounded-full blur-md opacity-30"></div>
+                    <p className="text-yellow-200/80 text-xs">درجة متوسطة</p>
                   </div>
                 </div>
               </CardContent>
@@ -807,53 +864,69 @@ export default function QuestionBankPage() {
           </div>
         </div>
 
-        {/* Magical Tabs */}
+        {/* Enhanced Tabs */}
         <Tabs defaultValue="verbal" className="w-full">
-          <div className="flex justify-center mb-8">
-            <div className="relative">
-              <div className="absolute inset-0 bg-gradient-to-r from-purple-500 to-cyan-500 rounded-2xl blur-lg opacity-30"></div>
-              <TabsList className="relative grid grid-cols-2 bg-black/30 backdrop-blur-xl border border-white/20 p-2 rounded-2xl">
-                <TabsTrigger value="verbal" className="flex items-center gap-3 px-8 py-4 text-white data-[state=active]:bg-gradient-to-r data-[state=active]:from-cyan-500 data-[state=active]:to-blue-500 data-[state=active]:text-white rounded-xl transition-all duration-300 transform hover:scale-105">
-                  <BookOpen className="h-5 w-5" />
+          <div className="flex justify-center mb-12">
+            <div className="relative group">
+              <div className="absolute inset-0 bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500 rounded-3xl blur-xl opacity-20 group-hover:opacity-30 transition-all duration-500"></div>
+              <TabsList className="relative grid grid-cols-2 bg-black/40 backdrop-blur-2xl border border-white/20 p-3 rounded-3xl shadow-2xl">
+                <TabsTrigger value="verbal" className="flex items-center gap-4 px-10 py-6 text-white data-[state=active]:bg-gradient-to-r data-[state=active]:from-blue-500 data-[state=active]:to-cyan-500 data-[state=active]:text-white data-[state=active]:shadow-xl rounded-2xl transition-all duration-500 transform hover:scale-105 text-lg font-medium">
+                  <div className="relative">
+                    <BookOpen className="h-6 w-6" />
+                    <div className="absolute inset-0 bg-blue-400 rounded-full blur-md opacity-30"></div>
+                  </div>
                   📚 بنك الأسئلة اللفظية
                 </TabsTrigger>
-                <TabsTrigger value="quantitative" className="flex items-center gap-3 px-8 py-4 text-white data-[state=active]:bg-gradient-to-r data-[state=active]:from-purple-500 data-[state=active]:to-pink-500 data-[state=active]:text-white rounded-xl transition-all duration-300 transform hover:scale-105">
-                  <Calculator className="h-5 w-5" />
+                <TabsTrigger value="quantitative" className="flex items-center gap-4 px-10 py-6 text-white data-[state=active]:bg-gradient-to-r data-[state=active]:from-purple-500 data-[state=active]:to-pink-500 data-[state=active]:text-white data-[state=active]:shadow-xl rounded-2xl transition-all duration-500 transform hover:scale-105 text-lg font-medium">
+                  <div className="relative">
+                    <Calculator className="h-6 w-6" />
+                    <div className="absolute inset-0 bg-purple-400 rounded-full blur-md opacity-30"></div>
+                  </div>
                   🔢 بنك الأسئلة الكمية
                 </TabsTrigger>
               </TabsList>
             </div>
           </div>
 
-          {/* Verbal Tests */}
-          <TabsContent value="verbal" className="space-y-6">
-            <Card>
-              <CardHeader>
-                <div className="flex items-center justify-between">
-                  <div>
-                    <CardTitle className="flex items-center gap-2">
-                      <BookOpen className="h-5 w-5 text-blue-600" />
-                      الاختبارات اللفظية
-                    </CardTitle>
-                    <CardDescription>
-                      {questionBankState.verbal.length} اختبار متاح • {verbalQuestionCount} سؤال إجمالي
-                    </CardDescription>
+          {/* Enhanced Verbal Tests */}
+          <TabsContent value="verbal" className="space-y-8">
+            <div className="relative group">
+              <div className="absolute inset-0 bg-gradient-to-r from-blue-400 to-cyan-400 rounded-3xl blur-xl opacity-10 group-hover:opacity-20 transition-all duration-500"></div>
+              <Card className="relative bg-black/20 backdrop-blur-xl border border-blue-200/20 shadow-2xl">
+                <CardHeader className="p-8">
+                  <div className="flex items-center justify-between mb-6">
+                    <div>
+                      <CardTitle className="flex items-center gap-4 text-2xl text-white">
+                        <div className="relative">
+                          <div className="absolute inset-0 bg-blue-400 rounded-full blur-lg opacity-40"></div>
+                          <div className="relative p-3 bg-gradient-to-r from-blue-500 to-cyan-500 rounded-full">
+                            <BookOpen className="h-6 w-6 text-white" />
+                          </div>
+                        </div>
+                        الاختبارات اللفظية
+                      </CardTitle>
+                      <CardDescription className="text-blue-200/80 text-lg mt-2">
+                        {questionBankState.verbal.length} اختبار متاح • {verbalQuestionCount} سؤال إجمالي
+                      </CardDescription>
+                    </div>
+                    <div className="text-right">
+                      <p className="text-sm text-blue-200/60 mb-1">التقدم الإجمالي</p>
+                      <p className="text-4xl font-black text-blue-300">
+                        {Math.round(getOverallProgress(questionBankState.verbal))}%
+                      </p>
+                    </div>
                   </div>
-                  <div className="text-right">
-                    <p className="text-sm text-gray-600 dark:text-gray-400">التقدم الإجمالي</p>
-                    <p className="text-2xl font-bold text-blue-600">
-                      {Math.round(getOverallProgress(questionBankState.verbal))}%
-                    </p>
+                  <div className="relative">
+                    <div className="absolute inset-0 bg-blue-400/20 rounded-full blur-md"></div>
+                    <Progress 
+                      value={getOverallProgress(questionBankState.verbal)} 
+                      className="w-full h-4 relative" 
+                    />
                   </div>
-                </div>
-                <Progress 
-                  value={getOverallProgress(questionBankState.verbal)} 
-                  className="w-full" 
-                />
-              </CardHeader>
-              <CardContent>
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                  {questionBankState.verbal.map((test) => {
+                </CardHeader>
+                <CardContent className="p-8 pt-0">
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
+                    {questionBankState.verbal.map((test) => {
                     // Check if previous test is completed with 50+ score (except for test 1)
                     const previousTest = questionBankState.verbal.find(t => t.testNumber === test.testNumber - 1);
                     const previousTestPassed = test.testNumber === 1 || 
@@ -904,34 +977,44 @@ export default function QuestionBankPage() {
             </Card>
           </TabsContent>
 
-          {/* Quantitative Tests */}
-          <TabsContent value="quantitative" className="space-y-6">
-            <Card>
-              <CardHeader>
-                <div className="flex items-center justify-between">
-                  <div>
-                    <CardTitle className="flex items-center gap-2">
-                      <Calculator className="h-5 w-5 text-purple-600" />
-                      الاختبارات الكمية
-                    </CardTitle>
-                    <CardDescription>
-                      {questionBankState.quantitative.length} اختبار متاح • {quantitativeQuestionCount} سؤال إجمالي
-                    </CardDescription>
+          {/* Enhanced Quantitative Tests */}
+          <TabsContent value="quantitative" className="space-y-8">
+            <div className="relative group">
+              <div className="absolute inset-0 bg-gradient-to-r from-purple-400 to-pink-400 rounded-3xl blur-xl opacity-10 group-hover:opacity-20 transition-all duration-500"></div>
+              <Card className="relative bg-black/20 backdrop-blur-xl border border-purple-200/20 shadow-2xl">
+                <CardHeader className="p-8">
+                  <div className="flex items-center justify-between mb-6">
+                    <div>
+                      <CardTitle className="flex items-center gap-4 text-2xl text-white">
+                        <div className="relative">
+                          <div className="absolute inset-0 bg-purple-400 rounded-full blur-lg opacity-40"></div>
+                          <div className="relative p-3 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full">
+                            <Calculator className="h-6 w-6 text-white" />
+                          </div>
+                        </div>
+                        الاختبارات الكمية
+                      </CardTitle>
+                      <CardDescription className="text-purple-200/80 text-lg mt-2">
+                        {questionBankState.quantitative.length} اختبار متاح • {quantitativeQuestionCount} سؤال إجمالي
+                      </CardDescription>
+                    </div>
+                    <div className="text-right">
+                      <p className="text-sm text-purple-200/60 mb-1">التقدم الإجمالي</p>
+                      <p className="text-4xl font-black text-purple-300">
+                        {Math.round(getOverallProgress(questionBankState.quantitative))}%
+                      </p>
+                    </div>
                   </div>
-                  <div className="text-right">
-                    <p className="text-sm text-gray-600 dark:text-gray-400">التقدم الإجمالي</p>
-                    <p className="text-2xl font-bold text-purple-600">
-                      {Math.round(getOverallProgress(questionBankState.quantitative))}%
-                    </p>
+                  <div className="relative">
+                    <div className="absolute inset-0 bg-purple-400/20 rounded-full blur-md"></div>
+                    <Progress 
+                      value={getOverallProgress(questionBankState.quantitative)} 
+                      className="w-full h-4 relative" 
+                    />
                   </div>
-                </div>
-                <Progress 
-                  value={getOverallProgress(questionBankState.quantitative)} 
-                  className="w-full" 
-                />
-              </CardHeader>
-              <CardContent>
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                </CardHeader>
+                <CardContent className="p-8 pt-0">
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
                   {questionBankState.quantitative.map((test) => {
                     // Check if previous test is completed with 50+ score (except for test 1)
                     const previousTest = questionBankState.quantitative.find(t => t.testNumber === test.testNumber - 1);
