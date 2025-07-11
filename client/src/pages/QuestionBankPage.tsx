@@ -660,61 +660,61 @@ export default function QuestionBankPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
       {/* Header */}
-      <div className="bg-white border-b border-gray-200">
+      <div className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700">
         <div className="max-w-6xl mx-auto px-6 py-12">
           <div className="text-center">
-            <h1 className="text-3xl font-bold text-gray-900 mb-4">
+            <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-4">
               بنك الأسئلة
             </h1>
-            <p className="text-lg text-gray-600 mb-8 max-w-2xl mx-auto">
+            <p className="text-lg text-gray-600 dark:text-gray-300 mb-8 max-w-2xl mx-auto">
               مجموعة شاملة من الأسئلة الأصلية مقسمة إلى اختبارات متدرجة لضمان التحضير الأمثل
             </p>
             
             {/* Statistics */}
             <div className="grid grid-cols-2 md:grid-cols-4 gap-6 max-w-2xl mx-auto">
               <div className="text-center">
-                <div className="text-2xl font-bold text-blue-600 mb-1">
+                <div className="text-2xl font-bold text-blue-600 dark:text-blue-400 mb-1">
                   {verbalQuestionCount + quantitativeQuestionCount}
                 </div>
-                <div className="text-sm text-gray-500">إجمالي الأسئلة</div>
+                <div className="text-sm text-gray-500 dark:text-gray-400">إجمالي الأسئلة</div>
               </div>
               <div className="text-center">
-                <div className="text-2xl font-bold text-purple-600 mb-1">
+                <div className="text-2xl font-bold text-purple-600 dark:text-purple-400 mb-1">
                   {questionBankState.verbal.length + questionBankState.quantitative.length}
                 </div>
-                <div className="text-sm text-gray-500">عدد الاختبارات</div>
+                <div className="text-sm text-gray-500 dark:text-gray-400">عدد الاختبارات</div>
               </div>
               <div className="text-center">
-                <div className="text-2xl font-bold text-green-600 mb-1">
+                <div className="text-2xl font-bold text-green-600 dark:text-green-400 mb-1">
                   {questionBankState.verbal.filter(t => t.completed).length + 
                    questionBankState.quantitative.filter(t => t.completed).length}
                 </div>
-                <div className="text-sm text-gray-500">مكتمل</div>
+                <div className="text-sm text-gray-500 dark:text-gray-400">مكتمل</div>
               </div>
               <div className="text-center">
-                <div className="text-2xl font-bold text-amber-600 mb-1">
+                <div className="text-2xl font-bold text-amber-600 dark:text-amber-400 mb-1">
                   {Math.round((getAverageScore(questionBankState.verbal) + 
                               getAverageScore(questionBankState.quantitative)) / 2)}%
                 </div>
-                <div className="text-sm text-gray-500">متوسط النتائج</div>
+                <div className="text-sm text-gray-500 dark:text-gray-400">متوسط النتائج</div>
               </div>
             </div>
 
             {/* Daily limit notice for free users */}
             {!isPremiumUser && (
-              <div className="bg-amber-50 border border-amber-200 rounded-lg p-4 mt-8 max-w-md mx-auto">
+              <div className="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-lg p-4 mt-8 max-w-md mx-auto">
                 <div className="flex items-center justify-center gap-2 mb-2">
-                  <Users className="h-4 w-4 text-amber-600" />
-                  <span className="text-amber-800 font-medium text-sm">حساب مجاني</span>
+                  <Users className="h-4 w-4 text-amber-600 dark:text-amber-400" />
+                  <span className="text-amber-800 dark:text-amber-300 font-medium text-sm">حساب مجاني</span>
                 </div>
-                <p className="text-sm text-amber-700 mb-2">
+                <p className="text-sm text-amber-700 dark:text-amber-300 mb-2">
                   {MAX_DAILY_FREE_TESTS - dailyTestsTaken} اختبار متبقي اليوم
                 </p>
-                <div className="w-full bg-amber-200 rounded-full h-2">
+                <div className="w-full bg-amber-200 dark:bg-amber-800 rounded-full h-2">
                   <div 
-                    className="bg-amber-500 h-2 rounded-full transition-all duration-300"
+                    className="bg-amber-500 dark:bg-amber-400 h-2 rounded-full transition-all duration-300"
                     style={{ width: `${(dailyTestsTaken / MAX_DAILY_FREE_TESTS) * 100}%` }}
                   />
                 </div>
@@ -730,17 +730,17 @@ export default function QuestionBankPage() {
         <Tabs defaultValue="verbal" className="w-full">
           {/* Tab Navigation */}
           <div className="flex justify-center mb-8">
-            <TabsList className="grid grid-cols-2 bg-white border border-gray-200 rounded-lg p-1 shadow-sm">
+            <TabsList className="grid grid-cols-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-1 shadow-sm">
               <TabsTrigger 
                 value="verbal" 
-                className="flex items-center gap-2 px-6 py-3 text-gray-600 data-[state=active]:bg-blue-600 data-[state=active]:text-white rounded-md transition-all font-medium"
+                className="flex items-center gap-2 px-6 py-3 text-gray-600 dark:text-gray-400 data-[state=active]:bg-blue-600 data-[state=active]:text-white rounded-md transition-all font-medium"
               >
                 <BookOpen className="h-4 w-4" />
                 القسم اللفظي
               </TabsTrigger>
               <TabsTrigger 
                 value="quantitative" 
-                className="flex items-center gap-2 px-6 py-3 text-gray-600 data-[state=active]:bg-purple-600 data-[state=active]:text-white rounded-md transition-all font-medium"
+                className="flex items-center gap-2 px-6 py-3 text-gray-600 dark:text-gray-400 data-[state=active]:bg-purple-600 data-[state=active]:text-white rounded-md transition-all font-medium"
               >
                 <Calculator className="h-4 w-4" />
                 القسم الكمي
@@ -750,19 +750,19 @@ export default function QuestionBankPage() {
 
           {/* Verbal Tests */}
           <TabsContent value="verbal" className="space-y-6">
-            <div className="bg-white border border-gray-200 rounded-lg p-6">
+            <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-6">
               <div className="flex items-center justify-between mb-6">
                 <div>
-                  <h2 className="text-xl font-semibold text-gray-900 mb-2">
+                  <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">
                     الاختبارات اللفظية
                   </h2>
-                  <p className="text-gray-600">
+                  <p className="text-gray-600 dark:text-gray-300">
                     {questionBankState.verbal.length} اختبار • {verbalQuestionCount} سؤال
                   </p>
                 </div>
                 <div className="text-center">
-                  <div className="text-sm text-gray-500 mb-1">معدل الإنجاز</div>
-                  <div className="text-2xl font-bold text-blue-600">
+                  <div className="text-sm text-gray-500 dark:text-gray-400 mb-1">معدل الإنجاز</div>
+                  <div className="text-2xl font-bold text-blue-600 dark:text-blue-400">
                     {Math.round(getOverallProgress(questionBankState.verbal))}%
                   </div>
                 </div>
@@ -785,8 +785,8 @@ export default function QuestionBankPage() {
                   return (
                     <div key={test.testNumber} className="relative">
                       {!previousTestPassed && (
-                        <div className="absolute inset-0 bg-gray-100 bg-opacity-90 rounded-lg z-10 flex items-center justify-center">
-                          <div className="text-center text-gray-600 p-4">
+                        <div className="absolute inset-0 bg-gray-100 dark:bg-gray-900 bg-opacity-90 dark:bg-opacity-90 rounded-lg z-10 flex items-center justify-center">
+                          <div className="text-center text-gray-600 dark:text-gray-400 p-4">
                             <Lock className="h-8 w-8 mx-auto mb-2" />
                             <p className="font-medium text-sm mb-1">مؤمّن</p>
                             <p className="text-xs">اجتز الاختبار السابق بدرجة 50+</p>
@@ -827,19 +827,19 @@ export default function QuestionBankPage() {
 
           {/* Quantitative Tests */}
           <TabsContent value="quantitative" className="space-y-6">
-            <div className="bg-white border border-gray-200 rounded-lg p-6">
+            <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-6">
               <div className="flex items-center justify-between mb-6">
                 <div>
-                  <h2 className="text-xl font-semibold text-gray-900 mb-2">
+                  <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">
                     الاختبارات الكمية
                   </h2>
-                  <p className="text-gray-600">
+                  <p className="text-gray-600 dark:text-gray-300">
                     {questionBankState.quantitative.length} اختبار • {quantitativeQuestionCount} سؤال
                   </p>
                 </div>
                 <div className="text-center">
-                  <div className="text-sm text-gray-500 mb-1">معدل الإنجاز</div>
-                  <div className="text-2xl font-bold text-purple-600">
+                  <div className="text-sm text-gray-500 dark:text-gray-400 mb-1">معدل الإنجاز</div>
+                  <div className="text-2xl font-bold text-purple-600 dark:text-purple-400">
                     {Math.round(getOverallProgress(questionBankState.quantitative))}%
                   </div>
                 </div>
@@ -862,8 +862,8 @@ export default function QuestionBankPage() {
                   return (
                     <div key={test.testNumber} className="relative">
                       {!previousTestPassed && (
-                        <div className="absolute inset-0 bg-gray-100 bg-opacity-90 rounded-lg z-10 flex items-center justify-center">
-                          <div className="text-center text-gray-600 p-4">
+                        <div className="absolute inset-0 bg-gray-100 dark:bg-gray-900 bg-opacity-90 dark:bg-opacity-90 rounded-lg z-10 flex items-center justify-center">
+                          <div className="text-center text-gray-600 dark:text-gray-400 p-4">
                             <Lock className="h-8 w-8 mx-auto mb-2" />
                             <p className="font-medium text-sm mb-1">مؤمّن</p>
                             <p className="text-xs">اجتز الاختبار السابق بدرجة 50+</p>
