@@ -1,0 +1,54 @@
+<svg width="150" height="150" viewBox="0 0 150 150" fill="none" xmlns="http://www.w3.org/2000/svg">
+<defs>
+  <!-- Gradient للخلفية الرئيسية -->
+  <linearGradient id="mainBg" x1="0%" y1="0%" x2="100%" y2="100%">
+    <stop offset="0%" style="stop-color:#3B82F6;stop-opacity:1" />
+    <stop offset="50%" style="stop-color:#8B5CF6;stop-opacity:1" />
+    <stop offset="100%" style="stop-color:#EC4899;stop-opacity:1" />
+  </linearGradient>
+  
+  <!-- Gradient للحرف العربي -->
+  <linearGradient id="textGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+    <stop offset="0%" style="stop-color:#FFFFFF;stop-opacity:1" />
+    <stop offset="100%" style="stop-color:#F8FAFC;stop-opacity:0.95" />
+  </linearGradient>
+  
+  <!-- Shadow للعمق -->
+  <filter id="dropShadow" x="-50%" y="-50%" width="200%" height="200%">
+    <feDropShadow dx="0" dy="6" stdDeviation="12" flood-color="#000000" flood-opacity="0.25"/>
+  </filter>
+  
+  <!-- Glow للإضاءة -->
+  <filter id="glowEffect" x="-50%" y="-50%" width="200%" height="200%">
+    <feGaussianBlur stdDeviation="4" result="coloredBlur"/>
+    <feMerge> 
+      <feMergeNode in="coloredBlur"/>
+      <feMergeNode in="SourceGraphic"/>
+    </feMerge>
+  </filter>
+</defs>
+
+<!-- الخلفية الأساسية -->
+<circle cx="75" cy="75" r="70" fill="url(#mainBg)" filter="url(#dropShadow)"/>
+
+<!-- دائرة داخلية للعمق -->
+<circle cx="75" cy="75" r="65" fill="none" stroke="rgba(255,255,255,0.15)" stroke-width="2"/>
+
+<!-- الحرف العربي "ق" -->
+<text x="75" y="95" text-anchor="middle" font-family="'Arial Black', 'Tajawal', Arial, sans-serif" font-size="60" font-weight="900" fill="url(#textGrad)" filter="url(#glowEffect)">ق</text>
+
+<!-- نقاط متلألئة ديكوراتيف -->
+<circle cx="40" cy="40" r="2.5" fill="rgba(255,255,255,0.6)">
+  <animate attributeName="opacity" values="0.3;0.9;0.3" dur="2s" repeatCount="indefinite"/>
+</circle>
+<circle cx="110" cy="45" r="2" fill="rgba(255,255,255,0.7)">
+  <animate attributeName="opacity" values="0.4;1;0.4" dur="2.5s" repeatCount="indefinite"/>
+</circle>
+<circle cx="45" cy="110" r="2.2" fill="rgba(255,255,255,0.5)">
+  <animate attributeName="opacity" values="0.2;0.8;0.2" dur="3s" repeatCount="indefinite"/>
+</circle>
+<circle cx="105" cy="105" r="1.8" fill="rgba(255,255,255,0.8)">
+  <animate attributeName="opacity" values="0.5;1;0.5" dur="1.8s" repeatCount="indefinite"/>
+</circle>
+
+</svg>

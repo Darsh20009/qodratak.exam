@@ -1,0 +1,140 @@
+
+<!DOCTYPE html>
+<html>
+<head>
+    <title>تسجيل خروج - قدراتك</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            text-align: center;
+            padding: 50px 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            min-height: 100vh;
+            margin: 0;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+        }
+        .container {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 20px;
+            padding: 40px;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            max-width: 400px;
+            width: 100%;
+        }
+        h1 {
+            font-size: 2.5em;
+            margin-bottom: 20px;
+            background: linear-gradient(45deg, #FFD700, #FFA500);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        .spinner {
+            width: 50px;
+            height: 50px;
+            border: 4px solid rgba(255, 255, 255, 0.3);
+            border-top: 4px solid #FFD700;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 20px auto;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        .message {
+            font-size: 1.2em;
+            margin: 20px 0;
+        }
+        .btn {
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 25px;
+            font-size: 1.1em;
+            cursor: pointer;
+            transition: transform 0.2s;
+            margin-top: 20px;
+        }
+        .btn:hover {
+            transform: translateY(-2px);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>تسجيل خروج</h1>
+        <div class="spinner"></div>
+        <p class="message">جاري مسح جميع البيانات المحفوظة...</p>
+        <p id="status">يرجى الانتظار</p>
+        <button class="btn" onclick="goToLogin()" style="display: none;" id="loginBtn">
+            الذهاب لصفحة تسجيل الدخول
+        </button>
+    </div>
+    
+    <script>
+        let step = 0;
+        const steps = [
+            "مسح localStorage...",
+            "مسح sessionStorage...", 
+            "مسح الكوكيز...",
+            "إنهاء الجلسة...",
+            "تم تسجيل الخروج بنجاح!"
+        ];
+        
+        function updateStatus() {
+            document.getElementById('status').textContent = steps[step];
+            step++;
+        }
+        
+        function goToLogin() {
+            window.location.href = "/login";
+        }
+        
+        // Clear all storage step by step
+        setTimeout(() => {
+            updateStatus(); // localStorage
+            localStorage.clear();
+        }, 500);
+        
+        setTimeout(() => {
+            updateStatus(); // sessionStorage
+            sessionStorage.clear();
+        }, 1000);
+        
+        setTimeout(() => {
+            updateStatus(); // cookies
+            document.cookie.split(";").forEach(function(c) { 
+                document.cookie = c.replace(/^ +/, "").replace(/=.*/, "=;expires=" + new Date().toUTCString() + ";path=/"); 
+            });
+        }, 1500);
+        
+        setTimeout(() => {
+            updateStatus(); // API logout
+            fetch("/api/auth/logout", {
+                method: "POST",
+                credentials: "include"
+            }).catch(console.error);
+        }, 2000);
+        
+        setTimeout(() => {
+            updateStatus(); // Success
+            document.querySelector('.spinner').style.display = 'none';
+            document.getElementById('loginBtn').style.display = 'inline-block';
+        }, 2500);
+        
+        // Auto redirect after 5 seconds
+        setTimeout(() => {
+            goToLogin();
+        }, 5000);
+    </script>
+</body>
+</html>

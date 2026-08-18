@@ -1,0 +1,10 @@
+# robots.txt for Qodratak Platform
+User-agent: *
+Allow: /
+
+# Sitemap location
+Sitemap: https://www.qodratak.site/sitemap.xml
+
+# Disallow sensitive areas
+Disallow: /admin
+Disallow: /api

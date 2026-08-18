@@ -1,0 +1,166 @@
+import { User, ExamBooking, TestResult } from '../mongodb/models';
+
+const BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN || '';
+
+// ── Send a Telegram message to a chat ────────────────────────────────────────
+export async function sendTelegramMessage(chatId: number | string, text: string): Promise<boolean> {
+  if (!BOT_TOKEN || !chatId) return false;
+  try {
+    const res = await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ chat_id: chatId, text, parse_mode: 'HTML' }),
+    });
+    return res.ok;
+  } catch (err) {
+    console.error('Telegram sendMessage error:', err);
+    return false;
+  }
+}
+
+// ── Exam reminder (1-hour window) ─────────────────────────────────────────────
+export async function checkTelegramExamReminders(): Promise<void> {
+  try {
+    const now = new Date();
+    const windowStart = new Date(now.getTime() + 55 * 60 * 1000);  // 55 min
+    const windowEnd   = new Date(now.getTime() + 65 * 60 * 1000);  // 65 min
+
+    const bookings = await ExamBooking.find({
+      status: 'pending',
+      telegramReminderSent: { $ne: true },
+      scheduledAt: { $gte: windowStart, $lte: windowEnd },
+    });
+
+    for (const booking of bookings) {
+      try {
+        const user = await User.findOne({ _id: booking.userId });
+        if (!user) continue;
+        if (user.notifExamReminder === false) continue;
+
+        const chatId = user.telegramChatId || (user.telegramId ? Number(user.telegramId) : null);
+        if (!chatId) continue;
+
+        const examDate = new Date(booking.scheduledAt);
+        const timeStr = examDate.toLocaleTimeString('ar-SA', { hour: '2-digit', minute: '2-digit', hour12: true, timeZone: 'Asia/Riyadh' });
+
+        const msg =
+          `⏰ <b>تذكير باختبار القياس</b>\n\n` +
+          `مرحباً ${user.fullName || user.username}،\n\n` +
+          `🎓 اختبارك المحجوز يبدأ بعد <b>ساعة تقريباً</b>\n` +
+          `🕐 الوقت المحدد: <b>${timeStr}</b>\n\n` +
+          `✅ تأكد من:\n` +
+          `• اتصالك بالإنترنت\n` +
+          `• وجودك في مكان هادئ\n` +
+          `• شحن جهازك\n\n` +
+          `بالتوفيق! 🌟\n` +
+          `<i>منصة قدراتك</i>`;
+
+        const sent = await sendTelegramMessage(chatId, msg);
+        if (sent) {
+          await ExamBooking.updateOne({ _id: booking._id }, { telegramReminderSent: true });
+          console.log(`📱 Telegram reminder sent to user ${user._id} for exam at ${timeStr}`);
+        }
+      } catch (err) {
+        console.error(`Telegram reminder error for booking ${booking._id}:`, err);
+      }
+    }
+  } catch (err) {
+    console.error('checkTelegramExamReminders error:', err);
+  }
+}
+
+// ── Weekly report ─────────────────────────────────────────────────────────────
+export async function sendWeeklyReports(): Promise<void> {
+  try {
+    const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
+
+    const users = await User.find({
+      notifWeeklyReport: { $ne: false },
+      $or: [
+        { weeklyReportLastSent: { $lt: sevenDaysAgo } },
+        { weeklyReportLastSent: { $exists: false } },
+      ],
+      $expr: {
+        $or: [
+          { $gt: ['$telegramChatId', 0] },
+          { $and: [{ $gt: [{ $strLenCP: { $ifNull: ['$telegramId', ''] } }, 0] }] },
+        ],
+      },
+    }).limit(500);
+
+    for (const user of users) {
+      try {
+        const chatId = user.telegramChatId || (user.telegramId ? Number(user.telegramId) : null);
+        if (!chatId) continue;
+
+        // Aggregate last 7 days of test results
+        const results = await TestResult.find({
+          userId: String(user._id),
+          createdAt: { $gte: sevenDaysAgo },
+        });
+
+        const totalTests = results.length;
+        if (totalTests === 0) {
+          // Still send a gentle nudge
+          const msg =
+            `📊 <b>تقريرك الأسبوعي</b>\n\n` +
+            `مرحباً ${user.fullName || user.username}،\n\n` +
+            `لم تُجرِ أي اختبارات هذا الأسبوع.\n\n` +
+            `💡 ابدأ بـ <b>10 أسئلة</b> يومياً وستلاحظ الفرق!\n\n` +
+            `<i>منصة قدراتك</i>`;
+          await sendTelegramMessage(chatId, msg);
+        } else {
+          const scores = results.map(r => (r as any).score || (r as any).totalScore || 0);
+          const avg = Math.round(scores.reduce((a, b) => a + b, 0) / scores.length);
+          const best = Math.max(...scores);
+          const totalQ = results.reduce((a, r) => a + ((r as any).totalQuestions || 0), 0);
+          const correctQ = results.reduce((a, r) => a + ((r as any).correctAnswers || 0), 0);
+          const accuracy = totalQ > 0 ? Math.round((correctQ / totalQ) * 100) : 0;
+
+          const trend = avg >= 70 ? '📈 ممتاز' : avg >= 50 ? '📊 جيد' : '📉 تحتاج مراجعة';
+          const emoji = avg >= 80 ? '🏆' : avg >= 60 ? '⭐' : '💪';
+
+          const msg =
+            `📊 <b>تقريرك الأسبوعي</b>\n\n` +
+            `مرحباً ${user.fullName || user.username}! ${emoji}\n\n` +
+            `<b>إحصائيات الأسبوع:</b>\n` +
+            `📝 عدد الاختبارات: <b>${totalTests}</b>\n` +
+            `🎯 متوسط النتيجة: <b>${avg}%</b>\n` +
+            `🥇 أفضل نتيجة: <b>${best}%</b>\n` +
+            `✅ دقة الإجابات: <b>${accuracy}%</b>\n\n` +
+            `${trend}\n\n` +
+            `${avg >= 70 ? 'استمر بهذا الأداء الرائع! 🔥' : 'لا تستسلم، التحسن يتطلب مثابرة 💪'}\n\n` +
+            `<i>منصة قدراتك</i>`;
+          await sendTelegramMessage(chatId, msg);
+        }
+
+        await User.updateOne({ _id: user._id }, { weeklyReportLastSent: new Date() });
+        console.log(`📊 Weekly report sent to user ${user._id}`);
+      } catch (err) {
+        console.error(`Weekly report error for user ${user._id}:`, err);
+      }
+    }
+  } catch (err) {
+    console.error('sendWeeklyReports error:', err);
+  }
+}
+
+// ── Start all notification schedulers ─────────────────────────────────────────
+export function startNotificationScheduler(): void {
+  // Check exam reminders every 5 minutes
+  setInterval(checkTelegramExamReminders, 5 * 60 * 1000);
+  // Run once immediately on boot
+  setTimeout(checkTelegramExamReminders, 30 * 1000);
+
+  // Weekly reports: check every hour, send on Sunday 20:00 KSA (17:00 UTC)
+  setInterval(async () => {
+    const now = new Date();
+    const utcDay = now.getUTCDay();  // 0=Sun
+    const utcHour = now.getUTCHours();
+    if (utcDay === 0 && utcHour === 17) {
+      await sendWeeklyReports();
+    }
+  }, 60 * 60 * 1000);
+
+  console.log('📱 Notification scheduler started (Telegram exam reminders + weekly reports)');
+}

@@ -1,0 +1,1033 @@
+
+import React, { useEffect, useState, useMemo } from 'react';
+import { useLocation } from 'wouter';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { formatDate } from '@/lib/formatters';
+import {
+  BookText,
+  Calculator,
+  Clock,
+  Award,
+  Target,
+  Eye,
+  CheckCircle,
+  XCircle,
+  BarChart3,
+  Filter,
+  ArrowUpDown,
+  ListChecks,
+  TrendingUp,
+  Sparkles,
+  Trophy,
+  Calendar,
+  Download,
+  Share2,
+  Star,
+  Zap,
+  Brain,
+  FileText,
+  CloudSun,
+  GraduationCap,
+  Users,
+  Flame,
+  Medal,
+  AlertCircle
+} from 'lucide-react';
+import { useToast } from '@/hooks/use-toast';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Badge } from "@/components/ui/badge";
+import { Progress } from "@/components/ui/progress";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { useQuery } from "@tanstack/react-query";
+import { Separator } from "@/components/ui/separator";
+
+interface ExamRecord {
+  date: string;
+  examType: string;
+  score: number;
+  totalQuestions: number;
+  timeTaken: number;
+  difficulty?: string;
+  sectionsData?: any[];
+  sectionScores?: any;
+  detailedResults?: any[];
+  achievementLevel?: 'excellent' | 'good' | 'average' | 'needs_improvement';
+}
+
+// توليد رقم مرجعي ثابت بناءً على بيانات الاختبار
+const generateRefNum = (date: string, examType: string): string => {
+  const str = date + examType;
+  let hash = 0;
+  for (let i = 0; i < str.length; i++) {
+    hash = Math.imul(31, hash) + str.charCodeAt(i) | 0;
+  }
+  const chars = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz';
+  let result = '';
+  let num = Math.abs(hash);
+  const year = new Date(date).getFullYear().toString().slice(2);
+  result = year;
+  while (result.length < 14) {
+    result += chars[num % 62];
+    num = Math.floor(num / 62);
+    if (num === 0) { num = Math.abs(hash) + result.length * 7; }
+  }
+  return result;
+};
+
+// التحقق إذا كان الاختبار رسمياً من نوع قياس/قدرات
+const isQiyasRecord = (examType: string): boolean => {
+  const lower = examType.toLowerCase();
+  return lower.includes('قياس') || lower.includes('قدرات') || lower.includes('محاكاة') || lower.includes('تحصيلي') || lower.includes('تأهيل');
+};
+
+// تنسيق التاريخ بالهجري والميلادي
+const formatDateBilingual = (dateStr: string): string => {
+  const date = new Date(dateStr);
+  const gregorian = date.toLocaleDateString('ar-SA', { year: 'numeric', month: '2-digit', day: '2-digit' });
+  try {
+    const hijri = new Intl.DateTimeFormat('ar-SA-u-ca-islamic', { year: 'numeric', month: '2-digit', day: '2-digit' }).format(date);
+    return `${gregorian} - هـ ${hijri}`;
+  } catch {
+    return gregorian;
+  }
+};
+
+interface ExamStats {
+  totalExams: number;
+  averageScore: number;
+  totalTimeSpent: number;
+  bestPerformance: number;
+  improvementTrend: number;
+  examsByType: Record<string, number>;
+}
+
+// Enhanced color and icon system for different exam types
+const getExamTypeInfo = (examName: string) => {
+  const lowerExamName = examName.toLowerCase();
+  
+  if (lowerExamName.includes("قياس") || lowerExamName.includes("قدرات")) {
+    return { 
+      icon: <ListChecks className="h-6 w-6" />, 
+      name: examName, 
+      color: "from-emerald-500 to-teal-600",
+      bgColor: "bg-emerald-50 dark:bg-emerald-900/20",
+      textColor: "text-emerald-700 dark:text-emerald-400",
+      category: "اختبار قدرات/قياس",
+      badge: "رسمي"
+    };
+  }
+  if (lowerExamName.includes("لفظي") || lowerExamName.includes("verbal")) {
+    return { 
+      icon: <BookText className="h-6 w-6" />, 
+      name: examName, 
+      color: "from-green-500 to-emerald-600",
+      bgColor: "bg-green-50 dark:bg-green-900/20",
+      textColor: "text-green-700 dark:text-green-400",
+      category: "اختبار لفظي",
+      badge: "لفظي"
+    };
+  }
+  if (lowerExamName.includes("كمي") || lowerExamName.includes("quantitative")) {
+    return { 
+      icon: <Calculator className="h-6 w-6" />, 
+      name: examName, 
+      color: "from-teal-500 to-green-600",
+      bgColor: "bg-teal-50 dark:bg-teal-900/20",
+      textColor: "text-teal-700 dark:text-teal-400",
+      category: "اختبار كمي",
+      badge: "كمي"
+    };
+  }
+  if (lowerExamName.includes("تأهيلي") || lowerExamName.includes("qualification")) {
+    return { 
+      icon: <GraduationCap className="h-6 w-6" />, 
+      name: examName, 
+      color: "from-amber-500 to-orange-600",
+      bgColor: "bg-amber-50 dark:bg-amber-900/20",
+      textColor: "text-amber-700 dark:text-amber-400",
+      category: "اختبار تأهيلي",
+      badge: "تأهيلي"
+    };
+  }
+  if (lowerExamName.includes("تجريبي") || lowerExamName.includes("mock")) {
+    return { 
+      icon: <CloudSun className="h-6 w-6" />, 
+      name: examName, 
+      color: "from-cyan-500 to-blue-600",
+      bgColor: "bg-cyan-50 dark:bg-cyan-900/20",
+      textColor: "text-cyan-700 dark:text-cyan-400",
+      category: "اختبار تجريبي",
+      badge: "تجريبي"
+    };
+  }
+  if (lowerExamName.includes("مخصص") || lowerExamName.includes("custom")) {
+    return { 
+      icon: <Target className="h-6 w-6" />, 
+      name: examName, 
+      color: "from-amber-500 to-yellow-600",
+      bgColor: "bg-amber-50 dark:bg-amber-900/20",
+      textColor: "text-amber-700 dark:text-amber-400",
+      category: "اختبار مخصص",
+      badge: "مخصص"
+    };
+  }
+  
+  return { 
+    icon: <FileText className="h-6 w-6" />, 
+    name: examName, 
+    color: "from-slate-500 to-gray-600",
+    bgColor: "bg-slate-50 dark:bg-slate-900/20",
+    textColor: "text-slate-700 dark:text-slate-400",
+    category: "اختبار عام",
+    badge: "عام"
+  };
+};
+
+const getPerformanceInfo = (score: number, totalQuestions: number) => {
+  if (totalQuestions === 0) return { 
+    level: 'needs_improvement', 
+    icon: <XCircle className="h-5 w-5" />, 
+    color: 'text-slate-500',
+    bgColor: 'bg-slate-100 dark:bg-slate-800',
+    label: 'غير مكتمل'
+  };
+  
+  const percentage = (score / totalQuestions) * 100;
+  
+  if (percentage >= 85) return { 
+    level: 'excellent', 
+    icon: <Trophy className="h-5 w-5" />, 
+    color: 'text-yellow-600 dark:text-yellow-400',
+    bgColor: 'bg-yellow-100 dark:bg-yellow-900/30',
+    label: 'ممتاز'
+  };
+  if (percentage >= 75) return { 
+    level: 'good', 
+    icon: <Medal className="h-5 w-5" />, 
+    color: 'text-green-600 dark:text-green-400',
+    bgColor: 'bg-green-100 dark:bg-green-900/30',
+    label: 'جيد جداً'
+  };
+  if (percentage >= 60) return { 
+    level: 'average', 
+    icon: <Star className="h-5 w-5" />, 
+    color: 'text-blue-600 dark:text-blue-400',
+    bgColor: 'bg-blue-100 dark:bg-blue-900/30',
+    label: 'جيد'
+  };
+  
+  return { 
+    level: 'needs_improvement', 
+    icon: <Flame className="h-5 w-5" />, 
+    color: 'text-orange-600 dark:text-orange-400',
+    bgColor: 'bg-orange-100 dark:bg-orange-900/30',
+    label: 'يحتاج تحسين'
+  };
+};
+
+const formatTimeTaken = (minutes: number): string => {
+  if (minutes <= 0) return "دقائق قليلة";
+  const hrs = Math.floor(minutes / 60);
+  const mins = Math.round(minutes % 60);
+
+  let result = "";
+  if (hrs > 0) {
+    result += `${hrs} ساعة`;
+    if (mins > 0) result += " و ";
+  }
+  if (mins > 0) {
+    result += `${mins} دقيقة`;
+  }
+  return result || `${Math.round(minutes)} دقيقة`;
+};
+
+// دالة لتوحيد تنسيق السجلات من مصادر مختلفة
+const normalizeRecord = (record: any, source: string): ExamRecord | null => {
+  try {
+    // التحقق من وجود البيانات الأساسية
+    if (!record) return null;
+
+    // استخراج البيانات حسب التنسيق
+    let examType = record.examType || record.testName || record.testType || source;
+    let date = record.date || record.testDate || record.completedAt || new Date().toISOString();
+    let score = record.score || record.correctAnswers || 0;
+    let totalQuestions = record.totalQuestions || 0;
+    let timeTaken = record.timeTaken || record.timeSpent || record.timeTakenMinutes || 0;
+
+    // التعامل مع التنسيقات الخاصة
+    if (source === 'questionBankResults' || source === 'advancedLabResults') {
+      examType = 'بنك الأسئلة';
+      if (record.category === 'verbal') examType = 'بنك الأسئلة - لفظي';
+      if (record.category === 'quantitative') examType = 'بنك الأسئلة - كمي';
+    }
+
+    if (source === 'lastChallengeResult') {
+      examType = 'تحدي الأخطاء';
+      if (record.timed) examType += ' (موقوت)';
+    }
+
+    if (source === 'verbalTestResults' || source === 'advancedVerbalTestResults') {
+      examType = source.includes('advanced') ? 'اختبار لفظي متقدم' : 'اختبار لفظي';
+    }
+
+    if (source === 'quantitativeTestResults' || source === 'advancedQuantitativeTestResults') {
+      examType = source.includes('advanced') ? 'اختبار كمي متقدم' : 'اختبار كمي';
+    }
+
+    if (source === 'tahsiliResults' || source === 'subjectTestResults') {
+      examType = 'اختبار تحصيلي';
+      if (record.subject) examType += ` - ${record.subject}`;
+    }
+
+    // تحويل الوقت إلى دقائق إذا كان بالثواني
+    if (timeTaken > 1000) {
+      timeTaken = Math.round(timeTaken / 60);
+    }
+
+    // التأكد من صحة البيانات
+    if (totalQuestions === 0 || !examType) return null;
+
+    return {
+      date,
+      examType,
+      score,
+      totalQuestions,
+      timeTaken,
+      difficulty: record.difficulty,
+      sectionsData: record.sectionsData,
+      sectionScores: record.sectionScores,
+      detailedResults: record.detailedResults,
+      achievementLevel: undefined
+    };
+  } catch (error) {
+    console.warn(`Failed to normalize record from ${source}:`, error);
+    return null;
+  }
+};
+
+export default function EnhancedExamRecordsPage() {
+  const [allRecords, setAllRecords] = useState<ExamRecord[]>([]);
+  const [filteredRecords, setFilteredRecords] = useState<ExamRecord[]>([]);
+  const [_location, setLocation] = useLocation();
+  const { toast } = useToast();
+  const [filterType, setFilterType] = useState<string>("all");
+  const [sortOrder, setSortOrder] = useState<"date_desc" | "date_asc" | "score_desc" | "score_asc">("date_desc");
+  const [showStats, setShowStats] = useState(false);
+  const [selectedRecord, setSelectedRecord] = useState<ExamRecord | null>(null);
+  const [isDetailsOpen, setIsDetailsOpen] = useState(false);
+
+  const { data: user } = useQuery<any>({ queryKey: ['/api/user'] });
+
+  // Enhanced data loading with better error handling and data validation
+  useEffect(() => {
+    const loadExamRecords = () => {
+      try {
+        // Load from ALL possible test sources in the platform
+        const sources = [
+          // قياس والاختبارات الرسمية
+          'examRecords',
+          'qiyasExamRecords', 
+          'mockExamRecords',
+          'customExamRecords',
+          'qualificationExamRecords',
+          // اختبارات القدرات الأساسية
+          'verbalTestResults',
+          'quantitativeTestResults',
+          // اختبارات القدرات المتقدمة
+          'advancedVerbalTestResults',
+          'advancedQuantitativeTestResults',
+          // بنك الأسئلة
+          'questionBankResults',
+          // التحصيلي
+          'subjectTestResults',
+          'tahsiliResults',
+          // المختبرات المتقدمة
+          'advancedLabResults',
+          // التحديات
+          'lastChallengeResult'
+        ];
+        
+        let allStoredRecords: ExamRecord[] = [];
+        
+        sources.forEach(source => {
+          const storedData = localStorage.getItem(source);
+          if (storedData) {
+            try {
+              const parsedData = JSON.parse(storedData);
+              
+              // التعامل مع التنسيقات المختلفة وتوحيدها
+              if (Array.isArray(parsedData)) {
+                parsedData.forEach(item => {
+                  const normalizedRecord = normalizeRecord(item, source);
+                  if (normalizedRecord) {
+                    allStoredRecords.push(normalizedRecord);
+                  }
+                });
+              } else if (parsedData && typeof parsedData === 'object') {
+                const normalizedRecord = normalizeRecord(parsedData, source);
+                if (normalizedRecord) {
+                  allStoredRecords.push(normalizedRecord);
+                }
+              }
+            } catch (parseError) {
+              console.warn(`Failed to parse ${source}:`, parseError);
+            }
+          }
+        });
+
+        // Enhanced validation and cleanup
+        const validRecords = allStoredRecords
+          .filter(record => 
+            record &&
+            typeof record.date === 'string' &&
+            typeof record.examType === 'string' &&
+            typeof record.score === 'number' &&
+            typeof record.totalQuestions === 'number' && record.totalQuestions >= 0 &&
+            typeof record.timeTaken === 'number' && record.timeTaken >= 0
+          )
+          .map(record => ({
+            ...record,
+            achievementLevel: getPerformanceInfo(record.score, record.totalQuestions).level as any
+          }))
+          .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+
+        // Remove duplicates based on date and exam type
+        const uniqueRecords = validRecords.filter((record, index, self) => 
+          index === self.findIndex(r => 
+            r.date === record.date && 
+            r.examType === record.examType &&
+            r.score === record.score
+          )
+        );
+
+        setAllRecords(uniqueRecords);
+        
+        if (uniqueRecords.length > 0) {
+          toast({
+            title: "تم تحميل السجلات بنجاح",
+            description: `تم العثور على ${uniqueRecords.length} سجل اختبار`,
+          });
+        }
+      } catch (error) {
+        console.error("Failed to load exam records:", error);
+        toast({
+          title: "خطأ في تحميل السجلات",
+          description: "حدث خطأ أثناء تحميل سجلات الاختبارات",
+          variant: "destructive",
+        });
+        setAllRecords([]);
+      }
+    };
+
+    loadExamRecords();
+  }, [toast]);
+
+  // Enhanced filtering and sorting
+  useEffect(() => {
+    let recordsToProcess = [...allRecords];
+
+    if (filterType !== "all") {
+      recordsToProcess = recordsToProcess.filter(record => {
+        const examInfo = getExamTypeInfo(record.examType);
+        return record.examType === filterType || examInfo.category.includes(filterType);
+      });
+    }
+
+    recordsToProcess.sort((a, b) => {
+      switch (sortOrder) {
+        case "date_asc":
+          return new Date(a.date).getTime() - new Date(b.date).getTime();
+        case "score_desc":
+          const percentageB = b.totalQuestions > 0 ? (b.score / b.totalQuestions) : 0;
+          const percentageA = a.totalQuestions > 0 ? (a.score / a.totalQuestions) : 0;
+          return percentageB - percentageA;
+        case "score_asc":
+          const percentageAasc = a.totalQuestions > 0 ? (a.score / a.totalQuestions) : 0;
+          const percentageBasc = b.totalQuestions > 0 ? (b.score / b.totalQuestions) : 0;
+          return percentageAasc - percentageBasc;
+        case "date_desc":
+        default:
+          return new Date(b.date).getTime() - new Date(a.date).getTime();
+      }
+    });
+
+    setFilteredRecords(recordsToProcess);
+  }, [allRecords, filterType, sortOrder]);
+
+  // Calculate comprehensive statistics
+  const examStats = useMemo((): ExamStats => {
+    if (allRecords.length === 0) return {
+      totalExams: 0,
+      averageScore: 0,
+      totalTimeSpent: 0,
+      bestPerformance: 0,
+      improvementTrend: 0,
+      examsByType: {}
+    };
+
+    const totalScore = allRecords.reduce((sum, record) => 
+      sum + (record.totalQuestions > 0 ? (record.score / record.totalQuestions) * 100 : 0), 0
+    );
+    const averageScore = totalScore / allRecords.length;
+    const totalTimeSpent = allRecords.reduce((sum, record) => sum + record.timeTaken, 0);
+    const bestPerformance = Math.max(...allRecords.map(record => 
+      record.totalQuestions > 0 ? (record.score / record.totalQuestions) * 100 : 0
+    ));
+
+    const examsByType = allRecords.reduce((acc, record) => {
+      const examInfo = getExamTypeInfo(record.examType);
+      acc[examInfo.category] = (acc[examInfo.category] || 0) + 1;
+      return acc;
+    }, {} as Record<string, number>);
+
+    // Calculate improvement trend (last 5 vs first 5 exams)
+    const recentExams = allRecords.slice(0, 5);
+    const olderExams = allRecords.slice(-5);
+    const recentAvg = recentExams.reduce((sum, record) => 
+      sum + (record.totalQuestions > 0 ? (record.score / record.totalQuestions) * 100 : 0), 0
+    ) / recentExams.length;
+    const olderAvg = olderExams.reduce((sum, record) => 
+      sum + (record.totalQuestions > 0 ? (record.score / record.totalQuestions) * 100 : 0), 0
+    ) / olderExams.length;
+    const improvementTrend = recentAvg - olderAvg;
+
+    return {
+      totalExams: allRecords.length,
+      averageScore,
+      totalTimeSpent,
+      bestPerformance,
+      improvementTrend,
+      examsByType
+    };
+  }, [allRecords]);
+
+  const examTypeOptions = useMemo(() => {
+    const types = new Set(allRecords.map(record => getExamTypeInfo(record.examType).category));
+    const options = [{ value: "all", label: "جميع الأنواع" }];
+    types.forEach(type => {
+      options.push({ value: type, label: type });
+    });
+    return options;
+  }, [allRecords]);
+
+  const exportRecords = () => {
+    const dataStr = JSON.stringify(allRecords, null, 2);
+    const dataBlob = new Blob([dataStr], { type: 'application/json' });
+    const url = URL.createObjectURL(dataBlob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `exam-records-${new Date().toISOString().split('T')[0]}.json`;
+    link.click();
+    URL.revokeObjectURL(url);
+    
+    toast({
+      title: "تم تصدير السجلات",
+      description: "تم تحميل ملف السجلات بنجاح",
+    });
+  };
+
+  const qiyasRecords = useMemo(() => allRecords.filter(r => isQiyasRecord(r.examType)), [allRecords]);
+
+  const openDetails = (record: ExamRecord) => {
+    setSelectedRecord(record);
+    setIsDetailsOpen(true);
+  };
+
+  return (
+    <>
+    {/* نافذة التفاصيل - نمط قياس الرسمي */}
+    <Dialog open={isDetailsOpen} onOpenChange={setIsDetailsOpen}>
+      <DialogContent className="max-w-2xl p-0 overflow-hidden" dir="rtl">
+        {selectedRecord && (
+          <div className="bg-white">
+            {/* شريط تحذير أزرق فاتح */}
+            <div className="bg-blue-50 border border-blue-200 rounded-t p-4 text-sm text-blue-900 leading-relaxed">
+              <div className="flex gap-2">
+                <AlertCircle className="h-4 w-4 mt-0.5 shrink-0 text-blue-600" />
+                <span>
+                  تعرض هذه الصفحة نتيجة المتقدم في الاختبار وليست للاستخدام الرسمي، ويعتبر أي تعديل عليها جريمة تزوير، ويحق للهيئة تطبيق العقوبات الواردة بلائحة تنظيم الاختبارات
+                </span>
+              </div>
+            </div>
+
+            {/* بطاقة التفاصيل */}
+            <div className="m-4 border border-gray-200 rounded overflow-hidden">
+              {/* رأس البطاقة بخلفية رمادية */}
+              <div className="bg-gray-100 border-b border-gray-200 px-4 py-3 text-center">
+                <h3 className="font-bold text-gray-800 text-base">{selectedRecord.examType}</h3>
+              </div>
+
+              {/* صفوف البيانات */}
+              <div className="divide-y divide-gray-100">
+                <div className="flex justify-between px-4 py-2.5">
+                  <span className="font-semibold text-gray-700 text-sm">اسم المختبر :</span>
+                  <span className="text-gray-700 text-sm">{user?.name || user?.username || 'الطالب'}</span>
+                </div>
+                <div className="flex justify-between px-4 py-2.5">
+                  <span className="font-semibold text-gray-700 text-sm">تاريخ الاختبار :</span>
+                  <span className="text-gray-700 text-sm">{formatDateBilingual(selectedRecord.date)}</span>
+                </div>
+                <div className="flex justify-between px-4 py-2.5">
+                  <span className="font-semibold text-gray-700 text-sm">نوع الاختبار :</span>
+                  <span className="text-gray-700 text-sm">محاكاة تدريبية</span>
+                </div>
+                {selectedRecord.sectionScores && Object.keys(selectedRecord.sectionScores).length >= 2 && (
+                  <>
+                    <div className="flex justify-between px-4 py-2.5">
+                      <span className="font-semibold text-gray-700 text-sm">درجة اللفظي :</span>
+                      <span className="text-gray-700 text-sm">
+                        {(() => {
+                          const sections = Object.values(selectedRecord.sectionScores) as any[];
+                          const half = Math.ceil(sections.length / 2);
+                          const verbalSections = sections.slice(0, half);
+                          const vScore = verbalSections.reduce((s: number, sec: any) => s + (sec.score || 0), 0);
+                          const vTotal = verbalSections.reduce((s: number, sec: any) => s + (sec.scoredQuestionsCount || 0), 0);
+                          return vTotal > 0 ? ((vScore / vTotal) * 100).toFixed(1) : '-';
+                        })()}
+                      </span>
+                    </div>
+                    <div className="flex justify-between px-4 py-2.5">
+                      <span className="font-semibold text-gray-700 text-sm">درجة الكمي :</span>
+                      <span className="text-gray-700 text-sm">
+                        {(() => {
+                          const sections = Object.values(selectedRecord.sectionScores) as any[];
+                          const half = Math.ceil(sections.length / 2);
+                          const quantSections = sections.slice(half);
+                          const qScore = quantSections.reduce((s: number, sec: any) => s + (sec.score || 0), 0);
+                          const qTotal = quantSections.reduce((s: number, sec: any) => s + (sec.scoredQuestionsCount || 0), 0);
+                          return qTotal > 0 ? ((qScore / qTotal) * 100).toFixed(1) : '-';
+                        })()}
+                      </span>
+                    </div>
+                  </>
+                )}
+                <div className="flex justify-between px-4 py-2.5">
+                  <span className="font-semibold text-gray-700 text-sm">الدرجة الكلية :</span>
+                  <span className="font-bold text-gray-900 text-sm">
+                    {selectedRecord.totalQuestions > 0
+                      ? ((selectedRecord.score / selectedRecord.totalQuestions) * 100).toFixed(1)
+                      : selectedRecord.score}
+                  </span>
+                </div>
+                <div className="flex justify-between px-4 py-2.5">
+                  <span className="font-semibold text-gray-700 text-sm">الرقم المرجعي :</span>
+                  <span className="text-gray-600 text-xs font-mono">{generateRefNum(selectedRecord.date, selectedRecord.examType)}</span>
+                </div>
+              </div>
+            </div>
+
+            {/* قسم الحساب والتنبيهات */}
+            <div className="mx-4 mb-4 text-sm text-gray-700 space-y-3">
+              <div>
+                <p className="font-semibold mb-1">يتم حساب الدرجة الكلية كالتالي :</p>
+                <ul className="list-disc list-inside space-y-1 text-gray-600">
+                  <li>التخصصات العلمية : 0.5 × درجة الجزء اللفظي + 0.5 × درجة الجزء الكمي</li>
+                  <li>التخصصات النظرية : 0.7 × درجة الجزء اللفظي + 0.3 × درجة الجزء الكمي</li>
+                </ul>
+              </div>
+              <div>
+                <p className="font-semibold mb-1">يجدر التنبيه إلى مايلي :</p>
+                <ul className="list-disc list-inside space-y-1 text-gray-600">
+                  <li>ليس هناك نجاح أو رسوب في الاختبار.</li>
+                  <li>الوزن الذي يعطى لاختبار القدرات للجامعات يرجع لتقديره للجامعات، لكنه يتراوح غالباً بين 30% و 50%.</li>
+                  <li>ينبغي على الطالب مراعاة شروط القبول بالجامعات والكليات وكذلك مواعيد التقديم.</li>
+                </ul>
+              </div>
+              <p className="text-xs text-gray-400 border-t border-gray-100 pt-2">
+                هذه نتيجة تدريبية من منصة قدراتك وليست نتيجة رسمية من هيئة تقويم التعليم والتدريب
+              </p>
+            </div>
+          </div>
+        )}
+      </DialogContent>
+    </Dialog>
+
+    <div className="min-h-screen bg-gray-50 dark:from-slate-950 dark:via-slate-900 dark:to-slate-800 pb-24">
+      <div className="container mx-auto py-6 sm:py-12 px-4 max-w-7xl">
+        {/* ===== قسم الاختبارات الرسمية - النمط الرسمي لقياس ===== */}
+        {qiyasRecords.length > 0 && (
+          <section className="mb-12">
+            <div className="flex items-center gap-3 mb-6">
+              <div className="w-1 h-6 bg-primary rounded-full"></div>
+              <h2 className="text-xl font-bold text-gray-800">نتائج الاختبارات الرسمية المسجلة</h2>
+              <Badge className="bg-primary/10 text-primary border-primary/20 font-medium">{qiyasRecords.length}</Badge>
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+              {qiyasRecords.map((record, idx) => {
+                const totalScore = record.totalQuestions > 0
+                  ? ((record.score / record.totalQuestions) * 100).toFixed(1)
+                  : record.score.toString();
+                const refNum = generateRefNum(record.date, record.examType);
+                return (
+                  <div
+                    key={`qiyas-${idx}`}
+                    className="bg-white border border-gray-200 rounded-lg shadow-sm overflow-hidden hover:shadow-md transition-shadow"
+                    data-testid={`card-qiyas-record-${idx}`}
+                  >
+                    {/* شريط أخضر علوي */}
+                    <div className="h-1 bg-primary w-full"></div>
+                    {/* اسم الاختبار */}
+                    <div className="px-4 pt-4 pb-3 border-b border-gray-100">
+                      <h3 className="font-bold text-gray-900 text-base leading-snug">{record.examType}</h3>
+                    </div>
+                    {/* بيانات الاختبار */}
+                    <div className="px-4 py-3 space-y-2.5">
+                      <div className="flex justify-between items-center">
+                        <span className="text-sm font-medium text-gray-600">تاريخ الاختبار :</span>
+                        <span className="text-sm text-gray-700">{formatDateBilingual(record.date)}</span>
+                      </div>
+                      <div className="flex justify-between items-center">
+                        <span className="text-sm font-medium text-gray-600">الدرجة الكلية :</span>
+                        <span className="text-sm font-bold text-gray-900">{totalScore}</span>
+                      </div>
+                      <div className="flex justify-between items-center">
+                        <span className="text-sm font-medium text-gray-600">الرقم المرجعي :</span>
+                        <span className="text-xs font-mono text-gray-500 dir-ltr">{refNum}</span>
+                      </div>
+                    </div>
+                    {/* زر التفاصيل */}
+                    <div className="px-4 pb-4">
+                      <Button
+                        onClick={() => openDetails(record)}
+                        className="w-full bg-primary hover:bg-primary/90 text-white text-sm h-9"
+                        data-testid={`button-qiyas-details-${idx}`}
+                      >
+                        التفاصيل
+                      </Button>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+            <Separator className="mt-10 mb-2" />
+          </section>
+        )}
+
+        {/* Animated Header */}
+        <header className="text-center mb-12 relative">
+          <div className="absolute inset-0 bg-gradient-to-r from-transparent via-primary/5 to-transparent rounded-full blur-3xl"></div>
+          <div className="relative z-10">
+            <div className="inline-flex items-center justify-center w-20 h-20 rounded-full mb-6 shadow-xl animate-pulse" style={{ background: '#1a7c3e' }}>
+              <Sparkles className="h-10 w-10 text-white" />
+            </div>
+            <h1 className="text-5xl font-extrabold text-gray-800 dark:text-white mb-4">
+              مركز إنجازاتك الاختبارية
+            </h1>
+            <p className="text-xl text-slate-600 dark:text-slate-400 max-w-3xl mx-auto leading-relaxed">
+              تابع تطورك الأكاديمي، حلل أداءك، واكتشف نقاط قوتك في رحلتك التعليمية
+            </p>
+            
+            {/* Quick Stats Bar */}
+            {allRecords.length > 0 && (
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-8 max-w-4xl mx-auto">
+                <div className="bg-white/70 dark:bg-slate-800/70 backdrop-blur-sm rounded-xl p-4 border border-slate-200/50 dark:border-slate-700/50">
+                  <Trophy className="h-8 w-8 text-yellow-500 mx-auto mb-2" />
+                  <div className="text-2xl font-bold text-slate-800 dark:text-slate-200">{examStats.totalExams}</div>
+                  <div className="text-sm text-slate-600 dark:text-slate-400">اختبار مكتمل</div>
+                </div>
+                <div className="bg-white/70 dark:bg-slate-800/70 backdrop-blur-sm rounded-xl p-4 border border-slate-200/50 dark:border-slate-700/50">
+                  <BarChart3 className="h-8 w-8 text-blue-500 mx-auto mb-2" />
+                  <div className="text-2xl font-bold text-slate-800 dark:text-slate-200">{examStats.averageScore.toFixed(1)}%</div>
+                  <div className="text-sm text-slate-600 dark:text-slate-400">متوسط الدرجات</div>
+                </div>
+                <div className="bg-white/70 dark:bg-slate-800/70 backdrop-blur-sm rounded-xl p-4 border border-slate-200/50 dark:border-slate-700/50">
+                  <Clock className="h-8 w-8 text-green-500 mx-auto mb-2" />
+                  <div className="text-2xl font-bold text-slate-800 dark:text-slate-200">{Math.round(examStats.totalTimeSpent / 60)}h</div>
+                  <div className="text-sm text-slate-600 dark:text-slate-400">إجمالي الوقت</div>
+                </div>
+                <div className="bg-white/70 dark:bg-slate-800/70 backdrop-blur-sm rounded-xl p-4 border border-slate-200/50 dark:border-slate-700/50">
+                  <Zap className="h-8 w-8 text-green-600 mx-auto mb-2" />
+                  <div className="text-2xl font-bold text-slate-800 dark:text-slate-200">{examStats.bestPerformance.toFixed(1)}%</div>
+                  <div className="text-sm text-slate-600 dark:text-slate-400">أفضل أداء</div>
+                </div>
+              </div>
+            )}
+          </div>
+        </header>
+
+        {/* Enhanced Controls */}
+        <div className="bg-white/80 dark:bg-slate-800/80 backdrop-blur-lg border border-slate-200/50 dark:border-slate-700/50 rounded-2xl p-6 mb-8 shadow-xl">
+          <div className="flex flex-col lg:flex-row gap-6 items-center justify-between">
+            <div className="flex flex-col sm:flex-row gap-4 items-center flex-1">
+              <div className="flex items-center gap-2">
+                <Filter className="h-5 w-5 text-primary" />
+                <label className="text-sm font-medium text-slate-700 dark:text-slate-300">فلترة:</label>
+              </div>
+              <Select value={filterType} onValueChange={setFilterType}>
+                <SelectTrigger className="w-full sm:w-[280px] bg-white/90 dark:bg-slate-700/90">
+                  <SelectValue placeholder="اختر نوعًا..." />
+                </SelectTrigger>
+                <SelectContent>
+                  {examTypeOptions.map(option => (
+                    <SelectItem key={option.value} value={option.value}>{option.label}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+
+              <div className="flex items-center gap-2">
+                <ArrowUpDown className="h-5 w-5 text-primary" />
+                <label className="text-sm font-medium text-slate-700 dark:text-slate-300">ترتيب:</label>
+              </div>
+              <Select value={sortOrder} onValueChange={(value) => setSortOrder(value as any)}>
+                <SelectTrigger className="w-full sm:w-[220px] bg-white/90 dark:bg-slate-700/90">
+                  <SelectValue placeholder="اختر ترتيبًا..." />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="date_desc">التاريخ (الأحدث أولاً)</SelectItem>
+                  <SelectItem value="date_asc">التاريخ (الأقدم أولاً)</SelectItem>
+                  <SelectItem value="score_desc">الدرجة (الأعلى أولاً)</SelectItem>
+                  <SelectItem value="score_asc">الدرجة (الأدنى أولاً)</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            
+            <div className="flex gap-3">
+              <Button 
+                variant="outline" 
+                onClick={() => setShowStats(!showStats)}
+                className="bg-white/90 dark:bg-slate-700/90"
+              >
+                <BarChart3 className="h-4 w-4 mr-2" />
+                {showStats ? 'إخفاء الإحصائيات' : 'عرض الإحصائيات'}
+              </Button>
+              {allRecords.length > 0 && (
+                <Button 
+                  variant="outline" 
+                  onClick={exportRecords}
+                  className="bg-white/90 dark:bg-slate-700/90"
+                >
+                  <Download className="h-4 w-4 mr-2" />
+                  تصدير
+                </Button>
+              )}
+            </div>
+          </div>
+        </div>
+
+        {/* Statistics Panel */}
+        {showStats && allRecords.length > 0 && (
+          <Card className="mb-8 bg-gradient-to-br from-white/90 to-blue-50/50 dark:from-slate-800/90 dark:to-slate-700/50 backdrop-blur-lg border-slate-200/50 dark:border-slate-700/50">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2 text-xl">
+                <Brain className="h-6 w-6 text-primary" />
+                تحليل شامل للأداء
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                <div className="space-y-4">
+                  <h4 className="font-semibold text-slate-700 dark:text-slate-300">توزيع الاختبارات حسب النوع</h4>
+                  {Object.entries(examStats.examsByType).map(([type, count]) => (
+                    <div key={type} className="flex items-center justify-between">
+                      <span className="text-sm text-slate-600 dark:text-slate-400">{type}</span>
+                      <Badge variant="secondary">{count}</Badge>
+                    </div>
+                  ))}
+                </div>
+                
+                <div className="space-y-4">
+                  <h4 className="font-semibold text-slate-700 dark:text-slate-300">مؤشرات الأداء</h4>
+                  <div className="space-y-3">
+                    <div>
+                      <div className="flex justify-between text-sm mb-1">
+                        <span>متوسط الدرجات</span>
+                        <span>{examStats.averageScore.toFixed(1)}%</span>
+                      </div>
+                      <Progress value={examStats.averageScore} className="h-2" />
+                    </div>
+                    <div>
+                      <div className="flex justify-between text-sm mb-1">
+                        <span>أفضل أداء</span>
+                        <span>{examStats.bestPerformance.toFixed(1)}%</span>
+                      </div>
+                      <Progress value={examStats.bestPerformance} className="h-2" />
+                    </div>
+                  </div>
+                </div>
+                
+                <div className="space-y-4">
+                  <h4 className="font-semibold text-slate-700 dark:text-slate-300">اتجاه التحسن</h4>
+                  <div className={`flex items-center gap-2 text-lg font-semibold ${
+                    examStats.improvementTrend > 0 ? 'text-green-600 dark:text-green-400' : 
+                    examStats.improvementTrend < 0 ? 'text-red-600 dark:text-red-400' : 
+                    'text-slate-600 dark:text-slate-400'
+                  }`}>
+                    {examStats.improvementTrend > 0 ? <TrendingUp className="h-5 w-5" /> : 
+                     examStats.improvementTrend < 0 ? <ArrowUpDown className="h-5 w-5 rotate-180" /> :
+                     <ArrowUpDown className="h-5 w-5" />}
+                    {examStats.improvementTrend > 0 ? '+' : ''}{examStats.improvementTrend.toFixed(1)}%
+                  </div>
+                  <p className="text-sm text-slate-600 dark:text-slate-400">
+                    مقارنة بين أحدث 5 اختبارات والـ 5 الأقدم
+                  </p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Records Display */}
+        {filteredRecords.length === 0 ? (
+          <div className="text-center py-20">
+            <div className="relative inline-block">
+              <div className="absolute inset-0 bg-gradient-to-r from-primary/20 to-blue-500/20 rounded-full blur-2xl"></div>
+              <BarChart3 className="relative h-32 w-32 text-slate-400 dark:text-slate-600 mx-auto mb-8 opacity-60" />
+            </div>
+            <h2 className="text-3xl font-bold mb-4 text-slate-700 dark:text-slate-300">
+              {allRecords.length > 0 && filterType !== "all" ? "لا توجد سجلات تطابق الفلتر الحالي" : "ابدأ رحلتك الاختبارية الآن!"}
+            </h2>
+            <p className="text-lg text-slate-500 dark:text-slate-400 mb-10 max-w-md mx-auto">
+              {allRecords.length === 0 ? "كل اختبار جديد هو خطوة نحو تحقيق أهدافك الأكاديمية" : "جرّب تغيير خيارات الفلترة أو الترتيب"}
+            </p>
+            {allRecords.length === 0 && (
+              <Button 
+                onClick={() => setLocation('/')} 
+                size="lg" 
+                className="text-white px-8 py-4 text-lg shadow-xl hover:shadow-2xl transition-all duration-300"
+                style={{ background: '#1a7c3e' }}
+              >
+                <Sparkles className="h-6 w-6 ml-2" />
+                ابدأ اختبارك الأول
+              </Button>
+            )}
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-8">
+            {filteredRecords.map((record, index) => {
+              const examInfo = getExamTypeInfo(record.examType);
+              const performance = getPerformanceInfo(record.score, record.totalQuestions);
+              const percentage = record.totalQuestions > 0 ? (record.score / record.totalQuestions) * 100 : 0;
+
+              return (
+                <Card
+                  key={`${record.date}-${record.examType}-${index}`}
+                  className="group relative overflow-hidden rounded-2xl shadow-lg hover:shadow-2xl dark:shadow-slate-900/50 transition-all duration-500 ease-out border-0 bg-white/80 dark:bg-slate-800/80 backdrop-blur-sm hover:-translate-y-2 hover:scale-[1.02]"
+                >
+                  {/* Gradient Header */}
+                  <div className={`h-2 bg-gradient-to-r ${examInfo.color}`}></div>
+                  
+                  {/* Floating Badge */}
+                  <div className="absolute top-4 left-4 z-20">
+                    <Badge 
+                      variant="secondary" 
+                      className={`${examInfo.bgColor} ${examInfo.textColor} border-0 font-medium px-3 py-1`}
+                    >
+                      {examInfo.badge}
+                    </Badge>
+                  </div>
+
+                  {/* Performance Badge */}
+                  <div className="absolute top-4 right-4 z-20">
+                    <div className={`flex items-center gap-1 ${performance.bgColor} ${performance.color} rounded-full px-3 py-1 text-xs font-medium`}>
+                      {performance.icon}
+                      {performance.label}
+                    </div>
+                  </div>
+
+                  <CardHeader className="pt-16 pb-4">
+                    <CardTitle className="flex items-start gap-3 text-lg leading-tight">
+                      <div className={`p-2 rounded-xl ${examInfo.bgColor} ${examInfo.textColor} shadow-sm`}>
+                        {examInfo.icon}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <h3 className="font-bold text-slate-800 dark:text-slate-100 line-clamp-2 mb-1" title={examInfo.name}>
+                          {examInfo.name}
+                        </h3>
+                        <div className="flex items-center gap-2 text-sm text-slate-500 dark:text-slate-400">
+                          <Calendar className="h-4 w-4" />
+                          {formatDate(record.date)}
+                        </div>
+                      </div>
+                    </CardTitle>
+                  </CardHeader>
+
+                  <CardContent className="pt-0 pb-6">
+                    {/* Score Display */}
+                    <div className="mb-6">
+                      <div className="flex justify-between items-center mb-3">
+                        <span className="text-sm font-medium text-slate-600 dark:text-slate-400">النتيجة</span>
+                        <span className="text-lg font-bold text-slate-800 dark:text-slate-200">
+                          {record.score} من {record.totalQuestions}
+                        </span>
+                      </div>
+                      <div className="relative">
+                        <Progress value={percentage} className="h-3 mb-2" />
+                        <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent h-3 rounded-full animate-pulse opacity-50"></div>
+                      </div>
+                      <div className="flex justify-between items-center">
+                        <span className={`text-lg font-bold ${performance.color}`}>
+                          {percentage.toFixed(1)}%
+                        </span>
+                        <div className="flex gap-1">
+                          {[...Array(5)].map((_, i) => (
+                            <Star 
+                              key={i}
+                              className={`h-4 w-4 ${
+                                i < Math.floor(percentage / 20) 
+                                  ? 'text-yellow-400 fill-yellow-400' 
+                                  : 'text-slate-300 dark:text-slate-600'
+                              }`} 
+                            />
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Time and Details */}
+                    <div className="flex items-center justify-between text-sm text-slate-500 dark:text-slate-400 mb-6">
+                      <div className="flex items-center gap-2">
+                        <Clock className="h-4 w-4 text-blue-500" />
+                        <span>{formatTimeTaken(record.timeTaken)}</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Users className="h-4 w-4 text-green-500" />
+                        <span>{record.totalQuestions} سؤال</span>
+                      </div>
+                    </div>
+
+                    {/* Action Button */}
+                    <Button
+                      className={`w-full bg-gradient-to-r ${examInfo.color} hover:opacity-90 text-white border-0 shadow-lg hover:shadow-xl transition-all duration-300 group-hover:scale-[1.02]`}
+                      onClick={() => {
+                        localStorage.setItem('currentTestResult', JSON.stringify(record));
+                        setLocation('/test-results');
+                        toast({
+                          title: "جاري عرض التفاصيل...",
+                          description: `سيتم عرض تفاصيل: ${record.examType}`,
+                        });
+                      }}
+                    >
+                      <Eye className="h-4 w-4 ml-2" />
+                      عرض التفاصيل الكاملة
+                    </Button>
+                  </CardContent>
+                </Card>
+              );
+            })}
+          </div>
+        )}
+
+        {/* Enhanced Footer */}
+        <footer className="text-center mt-16 py-8 border-t border-slate-200/50 dark:border-slate-700/50">
+          <div className="flex items-center justify-center gap-2 mb-4">
+            <Sparkles className="h-5 w-5 text-primary" />
+            <span className="text-lg font-semibold bg-gradient-to-r from-primary to-blue-600 bg-clip-text text-transparent">
+              منصة قدراتك
+            </span>
+          </div>
+          <p className="text-sm text-slate-500 dark:text-slate-400">
+            © {new Date().getFullYear()} جميع الحقوق محفوظة - نحو مستقبل أكاديمي مشرق
+          </p>
+        </footer>
+      </div>
+    </div>
+    </>
+  );
+}
