@@ -408,6 +408,7 @@ export interface IStorage {
 export class MemStorage implements IStorage {
   private users: User[] = [];
   private questions: Question[] = [];
+  private nextQuestionId = 1;
   private userTestResults: UserTestResult[] = [];
   private examTemplates: ExamTemplate[] = [];
   private examSections: ExamSection[] = [];

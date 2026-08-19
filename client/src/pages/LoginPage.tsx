@@ -517,21 +517,21 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:from-gray-950 dark:via-gray-900 dark:to-gray-950 p-4" dir="rtl">
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-[#E5E7EB] via-white to-[#F7F775]/30 p-4" dir="rtl">
       <div className="w-full max-w-md relative">
-        <div className="absolute -top-40 -right-40 w-80 h-80 bg-green-100 dark:bg-green-950/30 rounded-full blur-3xl opacity-40 pointer-events-none" />
-        <div className="absolute -bottom-40 -left-40 w-80 h-80 bg-green-50 dark:bg-green-950/20 rounded-full blur-3xl opacity-40 pointer-events-none" />
+        <div className="absolute -top-40 -right-40 w-80 h-80 bg-[#F7F775]/50 rounded-full blur-3xl opacity-50 pointer-events-none" />
+        <div className="absolute -bottom-40 -left-40 w-80 h-80 bg-[#94A3B8]/25 rounded-full blur-3xl opacity-50 pointer-events-none" />
 
-        <div className="relative bg-white/90 dark:bg-gray-900/90 backdrop-blur-xl rounded-3xl shadow-2xl border border-white/60 dark:border-gray-800 overflow-hidden">
-          <div className="h-1.5 bg-gradient-to-r from-green-500 via-emerald-500 to-teal-500" />
+        <div className="relative bg-white/95 backdrop-blur-xl rounded-3xl shadow-2xl shadow-[#0D1B2A]/10 border border-white overflow-hidden">
+          <div className="h-1.5 bg-gradient-to-r from-[#0D1B2A] via-[#1E2938] to-[#F7F775]" />
 
           {/* Header (always shown) */}
           <div className="pt-8 pb-4 px-8 text-center">
             <div className="w-16 h-16 rounded-2xl overflow-hidden mx-auto mb-4 shadow-lg">
-              <img src="/logo-512x512.png" alt="قدراتك" className="w-full h-full object-cover" />
+              <img src="/qodratak-logo.png" alt="قدراتك" className="w-full h-full object-cover object-top" />
             </div>
-            <h1 className="text-2xl font-bold text-gray-900 dark:text-white">أهلاً بك في قدراتك</h1>
-            <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">منصة الاستعداد لاختبار القدرات العامة</p>
+            <h1 className="text-2xl font-bold text-[#0D1B2A]">أهلاً بك في قدراتك</h1>
+            <p className="text-sm text-[#94A3B8] mt-1">مساحتك الهادئة للاستعداد والتقدم</p>
           </div>
 
           {/* 2FA Screen */}
@@ -572,7 +572,7 @@ export default function LoginPage() {
                       البريد أو اسم المستخدم أو الجوال
                     </label>
                     <div className="relative group">
-                      <span className="absolute right-3.5 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-green-500 transition-colors">
+                      <span className="absolute right-3.5 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-[#0D1B2A] transition-colors">
                         {getIdentifierIcon()}
                       </span>
                       <input
@@ -581,8 +581,9 @@ export default function LoginPage() {
                         value={formData.identifier}
                         onChange={(e) => setFormData({ ...formData, identifier: e.target.value })}
                         required
+                        autoComplete="username"
                         data-testid="input-identifier"
-                        className="w-full pr-10 pl-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50/80 dark:bg-gray-800/80 text-gray-900 dark:text-white placeholder:text-gray-400 dark:placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-green-500/40 focus:border-green-500 transition-all text-sm"
+                        className="w-full pr-10 pl-4 py-3 rounded-xl border border-[#E5E7EB] bg-[#E5E7EB]/40 text-[#0D1B2A] placeholder:text-[#94A3B8] focus:outline-none focus:ring-2 focus:ring-[#0D1B2A]/20 focus:border-[#0D1B2A] transition-all text-sm"
                       />
                     </div>
                   </div>
@@ -590,15 +591,16 @@ export default function LoginPage() {
                   <div className="space-y-1.5">
                     <label className="text-sm font-semibold text-gray-700 dark:text-gray-300">كلمة المرور</label>
                     <div className="relative group">
-                      <KeyRound className="absolute right-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 group-focus-within:text-green-500 transition-colors" />
+                      <KeyRound className="absolute right-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 group-focus-within:text-[#0D1B2A] transition-colors" />
                       <input
                         type={showPassword ? 'text' : 'password'}
                         placeholder="أدخل كلمة المرور"
                         value={formData.password}
                         onChange={(e) => setFormData({ ...formData, password: e.target.value })}
                         required
+                        autoComplete="current-password"
                         data-testid="input-password"
-                        className="w-full pr-10 pl-10 py-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50/80 dark:bg-gray-800/80 text-gray-900 dark:text-white placeholder:text-gray-400 dark:placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-green-500/40 focus:border-green-500 transition-all text-sm"
+                        className="w-full pr-10 pl-10 py-3 rounded-xl border border-[#E5E7EB] bg-[#E5E7EB]/40 text-[#0D1B2A] placeholder:text-[#94A3B8] focus:outline-none focus:ring-2 focus:ring-[#0D1B2A]/20 focus:border-[#0D1B2A] transition-all text-sm"
                       />
                       <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors" data-testid="button-toggle-password">
                         {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
@@ -610,7 +612,7 @@ export default function LoginPage() {
                     type="submit"
                     disabled={isLoading}
                     data-testid="button-login"
-                    className="w-full py-3 px-4 bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white font-semibold rounded-xl shadow-lg shadow-green-200 dark:shadow-green-900/30 transition-all duration-200 hover:shadow-xl hover:-translate-y-0.5 disabled:opacity-70 disabled:cursor-not-allowed disabled:hover:translate-y-0 flex items-center justify-center gap-2"
+                    className="w-full py-3 px-4 bg-[#0D1B2A] hover:bg-[#1E2938] text-white font-semibold rounded-xl shadow-lg shadow-[#0D1B2A]/15 transition-all duration-200 hover:shadow-xl hover:-translate-y-0.5 disabled:opacity-70 disabled:cursor-not-allowed disabled:hover:translate-y-0 flex items-center justify-center gap-2"
                   >
                     {isLoading ? (
                       <><div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> جاري تسجيل الدخول...</>
@@ -633,7 +635,7 @@ export default function LoginPage() {
                       data-testid="button-pin-login"
                       className="py-2.5 px-3 border border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-800 transition-all flex items-center justify-center gap-2 text-sm font-medium"
                     >
-                      <Hash className="w-4 h-4 text-green-500" />
+                      <Hash className="w-4 h-4 text-[#0D1B2A]" />
                       رمز PIN
                     </button>
 
@@ -657,7 +659,7 @@ export default function LoginPage() {
                       >
                         {isBiometricLoading
                           ? <div className="w-4 h-4 border-2 border-gray-400 border-t-gray-600 rounded-full animate-spin" />
-                          : <Fingerprint className="w-4 h-4 text-green-500" />}
+                          : <Fingerprint className="w-4 h-4 text-[#0D1B2A]" />}
                         {isBiometricLoading ? 'جاري...' : 'بصمة'}
                       </button>
                     )}
@@ -712,7 +714,7 @@ export default function LoginPage() {
                 )}
 
                 <div className="mt-4 flex items-center gap-2 text-xs text-gray-400 dark:text-gray-500 bg-gray-50 dark:bg-gray-800 p-3 rounded-xl border border-gray-100 dark:border-gray-700">
-                  <Shield className="w-3.5 h-3.5 flex-shrink-0 text-green-500" />
+                  <Shield className="w-3.5 h-3.5 flex-shrink-0 text-[#0D1B2A]" />
                   <span>بيانات تسجيل دخولك مشفرة ومحمية بالكامل</span>
                 </div>
               </div>
@@ -720,7 +722,7 @@ export default function LoginPage() {
               {/* Footer */}
               <div className="px-8 pb-6 border-t border-gray-100 dark:border-gray-800 pt-4 space-y-3">
                 <div className="flex items-center justify-between text-sm">
-                  <button onClick={() => setLocation('/account-type')} className="flex items-center gap-1.5 text-green-600 dark:text-green-400 hover:underline font-medium" data-testid="link-signup">
+                  <button onClick={() => setLocation('/account-type')} className="flex items-center gap-1.5 text-[#0D1B2A] hover:underline font-medium" data-testid="link-signup">
                     <UserPlus className="w-3.5 h-3.5" /> حساب جديد؟ سجّل الآن
                   </button>
                   <button onClick={() => setLocation('/guest-signup')} className="flex items-center gap-1.5 text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300 transition-colors" data-testid="link-guest">
@@ -728,7 +730,7 @@ export default function LoginPage() {
                   </button>
                 </div>
                 <div className="text-center">
-                  <button onClick={() => setLocation('/forgot-password')} className="flex items-center gap-1.5 text-sm text-gray-400 hover:text-green-600 dark:hover:text-green-400 transition-colors mx-auto" data-testid="link-forgot-password">
+                  <button onClick={() => setLocation('/forgot-password')} className="flex items-center gap-1.5 text-sm text-gray-400 hover:text-[#0D1B2A] transition-colors mx-auto" data-testid="link-forgot-password">
                     <HelpCircle className="w-3.5 h-3.5" /> نسيت كلمة المرور؟
                   </button>
                 </div>
@@ -737,15 +739,7 @@ export default function LoginPage() {
           )}
         </div>
 
-        <div className="text-center mt-6 text-xs text-gray-400 dark:text-gray-500">
-          <div className="flex items-center justify-center gap-4">
-            <div className="flex items-center gap-1"><div className="w-1.5 h-1.5 bg-green-400 rounded-full animate-pulse" /><span>+50,000 طالب</span></div>
-            <div className="w-px h-3 bg-gray-300 dark:bg-gray-700" />
-            <span>5,565+ سؤال</span>
-            <div className="w-px h-3 bg-gray-300 dark:bg-gray-700" />
-            <span>تقييم 4.9 ⭐</span>
-          </div>
-        </div>
+        <p className="text-center mt-6 text-xs tracking-[0.18em] text-[#94A3B8]">QIROX STUDIO</p>
       </div>
     </div>
   );

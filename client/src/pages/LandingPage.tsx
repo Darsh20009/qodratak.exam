@@ -1,272 +1,129 @@
 import { Link } from "wouter";
-import { useState, useEffect, useRef } from "react";
+import { useState } from "react";
 import {
-  Brain, Target, Trophy, Zap, Star, BookOpen, Users, CheckCircle,
-  BarChart3, Clock, GraduationCap, FileText, TrendingUp, Medal,
-  Menu, X, ArrowLeft, Layers, Gamepad2, ChevronLeft, Crown,
-  Flame, MessageCircle, Play, Shield
+  ArrowLeft,
+  BookOpen,
+  BrainCircuit,
+  Building2,
+  CheckCircle2,
+  ChevronLeft,
+  Globe2,
+  GraduationCap,
+  Headphones,
+  Languages,
+  Menu,
+  MessageCircle,
+  ShieldCheck,
+  Sparkles,
+  Target,
+  X,
 } from "lucide-react";
 
-const PRIMARY = "#1a7c3e";
-const PRIMARY_LIGHT = "#e8f5ee";
-const PRIMARY_DARK = "#145f30";
+const NAVY = "#0D1B2A";
+const SLATE = "#1E2938";
+const MIST = "#94A3B8";
+const SIGNAL = "#F7F775";
+const CANVAS = "#E5E7EB";
 
-function useCountUp(target: number, duration = 1800, active = false) {
-  const [n, setN] = useState(0);
-  useEffect(() => {
-    if (!active) return;
-    let start: number | null = null;
-    const step = (ts: number) => {
-      if (!start) start = ts;
-      const p = Math.min((ts - start) / duration, 1);
-      setN(Math.floor(p * target));
-      if (p < 1) requestAnimationFrame(step);
-    };
-    requestAnimationFrame(step);
-  }, [active, target, duration]);
-  return n;
-}
-
-const stats = [
-  { value: 5565, suffix: "+", label: "سؤال تدريبي", icon: BookOpen },
-  { value: 10000, suffix: "+", label: "طالب مسجّل", icon: Users },
-  { value: 36, suffix: "", label: "نموذج ورقي", icon: FileText },
-  { value: 98, suffix: "%", label: "نسبة رضا الطلاب", icon: Star },
-];
-
-const features = [
+const pathways = [
+  {
+    icon: BrainCircuit,
+    eyebrow: "قدرات",
+    title: "تدريب يقرأ مستواك",
+    description: "اختبارات منظمة، شروحات واضحة، وخطة تتقدم معك خطوة بخطوة.",
+  },
   {
     icon: GraduationCap,
-    title: "محاكاة اختبار قياس الحقيقي",
-    desc: "اختبر نفسك بنفس آلية قياس الرسمي — 7 أقسام، توقيت دقيق، تصحيح فوري بالذكاء الاصطناعي",
-    badge: "الأكثر شيوعاً",
-    color: "#1a7c3e",
-    bg: "#e8f5ee",
+    eyebrow: "تحصيلي",
+    title: "تحضير منضبط للمواد",
+    description: "مسارات تعلّم قابلة للتخصيص حسب المادة والوقت المتاح لك.",
   },
   {
-    icon: Brain,
-    title: "بنك أسئلة 5,565+ سؤال",
-    desc: "أسئلة لفظية وكمية بمستويات متدرّجة مع شروحات تفصيلية واستراتيجيات الحل",
-    badge: "5,565 سؤال",
-    color: "#1d4ed8",
-    bg: "#dbeafe",
-  },
-  {
-    icon: BarChart3,
-    title: "تحليل أدائك الذكي",
-    desc: "رسوم بيانية تفصيلية تكشف نقاط قوتك وضعفك — اعرف أين تصرف وقتك بدقة",
-    badge: "ذكاء اصطناعي",
-    color: "#6d28d9",
-    bg: "#ede9fe",
-  },
-  {
-    icon: FileText,
-    title: "36 نموذج ورقي حقيقي",
-    desc: "نماذج من اختبارات قياس السابقة مع نماذج الإجابة — الأقرب لما ستواجهه فعلاً",
-    badge: "36 نموذج",
-    color: "#b45309",
-    bg: "#fef3c7",
-  },
-  {
-    icon: Gamepad2,
-    title: "اختبار جماعي مباشر",
-    desc: "نافس أصدقاءك في الوقت الفعلي — من يجيب أسرع وأدق؟ دراسة تبدو كلعبة",
-    badge: "🔥 جديد",
-    color: "#be123c",
-    bg: "#ffe4e6",
-  },
-  {
-    icon: Layers,
-    title: "بطاقات المراجعة السريعة",
-    desc: "راجع أهم القواعد والاستراتيجيات في دقائق قبل يوم الاختبار",
-    badge: "مراجعة سريعة",
-    color: "#0891b2",
-    bg: "#cffafe",
+    icon: Globe2,
+    eyebrow: "IELTS",
+    title: "توسّع جاهز للمستقبل",
+    description: "بنية تعليمية واحدة تُضيف الاختبارات الجديدة من دون تعقيد.",
   },
 ];
 
-const howItWorks = [
-  {
-    step: "01",
-    title: "سجّل مجاناً في ثوانٍ",
-    desc: "لا بطاقة ائتمانية. 7 أيام تجربة مجانية كاملة لجميع الميزات.",
-    icon: Users,
-  },
-  {
-    step: "02",
-    title: "اختر طريقة تدريبك",
-    desc: "محاكاة قياس كاملة، بنك أسئلة، نماذج ورقية — أنت تقرر.",
-    icon: Target,
-  },
-  {
-    step: "03",
-    title: "تدرّب وتحلّل وتحسّن",
-    desc: "اقرأ شروحات الأسئلة وشاهد تقدمك في لوحة التحليل الذكية.",
-    icon: TrendingUp,
-  },
-  {
-    step: "04",
-    title: "ادخل الاختبار بثقة",
-    desc: "بعد التدريب المكثف، ستدخل قياس وأنت جاهز على أعلى مستوى.",
-    icon: Trophy,
-  },
+const principles = [
+  "تجربة اختبار مركّزة بلا تشتيت",
+  "نتائج مفهومة وخطة قابلة للتنفيذ",
+  "دعم عربي وإنجليزي لجميع المستخدمين",
+  "منصة متصلة للطالب والمدرس والمدرسة",
 ];
 
-const testimonials = [
-  {
-    name: "عبدالرحمن المطيري",
-    score: "97",
-    prev: "72",
-    period: "شهرين",
-    text: "كانت درجتي 72 وكنت يائس. بعد شهرين على قدراتك وصلت 97. الأسئلة دقيقة جداً وأقرب للاختبار الحقيقي من أي مصدر ثاني.",
-    avatar: "ع",
-    color: "#1a7c3e",
-  },
-  {
-    name: "نورة العتيبي",
-    score: "95",
-    prev: "68",
-    period: "شهر ونصف",
-    text: "الشروحات التفصيلية غيّرت فهمي للكمي. ما كنت أفهم الاحتمالات، بعد قدراتك صارت من أقوى نقاطي. شكراً!",
-    avatar: "ن",
-    color: "#1d4ed8",
-  },
-  {
-    name: "خالد الشهري",
-    score: "93",
-    prev: "75",
-    period: "3 أشهر",
-    text: "الاختبار الجماعي مع الأصدقاء حوّل الدراسة لمتعة. كنا نتنافس كل يوم وتحسّنت نتائجنا كلنا. محاكاة قياس 1:1 مطابقة.",
-    avatar: "خ",
-    color: "#7c3aed",
-  },
-];
-
-const plans = [
-  {
-    name: "مجاني",
-    price: "0",
-    period: "",
-    desc: "ابدأ رحلتك بدون تكلفة",
-    features: ["50 سؤال تجريبي", "اختبار مستوى أساسي", "الانضمام للاختبار الجماعي"],
-    cta: "ابدأ مجاناً",
-    href: "/signup",
-    accent: "#6b7280",
-    popular: false,
-    badge: null,
-  },
-  {
-    name: "Pro",
-    price: "29",
-    period: "/ شهر",
-    desc: "للتحضير الجاد والمنهجي",
-    features: [
-      "5,565+ سؤال كامل مع شروحات",
-      "محاكاة كاملة لاختبار قياس",
-      "إنشاء وإدارة اختبار جماعي",
-      "تحليل أداء متقدم + رسوم بيانية",
-      "36 نموذج ورقي من قياس السابقة",
-      "بطاقات مراجعة + اختبار تكيفي",
-      "دعم فني على مدار الساعة",
-    ],
-    cta: "اشترك الآن",
-    href: "/subscription",
-    accent: "#1a7c3e",
-    popular: true,
-    badge: "⭐ الأكثر شراءً",
-  },
-  {
-    name: "Pro Life Plus",
-    price: "199",
-    period: "/ سنة",
-    desc: "الوصول مدى الحياة — القيمة الأعلى",
-    features: [
-      "كل مميزات Pro",
-      "وصول مدى الحياة بدون تجديد",
-      "أسئلة حصرية VIP",
-      "شهادة إتمام معتمدة",
-      "مجتمع المتميزين الخاص",
-      "دعم أولوية قصوى 24/7",
-    ],
-    cta: "💎 احصل عليه الآن",
-    href: "/subscription",
-    accent: "#b45309",
-    popular: false,
-    badge: "💎 أفضل قيمة",
-  },
-];
-
-const navLinks = [
-  { label: "المميزات", href: "#features" },
-  { label: "كيف يعمل", href: "#how" },
-  { label: "الأسعار", href: "#pricing" },
-  { label: "آراء الطلاب", href: "#reviews" },
-];
-
-function NavBar() {
-  const [scrolled, setScrolled] = useState(false);
-  const [open, setOpen] = useState(false);
-
-  useEffect(() => {
-    const fn = () => setScrolled(window.scrollY > 40);
-    window.addEventListener("scroll", fn);
-    return () => window.removeEventListener("scroll", fn);
-  }, []);
+function Header() {
+  const [menuOpen, setMenuOpen] = useState(false);
+  const links = [
+    { label: "المنصة", href: "#platform" },
+    { label: "للمدارس", href: "#institutions" },
+    { label: "عن قدراتك", href: "#about" },
+  ];
 
   return (
-    <header
-      className={`fixed top-0 inset-x-0 z-50 transition-all duration-300 ${
-        scrolled ? "bg-white shadow-sm border-b border-gray-100" : "bg-white/90 backdrop-blur-sm"
-      }`}
-    >
-      <div className="max-w-7xl mx-auto px-4 h-16 flex items-center justify-between">
-        <Link href="/" className="flex items-center gap-2 group">
-          <div className="w-9 h-9 rounded-xl overflow-hidden shadow-md group-hover:scale-105 transition-transform">
-            <img src="/logo-512x512.png" alt="قدراتك" className="w-full h-full object-cover" />
+    <header className="sticky top-0 z-50 border-b border-slate-200/80 bg-white/90 backdrop-blur-xl">
+      <div className="mx-auto flex h-[72px] max-w-7xl items-center justify-between px-5 lg:px-8">
+        <Link href="/" className="qodratak-focus-ring flex items-center gap-3 rounded-lg">
+          <img
+            src="/qodratak-logo.png"
+            alt="قدراتك"
+            className="h-11 w-11 rounded-xl object-cover object-top shadow-sm"
+          />
+          <div className="leading-tight">
+            <span className="block text-lg font-black tracking-tight" style={{ color: NAVY }}>قدراتك</span>
+            <span className="block text-[10px] font-bold tracking-[0.18em]" style={{ color: MIST }}>QODRATAK</span>
           </div>
-          <span className="font-black text-xl" style={{ color: PRIMARY }}>قدراتك</span>
         </Link>
 
-        <nav className="hidden md:flex items-center gap-6">
-          {navLinks.map((l) => (
-            <a key={l.href} href={l.href} className="text-sm font-medium text-gray-600 hover:text-gray-900 transition-colors">
-              {l.label}
+        <nav className="hidden items-center gap-7 md:flex">
+          {links.map((link) => (
+            <a key={link.href} href={link.href} className="qodratak-focus-ring rounded-md text-sm font-bold text-slate-600 transition-colors hover:text-slate-950">
+              {link.label}
             </a>
           ))}
         </nav>
 
-        <div className="hidden md:flex items-center gap-3">
-          <Link href="/login" className="text-sm font-semibold text-gray-700 hover:text-gray-900 px-4 py-2 rounded-lg hover:bg-gray-100 transition-all">
+        <div className="hidden items-center gap-3 md:flex">
+          <Link href="/login" className="qodratak-focus-ring rounded-xl px-4 py-2 text-sm font-black text-slate-700 transition hover:bg-slate-100">
             تسجيل الدخول
           </Link>
           <Link
             href="/signup"
-            className="text-sm font-bold text-white px-5 py-2.5 rounded-xl shadow-md hover:shadow-lg transition-all hover:-translate-y-0.5 active:translate-y-0"
-            style={{ background: PRIMARY }}
+            className="qodratak-focus-ring inline-flex items-center gap-2 rounded-xl px-5 py-2.5 text-sm font-black transition hover:-translate-y-0.5"
+            style={{ background: NAVY, color: "white", boxShadow: "0 8px 22px rgba(13, 27, 42, 0.18)" }}
           >
-            ابدأ مجاناً
+            ابدأ رحلتك <ArrowLeft size={16} />
           </Link>
         </div>
 
-        <button className="md:hidden p-2 rounded-lg hover:bg-gray-100" onClick={() => setOpen(!open)}>
-          {open ? <X size={22} /> : <Menu size={22} />}
+        <button
+          type="button"
+          aria-label={menuOpen ? "إغلاق القائمة" : "فتح القائمة"}
+          aria-expanded={menuOpen}
+          onClick={() => setMenuOpen((value) => !value)}
+          className="qodratak-focus-ring rounded-lg p-2 text-slate-700 md:hidden"
+        >
+          {menuOpen ? <X size={24} /> : <Menu size={24} />}
         </button>
       </div>
 
-      {open && (
-        <div className="md:hidden bg-white border-t border-gray-100 px-4 py-4 space-y-3">
-          {navLinks.map((l) => (
-            <a key={l.href} href={l.href} onClick={() => setOpen(false)} className="block py-2 text-sm font-medium text-gray-700">
-              {l.label}
-            </a>
-          ))}
-          <div className="flex gap-3 pt-2">
-            <Link href="/login" className="flex-1 text-center py-2.5 text-sm font-semibold border border-gray-200 rounded-xl text-gray-700">
-              دخول
-            </Link>
-            <Link href="/signup" className="flex-1 text-center py-2.5 text-sm font-bold text-white rounded-xl" style={{ background: PRIMARY }}>
-              ابدأ مجاناً
-            </Link>
+      {menuOpen && (
+        <div className="border-t border-slate-200 bg-white px-5 py-4 md:hidden">
+          <div className="mx-auto flex max-w-7xl flex-col gap-1">
+            {links.map((link) => (
+              <a key={link.href} href={link.href} onClick={() => setMenuOpen(false)} className="rounded-lg px-3 py-3 text-sm font-bold text-slate-700 hover:bg-slate-100">
+                {link.label}
+              </a>
+            ))}
+            <div className="mt-2 grid grid-cols-2 gap-3">
+              <Link href="/login" className="rounded-xl border border-slate-200 px-3 py-3 text-center text-sm font-black text-slate-700">
+                دخول
+              </Link>
+              <Link href="/signup" className="rounded-xl px-3 py-3 text-center text-sm font-black text-white" style={{ background: NAVY }}>
+                إنشاء حساب
+              </Link>
+            </div>
           </div>
         </div>
       )}
@@ -274,157 +131,157 @@ function NavBar() {
   );
 }
 
-function StatsSection() {
-  const ref = useRef<HTMLDivElement>(null);
-  const [visible, setVisible] = useState(false);
-  useEffect(() => {
-    const obs = new IntersectionObserver(([e]) => { if (e.isIntersecting) setVisible(true); }, { threshold: 0.3 });
-    if (ref.current) obs.observe(ref.current);
-    return () => obs.disconnect();
-  }, []);
-  const c0 = useCountUp(5565, 1600, visible);
-  const c1 = useCountUp(10000, 1800, visible);
-  const c2 = useCountUp(36, 1200, visible);
-  const c3 = useCountUp(98, 1400, visible);
-  const counts = [c0, c1, c2, c3];
-
-  return (
-    <div ref={ref} className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6">
-      {stats.map((s, i) => (
-        <div key={i} className="bg-white rounded-2xl p-5 text-center shadow-sm border border-gray-100 hover:shadow-md transition-shadow">
-          <div className="w-10 h-10 rounded-xl mx-auto mb-3 flex items-center justify-center" style={{ background: PRIMARY_LIGHT }}>
-            <s.icon size={20} style={{ color: PRIMARY }} />
-          </div>
-          <div className="text-2xl md:text-3xl font-black" style={{ color: PRIMARY }}>
-            {visible ? counts[i].toLocaleString("ar-SA") : "—"}{s.suffix}
-          </div>
-          <div className="text-xs md:text-sm text-gray-500 mt-1 font-medium">{s.label}</div>
-        </div>
-      ))}
-    </div>
-  );
-}
-
 export default function LandingPage() {
   return (
-    <div className="min-h-screen bg-gray-50 text-gray-900 overflow-x-hidden" dir="rtl">
-      <NavBar />
+    <main className="min-h-screen overflow-hidden bg-[#F7F8FA] text-slate-900" dir="rtl">
+      <Header />
 
-      {/* ══════════ HERO ══════════ */}
-      <section id="hero" className="pt-28 pb-16 md:pt-36 md:pb-20 px-4" style={{ background: "linear-gradient(160deg, #f0fdf4 0%, #ffffff 60%, #eff6ff 100%)" }}>
-        <div className="max-w-5xl mx-auto text-center">
-          {/* Badge */}
-          <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full text-sm font-semibold mb-6 border" style={{ background: PRIMARY_LIGHT, color: PRIMARY, borderColor: "#a7f3c0" }}>
-            <Flame size={15} />
-            المنصة الأكثر دقةً في محاكاة اختبار قياس
-          </div>
+      <section className="relative isolate overflow-hidden px-5 pb-16 pt-14 sm:pb-24 sm:pt-20 lg:px-8">
+        <div className="absolute inset-x-0 top-0 -z-10 h-[82%] qodratak-brand-gradient" />
+        <div className="absolute -left-24 top-20 -z-10 h-72 w-72 rounded-full bg-[#F7F775]/20 blur-3xl" />
+        <div className="absolute right-1/4 top-0 -z-10 h-80 w-80 rounded-full bg-slate-400/20 blur-3xl" />
 
-          {/* Headline */}
-          <h1 className="text-4xl md:text-6xl font-black text-gray-900 leading-tight mb-5">
-            حقّق{" "}
-            <span className="relative inline-block">
-              <span style={{ color: PRIMARY }}>نتيجتك المثالية</span>
-              <svg className="absolute -bottom-1 right-0 w-full" height="6" viewBox="0 0 200 6" fill="none">
-                <path d="M0 3 Q100 0 200 3" stroke={PRIMARY} strokeWidth="3" strokeLinecap="round" />
-              </svg>
-            </span>
-            {" "}في قياس
-          </h1>
-
-          <p className="text-lg md:text-xl text-gray-600 max-w-2xl mx-auto leading-relaxed mb-8">
-            5,565+ سؤال حقيقي، محاكاة دقيقة لاختبار قياس، تحليل ذكي لأدائك — كل ما تحتاجه في مكان واحد
-          </p>
-
-          {/* CTAs */}
-          <div className="flex flex-col sm:flex-row gap-3 justify-center mb-12">
-            <Link
-              href="/signup"
-              className="inline-flex items-center justify-center gap-2 px-8 py-4 rounded-2xl text-base font-bold text-white shadow-lg hover:shadow-xl transition-all hover:-translate-y-0.5 active:translate-y-0"
-              style={{ background: PRIMARY }}
-            >
-              <Play size={18} />
-              ابدأ مجاناً — 7 أيام تجربة
-            </Link>
-            <Link
-              href="/login"
-              className="inline-flex items-center justify-center gap-2 px-8 py-4 rounded-2xl text-base font-semibold text-gray-700 bg-white border border-gray-200 shadow-sm hover:shadow-md transition-all hover:border-gray-300"
-            >
-              تسجيل الدخول
-              <ChevronLeft size={18} />
-            </Link>
-          </div>
-
-          {/* Social proof */}
-          <div className="flex items-center justify-center gap-2 text-sm text-gray-500">
-            <div className="flex -space-x-2 space-x-reverse">
-              {["ع", "م", "س", "ن", "خ"].map((l, i) => (
-                <div
-                  key={i}
-                  className="w-8 h-8 rounded-full border-2 border-white flex items-center justify-center text-white text-xs font-bold"
-                  style={{ background: ["#1a7c3e", "#1d4ed8", "#7c3aed", "#be123c", "#b45309"][i] }}
-                >
-                  {l}
-                </div>
-              ))}
+        <div className="mx-auto grid max-w-7xl items-center gap-12 lg:grid-cols-[1.15fr_0.85fr] lg:gap-16">
+          <div className="pt-4 text-center lg:text-right">
+            <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/10 px-4 py-2 text-xs font-bold text-white/90 backdrop-blur">
+              <Sparkles size={15} style={{ color: SIGNAL }} />
+              منصة تعليمية تُبنى حول تقدّمك الحقيقي
             </div>
-            <span>+10,000 طالب يتدربون الآن على المنصة</span>
-          </div>
-        </div>
-      </section>
-
-      {/* ══════════ STATS ══════════ */}
-      <section className="py-10 px-4 bg-white border-y border-gray-100">
-        <div className="max-w-5xl mx-auto">
-          <StatsSection />
-        </div>
-      </section>
-
-      {/* ══════════ FEATURES ══════════ */}
-      <section id="features" className="py-16 md:py-20 px-4 bg-gray-50">
-        <div className="max-w-6xl mx-auto">
-          <div className="text-center mb-12">
-            <div className="inline-block px-4 py-1.5 rounded-full text-sm font-semibold mb-4" style={{ background: PRIMARY_LIGHT, color: PRIMARY }}>
-              لماذا قدراتك؟
+            <h1 className="max-w-3xl text-4xl font-black leading-[1.17] tracking-tight text-white sm:text-5xl lg:text-6xl">
+              قياس واضح لقدراتك.
+              <span className="mt-2 block" style={{ color: SIGNAL }}>وتدريب يصنع الفرق.</span>
+            </h1>
+            <p className="mx-auto mt-6 max-w-2xl text-base leading-8 text-slate-200 sm:text-lg lg:mx-0">
+              قدراتك هي المساحة الهادئة التي تجمع الاختبار، التعلّم، والمتابعة في رحلة واحدة مصممة للطالب السعودي.
+            </p>
+            <div className="mt-9 flex flex-col justify-center gap-3 sm:flex-row lg:justify-start">
+              <Link
+                href="/signup"
+                className="qodratak-focus-ring inline-flex items-center justify-center gap-2 rounded-2xl px-6 py-4 text-sm font-black text-slate-950 transition hover:-translate-y-0.5"
+                style={{ background: SIGNAL, boxShadow: "0 12px 32px rgba(0, 0, 0, 0.22)" }}
+              >
+                أنشئ حسابك الآن <ArrowLeft size={17} />
+              </Link>
+              <a
+                href="#platform"
+                className="qodratak-focus-ring inline-flex items-center justify-center gap-2 rounded-2xl border border-white/20 bg-white/5 px-6 py-4 text-sm font-black text-white transition hover:bg-white/10"
+              >
+                اكتشف المنصة <ChevronLeft size={17} />
+              </a>
             </div>
-            <h2 className="text-3xl md:text-4xl font-black text-gray-900 mb-3">كل ما تحتاجه في مكان واحد</h2>
-            <p className="text-gray-500 max-w-xl mx-auto">منصة متكاملة صُممت خصيصاً للطالب السعودي الذي يريد التحضير الجاد لاختبار قياس</p>
+            <div className="mt-8 flex flex-wrap justify-center gap-x-5 gap-y-2 text-xs font-bold text-slate-300 lg:justify-start">
+              <span className="inline-flex items-center gap-1.5"><ShieldCheck size={15} style={{ color: SIGNAL }} />خصوصية وأمان</span>
+              <span className="inline-flex items-center gap-1.5"><Languages size={15} style={{ color: SIGNAL }} />عربي وإنجليزي</span>
+              <span className="inline-flex items-center gap-1.5"><MessageCircle size={15} style={{ color: SIGNAL }} />متابعة قريبة منك</span>
+            </div>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
-            {features.map((f, i) => (
-              <div key={i} className="bg-white rounded-2xl p-6 border border-gray-100 hover:shadow-lg transition-all hover:-translate-y-1 group">
-                <div className="w-12 h-12 rounded-xl flex items-center justify-center mb-4" style={{ background: f.bg }}>
-                  <f.icon size={24} style={{ color: f.color }} />
+          <div className="relative mx-auto w-full max-w-md lg:max-w-none">
+            <div className="absolute -inset-4 rounded-[2rem] bg-[#F7F775]/15 blur-2xl" />
+            <div className="relative overflow-hidden rounded-[1.75rem] border border-white/35 bg-white p-3 shadow-2xl">
+              <div className="overflow-hidden rounded-[1.25rem] bg-[#E5E7EB] p-5 sm:p-6">
+                <div className="mb-7 flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-white shadow-sm">
+                      <Target size={22} style={{ color: NAVY }} />
+                    </div>
+                    <div>
+                      <p className="text-xs font-bold text-slate-500">لوحة التقدّم</p>
+                      <p className="text-sm font-black" style={{ color: NAVY }}>رحلتك اليوم</p>
+                    </div>
+                  </div>
+                  <span className="rounded-lg bg-white px-3 py-1.5 text-xs font-black text-slate-600">الطالب</span>
                 </div>
-                <div className="inline-block px-2.5 py-1 rounded-md text-xs font-bold mb-3" style={{ background: f.bg, color: f.color }}>
-                  {f.badge}
+                <div className="rounded-2xl p-5 text-white" style={{ background: NAVY }}>
+                  <p className="text-xs font-bold text-slate-300">خطة اليوم</p>
+                  <div className="mt-4 flex items-end justify-between">
+                    <div>
+                      <p className="text-3xl font-black">01</p>
+                      <p className="mt-1 text-xs font-bold text-slate-300">جلسة مركزة</p>
+                    </div>
+                    <BrainCircuit size={34} style={{ color: SIGNAL }} />
+                  </div>
+                  <div className="mt-5 h-2 overflow-hidden rounded-full bg-white/15">
+                    <div className="h-full w-[44%] rounded-full" style={{ background: SIGNAL }} />
+                  </div>
                 </div>
-                <h3 className="text-base font-bold text-gray-900 mb-2">{f.title}</h3>
-                <p className="text-sm text-gray-500 leading-relaxed">{f.desc}</p>
+                <div className="mt-4 grid grid-cols-2 gap-3">
+                  <div className="rounded-2xl bg-white p-4">
+                    <p className="text-xs font-bold text-slate-500">خطوة تالية</p>
+                    <p className="mt-2 text-sm font-black" style={{ color: NAVY }}>اختبار تدريبي</p>
+                  </div>
+                  <div className="rounded-2xl bg-white p-4">
+                    <p className="text-xs font-bold text-slate-500">التعلّم</p>
+                    <p className="mt-2 text-sm font-black" style={{ color: NAVY }}>مسار شخصي</p>
+                  </div>
+                </div>
               </div>
+            </div>
+            <div className="absolute -bottom-5 -right-5 rounded-2xl border border-slate-200 bg-white px-4 py-3 shadow-xl">
+              <p className="text-[10px] font-bold text-slate-400">بدعم</p>
+              <p className="text-xs font-black" style={{ color: NAVY }}>Qirox Studio</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section id="platform" className="px-5 py-20 lg:px-8">
+        <div className="mx-auto max-w-7xl">
+          <div className="max-w-2xl">
+            <p className="text-sm font-black" style={{ color: SLATE }}>منصة واحدة. مسارات كثيرة.</p>
+            <h2 className="mt-3 text-3xl font-black leading-tight sm:text-4xl" style={{ color: NAVY }}>
+              كل أداة تحتاجها لتتقدّم بثقة.
+            </h2>
+            <p className="mt-4 leading-7 text-slate-500">
+              من أول اختبار تشخيصي إلى آخر مراجعة، تبقى تجربتك منظمة وسهلة الفهم.
+            </p>
+          </div>
+
+          <div className="mt-10 grid gap-5 lg:grid-cols-3">
+            {pathways.map((pathway) => (
+              <article key={pathway.eyebrow} className="group rounded-3xl border border-slate-200 bg-white p-7 shadow-[0_10px_30px_rgba(13,27,42,0.04)] transition duration-300 hover:-translate-y-1 hover:shadow-[0_20px_45px_rgba(13,27,42,0.10)]">
+                <div className="flex h-12 w-12 items-center justify-center rounded-2xl" style={{ background: CANVAS, color: NAVY }}>
+                  <pathway.icon size={25} />
+                </div>
+                <p className="mt-7 text-xs font-black tracking-[0.16em]" style={{ color: MIST }}>{pathway.eyebrow}</p>
+                <h3 className="mt-2 text-xl font-black" style={{ color: NAVY }}>{pathway.title}</h3>
+                <p className="mt-3 text-sm leading-7 text-slate-500">{pathway.description}</p>
+              </article>
             ))}
           </div>
+        </div>
+      </section>
 
-          {/* Advantage over competitor */}
-          <div className="mt-10 rounded-2xl p-6 md:p-8" style={{ background: PRIMARY_LIGHT, border: `1px solid #a7f3c0` }}>
-            <div className="flex flex-col md:flex-row items-start md:items-center gap-6">
-              <div className="flex-1">
-                <h3 className="text-xl font-black mb-2" style={{ color: PRIMARY }}>لماذا قدراتك أفضل من الدورات التقليدية؟</h3>
-                <p className="text-sm text-gray-600 leading-relaxed">
-                  الدورات تعطيك نظرياً — قدراتك تُدرّبك عملياً. الفرق بين من درس وبين من تدرّب.
-                  اختبر نفسك بالأسئلة الحقيقية، وليس بالشروحات النظرية.
-                </p>
+      <section id="institutions" className="px-5 py-10 lg:px-8">
+        <div className="mx-auto grid max-w-7xl overflow-hidden rounded-[2rem] lg:grid-cols-[0.9fr_1.1fr]" style={{ background: SLATE }}>
+          <div className="p-8 sm:p-12">
+            <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-white/10" style={{ color: SIGNAL }}>
+              <Building2 size={26} />
+            </div>
+            <p className="mt-8 text-sm font-black" style={{ color: SIGNAL }}>للمدارس والمعلّمين</p>
+            <h2 className="mt-3 text-3xl font-black leading-tight text-white">متابعة حقيقية، من غير تعقيد.</h2>
+            <p className="mt-5 max-w-xl text-sm leading-7 text-slate-300">
+              لوحات منفصلة للمدرس والمدرسة تساعدهم على متابعة المجموعات، الخطط، والتقدّم في مكان واحد.
+            </p>
+            <Link href="/signup" className="qodratak-focus-ring mt-8 inline-flex items-center gap-2 rounded-xl bg-white px-5 py-3 text-sm font-black transition hover:bg-slate-100" style={{ color: NAVY }}>
+              ابدأ كمؤسسة <ArrowLeft size={16} />
+            </Link>
+          </div>
+          <div className="relative min-h-[280px] p-8 sm:p-12">
+            <div className="absolute inset-0 opacity-30" style={{ backgroundImage: "radial-gradient(#F7F775 1px, transparent 1px)", backgroundSize: "22px 22px" }} />
+            <div className="relative mt-3 rounded-3xl bg-white p-6 shadow-2xl">
+              <div className="flex items-center justify-between border-b border-slate-100 pb-5">
+                <div>
+                  <p className="text-xs font-bold text-slate-500">نظرة عامة للمؤسسة</p>
+                  <p className="mt-1 text-lg font-black" style={{ color: NAVY }}>متابعة منظمة</p>
+                </div>
+                <div className="h-9 w-9 rounded-xl" style={{ background: SIGNAL }} />
               </div>
-              <div className="grid grid-cols-2 gap-3 flex-shrink-0">
-                {[
-                  { label: "أسئلة حقيقية", v: "5,565+" },
-                  { label: "نماذج سابقة", v: "36" },
-                  { label: "تحليل ذكي", v: "فوري" },
-                  { label: "محاكاة دقيقة", v: "100%" },
-                ].map((item, i) => (
-                  <div key={i} className="bg-white rounded-xl p-3 text-center border border-green-100">
-                    <div className="text-lg font-black" style={{ color: PRIMARY }}>{item.v}</div>
-                    <div className="text-xs text-gray-500">{item.label}</div>
+              <div className="mt-6 space-y-3">
+                {["خطط الدراسة", "تقارير الأداء", "الاختبارات المجدولة"].map((item, index) => (
+                  <div key={item} className="flex items-center justify-between rounded-xl bg-slate-50 px-4 py-3">
+                    <span className="text-sm font-bold text-slate-700">{item}</span>
+                    <span className="text-xs font-black" style={{ color: NAVY }}>0{index + 1}</span>
                   </div>
                 ))}
               </div>
@@ -433,231 +290,52 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* ══════════ HOW IT WORKS ══════════ */}
-      <section id="how" className="py-16 md:py-20 px-4 bg-white">
-        <div className="max-w-5xl mx-auto">
-          <div className="text-center mb-12">
-            <div className="inline-block px-4 py-1.5 rounded-full text-sm font-semibold mb-4" style={{ background: PRIMARY_LIGHT, color: PRIMARY }}>
-              كيف تبدأ؟
-            </div>
-            <h2 className="text-3xl md:text-4xl font-black text-gray-900 mb-3">أربع خطوات فقط للوصول لنتيجتك</h2>
+      <section id="about" className="px-5 py-20 lg:px-8">
+        <div className="mx-auto grid max-w-7xl gap-12 lg:grid-cols-2 lg:items-center">
+          <div>
+            <p className="text-sm font-black" style={{ color: SLATE }}>كيف نفكر في التعلّم</p>
+            <h2 className="mt-3 text-3xl font-black leading-tight sm:text-4xl" style={{ color: NAVY }}>
+              تركيز أكثر. ضجيج أقل. تقدّم يمكن قياسه.
+            </h2>
+            <p className="mt-5 max-w-xl leading-8 text-slate-500">
+              نعيد بناء قدراتك على أساس واحد: أن يفهم الطالب أين هو، وما هي خطوته التالية، وكيف يصل إليها بثقة.
+            </p>
           </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-6 relative">
-            <div className="hidden md:block absolute top-8 right-[12.5%] left-[12.5%] h-0.5" style={{ background: `linear-gradient(90deg, ${PRIMARY}, transparent)` }} />
-            {howItWorks.map((s, i) => (
-              <div key={i} className="relative text-center">
-                <div className="w-16 h-16 rounded-2xl mx-auto mb-4 flex items-center justify-center shadow-md" style={{ background: i === 0 ? PRIMARY : "#f8fafc", border: i === 0 ? "none" : "2px solid #e2e8f0" }}>
-                  <s.icon size={28} style={{ color: i === 0 ? "white" : PRIMARY }} />
-                </div>
-                <div className="text-xs font-black mb-1" style={{ color: PRIMARY }}>الخطوة {s.step}</div>
-                <h3 className="text-sm font-bold text-gray-900 mb-2">{s.title}</h3>
-                <p className="text-xs text-gray-500 leading-relaxed">{s.desc}</p>
-              </div>
+          <ul className="grid gap-3">
+            {principles.map((principle) => (
+              <li key={principle} className="flex items-center gap-3 rounded-2xl border border-slate-200 bg-white px-5 py-4 text-sm font-bold text-slate-700">
+                <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full" style={{ background: SIGNAL, color: NAVY }}>
+                  <CheckCircle2 size={15} />
+                </span>
+                {principle}
+              </li>
             ))}
-          </div>
+          </ul>
         </div>
       </section>
 
-      {/* ══════════ TESTIMONIALS ══════════ */}
-      <section id="reviews" className="py-16 md:py-20 px-4 bg-gray-50">
-        <div className="max-w-5xl mx-auto">
-          <div className="text-center mb-12">
-            <div className="inline-block px-4 py-1.5 rounded-full text-sm font-semibold mb-4" style={{ background: PRIMARY_LIGHT, color: PRIMARY }}>
-              قصص نجاح حقيقية
-            </div>
-            <h2 className="text-3xl md:text-4xl font-black text-gray-900 mb-3">طلاب غيّروا نتائجهم بقدراتك</h2>
-            <p className="text-gray-500">ليس مجرد كلام — أرقام حقيقية من طلاب حقيقيين</p>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            {testimonials.map((t, i) => (
-              <div key={i} className="bg-white rounded-2xl p-6 border border-gray-100 shadow-sm hover:shadow-md transition-shadow">
-                {/* Score badge */}
-                <div className="flex items-center justify-between mb-4">
-                  <div className="flex items-center gap-3">
-                    <div className="w-12 h-12 rounded-xl flex items-center justify-center text-white text-lg font-black" style={{ background: t.color }}>
-                      {t.avatar}
-                    </div>
-                    <div>
-                      <div className="font-bold text-sm text-gray-900">{t.name}</div>
-                      <div className="text-xs text-gray-400">خلال {t.period}</div>
-                    </div>
-                  </div>
-                  <div className="text-right">
-                    <div className="text-xs text-gray-400 line-through">{t.prev}%</div>
-                    <div className="text-2xl font-black" style={{ color: t.color }}>{t.score}%</div>
-                  </div>
-                </div>
-
-                {/* Score bar */}
-                <div className="mb-4">
-                  <div className="flex justify-between text-xs text-gray-400 mb-1">
-                    <span>قبل</span>
-                    <span className="font-semibold" style={{ color: t.color }}>+{parseInt(t.score) - parseInt(t.prev)} نقطة</span>
-                    <span>بعد</span>
-                  </div>
-                  <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
-                    <div className="h-full rounded-full transition-all" style={{ width: `${t.score}%`, background: t.color }} />
-                  </div>
-                </div>
-
-                <p className="text-sm text-gray-600 leading-relaxed">"{t.text}"</p>
-
-                <div className="flex mt-3">
-                  {[1, 2, 3, 4, 5].map((s) => <Star key={s} size={14} fill={t.color} style={{ color: t.color }} />)}
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* ══════════ PRICING ══════════ */}
-      <section id="pricing" className="py-16 md:py-20 px-4 bg-white">
-        <div className="max-w-5xl mx-auto">
-          <div className="text-center mb-12">
-            <div className="inline-block px-4 py-1.5 rounded-full text-sm font-semibold mb-4" style={{ background: PRIMARY_LIGHT, color: PRIMARY }}>
-              الأسعار
-            </div>
-            <h2 className="text-3xl md:text-4xl font-black text-gray-900 mb-3">استثمر في مستقبلك</h2>
-            <p className="text-gray-500">ابدأ مجاناً — اشترك عندما تكون مستعداً</p>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-5 items-start">
-            {plans.map((p, i) => (
-              <div
-                key={i}
-                className={`rounded-2xl border p-6 relative transition-all hover:-translate-y-1 hover:shadow-lg ${
-                  p.popular ? "border-2 shadow-xl" : "border-gray-100 bg-white"
-                }`}
-                style={p.popular ? { borderColor: p.accent, background: "#fafffe" } : {}}
-              >
-                {p.badge && (
-                  <div
-                    className="absolute -top-3 left-1/2 -translate-x-1/2 px-4 py-1 rounded-full text-xs font-bold text-white whitespace-nowrap"
-                    style={{ background: p.accent }}
-                  >
-                    {p.badge}
-                  </div>
-                )}
-
-                <div className="mb-4">
-                  <h3 className="text-lg font-black text-gray-900">{p.name}</h3>
-                  <p className="text-xs text-gray-500 mt-0.5">{p.desc}</p>
-                </div>
-
-                <div className="flex items-baseline gap-1 mb-5">
-                  <span className="text-4xl font-black" style={{ color: p.accent }}>{p.price}</span>
-                  <span className="text-sm text-gray-400 font-medium">ر.س{p.period}</span>
-                </div>
-
-                <Link
-                  href={p.href}
-                  className="block w-full text-center py-3 rounded-xl text-sm font-bold mb-5 transition-all hover:-translate-y-0.5"
-                  style={p.popular
-                    ? { background: p.accent, color: "white", boxShadow: `0 4px 14px ${p.accent}40` }
-                    : { background: "#f8fafc", color: "#374151", border: "1px solid #e5e7eb" }
-                  }
-                >
-                  {p.cta}
-                </Link>
-
-                <ul className="space-y-2.5">
-                  {p.features.map((f, j) => (
-                    <li key={j} className="flex items-start gap-2 text-sm text-gray-600">
-                      <CheckCircle size={16} className="flex-shrink-0 mt-0.5" style={{ color: p.accent }} />
-                      {f}
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            ))}
-          </div>
-
-          <p className="text-center text-sm text-gray-400 mt-6">
-            <Shield size={14} className="inline ml-1" />
-            جميع الخطط تبدأ بتجربة مجانية 7 أيام — لا بطاقة ائتمانية مطلوبة
+      <section className="px-5 pb-20 lg:px-8">
+        <div className="mx-auto max-w-7xl rounded-[2rem] px-7 py-12 text-center sm:px-12" style={{ background: CANVAS }}>
+          <Headphones className="mx-auto" size={29} style={{ color: NAVY }} />
+          <h2 className="mt-5 text-3xl font-black" style={{ color: NAVY }}>ابدأ بخطوتك التالية.</h2>
+          <p className="mx-auto mt-3 max-w-xl text-sm leading-7 text-slate-500">
+            أنشئ حسابك وابدأ رحلتك التعليمية مع قدراتك.
           </p>
+          <Link href="/signup" className="qodratak-focus-ring mt-7 inline-flex items-center gap-2 rounded-xl px-6 py-3.5 text-sm font-black text-white transition hover:-translate-y-0.5" style={{ background: NAVY }}>
+            ابدأ الآن <ArrowLeft size={16} />
+          </Link>
         </div>
       </section>
 
-      {/* ══════════ FINAL CTA ══════════ */}
-      <section className="py-16 md:py-20 px-4" style={{ background: `linear-gradient(135deg, ${PRIMARY}, ${PRIMARY_DARK})` }}>
-        <div className="max-w-3xl mx-auto text-center text-white">
-          <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full text-sm font-semibold mb-6 bg-white/15 border border-white/20">
-            <Trophy size={15} />
-            انضم لأكثر من 10,000 طالب
+      <footer className="border-t border-slate-200 bg-white px-5 py-8 lg:px-8">
+        <div className="mx-auto flex max-w-7xl flex-col items-center justify-between gap-4 text-center sm:flex-row sm:text-right">
+          <div className="flex items-center gap-2">
+            <img src="/qodratak-logo.png" alt="" className="h-8 w-8 rounded-lg object-cover object-top" />
+            <span className="text-sm font-black" style={{ color: NAVY }}>قدراتك</span>
           </div>
-
-          <h2 className="text-3xl md:text-5xl font-black mb-5 leading-tight">
-            درجتك في قياس تنتظرك
-            <br />
-            <span className="opacity-80 text-2xl md:text-3xl font-bold">ابدأ اليوم — مجاناً</span>
-          </h2>
-
-          <p className="text-base opacity-80 mb-8 max-w-lg mx-auto leading-relaxed">
-            كل يوم تأخير هو يوم أقل تدرّباً. المنافسون يتدربون الآن — هل أنت معهم؟
-          </p>
-
-          <div className="flex flex-col sm:flex-row gap-3 justify-center">
-            <Link
-              href="/signup"
-              className="inline-flex items-center justify-center gap-2 px-8 py-4 rounded-2xl text-base font-bold bg-white hover:bg-gray-50 transition-all shadow-lg hover:shadow-xl hover:-translate-y-0.5"
-              style={{ color: PRIMARY }}
-            >
-              <Play size={18} />
-              أنشئ حسابك المجاني
-            </Link>
-            <Link
-              href="/qiyas"
-              className="inline-flex items-center justify-center gap-2 px-8 py-4 rounded-2xl text-base font-semibold text-white border-2 border-white/40 hover:bg-white/10 transition-all"
-            >
-              جرّب اختبار قياس
-              <ArrowLeft size={18} />
-            </Link>
-          </div>
-        </div>
-      </section>
-
-      {/* ══════════ FOOTER ══════════ */}
-      <footer className="bg-gray-900 text-gray-400 py-10 px-4">
-        <div className="max-w-5xl mx-auto">
-          <div className="flex flex-col md:flex-row items-center justify-between gap-6">
-            <div className="flex items-center gap-3">
-              <div className="w-9 h-9 rounded-xl overflow-hidden">
-                <img src="/logo-512x512.png" alt="قدراتك" className="w-full h-full object-cover" />
-              </div>
-              <div>
-                <div className="text-white font-bold">قدراتك</div>
-                <div className="text-xs">منصة التحضير لاختبار قياس</div>
-              </div>
-            </div>
-
-            <div className="flex flex-wrap justify-center gap-6 text-sm">
-              <Link href="/signup" className="hover:text-white transition-colors">إنشاء حساب</Link>
-              <Link href="/login" className="hover:text-white transition-colors">تسجيل الدخول</Link>
-              <Link href="/subscription" className="hover:text-white transition-colors">الاشتراكات</Link>
-              <a href="#features" className="hover:text-white transition-colors">المميزات</a>
-              <a href="#pricing" className="hover:text-white transition-colors">الأسعار</a>
-            </div>
-
-            <div className="flex items-center gap-3">
-              <a
-                href="https://t.me/qodratak"
-                className="w-9 h-9 rounded-xl bg-gray-800 hover:bg-gray-700 flex items-center justify-center transition-colors"
-                target="_blank" rel="noopener noreferrer"
-              >
-                <MessageCircle size={18} />
-              </a>
-            </div>
-          </div>
-
-          <div className="border-t border-gray-800 mt-8 pt-6 text-center text-xs">
-            <p>© {new Date().getFullYear()} قدراتك — جميع الحقوق محفوظة | صُمِّم في المملكة العربية السعودية 🇸🇦</p>
-          </div>
+          <p className="text-xs font-bold text-slate-400">تصميم وتطوير Qirox Studio</p>
         </div>
       </footer>
-    </div>
+    </main>
   );
 }

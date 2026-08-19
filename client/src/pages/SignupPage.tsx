@@ -23,27 +23,27 @@ const accountTypeConfigs = {
     title: "حساب طالب",
     description: "للطلاب المستعدين لاختبار القدرات والتحصيلي",
     icon: User,
-    accent: "from-green-600 to-emerald-700",
-    ring: "ring-green-500",
-    badge: "bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300"
+    accent: "from-[#0D1B2A] to-[#1E2938]",
+    ring: "ring-[#0D1B2A]",
+    badge: "bg-[#E5E7EB] text-[#0D1B2A]"
   },
   teacher: {
     id: "teacher" as AccountType,
     title: "حساب مدرس",
     description: "للمعلمين ومدربي القدرات والتحصيلي",
     icon: GraduationCap,
-    accent: "from-teal-600 to-green-700",
-    ring: "ring-teal-500",
-    badge: "bg-teal-100 text-teal-700 dark:bg-teal-900/40 dark:text-teal-300"
+    accent: "from-[#1E2938] to-[#0D1B2A]",
+    ring: "ring-[#1E2938]",
+    badge: "bg-[#E5E7EB] text-[#0D1B2A]"
   },
   institution: {
     id: "institution" as AccountType,
     title: "حساب مؤسسة",
     description: "للمدارس والمعاهد التعليمية",
     icon: Building2,
-    accent: "from-emerald-600 to-teal-700",
-    ring: "ring-emerald-500",
-    badge: "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300"
+    accent: "from-[#0D1B2A] to-[#1E2938]",
+    ring: "ring-[#0D1B2A]",
+    badge: "bg-[#E5E7EB] text-[#0D1B2A]"
   }
 };
 
@@ -60,20 +60,13 @@ const cities = [
   "خميس مشيط", "حائل", "جازان", "نجران", "الباحة", "الجوف"
 ];
 
-const platformStats = [
-  { value: "+4,500", label: "سؤال تدريبي", icon: BookOpen },
-  { value: "+50K", label: "طالب مسجل", icon: Users },
-  { value: "95%", label: "نسبة النجاح", icon: TrendingUp },
-  { value: "4.9★", label: "تقييم المنصة", icon: Star },
-];
-
 const features = [
-  "محاكاة كاملة لاختبار القياس والتحصيلي",
-  "أكثر من 4,500 سؤال بتحليل تفصيلي",
-  "تقارير أداء ذكية وتتبع التقدم",
-  "لوحة قيادة متكاملة للطالب",
-  "بنك أسئلة يتجدد بانتظام",
-  "دعم فني سريع ومتواصل",
+  "مسار واضح للاستعداد والتقدم",
+  "تدريب منظم مع تغذية راجعة",
+  "لوحة متابعة شخصية للطالب",
+  "مساحة مخصصة للمدارس والمدرسين",
+  "بنك أسئلة يُبنى وفق معايير جودة",
+  "دعم متاح عند الحاجة",
 ];
 
 export default function SignupPage() {
@@ -701,12 +694,12 @@ export default function SignupPage() {
   }
 
   return (
-    <div className="min-h-screen bg-slate-50 dark:bg-gray-950" dir="rtl">
-      <SEO title={`إنشاء حساب - منصة قدراتك`} description="سجّل الآن واحصل على 7 أيام تجريبية مجانية في منصة قدراتك لتحضير اختبارات القياس والتحصيلي" />
+    <div className="min-h-screen bg-[#E5E7EB]/50" dir="rtl">
+      <SEO title="إنشاء حساب - قدراتك" description="أنشئ حسابك في منصة قدراتك لبدء رحلة تعلم منظمة." />
 
       <div className="flex min-h-screen">
-        {/* ─── Right panel: Branding + Stats ─── */}
-        <div className={`hidden lg:flex lg:w-[46%] bg-gradient-to-br ${config.accent} flex-col justify-between p-10 relative overflow-hidden`}>
+        {/* ─── Right panel: Branding ─── */}
+        <div className="hidden lg:flex lg:w-[46%] bg-gradient-to-br from-[#0D1B2A] via-[#1E2938] to-[#0D1B2A] flex-col justify-between p-10 relative overflow-hidden">
           {/* Background decoration */}
           <div className="absolute inset-0 opacity-10">
             <div className="absolute top-10 right-10 w-64 h-64 rounded-full bg-white/20 blur-3xl" />
@@ -716,12 +709,12 @@ export default function SignupPage() {
           <div className="relative z-10">
             {/* Logo */}
             <div className="flex items-center gap-3 mb-14">
-              <div className="w-11 h-11 bg-white/20 backdrop-blur rounded-xl flex items-center justify-center border border-white/30">
-                <Award className="w-6 h-6 text-white" />
+              <div className="w-11 h-11 bg-white rounded-xl flex items-center justify-center overflow-hidden shadow-lg">
+                <img src="/qodratak-logo.png" alt="قدراتك" className="w-full h-full object-cover object-top" />
               </div>
               <div>
-                <div className="text-white font-black text-xl tracking-tight">منصة قدراتك</div>
-                <div className="text-white/70 text-xs">Qodratak Platform</div>
+                <div className="text-white font-black text-xl tracking-tight">قدراتك</div>
+                <div className="text-white/70 text-xs tracking-[0.14em]">QIROX STUDIO</div>
               </div>
             </div>
 
@@ -729,25 +722,22 @@ export default function SignupPage() {
             <div className="mb-10">
               <div className="inline-flex items-center gap-2 bg-white/15 border border-white/25 rounded-full px-4 py-1.5 mb-5">
                 <Sparkles className="w-3.5 h-3.5 text-white" />
-                <span className="text-white text-xs font-semibold">7 أيام تجريبية مجانية</span>
+                <span className="text-white text-xs font-semibold">بداية جديدة بخطوات أوضح</span>
               </div>
               <h1 className="text-4xl font-black text-white leading-tight mb-4">
-                استعد لاختبار<br />القياس والتحصيلي<br />
-                <span className="text-white/80">باحترافية حقيقية</span>
+                ابدأ رحلتك<br />بقياس واضح<br />
+                <span className="text-[#F7F775]">وتدريب يصنع الفرق</span>
               </h1>
               <p className="text-white/75 text-base leading-relaxed max-w-sm">
-                انضم لآلاف الطلاب الذين حسّنوا نتائجهم مع قدراتك — المنصة الأكثر شمولاً لتحضير اختبارات قياس في المملكة.
+                قدراتك مساحة تعليمية هادئة تجمع التدريب والمتابعة في رحلة واحدة مصممة للطالب السعودي.
               </p>
             </div>
 
-            {/* Stats grid */}
-            <div className="grid grid-cols-2 gap-3 mb-10">
-              {platformStats.map((stat) => (
-                <div key={stat.label} className="bg-white/10 border border-white/20 rounded-2xl p-4 backdrop-blur-sm">
-                  <stat.icon className="w-5 h-5 text-white/70 mb-2" />
-                  <div className="text-2xl font-black text-white">{stat.value}</div>
-                  <div className="text-white/65 text-xs mt-0.5">{stat.label}</div>
-                </div>
+            <div className="flex flex-wrap gap-2 mb-10">
+              {["قدرات", "تحصيلي", "IELTS"].map((path) => (
+                <span key={path} className="rounded-full border border-white/20 bg-white/10 px-4 py-2 text-sm font-medium text-white/90">
+                  {path}
+                </span>
               ))}
             </div>
 
@@ -1121,6 +1111,7 @@ export default function SignupPage() {
                           placeholder="6 أحرف على الأقل"
                           value={password}
                           onChange={e => setPassword(e.target.value)}
+                          autoComplete="new-password"
                           data-testid="input-password"
                           className="h-11 rounded-xl border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-white pr-10 pl-10 focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
                         />
@@ -1162,6 +1153,7 @@ export default function SignupPage() {
                           placeholder="أعد إدخال كلمة المرور"
                           value={confirmPassword}
                           onChange={e => setConfirmPassword(e.target.value)}
+                          autoComplete="new-password"
                           data-testid="input-confirmPassword"
                           className={cn(
                             "h-11 rounded-xl border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-white pr-10 pl-10 focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500",

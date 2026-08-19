@@ -232,8 +232,8 @@ const SECONDARY_TOOLS = [
 
 // ─── Logged-in student dashboard ──────────────────────────────────────────────
 
-const GREEN = "#1a7c3e";
-const GREEN_LIGHT = "#e8f5ee";
+const GREEN = "#0D1B2A";
+const GREEN_LIGHT = "#E5E7EB";
 
 function LoggedInDashboard({ user }: { user: any }) {
   const name = user?.name || user?.username || "طالب";

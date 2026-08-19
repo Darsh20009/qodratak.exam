@@ -80,21 +80,30 @@ app.get("/app/qudratak-app.apk", (req: Request, res: Response) => {
   }
 });
 
+const mongoUrl = process.env.MONGODB_URI;
+const sessionStore = mongoUrl
+  ? MongoStore.create({
+      mongoUrl,
+      collectionName: 'sessions',
+      ttl: 30 * 24 * 60 * 60,
+      autoRemove: 'native',
+    })
+  : undefined;
+
+if (!sessionStore) {
+  console.warn("MONGODB_URI is not set; using in-memory sessions for local development only.");
+}
+
 app.use(session({
-  store: MongoStore.create({
-    mongoUrl: process.env.MONGODB_URI,
-    collectionName: 'sessions',
-    ttl: 30 * 24 * 60 * 60,
-    autoRemove: 'native',
-  }),
+  ...(sessionStore ? { store: sessionStore } : {}),
   secret: process.env.SESSION_SECRET || 'qudratak-session-secret-2030',
   resave: false,
   saveUninitialized: false,
   cookie: { 
-    secure: true,
+    secure: process.env.NODE_ENV === 'production',
     maxAge: 30 * 24 * 60 * 60 * 1000,
     httpOnly: true,
-    sameSite: 'none'
+    sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax'
   }
 }));
 

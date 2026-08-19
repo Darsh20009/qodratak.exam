@@ -104,7 +104,7 @@ import { FreeVerbalTestRunner } from "@/pages/FreeVerbalTestRunner";
 import { FreeQuantitativeTestRunner } from "@/pages/FreeQuantitativeTestRunner";
 import CoursesPage from "@/pages/CoursesPage";
 import TahsiliQuestionBank from "@/pages/TahsiliQuestionBank";
-const platformLogo = "/logo-512x512.png";
+const platformLogo = "/qodratak-logo.png";
 import FolderDetailPage from "@/pages/FolderDetailPage";
 import AdminLogin from "@/pages/admin/AdminLogin";
 import AdminDashboard from "@/pages/admin/AdminDashboard";
@@ -1042,7 +1042,7 @@ function Router({ splashDone }: { splashDone: boolean }) {
         {() => <SignupPage />}
       </Route>
       <Route path="/login">
-        {() => <MainLayout><LoginPage /></MainLayout>}
+        {() => <LoginPage />}
       </Route>
       <Route path="/forgot-password">
         {() => <MainLayout><ForgotPasswordPage /></MainLayout>}
@@ -1125,10 +1125,11 @@ function App() {
   // Check if we're on admin pages - skip splash for admin
   const isAdminPage = typeof window !== 'undefined' && window.location.pathname.startsWith('/admin');
 
-  // Splash screen enabled (but not for admin pages)
-  const [showSplash, setShowSplash] = React.useState(!isAdminPage);
+  // The public landing page should be available immediately; loading belongs inside
+  // feature screens that need it rather than obscuring the product identity.
+  const [showSplash, setShowSplash] = React.useState(false);
   const [showNationalDayPopup, setShowNationalDayPopup] = React.useState(false);
-  const [splashDone, setSplashDone] = React.useState(isAdminPage);
+  const [splashDone, setSplashDone] = React.useState(true);
 
   React.useEffect(() => {
     // Skip splash for admin pages
@@ -1137,11 +1138,6 @@ function App() {
       setSplashDone(true);
       return;
     }
-
-    const splashTimer = setTimeout(() => {
-      setShowSplash(false);
-      setSplashDone(true);
-    }, 800);
 
     // Check for National Day popup
     const hasSeenNationalDayPopup = localStorage.getItem('hasSeenNationalDayPopup2025');
@@ -1155,7 +1151,7 @@ function App() {
       }, 3000);
     }
 
-    return () => clearTimeout(splashTimer);
+    return undefined;
   }, []);
 
   const handleCloseNationalDayPopup = () => {
@@ -1168,16 +1164,16 @@ function App() {
       <div className="h-screen w-screen bg-white flex flex-col items-center justify-center" dir="rtl">
         <div className="flex items-center gap-4 mb-8">
           <div className="w-14 h-14 rounded-2xl overflow-hidden shadow-md flex-shrink-0">
-            <img src={platformLogo} alt="Qodratak" className="w-full h-full object-cover" />
+            <img src={platformLogo} alt="قدراتك" className="w-full h-full object-cover object-top" />
           </div>
           <div>
-            <h1 className="text-2xl font-black text-gray-900">منصة قدراتك</h1>
-            <p className="text-sm text-gray-400">Qodratak Platform</p>
+            <h1 className="text-2xl font-black text-[#0D1B2A]">قدراتك</h1>
+            <p className="text-sm text-[#94A3B8]">QODRATAK</p>
           </div>
         </div>
 
         <div className="w-56 h-1 bg-gray-100 rounded-full overflow-hidden">
-          <div className="h-full rounded-full animate-loading-bar" style={{ background: "#1a7c3e" }} />
+          <div className="h-full rounded-full animate-loading-bar" style={{ background: "#0D1B2A" }} />
         </div>
 
         <style>{`

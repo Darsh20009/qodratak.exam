@@ -3,47 +3,56 @@
 @tailwind utilities;
 
 /* ===============================================
-   نظام ألوان منصة قدراتك - الوضع النهاري
-   Professional Light/Dark Theme System
+   نظام ألوان قدراتك الجديد — Qirox Studio
+   Calm, focused, and exam-ready
    =============================================== */
 
 :root {
-  /* الألوان الأساسية للمنصة - أخضر قياس الرسمي */
-  --qudratak-primary: 149 66% 31%;
-  --qudratak-secondary: 158 45% 40%;
-  --qudratak-success: 142 72% 29%;
-  --qudratak-warning: 38 85% 48%;
+  /* Brand palette:
+     Navy #0D1B2A · Slate #1E2938 · Mist #94A3B8
+     Signal #F7F775 · Canvas #E5E7EB */
+  --brand-navy: #0D1B2A;
+  --brand-slate: #1E2938;
+  --brand-mist: #94A3B8;
+  --brand-signal: #F7F775;
+  --brand-canvas: #E5E7EB;
+  --brand-surface: #F7F8FA;
+
+  --qudratak-primary: 211 54% 11%;
+  --qudratak-secondary: 214 30% 17%;
+  --qudratak-success: 160 35% 38%;
+  --qudratak-warning: 60 90% 71%;
   --qudratak-danger: 0 65% 50%;
   
-  /* الوضع النهاري - نظيف ومريح كموقع قياس */
-  --background: 0 0% 97%;
-  --foreground: 210 25% 12%;
-  --muted: 210 12% 92%;
-  --muted-foreground: 215 10% 48%;
+  /* الوضع النهاري — هادئ وواضح */
+  --background: 210 20% 97%;
+  --foreground: 211 54% 11%;
+  --muted: 214 20% 91%;
+  --muted-foreground: 215 16% 45%;
   
   --card: 0 0% 100%;
-  --card-foreground: 210 25% 12%;
+  --card-foreground: 211 54% 11%;
   --popover: 0 0% 100%;
-  --popover-foreground: 210 25% 12%;
+  --popover-foreground: 211 54% 11%;
   
   --border: 210 14% 88%;
   --input: 210 14% 88%;
-  --ring: 149 66% 31%;
+  --ring: 211 54% 11%;
   
-  --primary: 149 66% 31%;
+  --primary: 211 54% 11%;
   --primary-foreground: 0 0% 100%;
   --secondary: 210 12% 92%;
-  --secondary-foreground: 210 25% 12%;
-  --accent: 149 30% 93%;
-  --accent-foreground: 149 66% 22%;
+  --secondary-foreground: 211 54% 11%;
+  --accent: 60 90% 71%;
+  --accent-foreground: 211 54% 11%;
   --destructive: 0 65% 50%;
   --destructive-foreground: 0 0% 100%;
   
-  --sidebar: 149 20% 96%;
-  --sidebar-foreground: 210 25% 12%;
+  --sidebar: 211 54% 11%;
+  --sidebar-foreground: 0 0% 100%;
   --sidebar-border: 210 14% 88%;
-  --sidebar-accent: 149 66% 31%;
-  --sidebar-accent-foreground: 0 0% 100%;
+  --sidebar-accent: 60 90% 71%;
+  --sidebar-accent-foreground: 211 54% 11%;
   
   --radius: 0.5rem;
   
@@ -56,34 +65,34 @@
 
 /* الوضع الليلي - Dark Mode (أغمق وأكثر راحة للعين) */
 .dark {
-  --background: 224 71% 4%;
+  --background: 211 54% 7%;
   --foreground: 0 0% 95%;
-  --muted: 215 28% 10%;
+  --muted: 214 30% 17%;
   --muted-foreground: 217 10% 64%;
   
-  --card: 224 71% 6%;
+  --card: 211 42% 10%;
   --card-foreground: 0 0% 95%;
-  --popover: 224 71% 6%;
+  --popover: 211 42% 10%;
   --popover-foreground: 0 0% 95%;
   
   --border: 215 28% 14%;
   --input: 215 28% 14%;
-  --ring: 221 83% 53%;
+  --ring: 60 90% 71%;
   
-  --primary: 221 83% 53%;
-  --primary-foreground: 0 0% 100%;
-  --secondary: 215 28% 14%;
+  --primary: 60 90% 71%;
+  --primary-foreground: 211 54% 11%;
+  --secondary: 214 30% 17%;
   --secondary-foreground: 0 0% 95%;
-  --accent: 215 28% 14%;
-  --accent-foreground: 0 0% 95%;
+  --accent: 60 90% 71%;
+  --accent-foreground: 211 54% 11%;
   --destructive: 0 62% 50%;
   --destructive-foreground: 0 0% 100%;
   
-  --sidebar: 224 71% 5%;
+  --sidebar: 211 54% 11%;
   --sidebar-foreground: 0 0% 95%;
-  --sidebar-border: 215 28% 14%;
-  --sidebar-accent: 221 83% 53%;
-  --sidebar-accent-foreground: 0 0% 100%;
+  --sidebar-border: 214 30% 17%;
+  --sidebar-accent: 60 90% 71%;
+  --sidebar-accent-foreground: 211 54% 11%;
 }
 
 /* ===============================================
@@ -100,11 +109,26 @@
     font-family: 'Tajawal', 'Inter', system-ui, -apple-system, sans-serif;
     direction: rtl;
     min-height: 100vh;
+    background-color: var(--brand-surface);
   }
   
   html {
     scroll-behavior: smooth;
   }
+}
+
+/* New brand primitives used by the rebuilt surfaces. */
+.qodratak-brand-gradient {
+  background: linear-gradient(135deg, var(--brand-navy) 0%, var(--brand-slate) 72%, #334155 100%);
+}
+
+.qodratak-signal {
+  color: var(--brand-signal);
+}
+
+.qodratak-focus-ring:focus-visible {
+  outline: 3px solid var(--brand-signal);
+  outline-offset: 3px;
 }
 
 /* ===============================================
