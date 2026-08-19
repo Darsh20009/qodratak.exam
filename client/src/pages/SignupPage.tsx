@@ -835,58 +835,6 @@ export default function SignupPage() {
                 </div>
               )}
 
-              {/* Telegram Quick Register */}
-              {activeType !== "institution" && (
-                <div className="mb-6">
-                  <div className="flex items-center gap-3 mb-3">
-                    <div className="flex-1 h-px bg-gray-200" />
-                    <span className="text-xs text-gray-400 font-medium whitespace-nowrap">سجّل بضغطة واحدة</span>
-                    <div className="flex-1 h-px bg-gray-200" />
-                  </div>
-                  <button
-                    type="button"
-                    onClick={openTelegramLogin}
-                    disabled={isTelegramLoading}
-                    data-testid="button-telegram-signup"
-                    className="w-full py-3 px-4 bg-[#2AABEE] hover:bg-[#229ED9] text-white font-semibold rounded-xl transition-all duration-200 hover:shadow-lg hover:-translate-y-0.5 disabled:opacity-70 disabled:cursor-not-allowed flex items-center justify-center gap-2.5"
-                  >
-                    {isTelegramLoading ? (
-                      <>
-                        <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                        {telegramStep === 'waiting' ? 'في انتظار تأكيدك في تيليجرام...' : 'جاري التحضير...'}
-                      </>
-                    ) : (
-                      <>
-                        <svg viewBox="0 0 24 24" className="w-5 h-5 fill-current"><path d="M12 0C5.373 0 0 5.373 0 12s5.373 12 12 12 12-5.373 12-12S18.627 0 12 0zm5.562 8.248l-2.012 9.483c-.148.658-.537.818-1.084.508l-3-2.21-1.447 1.394c-.16.16-.295.295-.605.295l.214-3.053 5.56-5.023c.242-.213-.054-.333-.373-.12L7.48 14.56l-2.952-.924c-.641-.2-.655-.641.135-.949l11.527-4.445c.535-.19 1.003.13.372.006z"/></svg>
-                        إنشاء حساب عبر تيليجرام
-                      </>
-                    )}
-                  </button>
-                  {telegramStep === 'waiting' && telegramDeepLink && (
-                    <div className="mt-2 p-3 bg-blue-50 border border-blue-200 rounded-xl text-center">
-                      <p className="text-xs text-blue-700 mb-2">📱 لم يفتح تيليجرام تلقائياً؟ اضغط الزر أدناه:</p>
-                      <a
-                        href={telegramDeepLink}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        data-testid="link-telegram-direct-signup"
-                        className="inline-flex items-center gap-2 bg-[#2AABEE] text-white text-xs font-bold px-4 py-2 rounded-lg hover:bg-[#229ED9] transition-colors"
-                      >
-                        <svg viewBox="0 0 24 24" className="w-4 h-4 fill-current"><path d="M12 0C5.373 0 0 5.373 0 12s5.373 12 12 12 12-5.373 12-12S18.627 0 12 0zm5.562 8.248l-2.012 9.483c-.148.658-.537.818-1.084.508l-3-2.21-1.447 1.394c-.16.16-.295.295-.605.295l.214-3.053 5.56-5.023c.242-.213-.054-.333-.373-.12L7.48 14.56l-2.952-.924c-.641-.2-.655-.641.135-.949l11.527-4.445c.535-.19 1.003.13.372.006z"/></svg>
-                        افتح تيليجرام مباشرة
-                      </a>
-                      <p className="text-xs text-gray-400 mt-2">بعد الضغط على Start في البوت، عُد هنا تلقائياً</p>
-                    </div>
-                  )}
-                  <p className="text-xs text-gray-400 text-center mt-2">تجربة 7 أيام مجانية — لا كلمة مرور مطلوبة</p>
-                  <div className="flex items-center gap-3 mt-4">
-                    <div className="flex-1 h-px bg-gray-200" />
-                    <span className="text-xs text-gray-400 font-medium whitespace-nowrap">أو أنشئ حساباً بالبريد</span>
-                    <div className="flex-1 h-px bg-gray-200" />
-                  </div>
-                </div>
-              )}
-
               {/* Form */}
               <form onSubmit={handleSubmit} className="space-y-5">
                 {/* Full Name */}
@@ -973,29 +921,6 @@ export default function SignupPage() {
                         className="flex-1 px-3 text-sm text-gray-900 dark:text-white bg-transparent outline-none"
                       />
                     </div>
-                  </div>
-                )}
-
-                {/* Telegram - for students/teachers */}
-                {activeType !== "institution" && (
-                  <div className="space-y-1.5">
-                    <Label htmlFor="telegram" className="text-sm font-semibold text-gray-700 dark:text-gray-300">
-                      حساب تيليجرام <span className="text-gray-400 text-xs font-normal">(اختياري)</span>
-                    </Label>
-                    <div className="relative">
-                      <input
-                        id="telegram"
-                        type="text"
-                        placeholder="username@"
-                        value={telegramUsername}
-                        onChange={e => setTelegramUsername(e.target.value.replace(/^@/, ''))}
-                        data-testid="input-telegram"
-                        dir="ltr"
-                        className="w-full h-11 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-left pl-10 pr-4 text-sm outline-none focus:ring-2 focus:ring-blue-400/20 focus:border-blue-400"
-                      />
-                      <span className="absolute left-3 top-1/2 -translate-y-1/2 text-blue-500 font-bold text-sm pointer-events-none">✈</span>
-                    </div>
-                    <p className="text-xs text-gray-400">اكتب اسم المستخدم بدون @</p>
                   </div>
                 )}
 

@@ -517,17 +517,14 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-[#E5E7EB] via-white to-[#F7F775]/30 p-4" dir="rtl">
-      <div className="w-full max-w-md relative">
-        <div className="absolute -top-40 -right-40 w-80 h-80 bg-[#F7F775]/50 rounded-full blur-3xl opacity-50 pointer-events-none" />
-        <div className="absolute -bottom-40 -left-40 w-80 h-80 bg-[#94A3B8]/25 rounded-full blur-3xl opacity-50 pointer-events-none" />
-
-        <div className="relative bg-white/95 backdrop-blur-xl rounded-3xl shadow-2xl shadow-[#0D1B2A]/10 border border-white overflow-hidden">
-          <div className="h-1.5 bg-gradient-to-r from-[#0D1B2A] via-[#1E2938] to-[#F7F775]" />
+    <div className="min-h-screen flex items-center justify-center bg-[#F7F8FA] p-4" dir="rtl">
+      <div className="w-full max-w-md">
+        <div className="overflow-hidden rounded-xl border border-[#E5E7EB] bg-white">
+          <div className="h-1" style={{ background: "#0D1B2A" }} />
 
           {/* Header (always shown) */}
           <div className="pt-8 pb-4 px-8 text-center">
-            <div className="w-16 h-16 rounded-2xl overflow-hidden mx-auto mb-4 shadow-lg">
+            <div className="w-14 h-14 rounded-lg overflow-hidden mx-auto mb-4">
               <img src="/qodratak-logo.png" alt="قدراتك" className="w-full h-full object-cover object-top" />
             </div>
             <h1 className="text-2xl font-bold text-[#0D1B2A]">أهلاً بك في قدراتك</h1>
@@ -612,7 +609,7 @@ export default function LoginPage() {
                     type="submit"
                     disabled={isLoading}
                     data-testid="button-login"
-                    className="w-full py-3 px-4 bg-[#0D1B2A] hover:bg-[#1E2938] text-white font-semibold rounded-xl shadow-lg shadow-[#0D1B2A]/15 transition-all duration-200 hover:shadow-xl hover:-translate-y-0.5 disabled:opacity-70 disabled:cursor-not-allowed disabled:hover:translate-y-0 flex items-center justify-center gap-2"
+                    className="w-full py-3 px-4 bg-[#0D1B2A] hover:bg-[#1E2938] text-white font-semibold rounded-xl transition-colors disabled:opacity-70 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                   >
                     {isLoading ? (
                       <><div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> جاري تسجيل الدخول...</>
@@ -621,99 +618,9 @@ export default function LoginPage() {
                     )}
                   </button>
 
-                  {/* Quick PIN & Biometric row */}
-                  <div className="grid grid-cols-2 gap-2">
-                    <button
-                      type="button"
-                      onClick={() => {
-                        if (!formData.identifier) {
-                          toast({ title: 'مطلوب', description: 'أدخل بريدك الإلكتروني أولاً', variant: 'destructive' });
-                          return;
-                        }
-                        setScreen('pin');
-                      }}
-                      data-testid="button-pin-login"
-                      className="py-2.5 px-3 border border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-800 transition-all flex items-center justify-center gap-2 text-sm font-medium"
-                    >
-                      <Hash className="w-4 h-4 text-[#0D1B2A]" />
-                      رمز PIN
-                    </button>
-
-                    {isInIframe ? (
-                      <button
-                        type="button"
-                        onClick={handleBiometricLogin}
-                        data-testid="button-biometric-open"
-                        className="py-2.5 px-3 border border-amber-200 dark:border-amber-700 bg-amber-50 dark:bg-amber-900/20 text-amber-700 dark:text-amber-400 rounded-xl hover:bg-amber-100 dark:hover:bg-amber-900/30 transition-all flex items-center justify-center gap-2 text-sm font-medium"
-                      >
-                        <ExternalLink className="w-4 h-4" />
-                        بصمة خارج
-                      </button>
-                    ) : (
-                      <button
-                        type="button"
-                        onClick={handleBiometricLogin}
-                        disabled={isBiometricLoading || !formData.identifier}
-                        data-testid="button-biometric"
-                        className="py-2.5 px-3 border border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-800 transition-all flex items-center justify-center gap-2 text-sm font-medium disabled:opacity-50"
-                      >
-                        {isBiometricLoading
-                          ? <div className="w-4 h-4 border-2 border-gray-400 border-t-gray-600 rounded-full animate-spin" />
-                          : <Fingerprint className="w-4 h-4 text-[#0D1B2A]" />}
-                        {isBiometricLoading ? 'جاري...' : 'بصمة'}
-                      </button>
-                    )}
-                  </div>
                 </form>
 
-                {/* Divider */}
-                <div className="flex items-center gap-3 my-4">
-                  <div className="flex-1 h-px bg-gray-200 dark:bg-gray-700" />
-                  <span className="text-xs text-gray-400 font-medium">أو</span>
-                  <div className="flex-1 h-px bg-gray-200 dark:bg-gray-700" />
-                </div>
-
-                {/* Telegram Login Button */}
-                <button
-                  type="button"
-                  onClick={openTelegramLogin}
-                  disabled={isTelegramLoading}
-                  data-testid="button-telegram-login"
-                  className="w-full py-3 px-4 bg-[#2AABEE] hover:bg-[#229ED9] text-white font-semibold rounded-xl transition-all duration-200 hover:shadow-lg hover:-translate-y-0.5 disabled:opacity-70 disabled:cursor-not-allowed flex items-center justify-center gap-2.5"
-                >
-                  {isTelegramLoading ? (
-                    <>
-                      <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                      {telegramStep === 'waiting' ? 'في انتظار تأكيدك في تيليجرام...' : 'جاري التحضير...'}
-                    </>
-                  ) : (
-                    <>
-                      <SiTelegram className="w-5 h-5" />
-                      تسجيل الدخول عبر تيليجرام
-                    </>
-                  )}
-                </button>
-                {telegramStep === 'waiting' && telegramDeepLink && (
-                  <div className="mt-2 p-3 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-700 rounded-xl text-center">
-                    <p className="text-xs text-blue-700 dark:text-blue-300 mb-2">📱 لم يفتح تيليجرام تلقائياً؟ اضغط الزر أدناه:</p>
-                    <a
-                      href={telegramDeepLink}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      data-testid="link-telegram-direct"
-                      className="inline-flex items-center gap-2 bg-[#2AABEE] text-white text-xs font-bold px-4 py-2 rounded-lg hover:bg-[#229ED9] transition-colors"
-                    >
-                      <SiTelegram className="w-4 h-4" />
-                      افتح تيليجرام مباشرة
-                    </a>
-                    <p className="text-xs text-gray-400 mt-2">بعد الضغط على Start في البوت، عُد هنا تلقائياً</p>
-                  </div>
-                )}
-                {telegramStep !== 'waiting' && (
-                  <p className="text-xs text-gray-400 dark:text-gray-500 text-center mt-2">سريع وآمن — سيُفتح تيليجرام لتأكيد هويتك</p>
-                )}
-
-                <div className="mt-4 flex items-center gap-2 text-xs text-gray-400 dark:text-gray-500 bg-gray-50 dark:bg-gray-800 p-3 rounded-xl border border-gray-100 dark:border-gray-700">
+                <div className="mt-5 flex items-center gap-2 text-xs text-gray-400 dark:text-gray-500 bg-gray-50 dark:bg-gray-800 p-3 rounded-xl border border-gray-100 dark:border-gray-700">
                   <Shield className="w-3.5 h-3.5 flex-shrink-0 text-[#0D1B2A]" />
                   <span>بيانات تسجيل دخولك مشفرة ومحمية بالكامل</span>
                 </div>
