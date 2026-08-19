@@ -1,38 +1,65 @@
 import { useState } from "react";
 import { Link } from "wouter";
-import { ArrowLeft, Menu, X } from "lucide-react";
+import {
+  ArrowLeft,
+  BarChart3,
+  BookOpenCheck,
+  Check,
+  ChevronLeft,
+  Clock3,
+  Layers3,
+  Menu,
+  Target,
+  X,
+} from "lucide-react";
 
 const NAVY = "#0D1B2A";
+const INK = "#1E2938";
 const SIGNAL = "#F7F775";
 
-const pathways = [
-  ["01", "قدرات", "ابدأ بقياس مستواك، ثم رتّب تدريبك خطوة بخطوة."],
-  ["02", "تحصيلي", "اجمع موادك وخطتك القادمة في مكان واحد واضح."],
-  ["03", "IELTS", "مسار إضافي يمكنك استخدامه عندما تكون مستعدًا له."],
+const journey = [
+  {
+    number: "01",
+    title: "اكتشف نقطة البداية",
+    text: "اختبار تشخيصي مختصر يوضح جوانب القوة وما يحتاج تدريبًا.",
+    icon: Target,
+  },
+  {
+    number: "02",
+    title: "تدرّب على المسار",
+    text: "تأسيس، بنوك أسئلة ومحاكاة مرتبة حسب هدفك واشتراكك.",
+    icon: BookOpenCheck,
+  },
+  {
+    number: "03",
+    title: "راجع تقدّمك",
+    text: "نتيجة واضحة بعد كل محاولة وخطة أبسط لما ستفعله بعدها.",
+    icon: BarChart3,
+  },
 ];
 
 function Header() {
   const [menuOpen, setMenuOpen] = useState(false);
 
   return (
-    <header className="border-b border-white/10">
-      <div className="mx-auto flex max-w-6xl items-center justify-between px-5 py-4 sm:px-8">
-        <Link href="/" className="qodratak-focus-ring flex items-center gap-2.5 rounded-lg">
-          <img src="/qodratak-logo.png" alt="قدراتك" className="h-10 w-10 rounded-lg object-cover object-top" />
+    <header className="relative z-30 border-b border-white/10">
+      <div className="mx-auto flex max-w-7xl items-center justify-between px-5 py-4 sm:px-8">
+        <Link href="/" className="qodratak-focus-ring flex items-center gap-2.5 rounded-xl">
+          <img src="/qodratak-logo.png" alt="قدراتك" className="h-10 w-10 rounded-xl object-cover object-top" />
           <div className="leading-tight">
             <span className="block text-base font-black text-white">قدراتك</span>
-            <span className="block text-[9px] font-bold tracking-[0.16em] text-white/55">QIROX STUDIO</span>
+            <span className="block text-[9px] font-bold tracking-[0.17em] text-white/55">QIROX STUDIO</span>
           </div>
         </Link>
 
-        <div className="hidden items-center gap-5 sm:flex">
-          <Link href="/login" className="qodratak-focus-ring text-sm font-bold text-white/80 hover:text-white">
-            تسجيل الدخول
+        <nav className="hidden items-center gap-6 sm:flex">
+          <a href="#journey" className="qodratak-focus-ring text-sm font-bold text-white/65 transition hover:text-white">كيف تعمل المنصة</a>
+          <a href="#inside" className="qodratak-focus-ring text-sm font-bold text-white/65 transition hover:text-white">ماذا ستجد</a>
+          <Link href="/login" className="qodratak-focus-ring text-sm font-bold text-white/90">تسجيل الدخول</Link>
+          <Link href="/signup?type=student" className="qodratak-focus-ring rounded-xl px-4 py-2.5 text-sm font-black transition hover:-translate-y-0.5" style={{ background: SIGNAL, color: NAVY }}>
+            أنشئ حسابك
           </Link>
-          <Link href="/signup?type=student" className="qodratak-focus-ring rounded-lg px-4 py-2 text-sm font-black" style={{ background: SIGNAL, color: NAVY }}>
-            أنشئ حسابًا
-          </Link>
-        </div>
+        </nav>
 
         <button
           type="button"
@@ -47,102 +74,198 @@ function Header() {
 
       {menuOpen && (
         <div className="border-t border-white/10 px-5 py-3 sm:hidden">
-          <div className="mx-auto flex max-w-6xl flex-col gap-1">
-            <Link href="/login" onClick={() => setMenuOpen(false)} className="rounded-lg px-3 py-2.5 text-sm font-bold text-white/85">
-              تسجيل الدخول
-            </Link>
-            <Link href="/signup?type=student" onClick={() => setMenuOpen(false)} className="rounded-lg px-3 py-2.5 text-sm font-black" style={{ background: SIGNAL, color: NAVY }}>
-              أنشئ حسابًا
-            </Link>
-          </div>
+          <nav className="mx-auto flex max-w-7xl flex-col gap-1">
+            <a href="#journey" onClick={() => setMenuOpen(false)} className="rounded-lg px-3 py-2.5 text-sm font-bold text-white/85">كيف تعمل المنصة</a>
+            <a href="#inside" onClick={() => setMenuOpen(false)} className="rounded-lg px-3 py-2.5 text-sm font-bold text-white/85">ماذا ستجد</a>
+            <Link href="/login" onClick={() => setMenuOpen(false)} className="rounded-lg px-3 py-2.5 text-sm font-bold text-white/85">تسجيل الدخول</Link>
+            <Link href="/signup?type=student" onClick={() => setMenuOpen(false)} className="mt-1 rounded-lg px-3 py-2.5 text-sm font-black" style={{ background: SIGNAL, color: NAVY }}>أنشئ حسابك</Link>
+          </nav>
         </div>
       )}
     </header>
   );
 }
 
+function ScorePreview() {
+  return (
+    <div className="relative mx-auto w-full max-w-[430px] rounded-[28px] border border-white/15 bg-[#16283A] p-4 shadow-2xl shadow-black/25">
+      <div className="flex items-center justify-between border-b border-white/10 pb-3">
+        <div>
+          <p className="text-[10px] font-black tracking-[0.13em] text-white/45">نتيجة توضيحية</p>
+          <p className="mt-0.5 text-sm font-black text-white">محاكاة قدرات شاملة</p>
+        </div>
+        <div className="rounded-lg border border-white/10 bg-white/5 px-2.5 py-1 text-[10px] font-bold text-white/65">مكتمل</div>
+      </div>
+
+      <div className="grid grid-cols-[1fr_1.05fr] items-center gap-3 py-5">
+        <div className="relative mx-auto flex h-32 w-32 items-center justify-center rounded-full" style={{ background: "conic-gradient(#F7F775 0deg 274deg, rgba(255,255,255,.11) 274deg 360deg)" }}>
+          <div className="flex h-[104px] w-[104px] flex-col items-center justify-center rounded-full bg-[#16283A]">
+            <span className="text-3xl font-black text-white">76</span>
+            <span className="mt-0.5 text-[10px] font-bold text-white/50">النتيجة</span>
+          </div>
+        </div>
+        <div className="space-y-3">
+          {[
+            ["الكمي", "72%", "w-[72%]"],
+            ["اللفظي", "81%", "w-[81%]"],
+            ["إدارة الوقت", "68%", "w-[68%]"],
+          ].map(([label, value, width]) => (
+            <div key={label}>
+              <div className="mb-1 flex justify-between text-[10px] font-bold text-white/60"><span>{label}</span><span>{value}</span></div>
+              <div className="h-1.5 overflow-hidden rounded-full bg-white/10"><span className={`block h-full rounded-full bg-[#F7F775] ${width}`} /></div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      <div className="flex items-center gap-2 rounded-xl border border-[#F7F775]/20 bg-[#F7F775]/10 px-3 py-2.5">
+        <Target className="h-4 w-4 shrink-0 text-[#F7F775]" />
+        <p className="text-xs font-bold leading-5 text-white/85">خطوتك التالية: راجع 14 سؤالًا في استراتيجيات الكمي.</p>
+      </div>
+    </div>
+  );
+}
+
+function ExamPreview() {
+  return (
+    <div className="rounded-[28px] border border-slate-200 bg-white p-4 shadow-[0_24px_80px_rgba(13,27,42,0.1)]">
+      <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+        <div className="flex items-center gap-2">
+          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-[#0D1B2A] text-[10px] font-black text-[#F7F775]">ق</div>
+          <div>
+            <p className="text-[11px] font-black text-[#0D1B2A]">اختبار محاكي</p>
+            <p className="text-[9px] font-bold text-slate-400">القسم 02 من 05</p>
+          </div>
+        </div>
+        <div className="inline-flex items-center gap-1 rounded-lg bg-slate-100 px-2 py-1 text-[10px] font-black text-slate-600"><Clock3 className="h-3 w-3" /> 18:32</div>
+      </div>
+      <div className="pt-4">
+        <div className="h-2 w-16 rounded-full bg-[#F7F775]" />
+        <p className="mt-3 text-sm font-black leading-6 text-[#0D1B2A]">إذا كان مجموع عددين يساوي 24، فما قيمة العدد الأكبر؟</p>
+        <div className="mt-4 grid grid-cols-2 gap-2">
+          {["8", "12", "16", "18"].map((choice, index) => (
+            <div key={choice} className={`rounded-xl border px-3 py-2.5 text-center text-xs font-black ${index === 2 ? "border-[#0D1B2A] bg-[#0D1B2A] text-white" : "border-slate-200 text-slate-500"}`}>{choice}</div>
+          ))}
+        </div>
+        <div className="mt-4 flex items-center gap-1.5">
+          {[...Array(8)].map((_, index) => <span key={index} className={`h-1.5 flex-1 rounded-full ${index < 5 ? "bg-[#0D1B2A]" : "bg-slate-100"}`} />)}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function LandingPage() {
   return (
-    <main className="min-h-screen bg-white text-slate-900" dir="rtl">
-      <section style={{ background: NAVY }}>
+    <main className="min-h-screen overflow-hidden bg-[#FAFBFC] text-slate-900" dir="rtl">
+      <section className="relative isolate overflow-hidden" style={{ background: NAVY }}>
+        <div className="pointer-events-none absolute inset-0 opacity-30" style={{ backgroundImage: "linear-gradient(rgba(247,247,117,.08) 1px, transparent 1px), linear-gradient(90deg, rgba(247,247,117,.08) 1px, transparent 1px)", backgroundSize: "44px 44px", maskImage: "linear-gradient(to bottom, black, transparent)" }} />
         <Header />
-        <div className="mx-auto max-w-3xl px-5 py-20 text-center sm:px-8 sm:py-28">
-          <p className="text-sm font-bold text-white/65">منصة قدراتك التعليمية</p>
-          <h1 className="mt-5 text-4xl font-black leading-tight text-white sm:text-6xl">
-            استعد بوضوح،
-            <br />
-            <span style={{ color: SIGNAL }}>وتقدّم بثقة.</span>
-          </h1>
-          <p className="mx-auto mt-6 max-w-xl text-base leading-8 text-slate-300 sm:text-lg">
-            مكان واحد يساعدك على معرفة مستواك، تنظيم تدريبك، ومتابعة ما أنجزته.
-          </p>
-          <div className="mt-8 flex flex-wrap justify-center gap-3">
-            <Link href="/signup?type=student" className="qodratak-focus-ring inline-flex items-center gap-2 rounded-lg px-5 py-3 text-sm font-black" style={{ background: SIGNAL, color: NAVY }}>
-              ابدأ الآن <ArrowLeft size={16} />
-            </Link>
-            <a href="#paths" className="qodratak-focus-ring rounded-lg border border-white/20 px-5 py-3 text-sm font-bold text-white hover:bg-white/10">
-              تعرّف على المسارات
-            </a>
+        <div className="relative mx-auto grid max-w-7xl items-center gap-12 px-5 pb-20 pt-14 sm:px-8 lg:grid-cols-[1.05fr_.95fr] lg:pb-28 lg:pt-20">
+          <div className="max-w-2xl">
+            <div className="inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/5 px-3 py-1.5 text-xs font-bold text-white/75">
+              <span className="h-1.5 w-1.5 rounded-full bg-[#F7F775]" />
+              منصة استعداد منظمة للطالب السعودي
+            </div>
+            <h1 className="mt-6 text-4xl font-black leading-[1.15] text-white sm:text-6xl">
+              لا تذاكر أكثر.
+              <br />
+              <span style={{ color: SIGNAL }}>ذاكر بوضوح.</span>
+            </h1>
+            <p className="mt-6 max-w-xl text-base leading-8 text-slate-300 sm:text-lg">
+              قدراتك تحول الاستعداد للاختبار من أسئلة مبعثرة إلى مسار تعرف فيه مستواك، تدريبك القادم، ونتيجتك بعد كل محاولة.
+            </p>
+            <div className="mt-8 flex flex-wrap gap-3">
+              <Link href="/signup?type=student" className="qodratak-focus-ring inline-flex items-center gap-2 rounded-xl px-5 py-3.5 text-sm font-black transition hover:-translate-y-0.5" style={{ background: SIGNAL, color: NAVY }}>
+                ابدأ حسابك <ArrowLeft size={17} />
+              </Link>
+              <a href="#journey" className="qodratak-focus-ring inline-flex items-center gap-2 rounded-xl border border-white/20 px-5 py-3.5 text-sm font-bold text-white transition hover:bg-white/10">
+                شاهد كيف تبدأ <ChevronLeft size={17} />
+              </a>
+            </div>
+            <div className="mt-9 flex flex-wrap gap-x-7 gap-y-3 text-xs font-bold text-white/65">
+              {["نتيجة واضحة بعد كل محاولة", "مسارات حسب اشتراكك", "خصوصية وحماية للحساب"].map((item) => <span key={item} className="flex items-center gap-1.5"><Check className="h-3.5 w-3.5 text-[#F7F775]" />{item}</span>)}
+            </div>
           </div>
+          <ScorePreview />
         </div>
       </section>
 
-      <section id="paths" className="mx-auto max-w-6xl px-5 py-16 sm:px-8">
-        <div className="max-w-2xl">
-          <p className="text-sm font-bold text-slate-400">بداية مرتبة</p>
-          <h2 className="mt-2 text-3xl font-black leading-tight" style={{ color: NAVY }}>
-            اختر مسارك، وابدأ من مكانك.
-          </h2>
+      <section className="relative z-10 mx-auto -mt-7 max-w-7xl px-5 sm:px-8">
+        <div className="grid overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-[0_18px_50px_rgba(13,27,42,.08)] sm:grid-cols-3">
+          {[
+            ["5", "مساحات تعلّم", "قدرات، تحصيلي، IELTS وتدريب مخصص."],
+            ["2", "جهازان نشطان", "تحكم أوضح في أمان حسابك."],
+            ["1", "لوحة تقدم", "تعرف منها خطوتك التالية دائمًا."],
+          ].map(([number, title, text], index) => (
+            <div key={title} className={`px-5 py-5 sm:px-7 ${index ? "border-t border-slate-100 sm:border-r sm:border-t-0" : ""}`}>
+              <span className="text-3xl font-black" style={{ color: NAVY }}>{number}</span>
+              <p className="mt-1 text-sm font-black text-slate-800">{title}</p>
+              <p className="mt-1 text-xs leading-5 text-slate-500">{text}</p>
+            </div>
+          ))}
         </div>
+      </section>
 
-        <div className="mt-10 grid border-t border-slate-200 md:grid-cols-3">
-          {pathways.map(([number, title, description]) => (
-            <article key={title} className="border-b border-slate-200 py-7 md:border-b-0 md:border-l md:px-7 md:first:pr-0 md:last:border-l-0">
-              <p className="text-sm font-black text-slate-400">{number}</p>
-              <h3 className="mt-5 text-xl font-black" style={{ color: NAVY }}>{title}</h3>
-              <p className="mt-3 text-sm leading-7 text-slate-500">{description}</p>
-              <Link href="/signup?type=student" className="qodratak-focus-ring mt-5 inline-flex items-center gap-1.5 text-sm font-black" style={{ color: NAVY }}>
-                ابدأ المسار <ArrowLeft size={15} />
-              </Link>
+      <section id="journey" className="mx-auto max-w-7xl px-5 py-24 sm:px-8">
+        <div className="max-w-2xl">
+          <p className="text-sm font-black text-slate-400">رحلة الطالب داخل قدراتك</p>
+          <h2 className="mt-3 text-3xl font-black leading-tight sm:text-4xl" style={{ color: NAVY }}>من أول محاولة إلى خطة تعرف سبب كل خطوة فيها.</h2>
+        </div>
+        <div className="mt-12 grid gap-5 md:grid-cols-3">
+          {journey.map(({ number, title, text, icon: Icon }) => (
+            <article key={title} className="group relative border-t-2 border-slate-200 pt-5 transition hover:border-[#0D1B2A]">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-black tracking-[.16em] text-slate-400">{number}</span>
+                <Icon className="h-5 w-5 text-slate-400 transition group-hover:text-[#0D1B2A]" />
+              </div>
+              <h3 className="mt-7 text-xl font-black" style={{ color: NAVY }}>{title}</h3>
+              <p className="mt-3 max-w-xs text-sm leading-7 text-slate-500">{text}</p>
             </article>
           ))}
         </div>
       </section>
 
-      <section className="border-y border-slate-200 bg-slate-50">
-        <div className="mx-auto grid max-w-6xl gap-8 px-5 py-16 sm:px-8 md:grid-cols-[1fr_1.3fr]">
-          <div>
-            <p className="text-sm font-bold text-slate-400">بلا تشتيت</p>
-            <h2 className="mt-2 text-3xl font-black leading-tight" style={{ color: NAVY }}>
-              تعرف أين أنت، وماذا تفعل بعد ذلك.
-            </h2>
+      <section id="inside" className="border-y border-slate-200 bg-[#F0F3F5]">
+        <div className="mx-auto grid max-w-7xl items-center gap-12 px-5 py-20 sm:px-8 lg:grid-cols-[.9fr_1.1fr]">
+          <div className="order-2 lg:order-1"><ExamPreview /></div>
+          <div className="order-1 lg:order-2">
+            <p className="text-sm font-black text-slate-400">ماذا ستجد بعد إنشاء الحساب؟</p>
+            <h2 className="mt-3 text-3xl font-black leading-tight sm:text-4xl" style={{ color: NAVY }}>مساحة واحدة للاستعداد، وليست صفحة أسئلة فقط.</h2>
+            <div className="mt-8 space-y-0 border-y border-slate-300">
+              {[
+                ["الاختبارات المحاكية", "اختبر نفسك في بيئة منظمة وافهم النتيجة."],
+                ["التأسيس وبنك الأسئلة", "تدرّب على الكمي واللفظي بطريقة تناسب مرحلتك."],
+                ["المتابعة والاشتراك", "شاهد ما هو متاح لك وكم بقي من باقتك."],
+              ].map(([title, text]) => (
+                <div key={title} className="flex gap-4 border-b border-slate-300 py-4 last:border-b-0">
+                  <span className="mt-1.5 h-2 w-2 shrink-0 rounded-full bg-[#0D1B2A]" />
+                  <div><h3 className="text-sm font-black text-[#0D1B2A]">{title}</h3><p className="mt-1 text-sm leading-6 text-slate-500">{text}</p></div>
+                </div>
+              ))}
+            </div>
+            <Link href="/signup?type=student" className="qodratak-focus-ring mt-8 inline-flex items-center gap-2 text-sm font-black text-[#0D1B2A]">
+              أنشئ حسابك وابدأ <ArrowLeft size={16} />
+            </Link>
           </div>
-          <ul className="divide-y divide-slate-200 border-y border-slate-200">
-            {[
-              "قياس يساعدك على تحديد البداية.",
-              "تدريب منظم يحافظ على تركيزك.",
-              "متابعة واضحة لما أنجزته وما بقي.",
-            ].map((item) => (
-              <li key={item} className="py-4 text-sm font-bold text-slate-600">{item}</li>
-            ))}
-          </ul>
         </div>
       </section>
 
-      <section className="mx-auto max-w-6xl px-5 py-16 sm:px-8">
-        <div className="border-r-4 px-6 py-3" style={{ borderColor: SIGNAL }}>
-          <p className="text-sm font-bold text-slate-400">قدراتك من Qirox Studio</p>
-          <h2 className="mt-2 text-3xl font-black" style={{ color: NAVY }}>رحلتك تبدأ بخطوة بسيطة.</h2>
-          <Link href="/signup?type=student" className="qodratak-focus-ring mt-6 inline-flex items-center gap-2 rounded-lg px-5 py-3 text-sm font-black" style={{ background: NAVY, color: "#fff" }}>
-            أنشئ حسابًا <ArrowLeft size={16} />
-          </Link>
+      <section className="mx-auto max-w-7xl px-5 py-24 sm:px-8">
+        <div className="relative overflow-hidden rounded-[28px] bg-[#0D1B2A] px-6 py-12 sm:px-12">
+          <Layers3 className="absolute -left-5 -top-6 h-36 w-36 text-white/5" />
+          <div className="relative max-w-2xl">
+            <p className="text-sm font-bold text-[#F7F775]">قدراتك من Qirox Studio</p>
+            <h2 className="mt-3 text-3xl font-black leading-tight text-white sm:text-4xl">ابدأ بخطوة صغيرة، واترك لنا ترتيب الباقي.</h2>
+            <p className="mt-4 text-sm leading-7 text-slate-300">حسابك يفتح لك مساحة منظمة لتتعلم، تختبر، وتتابع تقدمك بوضوح.</p>
+            <Link href="/signup?type=student" className="qodratak-focus-ring mt-7 inline-flex items-center gap-2 rounded-xl px-5 py-3.5 text-sm font-black transition hover:-translate-y-0.5" style={{ background: SIGNAL, color: NAVY }}>إنشاء حساب طالب <ArrowLeft size={17} /></Link>
+          </div>
         </div>
       </section>
 
-      <footer className="border-t border-slate-200 px-5 py-6 sm:px-8">
-        <div className="mx-auto flex max-w-6xl items-center justify-between gap-3 text-xs font-bold text-slate-400">
-          <span>قدراتك</span>
-          <span>QIROX STUDIO</span>
+      <footer className="border-t border-slate-200 px-5 py-7 sm:px-8">
+        <div className="mx-auto flex max-w-7xl items-center justify-between gap-3 text-xs font-bold text-slate-400">
+          <span>قدراتك · qodratak.sa</span><span>QIROX STUDIO</span>
         </div>
       </footer>
     </main>

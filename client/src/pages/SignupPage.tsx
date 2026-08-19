@@ -133,12 +133,12 @@ export default function SignupPage() {
   const typeParam = params.get("type") as AccountType | null;
 
   useEffect(() => {
-    if (typeParam && accountTypeConfigs[typeParam]) {
-      setActiveType(typeParam);
-    } else {
+    if (typeParam !== "student") {
       setLocation("/signup?type=student");
+      return;
     }
-  }, [typeParam]);
+    setActiveType("student");
+  }, [typeParam, setLocation]);
 
   // Check if redirected from LoginPage with pending Telegram profile
   useEffect(() => {
@@ -298,7 +298,7 @@ export default function SignupPage() {
     }
   };
 
-  if (!typeParam || !accountTypeConfigs[typeParam]) {
+  if (typeParam !== "student") {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="w-8 h-8 border-4 border-blue-500 border-t-transparent rounded-full animate-spin" />
@@ -694,22 +694,16 @@ export default function SignupPage() {
   }
 
   return (
-    <div className="min-h-screen bg-[#E5E7EB]/50" dir="rtl">
+    <div className="min-h-screen bg-[#EDF1F4] p-0 lg:p-6" dir="rtl">
       <SEO title="إنشاء حساب - قدراتك" description="أنشئ حسابك في منصة قدراتك لبدء رحلة تعلم منظمة." />
 
-      <div className="flex min-h-screen">
+      <div className="mx-auto flex min-h-screen max-w-6xl overflow-hidden bg-white lg:min-h-[calc(100vh-3rem)] lg:rounded-[28px] lg:border lg:border-slate-200 lg:shadow-[0_25px_80px_rgba(13,27,42,.12)]">
         {/* ─── Right panel: Branding ─── */}
-        <div className="hidden lg:flex lg:w-[46%] bg-gradient-to-br from-[#0D1B2A] via-[#1E2938] to-[#0D1B2A] flex-col justify-between p-10 relative overflow-hidden">
-          {/* Background decoration */}
-          <div className="absolute inset-0 opacity-10">
-            <div className="absolute top-10 right-10 w-64 h-64 rounded-full bg-white/20 blur-3xl" />
-            <div className="absolute bottom-20 left-0 w-80 h-80 rounded-full bg-black/20 blur-3xl" />
-          </div>
-
+        <div className="hidden lg:flex lg:w-[46%] bg-[#0D1B2A] flex-col justify-between p-10 relative overflow-hidden">
+          <div className="absolute inset-0 opacity-30" style={{ backgroundImage: "linear-gradient(rgba(247,247,117,.09) 1px, transparent 1px), linear-gradient(90deg, rgba(247,247,117,.09) 1px, transparent 1px)", backgroundSize: "40px 40px", maskImage: "linear-gradient(to bottom, black, transparent)" }} />
           <div className="relative z-10">
-            {/* Logo */}
             <div className="flex items-center gap-3 mb-14">
-              <div className="w-11 h-11 bg-white rounded-xl flex items-center justify-center overflow-hidden shadow-lg">
+              <div className="w-11 h-11 bg-white rounded-xl flex items-center justify-center overflow-hidden">
                 <img src="/qodratak-logo.png" alt="قدراتك" className="w-full h-full object-cover object-top" />
               </div>
               <div>
@@ -718,48 +712,42 @@ export default function SignupPage() {
               </div>
             </div>
 
-            {/* Hero text */}
-            <div className="mb-10">
-              <div className="inline-flex items-center gap-2 bg-white/15 border border-white/25 rounded-full px-4 py-1.5 mb-5">
-                <Sparkles className="w-3.5 h-3.5 text-white" />
-                <span className="text-white text-xs font-semibold">بداية جديدة بخطوات أوضح</span>
+            <div className="mb-9">
+              <div className="inline-flex items-center gap-2 border border-white/15 bg-white/5 rounded-full px-3 py-1.5 mb-5">
+                <span className="h-1.5 w-1.5 rounded-full bg-[#F7F775]" />
+                <span className="text-white/80 text-xs font-semibold">بداية مرتبة للطالب</span>
               </div>
               <h1 className="text-4xl font-black text-white leading-tight mb-4">
-                ابدأ رحلتك<br />بقياس واضح<br />
-                <span className="text-[#F7F775]">وتدريب يصنع الفرق</span>
+                حساب واحد.<br />خطة أوضح.<br />
+                <span className="text-[#F7F775]">وتقدم تراه بنفسك.</span>
               </h1>
               <p className="text-white/75 text-base leading-relaxed max-w-sm">
-                قدراتك مساحة تعليمية هادئة تجمع التدريب والمتابعة في رحلة واحدة مصممة للطالب السعودي.
+                بعد التسجيل ستصل إلى اختبارك، تدريبك، وملخص تقدمك من مساحة واحدة مهيأة لك.
               </p>
             </div>
 
-            <div className="flex flex-wrap gap-2 mb-10">
-              {["قدرات", "تحصيلي", "IELTS"].map((path) => (
-                <span key={path} className="rounded-full border border-white/20 bg-white/10 px-4 py-2 text-sm font-medium text-white/90">
-                  {path}
-                </span>
-              ))}
-            </div>
-
-            {/* Feature list */}
-            <div className="space-y-2.5">
-              {features.map((f) => (
-                <div key={f} className="flex items-center gap-3">
-                  <div className="w-5 h-5 rounded-full bg-white/20 flex items-center justify-center shrink-0">
-                    <CheckCircle2 className="w-3 h-3 text-white" />
+            <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
+              <div className="flex items-center justify-between border-b border-white/10 pb-3">
+                <div><div className="text-[10px] font-bold text-white/45">شكل النتيجة داخل المنصة</div><div className="mt-0.5 text-sm font-black text-white">محاكاة توضيحية</div></div>
+                <div className="flex h-11 w-11 items-center justify-center rounded-full border-4 border-[#F7F775] text-sm font-black text-white">76</div>
+              </div>
+              <div className="mt-4 space-y-3">
+                {[["الكمي", "72%"], ["اللفظي", "81%"], ["إدارة الوقت", "68%"]].map(([label, value], index) => (
+                  <div key={label}>
+                    <div className="mb-1 flex justify-between text-[10px] font-bold text-white/55"><span>{label}</span><span>{value}</span></div>
+                    <div className="h-1.5 rounded-full bg-white/10"><div className="h-full rounded-full bg-[#F7F775]" style={{ width: index === 0 ? "72%" : index === 1 ? "81%" : "68%" }} /></div>
                   </div>
-                  <span className="text-white/80 text-sm">{f}</span>
-                </div>
-              ))}
+                ))}
+              </div>
+              <div className="mt-4 flex items-center gap-2 text-xs font-bold text-white/75"><TrendingUp className="h-4 w-4 text-[#F7F775]" /> تعرف بالضبط ما الذي تراجعُه بعد المحاولة.</div>
             </div>
           </div>
 
-          {/* Bottom trust badge */}
-          <div className="relative z-10 flex items-center gap-3 bg-white/10 border border-white/20 rounded-2xl p-4 mt-8">
-            <Shield className="w-6 h-6 text-white/80 shrink-0" />
+          <div className="relative z-10 flex items-center gap-3 border border-white/15 bg-white/5 rounded-2xl p-4 mt-8">
+            <Shield className="w-6 h-6 text-[#F7F775] shrink-0" />
             <div>
-              <div className="text-white text-sm font-semibold">منصة آمنة وموثوقة</div>
-              <div className="text-white/60 text-xs">بيانات مشفرة وخصوصية تامة</div>
+              <div className="text-white text-sm font-semibold">خصوصيتك جزء من التجربة</div>
+              <div className="text-white/60 text-xs">تصل إلى حسابك وتدير أجهزتك من مكان واحد</div>
             </div>
           </div>
         </div>
@@ -767,73 +755,47 @@ export default function SignupPage() {
         {/* ─── Left panel: Form ─── */}
         <div className="flex-1 flex flex-col">
           {/* Top bar */}
-          <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100 dark:border-gray-800 bg-white dark:bg-gray-900">
+          <div className="flex items-center justify-between px-6 py-5 border-b border-slate-100 bg-white">
             <Link href="/login">
-              <button className="flex items-center gap-2 text-sm text-gray-500 hover:text-gray-900 dark:hover:text-white transition-colors" data-testid="button-back">
+                <button className="flex items-center gap-2 text-sm font-bold text-slate-500 hover:text-[#0D1B2A] transition-colors" data-testid="button-back">
                 <ArrowRight className="w-4 h-4" />
                 تسجيل الدخول
               </button>
             </Link>
-            <div className="flex items-center gap-2 lg:hidden">
-              <Award className="w-5 h-5 text-blue-600" />
-              <span className="font-bold text-gray-900 dark:text-white text-sm">منصة قدراتك</span>
+              <div className="flex items-center gap-2 lg:hidden">
+                <img src="/qodratak-logo.png" alt="" className="h-8 w-8 rounded-lg object-cover object-top" />
+                <span className="font-black text-[#0D1B2A] text-sm">قدراتك</span>
             </div>
-            <div className="text-sm text-gray-400 hidden sm:block">
-              لديك حساب؟ <Link href="/login" className="text-blue-600 hover:underline font-medium">ادخل الآن</Link>
+            <div className="text-sm text-slate-400 hidden sm:block">
+              لديك حساب؟ <Link href="/login" className="text-[#0D1B2A] hover:underline font-black">ادخل الآن</Link>
             </div>
           </div>
 
           {/* Form area */}
           <div className="flex-1 overflow-y-auto">
-            <div className="max-w-xl mx-auto px-6 py-8">
+            <div className="max-w-xl mx-auto px-6 py-10">
               {/* Page header */}
               <div className="mb-8">
-                <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-1">
-                  {activeType === "institution" ? "طلب تسجيل مؤسسة" : "إنشاء حساب جديد"}
-                </h2>
-                <p className="text-gray-500 dark:text-gray-400 text-sm">
-                  {activeType === "institution"
-                    ? "أرسل طلبك وسيتواصل معك الفريق لإتمام التسجيل"
-                    : "أنشئ حسابك الآن واستمتع بـ 7 أيام تجريبية مجانية"}
-                </p>
+                <p className="text-xs font-black tracking-[.14em] text-slate-400">إنشاء حساب طالب</p>
+                <h2 className="mt-2 text-3xl font-black text-[#0D1B2A]">خطتك تبدأ من هنا.</h2>
+                <p className="mt-2 text-slate-500 text-sm leading-6">أدخل بياناتك، أكد بريدك الإلكتروني، ثم نرتّب لك بداية أوضح.</p>
               </div>
 
-              {/* Account type tabs */}
-              <div className="flex gap-2 p-1.5 bg-gray-100 dark:bg-gray-800 rounded-2xl mb-7">
-                {(Object.values(accountTypeConfigs)).map((cfg) => {
-                  const Ic = cfg.icon;
-                  const isActive = activeType === cfg.id;
-                  return (
-                    <button
-                      key={cfg.id}
-                      onClick={() => handleTypeChange(cfg.id)}
-                      data-testid={`tab-${cfg.id}`}
-                      className={cn(
-                        "flex-1 flex flex-col items-center gap-1 py-2.5 rounded-xl text-xs font-semibold transition-all duration-200",
-                        isActive
-                          ? "bg-white dark:bg-gray-700 shadow-sm text-gray-900 dark:text-white"
-                          : "text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300"
-                      )}
-                    >
-                      <Ic className={cn("w-4 h-4", isActive ? "text-blue-600" : "")} />
-                      {cfg.title.replace("حساب ", "")}
-                    </button>
-                  );
-                })}
+              <div className="mb-7 grid grid-cols-3 gap-2">
+                {["بياناتك", "تأكيد البريد", "ابدأ التدريب"].map((label, index) => (
+                  <div key={label} className={`rounded-xl border px-3 py-2.5 text-center text-[11px] font-black ${index === 0 ? "border-[#0D1B2A] bg-[#0D1B2A] text-white" : "border-slate-200 bg-slate-50 text-slate-400"}`}><span className="ml-1 opacity-70">0{index + 1}</span>{label}</div>
+                ))}
               </div>
 
-              {/* Free trial badge (student/teacher only) */}
-              {activeType !== "institution" && (
-                <div className="flex items-center gap-3 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-2xl px-4 py-3 mb-7">
-                  <div className="w-9 h-9 bg-amber-100 dark:bg-amber-900/40 rounded-xl flex items-center justify-center shrink-0">
-                    <Crown className="w-5 h-5 text-amber-600" />
+              <div className="flex items-center gap-3 bg-[#F7F775]/35 border border-[#E2E270] rounded-2xl px-4 py-3 mb-7">
+                  <div className="w-9 h-9 bg-[#0D1B2A] rounded-xl flex items-center justify-center shrink-0">
+                    <CheckCircle2 className="w-5 h-5 text-[#F7F775]" />
                   </div>
                   <div>
-                    <div className="text-sm font-bold text-amber-800 dark:text-amber-300">7 أيام تجريبية مجاناً</div>
-                    <div className="text-xs text-amber-700/70 dark:text-amber-400/70">وصول كامل لجميع المميزات — لا بيانات بنك مطلوبة</div>
+                    <div className="text-sm font-black text-[#0D1B2A]">تجربة تبدأ من مستواك أنت</div>
+                    <div className="text-xs text-[#1E2938]/70">ستظهر لك المسارات المتاحة وخطواتك التالية في لوحة واحدة.</div>
                   </div>
-                </div>
-              )}
+              </div>
 
               {/* Form */}
               <form onSubmit={handleSubmit} className="space-y-5">

@@ -517,136 +517,91 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-[#F7F8FA] p-4" dir="rtl">
-      <div className="w-full max-w-md">
-        <div className="overflow-hidden rounded-xl border border-[#E5E7EB] bg-white">
-          <div className="h-1" style={{ background: "#0D1B2A" }} />
-
-          {/* Header (always shown) */}
-          <div className="pt-8 pb-4 px-8 text-center">
-            <div className="w-14 h-14 rounded-lg overflow-hidden mx-auto mb-4">
-              <img src="/qodratak-logo.png" alt="قدراتك" className="w-full h-full object-cover object-top" />
+    <div className="min-h-screen bg-[#EDF1F4] px-4 py-5 sm:px-8 sm:py-8" dir="rtl">
+      <div className="mx-auto grid min-h-[calc(100vh-4rem)] max-w-6xl overflow-hidden rounded-[28px] border border-slate-200 bg-white shadow-[0_25px_80px_rgba(13,27,42,.12)] lg:grid-cols-[.95fr_1.05fr]">
+        <aside className="relative hidden overflow-hidden bg-[#0D1B2A] p-10 lg:flex lg:flex-col">
+          <div className="absolute inset-0 opacity-30" style={{ backgroundImage: "linear-gradient(rgba(247,247,117,.09) 1px, transparent 1px), linear-gradient(90deg, rgba(247,247,117,.09) 1px, transparent 1px)", backgroundSize: "40px 40px", maskImage: "linear-gradient(to bottom, black, transparent)" }} />
+          <div className="relative flex items-center gap-2.5">
+            <img src="/qodratak-logo.png" alt="قدراتك" className="h-10 w-10 rounded-xl object-cover object-top" />
+            <div><p className="font-black text-white">قدراتك</p><p className="mt-0.5 text-[9px] font-bold tracking-[.16em] text-white/50">QIROX STUDIO</p></div>
+          </div>
+          <div className="relative mt-16 max-w-sm">
+            <p className="text-sm font-bold text-[#F7F775]">عودة إلى خطتك</p>
+            <h1 className="mt-3 text-4xl font-black leading-tight text-white">كل محاولة تقول لك ماذا تفعل بعدها.</h1>
+            <p className="mt-4 text-sm leading-7 text-slate-300">سجّل دخولك لتكمل التدريب، تراجع آخر نتيجة، وتعرف الخطوة التالية في مسارك.</p>
+          </div>
+          <div className="relative mt-auto rounded-2xl border border-white/10 bg-white/5 p-4">
+            <div className="flex items-center justify-between border-b border-white/10 pb-3">
+              <div><p className="text-[10px] font-bold text-white/45">ملخص آخر محاولة</p><p className="mt-0.5 text-sm font-black text-white">اختبار محاكي</p></div>
+              <div className="flex h-11 w-11 items-center justify-center rounded-full border-4 border-[#F7F775] text-sm font-black text-white">76</div>
             </div>
-            <h1 className="text-2xl font-bold text-[#0D1B2A]">أهلاً بك في قدراتك</h1>
-            <p className="text-sm text-[#94A3B8] mt-1">مساحتك الهادئة للاستعداد والتقدم</p>
+            <div className="mt-4 space-y-3">
+              {[["الكمي", "72%"], ["اللفظي", "81%"], ["إدارة الوقت", "68%"]].map(([label, value], index) => (
+                <div key={label}>
+                  <div className="mb-1 flex justify-between text-[10px] font-bold text-white/55"><span>{label}</span><span>{value}</span></div>
+                  <div className="h-1.5 rounded-full bg-white/10"><div className="h-full rounded-full bg-[#F7F775]" style={{ width: index === 0 ? "72%" : index === 1 ? "81%" : "68%" }} /></div>
+                </div>
+              ))}
+            </div>
+            <div className="mt-4 flex items-center gap-2 text-xs font-bold text-white/75"><Trophy className="h-4 w-4 text-[#F7F775]" /> أكمل من حيث توقفت</div>
+          </div>
+        </aside>
+
+        <main className="flex min-h-full flex-col">
+          <div className="flex items-center justify-between border-b border-slate-100 px-6 py-5 sm:px-9">
+            <button onClick={() => setLocation('/')} className="qodratak-focus-ring text-sm font-bold text-slate-500 transition hover:text-[#0D1B2A]">الرئيسية</button>
+            <div className="flex items-center gap-2 lg:hidden"><img src="/qodratak-logo.png" alt="" className="h-8 w-8 rounded-lg object-cover object-top" /><span className="text-sm font-black text-[#0D1B2A]">قدراتك</span></div>
+            <button onClick={() => setLocation('/signup?type=student')} className="qodratak-focus-ring text-sm font-black text-[#0D1B2A]">إنشاء حساب</button>
           </div>
 
-          {/* 2FA Screen */}
-          {screen === '2fa' && (
-            <>
-              <TwoFactorScreen
-                methods={twoFactorMethods}
-                onSuccess={handleSuccessfulLogin}
-              />
-              <div className="px-8 pb-6">
-                <button
-                  onClick={() => setScreen('login')}
-                  data-testid="button-2fa-back"
-                  className="w-full py-2.5 text-sm text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 transition-colors"
-                >
-                  ← الرجوع لتسجيل الدخول
-                </button>
-              </div>
-            </>
-          )}
+          <div className="mx-auto flex w-full max-w-md flex-1 flex-col justify-center px-6 py-10 sm:px-9">
+            <div className="mb-8">
+              <p className="text-xs font-black tracking-[.14em] text-slate-400">تسجيل الدخول</p>
+              <h2 className="mt-2 text-3xl font-black text-[#0D1B2A]">أهلًا بعودتك.</h2>
+              <p className="mt-2 text-sm leading-6 text-slate-500">أدخل بياناتك للعودة إلى لوحة تقدمك.</p>
+            </div>
 
-          {/* PIN Screen */}
-          {screen === 'pin' && (
-            <PinLoginScreen
-              email={formData.identifier}
-              onSuccess={handleSuccessfulLogin}
-              onBack={() => setScreen('login')}
-            />
-          )}
+            {screen === '2fa' && (
+              <>
+                <TwoFactorScreen methods={twoFactorMethods} onSuccess={handleSuccessfulLogin} />
+                <button onClick={() => setScreen('login')} data-testid="button-2fa-back" className="mt-4 w-full py-2.5 text-sm font-bold text-slate-500 transition hover:text-[#0D1B2A]">العودة لتسجيل الدخول</button>
+              </>
+            )}
 
-          {/* Main Login Form */}
-          {screen === 'login' && (
-            <>
-              <div className="px-8 pb-4 pt-2">
-                <form onSubmit={handleLogin} className="space-y-4">
-                  <div className="space-y-1.5">
-                    <label className="text-sm font-semibold text-gray-700 dark:text-gray-300">
-                      البريد أو اسم المستخدم أو الجوال
-                    </label>
-                    <div className="relative group">
-                      <span className="absolute right-3.5 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-[#0D1B2A] transition-colors">
-                        {getIdentifierIcon()}
-                      </span>
-                      <input
-                        type="text"
-                        placeholder="email@example.com / username / 05xxxxxxxx"
-                        value={formData.identifier}
-                        onChange={(e) => setFormData({ ...formData, identifier: e.target.value })}
-                        required
-                        autoComplete="username"
-                        data-testid="input-identifier"
-                        className="w-full pr-10 pl-4 py-3 rounded-xl border border-[#E5E7EB] bg-[#E5E7EB]/40 text-[#0D1B2A] placeholder:text-[#94A3B8] focus:outline-none focus:ring-2 focus:ring-[#0D1B2A]/20 focus:border-[#0D1B2A] transition-all text-sm"
-                      />
+            {screen === 'pin' && <PinLoginScreen email={formData.identifier} onSuccess={handleSuccessfulLogin} onBack={() => setScreen('login')} />}
+
+            {screen === 'login' && (
+              <>
+                <form onSubmit={handleLogin} className="space-y-5">
+                  <div className="space-y-2">
+                    <label className="text-sm font-black text-slate-700">البريد الإلكتروني أو رقم الجوال</label>
+                    <div className="group relative">
+                      <span className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 transition group-focus-within:text-[#0D1B2A]">{getIdentifierIcon()}</span>
+                      <input type="text" placeholder="example@email.com أو 05xxxxxxxx" value={formData.identifier} onChange={(e) => setFormData({ ...formData, identifier: e.target.value })} required autoComplete="username" data-testid="input-identifier" className="w-full rounded-xl border border-slate-200 bg-[#F8FAFB] py-3.5 pr-11 pl-4 text-sm text-[#0D1B2A] outline-none transition placeholder:text-slate-400 focus:border-[#0D1B2A] focus:bg-white focus:ring-4 focus:ring-[#0D1B2A]/10" />
                     </div>
                   </div>
-
-                  <div className="space-y-1.5">
-                    <label className="text-sm font-semibold text-gray-700 dark:text-gray-300">كلمة المرور</label>
-                    <div className="relative group">
-                      <KeyRound className="absolute right-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 group-focus-within:text-[#0D1B2A] transition-colors" />
-                      <input
-                        type={showPassword ? 'text' : 'password'}
-                        placeholder="أدخل كلمة المرور"
-                        value={formData.password}
-                        onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                        required
-                        autoComplete="current-password"
-                        data-testid="input-password"
-                        className="w-full pr-10 pl-10 py-3 rounded-xl border border-[#E5E7EB] bg-[#E5E7EB]/40 text-[#0D1B2A] placeholder:text-[#94A3B8] focus:outline-none focus:ring-2 focus:ring-[#0D1B2A]/20 focus:border-[#0D1B2A] transition-all text-sm"
-                      />
-                      <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors" data-testid="button-toggle-password">
-                        {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                      </button>
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between"><label className="text-sm font-black text-slate-700">كلمة المرور</label><button type="button" onClick={() => setLocation('/forgot-password')} className="text-xs font-bold text-slate-500 hover:text-[#0D1B2A]" data-testid="link-forgot-password">نسيت كلمة المرور؟</button></div>
+                    <div className="group relative">
+                      <KeyRound className="absolute right-4 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400 transition group-focus-within:text-[#0D1B2A]" />
+                      <input type={showPassword ? 'text' : 'password'} placeholder="أدخل كلمة المرور" value={formData.password} onChange={(e) => setFormData({ ...formData, password: e.target.value })} required autoComplete="current-password" data-testid="input-password" className="w-full rounded-xl border border-slate-200 bg-[#F8FAFB] py-3.5 pr-11 pl-11 text-sm text-[#0D1B2A] outline-none transition placeholder:text-slate-400 focus:border-[#0D1B2A] focus:bg-white focus:ring-4 focus:ring-[#0D1B2A]/10" />
+                      <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 transition hover:text-[#0D1B2A]" data-testid="button-toggle-password">{showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}</button>
                     </div>
                   </div>
-
-                  <button
-                    type="submit"
-                    disabled={isLoading}
-                    data-testid="button-login"
-                    className="w-full py-3 px-4 bg-[#0D1B2A] hover:bg-[#1E2938] text-white font-semibold rounded-xl transition-colors disabled:opacity-70 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-                  >
-                    {isLoading ? (
-                      <><div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> جاري تسجيل الدخول...</>
-                    ) : (
-                      <><LogIn className="w-4 h-4" /> تسجيل الدخول</>
-                    )}
+                  <button type="submit" disabled={isLoading} data-testid="button-login" className="flex w-full items-center justify-center gap-2 rounded-xl bg-[#0D1B2A] px-4 py-3.5 text-sm font-black text-white transition hover:bg-[#1E2938] disabled:cursor-not-allowed disabled:opacity-70">
+                    {isLoading ? <><div className="h-4 w-4 animate-spin rounded-full border-2 border-white/30 border-t-white" /> جارٍ تسجيل الدخول</> : <><LogIn className="h-4 w-4" /> تسجيل الدخول</>}
                   </button>
-
                 </form>
-
-                <div className="mt-5 flex items-center gap-2 text-xs text-gray-400 dark:text-gray-500 bg-gray-50 dark:bg-gray-800 p-3 rounded-xl border border-gray-100 dark:border-gray-700">
-                  <Shield className="w-3.5 h-3.5 flex-shrink-0 text-[#0D1B2A]" />
-                  <span>بيانات تسجيل دخولك مشفرة ومحمية بالكامل</span>
+                <div className="mt-5 flex items-center gap-2 rounded-xl border border-slate-200 bg-slate-50 px-3.5 py-3 text-xs leading-5 text-slate-500"><Shield className="h-4 w-4 shrink-0 text-[#0D1B2A]" /> جلساتك وبيانات الدخول محمية، ويمكنك إدارة أجهزتك من حسابك.</div>
+                <div className="mt-7 border-t border-slate-100 pt-6 text-center">
+                  <p className="text-sm text-slate-500">ليس لديك حساب؟ <button onClick={() => setLocation('/signup?type=student')} className="font-black text-[#0D1B2A]" data-testid="link-signup">ابدأ كطالب</button></p>
+                  <p className="mt-3 text-xs text-slate-400">المدرسون والمؤسسات ينضمون عبر رابط دعوة مرسل من الإدارة.</p>
                 </div>
-              </div>
-
-              {/* Footer */}
-              <div className="px-8 pb-6 border-t border-gray-100 dark:border-gray-800 pt-4 space-y-3">
-                <div className="flex items-center justify-between text-sm">
-                  <button onClick={() => setLocation('/account-type')} className="flex items-center gap-1.5 text-[#0D1B2A] hover:underline font-medium" data-testid="link-signup">
-                    <UserPlus className="w-3.5 h-3.5" /> حساب جديد؟ سجّل الآن
-                  </button>
-                  <button onClick={() => setLocation('/guest-signup')} className="flex items-center gap-1.5 text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300 transition-colors" data-testid="link-guest">
-                    <Zap className="w-3.5 h-3.5" /> تجربة مجانية
-                  </button>
-                </div>
-                <div className="text-center">
-                  <button onClick={() => setLocation('/forgot-password')} className="flex items-center gap-1.5 text-sm text-gray-400 hover:text-[#0D1B2A] transition-colors mx-auto" data-testid="link-forgot-password">
-                    <HelpCircle className="w-3.5 h-3.5" /> نسيت كلمة المرور؟
-                  </button>
-                </div>
-              </div>
-            </>
-          )}
-        </div>
-
-        <p className="text-center mt-6 text-xs tracking-[0.18em] text-[#94A3B8]">QIROX STUDIO</p>
+              </>
+            )}
+          </div>
+          <div className="border-t border-slate-100 px-6 py-4 text-center text-[10px] font-bold tracking-[.18em] text-slate-400">QIROX STUDIO</div>
+        </main>
       </div>
     </div>
   );
