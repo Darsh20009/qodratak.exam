@@ -12,6 +12,8 @@ import {
   Target,
   X,
 } from "lucide-react";
+import { SignupModal } from "@/components/SignupModal";
+import { TestimonialsSection } from "@/components/TestimonialsSection";
 
 const NAVY = "#0D1B2A";
 const INK = "#1E2938";
@@ -52,7 +54,7 @@ const differences = [
   ["مسار لا يشتتك", "لا تظهر لك إلا المساحات المتاحة لخطتك واشتراكك."],
 ];
 
-function Header() {
+function Header({ onSignup }: { onSignup: () => void }) {
   const [menuOpen, setMenuOpen] = useState(false);
 
   return (
@@ -70,9 +72,13 @@ function Header() {
           <a href="#journey" className="qodratak-focus-ring text-sm font-bold text-white/65 transition hover:text-white">كيف تعمل المنصة</a>
           <a href="#inside" className="qodratak-focus-ring text-sm font-bold text-white/65 transition hover:text-white">ماذا ستجد</a>
           <Link href="/login" className="qodratak-focus-ring text-sm font-bold text-white/90">تسجيل الدخول</Link>
-          <Link href="/signup?type=student" className="qodratak-focus-ring rounded-xl px-4 py-2.5 text-sm font-black transition hover:-translate-y-0.5" style={{ background: SIGNAL, color: NAVY }}>
+          <button
+            onClick={onSignup}
+            className="qodratak-focus-ring rounded-xl px-4 py-2.5 text-sm font-black transition hover:-translate-y-0.5"
+            style={{ background: SIGNAL, color: NAVY }}
+          >
             أنشئ حسابك
-          </Link>
+          </button>
         </nav>
 
         <button
@@ -92,7 +98,11 @@ function Header() {
             <a href="#journey" onClick={() => setMenuOpen(false)} className="rounded-lg px-3 py-2.5 text-sm font-bold text-white/85">كيف تعمل المنصة</a>
             <a href="#inside" onClick={() => setMenuOpen(false)} className="rounded-lg px-3 py-2.5 text-sm font-bold text-white/85">ماذا ستجد</a>
             <Link href="/login" onClick={() => setMenuOpen(false)} className="rounded-lg px-3 py-2.5 text-sm font-bold text-white/85">تسجيل الدخول</Link>
-            <Link href="/signup?type=student" onClick={() => setMenuOpen(false)} className="mt-1 rounded-lg px-3 py-2.5 text-sm font-black" style={{ background: SIGNAL, color: NAVY }}>أنشئ حسابك</Link>
+            <button
+              onClick={() => { setMenuOpen(false); onSignup(); }}
+              className="mt-1 rounded-lg px-3 py-2.5 text-right text-sm font-black"
+              style={{ background: SIGNAL, color: NAVY }}
+            >أنشئ حسابك</button>
           </nav>
         </div>
       )}
@@ -169,12 +179,49 @@ function ExamPreview() {
   );
 }
 
+/* ── Student avatars strip ── */
+function StudentStrip({ onSignup }: { onSignup: () => void }) {
+  const students = [
+    { src: "/students/student-f1.png", name: "ريم" },
+    { src: "/students/student-m1.jpg", name: "فهد" },
+    { src: "/students/student-f2.jpg", name: "نورة" },
+    { src: "/students/student-m2.jpg", name: "عبدالله" },
+    { src: "/students/student-f3.jpg", name: "سارة" },
+  ];
+  return (
+    <div className="flex flex-wrap items-center gap-4">
+      <div className="flex -space-x-2.5 space-x-reverse">
+        {students.map((s, i) => (
+          <div
+            key={i}
+            className="h-11 w-11 overflow-hidden rounded-full border-2 bg-slate-300 shadow"
+            style={{ borderColor: NAVY, zIndex: students.length - i }}
+          >
+            <img src={s.src} alt={s.name} className="h-full w-full object-cover object-top" />
+          </div>
+        ))}
+      </div>
+      <div>
+        <p className="text-sm font-black text-white">+٢١٠٠ طالب يستعدون الآن</p>
+        <button onClick={onSignup} className="mt-0.5 text-xs font-bold underline" style={{ color: SIGNAL }}>
+          انضم إليهم مجاناً →
+        </button>
+      </div>
+    </div>
+  );
+}
+
 export default function LandingPage() {
+  const [signupOpen, setSignupOpen] = useState(false);
+
   return (
     <main className="min-h-screen overflow-hidden bg-[#FAFBFC] text-slate-900" dir="rtl">
+      <SignupModal open={signupOpen} onClose={() => setSignupOpen(false)} />
+
+      {/* ── Hero ── */}
       <section className="relative isolate overflow-hidden" style={{ background: NAVY }}>
         <div className="pointer-events-none absolute inset-0 opacity-30" style={{ backgroundImage: "linear-gradient(rgba(247,247,117,.08) 1px, transparent 1px), linear-gradient(90deg, rgba(247,247,117,.08) 1px, transparent 1px)", backgroundSize: "44px 44px", maskImage: "linear-gradient(to bottom, black, transparent)" }} />
-        <Header />
+        <Header onSignup={() => setSignupOpen(true)} />
         <div className="relative mx-auto grid max-w-7xl items-center gap-12 px-5 pb-20 pt-14 sm:px-8 lg:grid-cols-[1.05fr_.95fr] lg:pb-28 lg:pt-20">
           <div className="max-w-2xl">
             <div className="inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/5 px-3 py-1.5 text-xs font-bold text-white/75">
@@ -190,9 +237,13 @@ export default function LandingPage() {
               قدراتك تحول الاستعداد للاختبار من أسئلة مبعثرة إلى مسار تعرف فيه مستواك، تدريبك القادم، ونتيجتك بعد كل محاولة.
             </p>
             <div className="mt-8 flex flex-wrap gap-3">
-              <Link href="/signup?type=student" className="qodratak-focus-ring inline-flex items-center gap-2 rounded-xl px-5 py-3.5 text-sm font-black transition hover:-translate-y-0.5" style={{ background: SIGNAL, color: NAVY }}>
+              <button
+                onClick={() => setSignupOpen(true)}
+                className="qodratak-focus-ring inline-flex items-center gap-2 rounded-xl px-5 py-3.5 text-sm font-black transition hover:-translate-y-0.5"
+                style={{ background: SIGNAL, color: NAVY }}
+              >
                 ابدأ حسابك <ArrowLeft size={17} />
-              </Link>
+              </button>
               <a href="#journey" className="qodratak-focus-ring inline-flex items-center gap-2 rounded-xl border border-white/20 px-5 py-3.5 text-sm font-bold text-white transition hover:bg-white/10">
                 شاهد كيف تبدأ <ChevronLeft size={17} />
               </a>
@@ -200,11 +251,16 @@ export default function LandingPage() {
             <div className="mt-9 flex flex-wrap gap-x-7 gap-y-3 text-xs font-bold text-white/65">
               {["نتيجة واضحة بعد كل محاولة", "مسارات حسب اشتراكك", "خصوصية وحماية للحساب"].map((item) => <span key={item} className="flex items-center gap-1.5"><Check className="h-3.5 w-3.5 text-[#F7F775]" />{item}</span>)}
             </div>
+            {/* student strip */}
+            <div className="mt-10">
+              <StudentStrip onSignup={() => setSignupOpen(true)} />
+            </div>
           </div>
           <ScorePreview />
         </div>
       </section>
 
+      {/* ── Stats bar ── */}
       <section className="relative z-10 mx-auto -mt-7 max-w-7xl px-5 sm:px-8">
         <div className="grid overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-[0_18px_50px_rgba(13,27,42,.08)] sm:grid-cols-3">
           {[
@@ -221,9 +277,14 @@ export default function LandingPage() {
         </div>
       </section>
 
+      {/* ── What you get — with student photo ── */}
       <section className="mx-auto grid max-w-7xl items-center gap-10 px-5 py-24 sm:px-8 lg:grid-cols-[1.02fr_.98fr]">
         <div className="relative overflow-hidden rounded-[28px] bg-[#DCE4E8]">
-          <img src="/attached_assets/generated_images/qodratak-students-study.jpg" alt="طلاب يراجعون دراستهم معًا" className="aspect-[4/3] h-full w-full object-cover" />
+          <img
+            src="/attached_assets/generated_images/qodratak-students-study.jpg"
+            alt="طلاب يراجعون دراستهم معًا"
+            className="aspect-[4/3] h-full w-full object-cover"
+          />
           <div className="absolute inset-x-4 bottom-4 rounded-2xl border border-white/40 bg-white/90 p-4 backdrop-blur-sm">
             <p className="text-xs font-black text-[#0D1B2A]">ليست مجرد أسئلة أكثر.</p>
             <p className="mt-1 text-xs leading-5 text-slate-600">هي طريقة أوضح لتعرف لماذا تتدرّب على هذا السؤال الآن.</p>
@@ -245,9 +306,17 @@ export default function LandingPage() {
               </div>
             ))}
           </div>
+          <button
+            onClick={() => setSignupOpen(true)}
+            className="qodratak-focus-ring mt-7 inline-flex items-center gap-2 rounded-xl px-5 py-3 text-sm font-black transition hover:-translate-y-0.5"
+            style={{ background: NAVY, color: SIGNAL }}
+          >
+            ابدأ حسابك مجاناً <ArrowLeft size={16} />
+          </button>
         </div>
       </section>
 
+      {/* ── Journey ── */}
       <section id="journey" className="mx-auto max-w-7xl px-5 py-24 sm:px-8">
         <div className="max-w-2xl">
           <p className="text-sm font-black text-slate-400">رحلة الطالب داخل قدراتك</p>
@@ -267,6 +336,7 @@ export default function LandingPage() {
         </div>
       </section>
 
+      {/* ── How to start ── */}
       <section className="border-y border-slate-200 bg-white">
         <div className="mx-auto max-w-7xl px-5 py-24 sm:px-8">
           <div className="flex max-w-2xl flex-col gap-3">
@@ -287,9 +357,19 @@ export default function LandingPage() {
               </article>
             ))}
           </div>
+          <div className="mt-10 flex justify-center">
+            <button
+              onClick={() => setSignupOpen(true)}
+              className="inline-flex items-center gap-2 rounded-xl px-6 py-3.5 text-sm font-black transition hover:-translate-y-0.5"
+              style={{ background: SIGNAL, color: NAVY }}
+            >
+              ابدأ الآن — مجاناً <ArrowLeft size={16} />
+            </button>
+          </div>
         </div>
       </section>
 
+      {/* ── Inside (what you find) ── */}
       <section id="inside" className="border-y border-slate-200 bg-[#F0F3F5]">
         <div className="mx-auto grid max-w-7xl items-center gap-12 px-5 py-20 sm:px-8 lg:grid-cols-[.9fr_1.1fr]">
           <div className="order-2 lg:order-1"><ExamPreview /></div>
@@ -308,20 +388,27 @@ export default function LandingPage() {
                 </div>
               ))}
             </div>
-            <Link href="/signup?type=student" className="qodratak-focus-ring mt-8 inline-flex items-center gap-2 text-sm font-black text-[#0D1B2A]">
+            <button
+              onClick={() => setSignupOpen(true)}
+              className="qodratak-focus-ring mt-8 inline-flex items-center gap-2 text-sm font-black text-[#0D1B2A]"
+            >
               أنشئ حسابك وابدأ <ArrowLeft size={16} />
-            </Link>
+            </button>
           </div>
         </div>
       </section>
 
+      {/* ── Platform sections ── */}
       <section className="mx-auto max-w-7xl px-5 py-24 sm:px-8">
         <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-end">
           <div className="max-w-2xl">
             <p className="text-sm font-black text-slate-400">أقسام المنصة</p>
             <h2 className="mt-3 text-3xl font-black leading-tight sm:text-4xl" style={{ color: NAVY }}>لكل جزء من استعدادك مكان واضح.</h2>
           </div>
-          <Link href="/signup?type=student" className="qodratak-focus-ring inline-flex items-center gap-2 text-sm font-black text-[#0D1B2A]">استكشفها من حسابك <ArrowLeft size={16} /></Link>
+          <button
+            onClick={() => setSignupOpen(true)}
+            className="qodratak-focus-ring inline-flex items-center gap-2 text-sm font-black text-[#0D1B2A]"
+          >استكشفها من حسابك <ArrowLeft size={16} /></button>
         </div>
         <div className="mt-10 grid border-y border-slate-200 md:grid-cols-5">
           {platformSections.map(([title, text], index) => (
@@ -334,6 +421,10 @@ export default function LandingPage() {
         </div>
       </section>
 
+      {/* ── Testimonials ── */}
+      <TestimonialsSection onSignup={() => setSignupOpen(true)} />
+
+      {/* ── Difference + big student photo ── */}
       <section className="border-y border-slate-200 bg-[#0D1B2A]">
         <div className="mx-auto grid max-w-7xl items-stretch gap-0 px-5 py-0 sm:px-8 lg:grid-cols-[.94fr_1.06fr]">
           <div className="py-16 lg:pl-16 lg:py-24">
@@ -356,14 +447,67 @@ export default function LandingPage() {
         </div>
       </section>
 
+      {/* ── Students group photo ── */}
+      <section className="relative overflow-hidden bg-[#F0F3F5] py-0">
+        <div className="mx-auto grid max-w-7xl items-center gap-0 px-0 lg:grid-cols-[1fr_1fr]">
+          <div className="relative min-h-72 overflow-hidden lg:min-h-[420px]">
+            <img
+              src="/students/students-group.png"
+              alt="مجموعة طلاب سعوديين"
+              className="h-full w-full object-cover"
+              style={{ objectPosition: "center 20%" }}
+            />
+            <div className="absolute inset-0 bg-gradient-to-r from-transparent to-[#F0F3F5]/80" />
+          </div>
+          <div className="px-8 py-14 lg:px-14">
+            <p className="text-sm font-black text-slate-400">لكل طالب هدف مختلف</p>
+            <h2 className="mt-3 text-3xl font-black leading-tight sm:text-4xl" style={{ color: NAVY }}>
+              سواء كنت تستعد للقدرات، التحصيلي، أو IELTS — فيه مسار لك هنا.
+            </h2>
+            <p className="mt-5 text-sm leading-7 text-slate-500">
+              قدراتك ليست منصة أسئلة فقط. هي مساحة تتعلم فيها بطريقة مرتبة تناسب مستواك واشتراكك وهدفك.
+            </p>
+            <button
+              onClick={() => setSignupOpen(true)}
+              className="mt-8 inline-flex items-center gap-2 rounded-xl px-5 py-3.5 text-sm font-black transition hover:-translate-y-0.5"
+              style={{ background: NAVY, color: SIGNAL }}
+            >
+              ابدأ رحلتك الآن <ArrowLeft size={16} />
+            </button>
+          </div>
+        </div>
+      </section>
+
+      {/* ── Final CTA ── */}
       <section className="mx-auto max-w-7xl px-5 py-24 sm:px-8">
         <div className="relative overflow-hidden rounded-[28px] bg-[#0D1B2A] px-6 py-12 sm:px-12">
           <Layers3 className="absolute -left-5 -top-6 h-36 w-36 text-white/5" />
-          <div className="relative max-w-2xl">
-            <p className="text-sm font-bold text-[#F7F775]">قدراتك من Qirox Studio</p>
-            <h2 className="mt-3 text-3xl font-black leading-tight text-white sm:text-4xl">ابدأ بخطوة صغيرة، واترك لنا ترتيب الباقي.</h2>
-            <p className="mt-4 text-sm leading-7 text-slate-300">حسابك يفتح لك مساحة منظمة لتتعلم، تختبر، وتتابع تقدمك بوضوح.</p>
-            <Link href="/signup?type=student" className="qodratak-focus-ring mt-7 inline-flex items-center gap-2 rounded-xl px-5 py-3.5 text-sm font-black transition hover:-translate-y-0.5" style={{ background: SIGNAL, color: NAVY }}>إنشاء حساب طالب <ArrowLeft size={17} /></Link>
+          {/* student avatars inside CTA */}
+          <div className="relative flex flex-col gap-6 sm:flex-row sm:items-center sm:justify-between">
+            <div className="max-w-2xl">
+              <p className="text-sm font-bold text-[#F7F775]">قدراتك من Qirox Studio</p>
+              <h2 className="mt-3 text-3xl font-black leading-tight text-white sm:text-4xl">ابدأ بخطوة صغيرة، واترك لنا ترتيب الباقي.</h2>
+              <p className="mt-4 text-sm leading-7 text-slate-300">حسابك يفتح لك مساحة منظمة لتتعلم، تختبر، وتتابع تقدمك بوضوح.</p>
+            </div>
+            <div className="flex flex-col items-start gap-4 sm:items-end">
+              <div className="flex -space-x-2.5 space-x-reverse">
+                {[
+                  "/students/student-f1.png",
+                  "/students/student-m1.jpg",
+                  "/students/student-f2.jpg",
+                  "/students/student-m2.jpg",
+                ].map((src, i) => (
+                  <div key={i} className="h-10 w-10 overflow-hidden rounded-full border-2 border-[#0D1B2A] bg-slate-600" style={{ zIndex: 4 - i }}>
+                    <img src={src} alt="" className="h-full w-full object-cover object-top" />
+                  </div>
+                ))}
+              </div>
+              <button
+                onClick={() => setSignupOpen(true)}
+                className="qodratak-focus-ring inline-flex items-center gap-2 rounded-xl px-5 py-3.5 text-sm font-black transition hover:-translate-y-0.5"
+                style={{ background: SIGNAL, color: NAVY }}
+              >إنشاء حساب طالب <ArrowLeft size={17} /></button>
+            </div>
           </div>
         </div>
       </section>

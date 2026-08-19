@@ -129,6 +129,7 @@ import LeaderboardPage from "@/pages/LeaderboardPage";
 import InstallPrompt from "@/components/InstallPrompt";
 import { FloatingInstallButton } from "@/components/PermanentInstallButton";
 import LandingPage from "@/pages/LandingPage";
+import { SplashScreen } from "@/components/SplashScreen";
 import MultiplayerPage from "@/pages/MultiplayerPage";
 import MultiplayerRoom from "@/pages/MultiplayerRoom";
 import NotificationBell from "@/components/NotificationBell";
@@ -1160,43 +1161,7 @@ function App() {
   };
 
   if (showSplash) {
-    return (
-      <div className="h-screen w-screen bg-white flex flex-col items-center justify-center" dir="rtl">
-        <div className="flex items-center gap-4 mb-8">
-          <div className="w-14 h-14 rounded-2xl overflow-hidden shadow-md flex-shrink-0">
-            <img src={platformLogo} alt="قدراتك" className="w-full h-full object-cover object-top" />
-          </div>
-          <div>
-            <h1 className="text-2xl font-black text-[#0D1B2A]">قدراتك</h1>
-            <p className="text-sm text-[#94A3B8]">QODRATAK</p>
-          </div>
-        </div>
-
-        <div className="w-56 h-1 bg-gray-100 rounded-full overflow-hidden">
-          <div className="h-full rounded-full animate-loading-bar" style={{ background: "#0D1B2A" }} />
-        </div>
-
-        <style>{`
-          @keyframes loading-bar {
-            0% { width: 0%; }
-            100% { width: 100%; }
-          }
-          .animate-loading-bar {
-            animation: loading-bar 1.2s ease-out forwards;
-          }
-          @keyframes pulse-glow {
-            0%, 100% { opacity: 0.4; }
-            50% { opacity: 0.7; }
-          }
-          .animate-pulse-glow {
-            animation: pulse-glow 2s ease-in-out infinite;
-          }
-          .bg-gradient-radial {
-            background: radial-gradient(circle, var(--tw-gradient-from), var(--tw-gradient-via), var(--tw-gradient-to));
-          }
-        `}</style>
-      </div>
-    );
+    return <SplashScreen onDone={() => { setShowSplash(false); setSplashDone(true); }} />;
   }
 
   return (
