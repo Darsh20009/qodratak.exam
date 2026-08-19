@@ -252,15 +252,15 @@ const InstallPrompt = () => {
 
   return (
     <div className="fixed bottom-20 left-4 right-4 md:bottom-4 z-50 md:left-auto md:right-4 md:w-96" dir="rtl">
-      <Card className="border-2 border-green-400 dark:border-green-400 shadow-2xl bg-white dark:bg-gray-900">
+      <Card className="border-2 border-[#0D1B2A]/15 shadow-2xl bg-white dark:bg-gray-900">
         <CardContent className="p-4">
           <div className="flex items-start justify-between mb-4">
             <div className="flex items-center gap-3">
-              <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-green-600 to-blue-600 flex items-center justify-center shadow-lg">
+              <div className="w-12 h-12 rounded-xl bg-[#0D1B2A] flex items-center justify-center shadow-lg">
                 <img 
-                  src="/icon-192x192.png" 
+                  src="/qodratak-logo.png"
                   alt="قدراتك" 
-                  className="w-8 h-8 rounded-lg"
+                  className="w-9 h-9 rounded-lg object-cover object-top"
                   onError={(e) => {
                     (e.target as HTMLImageElement).style.display = 'none';
                   }}

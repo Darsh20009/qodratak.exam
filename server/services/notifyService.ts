@@ -36,7 +36,7 @@ async function sendWebPush(userId: string, title: string, body: string, opts: No
     const payload = JSON.stringify({
       title,
       body,
-      icon:  opts.icon  || '/logo-512x512.png',
+      icon:  opts.icon  || '/qodratak-logo.png',
       badge: '/logo-192x192.png',
       tag:   opts.tag   || `notif-${Date.now()}`,
       data:  { url: opts.link || '/' },
@@ -146,7 +146,7 @@ export async function fireNotifyBroadcast(
       const subs = await PushSubscription.find({});
       const payload = JSON.stringify({
         title, body,
-        icon:  opts.icon || '/logo-512x512.png',
+        icon:  opts.icon || '/qodratak-logo.png',
         badge: '/logo-192x192.png',
         tag:   opts.tag  || `broadcast-${Date.now()}`,
         data:  { url: opts.link || '/' },

@@ -32,8 +32,8 @@ async function sendToSubscription(sub: any, payload: PushPayload): Promise<boole
       JSON.stringify({
         title: payload.title,
         body: payload.body,
-        icon: payload.icon || '/icon-192x192.png',
-        badge: payload.badge || '/icon-192x192.png',
+        icon: payload.icon || '/qodratak-logo.png',
+        badge: payload.badge || '/qodratak-logo.png',
         tag: payload.tag || 'qodratak-default',
         url: payload.url || '/',
         type: payload.type || 'general',

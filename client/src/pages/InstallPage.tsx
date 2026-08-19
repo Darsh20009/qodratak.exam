@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-const newLogoPath = "/logo-512x512.png";
+const newLogoPath = "/qodratak-logo.png";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";

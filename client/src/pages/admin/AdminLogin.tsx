@@ -66,7 +66,7 @@ export default function AdminLogin() {
         <div className="text-center mb-8">
           <div className="inline-flex items-center justify-center mb-4 relative">
             <div className="w-20 h-20 rounded-3xl overflow-hidden shadow-2xl border-2 border-emerald-600/40" style={{ boxShadow: '0 0 40px rgba(16,185,129,0.3)' }}>
-              <img src="/logo-512x512.png" alt="قدراتك" className="w-full h-full object-cover" />
+              <img src="/qodratak-logo.png" alt="قدراتك" className="w-full h-full object-cover object-top" />
             </div>
             <div className="absolute -bottom-2 -right-2 w-7 h-7 rounded-xl bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center shadow-lg border-2 border-[#071a0e]">
               <Shield className="w-3.5 h-3.5 text-white" />

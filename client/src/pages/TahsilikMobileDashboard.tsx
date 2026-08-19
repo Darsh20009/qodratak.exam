@@ -32,7 +32,7 @@ import {
   Rocket,
   Crown
 } from 'lucide-react';
-const newLogoPath = "/logo-512x512.png";
+const newLogoPath = "/qodratak-logo.png";
 
 const TahsilikMobileDashboard: React.FC = () => {
   const [, setLocation] = useLocation();

@@ -18,7 +18,7 @@ import {
   Crown,
   GraduationCap
 } from "lucide-react";
-const newLogoPath = "/logo-512x512.png";
+const newLogoPath = "/qodratak-logo.png";
 
 export default function NotFound() {
   const [showFloatingElements, setShowFloatingElements] = useState(false);

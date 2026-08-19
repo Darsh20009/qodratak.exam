@@ -24,7 +24,7 @@ import {
   BarChart3,
   TrendingUp
 } from 'lucide-react';
-const newLogoPath = "/logo-512x512.png";
+const newLogoPath = "/qodratak-logo.png";
 
 interface TestResult {
   examId: string;

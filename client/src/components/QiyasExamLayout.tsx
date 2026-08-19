@@ -194,7 +194,7 @@ export function QiyasExamLayout({
       ════════════════════════════════════════ */}
       <div className="md:hidden bg-white border-b border-gray-200 px-3 py-2 flex items-center justify-between shadow-sm sticky top-0 z-30">
         {/* Logo */}
-        <img src="/logo-512x512.png" alt="قدراتك" className="w-7 h-7 rounded-lg object-cover" />
+        <img src="/qodratak-logo.png" alt="قدراتك" className="w-7 h-7 rounded-lg object-cover object-top" />
 
         {/* Question number + section */}
         <div className="flex flex-col items-center">
@@ -224,7 +224,7 @@ export function QiyasExamLayout({
         <div className="hidden md:flex bg-white border-b border-gray-200 px-5 py-3 items-center justify-between shadow-sm">
           <div className="flex items-center gap-2 mr-3 pr-3 border-r border-gray-200 order-last">
             <span className="hidden sm:block text-xs font-bold text-gray-500">قدراتك</span>
-            <img src="/logo-512x512.png" alt="قدراتك" className="w-8 h-8 rounded-xl object-cover" />
+            <img src="/qodratak-logo.png" alt="قدراتك" className="w-8 h-8 rounded-xl object-cover object-top" />
           </div>
           <div className="flex items-center gap-1">
             <button

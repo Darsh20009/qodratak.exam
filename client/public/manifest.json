@@ -5,20 +5,20 @@
   "start_url": "/",
   "display": "standalone",
   "background_color": "#0f172a",
-  "theme_color": "#8B5CF6",
+  "theme_color": "#0D1B2A",
   "orientation": "portrait-primary",
   "lang": "ar",
   "dir": "rtl",
   "scope": "/",
   "icons": [
     {
-      "src": "/icon-192x192.png",
+      "src": "/qodratak-logo.png",
       "sizes": "192x192",
       "type": "image/png",
       "purpose": "any maskable"
     },
     {
-      "src": "/icon-512x512.png",
+      "src": "/qodratak-logo.png",
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "any maskable"
@@ -30,12 +30,12 @@
     {
       "name": "بنك الأسئلة",
       "url": "/question-bank",
-      "icons": [{ "src": "/icon-192x192.png", "sizes": "192x192" }]
+      "icons": [{ "src": "/qodratak-logo.png", "sizes": "192x192" }]
     },
     {
       "name": "اختبار قياس",
       "url": "/qiyas",
-      "icons": [{ "src": "/icon-192x192.png", "sizes": "192x192" }]
+      "icons": [{ "src": "/qodratak-logo.png", "sizes": "192x192" }]
     }
   ]
 }

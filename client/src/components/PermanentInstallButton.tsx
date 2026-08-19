@@ -132,7 +132,7 @@ export const PermanentInstallButton = () => {
       <Button 
         onClick={handleInstall}
         variant="default"
-        className="w-full bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white shadow-lg"
+        className="w-full bg-[#0D1B2A] hover:bg-[#1E2938] text-white shadow-lg"
         data-testid="button-permanent-install"
       >
         {getButtonContent()}
@@ -142,11 +142,11 @@ export const PermanentInstallButton = () => {
         <DialogContent className="max-w-sm" dir="rtl">
           <DialogHeader>
             <DialogTitle className="text-right flex items-center gap-2">
-              <div className="w-10 h-10 bg-gradient-to-br from-green-600 to-blue-600 rounded-xl flex items-center justify-center">
+              <div className="w-10 h-10 bg-[#0D1B2A] rounded-xl flex items-center justify-center">
                 <img 
-                  src="/icon-192x192.png" 
+                  src="/qodratak-logo.png"
                   alt="قدراتك" 
-                  className="w-7 h-7 rounded-lg"
+                  className="w-8 h-8 rounded-lg object-cover object-top"
                   onError={(e) => {
                     (e.target as HTMLImageElement).style.display = 'none';
                   }}
@@ -289,7 +289,7 @@ export const FloatingInstallButton = () => {
   return (
     <>
       <div className="fixed bottom-20 left-4 right-4 z-40 md:left-auto md:right-4 md:w-80" dir="rtl">
-        <div className="bg-gradient-to-r from-green-500 to-emerald-600 rounded-xl shadow-2xl p-4 relative">
+        <div className="bg-[#0D1B2A] rounded-xl shadow-2xl p-4 relative">
           <button 
             onClick={handleDismiss}
             className="absolute top-2 left-2 text-white/70 hover:text-white transition-colors"
@@ -301,9 +301,9 @@ export const FloatingInstallButton = () => {
           <div className="flex items-center gap-3 mb-3">
             <div className="w-12 h-12 bg-white/20 rounded-xl flex items-center justify-center">
               <img 
-                src="/icon-192x192.png" 
+                src="/qodratak-logo.png"
                 alt="قدراتك" 
-                className="w-9 h-9 rounded-lg"
+                className="w-9 h-9 rounded-lg object-cover object-top"
                 onError={(e) => {
                   (e.target as HTMLImageElement).style.display = 'none';
                 }}
@@ -318,7 +318,7 @@ export const FloatingInstallButton = () => {
           <Button 
             onClick={handleInstall}
             variant="secondary"
-            className="w-full bg-white text-green-600 hover:bg-gray-100 font-bold"
+            className="w-full bg-[#F7F775] text-[#0D1B2A] hover:bg-[#ffff9b] font-bold"
             data-testid="button-floating-install"
           >
             <Download className="w-5 h-5 ml-2" />
@@ -331,11 +331,11 @@ export const FloatingInstallButton = () => {
         <DialogContent className="max-w-sm" dir="rtl">
           <DialogHeader>
             <DialogTitle className="text-right flex items-center gap-2">
-              <div className="w-10 h-10 bg-gradient-to-br from-green-600 to-blue-600 rounded-xl flex items-center justify-center">
+              <div className="w-10 h-10 bg-[#0D1B2A] rounded-xl flex items-center justify-center">
                 <img 
-                  src="/icon-192x192.png" 
+                  src="/qodratak-logo.png"
                   alt="قدراتك" 
-                  className="w-7 h-7 rounded-lg"
+                  className="w-8 h-8 rounded-lg object-cover object-top"
                   onError={(e) => {
                     (e.target as HTMLImageElement).style.display = 'none';
                   }}

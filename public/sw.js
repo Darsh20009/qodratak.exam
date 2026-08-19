@@ -1,15 +1,12 @@
 // Service Worker for Qodratak PWA — Push Notifications + Offline Cache
-const CACHE_NAME = 'qudratak-app-v3';
-const STATIC_CACHE = 'qudratak-static-v3';
-const DYNAMIC_CACHE = 'qudratak-dynamic-v3';
+const CACHE_NAME = 'qudratak-app-v4';
+const STATIC_CACHE = 'qudratak-static-v4';
+const DYNAMIC_CACHE = 'qudratak-dynamic-v4';
 
 const STATIC_ASSETS = [
   '/',
   '/manifest.json',
-  '/icon-192x192.png',
-  '/icon-512x512.png',
-  '/apple-touch-icon.png',
-  '/favicon.ico'
+  '/qodratak-logo.png'
 ];
 
 // ── Install ───────────────────────────────────────────────────────────────────
@@ -114,8 +111,8 @@ self.addEventListener('push', (event) => {
 
   const options = {
     body,
-    icon:               '/icon-512x512.png',
-    badge:              '/favicon-32x32.png',
+    icon:               '/qodratak-logo.png',
+    badge:              '/qodratak-logo.png',
     tag,
     dir:                'rtl',
     lang:               'ar',

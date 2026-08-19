@@ -9,7 +9,7 @@ interface SEOProps {
 }
 
 const DOMAIN = 'https://www.qodratak.site';
-const DEFAULT_IMAGE = `${DOMAIN}/logo-512x512.png`;
+const DEFAULT_IMAGE = `${DOMAIN}/qodratak-logo.png`;
 const DEFAULT_TITLE = 'منصة قدراتك - رحلتك نحو التغيير والإبداع';
 const DEFAULT_DESCRIPTION = 'منصة قدراتك التعليمية - اختبارات تفاعلية لتطوير مهاراتك في اختبارات القدرات والتحصيلي مع أكثر من 3700 سؤال عالي الجودة وشروحات مفصلة';
 
