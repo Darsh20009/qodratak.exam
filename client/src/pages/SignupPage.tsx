@@ -317,7 +317,7 @@ export default function SignupPage() {
   const validateForm = () => {
     if (!fullName.trim()) { toast({ title: "خطأ", description: "يرجى إدخال الاسم الكامل", variant: "destructive" }); return false; }
     if (!email.trim() || !email.includes("@")) { toast({ title: "خطأ", description: "يرجى إدخال بريد إلكتروني صالح", variant: "destructive" }); return false; }
-    if (phone.trim() && phone.length < 9) { toast({ title: "خطأ", description: "رقم الجوال يجب أن يكون 9 أرقام على الأقل", variant: "destructive" }); return false; }
+    if (!whatsapp.trim() || whatsapp.length < 9) { toast({ title: "خطأ", description: "يرجى إدخال رقم واتساب صالح", variant: "destructive" }); return false; }
     if (activeType === "institution") {
       if (!whatsapp.trim() || whatsapp.length < 9) { toast({ title: "خطأ", description: "يرجى إدخال رقم واتساب صالح", variant: "destructive" }); return false; }
       if (!institutionName.trim()) { toast({ title: "خطأ", description: "يرجى إدخال اسم المؤسسة", variant: "destructive" }); return false; }
@@ -488,8 +488,8 @@ export default function SignupPage() {
         body: JSON.stringify({
           fullName: fullName.trim(),
           email: email.trim().toLowerCase(),
-          phone: phone.trim() ? `+966${phone.trim().replace(/^0/, '')}` : undefined,
-          whatsapp: whatsapp.trim() ? `+966${whatsapp.trim().replace(/^0/, '')}` : undefined,
+          phone: `+966${whatsapp.trim().replace(/^0/, '')}`,
+          whatsapp: `+966${whatsapp.trim().replace(/^0/, '')}`,
           telegramUsername: telegramUsername.trim() || undefined,
           password,
           role: activeType,
@@ -838,38 +838,13 @@ export default function SignupPage() {
                   </div>
                 </div>
 
-                {/* Phone */}
-                <div className="space-y-1.5">
-                  <Label htmlFor="phone" className="text-sm font-semibold text-gray-700 dark:text-gray-300">
-                    رقم الجوال {activeType === "institution" ? <span className="text-red-500">*</span> : <span className="text-gray-400 font-normal text-xs">(اختياري)</span>}
-                  </Label>
-                  <div className="flex h-11 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 overflow-hidden focus-within:ring-2 focus-within:ring-blue-500/20 focus-within:border-blue-500" dir="ltr">
-                    <div className="flex items-center gap-1.5 px-3 bg-gray-50 dark:bg-gray-700 border-r border-gray-200 dark:border-gray-600 text-sm font-semibold text-gray-600 dark:text-gray-300 shrink-0">
-                      <span>🇸🇦</span>
-                      <span>+966</span>
-                    </div>
-                    <input
-                      id="phone"
-                      type="tel"
-                      placeholder="5XXXXXXXX"
-                      value={phone}
-                      onChange={e => setPhone(e.target.value.replace(/^0/, ''))}
-                      data-testid="input-phone"
-                      dir="ltr"
-                      className="flex-1 px-3 text-sm text-gray-900 dark:text-white bg-transparent outline-none"
-                    />
-                  </div>
-                </div>
-
-                {/* WhatsApp - for students/teachers */}
                 {activeType !== "institution" && (
                   <div className="space-y-1.5">
                     <Label htmlFor="whatsapp-student" className="text-sm font-semibold text-gray-700 dark:text-gray-300">
-                      رقم الواتساب <span className="text-gray-400 text-xs font-normal">(اختياري)</span>
+                      رقم الواتساب <span className="text-red-500">*</span>
                     </Label>
-                    <div className="flex h-11 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 overflow-hidden focus-within:ring-2 focus-within:ring-green-500/20 focus-within:border-green-500" dir="ltr">
-                      <div className="flex items-center gap-1.5 px-3 bg-gray-50 dark:bg-gray-700 border-r border-gray-200 dark:border-gray-600 text-sm font-semibold text-gray-600 dark:text-gray-300 shrink-0">
-                        <span>🇸🇦</span>
+                    <div className="flex h-12 rounded-xl border border-slate-200 bg-[#F8FAFB] overflow-hidden focus-within:ring-4 focus-within:ring-[#0D1B2A]/10 focus-within:border-[#0D1B2A]" dir="ltr">
+                      <div className="flex items-center gap-1.5 px-3 bg-slate-100 border-r border-slate-200 text-sm font-semibold text-slate-600 shrink-0">
                         <span>+966</span>
                       </div>
                       <input
@@ -877,22 +852,30 @@ export default function SignupPage() {
                         type="tel"
                         placeholder="5XXXXXXXX"
                         value={whatsapp}
-                        onChange={e => setWhatsapp(e.target.value.replace(/^0/, ''))}
+                        onChange={e => {
+                          const value = e.target.value.replace(/^0/, '');
+                          setWhatsapp(value);
+                          setPhone(value);
+                        }}
                         data-testid="input-whatsapp-student"
                         dir="ltr"
-                        className="flex-1 px-3 text-sm text-gray-900 dark:text-white bg-transparent outline-none"
+                        autoComplete="tel"
+                        required
+                        className="flex-1 px-3 text-sm text-[#0D1B2A] bg-transparent outline-none"
                       />
                     </div>
+                    <p className="text-xs leading-5 text-slate-400">سنستخدم رقم واتساب لتأكيد الحساب والتنبيهات المهمة فقط.</p>
                   </div>
                 )}
 
                 {/* Academic profile — for students only */}
                 {activeType === "student" && (
-                  <div className="rounded-2xl border border-blue-100 dark:border-blue-900/40 bg-blue-50/50 dark:bg-blue-950/20 p-4 space-y-4">
-                    <p className="text-xs font-bold text-blue-700 dark:text-blue-300 flex items-center gap-1.5">
-                      <GraduationCap className="w-3.5 h-3.5" />
-                      ملفك الأكاديمي <span className="font-normal text-blue-400">(اختياري — يساعدنا على تخصيص تجربتك)</span>
-                    </p>
+                  <details className="group rounded-2xl border border-slate-200 bg-slate-50">
+                    <summary className="flex cursor-pointer list-none items-center justify-between gap-3 px-4 py-3.5 text-sm font-black text-[#0D1B2A]">
+                      <span className="flex items-center gap-2"><GraduationCap className="h-4 w-4" /> تخصيص خطتك الدراسية <span className="font-normal text-slate-400">(اختياري)</span></span>
+                      <ChevronLeft className="h-4 w-4 text-slate-400 transition group-open:-rotate-90" />
+                    </summary>
+                    <div className="border-t border-slate-200 p-4 space-y-4">
 
                     {/* التخصص */}
                     <div className="space-y-1.5">
@@ -981,7 +964,8 @@ export default function SignupPage() {
                       </div>
                       <p className="text-xs text-gray-400">اختياري — سنساعدك على الوصول لها</p>
                     </div>
-                  </div>
+                    </div>
+                  </details>
                 )}
 
                 {/* Password fields (student/teacher only) */}

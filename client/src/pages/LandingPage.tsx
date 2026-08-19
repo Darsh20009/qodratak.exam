@@ -38,6 +38,20 @@ const journey = [
   },
 ];
 
+const platformSections = [
+  ["الاختبارات المحاكية", "جرّب بيئة اختبار مرتبة مع وقت وأقسام ونتيجة مفهومة."],
+  ["التأسيس الكمي واللفظي", "ابدأ من المفهوم ثم انتقل إلى التدريب الذي يناسب مستواك."],
+  ["بنك الأسئلة", "راجع الأسئلة بحسب القسم والمهارة وما تحتاج تحسينه."],
+  ["التحصيلي وIELTS", "مساحات مستقلة تظهر لك عندما تكون مشمولة في اشتراكك."],
+  ["لوحة التقدم", "ملخص واحد لمحاولاتك، خطتك، ومدة اشتراكك."],
+];
+
+const differences = [
+  ["تدريب له سبب", "كل جلسة تربطك بهدف محدد بدل أن تتنقل بين أسئلة غير مترابطة."],
+  ["نتيجة قابلة للفهم", "ترى أين تحسنت وما الذي تحتاج أن تراجعه بعد الاختبار."],
+  ["مسار لا يشتتك", "لا تظهر لك إلا المساحات المتاحة لخطتك واشتراكك."],
+];
+
 function Header() {
   const [menuOpen, setMenuOpen] = useState(false);
 
@@ -207,6 +221,33 @@ export default function LandingPage() {
         </div>
       </section>
 
+      <section className="mx-auto grid max-w-7xl items-center gap-10 px-5 py-24 sm:px-8 lg:grid-cols-[1.02fr_.98fr]">
+        <div className="relative overflow-hidden rounded-[28px] bg-[#DCE4E8]">
+          <img src="/attached_assets/generated_images/qodratak-students-study.jpg" alt="طلاب يراجعون دراستهم معًا" className="aspect-[4/3] h-full w-full object-cover" />
+          <div className="absolute inset-x-4 bottom-4 rounded-2xl border border-white/40 bg-white/90 p-4 backdrop-blur-sm">
+            <p className="text-xs font-black text-[#0D1B2A]">ليست مجرد أسئلة أكثر.</p>
+            <p className="mt-1 text-xs leading-5 text-slate-600">هي طريقة أوضح لتعرف لماذا تتدرّب على هذا السؤال الآن.</p>
+          </div>
+        </div>
+        <div>
+          <p className="text-sm font-black text-slate-400">ماذا ستحصل عليه؟</p>
+          <h2 className="mt-3 text-3xl font-black leading-tight sm:text-4xl" style={{ color: NAVY }}>كل ما تحتاجه للاستعداد، في رحلة واحدة مفهومة.</h2>
+          <div className="mt-8 grid gap-3 sm:grid-cols-2">
+            {[
+              ["تدريب منظم", "تتدرج من التأسيس إلى المحاكاة."],
+              ["نتائج مباشرة", "تعرف ما تحتاج إليه بعد كل محاولة."],
+              ["خطة شخصية", "تظهر لك الخطوة التالية بوضوح."],
+              ["تجربة آمنة", "تحكم أكبر في حسابك وأجهزتك."],
+            ].map(([title, text]) => (
+              <div key={title} className="border-t border-slate-200 pt-3">
+                <h3 className="text-sm font-black text-[#0D1B2A]">{title}</h3>
+                <p className="mt-1 text-xs leading-5 text-slate-500">{text}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
       <section id="journey" className="mx-auto max-w-7xl px-5 py-24 sm:px-8">
         <div className="max-w-2xl">
           <p className="text-sm font-black text-slate-400">رحلة الطالب داخل قدراتك</p>
@@ -223,6 +264,29 @@ export default function LandingPage() {
               <p className="mt-3 max-w-xs text-sm leading-7 text-slate-500">{text}</p>
             </article>
           ))}
+        </div>
+      </section>
+
+      <section className="border-y border-slate-200 bg-white">
+        <div className="mx-auto max-w-7xl px-5 py-24 sm:px-8">
+          <div className="flex max-w-2xl flex-col gap-3">
+            <p className="text-sm font-black text-slate-400">كيف تبدأ؟</p>
+            <h2 className="text-3xl font-black leading-tight sm:text-4xl" style={{ color: NAVY }}>أربع محطات، وكل محطة تعرفك بما بعدها.</h2>
+          </div>
+          <div className="mt-12 grid gap-0 border-t border-slate-200 md:grid-cols-4">
+            {[
+              ["01", "أنشئ حسابك", "اسمك، بريدك، ورقم واتساب واحد للتأكيد."],
+              ["02", "اختر نقطة البداية", "عرّف خطتك أو ابدأ بتدريب يوضح مستواك."],
+              ["03", "أكمل المحاولات", "تدرب في المسارات المتاحة لك بهدوء وتركيز."],
+              ["04", "استخدم النتيجة", "راجع أخطاءك وحدد ما ستتدرب عليه بعد ذلك."],
+            ].map(([number, title, text], index) => (
+              <article key={title} className={`min-h-48 border-b border-slate-200 px-0 py-6 md:border-b-0 md:px-5 ${index ? "md:border-r" : "md:pr-0"}`}>
+                <span className="text-xs font-black tracking-[.16em] text-[#0D1B2A]">{number}</span>
+                <h3 className="mt-8 text-lg font-black text-[#0D1B2A]">{title}</h3>
+                <p className="mt-3 text-sm leading-6 text-slate-500">{text}</p>
+              </article>
+            ))}
+          </div>
         </div>
       </section>
 
@@ -247,6 +311,47 @@ export default function LandingPage() {
             <Link href="/signup?type=student" className="qodratak-focus-ring mt-8 inline-flex items-center gap-2 text-sm font-black text-[#0D1B2A]">
               أنشئ حسابك وابدأ <ArrowLeft size={16} />
             </Link>
+          </div>
+        </div>
+      </section>
+
+      <section className="mx-auto max-w-7xl px-5 py-24 sm:px-8">
+        <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-end">
+          <div className="max-w-2xl">
+            <p className="text-sm font-black text-slate-400">أقسام المنصة</p>
+            <h2 className="mt-3 text-3xl font-black leading-tight sm:text-4xl" style={{ color: NAVY }}>لكل جزء من استعدادك مكان واضح.</h2>
+          </div>
+          <Link href="/signup?type=student" className="qodratak-focus-ring inline-flex items-center gap-2 text-sm font-black text-[#0D1B2A]">استكشفها من حسابك <ArrowLeft size={16} /></Link>
+        </div>
+        <div className="mt-10 grid border-y border-slate-200 md:grid-cols-5">
+          {platformSections.map(([title, text], index) => (
+            <article key={title} className={`px-0 py-6 md:px-5 ${index ? "border-t border-slate-200 md:border-r md:border-t-0" : "md:pr-0"}`}>
+              <span className="text-xs font-black text-slate-400">0{index + 1}</span>
+              <h3 className="mt-5 text-base font-black text-[#0D1B2A]">{title}</h3>
+              <p className="mt-2 text-xs leading-6 text-slate-500">{text}</p>
+            </article>
+          ))}
+        </div>
+      </section>
+
+      <section className="border-y border-slate-200 bg-[#0D1B2A]">
+        <div className="mx-auto grid max-w-7xl items-stretch gap-0 px-5 py-0 sm:px-8 lg:grid-cols-[.94fr_1.06fr]">
+          <div className="py-16 lg:pl-16 lg:py-24">
+            <p className="text-sm font-black text-[#F7F775]">ما المختلف في قدراتك؟</p>
+            <h2 className="mt-3 text-3xl font-black leading-tight text-white sm:text-4xl">نحوّل النتيجة إلى قرار، لا إلى رقم ينتهي عنده التدريب.</h2>
+            <div className="mt-9 divide-y divide-white/10 border-y border-white/10">
+              {differences.map(([title, text]) => (
+                <div key={title} className="py-4">
+                  <h3 className="text-sm font-black text-white">{title}</h3>
+                  <p className="mt-1 text-sm leading-6 text-slate-300">{text}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+          <div className="relative min-h-80 overflow-hidden lg:min-h-full">
+            <img src="/attached_assets/generated_images/qodratak-student-focus.jpg" alt="طالب يستعد للاختبار" className="absolute inset-0 h-full w-full object-cover" />
+            <div className="absolute inset-0 bg-gradient-to-l from-transparent to-[#0D1B2A]/45" />
+            <div className="absolute bottom-5 right-5 rounded-xl border border-white/15 bg-[#0D1B2A]/85 px-4 py-3 text-xs font-bold leading-5 text-white backdrop-blur-sm">استعداد هادئ، وقرار واضح بعد كل محاولة.</div>
           </div>
         </div>
       </section>
