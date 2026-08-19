@@ -47,7 +47,7 @@ export async function aiChat(messages: { role: 'user' | 'assistant'; content: st
       headers: {
         'Authorization': `Bearer ${apiKey}`,
         'Content-Type': 'application/json',
-        'HTTP-Referer': 'https://qodratak.site',
+        'HTTP-Referer': 'https://qodratak.sa',
         'X-Title': 'Qodratak AI Assistant',
       },
       body: JSON.stringify({
@@ -133,7 +133,7 @@ ${explanation ? `\nالشرح المتوفر: ${explanation}` : ''}
       headers: {
         'Authorization': `Bearer ${apiKey}`,
         'Content-Type': 'application/json',
-        'HTTP-Referer': 'https://qodratak.site',
+        'HTTP-Referer': 'https://qodratak.sa',
         'X-Title': 'Qodratak Question Explainer',
       },
       body: JSON.stringify({
@@ -194,7 +194,7 @@ export async function analyzePerformance(stats: {
       headers: {
         'Authorization': `Bearer ${apiKey}`,
         'Content-Type': 'application/json',
-        'HTTP-Referer': 'https://qodratak.site',
+        'HTTP-Referer': 'https://qodratak.sa',
         'X-Title': 'Qodratak Performance Analyzer',
       },
       body: JSON.stringify({
@@ -285,7 +285,7 @@ ${questionsData.some(q => q.hasImage) ? 'ملاحظة: بعض الأسئلة ت�
       headers: {
         'Authorization': `Bearer ${apiKey}`,
         'Content-Type': 'application/json',
-        'HTTP-Referer': 'https://qodratak.site',
+        'HTTP-Referer': 'https://qodratak.sa',
         'X-Title': 'Qodratak Mistake Explainer',
       },
       body: JSON.stringify({
@@ -437,7 +437,7 @@ ${slowList || 'لا يوجد'}
       headers: {
         'Authorization': `Bearer ${apiKey}`,
         'Content-Type': 'application/json',
-        'HTTP-Referer': 'https://qodratak.site',
+        'HTTP-Referer': 'https://qodratak.sa',
         'X-Title': 'Qodratak Teacher System',
       },
       body: JSON.stringify({
@@ -526,7 +526,7 @@ export async function generateStudyPlan(params: {
       headers: {
         'Authorization': `Bearer ${apiKey}`,
         'Content-Type': 'application/json',
-        'HTTP-Referer': 'https://qodratak.site',
+        'HTTP-Referer': 'https://qodratak.sa',
         'X-Title': 'Qodratak Study Planner',
       },
       body: JSON.stringify({

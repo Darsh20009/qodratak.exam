@@ -8,10 +8,10 @@ interface SEOProps {
   type?: string;
 }
 
-const DOMAIN = 'https://www.qodratak.site';
+const DOMAIN = 'https://qodratak.sa';
 const DEFAULT_IMAGE = `${DOMAIN}/qodratak-logo.png`;
-const DEFAULT_TITLE = 'منصة قدراتك - رحلتك نحو التغيير والإبداع';
-const DEFAULT_DESCRIPTION = 'منصة قدراتك التعليمية - اختبارات تفاعلية لتطوير مهاراتك في اختبارات القدرات والتحصيلي مع أكثر من 3700 سؤال عالي الجودة وشروحات مفصلة';
+const DEFAULT_TITLE = 'قدراتك - استعد بوضوح وتقدّم بثقة';
+const DEFAULT_DESCRIPTION = 'منصة قدراتك التعليمية لتنظيم الاستعداد والتدريب في القدرات والتحصيلي.';
 
 export function SEO({
   title = DEFAULT_TITLE,

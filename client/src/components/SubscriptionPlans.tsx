@@ -214,7 +214,7 @@ export function SubscriptionPlans() {
 
 مع تحيات فريق قدراتك
 📧 للدعم الفني: qoudratak@gmail.com
-🌐 الموقع الرسمي: www.qodratak.space
+🌐 الموقع الرسمي: qodratak.sa
 
 ---
 منصة شاملة ومتطورة للتدريب على اختبارات القياس
@@ -404,7 +404,7 @@ export function SubscriptionPlans() {
             className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary accent-primary"
           />
           <label htmlFor="terms" className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
-            أوافق على <a href="https://www.qodratak.space/privacy" target="_blank" rel="noopener noreferrer" className="underline text-primary hover:text-primary/80">الشروط والأحكام</a>.
+            أوافق على <a href="https://qodratak.sa/privacy" target="_blank" rel="noopener noreferrer" className="underline text-primary hover:text-primary/80">الشروط والأحكام</a>.
           </label>
         </div>
         {/* --- نهاية الجزء المضاف --- */}

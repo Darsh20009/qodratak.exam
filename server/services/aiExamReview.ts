@@ -71,7 +71,7 @@ ${JSON.stringify(questionsForReview.map(q => ({
       headers: {
         'Authorization': `Bearer ${apiKey}`,
         'Content-Type': 'application/json',
-        'HTTP-Referer': 'https://qodratak.site',
+        'HTTP-Referer': 'https://qodratak.sa',
         'X-Title': 'Qodratak Exam Review',
       },
       body: JSON.stringify({

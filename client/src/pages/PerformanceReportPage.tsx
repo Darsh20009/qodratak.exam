@@ -218,7 +218,7 @@ function ReportPreview({
         {/* Footer */}
         <div style={{ marginTop: "32px", paddingTop: "16px", borderTop: "1px solid #e5e7eb", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
           <div style={{ fontSize: "11px", color: "#9ca3af" }}>
-            تم إنشاء هذا التقرير آلياً من منصة قدراتك • qodratak.site
+            تم إنشاء هذا التقرير آلياً من منصة قدراتك • qodratak.sa
           </div>
           <div style={{ fontSize: "11px", color: "#9ca3af" }}>
             {dateStr}

@@ -810,7 +810,7 @@ export default function NewHome() {
                     <div className="w-3 h-3 rounded-full bg-amber-400" />
                     <div className="w-3 h-3 rounded-full bg-emerald-500" />
                     <div className="flex-1 mx-3 h-5 bg-gray-800 rounded-md flex items-center px-2">
-                      <span className="text-gray-500 text-[10px]">qodratak.site/scheduled-exam</span>
+                      <span className="text-gray-500 text-[10px]">qodratak.sa/scheduled-exam</span>
                     </div>
                   </div>
 

@@ -40,7 +40,7 @@ export class MongoStorage {
         permissions: ['all'],
       });
       console.log('✅ Default admin created (username: admin; configure ADMIN_INITIAL_PASSWORD for the initial password)');
-    } else if (existingAdmin.email === 'admin@qudratuk.com' || existingAdmin.email === 'admin@qodratak.site') {
+    } else if (existingAdmin.email === 'admin@qudratuk.com' || existingAdmin.email === 'admin@qodratak.sa') {
       await Admin.updateOne({ username: 'admin' }, { $set: { email: adminEmail } });
       console.log(`✅ Updated admin email to ${adminEmail}`);
     }

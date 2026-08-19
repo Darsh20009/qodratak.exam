@@ -1,5 +1,5 @@
 const SMTP2GO_API_KEY = process.env.SMTP2GO_API_KEY;
-const FROM_EMAIL = process.env.FROM_EMAIL || 'noreply@qodratak.site';
+const FROM_EMAIL = process.env.FROM_EMAIL || 'noreply@qodratak.sa';
 const FROM_NAME = process.env.FROM_NAME || 'منصة قدراتك';
 
 async function sendEmail(to: string | string[], subject: string, htmlBody: string, textBody: string): Promise<boolean> {
@@ -63,7 +63,7 @@ function emailBase(accentColor: string, content: string): string {
                   <span style="color:#999;font-size:13px;margin-right:6px;">· Qodratak</span>
                 </td>
                 <td align="left">
-                  <span style="color:#bbb;font-size:11px;">qodratak.site</span>
+                  <span style="color:#bbb;font-size:11px;">qodratak.sa</span>
                 </td>
               </tr>
             </table>
@@ -81,7 +81,7 @@ function emailBase(accentColor: string, content: string): string {
         <tr>
           <td style="padding:20px 36px;border-top:1px solid #f0f0f0;background:#fafafa;">
             <p style="margin:0;color:#aaa;font-size:11px;text-align:center;line-height:1.8;">
-              © 2025 منصة قدراتك &nbsp;·&nbsp; qodratak.site<br>
+              © 2025 منصة قدراتك &nbsp;·&nbsp; qodratak.sa<br>
               هذا البريد أُرسل تلقائياً، يُرجى عدم الرد عليه.
             </p>
           </td>
@@ -214,7 +214,7 @@ export async function sendWelcomeEmail(email: string, fullName: string): Promise
       </tr>
     </table>
 
-    ${ctaButton('https://qodratak.site', 'ابدأ رحلتك الآن ←', '#4f46e5')}
+    ${ctaButton('https://qodratak.sa', 'ابدأ رحلتك الآن ←', '#4f46e5')}
   `;
 
   return sendEmail(
@@ -240,7 +240,7 @@ export async function sendSubscriptionApprovalEmail(email: string, fullName: str
       infoRow('الخطة', planName) +
       infoRow('تاريخ انتهاء الاشتراك', formattedDate)
     )}
-    ${ctaButton('https://qodratak.site', 'الذهاب إلى المنصة ←', '#059669')}
+    ${ctaButton('https://qodratak.sa', 'الذهاب إلى المنصة ←', '#059669')}
   `;
 
   return sendEmail(
@@ -311,14 +311,14 @@ export async function sendExamResults(
 
     ${alertBox('الأسئلة التي أخطأت فيها محفوظة في مجلد الأخطاء بملفك الشخصي — راجعها لتحسين أدائك القادم.', '#92400e', '#fffbeb')}
 
-    ${ctaButton('https://qodratak.site/folders', 'مراجعة أخطاء الاختبار ←', '#4f46e5')}
+    ${ctaButton('https://qodratak.sa/folders', 'مراجعة أخطاء الاختبار ←', '#4f46e5')}
   `;
 
   return sendEmail(
     email,
     `نتيجتك في اختبار القدرات: ${score.toFixed(1)}%`,
     emailBase('#4f46e5', body),
-    `عزيزي الطالب ${firstName}،\n\nنتيجتك: ${score.toFixed(1)}%\nالكمي: ${results.quantPercent.toFixed(1)}% | اللفظي: ${results.verbalPercent.toFixed(1)}%\n\nصحيح: ${results.correctAnswers} | خطأ: ${results.wrongAnswers} | متخطى: ${results.skippedAnswers}\n\nمنصة قدراتك | qodratak.site`
+    `عزيزي الطالب ${firstName}،\n\nنتيجتك: ${score.toFixed(1)}%\nالكمي: ${results.quantPercent.toFixed(1)}% | اللفظي: ${results.verbalPercent.toFixed(1)}%\n\nصحيح: ${results.correctAnswers} | خطأ: ${results.wrongAnswers} | متخطى: ${results.skippedAnswers}\n\nمنصة قدراتك | qodratak.sa`
   );
 }
 
@@ -347,13 +347,13 @@ export async function notifyAdminNewSubscription(
       infoRow('طريقة الدفع', paymentMethod) +
       infoRow('سند التحويل', hasReceipt ? 'مرفق ✓' : 'غير مرفق ✗')
     )}
-    ${ctaButton('https://qodratak.site/admin', 'مراجعة الطلب في لوحة التحكم ←', '#d97706')}
+    ${ctaButton('https://qodratak.sa/admin', 'مراجعة الطلب في لوحة التحكم ←', '#d97706')}
   `;
 
   return sendAdminNotificationEmail(
     `طلب اشتراك جديد — ${studentName} (${planName})`,
     emailBase('#d97706', body),
-    `طلب اشتراك جديد من ${studentName} (${studentEmail}) — الخطة: ${planName} — طريقة الدفع: ${paymentMethod} — سند التحويل: ${hasReceipt ? 'مرفق' : 'غير مرفق'}\n\nراجع الطلب: https://qodratak.site/admin`
+    `طلب اشتراك جديد من ${studentName} (${studentEmail}) — الخطة: ${planName} — طريقة الدفع: ${paymentMethod} — سند التحويل: ${hasReceipt ? 'مرفق' : 'غير مرفق'}\n\nراجع الطلب: https://qodratak.sa/admin`
   );
 }
 
@@ -370,13 +370,13 @@ export async function notifyAdminReceiptUploaded(
       infoRow('البريد', studentEmail) +
       infoRow('الخطة', planName)
     )}
-    ${ctaButton('https://qodratak.site/admin', 'مراجعة السند وتفعيل الاشتراك ←', '#059669')}
+    ${ctaButton('https://qodratak.sa/admin', 'مراجعة السند وتفعيل الاشتراك ←', '#059669')}
   `;
 
   return sendAdminNotificationEmail(
     `سند تحويل جديد — ${studentName} (${planName})`,
     emailBase('#059669', body),
-    `رفع ${studentName} (${studentEmail}) سند تحويل للخطة ${planName}.\n\nراجع الطلب: https://qodratak.site/admin`
+    `رفع ${studentName} (${studentEmail}) سند تحويل للخطة ${planName}.\n\nراجع الطلب: https://qodratak.sa/admin`
   );
 }
 
@@ -395,13 +395,13 @@ export async function notifyAdminInstitutionRequest(
       infoRow('البريد', email) +
       infoRow('الهاتف', phone || 'غير محدد')
     )}
-    ${ctaButton('https://qodratak.site/admin', 'مراجعة الطلب في لوحة التحكم ←', '#7c3aed')}
+    ${ctaButton('https://qodratak.sa/admin', 'مراجعة الطلب في لوحة التحكم ←', '#7c3aed')}
   `;
 
   return sendAdminNotificationEmail(
     `طلب مؤسسة جديدة — ${institutionName}`,
     emailBase('#7c3aed', body),
-    `طلب مؤسسة جديد: ${institutionName}\nالمسؤول: ${responsibleName}\nالبريد: ${email}\nالهاتف: ${phone || 'غير محدد'}\n\nراجع الطلب: https://qodratak.site/admin`
+    `طلب مؤسسة جديد: ${institutionName}\nالمسؤول: ${responsibleName}\nالبريد: ${email}\nالهاتف: ${phone || 'غير محدد'}\n\nراجع الطلب: https://qodratak.sa/admin`
   );
 }
 
@@ -442,7 +442,7 @@ export async function sendTestEmail(to: string): Promise<boolean> {
       تم استلام هذا البريد التجريبي من منصة قدراتك. نظام البريد الإلكتروني متصل عبر SMTP2Go.
     </p>
     ${infoTable(
-      infoRow('المُرسِل', 'noreply@qodratak.site') +
+      infoRow('المُرسِل', 'noreply@qodratak.sa') +
       infoRow('الخدمة', 'SMTP2Go')
     )}
   `;
@@ -499,14 +499,14 @@ export async function sendExamBookingConfirmation(
       infoRow('رقم الحجز', bookingId.slice(-8).toUpperCase())
     )}
     ${alertBox('يُرجى الحضور قبل موعد الاختبار بـ 5 دقائق وتجهيز اتصال إنترنت مستقر. الاختبار يعمل في وضع الشاشة الكاملة.', '#92400e', '#fffbeb')}
-    ${ctaButton('https://qodratak.site/book-exam', 'عرض تفاصيل الحجز ←', '#4f46e5')}
+    ${ctaButton('https://qodratak.sa/book-exam', 'عرض تفاصيل الحجز ←', '#4f46e5')}
   `;
 
   return sendEmail(
     email,
     `تأكيد حجز اختبار القدرات — ${dateStr}`,
     emailBase('#4f46e5', body),
-    `مرحباً ${firstName}،\n\nتم تأكيد حجزك لاختبار القدرات العامة.\n\nالتاريخ: ${dateStr}\nالوقت: ${timeStr}\nرقم الحجز: ${bookingId.slice(-8).toUpperCase()}\n\nمنصة قدراتك | qodratak.site`
+    `مرحباً ${firstName}،\n\nتم تأكيد حجزك لاختبار القدرات العامة.\n\nالتاريخ: ${dateStr}\nالوقت: ${timeStr}\nرقم الحجز: ${bookingId.slice(-8).toUpperCase()}\n\nمنصة قدراتك | qodratak.sa`
   );
 }
 
@@ -537,14 +537,14 @@ export async function sendExamReminderEmail(
     </table>
 
     ${alertBox('تأكد من استقرار اتصالك بالإنترنت · أغلق التطبيقات الأخرى · الاختبار في وضع الشاشة الكاملة.', '#166534', '#f0fdf4')}
-    ${ctaButton('https://qodratak.site/book-exam', 'ابدأ الاختبار الآن ←', '#ea580c')}
+    ${ctaButton('https://qodratak.sa/book-exam', 'ابدأ الاختبار الآن ←', '#ea580c')}
   `;
 
   return sendEmail(
     email,
     `تذكير: اختبار القدرات بعد 5 دقائق — الساعة ${timeStr}`,
     emailBase('#ea580c', body),
-    `مرحباً ${firstName}،\n\nتذكير: موعد اختبار القدرات اليوم الساعة ${timeStr} — بعد 5 دقائق!\n\nابدأ من: https://qodratak.site/book-exam\n\nمنصة قدراتك | qodratak.site`
+    `مرحباً ${firstName}،\n\nتذكير: موعد اختبار القدرات اليوم الساعة ${timeStr} — بعد 5 دقائق!\n\nابدأ من: https://qodratak.sa/book-exam\n\nمنصة قدراتك | qodratak.sa`
   );
 }
 
@@ -582,7 +582,7 @@ export async function sendExamStartEmail(
     email,
     `اختبار القدرات بدأ الآن — ${dateStr}`,
     emailBase('#059669', body),
-    `مرحباً ${firstName}،\n\nلقد بدأ اختبار القدرات. نتمنى لك التوفيق!\n\nالاختبار مقسم إلى 5 أقسام، 26 دقيقة لكل قسم. لا تغادر الصفحة أثناء الاختبار.\n\nمنصة قدراتك | qodratak.site`
+    `مرحباً ${firstName}،\n\nلقد بدأ اختبار القدرات. نتمنى لك التوفيق!\n\nالاختبار مقسم إلى 5 أقسام، 26 دقيقة لكل قسم. لا تغادر الصفحة أثناء الاختبار.\n\nمنصة قدراتك | qodratak.sa`
   );
 }
 
@@ -632,6 +632,6 @@ export async function sendInvitationEmail(
     toEmail,
     `${inviterName} يدعوك للانضمام إلى منصة قدراتك`,
     emailBase('#059669', body),
-    `مرحباً!\n\nقام ${inviterName} بدعوتك للانضمام إلى منصة قدراتك.\nستحصل على اشتراك: ${planLabel}\n\nاضغط على الرابط لقبول الدعوة:\n${acceptLink}\n\nالرابط صالح لمدة 7 أيام.\n\nمنصة قدراتك | qodratak.site`
+    `مرحباً!\n\nقام ${inviterName} بدعوتك للانضمام إلى منصة قدراتك.\nستحصل على اشتراك: ${planLabel}\n\nاضغط على الرابط لقبول الدعوة:\n${acceptLink}\n\nالرابط صالح لمدة 7 أيام.\n\nمنصة قدراتك | qodratak.sa`
   );
 }

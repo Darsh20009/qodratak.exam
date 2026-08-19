@@ -121,7 +121,7 @@ async function recoverPendingAiReviews(): Promise<void> {
 }
 
 export async function registerRoutes(app: Express): Promise<Server> {
-  console.log('✅ SMTP2Go email service ready - noreply@qodratak.site');
+  console.log('✅ SMTP2Go email service ready - noreply@qodratak.sa');
 
   // Admin middleware - Revalidates admin on each request
   const requireAdmin = async (req: Request, res: Response, next: Function) => {
@@ -5266,7 +5266,7 @@ app.post("/api/auth/register", async (req: Request, res: Response) => {
       }
 
       const SMTP2GO_API_KEY = process.env.SMTP2GO_API_KEY;
-      const FROM_EMAIL = process.env.FROM_EMAIL || 'noreply@qodratak.site';
+      const FROM_EMAIL = process.env.FROM_EMAIL || 'noreply@qodratak.sa';
       if (!SMTP2GO_API_KEY) {
         return res.status(503).json({ error: 'خدمة البريد غير مهيأة' });
       }
@@ -5279,7 +5279,7 @@ app.post("/api/auth/register", async (req: Request, res: Response) => {
             <h2 style="color:#1f2937;margin:0 0 16px;">${subject}</h2>
             <div style="color:#374151;line-height:1.7;white-space:pre-wrap;">${body}</div>
             <div style="margin-top:24px;padding-top:16px;border-top:1px solid #f3f4f6;text-align:center;">
-              <p style="color:#9ca3af;font-size:12px;">qodratak.site</p>
+              <p style="color:#9ca3af;font-size:12px;">qodratak.sa</p>
             </div>
           </div>
         </div>`;
@@ -7285,7 +7285,7 @@ app.post("/api/auth/register", async (req: Request, res: Response) => {
             ${wrongCount > 0 ? `<p style="color:#dc2626;margin:4px 0">${wrongCount} سؤال خاطئ</p>` : '<p style="color:#16a34a">أحسنت! لا أخطاء</p>'}
           </div>
           ${explanationHtml}
-          <p style="text-align:center;color:#9ca3af;font-size:12px;margin-top:24px">منصة قدراتك — qodratak.site</p>
+          <p style="text-align:center;color:#9ca3af;font-size:12px;margin-top:24px">منصة قدراتك — qodratak.sa</p>
         </div>`;
 
       const { sendCustomEmail } = await import('./services/emailService');

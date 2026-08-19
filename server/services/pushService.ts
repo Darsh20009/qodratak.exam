@@ -2,7 +2,7 @@ import webpush from 'web-push';
 import { PushSubscription, User, ExamBooking, TestResult } from '../mongodb/models';
 
 // ── VAPID setup ──────────────────────────────────────────────────────────────
-const VAPID_EMAIL   = process.env.VAPID_EMAIL   || 'mailto:admin@qodratak.site';
+const VAPID_EMAIL   = process.env.VAPID_EMAIL   || 'mailto:admin@qodratak.sa';
 const VAPID_PUBLIC  = process.env.VAPID_PUBLIC_KEY  || '';
 const VAPID_PRIVATE = process.env.VAPID_PRIVATE_KEY || '';
 

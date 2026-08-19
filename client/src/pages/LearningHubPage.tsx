@@ -795,7 +795,7 @@ ${lesson.content}
         <div style="border-top:2px solid #e5e7eb;padding-top:20px;display:flex;justify-content:space-between;align-items:center;">
           <div style="font-size:12px;color:#9ca3af;">منصة قدراتك — جميع الحقوق محفوظة</div>
           <div style="font-size:12px;color:#9ca3af;">خُصِّص لـ ${studentName || "الطالب"} | ${new Date().toLocaleDateString("ar-SA")}</div>
-          <div style="font-size:12px;color:#9ca3af;">qodratak.site</div>
+          <div style="font-size:12px;color:#9ca3af;">qodratak.sa</div>
         </div>
       </div>
     </div>
