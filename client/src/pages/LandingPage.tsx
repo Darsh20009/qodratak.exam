@@ -59,20 +59,20 @@ function Header({ onSignup }: { onSignup: () => void }) {
   const [menuOpen, setMenuOpen] = useState(false);
 
   return (
-    <header className="relative z-30 border-b border-white/[.08]">
+    <header className="relative z-30 border-b border-[#24202D]/[.09] bg-[#F7F4EE]">
       <div className="mx-auto flex max-w-7xl items-center justify-between px-5 py-4 sm:px-8">
         <Link href="/" className="qodratak-focus-ring flex items-center gap-2.5 rounded-lg">
-          <span className="grid h-10 w-10 place-items-center rounded-md text-lg font-black" style={{ background: SIGNAL, color: NAVY }}>ق</span>
+          <img src="/qodratak-logo.png" alt="قدراتك" className="h-10 w-10 rounded-lg object-cover object-top" />
           <div className="leading-tight">
-            <span className="block text-base font-black text-white">قدراتك</span>
-            <span className="block text-[9px] font-bold tracking-[0.17em] text-white/45">STUDY SYSTEMS</span>
+            <span className="block text-base font-black" style={{ color: NAVY }}>قدراتك</span>
+            <span className="block text-[9px] font-bold tracking-[0.17em] text-[#8B8278]">STUDY SYSTEMS</span>
           </div>
         </Link>
 
         <nav className="hidden items-center gap-6 sm:flex">
-          <a href="#journey" className="qodratak-focus-ring text-sm font-bold text-white/65 transition hover:text-white">كيف تعمل المنصة</a>
-          <a href="#inside" className="qodratak-focus-ring text-sm font-bold text-white/65 transition hover:text-white">ماذا ستجد</a>
-          <Link href="/login" className="qodratak-focus-ring text-sm font-bold text-white/90">تسجيل الدخول</Link>
+          <a href="#journey" className="qodratak-focus-ring text-sm font-bold text-[#6B625B] transition hover:text-[#24202D]">كيف تعمل المنصة</a>
+          <a href="#inside" className="qodratak-focus-ring text-sm font-bold text-[#6B625B] transition hover:text-[#24202D]">ماذا ستجد</a>
+          <Link href="/login" className="qodratak-focus-ring text-sm font-bold text-[#24202D]">تسجيل الدخول</Link>
           <button
             onClick={onSignup}
             className="qodratak-focus-ring rounded-md px-4 py-2.5 text-sm font-black transition hover:-translate-y-0.5"
@@ -87,18 +87,18 @@ function Header({ onSignup }: { onSignup: () => void }) {
           aria-label={menuOpen ? "إغلاق القائمة" : "فتح القائمة"}
           aria-expanded={menuOpen}
           onClick={() => setMenuOpen((open) => !open)}
-          className="qodratak-focus-ring rounded-lg p-2 text-white sm:hidden"
+          className="qodratak-focus-ring rounded-lg p-2 text-[#24202D] sm:hidden"
         >
           {menuOpen ? <X size={22} /> : <Menu size={22} />}
         </button>
       </div>
 
       {menuOpen && (
-        <div className="border-t border-white/10 px-5 py-3 sm:hidden">
+        <div className="border-t border-[#24202D]/[.09] px-5 py-3 sm:hidden">
           <nav className="mx-auto flex max-w-7xl flex-col gap-1">
-            <a href="#journey" onClick={() => setMenuOpen(false)} className="rounded-lg px-3 py-2.5 text-sm font-bold text-white/85">كيف تعمل المنصة</a>
-            <a href="#inside" onClick={() => setMenuOpen(false)} className="rounded-lg px-3 py-2.5 text-sm font-bold text-white/85">ماذا ستجد</a>
-            <Link href="/login" onClick={() => setMenuOpen(false)} className="rounded-lg px-3 py-2.5 text-sm font-bold text-white/85">تسجيل الدخول</Link>
+            <a href="#journey" onClick={() => setMenuOpen(false)} className="rounded-lg px-3 py-2.5 text-sm font-bold text-[#6B625B]">كيف تعمل المنصة</a>
+            <a href="#inside" onClick={() => setMenuOpen(false)} className="rounded-lg px-3 py-2.5 text-sm font-bold text-[#6B625B]">ماذا ستجد</a>
+            <Link href="/login" onClick={() => setMenuOpen(false)} className="rounded-lg px-3 py-2.5 text-sm font-bold text-[#6B625B]">تسجيل الدخول</Link>
             <button
               onClick={() => { setMenuOpen(false); onSignup(); }}
               className="mt-1 rounded-lg px-3 py-2.5 text-right text-sm font-black"
@@ -113,21 +113,21 @@ function Header({ onSignup }: { onSignup: () => void }) {
 
 function ScorePreview() {
   return (
-    <div className="relative mx-auto w-full max-w-[440px] overflow-hidden rounded-[18px] border border-white/[.11] bg-[#252235] p-5 shadow-[0_28px_70px_rgba(0,0,0,.32)]">
-      <div className="pointer-events-none absolute -left-16 -top-16 h-40 w-40 rounded-full blur-3xl" style={{ background: `${MINT}1e` }} />
-      <div className="relative flex items-center justify-between border-b border-white/[.1] pb-4">
+    <div className="relative mx-auto w-full max-w-[440px] overflow-hidden rounded-[18px] border border-[#24202D]/[.11] bg-[#FFFCF7] p-5 shadow-[0_26px_70px_rgba(42,38,54,.12)]">
+      <div className="pointer-events-none absolute -left-16 -top-16 h-40 w-40 rounded-full blur-3xl" style={{ background: `${MINT}30` }} />
+      <div className="relative flex items-center justify-between border-b border-[#24202D]/[.1] pb-4">
         <div>
-          <p className="text-[10px] font-black tracking-[0.16em] text-white/40">خريطة الاستعداد</p>
-          <p className="mt-1 text-sm font-black text-white">أين تقف قبل الاختبار؟</p>
+          <p className="text-[10px] font-black tracking-[0.16em] text-[#8B8278]">خريطة الاستعداد</p>
+          <p className="mt-1 text-sm font-black" style={{ color: NAVY }}>أين تقف قبل الاختبار؟</p>
         </div>
-        <div className="border border-white/[.12] bg-white/[.04] px-2.5 py-1 text-[10px] font-bold" style={{ color: MINT }}>تحديث اليوم</div>
+        <div className="border border-[#72BFAF]/35 bg-[#E7F2ED] px-2.5 py-1 text-[10px] font-bold" style={{ color: "#398B79" }}>تحديث اليوم</div>
       </div>
 
       <div className="relative grid grid-cols-[1fr_1.05fr] items-center gap-4 py-6">
-        <div className="relative mx-auto flex h-32 w-32 items-center justify-center rounded-full" style={{ background: `conic-gradient(${SIGNAL} 0deg 222deg, ${MINT} 222deg 274deg, rgba(255,255,255,.12) 274deg 360deg)` }}>
-          <div className="flex h-[104px] w-[104px] flex-col items-center justify-center rounded-full bg-[#252235]">
-            <span className="text-3xl font-black text-white">76</span>
-            <span className="mt-0.5 text-[10px] font-bold text-white/45">جاهزية</span>
+        <div className="relative mx-auto flex h-32 w-32 items-center justify-center rounded-full" style={{ background: `conic-gradient(${SIGNAL} 0deg 222deg, ${MINT} 222deg 274deg, rgba(42,38,54,.12) 274deg 360deg)` }}>
+          <div className="flex h-[104px] w-[104px] flex-col items-center justify-center rounded-full bg-[#FFFCF7]">
+            <span className="text-3xl font-black" style={{ color: NAVY }}>76</span>
+            <span className="mt-0.5 text-[10px] font-bold text-[#8B8278]">جاهزية</span>
           </div>
         </div>
         <div className="space-y-3">
@@ -137,16 +137,16 @@ function ScorePreview() {
             ["إدارة الوقت", "68%", "68%", "#B8A4FF"],
           ].map(([label, value, width, color]) => (
             <div key={label}>
-              <div className="mb-1 flex justify-between text-[10px] font-bold text-white/60"><span>{label}</span><span>{value}</span></div>
-              <div className="h-1.5 overflow-hidden bg-white/10"><span className="block h-full" style={{ width, background: color }} /></div>
+              <div className="mb-1 flex justify-between text-[10px] font-bold text-[#6B625B]"><span>{label}</span><span>{value}</span></div>
+              <div className="h-1.5 overflow-hidden bg-[#E9E5DE]"><span className="block h-full" style={{ width, background: color }} /></div>
             </div>
           ))}
         </div>
       </div>
 
-      <div className="relative flex items-center gap-2 border border-white/[.1] bg-black/10 px-3 py-3">
+      <div className="relative flex items-center gap-2 border border-[#24202D]/[.1] bg-[#F3EEE7] px-3 py-3">
         <Target className="h-4 w-4 shrink-0" style={{ color: SIGNAL }} />
-        <p className="text-xs font-bold leading-5 text-white/80">الخطوة الأوضح الآن: 14 سؤالًا في استراتيجيات الكمي.</p>
+        <p className="text-xs font-bold leading-5" style={{ color: NAVY }}>الخطوة الأوضح الآن: 14 سؤالًا في استراتيجيات الكمي.</p>
       </div>
     </div>
   );
@@ -217,27 +217,27 @@ export default function LandingPage() {
   const [signupOpen, setSignupOpen] = useState(false);
 
   return (
-    <main className="min-h-screen overflow-hidden bg-[#F5F1EB] text-slate-900" dir="rtl">
+    <main className="min-h-screen overflow-hidden bg-[#F7F4EE] text-slate-900" dir="rtl">
       <SignupModal open={signupOpen} onClose={() => setSignupOpen(false)} />
 
       {/* ── Hero ── */}
-      <section className="relative isolate overflow-hidden" style={{ background: NAVY }}>
-        <div className="pointer-events-none absolute inset-0" style={{ background: `radial-gradient(circle at 9% 18%, ${MINT}18, transparent 24%), radial-gradient(circle at 78% 105%, ${SIGNAL}24, transparent 38%), linear-gradient(125deg, #171723 10%, #211D2E 57%, #171723 100%)` }} />
-        <div className="pointer-events-none absolute left-[-12rem] top-28 h-[28rem] w-[28rem] rounded-full border border-white/[.05]" />
-        <div className="pointer-events-none absolute -bottom-32 right-[38%] h-72 w-72 rounded-full border border-white/[.05]" />
+      <section className="relative isolate overflow-hidden bg-[#F7F4EE]">
+        <div className="pointer-events-none absolute inset-0" style={{ background: `radial-gradient(circle at 9% 18%, ${MINT}20, transparent 24%), radial-gradient(circle at 78% 105%, ${SIGNAL}18, transparent 38%)` }} />
+        <div className="pointer-events-none absolute left-[-12rem] top-28 h-[28rem] w-[28rem] rounded-full border border-[#24202D]/[.055]" />
+        <div className="pointer-events-none absolute -bottom-32 right-[38%] h-72 w-72 rounded-full border border-[#24202D]/[.055]" />
         <Header onSignup={() => setSignupOpen(true)} />
         <div className="relative mx-auto grid max-w-7xl items-center gap-12 px-5 pb-20 pt-14 sm:px-8 lg:grid-cols-[1.08fr_.92fr] lg:pb-28 lg:pt-20">
           <div className="max-w-2xl">
-            <div className="inline-flex items-center gap-2 border-b border-white/[.18] pb-2 text-xs font-bold text-white/65">
+            <div className="inline-flex items-center gap-2 border-b border-[#24202D]/[.16] pb-2 text-xs font-bold text-[#6B625B]">
               <span className="h-2 w-2 rounded-full" style={{ background: MINT }} />
               منصة استعداد مصممة للطالب السعودي
             </div>
-            <h1 className="mt-7 text-[2.65rem] font-black leading-[1.1] tracking-tight text-white sm:text-6xl">
+            <h1 className="mt-7 text-[2.65rem] font-black leading-[1.1] tracking-tight sm:text-6xl" style={{ color: NAVY }}>
               لا تذاكر أكثر.
               <br />
               <span style={{ color: SIGNAL }}>ذاكر باتجاه.</span>
             </h1>
-            <p className="mt-6 max-w-xl text-base leading-8 text-[#CFC8D8] sm:text-lg">
+            <p className="mt-6 max-w-xl text-base leading-8 text-[#6B625B] sm:text-lg">
               حوّل الاستعداد للاختبار من أسئلة مبعثرة إلى خطة تعرف فيها مستواك، تدريبك القادم، وسبب كل خطوة.
             </p>
             <div className="mt-8 flex flex-wrap gap-3">
@@ -248,18 +248,18 @@ export default function LandingPage() {
               >
                 ابدأ حسابك <ArrowLeft size={17} />
               </button>
-              <a href="#journey" className="qodratak-focus-ring inline-flex items-center gap-2 border border-white/[.22] px-5 py-3.5 text-sm font-bold text-white transition hover:border-white/50 hover:bg-white/[.06]">
+              <a href="#journey" className="qodratak-focus-ring inline-flex items-center gap-2 border border-[#24202D]/[.18] px-5 py-3.5 text-sm font-bold transition hover:border-[#24202D]/40 hover:bg-[#24202D]/[.05]" style={{ color: NAVY }}>
                 شاهد كيف تبدأ <ChevronLeft size={17} />
               </a>
             </div>
-            <div className="mt-10 flex flex-wrap gap-x-6 gap-y-3 border-t border-white/[.1] pt-5 text-xs font-bold text-white/60">
+            <div className="mt-10 flex flex-wrap gap-x-6 gap-y-3 border-t border-[#24202D]/[.1] pt-5 text-xs font-bold text-[#6B625B]">
               {["تشخيص قبل التدريب", "محاكاة بوقت حقيقي", "تحليل واضح بعد كل محاولة"].map((item) => <span key={item} className="flex items-center gap-1.5"><Check className="h-3.5 w-3.5" style={{ color: MINT }} />{item}</span>)}
             </div>
             <div className="mt-8 flex items-center gap-3">
-              <span className="text-3xl font-black text-white">+٢١٠٠</span>
-              <span className="max-w-[9rem] text-xs font-bold leading-5 text-white/55">طالب يبنون خطة استعدادهم الآن</span>
-              <span className="h-8 w-px bg-white/15" />
-              <button onClick={() => setSignupOpen(true)} className="text-xs font-bold underline underline-offset-4 transition hover:text-white" style={{ color: MINT }}>انضم إليهم مجانًا</button>
+              <span className="text-3xl font-black" style={{ color: NAVY }}>+٢١٠٠</span>
+              <span className="max-w-[9rem] text-xs font-bold leading-5 text-[#8B8278]">طالب يبنون خطة استعدادهم الآن</span>
+              <span className="h-8 w-px bg-[#24202D]/15" />
+              <button onClick={() => setSignupOpen(true)} className="text-xs font-bold underline underline-offset-4 transition hover:text-[#24202D]" style={{ color: "#398B79" }}>انضم إليهم مجانًا</button>
             </div>
           </div>
           <ScorePreview />
