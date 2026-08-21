@@ -1,0 +1,19 @@
+kind = "design"
+previewPath = "/__qudratak-design/"
+title = "Qudratuk Design Preview"
+description = "Canvas mockup preview for the redesigned Qudratuk student dashboard."
+version = "1.0.0"
+id = "artifacts/qudratak-design-preview"
+router = "path"
+
+[[services]]
+name = "Component Preview Server"
+paths = [ "/__qudratak-design/" ]
+localPort = 24720
+
+[services.development]
+run = "npm run dev"
+
+[services.env]
+PORT = "24720"
+BASE_PATH = "/__qudratak-design/"
