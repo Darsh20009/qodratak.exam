@@ -144,7 +144,7 @@ export const PermanentInstallButton = () => {
             <DialogTitle className="text-right flex items-center gap-2">
               <div className="w-10 h-10 bg-[#0D1B2A] rounded-xl flex items-center justify-center">
                 <img 
-                  src="/qodratak-logo.png"
+                  src="/qodratak-logo-transparent.png"
                   alt="قدراتك" 
                   className="w-8 h-8 rounded-lg object-cover object-top"
                   onError={(e) => {
@@ -301,7 +301,7 @@ export const FloatingInstallButton = () => {
           <div className="flex items-center gap-3 mb-3">
             <div className="w-12 h-12 bg-white/20 rounded-xl flex items-center justify-center">
               <img 
-                src="/qodratak-logo.png"
+                src="/qodratak-logo-transparent.png"
                 alt="قدراتك" 
                 className="w-9 h-9 rounded-lg object-cover object-top"
                 onError={(e) => {
@@ -333,7 +333,7 @@ export const FloatingInstallButton = () => {
             <DialogTitle className="text-right flex items-center gap-2">
               <div className="w-10 h-10 bg-[#0D1B2A] rounded-xl flex items-center justify-center">
                 <img 
-                  src="/qodratak-logo.png"
+                  src="/qodratak-logo-transparent.png"
                   alt="قدراتك" 
                   className="w-8 h-8 rounded-lg object-cover object-top"
                   onError={(e) => {

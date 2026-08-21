@@ -27,7 +27,7 @@ import {
   CheckCircle,
   Activity
 } from 'lucide-react';
-const newLogoPath = "/qodratak-logo.png";
+const newLogoPath = "/qodratak-logo-transparent.png";
 
 const TahsiliPage: React.FC = () => {
   const [showBook, setShowBook] = useState(false);

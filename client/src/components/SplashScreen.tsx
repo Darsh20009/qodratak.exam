@@ -59,7 +59,7 @@ export function SplashScreen({ onDone }: { onDone: () => void }) {
       >
         {/* Icon */}
         <div className="mb-6 overflow-hidden rounded-[22px] shadow-[0_0_0_1px_rgba(247,247,117,0.18),0_16px_48px_rgba(0,0,0,0.45)]" style={{ width: 80, height: 80 }}>
-          <img src="/qodratak-logo.png" alt="قدراتك" className="h-full w-full object-cover object-top" />
+          <img src="/qodratak-logo-transparent.png" alt="قدراتك" className="h-full w-full object-contain" />
         </div>
 
         {/* Word mark */}

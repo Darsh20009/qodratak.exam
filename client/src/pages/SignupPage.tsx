@@ -704,7 +704,7 @@ export default function SignupPage() {
           <div className="relative z-10">
             <div className="flex items-center gap-3 mb-14">
               <div className="w-11 h-11 bg-white rounded-xl flex items-center justify-center overflow-hidden">
-                <img src="/qodratak-logo.png" alt="قدراتك" className="w-full h-full object-cover object-top" />
+                <img src="/qodratak-logo-transparent.png" alt="قدراتك" className="w-full h-full object-contain" />
               </div>
               <div>
                 <div className="text-white font-black text-xl tracking-tight">قدراتك</div>
@@ -763,7 +763,7 @@ export default function SignupPage() {
               </button>
             </Link>
               <div className="flex items-center gap-2 lg:hidden">
-                <img src="/qodratak-logo.png" alt="" className="h-8 w-8 rounded-lg object-cover object-top" />
+                <img src="/qodratak-logo-transparent.png" alt="" className="h-8 w-8 object-contain" />
                 <span className="font-black text-[#0D1B2A] text-sm">قدراتك</span>
             </div>
             <div className="text-sm text-slate-400 hidden sm:block">

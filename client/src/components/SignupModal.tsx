@@ -155,7 +155,7 @@ export function SignupModal({ open, onClose }: SignupModalProps) {
             <div className="relative z-10">
               <div className="mb-8 flex items-center gap-2.5">
                 <div className="h-9 w-9 overflow-hidden rounded-xl bg-white">
-                  <img src="/qodratak-logo.png" alt="" className="h-full w-full object-cover object-top" />
+                  <img src="/qodratak-logo-transparent.png" alt="" className="h-full w-full object-contain" />
                 </div>
                 <div>
                   <div className="text-sm font-black text-white">قدراتك</div>

@@ -9,7 +9,7 @@ interface SEOProps {
 }
 
 const DOMAIN = 'https://qodratak.sa';
-const DEFAULT_IMAGE = `${DOMAIN}/qodratak-logo.png`;
+const DEFAULT_IMAGE = `${DOMAIN}/qodratak-logo-transparent.png`;
 const DEFAULT_TITLE = 'قدراتك - استعد بوضوح وتقدّم بثقة';
 const DEFAULT_DESCRIPTION = 'منصة قدراتك التعليمية لتنظيم الاستعداد والتدريب في القدرات والتحصيلي.';
 

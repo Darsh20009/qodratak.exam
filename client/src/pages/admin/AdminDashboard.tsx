@@ -412,7 +412,7 @@ export default function AdminDashboard() {
         <div className="p-5 border-b border-emerald-900/40">
           <div className="flex items-center gap-3">
             <div className="w-11 h-11 rounded-2xl overflow-hidden shadow-lg border-2 border-emerald-600/40" style={{ boxShadow: '0 0 20px rgba(16,185,129,0.2)' }}>
-              <img src="/qodratak-logo.png" alt="قدراتك" className="w-full h-full object-cover object-top" />
+              <img src="/qodratak-logo-transparent.png" alt="قدراتك" className="w-full h-full object-contain" />
             </div>
             <div>
               <p className="text-emerald-300 font-bold text-sm">لوحة التحكم</p>

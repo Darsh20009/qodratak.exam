@@ -104,7 +104,7 @@ import { FreeVerbalTestRunner } from "@/pages/FreeVerbalTestRunner";
 import { FreeQuantitativeTestRunner } from "@/pages/FreeQuantitativeTestRunner";
 import CoursesPage from "@/pages/CoursesPage";
 import TahsiliQuestionBank from "@/pages/TahsiliQuestionBank";
-const platformLogo = "/qodratak-logo.png";
+const platformLogo = "/qodratak-logo-transparent.png";
 import FolderDetailPage from "@/pages/FolderDetailPage";
 import AdminLogin from "@/pages/admin/AdminLogin";
 import AdminDashboard from "@/pages/admin/AdminDashboard";

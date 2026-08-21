@@ -62,7 +62,7 @@ function Header({ onSignup }: { onSignup: () => void }) {
     <header className="relative z-30 border-b border-[#24202D]/[.09] bg-[#F7F4EE]">
       <div className="mx-auto flex max-w-7xl items-center justify-between px-5 py-4 sm:px-8">
         <Link href="/" className="qodratak-focus-ring flex items-center gap-2.5 rounded-lg">
-          <img src="/qodratak-logo.png" alt="قدراتك" className="h-10 w-10 rounded-lg object-cover object-top" />
+          <img src="/qodratak-logo-transparent.png" alt="قدراتك" className="h-10 w-10 object-contain" />
           <div className="leading-tight">
             <span className="block text-base font-black" style={{ color: NAVY }}>قدراتك</span>
             <span className="block text-[9px] font-bold tracking-[0.17em] text-[#8B8278]">STUDY SYSTEMS</span>
@@ -147,6 +147,46 @@ function ScorePreview() {
       <div className="relative flex items-center gap-2 border border-[#24202D]/[.1] bg-[#F3EEE7] px-3 py-3">
         <Target className="h-4 w-4 shrink-0" style={{ color: SIGNAL }} />
         <p className="text-xs font-bold leading-5" style={{ color: NAVY }}>الخطوة الأوضح الآن: 14 سؤالًا في استراتيجيات الكمي.</p>
+      </div>
+    </div>
+  );
+}
+
+function StudyPathGraphic() {
+  return (
+    <div className="relative aspect-[4/3] overflow-hidden bg-[#E9E4DC]">
+      <div className="absolute inset-0" style={{ background: `radial-gradient(circle at 18% 22%, ${MINT}52, transparent 25%), radial-gradient(circle at 80% 78%, ${SIGNAL}42, transparent 32%)` }} />
+      <div className="absolute -left-16 -top-16 h-48 w-48 rounded-full border border-[#24202D]/10" />
+      <div className="absolute -bottom-20 right-8 h-48 w-48 rounded-full border border-[#24202D]/10" />
+
+      <div className="absolute left-[12%] top-[14%] w-[51%] -rotate-[5deg] border border-[#24202D]/10 bg-[#FFFCF7] p-5 shadow-[0_18px_38px_rgba(42,38,54,.14)]">
+        <div className="flex items-center justify-between border-b border-[#24202D]/10 pb-3">
+          <div className="flex items-center gap-2">
+            <span className="grid h-8 w-8 place-items-center rounded-full text-xs font-black" style={{ background: SIGNAL, color: NAVY }}>١</span>
+            <div><p className="text-[10px] font-black text-[#8B8278]">هذا الأسبوع</p><p className="text-xs font-black" style={{ color: NAVY }}>خطة الاستعداد</p></div>
+          </div>
+          <Layers3 className="h-4 w-4 text-[#8B8278]" />
+        </div>
+        <div className="mt-5 space-y-3">
+          {[
+            ["تأسيس الكمي", "مكتمل", MINT],
+            ["الاستنتاج اللفظي", "اليوم", SIGNAL],
+            ["محاكاة قصيرة", "الجمعة", "#B8A4FF"],
+          ].map(([label, status, color]) => (
+            <div key={label} className="flex items-center justify-between gap-3">
+              <span className="text-[11px] font-bold text-[#4F4A58]">{label}</span>
+              <span className="border px-2 py-0.5 text-[9px] font-black" style={{ borderColor: `${color}90`, color }}>{status}</span>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      <div className="absolute bottom-[13%] right-[10%] w-[43%] rotate-[4deg] border border-[#24202D]/10 bg-[#24202D] p-4 shadow-[0_18px_38px_rgba(42,38,54,.2)]">
+        <div className="flex items-start justify-between">
+          <div><p className="text-[10px] font-bold text-white/55">اتجاهك واضح</p><p className="mt-1 text-xl font-black text-white">٧٦<span className="mr-1 text-xs font-bold text-white/50">٪</span></p></div>
+          <div className="grid h-9 w-9 place-items-center rounded-full border border-white/15 text-xs font-black" style={{ color: MINT }}>✓</div>
+        </div>
+        <div className="mt-4 h-1.5 bg-white/15"><div className="h-full w-[76%]" style={{ background: MINT }} /></div>
       </div>
     </div>
   );
@@ -283,17 +323,13 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* ── What you get — with student photo ── */}
+      {/* ── What you get — study path graphic ── */}
       <section className="mx-auto grid max-w-7xl items-center gap-10 px-5 py-24 sm:px-8 lg:grid-cols-[1.02fr_.98fr]">
-        <div className="relative overflow-hidden rounded-[28px] bg-[#DCE4E8]">
-          <img
-            src="/attached_assets/generated_images/qodratak-students-study.jpg"
-            alt="طلاب يراجعون دراستهم معًا"
-            className="aspect-[4/3] h-full w-full object-cover"
-          />
-          <div className="absolute inset-x-4 bottom-4 rounded-2xl border border-white/40 bg-white/90 p-4 backdrop-blur-sm">
-            <p className="text-xs font-black text-[#0D1B2A]">ليست مجرد أسئلة أكثر.</p>
-            <p className="mt-1 text-xs leading-5 text-slate-600">هي طريقة أوضح لتعرف لماذا تتدرّب على هذا السؤال الآن.</p>
+        <div className="relative overflow-hidden rounded-[28px] bg-[#E9E4DC]">
+          <StudyPathGraphic />
+          <div className="absolute inset-x-4 bottom-4 border border-white/55 bg-[#FFFCF7]/92 p-4 backdrop-blur-sm">
+            <p className="text-xs font-black" style={{ color: NAVY }}>ليست مجرد أسئلة أكثر.</p>
+            <p className="mt-1 text-xs leading-5 text-[#6B625B]">هي طريقة أوضح لتعرف لماذا تتدرّب على هذا السؤال الآن.</p>
           </div>
         </div>
         <div>

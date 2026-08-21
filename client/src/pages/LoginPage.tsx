@@ -522,7 +522,7 @@ export default function LoginPage() {
         <aside className="relative hidden overflow-hidden bg-[#0D1B2A] p-10 lg:flex lg:flex-col">
           <div className="absolute inset-0 opacity-30" style={{ backgroundImage: "linear-gradient(rgba(247,247,117,.09) 1px, transparent 1px), linear-gradient(90deg, rgba(247,247,117,.09) 1px, transparent 1px)", backgroundSize: "40px 40px", maskImage: "linear-gradient(to bottom, black, transparent)" }} />
           <div className="relative flex items-center gap-2.5">
-            <img src="/qodratak-logo.png" alt="قدراتك" className="h-10 w-10 rounded-xl object-cover object-top" />
+            <img src="/qodratak-logo-transparent.png" alt="قدراتك" className="h-10 w-10 object-contain" />
             <div><p className="font-black text-white">قدراتك</p><p className="mt-0.5 text-[9px] font-bold tracking-[.16em] text-white/50">QIROX STUDIO</p></div>
           </div>
           <div className="relative mt-16 max-w-sm">
@@ -550,7 +550,7 @@ export default function LoginPage() {
         <main className="flex min-h-full flex-col">
           <div className="flex items-center justify-between border-b border-slate-100 px-6 py-5 sm:px-9">
             <button onClick={() => setLocation('/')} className="qodratak-focus-ring text-sm font-bold text-slate-500 transition hover:text-[#0D1B2A]">الرئيسية</button>
-            <div className="flex items-center gap-2 lg:hidden"><img src="/qodratak-logo.png" alt="" className="h-8 w-8 rounded-lg object-cover object-top" /><span className="text-sm font-black text-[#0D1B2A]">قدراتك</span></div>
+            <div className="flex items-center gap-2 lg:hidden"><img src="/qodratak-logo-transparent.png" alt="" className="h-8 w-8 object-contain" /><span className="text-sm font-black text-[#0D1B2A]">قدراتك</span></div>
             <button onClick={() => setLocation('/signup?type=student')} className="qodratak-focus-ring text-sm font-black text-[#0D1B2A]">إنشاء حساب</button>
           </div>
 
