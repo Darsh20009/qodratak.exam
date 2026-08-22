@@ -15,6 +15,24 @@ const questionImagesDir = 'uploads/question-images';
   if (!fs.existsSync(d)) fs.mkdirSync(d, { recursive: true });
 });
 
+function getDevelopmentDemoAdmin(username: string) {
+  if (process.env.NODE_ENV === 'production') return null;
+
+  try {
+    const users = JSON.parse(fs.readFileSync('attached_assets/user.json', 'utf-8'));
+    const normalizedUsername = username.trim().toLowerCase();
+    const user = users.find((candidate: any) =>
+      candidate?.isDemo &&
+      candidate?.role === 'admin' &&
+      candidate?.username?.trim().toLowerCase() === normalizedUsername
+    );
+
+    return user || null;
+  } catch {
+    return null;
+  }
+}
+
 const receiptStorage = multer.diskStorage({
   destination: (req, file, cb) => cb(null, uploadDir),
   filename: (req, file, cb) => {
@@ -91,6 +109,42 @@ router.post('/login', async (req: Request, res: Response) => {
     const { username, password } = req.body;
     if (!username || !password) {
       return res.status(400).json({ error: 'اسم المستخدم وكلمة المرور مطلوبان' });
+    }
+
+    const demoAdmin = getDevelopmentDemoAdmin(username);
+    const demoPasswordValid = demoAdmin?.password
+      ? await bcrypt.compare(password, demoAdmin.password)
+      : false;
+
+    if (demoAdmin && demoPasswordValid) {
+      (req.session as any).admin = {
+        adminId: String(demoAdmin.id),
+        username: demoAdmin.username,
+        fullName: demoAdmin.fullName || demoAdmin.name,
+        role: 'system_admin',
+        permissions: ['all'],
+        isDemo: true,
+      };
+      (req.session as any).isAdmin = true;
+      (req.session as any).adminId = String(demoAdmin.id);
+
+      return req.session.save((err) => {
+        if (err) {
+          console.error('Demo admin session save error:', err);
+          return res.status(500).json({ error: 'خطأ في حفظ جلسة الإدارة' });
+        }
+
+        return res.json({
+          success: true,
+          admin: {
+            id: String(demoAdmin.id),
+            username: demoAdmin.username,
+            fullName: demoAdmin.fullName || demoAdmin.name,
+            role: 'system_admin',
+            isDemo: true,
+          },
+        });
+      });
     }
 
     const admin = await mongoStorage.getAdminByUsername(username);

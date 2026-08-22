@@ -105,7 +105,6 @@ const platformLogo = "/qodratak-logo-transparent.png";
 import FolderDetailPage from "@/pages/FolderDetailPage";
 import AdminLogin from "@/pages/admin/AdminLogin";
 import AdminDashboard from "@/pages/admin/AdminDashboard";
-import QuestionsManagementPage from "@/pages/admin/QuestionsManagementPage";
 import ChatPage from "@/pages/admin/ChatPage";
 import TahsiliPage from "@/pages/TahsiliPage";
 import TahsiliDashboard from "@/pages/TahsiliDashboard";
@@ -120,7 +119,6 @@ import TahsilikComprehensiveTest from "@/pages/TahsilikComprehensiveTest";
 import TahsilikSubjectTest from "@/pages/TahsilikSubjectTest";
 import TahsilikSubjectTestRunner from "@/pages/TahsilikSubjectTestRunner";
 import TahsilikTestsHub from "@/pages/TahsilikTestsHub";
-import AdminUsersPage from "@/pages/AdminUsersPage";
 import LeaderboardPage from "@/pages/LeaderboardPage";
 import InstallPrompt from "@/components/InstallPrompt";
 import { FloatingInstallButton } from "@/components/PermanentInstallButton";
@@ -198,108 +196,56 @@ function MainLayout({ children }: { children: React.ReactNode }) {
   }, []);
 
   useEffect(() => {
-    const updateUserData = () => {
-      const storedUser = localStorage.getItem('user');
-      if (storedUser) {
-        try {
-          const user = JSON.parse(storedUser);
-          setUserName(user.username || user.name);
-          setUserSubscription(user.subscription?.type || 'free');
-          setUserId(user.id);
-        } catch (e) {
-          console.error("Error parsing stored user:", e);
-          setUserName(null);
-          setUserSubscription('free');
-          setUserId(null);
-        }
-      } else {
-        setUserName(null);
-        setUserSubscription('free');
-        setUserId(null);
-      }
+    const applyServerUser = (serverUser: any) => {
+      setUserName(serverUser.username || serverUser.name || null);
+      setUserSubscription(serverUser.subscription?.type || 'free');
+      setUserId(serverUser.id ?? null);
+
+      // Temporary display cache for legacy pages. It never restores authentication.
+      localStorage.setItem('user', JSON.stringify(serverUser));
     };
 
-    // دالة التحديث من بيانات الخادم
     const fetchServerUserData = async () => {
       try {
         const response = await fetch('/api/user', { credentials: 'include' });
         if (response.ok) {
           const serverUser = await response.json();
           if (serverUser && serverUser.id) {
-            localStorage.setItem('user', JSON.stringify(serverUser));
-            setUserName(serverUser.username || serverUser.name);
-            setUserSubscription(serverUser.subscription?.type || 'free');
-          }
-        } else if (response.status === 401) {
-          // Session expired — try restoring from localStorage
-          const storedRaw = localStorage.getItem('user');
-          if (storedRaw) {
-            try {
-              const stored = JSON.parse(storedRaw);
-              if (stored?.id && stored?.email) {
-                const restoreRes = await fetch('/api/auth/restore-session', {
-                  method: 'POST',
-                  headers: { 'Content-Type': 'application/json' },
-                  body: JSON.stringify({ userId: stored.id, email: stored.email }),
-                  credentials: 'include',
-                });
-                if (restoreRes.ok) {
-                  setUserName(stored.username || stored.name);
-                  setUserSubscription(stored.subscription?.type || 'free');
-                  setUserId(stored.id);
-                } else {
-                  updateUserData();
-                }
-              } else {
-                updateUserData();
-              }
-            } catch {
-              updateUserData();
-            }
-          } else {
-            updateUserData();
+            applyServerUser(serverUser);
+            return;
           }
         }
-      } catch (error) {
-        updateUserData();
+
+        setUserName(null);
+        setUserSubscription('free');
+        setUserId(null);
+        localStorage.removeItem('user');
+      } catch {
+        setUserName(null);
+        setUserSubscription('free');
+        setUserId(null);
       }
     };
 
-    // تحديث البيانات عند تحميل الصفحة
     fetchServerUserData();
 
-    // الاستماع لتغييرات تسجيل الدخول
-    const handleUserLogin = (event: any) => {
-      setUserName(event.detail?.username || event.detail?.name);
-      setUserSubscription(event.detail?.subscription?.type || 'free');
-      // تحديث localStorage أيضاً
-      localStorage.setItem('user', JSON.stringify(event.detail));
-      // تحديث مخزن React Query لضمان ظهور الملف الشخصي فوراً
+    const handleUserLogin = () => {
+      fetchServerUserData();
       queryClient.invalidateQueries({ queryKey: ['/api/user'] });
     };
 
-    const handleStorageChange = () => {
-      updateUserData();
-    };
-
-    // الاستماع لتحديثات بيانات الخادم
     const handleServerUserUpdate = (event: any) => {
       const serverUser = event.detail;
       if (serverUser) {
-        localStorage.setItem('user', JSON.stringify(serverUser));
-        setUserName(serverUser.username || serverUser.name);
-        setUserSubscription(serverUser.subscription?.type || 'free');
-        console.log('تم تحديث بيانات الشريط الجانبي:', serverUser.subscription?.type);
+        applyServerUser(serverUser);
       }
     };
 
     window.addEventListener('userLoggedIn', handleUserLogin);
-    window.addEventListener('storage', handleStorageChange);
     window.addEventListener('serverUserUpdated', handleServerUserUpdate);
 
     return () => {
       window.removeEventListener('userLoggedIn', handleUserLogin);
-      window.removeEventListener('storage', handleStorageChange);
       window.removeEventListener('serverUserUpdated', handleServerUserUpdate);
     };
   }, []);
@@ -1104,10 +1050,10 @@ function Router({ splashDone }: { splashDone: boolean }) {
         {() => <AdminDashboard />}
       </Route>
       <Route path="/admin/users">
-        {() => <MainLayout><AdminUsersPage /></MainLayout>}
+        {() => <AdminDashboard initialTab="users" />}
       </Route>
       <Route path="/admin/questions">
-        {() => <QuestionsManagementPage />}
+        {() => <AdminDashboard initialTab="questions" />}
       </Route>
       <Route path="/admin/chat">
         {() => <ChatPage />}

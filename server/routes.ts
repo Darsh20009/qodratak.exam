@@ -2663,58 +2663,10 @@ app.post("/api/auth/register", async (req: Request, res: Response) => {
     }
   });
 
-  // Restore session from localStorage data (for server restarts)
-  app.post("/api/auth/restore-session", async (req: Request, res: Response) => {
-    try {
-      const { userId, email } = req.body;
-      if (!userId || !email) {
-        return res.status(400).json({ error: 'userId و email مطلوبان' });
-      }
-
-      // Check if session already valid
-      if ((req.session as any)?.userId) {
-        return res.json({ restored: true });
-      }
-
-      let foundUser: any = null;
-      const emailLower = String(email).toLowerCase();
-
-      // Check user.json
-      try {
-        const users = JSON.parse(fs.readFileSync("attached_assets/user.json", "utf8"));
-        foundUser = users.find((u: any) =>
-          (String(u.id) === String(userId) || u.id === userId) &&
-          u.email?.toLowerCase() === emailLower
-        );
-      } catch {}
-
-      // Check MongoDB
-      if (!foundUser) {
-        try {
-          const { User } = await import('./mongodb/models');
-          const mongoUser = await User.findOne({ email: emailLower });
-          if (mongoUser && (String(mongoUser._id) === String(userId) || (mongoUser as any).id === userId)) {
-            foundUser = { id: mongoUser._id.toString(), email: mongoUser.email, role: (mongoUser as any).role || 'student' };
-          }
-        } catch {}
-      }
-
-      if (!foundUser) {
-        return res.status(401).json({ error: 'لم يتم التحقق من المستخدم' });
-      }
-
-      (req.session as any).userId = foundUser.id;
-      (req.session as any).userEmail = foundUser.email;
-      (req.session as any).userRole = foundUser.role || 'student';
-
-      req.session.save((err) => {
-        if (err) return res.status(500).json({ error: 'خطأ في حفظ الجلسة' });
-        res.json({ restored: true });
-      });
-    } catch (error) {
-      console.error('restore-session error:', error);
-      res.status(500).json({ error: 'خطأ في استعادة الجلسة' });
-    }
+  // Legacy endpoint retained only to return an explicit failure. Browser-stored
+  // identifiers must never be enough to recreate an authenticated session.
+  app.all("/api/auth/restore-session", (_req: Request, res: Response) => {
+    res.status(410).json({ message: "استعادة الجلسة من المتصفح لم تعد مدعومة. سجّل الدخول مرة أخرى." });
   });
 
   // Get user by ID

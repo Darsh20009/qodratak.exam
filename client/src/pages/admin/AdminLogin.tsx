@@ -1,52 +1,68 @@
-import { useState } from 'react';
+import { FormEvent, useEffect, useState } from 'react';
 import { useLocation } from 'wouter';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
+import { ArrowRight, KeyRound, Loader2, LockKeyhole, ShieldCheck } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
-import { Lock, User, Shield } from 'lucide-react';
 
 export default function AdminLogin() {
   const [, setLocation] = useLocation();
   const { toast } = useToast();
+  const [username, setUsername] = useState('');
+  const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const [formData, setFormData] = useState({
-    username: '',
-    password: '',
-  });
+  const [checkingSession, setCheckingSession] = useState(true);
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  useEffect(() => {
+    let isMounted = true;
+
+    fetch('/api/admin/session', { credentials: 'include' })
+      .then(async response => ({ ok: response.ok, body: await response.json().catch(() => null) }))
+      .then(({ ok, body }) => {
+        if (isMounted && ok && body?.authenticated) {
+          setLocation('/admin/dashboard');
+        }
+      })
+      .catch(() => undefined)
+      .finally(() => {
+        if (isMounted) setCheckingSession(false);
+      });
+
+    return () => {
+      isMounted = false;
+    };
+  }, [setLocation]);
+
+  const handleSubmit = async (event: FormEvent) => {
+    event.preventDefault();
+
+    if (!username.trim() || !password) {
+      toast({
+        title: 'أكمل بيانات الدخول',
+        description: 'أدخل اسم المستخدم وكلمة المرور.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
     setIsLoading(true);
-
     try {
       const response = await fetch('/api/admin/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(formData),
         credentials: 'include',
+        body: JSON.stringify({ username: username.trim(), password }),
       });
+      const data = await response.json().catch(() => ({}));
 
-      const data = await response.json();
-
-      if (response.ok) {
-        toast({
-          title: 'تم تسجيل الدخول بنجاح',
-          description: `مرحباً ${data.admin.fullName}`,
-        });
-        setLocation('/admin/dashboard');
-      } else {
-        toast({
-          title: 'خطأ في تسجيل الدخول',
-          description: data.error || 'فشل تسجيل الدخول',
-          variant: 'destructive',
-        });
+      if (!response.ok || !data.success) {
+        throw new Error(data.error || 'تعذر تسجيل الدخول');
       }
-    } catch (error) {
+
+      toast({ title: 'مرحبًا بك في الإدارة', description: 'تم التحقق من جلستك بنجاح.' });
+      setLocation('/admin/dashboard');
+    } catch (error: any) {
       toast({
-        title: 'خطأ',
-        description: 'حدث خطأ في الاتصال بالخادم',
+        title: 'تعذر تسجيل الدخول',
+        description: error.message || 'تحقق من البيانات وحاول مجددًا.',
         variant: 'destructive',
       });
     } finally {
@@ -55,83 +71,102 @@ export default function AdminLogin() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-[#071a0e] p-4" dir="rtl">
-      {/* Subtle grid bg */}
-      <div className="absolute inset-0 opacity-5" style={{ backgroundImage: 'radial-gradient(circle at 2px 2px, #10b981 1px, transparent 0)', backgroundSize: '32px 32px' }} />
-      {/* Glow */}
-      <div className="absolute top-1/3 left-1/2 -translate-x-1/2 -translate-y-1/2 w-80 h-80 rounded-full blur-3xl" style={{ background: 'radial-gradient(circle, rgba(16,185,129,0.15) 0%, transparent 70%)' }} />
-
-      <div className="relative w-full max-w-md">
-        {/* Header */}
-        <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center mb-4 relative">
-            <div className="w-20 h-20 rounded-3xl overflow-hidden shadow-2xl border-2 border-emerald-600/40" style={{ boxShadow: '0 0 40px rgba(16,185,129,0.3)' }}>
-              <img src="/qodratak-logo-transparent.png" alt="قدراتك" className="w-full h-full object-contain" />
-            </div>
-            <div className="absolute -bottom-2 -right-2 w-7 h-7 rounded-xl bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center shadow-lg border-2 border-[#071a0e]">
-              <Shield className="w-3.5 h-3.5 text-white" />
-            </div>
-          </div>
-          <h1 className="text-2xl font-black text-emerald-100">لوحة تحكم المدير</h1>
-          <p className="text-emerald-500/70 text-sm mt-1">منصة قدراتك — وصول مخصص للمدراء</p>
-        </div>
-
-        {/* Card */}
-        <div className="bg-[#0a2418] rounded-3xl border border-emerald-900/40 p-8 shadow-2xl">
-          <form onSubmit={handleSubmit} className="space-y-5">
-            <div className="space-y-2">
-              <label className="text-emerald-300 text-sm font-medium" htmlFor="username">اسم المستخدم</label>
-              <div className="relative">
-                <User className="absolute right-3 top-1/2 transform -translate-y-1/2 text-emerald-600 w-4 h-4" />
-                <Input
-                  id="username"
-                  type="text"
-                  placeholder="أدخل اسم المستخدم"
-                  className="pr-10 bg-emerald-900/20 border-emerald-800/40 text-emerald-100 placeholder:text-emerald-700 focus:border-emerald-500 focus:ring-emerald-500/20"
-                  value={formData.username}
-                  onChange={(e) => setFormData({ ...formData, username: e.target.value })}
-                  required
-                  data-testid="input-admin-username"
-                />
+    <main className="min-h-screen bg-[#F7F4EE] px-4 py-8 text-[#24202D]" dir="rtl">
+      <div className="mx-auto flex min-h-[calc(100vh-4rem)] max-w-5xl items-center">
+        <div className="grid w-full overflow-hidden rounded-3xl border border-[#24202D]/10 bg-[#FFFCF7] shadow-[0_18px_50px_rgba(36,32,45,0.08)] md:grid-cols-[0.92fr_1.08fr]">
+          <section className="hidden bg-[#24202D] p-10 text-[#FFFCF7] md:flex md:flex-col md:justify-between">
+            <div className="flex items-center gap-3">
+              <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-[#FFFCF7]">
+                <img src="/qodratak-logo-transparent.png" alt="قدراتك" className="h-9 w-9 object-contain" />
+              </div>
+              <div>
+                <p className="font-bold">قدراتك</p>
+                <p className="mt-0.5 text-xs text-[#FFFCF7]/65">بوابة الإدارة</p>
               </div>
             </div>
-            <div className="space-y-2">
-              <label className="text-emerald-300 text-sm font-medium" htmlFor="password">كلمة المرور</label>
-              <div className="relative">
-                <Lock className="absolute right-3 top-1/2 transform -translate-y-1/2 text-emerald-600 w-4 h-4" />
-                <Input
-                  id="password"
-                  type="password"
-                  placeholder="أدخل كلمة المرور"
-                  className="pr-10 bg-emerald-900/20 border-emerald-800/40 text-emerald-100 placeholder:text-emerald-700 focus:border-emerald-500 focus:ring-emerald-500/20"
-                  value={formData.password}
-                  onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                  required
-                  data-testid="input-admin-password"
-                />
+
+            <div>
+              <div className="mb-5 flex h-12 w-12 items-center justify-center rounded-2xl bg-[#FFFCF7]/10">
+                <ShieldCheck className="h-6 w-6 text-[#F4AA85]" />
               </div>
+              <h1 className="text-2xl font-bold leading-relaxed">إدارة واضحة، في مكان واحد.</h1>
+              <p className="mt-3 max-w-sm text-sm leading-7 text-[#FFFCF7]/70">
+                استخدم حساب الإدارة المصرح لك للوصول إلى الطلاب والمؤسسات والاشتراكات.
+              </p>
             </div>
-            <Button
-              type="submit"
-              className="w-full bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-bold py-3 rounded-xl shadow-lg shadow-emerald-900/30 transition-all hover:scale-105"
-              disabled={isLoading}
-              data-testid="button-admin-login"
+
+            <p className="text-xs text-[#FFFCF7]/45">وصول آمن ومخصص لفريق الإدارة.</p>
+          </section>
+
+          <section className="px-6 py-9 sm:px-10 md:py-12">
+            <button
+              type="button"
+              onClick={() => setLocation('/')}
+              className="mb-9 inline-flex items-center gap-2 text-sm text-[#625D69] transition-colors hover:text-[#24202D]"
             >
-              {isLoading ? (
-                <span className="flex items-center justify-center gap-2">
-                  <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                  جاري تسجيل الدخول...
-                </span>
-              ) : (
-                <span className="flex items-center justify-center gap-2">
-                  <Shield className="w-4 h-4" />
-                  دخول لوحة التحكم
-                </span>
-              )}
-            </Button>
-          </form>
+              <ArrowRight className="h-4 w-4" />
+              العودة للرئيسية
+            </button>
+
+            <div className="mb-8">
+              <div className="mb-4 flex h-11 w-11 items-center justify-center rounded-2xl bg-[#F4AA85]/20 text-[#B65D36] md:hidden">
+                <ShieldCheck className="h-5 w-5" />
+              </div>
+              <p className="text-sm font-medium text-[#B65D36]">مساحة الإدارة</p>
+              <h2 className="mt-2 text-2xl font-bold">تسجيل الدخول</h2>
+              <p className="mt-2 text-sm leading-6 text-[#625D69]">أدخل بيانات حساب الإدارة للمتابعة.</p>
+            </div>
+
+            {checkingSession ? (
+              <div className="flex items-center gap-3 rounded-2xl border border-[#24202D]/10 bg-[#F7F4EE] px-4 py-4 text-sm text-[#625D69]">
+                <Loader2 className="h-4 w-4 animate-spin text-[#B65D36]" />
+                جارٍ التحقق من الجلسة...
+              </div>
+            ) : (
+              <form onSubmit={handleSubmit} className="space-y-5">
+                <label className="block">
+                  <span className="mb-2 block text-sm font-medium">اسم المستخدم</span>
+                  <div className="relative">
+                    <KeyRound className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#8E8993]" />
+                    <input
+                      type="text"
+                      value={username}
+                      onChange={event => setUsername(event.target.value)}
+                      autoComplete="username"
+                      placeholder="اسم المستخدم"
+                      className="h-12 w-full rounded-xl border border-[#24202D]/15 bg-[#FFFCF7] pr-10 pl-4 text-sm outline-none transition-colors placeholder:text-[#9E99A2] focus:border-[#B65D36] focus:ring-2 focus:ring-[#F4AA85]/30"
+                    />
+                  </div>
+                </label>
+
+                <label className="block">
+                  <span className="mb-2 block text-sm font-medium">كلمة المرور</span>
+                  <div className="relative">
+                    <LockKeyhole className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#8E8993]" />
+                    <input
+                      type="password"
+                      value={password}
+                      onChange={event => setPassword(event.target.value)}
+                      autoComplete="current-password"
+                      placeholder="كلمة المرور"
+                      className="h-12 w-full rounded-xl border border-[#24202D]/15 bg-[#FFFCF7] pr-10 pl-4 text-sm outline-none transition-colors placeholder:text-[#9E99A2] focus:border-[#B65D36] focus:ring-2 focus:ring-[#F4AA85]/30"
+                    />
+                  </div>
+                </label>
+
+                <button
+                  type="submit"
+                  disabled={isLoading}
+                  className="flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-[#24202D] text-sm font-bold text-[#FFFCF7] transition-colors hover:bg-[#393343] disabled:cursor-not-allowed disabled:opacity-60"
+                >
+                  {isLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <ShieldCheck className="h-4 w-4" />}
+                  {isLoading ? 'جارٍ تسجيل الدخول...' : 'الدخول إلى لوحة الإدارة'}
+                </button>
+              </form>
+            )}
+          </section>
         </div>
       </div>
-    </div>
+    </main>
   );
 }

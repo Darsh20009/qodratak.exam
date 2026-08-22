@@ -38,25 +38,25 @@ interface Subscription { _id: string; userId: { _id: string; username: string; f
 interface InstitutionRequest { _id: string; institutionName: string; responsibleName: string; phone: string; email: string; whatsapp: string; city: string; institutionType: string; studentsCount?: number; notes?: string; status: 'pending' | 'approved' | 'rejected'; createdAt: string }
 
 const NAV_ITEMS = [
-  { key: 'overview', icon: LayoutDashboard, label: 'نظرة عامة', color: 'text-blue-400' },
-  { key: 'users', icon: Users, label: 'الطلاب', color: 'text-emerald-400' },
-  { key: 'subscriptions', icon: CreditCard, label: 'الاشتراكات', color: 'text-green-400' },
-  { key: 'tests', icon: FileText, label: 'الاختبارات', color: 'text-orange-400' },
-  { key: 'questions', icon: BookOpen, label: 'بنك الأسئلة', color: 'text-amber-400' },
-  { key: 'test-builder', icon: FlaskConical, label: 'إنشاء الاختبارات', color: 'text-amber-400' },
-  { key: 'announcements', icon: Megaphone, label: 'الإعلانات', color: 'text-sky-400' },
-  { key: 'support', icon: HeadphonesIcon, label: 'الدعم الفني', color: 'text-teal-400' },
-  { key: 'roles', icon: UserCog, label: 'الأدوار والصلاحيات', color: 'text-emerald-400' },
-  { key: 'settings', icon: Sliders, label: 'إعدادات المنصة', color: 'text-orange-300' },
-  { key: 'employees', icon: Briefcase, label: 'الموظفون', color: 'text-teal-400' },
-  { key: 'accounting', icon: PiggyBank, label: 'المحاسبة', color: 'text-green-400' },
-  { key: 'email', icon: Mail, label: 'البريد الإلكتروني', color: 'text-yellow-400' },
-  { key: 'exams', icon: CalendarCheck, label: 'الاختبارات المجدولة', color: 'text-cyan-400' },
-  { key: 'institutions', icon: Building2, label: 'طلبات المؤسسات', color: 'text-rose-400' },
-  { key: 'notifications', icon: BellRing, label: 'مركز الإشعارات', color: 'text-emerald-400' },
-  { key: 'question-reports', icon: AlertTriangle, label: 'بلاغات الأسئلة', color: 'text-rose-400' },
-  { key: 'wallets', icon: Wallet, label: 'المحافظ والمكافآت', color: 'text-yellow-400' },
-  { key: 'seasonal-exams', icon: Sparkles, label: 'الاختبارات الموسمية', color: 'text-amber-400' },
+  { key: 'overview', icon: LayoutDashboard, label: 'نظرة عامة', color: 'text-[#625D69]' },
+  { key: 'users', icon: Users, label: 'الطلاب', color: 'text-[#B65D36]' },
+  { key: 'subscriptions', icon: CreditCard, label: 'الاشتراكات', color: 'text-[#7964C1]' },
+  { key: 'tests', icon: FileText, label: 'الاختبارات', color: 'text-[#B65D36]' },
+  { key: 'questions', icon: BookOpen, label: 'بنك الأسئلة', color: 'text-[#7964C1]' },
+  { key: 'test-builder', icon: FlaskConical, label: 'إنشاء الاختبارات', color: 'text-[#7964C1]' },
+  { key: 'announcements', icon: Megaphone, label: 'الإعلانات', color: 'text-[#B65D36]' },
+  { key: 'support', icon: HeadphonesIcon, label: 'الدعم الفني', color: 'text-[#625D69]' },
+  { key: 'roles', icon: UserCog, label: 'الأدوار والصلاحيات', color: 'text-[#7964C1]' },
+  { key: 'settings', icon: Sliders, label: 'إعدادات المنصة', color: 'text-[#B65D36]' },
+  { key: 'employees', icon: Briefcase, label: 'الموظفون', color: 'text-[#625D69]' },
+  { key: 'accounting', icon: PiggyBank, label: 'المحاسبة', color: 'text-[#7964C1]' },
+  { key: 'email', icon: Mail, label: 'البريد الإلكتروني', color: 'text-[#B65D36]' },
+  { key: 'exams', icon: CalendarCheck, label: 'الاختبارات المجدولة', color: 'text-[#625D69]' },
+  { key: 'institutions', icon: Building2, label: 'طلبات المؤسسات', color: 'text-[#B65D36]' },
+  { key: 'notifications', icon: BellRing, label: 'مركز الإشعارات', color: 'text-[#7964C1]' },
+  { key: 'question-reports', icon: AlertTriangle, label: 'بلاغات الأسئلة', color: 'text-[#B65D36]' },
+  { key: 'wallets', icon: Wallet, label: 'المحافظ والمكافآت', color: 'text-[#7964C1]' },
+  { key: 'seasonal-exams', icon: Sparkles, label: 'الاختبارات الموسمية', color: 'text-[#B65D36]' },
 ];
 
 function formatDate(d: string | null | undefined) {
@@ -74,16 +74,16 @@ function formatDateTime(d: string | null | undefined) {
 
 function StatCard({ icon: Icon, label, value, sub, color, bg }: any) {
   return (
-    <div className={`rounded-2xl p-5 ${bg} border border-white/10 relative overflow-hidden`}>
-      <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-white/20 to-transparent" />
+    <div className="relative overflow-hidden rounded-2xl border border-[#24202D]/10 bg-[#FFFCF7] p-5 shadow-[0_6px_20px_rgba(36,32,45,0.04)]">
+      <div className="absolute top-0 left-0 h-1 w-full bg-[#F4AA85]/50" />
       <div className="flex items-start justify-between">
         <div>
-          <p className="text-white/60 text-sm mb-1">{label}</p>
-          <p className="text-white text-3xl font-bold">{typeof value === 'number' ? value.toLocaleString('ar') : value}</p>
-          {sub && <p className="text-white/50 text-xs mt-1">{sub}</p>}
+          <p className="mb-1 text-sm text-[#625D69]">{label}</p>
+          <p className="text-3xl font-bold text-[#24202D]">{typeof value === 'number' ? value.toLocaleString('ar') : value}</p>
+          {sub && <p className="mt-1 text-xs text-[#8E8993]">{sub}</p>}
         </div>
-        <div className={`w-12 h-12 rounded-xl ${color} bg-white/10 flex items-center justify-center`}>
-          <Icon className="w-6 h-6 text-white" />
+        <div className={`flex h-12 w-12 items-center justify-center rounded-xl ${color}`}>
+          <Icon className="h-6 w-6 text-[#24202D]" />
         </div>
       </div>
     </div>
@@ -102,11 +102,11 @@ function StatusBadge({ status }: { status: string }) {
   return <span className={`text-xs px-2 py-0.5 rounded-full border ${s.cls}`}>{s.label}</span>;
 }
 
-export default function AdminDashboard() {
+export default function AdminDashboard({ initialTab = 'overview' }: { initialTab?: string }) {
   const [, setLocation] = useLocation();
   const { toast } = useToast();
   const queryClient = useQueryClient();
-  const [activeTab, setActiveTab] = useState('overview');
+  const [activeTab, setActiveTab] = useState(initialTab);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
   const [selectedSubscription, setSelectedSubscription] = useState<Subscription | null>(null);
@@ -385,7 +385,7 @@ export default function AdminDashboard() {
   }, [sessionLoading, session, setLocation]);
 
   if (sessionLoading || !(session as any)?.authenticated) {
-    return <div className="min-h-screen bg-[#071a0e] flex items-center justify-center flex-col gap-4"><div className="w-10 h-10 border-4 border-emerald-500 border-t-transparent rounded-full animate-spin" /><p className="text-emerald-400 text-sm">جاري التحقق...</p></div>;
+    return <div className="flex min-h-screen flex-col items-center justify-center gap-4 bg-[#F7F4EE]"><div className="h-10 w-10 animate-spin rounded-full border-4 border-[#B65D36] border-t-transparent" /><p className="text-sm text-[#625D69]">جارٍ التحقق...</p></div>;
   }
 
   const admin = (session as any)?.admin;
@@ -400,23 +400,23 @@ export default function AdminDashboard() {
   const handleTabChange = (key: string) => { setActiveTab(key); setIsMobileSidebarOpen(false); };
 
   return (
-    <div className="min-h-screen bg-[#071a0e] flex" dir="rtl">
+    <div className="min-h-screen bg-[#F7F4EE] text-[#24202D] flex" dir="rtl">
       {/* Mobile Overlay */}
       {isMobileSidebarOpen && (
         <div className="fixed inset-0 bg-black/60 z-30 lg:hidden" onClick={() => setIsMobileSidebarOpen(false)} />
       )}
 
       {/* ═══ SIDEBAR ═══ */}
-      <aside className={`fixed lg:static inset-y-0 right-0 z-40 w-64 flex-shrink-0 bg-[#0a2418] border-l border-emerald-900/40 flex flex-col h-screen overflow-y-auto transition-transform duration-300 ${isMobileSidebarOpen ? 'translate-x-0' : 'translate-x-full lg:translate-x-0'}`}>
+      <aside className={`fixed lg:static inset-y-0 right-0 z-40 flex h-screen w-64 flex-shrink-0 flex-col overflow-y-auto border-l border-[#24202D]/10 bg-[#FFFCF7] transition-transform duration-300 ${isMobileSidebarOpen ? 'translate-x-0' : 'translate-x-full lg:translate-x-0'}`}>
         {/* Logo */}
-        <div className="p-5 border-b border-emerald-900/40">
+        <div className="border-b border-[#24202D]/10 p-5">
           <div className="flex items-center gap-3">
-            <div className="w-11 h-11 rounded-2xl overflow-hidden shadow-lg border-2 border-emerald-600/40" style={{ boxShadow: '0 0 20px rgba(16,185,129,0.2)' }}>
+            <div className="h-11 w-11 overflow-hidden rounded-2xl border border-[#24202D]/10 bg-[#F7F4EE] p-1">
               <img src="/qodratak-logo-transparent.png" alt="قدراتك" className="w-full h-full object-contain" />
             </div>
             <div>
-              <p className="text-emerald-300 font-bold text-sm">لوحة التحكم</p>
-              <p className="text-emerald-600/70 text-xs flex items-center gap-1">
+              <p className="text-sm font-bold text-[#24202D]">لوحة التحكم</p>
+              <p className="flex items-center gap-1 text-xs text-[#625D69]">
                 <Shield className="w-3 h-3" />
                 قدراتك — المدير
               </p>
@@ -425,14 +425,14 @@ export default function AdminDashboard() {
         </div>
 
         {/* Admin info */}
-        <div className="p-4 border-b border-emerald-900/40">
-          <div className="flex items-center gap-3 p-3 rounded-xl bg-emerald-900/30 border border-emerald-800/30">
-            <div className="w-9 h-9 rounded-full bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center text-white font-bold text-sm shadow-md">
+        <div className="border-b border-[#24202D]/10 p-4">
+          <div className="flex items-center gap-3 rounded-xl border border-[#24202D]/10 bg-[#F7F4EE] p-3">
+            <div className="flex h-9 w-9 items-center justify-center rounded-full bg-[#24202D] text-sm font-bold text-[#FFFCF7]">
               {admin?.fullName?.[0] || admin?.username?.[0] || 'A'}
             </div>
             <div className="min-w-0">
-              <p className="text-emerald-100 text-sm font-medium truncate">{admin?.fullName || admin?.username}</p>
-              <p className="text-emerald-500/70 text-xs">{admin?.role === 'super_admin' ? '👑 مدير عام' : '🛡 مدير'}</p>
+              <p className="truncate text-sm font-medium text-[#24202D]">{admin?.fullName || admin?.username}</p>
+              <p className="text-xs text-[#625D69]">{admin?.role === 'super_admin' ? 'مدير عام' : 'مدير'}</p>
             </div>
           </div>
         </div>
@@ -448,25 +448,25 @@ export default function AdminDashboard() {
                 onClick={() => handleTabChange(item.key)}
                 className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all ${
                   isActive
-                    ? 'bg-gradient-to-r from-emerald-600/40 to-teal-600/20 text-emerald-200 border border-emerald-600/30 shadow-sm'
-                    : 'text-emerald-500/80 hover:text-emerald-200 hover:bg-emerald-900/40'
+                    ? 'border border-[#F4AA85]/40 bg-[#F4AA85]/20 text-[#24202D]'
+                    : 'text-[#625D69] hover:bg-[#F7F4EE] hover:text-[#24202D]'
                 }`}
               >
-                <item.icon className={`w-4 h-4 ${isActive ? 'text-emerald-400' : item.color}`} />
+                <item.icon className={`h-4 w-4 ${isActive ? 'text-[#B65D36]' : item.color}`} />
                 <span className="flex-1 text-right">{item.label}</span>
                 {hasBadge && (
                   <span className="w-5 h-5 rounded-full bg-red-500 text-white text-xs flex items-center justify-center font-bold shadow-md">
                     {item.key === 'subscriptions' ? pendingSubCount : pendingInstCount}
                   </span>
                 )}
-                {isActive && <ChevronRight className="w-3 h-3 text-emerald-400" />}
+                {isActive && <ChevronRight className="h-3 w-3 text-[#B65D36]" />}
               </button>
             );
           })}
         </nav>
 
         {/* Logout */}
-        <div className="p-3 border-t border-emerald-900/40">
+        <div className="border-t border-[#24202D]/10 p-3">
           <button
             onClick={handleLogout}
             className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-red-400 hover:bg-red-500/10 hover:text-red-300 transition-all"
@@ -480,27 +480,27 @@ export default function AdminDashboard() {
       {/* ═══ MAIN CONTENT ═══ */}
       <main className="flex-1 overflow-y-auto min-w-0">
         {/* Top bar */}
-        <div className="bg-[#0a2418]/90 backdrop-blur border-b border-emerald-900/40 px-4 md:px-6 py-4 flex items-center justify-between sticky top-0 z-10">
+        <div className="sticky top-0 z-10 flex items-center justify-between border-b border-[#24202D]/10 bg-[#FFFCF7]/95 px-4 py-4 backdrop-blur md:px-6">
           <div className="flex items-center gap-3">
-            <button onClick={() => setIsMobileSidebarOpen(true)} className="lg:hidden w-9 h-9 rounded-lg bg-emerald-900/50 flex items-center justify-center text-emerald-400 hover:text-white transition-colors">
+            <button onClick={() => setIsMobileSidebarOpen(true)} className="flex h-9 w-9 items-center justify-center rounded-lg bg-[#F7F4EE] text-[#625D69] transition-colors hover:text-[#24202D] lg:hidden">
               <Menu className="w-5 h-5" />
             </button>
             <div>
-              <h1 className="text-emerald-100 font-bold text-base md:text-lg flex items-center gap-2">
+              <h1 className="flex items-center gap-2 text-base font-bold text-[#24202D] md:text-lg">
                 {(() => { const item = NAV_ITEMS.find(n => n.key === activeTab); return item ? <item.icon className={`w-5 h-5 ${item.color}`} /> : null; })()}
                 {NAV_ITEMS.find(n => n.key === activeTab)?.label}
               </h1>
-              <p className="text-emerald-600/70 text-xs hidden md:block">{new Date().toLocaleDateString('ar-SA', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</p>
+              <p className="hidden text-xs text-[#625D69] md:block">{new Date().toLocaleDateString('ar-SA', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</p>
             </div>
           </div>
           <div className="flex items-center gap-2">
-            <button className="relative w-9 h-9 rounded-lg bg-emerald-900/40 flex items-center justify-center text-emerald-400 hover:text-emerald-200 transition-colors border border-emerald-800/30">
+            <button className="relative flex h-9 w-9 items-center justify-center rounded-lg border border-[#24202D]/10 bg-[#F7F4EE] text-[#625D69] transition-colors hover:text-[#24202D]">
               <Bell className="w-4 h-4" />
               {(pendingSubCount + pendingInstCount) > 0 && (
-                <span className="absolute top-1 left-1 w-2.5 h-2.5 rounded-full bg-red-500 border border-[#0a2418]" />
+                <span className="absolute left-1 top-1 h-2.5 w-2.5 rounded-full border border-[#FFFCF7] bg-red-500" />
               )}
             </button>
-            <button onClick={() => queryClient.invalidateQueries()} className="w-9 h-9 rounded-lg bg-emerald-900/40 flex items-center justify-center text-emerald-400 hover:text-emerald-200 transition-colors border border-emerald-800/30">
+            <button onClick={() => queryClient.invalidateQueries()} className="flex h-9 w-9 items-center justify-center rounded-lg border border-[#24202D]/10 bg-[#F7F4EE] text-[#625D69] transition-colors hover:text-[#24202D]">
               <RefreshCw className="w-4 h-4" />
             </button>
           </div>
