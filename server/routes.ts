@@ -106,6 +106,10 @@ async function scheduleAiReviewAndEmail(bookingId: string, userId: string): Prom
 }
 
 async function recoverPendingAiReviews(): Promise<void> {
+  if (mongoose.connection.readyState !== 1) {
+    return;
+  }
+
   try {
     const pending = await mongoStorage.getPendingAiReviews();
     if (pending.length === 0) return;

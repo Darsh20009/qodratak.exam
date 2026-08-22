@@ -1585,3 +1585,125 @@ p, h1, h2, h3, h4, h5, h6, span, li {
     font-size: 16px !important;
   }
 }
+
+/* ===============================================
+   Calm interface and Arabic readability defaults
+   =============================================== */
+
+/* Arabic letters must never inherit display-style tracking. */
+[dir="rtl"],
+[dir="rtl"] input,
+[dir="rtl"] textarea,
+[dir="rtl"] button {
+  letter-spacing: normal;
+  word-spacing: normal;
+  font-kerning: normal;
+}
+
+[dir="rtl"] [class*="tracking-"] {
+  letter-spacing: normal !important;
+}
+
+/* Numeric verification fields are intentionally spaced. */
+[dir="rtl"] .otp-input {
+  letter-spacing: 0.5em !important;
+}
+
+/* The system uses borders and spacing for hierarchy, not decorative depth. */
+[class*="shadow-"]:not([class~="shadow-none"]) {
+  box-shadow: 0 1px 3px rgba(23, 23, 35, 0.07) !important;
+}
+
+[class*="drop-shadow"] {
+  filter: none !important;
+}
+
+.glow-primary,
+.glow-blue,
+.glow-purple,
+.glow-green,
+.glow-amber,
+.glow-pink,
+.glow-cyan,
+.text-glow-blue,
+.text-glow-purple,
+.text-glow-white,
+.border-glow::before,
+.gradient-border::before,
+.card-sparkle::after {
+  box-shadow: none !important;
+  text-shadow: none !important;
+  display: none !important;
+}
+
+/* Sparkles are intentionally removed from the product language. */
+svg.lucide-sparkles,
+svg.lucide-sparkles-icon {
+  display: none !important;
+}
+
+/* Keep loading spinners, but stop decorative motion and hover theatrics. */
+[class*="animate-"]:not([class~="animate-spin"]):not([class~="animate-in"]):not([class~="animate-out"]),
+.page-enter,
+.card-rise,
+.slide-up-smooth,
+.pop-in,
+.pulse-effect,
+.notification-dot,
+.national-day-celebration {
+  animation: none !important;
+}
+
+.card-hover,
+.card-hover:hover,
+.achievement-card,
+.achievement-card:hover {
+  transform: none !important;
+  transition: border-color 0.15s ease, background-color 0.15s ease !important;
+  box-shadow: none !important;
+}
+
+[class*="hover:scale-"]:hover,
+[class*="hover:-translate-"]:hover,
+[class*="hover:translate-"]:hover {
+  transform: none !important;
+}
+
+[class*="hover:shadow-"]:hover {
+  box-shadow: 0 1px 3px rgba(23, 23, 35, 0.07) !important;
+}
+
+@media (max-width: 767px) {
+  /* Blurs, long transitions, and ornamental backgrounds are expensive on phones. */
+  [class*="backdrop-blur"],
+  .glass,
+  .glass-card,
+  .glass-dark {
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+  }
+
+  .orb,
+  [class*="blur-"] {
+    filter: none !important;
+  }
+
+  .orb {
+    display: none !important;
+  }
+
+  *, *::before, *::after {
+    scroll-behavior: auto !important;
+    transition-duration: 0.15s !important;
+    transition-delay: 0s !important;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}

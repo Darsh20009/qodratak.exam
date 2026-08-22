@@ -70,7 +70,6 @@ import QiyasHubPage from "@/pages/QiyasHubPage";
 import CustomExamPage from "@/pages/CustomExamPage";
 import MockExamPage from "@/pages/MockExamPage";
 import LibraryPage from "@/pages/LibraryPage";
-import LearningHubPage from "@/pages/LearningHubPage";
 import BooksPage from "@/pages/BooksPage";
 import FoldersPage from "@/pages/FoldersPage";
 import ChallengePage from "@/pages/ChallengePage";
@@ -87,7 +86,6 @@ import { AdvancedQuantitativeTest } from "@/pages/AdvancedQuantitativeTest";
 import EnhancedSubscriptionPlans from "@/components/EnhancedSubscriptionPlans";
 import MistakeChallengePage from '@/pages/MistakeChallengePage';
 import FlashcardsPage from '@/pages/FlashcardsPage';
-import PerformanceReportPage from '@/pages/PerformanceReportPage';
 import AdaptiveTestPage from '@/pages/AdaptiveTestPage';
 import ErrorAnalysisPage from '@/pages/ErrorAnalysisPage';
 import EnhancedMistakeChallenge from '@/pages/EnhancedMistakeChallenge';
@@ -95,7 +93,6 @@ import { EnhancedVerbalTests } from "@/pages/EnhancedVerbalTests";
 import { EnhancedQuantitativeTests } from "@/pages/EnhancedQuantitativeTests";
 import { LevelAssessmentPage } from "@/pages/LevelAssessmentPage";
 import { SkillProgressPage } from "@/pages/SkillProgressPage";
-import PaperExamResultsPage from "@/pages/PaperExamResultsPage";
 import QuestionBankPage from "@/pages/QuestionBankPage";
 import QuestionBankTestRunner from "@/pages/QuestionBankTestRunner";
 import SectionedTestRunner from "@/pages/SectionedTestRunner";
@@ -124,7 +121,6 @@ import TahsilikSubjectTest from "@/pages/TahsilikSubjectTest";
 import TahsilikSubjectTestRunner from "@/pages/TahsilikSubjectTestRunner";
 import TahsilikTestsHub from "@/pages/TahsilikTestsHub";
 import AdminUsersPage from "@/pages/AdminUsersPage";
-import PaperExamPage from "@/pages/PaperExamPage";
 import LeaderboardPage from "@/pages/LeaderboardPage";
 import InstallPrompt from "@/components/InstallPrompt";
 import { FloatingInstallButton } from "@/components/PermanentInstallButton";
@@ -134,7 +130,6 @@ import MultiplayerPage from "@/pages/MultiplayerPage";
 import MultiplayerRoom from "@/pages/MultiplayerRoom";
 import NotificationBell from "@/components/NotificationBell";
 import { ThemeToggle } from "@/components/ThemeToggle";
-import PaperModelsPage from "@/pages/PaperModelsPage";
 import PaperModelsManagementPage from "@/pages/PaperModelsManagementPage";
 import BubbleSheetScanPage from "@/pages/BubbleSheetScanPage";
 import PlatformGuidePage from "@/pages/PlatformGuidePage";
@@ -143,7 +138,6 @@ import FolderView from "@/pages/FolderView";
 import TestMe from "@/pages/TestMe";
 import FolderTest from "@/pages/FolderTest";
 import AccountTypeSelection from "@/pages/AccountTypeSelection";
-import SignupPage from "@/pages/SignupPage";
 import BookExamPage from "@/pages/BookExamPage";
 import ScheduledExamRunner from "@/pages/ScheduledExamRunner";
 import StudentAnalyticsPage from "@/pages/StudentAnalyticsPage";
@@ -165,6 +159,22 @@ import TeacherSystemPage from "@/pages/TeacherSystemPage";
 import SecuritySettingsPage from "@/pages/SecuritySettingsPage";
 import NotificationsPage from "@/pages/NotificationsPage";
 import InstitutionPortalPage from "@/pages/InstitutionPortalPage";
+
+// These routes contain reporting and document-generation libraries. Loading them
+// only when opened keeps the first visit, especially on mobile data, lightweight.
+const LearningHubPage = React.lazy(() => import("@/pages/LearningHubPage"));
+const PerformanceReportPage = React.lazy(() => import("@/pages/PerformanceReportPage"));
+const PaperExamResultsPage = React.lazy(() => import("@/pages/PaperExamResultsPage"));
+const PaperExamPage = React.lazy(() => import("@/pages/PaperExamPage"));
+const PaperModelsPage = React.lazy(() => import("@/pages/PaperModelsPage"));
+
+function RouteLoadingFallback() {
+  return (
+    <div className="grid min-h-screen place-items-center bg-[#F7F4EE] px-5 text-center" dir="rtl">
+      <p className="text-sm font-bold text-[#6B625B]">جارٍ فتح الصفحة...</p>
+    </div>
+  );
+}
 
 function MainLayout({ children }: { children: React.ReactNode }) {
   const [location] = useLocation();
@@ -1044,7 +1054,7 @@ function Router({ splashDone }: { splashDone: boolean }) {
         {() => <MainLayout><InstitutionPortalPage /></MainLayout>}
       </Route>
       <Route path="/signup">
-        {() => <SignupPage />}
+        {() => <LandingPage initialModal="signup" />}
       </Route>
       <Route path="/login">
         {() => <LoginPage />}
@@ -1173,7 +1183,9 @@ function App() {
       <ThemeProvider attribute="class" defaultTheme="light" enableSystem={false}>
         <TooltipProvider>
           <Toaster />
-          <Router splashDone={splashDone} />
+          <React.Suspense fallback={<RouteLoadingFallback />}>
+            <Router splashDone={splashDone} />
+          </React.Suspense>
 
           {/* PWA Install Prompt - يظهر على جميع المتصفحات */}
           {splashDone && <InstallPrompt />}

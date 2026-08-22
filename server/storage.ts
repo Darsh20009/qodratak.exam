@@ -998,45 +998,49 @@ export class MemStorage implements IStorage {
   private async seedQuestionsFromFile(): Promise<void> {
     try {
       // ── MongoDB-first: load questions from MongoDB ──
-      try {
-        // Wait for MongoDB connection to be ready (up to 15s)
+      if (process.env.MONGODB_URI) {
+        try {
+          // MongoDB is configured: wait briefly for the connection before using it.
         const mongoose = await import('mongoose');
         let waited = 0;
-        while (mongoose.default.connection.readyState !== 1 && waited < 15000) {
-          await new Promise(r => setTimeout(r, 200));
-          waited += 200;
-        }
-        const { Question: MongoQuestion } = await import('./mongodb/models');
-        const mongoCount = await MongoQuestion.countDocuments();
-        if (mongoCount > 0) {
-          const mongoQuestions = await MongoQuestion.find({}, {
-            questionId: 1, category: 1, subcategory: 1, text: 1,
-            options: 1, correctOptionIndex: 1, difficulty: 1,
-            topic: 1, dialect: 1, keywords: 1, section: 1, explanation: 1
-          }).lean();
-
-          for (const q of mongoQuestions) {
-            const id = this.nextQuestionId++;
-            this.questions.push({
-              id,
-              category: (q.category as any) || 'verbal',
-              subcategory: q.subcategory || '',
-              text: q.text,
-              options: q.options,
-              correctOptionIndex: q.correctOptionIndex,
-              difficulty: (q.difficulty as any) || 'intermediate',
-              topic: q.topic || 'general',
-              dialect: (q.dialect as any) || 'standard',
-              keywords: q.keywords || [],
-              section: q.section || 1,
-              explanation: q.explanation || ''
-            });
+          while (mongoose.default.connection.readyState !== 1 && waited < 3000) {
+            await new Promise(r => setTimeout(r, 200));
+            waited += 200;
           }
-          console.log(`Questions loaded successfully from MongoDB (${mongoCount} questions)`);
-          return;
+          if (mongoose.default.connection.readyState === 1) {
+            const { Question: MongoQuestion } = await import('./mongodb/models');
+            const mongoCount = await MongoQuestion.countDocuments();
+            if (mongoCount > 0) {
+              const mongoQuestions = await MongoQuestion.find({}, {
+                questionId: 1, category: 1, subcategory: 1, text: 1,
+                options: 1, correctOptionIndex: 1, difficulty: 1,
+                topic: 1, dialect: 1, keywords: 1, section: 1, explanation: 1
+              }).lean();
+
+              for (const q of mongoQuestions) {
+                const id = this.nextQuestionId++;
+                this.questions.push({
+                  id,
+                  category: (q.category as any) || 'verbal',
+                  subcategory: q.subcategory || '',
+                  text: q.text,
+                  options: q.options,
+                  correctOptionIndex: q.correctOptionIndex,
+                  difficulty: (q.difficulty as any) || 'intermediate',
+                  topic: q.topic || 'general',
+                  dialect: (q.dialect as any) || 'standard',
+                  keywords: q.keywords || [],
+                  section: q.section || 1,
+                  explanation: q.explanation || ''
+                });
+              }
+              console.log(`Questions loaded successfully from MongoDB (${mongoCount} questions)`);
+              return;
+            }
+          }
+        } catch (mongoErr: any) {
+          console.log('MongoDB question load unavailable, falling back to file... Error:', mongoErr?.message || mongoErr);
         }
-      } catch (mongoErr: any) {
-        console.log('MongoDB question load unavailable, falling back to file... Error:', mongoErr?.message || mongoErr);
       }
 
       // ── Fallback: load from JSON file ──

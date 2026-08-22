@@ -147,6 +147,11 @@ export async function sendWeeklyReports(): Promise<void> {
 
 // ── Start all notification schedulers ─────────────────────────────────────────
 export function startNotificationScheduler(): void {
+  if (!process.env.MONGODB_URI) {
+    console.log('Notification scheduler is inactive until MongoDB is configured');
+    return;
+  }
+
   // Check exam reminders every 5 minutes
   setInterval(checkTelegramExamReminders, 5 * 60 * 1000);
   // Run once immediately on boot

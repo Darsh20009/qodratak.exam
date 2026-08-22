@@ -276,6 +276,11 @@ export async function sendStreakPush(userId: string, streakDays: number): Promis
 
 // ── Start push scheduler ─────────────────────────────────────────────────────
 export function startPushScheduler(): void {
+  if (!process.env.MONGODB_URI || !VAPID_PUBLIC || !VAPID_PRIVATE) {
+    console.log('[Push] Scheduler is inactive until MongoDB and VAPID keys are configured');
+    return;
+  }
+
   // Exam reminders every 5 minutes
   setInterval(sendPushExamReminders, 5 * 60 * 1000);
   setTimeout(sendPushExamReminders, 10 * 1000);

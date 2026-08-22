@@ -13,6 +13,7 @@ import {
   X,
 } from "lucide-react";
 import { SignupModal } from "@/components/SignupModal";
+import { LoginModal } from "@/components/LoginModal";
 import { TestimonialsSection } from "@/components/TestimonialsSection";
 
 const NAVY = "#171723";
@@ -55,7 +56,7 @@ const differences = [
   ["مسار لا يشتتك", "لا تظهر لك إلا المساحات المتاحة لخطتك واشتراكك."],
 ];
 
-function Header({ onSignup }: { onSignup: () => void }) {
+function Header({ onSignup, onLogin }: { onSignup: () => void; onLogin: () => void }) {
   const [menuOpen, setMenuOpen] = useState(false);
 
   return (
@@ -63,16 +64,13 @@ function Header({ onSignup }: { onSignup: () => void }) {
       <div className="mx-auto flex max-w-7xl items-center justify-between px-5 py-4 sm:px-8">
         <Link href="/" className="qodratak-focus-ring flex items-center gap-2.5 rounded-lg">
           <img src="/qodratak-logo-transparent.png" alt="قدراتك" className="h-10 w-10 object-contain" />
-          <div className="leading-tight">
-            <span className="block text-base font-black" style={{ color: NAVY }}>قدراتك</span>
-            <span className="block text-[9px] font-bold tracking-[0.17em] text-[#8B8278]">STUDY SYSTEMS</span>
-          </div>
+           <span className="text-base font-black" style={{ color: NAVY }}>قدراتك</span>
         </Link>
 
         <nav className="hidden items-center gap-6 sm:flex">
           <a href="#journey" className="qodratak-focus-ring text-sm font-bold text-[#6B625B] transition hover:text-[#24202D]">كيف تعمل المنصة</a>
           <a href="#inside" className="qodratak-focus-ring text-sm font-bold text-[#6B625B] transition hover:text-[#24202D]">ماذا ستجد</a>
-          <Link href="/login" className="qodratak-focus-ring text-sm font-bold text-[#24202D]">تسجيل الدخول</Link>
+          <button type="button" onClick={onLogin} className="qodratak-focus-ring text-sm font-bold text-[#24202D]">تسجيل الدخول</button>
           <button
             onClick={onSignup}
             className="qodratak-focus-ring rounded-md px-4 py-2.5 text-sm font-black transition hover:-translate-y-0.5"
@@ -98,7 +96,7 @@ function Header({ onSignup }: { onSignup: () => void }) {
           <nav className="mx-auto flex max-w-7xl flex-col gap-1">
             <a href="#journey" onClick={() => setMenuOpen(false)} className="rounded-lg px-3 py-2.5 text-sm font-bold text-[#6B625B]">كيف تعمل المنصة</a>
             <a href="#inside" onClick={() => setMenuOpen(false)} className="rounded-lg px-3 py-2.5 text-sm font-bold text-[#6B625B]">ماذا ستجد</a>
-            <Link href="/login" onClick={() => setMenuOpen(false)} className="rounded-lg px-3 py-2.5 text-sm font-bold text-[#6B625B]">تسجيل الدخول</Link>
+            <button type="button" onClick={() => { setMenuOpen(false); onLogin(); }} className="rounded-lg px-3 py-2.5 text-right text-sm font-bold text-[#6B625B]">تسجيل الدخول</button>
             <button
               onClick={() => { setMenuOpen(false); onSignup(); }}
               className="mt-1 rounded-lg px-3 py-2.5 text-right text-sm font-black"
@@ -253,19 +251,29 @@ function StudentStrip({ onSignup }: { onSignup: () => void }) {
   );
 }
 
-export default function LandingPage() {
-  const [signupOpen, setSignupOpen] = useState(false);
+export default function LandingPage({ initialModal }: { initialModal?: "signup" | "login" } = {}) {
+  const [signupOpen, setSignupOpen] = useState(initialModal === "signup");
+  const [loginOpen, setLoginOpen] = useState(initialModal === "login");
 
   return (
     <main className="min-h-screen overflow-hidden bg-[#F7F4EE] text-slate-900" dir="rtl">
-      <SignupModal open={signupOpen} onClose={() => setSignupOpen(false)} />
+      <SignupModal
+        open={signupOpen}
+        onClose={() => setSignupOpen(false)}
+        onSwitchToLogin={() => setLoginOpen(true)}
+      />
+      <LoginModal
+        open={loginOpen}
+        onClose={() => setLoginOpen(false)}
+        onSwitchToSignup={() => setSignupOpen(true)}
+      />
 
       {/* ── Hero ── */}
       <section className="relative isolate overflow-hidden bg-[#F7F4EE]">
         <div className="pointer-events-none absolute inset-0" style={{ background: `radial-gradient(circle at 9% 18%, ${MINT}20, transparent 24%), radial-gradient(circle at 78% 105%, ${SIGNAL}18, transparent 38%)` }} />
         <div className="pointer-events-none absolute left-[-12rem] top-28 h-[28rem] w-[28rem] rounded-full border border-[#24202D]/[.055]" />
         <div className="pointer-events-none absolute -bottom-32 right-[38%] h-72 w-72 rounded-full border border-[#24202D]/[.055]" />
-        <Header onSignup={() => setSignupOpen(true)} />
+        <Header onSignup={() => setSignupOpen(true)} onLogin={() => setLoginOpen(true)} />
         <div className="relative mx-auto grid max-w-7xl items-center gap-12 px-5 pb-20 pt-14 sm:px-8 lg:grid-cols-[1.08fr_.92fr] lg:pb-28 lg:pt-20">
           <div className="max-w-2xl">
             <div className="inline-flex items-center gap-2 border-b border-[#24202D]/[.16] pb-2 text-xs font-bold text-[#6B625B]">
@@ -405,7 +413,7 @@ export default function LandingPage() {
               className="inline-flex items-center gap-2 rounded-xl px-6 py-3.5 text-sm font-black transition hover:-translate-y-0.5"
               style={{ background: SIGNAL, color: NAVY }}
             >
-              ابدأ الآن — مجاناً <ArrowLeft size={16} />
+              ابدأ الآن مجاناً <ArrowLeft size={16} />
             </button>
           </div>
         </div>
@@ -504,7 +512,7 @@ export default function LandingPage() {
           <div className="px-8 py-14 lg:px-14">
             <p className="text-sm font-black text-slate-400">لكل طالب هدف مختلف</p>
             <h2 className="mt-3 text-3xl font-black leading-tight sm:text-4xl" style={{ color: NAVY }}>
-              سواء كنت تستعد للقدرات، التحصيلي، أو IELTS — فيه مسار لك هنا.
+              سواء كنت تستعد للقدرات، التحصيلي، أو IELTS، يوجد مسار مناسب لك.
             </h2>
             <p className="mt-5 text-sm leading-7 text-slate-500">
               قدراتك ليست منصة أسئلة فقط. هي مساحة تتعلم فيها بطريقة مرتبة تناسب مستواك واشتراكك وهدفك.
