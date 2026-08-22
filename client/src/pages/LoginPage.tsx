@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { useLocation, useSearch } from "wouter";
-import { Eye, EyeOff, LogIn, Fingerprint, UserPlus, Shield, KeyRound, HelpCircle, Trophy, Zap, Mail, Phone, User, ExternalLink, Lock, Hash, RefreshCw, CheckCircle2, Smartphone } from "lucide-react";
+import { Eye, EyeOff, LogIn, Fingerprint, UserPlus, Shield, KeyRound, HelpCircle, Trophy, Zap, Mail, Phone, User, ExternalLink, Lock, Hash, RefreshCw, CheckCircle2, Smartphone, Building2, GraduationCap } from "lucide-react";
 import { startAuthentication } from '@simplewebauthn/browser';
 import { SiTelegram } from "react-icons/si";
 
@@ -372,7 +372,7 @@ export default function LoginPage() {
     localStorage.setItem('user', JSON.stringify(result));
     window.dispatchEvent(new CustomEvent('userLoggedIn', { detail: result }));
     toast({ title: 'مرحباً بعودتك!', description: `أهلاً ${result.fullName || result.name || result.username}` });
-    setLocation(returnPath);
+    setLocation(result.role === 'institution_admin' ? '/institution' : returnPath);
   }, [setLocation, returnPath, toast]);
 
   useEffect(() => {
@@ -558,7 +558,7 @@ export default function LoginPage() {
             <div className="mb-8">
               <p className="text-xs font-black tracking-[.14em] text-slate-400">تسجيل الدخول</p>
               <h2 className="mt-2 text-3xl font-black text-[#0D1B2A]">أهلًا بعودتك.</h2>
-              <p className="mt-2 text-sm leading-6 text-slate-500">أدخل بياناتك للعودة إلى لوحة تقدمك.</p>
+               <p className="mt-2 text-sm leading-6 text-slate-500">استخدم بيانات حسابك وسنوجّهك تلقائيًا إلى المساحة المناسبة.</p>
             </div>
 
             {screen === '2fa' && (
@@ -593,9 +593,31 @@ export default function LoginPage() {
                   </button>
                 </form>
                 <div className="mt-5 flex items-center gap-2 rounded-xl border border-slate-200 bg-slate-50 px-3.5 py-3 text-xs leading-5 text-slate-500"><Shield className="h-4 w-4 shrink-0 text-[#0D1B2A]" /> جلساتك وبيانات الدخول محمية، ويمكنك إدارة أجهزتك من حسابك.</div>
+                 <div className="mt-4 rounded-xl border border-[#0D1B2A]/10 bg-[#F8FAFB] p-4">
+                   <div className="flex items-center gap-2">
+                     <Shield className="h-4 w-4 text-[#0D1B2A]" />
+                     <p className="text-xs font-black text-[#0D1B2A]">دخول واحد لكل الحسابات</p>
+                   </div>
+                   <p className="mt-1 text-[11px] leading-5 text-slate-500">الطالب يتجه إلى لوحة تقدمه، المؤسسة إلى بوابتها، والأدمن إلى لوحة الإدارة.</p>
+                   {import.meta.env.DEV && (
+                     <div className="mt-3 grid gap-2 sm:grid-cols-3">
+                       {[
+                         ["الأدمن التجريبي", "admin-demo", "AdminDemo@2026", Shield],
+                         ["الطالب التجريبي", "student-demo", "StudentDemo@2026", GraduationCap],
+                         ["المؤسسة التجريبية", "institution-demo", "InstitutionDemo@2026", Building2],
+                       ].map(([label, identifier, password, Icon]) => (
+                         <div key={label as string} className="border border-slate-200 bg-white p-2.5">
+                           <div className="flex items-center gap-1.5 text-[10px] font-black text-[#0D1B2A]"><Icon className="h-3.5 w-3.5" />{label}</div>
+                           <p className="mt-1 font-mono text-[10px] text-slate-600">{identifier}</p>
+                           <p className="font-mono text-[10px] text-slate-600">{password}</p>
+                         </div>
+                       ))}
+                     </div>
+                   )}
+                 </div>
                 <div className="mt-7 border-t border-slate-100 pt-6 text-center">
                   <p className="text-sm text-slate-500">ليس لديك حساب؟ <button onClick={() => setLocation('/signup?type=student')} className="font-black text-[#0D1B2A]" data-testid="link-signup">ابدأ كطالب</button></p>
-                  <p className="mt-3 text-xs text-slate-400">المدرسون والمؤسسات ينضمون عبر رابط دعوة مرسل من الإدارة.</p>
+                   <p className="mt-3 text-xs text-slate-400">طلبات المؤسسات الفعلية تُراجع من الإدارة قبل التفعيل.</p>
                 </div>
               </>
             )}

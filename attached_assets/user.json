@@ -1,1 +1,47 @@
-[]
+[
+  {
+    "id": 900001,
+    "name": "مدير التجربة",
+    "fullName": "مدير التجربة",
+    "username": "admin-demo",
+    "email": "admin.demo@qodratak.sa",
+    "phone": "0500000001",
+    "password": "$2b$10$eLAimBBS7Sci0qlrmkT6uebsfRNu39V030/QRVpBuxkdDJ7lxKzwO",
+    "role": "admin",
+    "isDemo": true,
+    "subscription": { "type": "demo", "status": "active" },
+    "points": 0,
+    "level": 1
+  },
+  {
+    "id": 900002,
+    "name": "الطالب التجريبي",
+    "fullName": "الطالب التجريبي",
+    "username": "student-demo",
+    "email": "student.demo@qodratak.sa",
+    "phone": "0500000002",
+    "password": "$2b$10$t8lv0zWY1XYoZPMFq1CZauKl9jO8SHL3CMoYsAfW0sz4Vn2HxpPPy",
+    "role": "student",
+    "isDemo": true,
+    "subscription": { "type": "trial", "status": "active" },
+    "points": 320,
+    "level": 3,
+    "testsTaken": 4,
+    "averageScore": 76
+  },
+  {
+    "id": 900003,
+    "name": "مؤسسة قدراتك التجريبية",
+    "fullName": "مؤسسة قدراتك التجريبية",
+    "username": "institution-demo",
+    "email": "institution.demo@qodratak.sa",
+    "phone": "0500000003",
+    "password": "$2b$10$Rv5YCCrEJmPtUbWIIhRAsOA3QIC1QbFp/MoclLvOxMtn2KzkiOIu.",
+    "role": "institution_admin",
+    "isDemo": true,
+    "institution": { "name": "مؤسسة قدراتك التجريبية", "type": "training_center" },
+    "subscription": { "type": "institution", "status": "active" },
+    "points": 0,
+    "level": 1
+  }
+]

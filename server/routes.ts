@@ -126,6 +126,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Admin middleware - Revalidates admin on each request
   const requireAdmin = async (req: Request, res: Response, next: Function) => {
     try {
+      const sessionAdmin = (req.session as any).admin;
+      if (sessionAdmin?.isDemo && process.env.NODE_ENV !== 'production') {
+        (req as any).admin = sessionAdmin;
+        return next();
+      }
+
       if ((req.session as any).isAdmin && (req.session as any).adminId) {
         const admin = await mongoStorage.getAdminById((req.session as any).adminId);
         if (admin && admin.isActive !== false) {
@@ -1310,44 +1316,46 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const normalizedId = loginId.toLowerCase();
 
       // أولاً: تحقق من الأدمن (بالبريد أو اسم المستخدم)
-      try {
-        const { Admin } = await import('./mongodb/models');
-        const adminDoc = await Admin.findOne({
-          $or: [
-            { email: normalizedId },
-            { username: normalizedId },
-            { username: loginId }
-          ]
-        });
-        if (adminDoc) {
-          const adminPasswordValid = await bcrypt.compare(password, adminDoc.password);
-          if (!adminPasswordValid) {
-            return res.status(401).json({ message: "بيانات تسجيل الدخول غير صحيحة" });
-          }
-          if (!adminDoc.isActive) {
-            return res.status(403).json({ message: "هذا الحساب معطل" });
-          }
-          (req.session as any).isAdmin = true;
-          (req.session as any).adminId = String(adminDoc._id);
-          (req.session as any).admin = {
-            adminId: String(adminDoc._id),
-            username: adminDoc.username,
-            fullName: adminDoc.fullName,
-            role: adminDoc.role,
-            permissions: adminDoc.permissions || ['all'],
-          };
-          return new Promise<void>((resolve) => {
-            req.session.save((err) => {
-              if (err) {
-                res.status(500).json({ message: 'خطأ في حفظ الجلسة' });
-              } else {
-                res.json({ isAdmin: true, admin: { username: adminDoc.username, fullName: adminDoc.fullName, role: adminDoc.role } });
-              }
-              resolve();
-            });
+      if (mongoose.connection.readyState === 1) {
+        try {
+          const { Admin } = await import('./mongodb/models');
+          const adminDoc = await Admin.findOne({
+            $or: [
+              { email: normalizedId },
+              { username: normalizedId },
+              { username: loginId }
+            ]
           });
-        }
-      } catch (_) {}
+          if (adminDoc) {
+            const adminPasswordValid = await bcrypt.compare(password, adminDoc.password);
+            if (!adminPasswordValid) {
+              return res.status(401).json({ message: "بيانات تسجيل الدخول غير صحيحة" });
+            }
+            if (!adminDoc.isActive) {
+              return res.status(403).json({ message: "هذا الحساب معطل" });
+            }
+            (req.session as any).isAdmin = true;
+            (req.session as any).adminId = String(adminDoc._id);
+            (req.session as any).admin = {
+              adminId: String(adminDoc._id),
+              username: adminDoc.username,
+              fullName: adminDoc.fullName,
+              role: adminDoc.role,
+              permissions: adminDoc.permissions || ['all'],
+            };
+            return new Promise<void>((resolve) => {
+              req.session.save((err) => {
+                if (err) {
+                  res.status(500).json({ message: 'خطأ في حفظ الجلسة' });
+                } else {
+                  res.json({ isAdmin: true, admin: { username: adminDoc.username, fullName: adminDoc.fullName, role: adminDoc.role } });
+                }
+                resolve();
+              });
+            });
+          }
+        } catch (_) {}
+      }
 
       // قراءة ملف المستخدمين
       let users = [];
@@ -1369,7 +1377,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return emailMatch || usernameMatch || nameMatch || phoneMatch;
       });
 
-      if (!user) {
+      if (!user && mongoose.connection.readyState === 1) {
         // Fallback: check MongoDB for users registered via Telegram or other paths
         try {
           const { User: MongoUser } = await import('./mongodb/models');
@@ -1453,6 +1461,36 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       if (!isPasswordValid) {
         return res.status(401).json({ message: "البريد الإلكتروني أو كلمة المرور غير صحيحة" });
+      }
+
+      // Demo administrators are limited to local, non-production previews.
+      // They use the same login form as everyone else, but receive an admin session.
+      if (user.role === 'admin' && user.isDemo) {
+        if (process.env.NODE_ENV === 'production') {
+          return res.status(403).json({ message: "حساب الإدارة التجريبي غير متاح في بيئة الإنتاج" });
+        }
+
+        (req.session as any).admin = {
+          adminId: String(user.id),
+          username: user.username,
+          fullName: user.fullName || user.name,
+          role: 'demo_admin',
+          permissions: ['demo'],
+          isDemo: true,
+        };
+        (req.session as any).isAdmin = true;
+        (req.session as any).adminId = String(user.id);
+
+        return req.session.save((err) => {
+          if (err) {
+            console.error('Demo admin session save error:', err);
+            return res.status(500).json({ message: "خطأ في حفظ جلسة الإدارة" });
+          }
+          return res.json({
+            isAdmin: true,
+            admin: { username: user.username, fullName: user.fullName || user.name, role: 'demo_admin', isDemo: true },
+          });
+        });
       }
 
       // التحقق من حالة الاشتراك

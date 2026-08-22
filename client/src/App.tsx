@@ -164,6 +164,7 @@ import { SecuritySetupModal } from "@/components/SecuritySetupModal";
 import TeacherSystemPage from "@/pages/TeacherSystemPage";
 import SecuritySettingsPage from "@/pages/SecuritySettingsPage";
 import NotificationsPage from "@/pages/NotificationsPage";
+import InstitutionPortalPage from "@/pages/InstitutionPortalPage";
 
 function MainLayout({ children }: { children: React.ReactNode }) {
   const [location] = useLocation();
@@ -1038,6 +1039,9 @@ function Router({ splashDone }: { splashDone: boolean }) {
       </Route>
       <Route path="/account-type">
         {() => <AccountTypeSelection />}
+      </Route>
+      <Route path="/institution">
+        {() => <MainLayout><InstitutionPortalPage /></MainLayout>}
       </Route>
       <Route path="/signup">
         {() => <SignupPage />}
