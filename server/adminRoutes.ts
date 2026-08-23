@@ -4,6 +4,7 @@ import multer from 'multer';
 import path from 'path';
 import fs from 'fs';
 import { mongoStorage } from './mongodb/mongoStorage';
+import { storage } from './storage';
 import { Question, ChatMessage, Admin } from './mongodb/models';
 import { sendSubscriptionApprovalEmail } from './services/emailService';
 
@@ -34,6 +35,64 @@ function getDevelopmentDemoAdmin(username: string) {
   } catch {
     return null;
   }
+}
+
+async function getLocalDashboardData() {
+  let localUsers: any[] = [];
+
+  try {
+    localUsers = JSON.parse(fs.readFileSync('attached_assets/user.json', 'utf-8'));
+  } catch {
+    localUsers = [];
+  }
+
+  const learners = localUsers.filter(user => user?.role !== 'admin');
+  const activeSubscriptions = learners.filter(user =>
+    user?.subscription?.status === 'active' && user?.subscription?.type !== 'free'
+  );
+  const totalTests = learners.reduce((total, user) => total + Number(user?.testsTaken || 0), 0);
+  const scoredUsers = learners.filter(user => Number.isFinite(Number(user?.averageScore)));
+  const averageScore = scoredUsers.length
+    ? scoredUsers.reduce((total, user) => total + Number(user.averageScore || 0), 0) / scoredUsers.length
+    : 0;
+  const questions = await storage.getAllQuestions();
+  const verbalQuestions = questions.filter((question: any) =>
+    String(question.category || question.type || '').toLowerCase().includes('verbal')
+  );
+
+  return {
+    stats: {
+      users: {
+        totalUsers: learners.length,
+        activeToday: 0,
+        activeThisWeek: 0,
+        newUsersToday: 0,
+        newUsersThisWeek: 0,
+      },
+      subscriptions: {
+        totalSubscriptions: learners.length,
+        activeSubscriptions: activeSubscriptions.length,
+        pendingSubscriptions: 0,
+        expiredSubscriptions: 0,
+        cancelledSubscriptions: 0,
+        newSubscriptionsToday: 0,
+        newSubscriptionsThisWeek: 0,
+        revenueThisMonth: 0,
+      },
+      tests: {
+        totalTests,
+        testsToday: 0,
+        testsThisWeek: 0,
+        averageScore,
+        testsByType: {},
+      },
+    },
+    questionCount: {
+      verbal: verbalQuestions.length,
+      quantitative: Math.max(0, questions.length - verbalQuestions.length),
+      total: questions.length,
+    },
+  };
 }
 
 const receiptStorage = multer.diskStorage({
@@ -214,8 +273,12 @@ router.get('/session', requireAdminAuth, (req: Request, res: Response) => {
 
 router.get('/dashboard/stats', requireAdminAuth, async (req: Request, res: Response) => {
   try {
-    const stats = await mongoStorage.getDashboardStats();
-    const questionCount = await mongoStorage.getQuestionCount();
+    const { stats, questionCount } = process.env.MONGODB_URI
+      ? {
+          stats: await mongoStorage.getDashboardStats(),
+          questionCount: await mongoStorage.getQuestionCount(),
+        }
+      : await getLocalDashboardData();
 
     res.json({
       totalUsers: stats.users.totalUsers,

@@ -506,56 +506,56 @@ export default function AdminDashboard({ initialTab = 'overview' }: { initialTab
           </div>
         </div>
 
-        <div className="p-6">
+        <div className="p-4 md:p-6">
 
           {/* ─── OVERVIEW ─── */}
           {activeTab === 'overview' && (
             <div className="space-y-6">
               {statsLoading ? (
                 <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-                  {[...Array(8)].map((_, i) => <div key={i} className="h-28 rounded-2xl bg-emerald-900/30 animate-pulse" />)}
+                  {[...Array(8)].map((_, i) => <div key={i} className="h-28 animate-pulse rounded-2xl border border-[#24202D]/10 bg-[#FFFCF7]" />)}
                 </div>
               ) : stats ? (
                 <>
                   <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-                    <StatCard icon={Users} label="إجمالي الطلاب" value={stats.users.totalUsers} sub={`+${stats.users.newUsersToday} اليوم`} color="bg-blue-500/20" bg="bg-gradient-to-br from-blue-600/20 to-blue-800/20" />
-                    <StatCard icon={Activity} label="نشطون اليوم" value={stats.users.activeToday} sub={`${stats.users.activeThisWeek} هذا الأسبوع`} color="bg-emerald-500/20" bg="bg-gradient-to-br from-emerald-600/20 to-emerald-800/20" />
-                    <StatCard icon={CreditCard} label="اشتراكات نشطة" value={stats.subscriptions.activeSubscriptions} sub={pendingSubCount > 0 ? `${pendingSubCount} بانتظار المراجعة` : undefined} color="bg-green-500/20" bg="bg-gradient-to-br from-green-600/20 to-green-800/20" />
-                    <StatCard icon={DollarSign} label="إيرادات الشهر" value={`${stats.subscriptions.revenueThisMonth.toLocaleString()} ر.س`} sub={`+${stats.subscriptions.newSubscriptionsThisWeek} اشتراك هذا الأسبوع`} color="bg-yellow-500/20" bg="bg-gradient-to-br from-yellow-600/20 to-yellow-800/20" />
+                    <StatCard icon={Users} label="إجمالي الطلاب" value={stats.users.totalUsers} sub={`+${stats.users.newUsersToday} اليوم`} color="bg-[#DDE7F7]" bg="" />
+                    <StatCard icon={Activity} label="نشطون اليوم" value={stats.users.activeToday} sub={`${stats.users.activeThisWeek} هذا الأسبوع`} color="bg-[#F4AA85]/20" bg="" />
+                    <StatCard icon={CreditCard} label="اشتراكات نشطة" value={stats.subscriptions.activeSubscriptions} sub={pendingSubCount > 0 ? `${pendingSubCount} بانتظار المراجعة` : undefined} color="bg-[#EAE4F7]" bg="" />
+                    <StatCard icon={DollarSign} label="إيرادات الشهر" value={`${stats.subscriptions.revenueThisMonth.toLocaleString()} ر.س`} sub={`+${stats.subscriptions.newSubscriptionsThisWeek} اشتراك هذا الأسبوع`} color="bg-[#F7E8C7]" bg="" />
                   </div>
                   <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-                    <StatCard icon={FileText} label="إجمالي الاختبارات" value={stats.tests.totalTests} sub={`${stats.tests.testsToday} اليوم`} color="bg-orange-500/20" bg="bg-gradient-to-br from-orange-600/20 to-orange-800/20" />
-                    <StatCard icon={Star} label="متوسط الدرجات" value={`${stats.tests.averageScore.toFixed(1)}%`} sub="عبر جميع الاختبارات" color="bg-amber-500/20" bg="bg-gradient-to-br from-amber-600/20 to-amber-800/20" />
-                    <StatCard icon={TrendingUp} label="اشتراكات جديدة" value={stats.subscriptions.newSubscriptionsToday} sub="اليوم" color="bg-cyan-500/20" bg="bg-gradient-to-br from-cyan-600/20 to-cyan-800/20" />
-                    <StatCard icon={Trophy} label="متوقفون" value={stats.subscriptions.expiredSubscriptions} sub="اشتراك منتهي" color="bg-rose-500/20" bg="bg-gradient-to-br from-rose-600/20 to-rose-800/20" />
+                    <StatCard icon={FileText} label="إجمالي الاختبارات" value={stats.tests.totalTests} sub={`${stats.tests.testsToday} اليوم`} color="bg-[#FBE7D9]" bg="" />
+                    <StatCard icon={Star} label="متوسط الدرجات" value={`${stats.tests.averageScore.toFixed(1)}%`} sub="عبر جميع الاختبارات" color="bg-[#F7E8C7]" bg="" />
+                    <StatCard icon={TrendingUp} label="اشتراكات جديدة" value={stats.subscriptions.newSubscriptionsToday} sub="اليوم" color="bg-[#DDE7F7]" bg="" />
+                    <StatCard icon={Trophy} label="متوقفون" value={stats.subscriptions.expiredSubscriptions} sub="اشتراك منتهي" color="bg-[#EAE4F7]" bg="" />
                   </div>
 
                   {/* Quick actions */}
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <div className="bg-emerald-900/20 rounded-2xl p-5 border border-emerald-900/40">
-                      <h3 className="text-white font-semibold mb-4 flex items-center gap-2"><Zap className="w-4 h-4 text-yellow-400" /> إجراءات سريعة</h3>
+                    <div className="rounded-2xl border border-[#24202D]/10 bg-[#FFFCF7] p-5 shadow-[0_6px_20px_rgba(36,32,45,0.04)]">
+                      <h3 className="mb-4 flex items-center gap-2 font-semibold text-[#24202D]"><Zap className="h-4 w-4 text-[#B65D36]" /> إجراءات سريعة</h3>
                       <div className="space-y-2">
-                        <button onClick={() => setActiveTab('subscriptions')} className="w-full text-right text-sm text-slate-300 hover:text-white py-2 px-3 rounded-lg hover:bg-slate-800 flex items-center gap-2 transition-colors">
-                          <CreditCard className="w-4 h-4 text-green-400" />
+                        <button onClick={() => setActiveTab('subscriptions')} className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-right text-sm text-[#625D69] transition-colors hover:bg-[#F7F4EE] hover:text-[#24202D]">
+                          <CreditCard className="h-4 w-4 text-[#7964C1]" />
                           مراجعة الاشتراكات المعلقة
                           {pendingSubCount > 0 && <Badge className="mr-auto bg-red-500 text-white border-0 text-xs">{pendingSubCount}</Badge>}
                         </button>
-                        <button onClick={() => setActiveTab('email')} className="w-full text-right text-sm text-slate-300 hover:text-white py-2 px-3 rounded-lg hover:bg-slate-800 flex items-center gap-2 transition-colors">
-                          <Mail className="w-4 h-4 text-yellow-400" />
+                        <button onClick={() => setActiveTab('email')} className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-right text-sm text-[#625D69] transition-colors hover:bg-[#F7F4EE] hover:text-[#24202D]">
+                          <Mail className="h-4 w-4 text-[#B65D36]" />
                           إرسال بريد جماعي
                         </button>
-                        <button onClick={() => setActiveTab('questions')} className="w-full text-right text-sm text-slate-300 hover:text-white py-2 px-3 rounded-lg hover:bg-slate-800 flex items-center gap-2 transition-colors">
-                          <BookOpen className="w-4 h-4 text-amber-400" />
+                        <button onClick={() => setActiveTab('questions')} className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-right text-sm text-[#625D69] transition-colors hover:bg-[#F7F4EE] hover:text-[#24202D]">
+                          <BookOpen className="h-4 w-4 text-[#7964C1]" />
                           إدارة بنك الأسئلة
                         </button>
-                        <button onClick={() => setActiveTab('exams')} className="w-full text-right text-sm text-slate-300 hover:text-white py-2 px-3 rounded-lg hover:bg-slate-800 flex items-center gap-2 transition-colors">
-                          <CalendarCheck className="w-4 h-4 text-cyan-400" />
+                        <button onClick={() => setActiveTab('exams')} className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-right text-sm text-[#625D69] transition-colors hover:bg-[#F7F4EE] hover:text-[#24202D]">
+                          <CalendarCheck className="h-4 w-4 text-[#B65D36]" />
                           عرض الاختبارات المجدولة
                         </button>
                       </div>
                     </div>
-                    <div className="bg-emerald-900/20 rounded-2xl p-5 border border-emerald-900/40">
-                      <h3 className="text-white font-semibold mb-4 flex items-center gap-2"><BarChart3 className="w-4 h-4 text-blue-400" /> حالة النظام</h3>
+                    <div className="rounded-2xl border border-[#24202D]/10 bg-[#FFFCF7] p-5 shadow-[0_6px_20px_rgba(36,32,45,0.04)]">
+                      <h3 className="mb-4 flex items-center gap-2 font-semibold text-[#24202D]"><BarChart3 className="h-4 w-4 text-[#7964C1]" /> حالة النظام</h3>
                       <div className="space-y-3">
                         {[
                           { label: 'قاعدة البيانات', status: 'متصلة', ok: true },
@@ -564,29 +564,29 @@ export default function AdminDashboard({ initialTab = 'overview' }: { initialTab
                           { label: 'WebSocket', status: 'نشط', ok: true },
                         ].map(s => (
                           <div key={s.label} className="flex items-center justify-between">
-                            <span className="text-slate-400 text-sm">{s.label}</span>
-                            <span className={`text-xs px-2 py-0.5 rounded-full ${s.ok ? 'bg-emerald-500/20 text-emerald-400' : 'bg-red-500/20 text-red-400'}`}>{s.status}</span>
+                            <span className="text-sm text-[#625D69]">{s.label}</span>
+                            <span className={`rounded-full px-2 py-0.5 text-xs ${s.ok ? 'bg-[#F4AA85]/20 text-[#8D482C]' : 'bg-red-500/10 text-red-600'}`}>{s.status}</span>
                           </div>
                         ))}
                       </div>
                     </div>
-                    <div className="bg-emerald-900/20 rounded-2xl p-5 border border-emerald-900/40">
-                      <h3 className="text-white font-semibold mb-4 flex items-center gap-2"><Bell className="w-4 h-4 text-orange-400" /> تنبيهات</h3>
+                    <div className="rounded-2xl border border-[#24202D]/10 bg-[#FFFCF7] p-5 shadow-[0_6px_20px_rgba(36,32,45,0.04)]">
+                      <h3 className="mb-4 flex items-center gap-2 font-semibold text-[#24202D]"><Bell className="h-4 w-4 text-[#B65D36]" /> تنبيهات</h3>
                       <div className="space-y-2">
                         {pendingSubCount > 0 && (
-                          <div className="flex items-center gap-2 p-2 rounded-lg bg-yellow-500/10 text-yellow-400 text-sm">
+                          <div className="flex items-center gap-2 rounded-lg bg-[#F7E8C7]/60 p-2 text-sm text-[#7D5A18]">
                             <AlertCircle className="w-4 h-4 flex-shrink-0" />
                             {pendingSubCount} اشتراك بانتظار المراجعة
                           </div>
                         )}
                         {pendingInstCount > 0 && (
-                          <div className="flex items-center gap-2 p-2 rounded-lg bg-orange-500/10 text-orange-400 text-sm">
+                          <div className="flex items-center gap-2 rounded-lg bg-[#FBE7D9] p-2 text-sm text-[#8D482C]">
                             <Building2 className="w-4 h-4 flex-shrink-0" />
                             {pendingInstCount} طلب مؤسسة جديد
                           </div>
                         )}
                         {pendingSubCount === 0 && pendingInstCount === 0 && (
-                          <div className="flex items-center gap-2 p-2 rounded-lg bg-emerald-500/10 text-emerald-400 text-sm">
+                          <div className="flex items-center gap-2 rounded-lg bg-[#F7F4EE] p-2 text-sm text-[#625D69]">
                             <CheckCircle className="w-4 h-4 flex-shrink-0" />
                             لا توجد تنبيهات معلقة
                           </div>
