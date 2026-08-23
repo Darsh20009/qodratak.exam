@@ -1,11 +1,13 @@
 import { FormEvent, useEffect, useState } from 'react';
 import { useLocation } from 'wouter';
+import { useQueryClient } from '@tanstack/react-query';
 import { ArrowRight, KeyRound, Loader2, LockKeyhole, ShieldCheck } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 
 export default function AdminLogin() {
   const [, setLocation] = useLocation();
   const { toast } = useToast();
+  const queryClient = useQueryClient();
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -57,6 +59,8 @@ export default function AdminLogin() {
         throw new Error(data.error || 'تعذر تسجيل الدخول');
       }
 
+      queryClient.removeQueries({ queryKey: ['/api/admin/session'] });
+      queryClient.removeQueries({ queryKey: ['/api/admin/dashboard/stats'] });
       toast({ title: 'مرحبًا بك في الإدارة', description: 'تم التحقق من جلستك بنجاح.' });
       setLocation('/admin/dashboard');
     } catch (error: any) {
@@ -123,46 +127,61 @@ export default function AdminLogin() {
                 جارٍ التحقق من الجلسة...
               </div>
             ) : (
-              <form onSubmit={handleSubmit} className="space-y-5">
-                <label className="block">
-                  <span className="mb-2 block text-sm font-medium">اسم المستخدم</span>
-                  <div className="relative">
-                    <KeyRound className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#8E8993]" />
-                    <input
-                      type="text"
-                      value={username}
-                      onChange={event => setUsername(event.target.value)}
-                      autoComplete="username"
-                      placeholder="اسم المستخدم"
-                      className="h-12 w-full rounded-xl border border-[#24202D]/15 bg-[#FFFCF7] pr-10 pl-4 text-sm outline-none transition-colors placeholder:text-[#9E99A2] focus:border-[#B65D36] focus:ring-2 focus:ring-[#F4AA85]/30"
-                    />
-                  </div>
-                </label>
+              <>
+                {import.meta.env.DEV && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setUsername('admin-demo');
+                      setPassword('AdminDemo@2026');
+                    }}
+                    className="mb-5 w-full rounded-xl border border-[#B65D36]/20 bg-[#F4AA85]/10 px-3 py-2.5 text-sm font-medium text-[#8D482C] transition-colors hover:bg-[#F4AA85]/20"
+                  >
+                    تعبئة حساب الإدارة التجريبي
+                  </button>
+                )}
 
-                <label className="block">
-                  <span className="mb-2 block text-sm font-medium">كلمة المرور</span>
-                  <div className="relative">
-                    <LockKeyhole className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#8E8993]" />
-                    <input
-                      type="password"
-                      value={password}
-                      onChange={event => setPassword(event.target.value)}
-                      autoComplete="current-password"
-                      placeholder="كلمة المرور"
-                      className="h-12 w-full rounded-xl border border-[#24202D]/15 bg-[#FFFCF7] pr-10 pl-4 text-sm outline-none transition-colors placeholder:text-[#9E99A2] focus:border-[#B65D36] focus:ring-2 focus:ring-[#F4AA85]/30"
-                    />
-                  </div>
-                </label>
+                <form onSubmit={handleSubmit} className="space-y-5">
+                  <label className="block">
+                    <span className="mb-2 block text-sm font-medium">اسم المستخدم أو البريد</span>
+                    <div className="relative">
+                      <KeyRound className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#8E8993]" />
+                      <input
+                        type="text"
+                        value={username}
+                        onChange={event => setUsername(event.target.value)}
+                        autoComplete="username"
+                        placeholder="اسم المستخدم أو البريد"
+                        className="h-12 w-full rounded-xl border border-[#24202D]/15 bg-[#FFFCF7] pr-10 pl-4 text-sm outline-none transition-colors placeholder:text-[#9E99A2] focus:border-[#B65D36] focus:ring-2 focus:ring-[#F4AA85]/30"
+                      />
+                    </div>
+                  </label>
 
-                <button
-                  type="submit"
-                  disabled={isLoading}
-                  className="flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-[#24202D] text-sm font-bold text-[#FFFCF7] transition-colors hover:bg-[#393343] disabled:cursor-not-allowed disabled:opacity-60"
-                >
-                  {isLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <ShieldCheck className="h-4 w-4" />}
-                  {isLoading ? 'جارٍ تسجيل الدخول...' : 'الدخول إلى لوحة الإدارة'}
-                </button>
-              </form>
+                  <label className="block">
+                    <span className="mb-2 block text-sm font-medium">كلمة المرور</span>
+                    <div className="relative">
+                      <LockKeyhole className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#8E8993]" />
+                      <input
+                        type="password"
+                        value={password}
+                        onChange={event => setPassword(event.target.value)}
+                        autoComplete="current-password"
+                        placeholder="كلمة المرور"
+                        className="h-12 w-full rounded-xl border border-[#24202D]/15 bg-[#FFFCF7] pr-10 pl-4 text-sm outline-none transition-colors placeholder:text-[#9E99A2] focus:border-[#B65D36] focus:ring-2 focus:ring-[#F4AA85]/30"
+                      />
+                    </div>
+                  </label>
+
+                  <button
+                    type="submit"
+                    disabled={isLoading}
+                    className="flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-[#24202D] text-sm font-bold text-[#FFFCF7] transition-colors hover:bg-[#393343] disabled:cursor-not-allowed disabled:opacity-60"
+                  >
+                    {isLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <ShieldCheck className="h-4 w-4" />}
+                    {isLoading ? 'جارٍ تسجيل الدخول...' : 'الدخول إلى لوحة الإدارة'}
+                  </button>
+                </form>
+              </>
             )}
           </section>
         </div>

@@ -24,7 +24,10 @@ function getDevelopmentDemoAdmin(username: string) {
     const user = users.find((candidate: any) =>
       candidate?.isDemo &&
       candidate?.role === 'admin' &&
-      candidate?.username?.trim().toLowerCase() === normalizedUsername
+      (
+        candidate?.username?.trim().toLowerCase() === normalizedUsername ||
+        candidate?.email?.trim().toLowerCase() === normalizedUsername
+      )
     );
 
     return user || null;
