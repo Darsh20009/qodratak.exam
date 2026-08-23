@@ -209,6 +209,13 @@ router.post('/login', async (req: Request, res: Response) => {
       });
     }
 
+    if (!process.env.MONGODB_URI) {
+      return res.status(503).json({
+        error: 'تسجيل الأدمن الحقيقي غير متاح حاليًا لأن قاعدة البيانات غير متصلة',
+        code: 'ADMIN_DATABASE_NOT_CONFIGURED',
+      });
+    }
+
     const admin = await mongoStorage.getAdminByUsername(username);
 
     if (!admin) {
