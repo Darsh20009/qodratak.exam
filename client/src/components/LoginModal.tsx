@@ -3,6 +3,7 @@ import { useLocation } from "wouter";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { Eye, EyeOff, KeyRound, LogIn, Mail, Shield, User, X, Building2, GraduationCap } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { setAdminAccessToken } from "@/lib/adminSession";
 
 const NAVY = "#171723";
 const SIGNAL = "#FF8A70";
@@ -63,6 +64,7 @@ export function LoginModal({ open, onClose, onSwitchToSignup }: LoginModalProps)
       }
 
       if (result.isAdmin) {
+        setAdminAccessToken(result.adminAccessToken);
         const sessionResponse = await fetch('/api/admin/session', {
           credentials: 'include',
           cache: 'no-store',

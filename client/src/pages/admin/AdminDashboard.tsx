@@ -12,6 +12,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { useToast } from '@/hooks/use-toast';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { apiRequest } from '@/lib/queryClient';
+import { clearAdminAccessToken } from '@/lib/adminSession';
 import {
   Users, CreditCard, FileText, Activity, TrendingUp,
   Clock, CheckCircle, XCircle, Search, LogOut, Download,
@@ -376,7 +377,11 @@ export default function AdminDashboard({ initialTab = 'overview' }: { initialTab
     onError: () => toast({ title: 'فشل الإرسال', variant: 'destructive' }),
   });
 
-  const handleLogout = async () => { await fetch('/api/admin/logout', { method: 'POST', credentials: 'include' }); setLocation('/admin'); };
+  const handleLogout = async () => {
+    await fetch('/api/admin/logout', { method: 'POST', credentials: 'include' });
+    clearAdminAccessToken();
+    setLocation('/admin');
+  };
 
   useEffect(() => {
     if (!sessionLoading && !(session as any)?.authenticated) {

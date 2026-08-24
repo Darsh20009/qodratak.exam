@@ -2,6 +2,7 @@ import React from 'react';
 import { Switch, Route, Link, useLocation } from "wouter";
 import { RotateDevicePrompt } from "@/components/RotateDevicePrompt";
 import { queryClient } from "./lib/queryClient";
+import { installAdminFetchBridge } from "./lib/adminSession";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -157,6 +158,8 @@ import TeacherSystemPage from "@/pages/TeacherSystemPage";
 import SecuritySettingsPage from "@/pages/SecuritySettingsPage";
 import NotificationsPage from "@/pages/NotificationsPage";
 import InstitutionPortalPage from "@/pages/InstitutionPortalPage";
+
+installAdminFetchBridge();
 
 // These routes contain reporting and document-generation libraries. Loading them
 // only when opened keeps the first visit, especially on mobile data, lightweight.

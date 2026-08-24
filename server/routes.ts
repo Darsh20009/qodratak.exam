@@ -16,6 +16,7 @@ import bcrypt from 'bcryptjs';
 import { exec } from 'child_process';
 import { sendTestEmail, sendOTPEmail, sendWelcomeEmail, sendSubscriptionApprovalEmail, sendExamResults, sendPasswordResetEmail, notifyAdminNewSubscription, notifyAdminReceiptUploaded, notifyAdminInstitutionRequest, sendInvitationEmail } from './services/emailService';
 import crypto from 'crypto';
+import { createAdminAccessToken } from './adminSessionToken';
 
 // RBAC System - Sprint 0
 import { 
@@ -1340,19 +1341,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
             }
             (req.session as any).isAdmin = true;
             (req.session as any).adminId = String(adminDoc._id);
-            (req.session as any).admin = {
+            const adminIdentity = {
               adminId: String(adminDoc._id),
               username: adminDoc.username,
               fullName: adminDoc.fullName,
               role: adminDoc.role,
               permissions: adminDoc.permissions || ['all'],
             };
+            (req.session as any).admin = adminIdentity;
             return new Promise<void>((resolve) => {
               req.session.save((err) => {
                 if (err) {
                   res.status(500).json({ message: 'خطأ في حفظ الجلسة' });
                 } else {
-                  res.json({ isAdmin: true, admin: { username: adminDoc.username, fullName: adminDoc.fullName, role: adminDoc.role } });
+                  res.json({
+                    isAdmin: true,
+                    admin: { username: adminDoc.username, fullName: adminDoc.fullName, role: adminDoc.role },
+                    adminAccessToken: createAdminAccessToken(adminIdentity),
+                  });
                 }
                 resolve();
               });
@@ -1474,7 +1480,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           return res.status(403).json({ message: "حساب الإدارة التجريبي غير متاح في بيئة الإنتاج" });
         }
 
-        (req.session as any).admin = {
+        const adminIdentity = {
           adminId: String(user.id),
           username: user.username,
           fullName: user.fullName || user.name,
@@ -1482,6 +1488,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           permissions: ['demo'],
           isDemo: true,
         };
+        (req.session as any).admin = adminIdentity;
         (req.session as any).isAdmin = true;
         (req.session as any).adminId = String(user.id);
 
@@ -1493,6 +1500,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           return res.json({
             isAdmin: true,
             admin: { username: user.username, fullName: user.fullName || user.name, role: 'demo_admin', isDemo: true },
+            adminAccessToken: createAdminAccessToken(adminIdentity),
           });
         });
       }

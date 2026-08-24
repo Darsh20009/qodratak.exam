@@ -3,6 +3,7 @@ import { useLocation } from 'wouter';
 import { useQueryClient } from '@tanstack/react-query';
 import { ArrowRight, KeyRound, Loader2, LockKeyhole, ShieldCheck } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { setAdminAccessToken } from '@/lib/adminSession';
 
 export default function AdminLogin() {
   const [, setLocation] = useLocation();
@@ -59,6 +60,7 @@ export default function AdminLogin() {
         throw new Error(data.error || 'تعذر تسجيل الدخول');
       }
 
+      setAdminAccessToken(data.adminAccessToken);
       const sessionResponse = await fetch('/api/admin/session', {
         credentials: 'include',
         cache: 'no-store',

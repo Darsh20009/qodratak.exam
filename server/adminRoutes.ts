@@ -7,6 +7,7 @@ import { mongoStorage } from './mongodb/mongoStorage';
 import { storage } from './storage';
 import { Question, ChatMessage, Admin } from './mongodb/models';
 import { sendSubscriptionApprovalEmail } from './services/emailService';
+import { createAdminAccessToken, verifyAdminAccessToken } from './adminSessionToken';
 
 const router = Router();
 
@@ -140,6 +141,33 @@ const uploadQuestionImage = multer({
 const requireAdminAuth = async (req: Request, res: Response, next: NextFunction) => {
   const adminSession = (req.session as any)?.admin;
   const isAdminByFlag = (req.session as any)?.isAdmin && (req.session as any)?.adminId;
+
+  if (!adminSession && !isAdminByFlag) {
+    const tokenAdmin = verifyAdminAccessToken(req);
+    if (tokenAdmin?.isDemo) {
+      (req.session as any).admin = tokenAdmin;
+      return next();
+    }
+
+    if (tokenAdmin) {
+      try {
+        const admin = await mongoStorage.getAdminById(tokenAdmin.adminId);
+        if (admin && admin.isActive !== false) {
+          (req.session as any).admin = {
+            adminId: String(admin._id),
+            username: admin.username,
+            fullName: admin.fullName,
+            role: admin.role,
+            permissions: admin.permissions || ['all'],
+          };
+          return next();
+        }
+      } catch {
+        // The standard authorization response below is intentionally generic.
+      }
+    }
+  }
+
   if (!adminSession && !isAdminByFlag) {
     return res.status(401).json({ error: 'يجب تسجيل الدخول كمدير' });
   }
@@ -179,7 +207,7 @@ router.post('/login', async (req: Request, res: Response) => {
       : false;
 
     if (demoAdmin && demoPasswordValid) {
-      (req.session as any).admin = {
+      const adminIdentity = {
         adminId: String(demoAdmin.id),
         username: demoAdmin.username,
         fullName: demoAdmin.fullName || demoAdmin.name,
@@ -187,6 +215,7 @@ router.post('/login', async (req: Request, res: Response) => {
         permissions: ['all'],
         isDemo: true,
       };
+      (req.session as any).admin = adminIdentity;
       (req.session as any).isAdmin = true;
       (req.session as any).adminId = String(demoAdmin.id);
 
@@ -205,6 +234,7 @@ router.post('/login', async (req: Request, res: Response) => {
             role: 'system_admin',
             isDemo: true,
           },
+          adminAccessToken: createAdminAccessToken(adminIdentity),
         });
       });
     }
@@ -233,13 +263,14 @@ router.post('/login', async (req: Request, res: Response) => {
 
     await mongoStorage.updateAdminLogin(String(admin._id));
 
-    (req.session as any).admin = {
+    const adminIdentity = {
       adminId: String(admin._id),
       username: admin.username,
       fullName: admin.fullName,
       role: admin.role,
       permissions: admin.permissions || ['all'],
     };
+    (req.session as any).admin = adminIdentity;
     (req.session as any).isAdmin = true;
     (req.session as any).adminId = String(admin._id);
 
@@ -255,7 +286,8 @@ router.post('/login', async (req: Request, res: Response) => {
           username: admin.username,
           fullName: admin.fullName,
           role: admin.role,
-        }
+        },
+        adminAccessToken: createAdminAccessToken(adminIdentity),
       });
     });
   } catch (error) {

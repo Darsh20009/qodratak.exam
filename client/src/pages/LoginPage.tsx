@@ -4,6 +4,7 @@ import { useLocation, useSearch } from "wouter";
 import { Eye, EyeOff, LogIn, Fingerprint, UserPlus, Shield, KeyRound, HelpCircle, Trophy, Zap, Mail, Phone, User, ExternalLink, Lock, Hash, RefreshCw, CheckCircle2, Smartphone, Building2, GraduationCap } from "lucide-react";
 import { startAuthentication } from '@simplewebauthn/browser';
 import { SiTelegram } from "react-icons/si";
+import { setAdminAccessToken } from "@/lib/adminSession";
 
 // ──────────────────────────────────────────
 // 2FA Verification Screen
@@ -443,6 +444,7 @@ export default function LoginPage() {
       const result = await response.json();
       if (response.ok) {
         if (result.isAdmin) {
+          setAdminAccessToken(result.adminAccessToken);
           const sessionResponse = await fetch('/api/admin/session', {
             credentials: 'include',
             cache: 'no-store',
