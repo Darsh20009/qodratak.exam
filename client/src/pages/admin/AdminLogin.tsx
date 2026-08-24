@@ -59,10 +59,19 @@ export default function AdminLogin() {
         throw new Error(data.error || 'تعذر تسجيل الدخول');
       }
 
+      const sessionResponse = await fetch('/api/admin/session', {
+        credentials: 'include',
+        cache: 'no-store',
+      });
+      const sessionData = await sessionResponse.json().catch(() => null);
+
+      if (!sessionResponse.ok || !sessionData?.authenticated) {
+        throw new Error('تم التحقق من بيانات الدخول، لكن تعذر حفظ جلسة الإدارة. أعد فتح المعاينة ثم حاول مرة أخرى.');
+      }
+
       queryClient.removeQueries({ queryKey: ['/api/admin/session'] });
       queryClient.removeQueries({ queryKey: ['/api/admin/dashboard/stats'] });
-      toast({ title: 'مرحبًا بك في الإدارة', description: 'تم التحقق من جلستك بنجاح.' });
-      setLocation('/admin/dashboard');
+      window.location.replace('/admin/dashboard');
     } catch (error: any) {
       toast({
         title: 'تعذر تسجيل الدخول',

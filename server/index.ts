@@ -102,12 +102,13 @@ const requiresCrossSiteCookie = process.env.NODE_ENV === 'production' || isEmbed
 
 app.use(session({
   ...(sessionStore ? { store: sessionStore } : {}),
+  name: requiresCrossSiteCookie ? '__Host-qodratak.sid' : 'qodratak.sid',
   secret: process.env.SESSION_SECRET || 'qudratak-session-secret-2030',
   resave: false,
   saveUninitialized: false,
   proxy: true,
   cookie: { 
-    secure: process.env.NODE_ENV === 'production' ? true : 'auto',
+    secure: requiresCrossSiteCookie,
     maxAge: 30 * 24 * 60 * 60 * 1000,
     httpOnly: true,
     sameSite: requiresCrossSiteCookie ? 'none' : 'lax',
