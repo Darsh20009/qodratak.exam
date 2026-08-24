@@ -1,5 +1,6 @@
-# Adjust NODE_VERSION to meet Vite requirements (20.19+ or 22.12+)
-ARG NODE_VERSION=22.12.0
+# Vite 7 requires Node 20.19+; Node 20 LTS avoids the npm Docker crash
+# observed with the Node 22 image on the deployment builder.
+ARG NODE_VERSION=20.19.5
 FROM node:${NODE_VERSION}-slim AS base
 
 LABEL fly_launch_runtime="Node.js"
@@ -18,13 +19,10 @@ FROM base AS build
 RUN apt-get update -qq && \
     apt-get install --no-install-recommends -y build-essential node-gyp pkg-config python-is-python3
 
-# npm 10.9.0 can terminate unexpectedly during large Docker installs with
-# "Exit handler never called". Pin the patched npm release before ci so the
-# lockfile install stays deterministic and does not depend on the base image's
-# bundled npm patch level.
+# Keep the lockfile install deterministic. Node 20 LTS ships a stable npm
+# release for this Docker build environment.
 COPY package-lock.json package.json ./
-RUN npm install --global npm@10.9.2 --no-audit --no-fund && \
-    npm ci --include=dev --prefer-offline --no-audit --no-fund
+RUN npm ci --include=dev --prefer-offline --no-audit --no-fund
 
 # Copy application code
 COPY . .
