@@ -94,16 +94,24 @@ if (!sessionStore) {
   console.warn("MONGODB_URI is not set; using in-memory sessions for local development only.");
 }
 
+// Replit's preview is served over HTTPS inside an embedded frame. The session
+// cookie must be explicitly allowed in that context or the browser drops it
+// after a successful login request.
+const isEmbeddedReplitPreview = Boolean(process.env.REPLIT_DEV_DOMAIN || process.env.REPLIT_DOMAINS);
+const requiresCrossSiteCookie = process.env.NODE_ENV === 'production' || isEmbeddedReplitPreview;
+
 app.use(session({
   ...(sessionStore ? { store: sessionStore } : {}),
   secret: process.env.SESSION_SECRET || 'qudratak-session-secret-2030',
   resave: false,
   saveUninitialized: false,
+  proxy: true,
   cookie: { 
-    secure: process.env.NODE_ENV === 'production',
+    secure: process.env.NODE_ENV === 'production' ? true : 'auto',
     maxAge: 30 * 24 * 60 * 60 * 1000,
     httpOnly: true,
-    sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax'
+    sameSite: requiresCrossSiteCookie ? 'none' : 'lax',
+    partitioned: isEmbeddedReplitPreview,
   }
 }));
 
