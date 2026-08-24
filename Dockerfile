@@ -18,9 +18,13 @@ FROM base AS build
 RUN apt-get update -qq && \
     apt-get install --no-install-recommends -y build-essential node-gyp pkg-config python-is-python3
 
-# Install node modules with optimizations for large installs
+# npm 10.9.0 can terminate unexpectedly during large Docker installs with
+# "Exit handler never called". Pin the patched npm release before ci so the
+# lockfile install stays deterministic and does not depend on the base image's
+# bundled npm patch level.
 COPY package-lock.json package.json ./
-RUN npm ci --include=dev --prefer-offline --no-audit
+RUN npm install --global npm@10.9.2 --no-audit --no-fund && \
+    npm ci --include=dev --prefer-offline --no-audit --no-fund
 
 # Copy application code
 COPY . .
