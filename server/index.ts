@@ -100,6 +100,16 @@ if (!sessionStore) {
 const isEmbeddedReplitPreview = Boolean(process.env.REPLIT_DEV_DOMAIN || process.env.REPLIT_DOMAINS);
 const requiresCrossSiteCookie = process.env.NODE_ENV === 'production' || isEmbeddedReplitPreview;
 
+if (isEmbeddedReplitPreview) {
+  app.use((req, _res, next) => {
+    // The Replit preview terminates HTTPS before forwarding to the workflow.
+    // Some preview paths omit X-Forwarded-Proto, so express-session would
+    // otherwise refuse to set the required secure cookie.
+    req.headers['x-forwarded-proto'] = 'https';
+    next();
+  });
+}
+
 app.use(session({
   ...(sessionStore ? { store: sessionStore } : {}),
   name: requiresCrossSiteCookie ? '__Host-qodratak.sid' : 'qodratak.sid',

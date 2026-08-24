@@ -63,9 +63,18 @@ export function LoginModal({ open, onClose, onSwitchToSignup }: LoginModalProps)
       }
 
       if (result.isAdmin) {
-        toast({ title: "تم تسجيل الدخول", description: "سيتم توجيهك إلى لوحة الإدارة." });
+        const sessionResponse = await fetch('/api/admin/session', {
+          credentials: 'include',
+          cache: 'no-store',
+        });
+        const session = await sessionResponse.json().catch(() => null);
+
+        if (!sessionResponse.ok || !session?.authenticated) {
+          throw new Error("تعذر حفظ جلسة الإدارة. حدّث المعاينة ثم أعد المحاولة.");
+        }
+
         close();
-        setLocation("/admin/dashboard");
+        window.location.replace("/admin/dashboard");
         return;
       }
 

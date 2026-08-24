@@ -443,8 +443,17 @@ export default function LoginPage() {
       const result = await response.json();
       if (response.ok) {
         if (result.isAdmin) {
-          toast({ title: 'مرحباً أيها المدير!', description: `أهلاً ${result.admin?.fullName || 'مدير النظام'}` });
-          setLocation('/admin/dashboard');
+          const sessionResponse = await fetch('/api/admin/session', {
+            credentials: 'include',
+            cache: 'no-store',
+          });
+          const session = await sessionResponse.json().catch(() => null);
+
+          if (!sessionResponse.ok || !session?.authenticated) {
+            throw new Error('تعذر حفظ جلسة الإدارة. حدّث المعاينة ثم أعد المحاولة.');
+          }
+
+          window.location.replace('/admin/dashboard');
           return;
         }
         if (result.require2FA) {
