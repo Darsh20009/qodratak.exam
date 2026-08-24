@@ -149,7 +149,16 @@ export class MongoStorage {
 
   // Admin Operations
   async getAdminByUsername(username: string): Promise<IAdmin | null> {
-    return Admin.findOne({ username });
+    const normalizedUsername = username.trim();
+    const escapedUsername = normalizedUsername.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    const exactMatch = { $regex: `^${escapedUsername}$`, $options: 'i' };
+
+    return Admin.findOne({
+      $or: [
+        { username: exactMatch },
+        { email: exactMatch },
+      ],
+    });
   }
 
   async getAdminById(id: string): Promise<IAdmin | null> {
