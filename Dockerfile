@@ -25,7 +25,7 @@ RUN apt-get update -qq && \
 # Keep the lockfile install deterministic. Node 20 LTS ships a stable npm
 # release for this Docker build environment.
 COPY package-lock.json package.json ./
-RUN npm ci --include=dev --prefer-offline --no-audit --no-fund
+RUN npm ci --include=dev --no-audit --no-fund
 RUN test -x node_modules/.bin/vite
 
 # Copy application code
