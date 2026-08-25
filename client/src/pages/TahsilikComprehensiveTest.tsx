@@ -132,15 +132,6 @@ const TahsilikComprehensiveTest: React.FC = () => {
   ];
 
   const startComprehensiveTest = () => {
-    const testConfig = {
-      type: 'comprehensive',
-      mode: selectedMode,
-      totalQuestions: 110,
-      distribution: questionDistribution,
-      timeLimit: testModes.find(m => m.id === selectedMode)?.timeLimit || 135
-    };
-    
-    localStorage.setItem('comprehensiveTestConfig', JSON.stringify(testConfig));
     setLocation('/tahsilik/test-runner/comprehensive');
   };
 

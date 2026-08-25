@@ -8,6 +8,7 @@ import { storage } from './storage';
 import { Question, ChatMessage, Admin } from './mongodb/models';
 import { sendSubscriptionApprovalEmail } from './services/emailService';
 import { createAdminAccessToken, verifyAdminAccessToken } from './adminSessionToken';
+import { getPrivateQuestionImageOriginal, processQuestionImage } from './services/questionImageProcessor';
 
 const router = Router();
 
@@ -104,14 +105,6 @@ const receiptStorage = multer.diskStorage({
   }
 });
 
-const questionImageStorage = multer.diskStorage({
-  destination: (req, file, cb) => cb(null, questionImagesDir),
-  filename: (req, file, cb) => {
-    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-    cb(null, 'q-img-' + uniqueSuffix + path.extname(file.originalname));
-  }
-});
-
 const uploadReceipt = multer({
   storage: receiptStorage,
   limits: { fileSize: 5 * 1024 * 1024 },
@@ -126,14 +119,14 @@ const uploadReceipt = multer({
 });
 
 const uploadQuestionImage = multer({
-  storage: questionImageStorage,
+  storage: multer.memoryStorage(),
   limits: { fileSize: 5 * 1024 * 1024 },
   fileFilter: (req, file, cb) => {
-    const allowed = /jpeg|jpg|png|gif|webp/;
-    if (allowed.test(path.extname(file.originalname).toLowerCase())) {
+    const allowedMimeTypes = new Set(['image/jpeg', 'image/png', 'image/webp']);
+    if (allowedMimeTypes.has(file.mimetype)) {
       cb(null, true);
     } else {
-      cb(new Error('فقط ملفات الصور مسموح بها'));
+      cb(new Error('يُسمح بصور PNG وJPG وWebP فقط'));
     }
   }
 });
@@ -564,7 +557,7 @@ router.get('/questions/:id', requireAdminAuth, async (req: Request, res: Respons
 router.post('/questions', requireAdminAuth, async (req: Request, res: Response) => {
   try {
     const adminSession = (req.session as any).admin;
-    const { text, category, subcategory, options, correctOptionIndex, difficulty, explanation, imageUrl } = req.body;
+    const { text, category, subcategory, options, correctOptionIndex, difficulty, explanation, imageUrl, imageOriginalUrl, imageProcessing } = req.body;
 
     if (!text || !category || !options || correctOptionIndex === undefined) {
       return res.status(400).json({ error: 'البيانات الأساسية مطلوبة' });
@@ -583,6 +576,8 @@ router.post('/questions', requireAdminAuth, async (req: Request, res: Response) 
       difficulty: difficulty || 'intermediate',
       explanation: explanation || '',
       imageUrl: imageUrl || '',
+      imageOriginalUrl: imageOriginalUrl || undefined,
+      imageProcessing: imageProcessing || undefined,
       createdBy: adminSession.username,
       createdAt: new Date(),
     });
@@ -596,7 +591,7 @@ router.post('/questions', requireAdminAuth, async (req: Request, res: Response) 
 
 router.put('/questions/:id', requireAdminAuth, async (req: Request, res: Response) => {
   try {
-    const { text, category, subcategory, options, correctOptionIndex, difficulty, explanation, imageUrl } = req.body;
+    const { text, category, subcategory, options, correctOptionIndex, difficulty, explanation, imageUrl, imageOriginalUrl, imageProcessing } = req.body;
 
     const updated = await Question.findByIdAndUpdate(
       req.params.id,
@@ -609,6 +604,8 @@ router.put('/questions/:id', requireAdminAuth, async (req: Request, res: Respons
         ...(difficulty && { difficulty }),
         ...(explanation !== undefined && { explanation }),
         ...(imageUrl !== undefined && { imageUrl }),
+        ...(imageOriginalUrl !== undefined && { imageOriginalUrl }),
+        ...(imageProcessing !== undefined && { imageProcessing }),
         updatedAt: new Date(),
       },
       { new: true }
@@ -643,11 +640,16 @@ router.post('/questions/:id/image', requireAdminAuth, uploadQuestionImage.single
       return res.status(400).json({ error: 'لم يتم رفع أي صورة' });
     }
 
-    const imageUrl = `/uploads/question-images/${req.file.filename}`;
+    const processed = await processQuestionImage(req.file.buffer);
 
     const updated = await Question.findByIdAndUpdate(
       req.params.id,
-      { imageUrl, updatedAt: new Date() },
+      {
+        imageUrl: processed.imageUrl,
+        imageOriginalUrl: processed.originalUrl,
+        imageProcessing: processed.processing,
+        updatedAt: new Date(),
+      },
       { new: true }
     );
 
@@ -655,7 +657,7 @@ router.post('/questions/:id/image', requireAdminAuth, uploadQuestionImage.single
       return res.status(404).json({ error: 'السؤال غير موجود' });
     }
 
-    res.json({ success: true, imageUrl, question: updated });
+    res.json({ success: true, ...processed, question: updated });
   } catch (error) {
     console.error('Upload question image error:', error);
     res.status(500).json({ error: 'فشل في رفع الصورة' });
@@ -667,11 +669,18 @@ router.post('/questions/upload-image-standalone', requireAdminAuth, uploadQuesti
     if (!req.file) {
       return res.status(400).json({ error: 'لم يتم رفع أي صورة' });
     }
-    const imageUrl = `/uploads/question-images/${req.file.filename}`;
-    res.json({ success: true, imageUrl });
+    res.json({ success: true, ...(await processQuestionImage(req.file.buffer)) });
   } catch (error) {
     res.status(500).json({ error: 'فشل في رفع الصورة' });
   }
+});
+
+router.get('/question-images/original/:filename', requireAdminAuth, (req: Request, res: Response) => {
+  const originalPath = getPrivateQuestionImageOriginal(req.params.filename);
+  if (!originalPath || !fs.existsSync(originalPath)) {
+    return res.status(404).json({ error: 'الصورة الأصلية غير موجودة' });
+  }
+  return res.sendFile(path.resolve(originalPath));
 });
 
 router.post('/questions/seed-from-json', requireAdminAuth, async (req: Request, res: Response) => {
@@ -955,7 +964,19 @@ router.post('/broadcast-email', requireAdminAuth, async (req: Request, res: Resp
 router.post('/subscriptions/create-manual', requireAdminAuth, async (req: Request, res: Response) => {
   try {
     const { userId, type, durationDays, price, notes } = req.body;
-    if (!userId || !type || !durationDays) {
+    const subscriptionTypes = new Set(['free', 'Pro', 'Pro Life', 'Pro Life Plus']);
+    const parsedDurationDays = Number(durationDays);
+    const parsedPrice = Number(price ?? 0);
+    if (
+      typeof userId !== 'string' ||
+      typeof type !== 'string' ||
+      !subscriptionTypes.has(type) ||
+      !Number.isInteger(parsedDurationDays) ||
+      parsedDurationDays < 1 ||
+      parsedDurationDays > 3650 ||
+      !Number.isFinite(parsedPrice) ||
+      parsedPrice < 0
+    ) {
       return res.status(400).json({ error: 'userId ونوع الاشتراك والمدة مطلوبة' });
     }
     const { User, Subscription } = await import('./mongodb/models');
@@ -964,17 +985,17 @@ router.post('/subscriptions/create-manual', requireAdminAuth, async (req: Reques
 
     const startDate = new Date();
     const endDate = new Date();
-    endDate.setDate(endDate.getDate() + parseInt(durationDays));
+    endDate.setDate(endDate.getDate() + parsedDurationDays);
 
     const adminSession = (req.session as any).admin;
     const sub = await Subscription.create({
       userId,
-      type,
+      type: type as 'free' | 'Pro' | 'Pro Life' | 'Pro Life Plus',
       status: 'active',
       startDate,
       endDate,
-      price: price || 0,
-      paymentMethod: 'admin_manual',
+      price: parsedPrice,
+      paymentMethod: 'manual',
       notes: notes || `أضيف يدوياً بواسطة ${adminSession?.username}`,
       approvedBy: adminSession?._id,
       approvedAt: new Date(),
@@ -1123,7 +1144,7 @@ router.delete('/questions/category/:category/all', requireAdminAuth, async (req:
     if (!['verbal', 'quantitative'].includes(category)) {
       return res.status(400).json({ error: 'الفئة غير صحيحة' });
     }
-    const result = await Question.deleteMany({ category });
+    const result = await Question.deleteMany({ category: category as 'verbal' | 'quantitative' });
     res.json({ success: true, deletedCount: result.deletedCount, message: `تم حذف ${result.deletedCount} سؤال من فئة ${category === 'quantitative' ? 'الكمي' : 'اللفظي'}` });
   } catch (error) {
     console.error('Delete questions by category error:', error);

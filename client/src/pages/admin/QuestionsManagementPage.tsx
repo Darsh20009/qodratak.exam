@@ -24,6 +24,13 @@ interface Question {
   difficulty: 'beginner' | 'intermediate' | 'advanced';
   explanation?: string;
   imageUrl?: string;
+  imageOriginalUrl?: string;
+  imageProcessing?: {
+    status: 'processed' | 'original_only';
+    backgroundRemoved: boolean;
+    watermarkCleanupApplied: boolean;
+    note?: string;
+  };
 }
 
 const categoryLabels: Record<string, string> = {
@@ -55,6 +62,8 @@ const emptyQuestion = {
   difficulty: 'intermediate' as string,
   explanation: '',
   imageUrl: '',
+  imageOriginalUrl: '',
+  imageProcessing: undefined as Question['imageProcessing'],
 };
 
 export default function QuestionsManagementPage() {
@@ -161,6 +170,8 @@ export default function QuestionsManagementPage() {
       difficulty: q.difficulty,
       explanation: q.explanation || '',
       imageUrl: q.imageUrl || '',
+      imageOriginalUrl: q.imageOriginalUrl || '',
+      imageProcessing: q.imageProcessing,
     });
     setShowDialog(true);
   };
@@ -178,6 +189,8 @@ export default function QuestionsManagementPage() {
       difficulty: form.difficulty,
       explanation: form.explanation,
       imageUrl: form.imageUrl,
+      imageOriginalUrl: form.imageOriginalUrl,
+      imageProcessing: form.imageProcessing,
     };
 
     if (editingQuestion) {
@@ -208,11 +221,21 @@ export default function QuestionsManagementPage() {
         return;
       }
       if (data.imageUrl) {
-        setForm(f => ({ ...f, imageUrl: data.imageUrl }));
+        setForm(f => ({
+          ...f,
+          imageUrl: data.imageUrl,
+          imageOriginalUrl: data.originalUrl || f.imageOriginalUrl,
+          imageProcessing: data.processing,
+        }));
         if (questionId) {
           queryClient.invalidateQueries({ queryKey: ['/api/admin/questions'] });
         }
-        toast({ title: '✅ تم رفع الصورة بنجاح' });
+        toast({
+          title: 'تمت معالجة صورة السؤال',
+          description: data.processing?.status === 'original_only'
+            ? data.processing.note
+            : 'حُفظ الأصل، وتم إعداد نسخة بخلفية شفافة وتنظيف العلامات الخفيفة.',
+        });
       }
     } catch {
       toast({ title: 'خطأ', description: 'فشل في رفع الصورة', variant: 'destructive' });
@@ -478,11 +501,18 @@ export default function QuestionsManagementPage() {
               {form.imageUrl ? (
                 <div className="relative inline-block">
                   <img src={form.imageUrl} alt="صورة السؤال" className="w-full max-w-sm rounded-xl border object-contain max-h-40" />
+                   {form.imageProcessing && (
+                     <p className="mt-2 max-w-sm text-xs text-gray-500">
+                       {form.imageProcessing.status === 'processed'
+                         ? `تمت المعالجة: ${form.imageProcessing.backgroundRemoved ? 'أزيلت الخلفية' : 'لا توجد خلفية بسيطة للإزالة'}${form.imageProcessing.watermarkCleanupApplied ? '، ونُظّفت العلامات الفاتحة.' : '.'}`
+                         : form.imageProcessing.note}
+                     </p>
+                   )}
                   <Button
                     variant="destructive"
                     size="icon"
                     className="absolute top-2 left-2 h-7 w-7"
-                    onClick={() => setForm(f => ({ ...f, imageUrl: '' }))}
+                    onClick={() => setForm(f => ({ ...f, imageUrl: '', imageOriginalUrl: '', imageProcessing: undefined }))}
                   >
                     <X className="w-3.5 h-3.5" />
                   </Button>

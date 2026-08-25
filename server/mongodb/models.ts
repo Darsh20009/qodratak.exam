@@ -313,6 +313,13 @@ export interface IQuestion extends Document {
   section?: number;
   explanation?: string;
   imageUrl?: string;
+  imageOriginalUrl?: string;
+  imageProcessing?: {
+    status: 'processed' | 'original_only';
+    backgroundRemoved: boolean;
+    watermarkCleanupApplied: boolean;
+    note?: string;
+  };
   createdAt: Date;
   updatedAt?: Date;
   createdBy?: string;
@@ -332,6 +339,13 @@ const questionSchema = new Schema<IQuestion>({
   section: { type: Number, default: 1 },
   explanation: { type: String },
   imageUrl: { type: String },
+  imageOriginalUrl: { type: String },
+  imageProcessing: {
+    status: { type: String, enum: ['processed', 'original_only'] },
+    backgroundRemoved: { type: Boolean },
+    watermarkCleanupApplied: { type: Boolean },
+    note: { type: String },
+  },
   createdAt: { type: Date, default: Date.now },
   updatedAt: { type: Date },
   createdBy: { type: String },

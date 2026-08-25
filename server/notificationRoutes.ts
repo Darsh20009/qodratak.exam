@@ -2,12 +2,24 @@ import { Router, Request, Response } from 'express';
 import webpush from 'web-push';
 import { InAppNotification, PushSubscription } from './mongodb/models';
 import { chatWebSocketServer } from './websocket';
+import { requireAdmin, requireAuth } from './middleware/rbac';
 
 const router = Router();
 
 const VAPID_PUBLIC = process.env.VAPID_PUBLIC_KEY || '';
 const VAPID_PRIVATE = process.env.VAPID_PRIVATE_KEY || '';
 const VAPID_EMAIL = process.env.VAPID_EMAIL || 'mailto:admin@qodratak.sa';
+const OBJECT_ID_RE = /^[a-fA-F0-9]{24}$/;
+const NOTIFICATION_TYPES = new Set(['info', 'success', 'warning', 'exam', 'achievement', 'event', 'promo']);
+
+function sessionUserId(req: Request): string | null {
+  const userId = (req.session as any)?.userId;
+  return typeof userId === 'string' && OBJECT_ID_RE.test(userId) ? userId : null;
+}
+
+function validText(value: unknown, maxLength: number): value is string {
+  return typeof value === 'string' && value.trim().length > 0 && value.length <= maxLength;
+}
 
 if (VAPID_PUBLIC && VAPID_PRIVATE) {
   webpush.setVapidDetails(VAPID_EMAIL, VAPID_PUBLIC, VAPID_PRIVATE);
@@ -19,11 +31,16 @@ router.get('/vapid-public-key', (req: Request, res: Response) => {
 });
 
 // ── SUBSCRIBE TO PUSH NOTIFICATIONS ──────────────────────────────────────────
-router.post('/subscribe', async (req: Request, res: Response) => {
+router.post('/subscribe', requireAuth, async (req: Request, res: Response) => {
   try {
-    const { subscription, userId } = req.body;
-    if (!subscription || !userId) {
-      return res.status(400).json({ error: 'Missing subscription or userId' });
+    const userId = sessionUserId(req);
+    const { subscription } = req.body;
+    if (!userId || !subscription || typeof subscription !== 'object' ||
+      !validText(subscription.endpoint, 2048) ||
+      !subscription.keys || typeof subscription.keys !== 'object' ||
+      !validText(subscription.keys.p256dh, 512) ||
+      !validText(subscription.keys.auth, 512)) {
+      return res.status(400).json({ error: 'Invalid push subscription' });
     }
 
     await PushSubscription.findOneAndUpdate(
@@ -40,10 +57,14 @@ router.post('/subscribe', async (req: Request, res: Response) => {
 });
 
 // ── UNSUBSCRIBE FROM PUSH NOTIFICATIONS ──────────────────────────────────────
-router.delete('/subscribe', async (req: Request, res: Response) => {
+router.delete('/subscribe', requireAuth, async (req: Request, res: Response) => {
   try {
     const { endpoint } = req.body;
-    await PushSubscription.deleteOne({ endpoint });
+    const userId = sessionUserId(req);
+    if (!userId || !validText(endpoint, 2048)) {
+      return res.status(400).json({ error: 'Invalid push subscription' });
+    }
+    await PushSubscription.deleteOne({ endpoint, userId });
     res.json({ success: true });
   } catch (error) {
     res.status(500).json({ error: 'Failed to unsubscribe' });
@@ -51,9 +72,10 @@ router.delete('/subscribe', async (req: Request, res: Response) => {
 });
 
 // ── ADMIN: GET ALL GLOBAL NOTIFICATIONS (must be before /in-app/:userId) ──────
-router.get('/in-app/global', async (req: Request, res: Response) => {
+router.get('/in-app/global', requireAdmin, async (req: Request, res: Response) => {
   try {
-    const limit = parseInt(req.query.limit as string) || 50;
+    const requestedLimit = typeof req.query.limit === 'string' ? Number.parseInt(req.query.limit, 10) : 50;
+    const limit = Number.isInteger(requestedLimit) ? Math.min(Math.max(requestedLimit, 1), 100) : 50;
     const notifications = await InAppNotification.find({ isGlobal: true })
       .sort({ createdAt: -1 })
       .limit(limit);
@@ -64,9 +86,12 @@ router.get('/in-app/global', async (req: Request, res: Response) => {
 });
 
 // ── GET IN-APP NOTIFICATIONS FOR USER ────────────────────────────────────────
-router.get('/in-app/:userId', async (req: Request, res: Response) => {
+router.get('/in-app/:userId', requireAuth, async (req: Request, res: Response) => {
   try {
-    const { userId } = req.params;
+    const userId = sessionUserId(req);
+    if (!userId || req.params.userId !== userId) {
+      return res.status(403).json({ error: 'غير مصرح - لا تملك صلاحية الوصول لهذه الإشعارات' });
+    }
     const notifications = await InAppNotification.find({
       $or: [{ userId }, { isGlobal: true }]
     }).sort({ createdAt: -1 }).limit(50);
@@ -78,9 +103,16 @@ router.get('/in-app/:userId', async (req: Request, res: Response) => {
 });
 
 // ── MARK NOTIFICATION AS READ ─────────────────────────────────────────────────
-router.patch('/in-app/:id/read', async (req: Request, res: Response) => {
+router.patch('/in-app/:id/read', requireAuth, async (req: Request, res: Response) => {
   try {
-    await InAppNotification.findByIdAndUpdate(req.params.id, { isRead: true });
+    const userId = sessionUserId(req);
+    if (!userId || !OBJECT_ID_RE.test(req.params.id)) {
+      return res.status(400).json({ error: 'Invalid notification id' });
+    }
+    await InAppNotification.findOneAndUpdate(
+      { _id: req.params.id, $or: [{ userId }, { isGlobal: true }] },
+      { isRead: true }
+    );
     res.json({ success: true });
   } catch (error) {
     res.status(500).json({ error: 'Failed to mark as read' });
@@ -88,9 +120,13 @@ router.patch('/in-app/:id/read', async (req: Request, res: Response) => {
 });
 
 // ── USER: DELETE OWN NOTIFICATION ────────────────────────────────────────────
-router.delete('/in-app/:id', async (req: Request, res: Response) => {
+router.delete('/in-app/:id', requireAuth, async (req: Request, res: Response) => {
   try {
-    await InAppNotification.findByIdAndDelete(req.params.id);
+    const userId = sessionUserId(req);
+    if (!userId || !OBJECT_ID_RE.test(req.params.id)) {
+      return res.status(400).json({ error: 'Invalid notification id' });
+    }
+    await InAppNotification.findOneAndDelete({ _id: req.params.id, userId });
     res.json({ success: true });
   } catch (error) {
     res.status(500).json({ error: 'Failed to delete notification' });
@@ -98,9 +134,12 @@ router.delete('/in-app/:id', async (req: Request, res: Response) => {
 });
 
 // ── MARK ALL AS READ ──────────────────────────────────────────────────────────
-router.patch('/in-app/mark-all-read/:userId', async (req: Request, res: Response) => {
+router.patch('/in-app/mark-all-read/:userId', requireAuth, async (req: Request, res: Response) => {
   try {
-    const { userId } = req.params;
+    const userId = sessionUserId(req);
+    if (!userId || req.params.userId !== userId) {
+      return res.status(403).json({ error: 'غير مصرح - لا تملك صلاحية الوصول لهذه الإشعارات' });
+    }
     await InAppNotification.updateMany(
       { $or: [{ userId }, { isGlobal: true }], isRead: false },
       { isRead: true }
@@ -112,9 +151,12 @@ router.patch('/in-app/mark-all-read/:userId', async (req: Request, res: Response
 });
 
 // ── GET UNREAD COUNT ──────────────────────────────────────────────────────────
-router.get('/in-app/:userId/unread-count', async (req: Request, res: Response) => {
+router.get('/in-app/:userId/unread-count', requireAuth, async (req: Request, res: Response) => {
   try {
-    const { userId } = req.params;
+    const userId = sessionUserId(req);
+    if (!userId || req.params.userId !== userId) {
+      return res.status(403).json({ error: 'غير مصرح - لا تملك صلاحية الوصول لهذه الإشعارات' });
+    }
     const count = await InAppNotification.countDocuments({
       $or: [{ userId }, { isGlobal: true }],
       isRead: false,
@@ -126,11 +168,15 @@ router.get('/in-app/:userId/unread-count', async (req: Request, res: Response) =
 });
 
 // ── ADMIN: SEND NOTIFICATION ──────────────────────────────────────────────────
-router.post('/admin/send', async (req: Request, res: Response) => {
+router.post('/admin/send', requireAdmin, async (req: Request, res: Response) => {
   try {
-    const { title, body, type, link, targetUserId, isGlobal, sentBy } = req.body;
-    if (!title || !body) {
-      return res.status(400).json({ error: 'Title and body required' });
+    const { title, body, type, link, targetUserId, isGlobal } = req.body;
+    if (!validText(title, 200) || !validText(body, 2000) ||
+      (type !== undefined && (typeof type !== 'string' || !NOTIFICATION_TYPES.has(type))) ||
+      (link !== undefined && (typeof link !== 'string' || link.length > 2048)) ||
+      typeof isGlobal !== 'boolean' ||
+      (!isGlobal && (typeof targetUserId !== 'string' || !OBJECT_ID_RE.test(targetUserId)))) {
+      return res.status(400).json({ error: 'Invalid notification data' });
     }
 
     const notification = await InAppNotification.create({
@@ -140,7 +186,7 @@ router.post('/admin/send', async (req: Request, res: Response) => {
       type: type || 'info',
       link,
       isGlobal: isGlobal || false,
-      sentBy: sentBy || 'admin',
+       sentBy: String((req as any).adminSession?.adminId || (req as any).rbacUser?.id || 'admin'),
       isRead: false,
     });
 
@@ -183,7 +229,7 @@ router.post('/admin/send', async (req: Request, res: Response) => {
 });
 
 // ── ADMIN: GET ALL NOTIFICATIONS ──────────────────────────────────────────────
-router.get('/admin/all', async (req: Request, res: Response) => {
+router.get('/admin/all', requireAdmin, async (req: Request, res: Response) => {
   try {
     const notifications = await InAppNotification.find()
       .sort({ createdAt: -1 })
@@ -195,7 +241,7 @@ router.get('/admin/all', async (req: Request, res: Response) => {
 });
 
 // ── ADMIN: PUSH SUBSCRIPTION STATS ────────────────────────────────────────────
-router.get('/push/stats', async (req: Request, res: Response) => {
+router.get('/push/stats', requireAdmin, async (req: Request, res: Response) => {
   try {
     const totalSubscriptions = await PushSubscription.countDocuments();
     const totalNotifications = await InAppNotification.countDocuments();
@@ -206,10 +252,15 @@ router.get('/push/stats', async (req: Request, res: Response) => {
 });
 
 // ── ADMIN: BROADCAST IN-APP NOTIFICATION ──────────────────────────────────────
-router.post('/in-app/broadcast', async (req: Request, res: Response) => {
+router.post('/in-app/broadcast', requireAdmin, async (req: Request, res: Response) => {
   try {
     const { title, body, type, target, link } = req.body;
-    if (!title || !body) return res.status(400).json({ error: 'Title and body required' });
+    if (!validText(title, 200) || !validText(body, 2000) ||
+      (type !== undefined && (typeof type !== 'string' || !NOTIFICATION_TYPES.has(type))) ||
+      (target !== undefined && target !== 'global') ||
+      (link !== undefined && (typeof link !== 'string' || link.length > 2048))) {
+      return res.status(400).json({ error: 'Invalid notification data' });
+    }
 
     const notification = await InAppNotification.create({
       title,
@@ -233,10 +284,14 @@ router.post('/in-app/broadcast', async (req: Request, res: Response) => {
 });
 
 // ── ADMIN: BROADCAST PUSH NOTIFICATION ────────────────────────────────────────
-router.post('/push/broadcast', async (req: Request, res: Response) => {
+router.post('/push/broadcast', requireAdmin, async (req: Request, res: Response) => {
   try {
     const { title, body, target, link } = req.body;
-    if (!title || !body) return res.status(400).json({ error: 'Title and body required' });
+    if (!validText(title, 200) || !validText(body, 2000) ||
+      (target !== undefined && target !== 'premium') ||
+      (link !== undefined && (typeof link !== 'string' || link.length > 2048))) {
+      return res.status(400).json({ error: 'Invalid notification data' });
+    }
 
     if (!VAPID_PUBLIC || !VAPID_PRIVATE) {
       return res.status(503).json({ error: 'Push notifications not configured' });
@@ -269,8 +324,11 @@ router.post('/push/broadcast', async (req: Request, res: Response) => {
 });
 
 // ── ADMIN: DELETE NOTIFICATION ────────────────────────────────────────────────
-router.delete('/admin/:id', async (req: Request, res: Response) => {
+router.delete('/admin/:id', requireAdmin, async (req: Request, res: Response) => {
   try {
+    if (!OBJECT_ID_RE.test(req.params.id)) {
+      return res.status(400).json({ error: 'Invalid notification id' });
+    }
     await InAppNotification.findByIdAndDelete(req.params.id);
     res.json({ success: true });
   } catch (error) {

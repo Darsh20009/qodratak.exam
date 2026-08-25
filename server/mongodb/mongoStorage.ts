@@ -717,7 +717,13 @@ export class MongoStorage {
   }
 
   async getInstitutionRequests(status?: string): Promise<IInstitutionRequest[]> {
-    const query = status ? { status } : {};
+    const allowedStatuses = new Set(['pending', 'approved', 'rejected']);
+    if (status && !allowedStatuses.has(status)) {
+      return [];
+    }
+    const query = status
+      ? { status: status as 'pending' | 'approved' | 'rejected' }
+      : {};
     return await InstitutionRequest.find(query).sort({ createdAt: -1 });
   }
 

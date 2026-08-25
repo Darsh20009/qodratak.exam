@@ -1,6 +1,12 @@
 import { Link, useLocation } from "wouter";
 import { Building2, ClipboardList, ShieldCheck, Users, ArrowLeft } from "lucide-react";
 
+const portalHighlights = [
+  { title: "الطلاب", text: "إدارة الطلاب عند التفعيل", Icon: Users },
+  { title: "المتابعة", text: "تقارير واضحة للحساب", Icon: ClipboardList },
+  { title: "الحماية", text: "صلاحيات منفصلة وآمنة", Icon: ShieldCheck },
+];
+
 export default function InstitutionPortalPage() {
   const [, setLocation] = useLocation();
   const user = (() => {
@@ -27,12 +33,8 @@ export default function InstitutionPortalPage() {
             <p className="mt-3 max-w-2xl text-sm leading-7 text-[#6B625B]">هذه مساحة آمنة لمعاينة رحلة المؤسسة. عند تفعيل حساب مؤسسة حقيقي من الإدارة، ستظهر هنا بيانات الطلاب والتقارير والخطط الخاصة بها.</p>
           </div>
           <div className="grid gap-px bg-[#24202D]/10 sm:grid-cols-3">
-            {[
-              ["الطلاب", "إدارة الطلاب عند التفعيل", Users],
-              ["المتابعة", "تقارير واضحة للحساب", ClipboardList],
-              ["الحماية", "صلاحيات منفصلة وآمنة", ShieldCheck],
-            ].map(([title, text, Icon]) => (
-              <div key={title as string} className="bg-[#FFFCF7] p-6">
+            {portalHighlights.map(({ title, text, Icon }) => (
+              <div key={title} className="bg-[#FFFCF7] p-6">
                 <Icon className="h-5 w-5 text-[#FF8A70]" />
                 <h3 className="mt-3 text-sm font-black text-[#171723]">{title}</h3>
                 <p className="mt-1 text-xs leading-5 text-[#6B625B]">{text}</p>

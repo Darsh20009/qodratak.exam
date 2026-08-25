@@ -6,6 +6,12 @@ import { startAuthentication } from '@simplewebauthn/browser';
 import { SiTelegram } from "react-icons/si";
 import { setAdminAccessToken } from "@/lib/adminSession";
 
+const developmentAccounts = [
+  { label: "الأدمن التجريبي", identifier: "admin-demo", password: "AdminDemo@2026", Icon: Shield },
+  { label: "الطالب التجريبي", identifier: "student-demo", password: "StudentDemo@2026", Icon: GraduationCap },
+  { label: "المؤسسة التجريبية", identifier: "institution-demo", password: "InstitutionDemo@2026", Icon: Building2 },
+];
+
 // ──────────────────────────────────────────
 // 2FA Verification Screen
 // ──────────────────────────────────────────
@@ -612,12 +618,8 @@ export default function LoginPage() {
                    <p className="mt-1 text-[11px] leading-5 text-slate-500">الطالب يتجه إلى لوحة تقدمه، المؤسسة إلى بوابتها، والأدمن إلى لوحة الإدارة.</p>
                    {import.meta.env.DEV && (
                      <div className="mt-3 grid gap-2 sm:grid-cols-3">
-                       {[
-                         ["الأدمن التجريبي", "admin-demo", "AdminDemo@2026", Shield],
-                         ["الطالب التجريبي", "student-demo", "StudentDemo@2026", GraduationCap],
-                         ["المؤسسة التجريبية", "institution-demo", "InstitutionDemo@2026", Building2],
-                       ].map(([label, identifier, password, Icon]) => (
-                         <div key={label as string} className="border border-slate-200 bg-white p-2.5">
+                        {developmentAccounts.map(({ label, identifier, password, Icon }) => (
+                          <div key={label} className="border border-slate-200 bg-white p-2.5">
                            <div className="flex items-center gap-1.5 text-[10px] font-black text-[#0D1B2A]"><Icon className="h-3.5 w-3.5" />{label}</div>
                            <p className="mt-1 font-mono text-[10px] text-slate-600">{identifier}</p>
                            <p className="font-mono text-[10px] text-slate-600">{password}</p>
