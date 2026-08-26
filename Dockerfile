@@ -25,7 +25,11 @@ RUN apt-get update -qq && \
 # Keep the lockfile install deterministic. Node 20 LTS ships a stable npm
 # release for this Docker build environment.
 COPY package-lock.json package.json ./
-RUN npm ci --include=dev --no-audit --no-fund
+RUN npm install --global npm@10.9.3 --no-audit --no-fund
+RUN npm --version && npm ci --include=dev --ignore-scripts --no-audit --no-fund
+# sharp uses a native optional binary; run only its install step after the
+# dependency tree is complete so a lifecycle script cannot break npm ci.
+RUN npm rebuild sharp --foreground-scripts
 RUN test -x node_modules/.bin/vite
 
 # Copy application code

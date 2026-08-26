@@ -1,5 +1,10 @@
 /.git
 /node_modules
+/dist
+/attached_assets
+/screenshots
+/uploads
+/private_uploads
 .dockerignore
 .env
 Dockerfile
