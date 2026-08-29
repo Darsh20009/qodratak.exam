@@ -109,6 +109,7 @@ export default function SignupPage() {
   const [isSendingEmailOtp, setIsSendingEmailOtp] = useState(false);
   const [isVerifyingEmail, setIsVerifyingEmail] = useState(false);
   const [emailOtpSent, setEmailOtpSent] = useState(false);
+  const [phoneVerificationToken, setPhoneVerificationToken] = useState("");
   const [phoneOtp, setPhoneOtp] = useState("");
   const [phoneVerified, setPhoneVerified] = useState(false);
   const [isSendingPhoneOtp, setIsSendingPhoneOtp] = useState(false);
@@ -315,7 +316,7 @@ export default function SignupPage() {
   };
 
   const validateForm = () => {
-    if (!fullName.trim()) { toast({ title: "خطأ", description: "يرجى إدخال الاسم الكامل", variant: "destructive" }); return false; }
+    if (fullName.trim().split(/\s+/).length < 2) { toast({ title: "خطأ", description: "يرجى إدخال الاسم الثنائي على الأقل", variant: "destructive" }); return false; }
     if (!email.trim() || !email.includes("@")) { toast({ title: "خطأ", description: "يرجى إدخال بريد إلكتروني صالح", variant: "destructive" }); return false; }
     if (!whatsapp.trim() || whatsapp.length < 9) { toast({ title: "خطأ", description: "يرجى إدخال رقم واتساب صالح", variant: "destructive" }); return false; }
     if (activeType === "institution") {
@@ -332,21 +333,21 @@ export default function SignupPage() {
 
   // ── OTP Handlers ────────────────────────────────────────────────────────
   const handleSendEmailOtp = async () => {
-    if (!email.trim() || !email.includes('@')) {
-      toast({ title: "خطأ", description: "أدخل بريداً إلكترونياً صالحاً أولاً", variant: "destructive" });
+    if (!whatsapp.trim() || whatsapp.length < 9) {
+      toast({ title: "خطأ", description: "أدخل رقم واتساب صالحاً أولاً", variant: "destructive" });
       return;
     }
     setIsSendingEmailOtp(true);
     try {
-      const res = await fetch('/api/auth/signup/send-otp', {
+      const res = await fetch('/api/auth/phone-otp/request', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: email.trim().toLowerCase(), fullName: fullName.trim() })
+        body: JSON.stringify({ phone: `+966${whatsapp.trim().replace(/^0/, '')}`, purpose: 'signup' })
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'فشل إرسال الرمز');
       setEmailOtpSent(true);
-      toast({ title: "تم الإرسال", description: "تحقق من بريدك الإلكتروني" });
+      toast({ title: "تم الإرسال", description: "تحقق من رسائل واتساب" });
     } catch (err: any) {
       toast({ title: "خطأ", description: err.message, variant: "destructive" });
     } finally {
@@ -361,15 +362,17 @@ export default function SignupPage() {
     }
     setIsVerifyingEmail(true);
     try {
-      const res = await fetch('/api/auth/signup/verify-otp', {
+      const res = await fetch('/api/auth/phone-otp/verify', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: email.trim().toLowerCase(), otp: emailOtp.trim() })
+        body: JSON.stringify({ phone: `+966${whatsapp.trim().replace(/^0/, '')}`, otp: emailOtp.trim(), purpose: 'signup' })
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'رمز التحقق خاطئ');
       setEmailVerified(true);
-      toast({ title: "✅ تم التحقق", description: "تم التحقق من البريد الإلكتروني" });
+      setPhoneVerified(true);
+      setPhoneVerificationToken(data.verificationToken);
+      toast({ title: "✅ تم التحقق", description: "تم التحقق من رقم واتساب" });
     } catch (err: any) {
       toast({ title: "خطأ", description: err.message, variant: "destructive" });
     } finally {
@@ -474,9 +477,9 @@ export default function SignupPage() {
       return;
     }
 
-    // Step 2: email OTP must be verified before registering
-    if (!emailVerified) {
-      toast({ title: "مطلوب", description: "تحقق من بريدك الإلكتروني أولاً", variant: "destructive" });
+    // Step 2: WhatsApp OTP must be verified before registering
+    if (!emailVerified || !phoneVerificationToken) {
+      toast({ title: "مطلوب", description: "تحقق من رقم واتساب أولاً", variant: "destructive" });
       return;
     }
 
@@ -499,6 +502,7 @@ export default function SignupPage() {
             studyGoal: studyGoal || undefined,
             targetScore: targetScore !== "" ? Number(targetScore) : undefined,
           }),
+          phoneVerificationToken,
         })
       });
       const data = await response.json();
@@ -778,11 +782,11 @@ export default function SignupPage() {
               <div className="mb-8">
                 <p className="text-xs font-black tracking-[.14em] text-slate-400">إنشاء حساب طالب</p>
                 <h2 className="mt-2 text-3xl font-black text-[#0D1B2A]">خطتك تبدأ من هنا.</h2>
-                <p className="mt-2 text-slate-500 text-sm leading-6">أدخل بياناتك، أكد بريدك الإلكتروني، ثم نرتّب لك بداية أوضح.</p>
+                 <p className="mt-2 text-slate-500 text-sm leading-6">أدخل بياناتك، أكّد رقم واتساب، ثم نرتّب لك بداية أوضح.</p>
               </div>
 
               <div className="mb-7 grid grid-cols-3 gap-2">
-                {["بياناتك", "تأكيد البريد", "ابدأ التدريب"].map((label, index) => (
+                 {["بياناتك", "تأكيد واتساب", "ابدأ التدريب"].map((label, index) => (
                   <div key={label} className={`rounded-xl border px-3 py-2.5 text-center text-[11px] font-black ${index === 0 ? "border-[#0D1B2A] bg-[#0D1B2A] text-white" : "border-slate-200 bg-slate-50 text-slate-400"}`}><span className="ml-1 opacity-70">0{index + 1}</span>{label}</div>
                 ))}
               </div>
@@ -1131,19 +1135,19 @@ export default function SignupPage() {
                   </div>
                 )}
 
-                {/* ─── Step 2: Email OTP Verification ─── */}
+                {/* ─── Step 2: WhatsApp OTP Verification ─── */}
                 {step === 2 && activeType !== "institution" && (
                   <div className="bg-emerald-50 rounded-2xl p-5 space-y-4 border border-emerald-100">
                     <div className="flex items-center gap-2 text-emerald-700 font-semibold text-sm">
-                      <Mail className="w-4 h-4" />
-                      تحقق من بريدك الإلكتروني
+                      <MessageCircle className="w-4 h-4" />
+                      تحقق من رقم واتساب
                     </div>
                     <p className="text-xs text-gray-500">
-                      سنرسل رمز تحقق مكون من 6 أرقام إلى: <span className="font-bold text-gray-700" dir="ltr">{email}</span>
+                       سنرسل رمز تحقق مكوناً من 6 أرقام إلى: <span className="font-bold text-gray-700" dir="ltr">+966{whatsapp.replace(/^0/, '')}</span>
                     </p>
                     {emailVerified ? (
                       <div className="flex items-center gap-2 text-emerald-700 text-sm bg-emerald-100 rounded-xl px-3 py-2">
-                        <CheckCircle2 className="w-4 h-4" /> تم التحقق من البريد الإلكتروني ✅
+                         <CheckCircle2 className="w-4 h-4" /> تم التحقق من رقم واتساب ✅
                       </div>
                     ) : (
                       <>
@@ -1155,7 +1159,7 @@ export default function SignupPage() {
                             variant="outline"
                             size="sm"
                             className="border-emerald-300 text-emerald-700 hover:bg-emerald-100 text-xs h-9"
-                            data-testid="button-send-email-otp"
+                               data-testid="button-send-whatsapp-otp"
                           >
                             {isSendingEmailOtp ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : emailOtpSent ? "إعادة الإرسال" : "إرسال رمز التحقق"}
                           </Button>
@@ -1168,7 +1172,7 @@ export default function SignupPage() {
                               value={emailOtp}
                               onChange={e => setEmailOtp(e.target.value)}
                               maxLength={6}
-                              data-testid="input-email-otp"
+                               data-testid="input-whatsapp-otp"
                               className="flex-1 h-10 rounded-xl border-emerald-200 bg-white text-gray-900 text-center tracking-widest focus:ring-2 focus:ring-emerald-500/20"
                               dir="ltr"
                             />
@@ -1178,7 +1182,7 @@ export default function SignupPage() {
                               disabled={isVerifyingEmail}
                               size="sm"
                               className="h-10 px-4 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs"
-                              data-testid="button-verify-email-otp"
+                               data-testid="button-verify-whatsapp-otp"
                             >
                               {isVerifyingEmail ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : "تحقق"}
                             </Button>
