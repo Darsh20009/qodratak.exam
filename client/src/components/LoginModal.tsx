@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useLocation } from "wouter";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
-import { Eye, EyeOff, KeyRound, LogIn, Mail, Shield, User, X, Building2, GraduationCap } from "lucide-react";
+import { Eye, EyeOff, KeyRound, LogIn, MessageCircle, Shield, User, X, Building2, GraduationCap } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { setAdminAccessToken } from "@/lib/adminSession";
 
@@ -26,12 +26,18 @@ export function LoginModal({ open, onClose, onSwitchToSignup }: LoginModalProps)
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [loginMode, setLoginMode] = useState<"password" | "whatsapp">("password");
+  const [otp, setOtp] = useState("");
+  const [otpSent, setOtpSent] = useState(false);
 
   function reset() {
     setIdentifier("");
     setPassword("");
     setShowPassword(false);
     setIsLoading(false);
+    setLoginMode("password");
+    setOtp("");
+    setOtpSent(false);
   }
 
   function close() {
@@ -44,6 +50,29 @@ export function LoginModal({ open, onClose, onSwitchToSignup }: LoginModalProps)
     setIsLoading(true);
 
     try {
+      if (loginMode === "whatsapp") {
+        const response = await fetch(otpSent ? "/api/auth/phone-otp/verify" : "/api/auth/phone-otp/request", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          credentials: "include",
+          body: JSON.stringify({ phone: identifier.trim(), otp: otp.trim(), purpose: "login" }),
+        });
+        const result = await response.json();
+        if (!response.ok) throw new Error(result.error || "تعذر التحقق من رقم الجوال");
+        if (!otpSent) {
+          setOtpSent(true);
+          toast({ title: "تم إرسال الرمز", description: "أدخل الرمز الذي وصلك عبر واتساب." });
+          return;
+        }
+
+        localStorage.setItem("user", JSON.stringify(result));
+        window.dispatchEvent(new CustomEvent("userLoggedIn", { detail: result }));
+        toast({ title: "أهلًا بعودتك", description: "تم تسجيل الدخول برقم واتساب." });
+        close();
+        setLocation(result.role === "institution_admin" ? "/institution" : "/");
+        return;
+      }
+
       const response = await fetch("/api/auth/login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -124,6 +153,23 @@ export function LoginModal({ open, onClose, onSwitchToSignup }: LoginModalProps)
           <h2 className="mt-2 text-2xl font-black" style={{ color: NAVY }}>أهلًا بعودتك.</h2>
           <p className="mt-2 text-sm leading-6 text-[#6B625B]">أدخل بياناتك وسنوجّهك تلقائيًا للمساحة المناسبة لحسابك.</p>
 
+          <div className="mt-5 grid grid-cols-2 gap-2 rounded-xl bg-[#F1EEE8] p-1">
+            <button
+              type="button"
+              onClick={() => { setLoginMode("password"); setOtpSent(false); setOtp(""); }}
+              className={`rounded-lg px-3 py-2.5 text-xs font-black transition ${loginMode === "password" ? "bg-white text-[#171723] shadow-sm" : "text-[#7D756D]"}`}
+            >
+              البريد أو كلمة المرور
+            </button>
+            <button
+              type="button"
+              onClick={() => { setLoginMode("whatsapp"); setOtpSent(false); setOtp(""); }}
+              className={`flex items-center justify-center gap-1.5 rounded-lg px-3 py-2.5 text-xs font-black transition ${loginMode === "whatsapp" ? "bg-white text-[#171723] shadow-sm" : "text-[#7D756D]"}`}
+            >
+              <MessageCircle className="h-3.5 w-3.5" /> رمز واتساب
+            </button>
+          </div>
+
           {import.meta.env.DEV && (
             <div className="mt-4 rounded-xl border border-[#24202D]/10 bg-[#F8F6F1] p-3">
               <p className="text-[11px] font-black text-[#6B625B]">حسابات التجربة</p>
@@ -148,22 +194,23 @@ export function LoginModal({ open, onClose, onSwitchToSignup }: LoginModalProps)
 
           <form onSubmit={handleSubmit} className="mt-6 space-y-4">
             <label className="block space-y-2">
-              <span className="text-sm font-black text-[#4F4A58]">البريد الإلكتروني أو اسم المستخدم</span>
+              <span className="text-sm font-black text-[#4F4A58]">{loginMode === "whatsapp" ? "رقم الجوال" : "البريد الإلكتروني أو اسم المستخدم"}</span>
               <div className="relative">
                 <User className="pointer-events-none absolute right-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-[#8B8278]" />
                 <input
                   type="text"
                   required
-                  autoComplete="username"
+                  autoComplete={loginMode === "whatsapp" ? "tel" : "username"}
                   value={identifier}
                   onChange={(event) => setIdentifier(event.target.value)}
-                  placeholder="example@email.com أو اسم المستخدم"
+                  placeholder={loginMode === "whatsapp" ? "05XXXXXXXX" : "example@email.com أو اسم المستخدم"}
+                  dir={loginMode === "whatsapp" ? "ltr" : "rtl"}
                   className="w-full rounded-xl border border-[#24202D]/15 bg-[#F8F6F1] py-3.5 pl-4 pr-11 text-sm text-[#171723] outline-none transition placeholder:text-[#A49B91] focus:border-[#171723] focus:bg-white focus:ring-4 focus:ring-[#171723]/10"
                 />
               </div>
             </label>
 
-            <label className="block space-y-2">
+            {loginMode === "password" ? <label className="block space-y-2">
               <span className="text-sm font-black text-[#4F4A58]">كلمة المرور</span>
               <div className="relative">
                 <KeyRound className="pointer-events-none absolute right-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-[#8B8278]" />
@@ -180,11 +227,30 @@ export function LoginModal({ open, onClose, onSwitchToSignup }: LoginModalProps)
                   {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                 </button>
               </div>
-            </label>
+            </label> : otpSent ? (
+              <label className="block space-y-2">
+                <span className="text-sm font-black text-[#4F4A58]">رمز التحقق</span>
+                <div className="relative">
+                  <KeyRound className="pointer-events-none absolute right-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-[#8B8278]" />
+                  <input
+                    type="text"
+                    inputMode="numeric"
+                    required
+                    autoComplete="one-time-code"
+                    value={otp}
+                    onChange={(event) => setOtp(event.target.value.replace(/\D/g, "").slice(0, 6))}
+                    placeholder="000000"
+                    dir="ltr"
+                    className="w-full rounded-xl border border-[#24202D]/15 bg-[#F8F6F1] py-3.5 pl-4 pr-11 text-center text-sm tracking-[.35em] text-[#171723] outline-none transition focus:border-[#171723] focus:bg-white focus:ring-4 focus:ring-[#171723]/10"
+                  />
+                </div>
+                <button type="button" onClick={() => { setOtpSent(false); setOtp(""); }} className="text-xs font-bold text-[#6B625B] hover:text-[#171723]">تغيير الرقم أو إعادة الإرسال</button>
+              </label>
+            ) : null}
 
             <button type="submit" disabled={isLoading} className="flex w-full items-center justify-center gap-2 rounded-xl px-4 py-3.5 text-sm font-black text-white transition hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-60" style={{ background: NAVY }}>
               {isLoading ? <span className="h-4 w-4 animate-spin rounded-full border-2 border-white/30 border-t-white" /> : <LogIn className="h-4 w-4" />}
-              {isLoading ? "جارٍ تسجيل الدخول..." : "تسجيل الدخول"}
+              {isLoading ? "جارٍ التنفيذ..." : loginMode === "whatsapp" ? (otpSent ? "تأكيد وتسجيل الدخول" : "إرسال رمز واتساب") : "تسجيل الدخول"}
             </button>
           </form>
 

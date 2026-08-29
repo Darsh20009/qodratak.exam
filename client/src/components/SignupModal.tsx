@@ -39,6 +39,7 @@ export function SignupModal({ open, onClose, onSwitchToLogin }: SignupModalProps
   const [emailOtpSent, setEmailOtpSent] = useState(false);
   const [isSendingOtp, setIsSendingOtp] = useState(false);
   const [isVerifyingOtp, setIsVerifyingOtp] = useState(false);
+  const [phoneVerificationToken, setPhoneVerificationToken] = useState("");
 
   // Academic (optional)
   const [academicTrack, setAcademicTrack] = useState<"" | "علمي" | "أدبي">("");
@@ -48,13 +49,14 @@ export function SignupModal({ open, onClose, onSwitchToLogin }: SignupModalProps
     setStep(1); setFullName(""); setEmail(""); setWhatsapp("");
     setPassword(""); setConfirmPassword(""); setEmailOtp("");
     setEmailVerified(false); setEmailOtpSent(false);
+    setPhoneVerificationToken("");
     setAcademicTrack(""); setStudyGoal("");
   }
 
   function handleClose() { resetModal(); onClose(); }
 
   function validate() {
-    if (!fullName.trim()) { toast({ title: "مطلوب", description: "أدخل اسمك الكامل", variant: "destructive" }); return false; }
+    if (fullName.trim().split(/\s+/).length < 2) { toast({ title: "مطلوب", description: "أدخل الاسم الثنائي على الأقل", variant: "destructive" }); return false; }
     if (!email.trim() || !email.includes("@")) { toast({ title: "خطأ", description: "أدخل بريداً إلكترونياً صالحاً", variant: "destructive" }); return false; }
     if (!whatsapp.trim() || whatsapp.length < 9) { toast({ title: "مطلوب", description: "أدخل رقم واتساب صالحاً", variant: "destructive" }); return false; }
     if (!password || password.length < 6) { toast({ title: "خطأ", description: "كلمة المرور 6 أحرف على الأقل", variant: "destructive" }); return false; }
@@ -63,19 +65,19 @@ export function SignupModal({ open, onClose, onSwitchToLogin }: SignupModalProps
   }
 
   async function sendOtp() {
-    if (!email.trim() || !email.includes("@")) {
-      toast({ title: "خطأ", description: "أدخل بريداً صالحاً أولاً", variant: "destructive" }); return;
+    if (!whatsapp.trim() || whatsapp.length < 9) {
+      toast({ title: "خطأ", description: "أدخل رقم واتساب صالحاً أولاً", variant: "destructive" }); return;
     }
     setIsSendingOtp(true);
     try {
-      const res = await fetch("/api/auth/signup/send-otp", {
+      const res = await fetch("/api/auth/phone-otp/request", {
         method: "POST", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email: email.trim().toLowerCase(), fullName: fullName.trim() }),
+        body: JSON.stringify({ phone: `+966${whatsapp.trim().replace(/^0/, "")}`, purpose: "signup" }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "فشل إرسال الرمز");
       setEmailOtpSent(true);
-      toast({ title: "تم الإرسال", description: "تحقق من بريدك الإلكتروني" });
+      toast({ title: "تم الإرسال", description: "تحقق من رسائل واتساب" });
     } catch (err: any) {
       toast({ title: "خطأ", description: err.message, variant: "destructive" });
     } finally { setIsSendingOtp(false); }
@@ -85,14 +87,15 @@ export function SignupModal({ open, onClose, onSwitchToLogin }: SignupModalProps
     if (!emailOtp.trim()) { toast({ title: "خطأ", description: "أدخل رمز التحقق", variant: "destructive" }); return; }
     setIsVerifyingOtp(true);
     try {
-      const res = await fetch("/api/auth/signup/verify-otp", {
+      const res = await fetch("/api/auth/phone-otp/verify", {
         method: "POST", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email: email.trim().toLowerCase(), otp: emailOtp.trim() }),
+        body: JSON.stringify({ phone: `+966${whatsapp.trim().replace(/^0/, "")}`, otp: emailOtp.trim(), purpose: "signup" }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "رمز خاطئ");
       setEmailVerified(true);
-      toast({ title: "تم التحقق", description: "البريد مؤكد" });
+      setPhoneVerificationToken(data.verificationToken);
+      toast({ title: "تم التحقق", description: "رقم واتساب مؤكد" });
     } catch (err: any) {
       toast({ title: "خطأ", description: err.message, variant: "destructive" });
     } finally { setIsVerifyingOtp(false); }
@@ -101,7 +104,7 @@ export function SignupModal({ open, onClose, onSwitchToLogin }: SignupModalProps
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (step === 1) { if (!validate()) return; setStep(2); return; }
-    if (!emailVerified) { toast({ title: "مطلوب", description: "تحقق من بريدك أولاً", variant: "destructive" }); return; }
+    if (!emailVerified || !phoneVerificationToken) { toast({ title: "مطلوب", description: "تحقق من رقم واتساب أولاً", variant: "destructive" }); return; }
     setIsLoading(true);
     try {
       const res = await fetch("/api/auth/register-multi", {
@@ -115,6 +118,7 @@ export function SignupModal({ open, onClose, onSwitchToLogin }: SignupModalProps
           role: "student",
           academicTrack: academicTrack || undefined,
           studyGoal: studyGoal || undefined,
+          phoneVerificationToken,
         }),
       });
       const data = await res.json();
@@ -160,7 +164,7 @@ export function SignupModal({ open, onClose, onSwitchToLogin }: SignupModalProps
 
           <div className="border-b border-[#24202D]/10 px-6 py-3">
             <div className="flex gap-2">
-              {["بياناتك", "تأكيد البريد"].map((label, i) => (
+              {["بياناتك", "تأكيد واتساب"].map((label, i) => (
                 <div key={label} className={`flex-1 rounded-lg py-2 text-center text-[11px] font-black ${
                   i === step - 1 ? "bg-[#171723] text-white" : i < step - 1 ? "bg-[#91D7C5]/35 text-[#171723]" : "border border-[#24202D]/12 text-[#8B8278]"
                 }`}>
@@ -243,7 +247,7 @@ export function SignupModal({ open, onClose, onSwitchToLogin }: SignupModalProps
                   </div>
                 </details>
 
-                <button type="submit" className="w-full rounded-xl py-3.5 text-sm font-black transition hover:-translate-y-0.5" style={{ background: SIGNAL, color: NAVY }}>التالي: تأكيد البريد</button>
+                <button type="submit" className="w-full rounded-xl py-3.5 text-sm font-black transition hover:-translate-y-0.5" style={{ background: SIGNAL, color: NAVY }}>التالي: تأكيد واتساب</button>
                 <p className="text-center text-xs text-[#8B8278]">لديك حساب؟{" "}
                   <button type="button" onClick={() => { handleClose(); onSwitchToLogin?.(); }} className="font-black text-[#171723] hover:underline">سجّل الدخول</button>
                 </p>
@@ -254,8 +258,8 @@ export function SignupModal({ open, onClose, onSwitchToLogin }: SignupModalProps
               <div className="space-y-5">
                 <div>
                   <p className="text-xs font-black text-[#8B8278]">الخطوة الأخيرة</p>
-                  <h3 className="mt-1 text-2xl font-black text-[#171723]">أكّد بريدك الإلكتروني.</h3>
-                  <p className="mt-2 text-sm leading-6 text-[#6B625B]">سنرسل رمزًا مؤقتًا إلى <span className="font-bold text-[#171723]">{email}</span></p>
+                  <h3 className="mt-1 text-2xl font-black text-[#171723]">أكّد رقم واتساب.</h3>
+                  <p className="mt-2 text-sm leading-6 text-[#6B625B]">سنرسل رمزًا مؤقتًا إلى <span className="font-bold text-[#171723]" dir="ltr">+966{whatsapp.replace(/^0/, "")}</span></p>
                 </div>
                 <div className="space-y-2">
                   <div className="flex gap-2">
@@ -265,7 +269,7 @@ export function SignupModal({ open, onClose, onSwitchToLogin }: SignupModalProps
                     </button>
                   </div>
                   {emailOtpSent && !emailVerified && <button type="button" onClick={verifyOtp} disabled={isVerifyingOtp || !emailOtp.trim()} className="w-full rounded-xl border border-[#171723] py-2.5 text-sm font-black text-[#171723] transition hover:bg-[#171723] hover:text-white">{isVerifyingOtp ? <Loader2 className="mx-auto h-4 w-4 animate-spin" /> : "تحقق من الرمز"}</button>}
-                  {emailVerified && <div className="flex items-center gap-2 rounded-xl bg-[#EFF8F4] px-4 py-2.5 text-sm font-bold text-[#398B79]"><CheckCircle2 className="h-4 w-4" /> تم التحقق من البريد</div>}
+                  {emailVerified && <div className="flex items-center gap-2 rounded-xl bg-[#EFF8F4] px-4 py-2.5 text-sm font-bold text-[#398B79]"><CheckCircle2 className="h-4 w-4" /> تم التحقق من رقم واتساب</div>}
                 </div>
                 <button type="submit" disabled={isLoading || !emailVerified} className="w-full rounded-xl py-3.5 text-sm font-black disabled:cursor-not-allowed disabled:opacity-50" style={{ background: emailVerified ? SIGNAL : "#E5E7EB", color: emailVerified ? NAVY : "#94A3B8" }}>{isLoading ? <Loader2 className="mx-auto h-5 w-5 animate-spin" /> : "إنشاء الحساب"}</button>
               </div>

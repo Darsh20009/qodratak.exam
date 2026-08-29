@@ -3,6 +3,7 @@ import { useLocation } from 'wouter';
 import QuestionsManagementPage from './QuestionsManagementPage';
 import AdminWalletsTab from './AdminWalletsTab';
 import AdminSeasonalExamsTab from './AdminSeasonalExamsTab';
+import WhatsAppAdminTab from './WhatsAppAdminTab';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -55,6 +56,7 @@ const NAV_ITEMS = [
   { key: 'exams', icon: CalendarCheck, label: 'الاختبارات المجدولة', color: 'text-[#625D69]' },
   { key: 'institutions', icon: Building2, label: 'طلبات المؤسسات', color: 'text-[#B65D36]' },
   { key: 'notifications', icon: BellRing, label: 'مركز الإشعارات', color: 'text-[#7964C1]' },
+  { key: 'whatsapp', icon: MessageCircle, label: 'واتساب CRM', color: 'text-[#2E8B70]' },
   { key: 'question-reports', icon: AlertTriangle, label: 'بلاغات الأسئلة', color: 'text-[#B65D36]' },
   { key: 'wallets', icon: Wallet, label: 'المحافظ والمكافآت', color: 'text-[#7964C1]' },
   { key: 'seasonal-exams', icon: Sparkles, label: 'الاختبارات الموسمية', color: 'text-[#B65D36]' },
@@ -1472,6 +1474,8 @@ export default function AdminDashboard({ initialTab = 'overview' }: { initialTab
               })()}
             </div>
           )}
+
+          {activeTab === 'whatsapp' && <WhatsAppAdminTab />}
 
           {/* ─── NOTIFICATIONS TAB ─── */}
           {activeTab === 'notifications' && (

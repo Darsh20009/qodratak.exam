@@ -45,6 +45,7 @@ lerna-debug.log*
 replit.md
 .local/
 .agents/
+.whatsapp-auth/
 attached_assets/user.json
 uploads/receipts/
 attached_assets/*.txt

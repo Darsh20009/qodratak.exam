@@ -17,6 +17,12 @@ import { exec } from 'child_process';
 import { sendTestEmail, sendOTPEmail, sendWelcomeEmail, sendSubscriptionApprovalEmail, sendExamResults, sendPasswordResetEmail, notifyAdminNewSubscription, notifyAdminReceiptUploaded, notifyAdminInstitutionRequest, sendInvitationEmail } from './services/emailService';
 import crypto from 'crypto';
 import { createAdminAccessToken } from './adminSessionToken';
+import {
+  normalizeSaudiPhone,
+  requestPhoneOtp,
+  verifyPhoneOtp,
+  verifyPhoneVerificationToken,
+} from './services/phoneOtpService';
 
 // RBAC System - Sprint 0
 import { 
@@ -1633,6 +1639,112 @@ const telegramLoginSessions = new Map<string, { telegramId: string; telegramUser
 // In-memory store for phone OTPs (sent via Telegram bot)
 const phoneOtpStore = new Map<string, { otp: string; expiry: Date; chatId?: number }>();
 
+  app.post('/api/auth/phone-otp/request', async (req: Request, res: Response) => {
+    try {
+      const purpose = req.body?.purpose === 'login' ? 'login' : 'signup';
+      const phone = normalizeSaudiPhone(req.body?.phone);
+      let users: any[] = [];
+      try { users = JSON.parse(fs.readFileSync('attached_assets/user.json', 'utf-8')); } catch {}
+
+      const phoneExistsLocally = users.some((user: any) => {
+        try { return normalizeSaudiPhone(user.phone || user.whatsapp) === phone; } catch { return false; }
+      });
+      let phoneExistsInMongo = false;
+      if (mongoose.connection.readyState === 1) {
+        const { User: MongoUser } = await import('./mongodb/models');
+        phoneExistsInMongo = Boolean(await MongoUser.exists({ phone }));
+      }
+
+      if (purpose === 'signup' && (phoneExistsLocally || phoneExistsInMongo)) {
+        return res.status(409).json({ error: 'رقم الجوال مستخدم مسبقاً' });
+      }
+      if (purpose === 'login' && !phoneExistsLocally && !phoneExistsInMongo) {
+        return res.status(404).json({ error: 'لا يوجد حساب مرتبط بهذا الرقم' });
+      }
+
+      const result = await requestPhoneOtp(phone, purpose);
+      if (!result.sent) {
+        return res.status(429).json({
+          error: `يمكن إعادة إرسال الرمز بعد ${result.retryAfter} ثانية`,
+          retryAfter: result.retryAfter,
+        });
+      }
+      return res.json({
+        success: true,
+        retryAfter: result.retryAfter,
+        message: 'تم إرسال رمز التحقق عبر واتساب',
+      });
+    } catch (error: any) {
+      if (error?.message === 'WHATSAPP_NOT_CONNECTED') {
+        return res.status(503).json({ error: 'خدمة واتساب غير مرتبطة بعد. تواصل مع إدارة المنصة.' });
+      }
+      if (error?.message === 'INVALID_PHONE') {
+        return res.status(400).json({ error: 'أدخل رقم جوال سعودي صحيحاً' });
+      }
+      console.error('WhatsApp OTP request error:', error);
+      return res.status(500).json({ error: 'تعذر إرسال رمز التحقق حالياً' });
+    }
+  });
+
+  app.post('/api/auth/phone-otp/verify', async (req: Request, res: Response) => {
+    try {
+      const purpose = req.body?.purpose === 'login' ? 'login' : 'signup';
+      const verification = verifyPhoneOtp(req.body?.phone, req.body?.otp, purpose);
+      if (purpose === 'signup') {
+        return res.json({
+          success: true,
+          phone: verification.phone,
+          verificationToken: verification.verificationToken,
+        });
+      }
+
+      let users: any[] = [];
+      try { users = JSON.parse(fs.readFileSync('attached_assets/user.json', 'utf-8')); } catch {}
+      const localUser = users.find((user: any) => {
+        try { return normalizeSaudiPhone(user.phone || user.whatsapp) === verification.phone; } catch { return false; }
+      });
+
+      let loginUser: any = localUser;
+      if (!loginUser && mongoose.connection.readyState === 1) {
+        const { User: MongoUser } = await import('./mongodb/models');
+        const mongoUser = await MongoUser.findOne({ phone: verification.phone }).lean() as any;
+        if (mongoUser) {
+          loginUser = {
+            id: String(mongoUser._id),
+            name: mongoUser.fullName || mongoUser.username,
+            fullName: mongoUser.fullName || mongoUser.username,
+            username: mongoUser.username,
+            email: mongoUser.email,
+            phone: mongoUser.phone,
+            role: mongoUser.role || 'student',
+            points: mongoUser.points || 0,
+            level: mongoUser.level || 1,
+            subscription: mongoUser.subscription || { type: 'free', status: 'active' },
+          };
+        }
+      }
+      if (!loginUser) return res.status(404).json({ error: 'الحساب غير موجود' });
+
+      (req.session as any).userId = loginUser.id;
+      (req.session as any).userEmail = loginUser.email;
+      (req.session as any).userRole = loginUser.role || 'student';
+      return req.session.save((sessionError) => {
+        if (sessionError) return res.status(500).json({ error: 'تعذر حفظ جلسة الدخول' });
+        const { password: _password, ...safeUser } = loginUser;
+        return res.json(safeUser);
+      });
+    } catch (error: any) {
+      const messages: Record<string, string> = {
+        INVALID_PHONE: 'أدخل رقم جوال سعودي صحيحاً',
+        OTP_EXPIRED: 'انتهت صلاحية الرمز. اطلب رمزاً جديداً.',
+        OTP_INVALID: 'رمز التحقق غير صحيح',
+        OTP_ATTEMPTS_EXCEEDED: 'تم تجاوز عدد المحاولات. اطلب رمزاً جديداً.',
+      };
+      const message = messages[error?.message];
+      return res.status(message ? 400 : 500).json({ error: message || 'تعذر التحقق من الرمز' });
+    }
+  });
+
 app.post('/api/auth/signup/send-otp', async (req: Request, res: Response) => {
   try {
     const { email, fullName, phone } = req.body;
@@ -2085,11 +2197,15 @@ app.post("/api/auth/register", async (req: Request, res: Response) => {
   // NOTE: Institutions must use /api/auth/institution-request instead
   app.post("/api/auth/register-multi", async (req: Request, res: Response) => {
     try {
-      const { fullName, email, phone, password, role, whatsapp, telegramUsername, academicTrack, gradeLevel, studyGoal, targetScore } = req.body;
+      const { fullName, email, phone, password, role, whatsapp, telegramUsername, academicTrack, gradeLevel, studyGoal, targetScore, phoneVerificationToken } = req.body;
 
       // Validate required fields
       if (!fullName || !email || !password || !role) {
         return res.status(400).json({ message: "يرجى إدخال جميع البيانات المطلوبة" });
+      }
+
+      if (!phone || !verifyPhoneVerificationToken(phoneVerificationToken, phone, 'signup')) {
+        return res.status(400).json({ message: "يجب تأكيد رقم الجوال عبر واتساب قبل إنشاء الحساب" });
       }
 
       // Validate password length
@@ -2123,6 +2239,12 @@ app.post("/api/auth/register", async (req: Request, res: Response) => {
       // Check if email already exists
       if (users.some((u: any) => u.email === email)) {
         return res.status(400).json({ message: "البريد الإلكتروني مستخدم من قبل" });
+      }
+      const normalizedPhone = normalizeSaudiPhone(phone);
+      if (users.some((u: any) => {
+        try { return normalizeSaudiPhone(u.phone || u.whatsapp) === normalizedPhone; } catch { return false; }
+      })) {
+        return res.status(400).json({ message: "رقم الجوال مستخدم من قبل" });
       }
 
       // Hash password for security
@@ -2161,8 +2283,8 @@ app.post("/api/auth/register", async (req: Request, res: Response) => {
         name: fullName,
         fullName,
         email,
-        phone: phone || undefined,
-        whatsapp: whatsapp || undefined,
+        phone: normalizedPhone,
+        whatsapp: normalizedPhone,
         telegramUsername: telegramUsername || undefined,
         password: hashedPassword,
         role,
@@ -2203,7 +2325,7 @@ app.post("/api/auth/register", async (req: Request, res: Response) => {
             username: email,
             password: hashedPassword,
             email,
-            phone: phone || undefined,
+            phone: normalizedPhone,
             fullName,
             role,
             points: 100,

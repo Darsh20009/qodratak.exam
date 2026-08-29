@@ -9,6 +9,12 @@ import { Question, ChatMessage, Admin } from './mongodb/models';
 import { sendSubscriptionApprovalEmail } from './services/emailService';
 import { createAdminAccessToken, verifyAdminAccessToken } from './adminSessionToken';
 import { getPrivateQuestionImageOriginal, processQuestionImage } from './services/questionImageProcessor';
+import {
+  connectWhatsApp,
+  disconnectWhatsApp,
+  getWhatsAppStatus,
+  sendWhatsAppText,
+} from './services/whatsappService';
 
 const router = Router();
 
@@ -1331,6 +1337,45 @@ router.put('/settings/:key', requireAdminAuth, async (req: Request, res: Respons
     res.json({ success: true, setting });
   } catch (error) {
     res.status(500).json({ error: 'فشل في تحديث الإعداد' });
+  }
+});
+
+// =========== WHATSAPP CONNECTION ============
+router.get('/whatsapp/status', requireAdminAuth, (_req: Request, res: Response) => {
+  res.json(getWhatsAppStatus());
+});
+
+router.post('/whatsapp/connect', requireAdminAuth, async (_req: Request, res: Response) => {
+  try {
+    await connectWhatsApp();
+    res.json(getWhatsAppStatus());
+  } catch (error) {
+    console.error('[WhatsApp] connect error:', error);
+    res.status(500).json({ error: 'تعذر بدء ربط واتساب' });
+  }
+});
+
+router.post('/whatsapp/disconnect', requireAdminAuth, async (req: Request, res: Response) => {
+  try {
+    const clearSession = req.body?.clearSession === true;
+    res.json(await disconnectWhatsApp(clearSession));
+  } catch (error) {
+    console.error('[WhatsApp] disconnect error:', error);
+    res.status(500).json({ error: 'تعذر فصل واتساب' });
+  }
+});
+
+router.post('/whatsapp/test-message', requireAdminAuth, async (req: Request, res: Response) => {
+  try {
+    const { phone } = req.body;
+    if (!phone) return res.status(400).json({ error: 'رقم الاختبار مطلوب' });
+    await sendWhatsAppText(phone, 'تم ربط منصة قدراتك بواتساب بنجاح ✅');
+    res.json({ success: true });
+  } catch (error: any) {
+    const message = error?.message === 'WHATSAPP_NOT_CONNECTED'
+      ? 'اربط واتساب أولاً'
+      : 'تعذر إرسال رسالة الاختبار';
+    res.status(400).json({ error: message });
   }
 });
 

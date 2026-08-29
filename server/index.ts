@@ -11,6 +11,7 @@ import adminRoutes from "./adminRoutes";
 import notificationRoutes from "./notificationRoutes";
 import multiplayerRoutes, { gameWebSocketServer } from "./multiplayerRoutes";
 import { Question } from "./mongodb/models";
+import { restoreWhatsAppSession } from "./services/whatsappService";
 
 const app = express();
 app.set('trust proxy', 1); // Trust the first reverse proxy for secure cookies
@@ -260,6 +261,7 @@ async function seedQuestionsIfEmpty() {
   const serverInstance = app.listen(port, '0.0.0.0', () => {
     log(`serving on port ${port}`);
   });
+  void restoreWhatsAppSession();
 
   // Initialize WebSocket servers in noServer mode
   const { wss } = await import('./websocket');
