@@ -262,7 +262,6 @@ async function seedQuestionsIfEmpty() {
   const serverInstance = app.listen(port, '0.0.0.0', () => {
     log(`serving on port ${port}`);
   });
-  void restoreWhatsAppSession();
   onWhatsAppMessage(async (message) => {
     if (mongoose.connection.readyState !== 1) return;
     try {
@@ -272,6 +271,7 @@ async function seedQuestionsIfEmpty() {
       console.error("[WhatsApp] Could not persist message:", error);
     }
   });
+  void restoreWhatsAppSession();
 
   // Initialize WebSocket servers in noServer mode
   const { wss } = await import('./websocket');
