@@ -23,6 +23,7 @@ import {
   verifyPhoneOtp,
   verifyPhoneVerificationToken,
 } from './services/phoneOtpService';
+import { getDeviceKey, publicDevices, registerDevice } from './services/deviceSecurity';
 
 // RBAC System - Sprint 0
 import { 
@@ -1430,6 +1431,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
               city: mongoUser.city,
             };
 
+            const deviceAccess = registerDevice(mongoUser.devices, req, req.body?.deviceId);
+            if (!deviceAccess.allowed) {
+              return res.status(409).json({
+                message: "وصلت إلى الحد الأقصى لجهازين. احذف جهازاً قديماً من إدارة الأجهزة ثم حاول مجدداً.",
+                code: "DEVICE_LIMIT_REACHED",
+                devices: publicDevices(deviceAccess.devices),
+              });
+            }
+            mongoUser.devices = deviceAccess.devices as any;
+            await mongoUser.save();
+
             // ── 2FA check ──
             if (mongoUser.twoFactorEnabled && (mongoUser.twoFactorMethods || []).length > 0) {
               (req.session as any).pending2FA = { userId: String(mongoUser._id) };
@@ -1511,9 +1523,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
 
+      const deviceAccess = registerDevice(user.devices, req, req.body?.deviceId);
+      if (!deviceAccess.allowed) {
+        return res.status(409).json({
+          message: "وصلت إلى الحد الأقصى لجهازين. احذف جهازاً قديماً من إدارة الأجهزة ثم حاول مجدداً.",
+          code: "DEVICE_LIMIT_REACHED",
+          devices: publicDevices(deviceAccess.devices),
+        });
+      }
+      user.devices = deviceAccess.devices;
+
       // التحقق من حالة الاشتراك
       const today = new Date();
-      let shouldUpdateUser = false;
+      let shouldUpdateUser = true;
 
       if (user.subscription) {
         // التحقق من انتهاء الاشتراك لجميع الباقات المدفوعة
@@ -1707,8 +1729,18 @@ const phoneOtpStore = new Map<string, { otp: string; expiry: Date; chatId?: numb
       let loginUser: any = localUser;
       if (!loginUser && mongoose.connection.readyState === 1) {
         const { User: MongoUser } = await import('./mongodb/models');
-        const mongoUser = await MongoUser.findOne({ phone: verification.phone }).lean() as any;
+            const mongoUser = await MongoUser.findOne({ phone: verification.phone }) as any;
         if (mongoUser) {
+              const deviceAccess = registerDevice(mongoUser.devices, req, req.body?.deviceId);
+              if (!deviceAccess.allowed) {
+                return res.status(409).json({
+                  error: 'وصلت إلى الحد الأقصى لجهازين. احذف جهازاً قديماً من إدارة الأجهزة ثم حاول مجدداً.',
+                  code: 'DEVICE_LIMIT_REACHED',
+                  devices: publicDevices(deviceAccess.devices),
+                });
+              }
+              mongoUser.devices = deviceAccess.devices as any;
+              await mongoUser.save();
           loginUser = {
             id: String(mongoUser._id),
             name: mongoUser.fullName || mongoUser.username,
@@ -1719,10 +1751,28 @@ const phoneOtpStore = new Map<string, { otp: string; expiry: Date; chatId?: numb
             role: mongoUser.role || 'student',
             points: mongoUser.points || 0,
             level: mongoUser.level || 1,
-            subscription: mongoUser.subscription || { type: 'free', status: 'active' },
+                subscription: mongoUser.subscription || { type: 'free', status: 'active' },
+                devices: mongoUser.devices,
           };
         }
       }
+          if (loginUser && !loginUser.devices) {
+            const deviceAccess = registerDevice(loginUser.devices, req, req.body?.deviceId);
+            if (!deviceAccess.allowed) {
+              return res.status(409).json({
+                error: 'وصلت إلى الحد الأقصى لجهازين. احذف جهازاً قديماً من إدارة الأجهزة ثم حاول مجدداً.',
+                code: 'DEVICE_LIMIT_REACHED',
+                devices: publicDevices(deviceAccess.devices),
+              });
+            }
+            loginUser.devices = deviceAccess.devices;
+            try {
+              const localUsers = users.map((candidate: any) => candidate.id === loginUser.id ? loginUser : candidate);
+              fs.writeFileSync('attached_assets/user.json', JSON.stringify(localUsers, null, 2));
+            } catch (error) {
+              console.error('Phone login device save error:', error);
+            }
+          }
       if (!loginUser) return res.status(404).json({ error: 'الحساب غير موجود' });
 
       (req.session as any).userId = loginUser.id;
@@ -1742,6 +1792,49 @@ const phoneOtpStore = new Map<string, { otp: string; expiry: Date; chatId?: numb
       };
       const message = messages[error?.message];
       return res.status(message ? 400 : 500).json({ error: message || 'تعذر التحقق من الرمز' });
+    }
+  });
+
+  app.get('/api/user/devices', requireAuth, async (req: Request, res: Response) => {
+    try {
+      const userId = String((req.session as any).userId);
+      const currentDeviceKey = getDeviceKey(req, req.headers['x-device-id']);
+      if (mongoose.connection.readyState === 1) {
+        const { User: MongoUser } = await import('./mongodb/models');
+        const mongoUser = await MongoUser.findById(userId).lean() as any;
+        return res.json({ devices: publicDevices(mongoUser?.devices, currentDeviceKey), limit: 2 });
+      }
+
+      const users = JSON.parse(fs.readFileSync('attached_assets/user.json', 'utf-8'));
+      const user = users.find((candidate: any) => String(candidate.id) === userId);
+      return res.json({ devices: publicDevices(user?.devices, currentDeviceKey), limit: 2 });
+    } catch (error) {
+      console.error('Get devices error:', error);
+      return res.status(500).json({ error: 'تعذر قراءة الأجهزة المسجلة' });
+    }
+  });
+
+  app.delete('/api/user/devices/:deviceId', requireAuth, async (req: Request, res: Response) => {
+    try {
+      const deviceId = String(req.params.deviceId || '');
+      if (!/^[a-f0-9]{32}$/.test(deviceId)) {
+        return res.status(400).json({ error: 'معرّف الجهاز غير صالح' });
+      }
+      const userId = String((req.session as any).userId);
+      if (mongoose.connection.readyState === 1) {
+        const { User: MongoUser } = await import('./mongodb/models');
+        await MongoUser.findByIdAndUpdate(userId, { $pull: { devices: { deviceKey: deviceId } } });
+      } else {
+        const users = JSON.parse(fs.readFileSync('attached_assets/user.json', 'utf-8'));
+        const user = users.find((candidate: any) => String(candidate.id) === userId);
+        if (!user) return res.status(404).json({ error: 'المستخدم غير موجود' });
+        user.devices = (user.devices || []).filter((device: any) => device.deviceKey !== deviceId);
+        fs.writeFileSync('attached_assets/user.json', JSON.stringify(users, null, 2));
+      }
+      return res.json({ success: true });
+    } catch (error) {
+      console.error('Delete device error:', error);
+      return res.status(500).json({ error: 'تعذر حذف الجهاز' });
     }
   });
 

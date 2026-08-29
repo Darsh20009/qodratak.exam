@@ -38,6 +38,7 @@ import {
 import { Badge } from "../components/ui/badge";
 import { CaptchaVerification } from "@/components/CaptchaVerification";
 import SubscriptionCountdown from "@/components/SubscriptionCountdown";
+import { DeviceManagementCard } from "@/components/DeviceManagementCard";
 
 // Form schema for login
 const loginSchema = z.object({
@@ -1005,6 +1006,8 @@ const ProfilePage: React.FC = () => {
           </TabsContent>
         </Tabs>
       </div>
+
+      {isLoggedIn && <DeviceManagementCard />}
 
       {/* Captcha Verification Modal */}
       {showCaptcha && (

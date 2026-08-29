@@ -4,6 +4,7 @@ import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { Eye, EyeOff, KeyRound, LogIn, MessageCircle, Shield, User, X, Building2, GraduationCap } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { setAdminAccessToken } from "@/lib/adminSession";
+import { getDeviceId } from "@/lib/device";
 
 const NAVY = "#171723";
 const SIGNAL = "#FF8A70";
@@ -55,7 +56,7 @@ export function LoginModal({ open, onClose, onSwitchToSignup }: LoginModalProps)
           method: "POST",
           headers: { "Content-Type": "application/json" },
           credentials: "include",
-          body: JSON.stringify({ phone: identifier.trim(), otp: otp.trim(), purpose: "login" }),
+          body: JSON.stringify({ phone: identifier.trim(), otp: otp.trim(), purpose: "login", deviceId: getDeviceId() }),
         });
         const result = await response.json();
         if (!response.ok) throw new Error(result.error || "تعذر التحقق من رقم الجوال");
@@ -77,7 +78,7 @@ export function LoginModal({ open, onClose, onSwitchToSignup }: LoginModalProps)
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
-        body: JSON.stringify({ identifier: identifier.trim(), password }),
+        body: JSON.stringify({ identifier: identifier.trim(), password, deviceId: getDeviceId() }),
       });
       const result = await response.json();
 

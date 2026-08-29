@@ -9,7 +9,10 @@
     "password": "$2b$10$eLAimBBS7Sci0qlrmkT6uebsfRNu39V030/QRVpBuxkdDJ7lxKzwO",
     "role": "admin",
     "isDemo": true,
-    "subscription": { "type": "demo", "status": "active" },
+    "subscription": {
+      "type": "demo",
+      "status": "active"
+    },
     "points": 0,
     "level": 1
   },
@@ -23,11 +26,32 @@
     "password": "$2b$10$t8lv0zWY1XYoZPMFq1CZauKl9jO8SHL3CMoYsAfW0sz4Vn2HxpPPy",
     "role": "student",
     "isDemo": true,
-    "subscription": { "type": "trial", "status": "active" },
+    "subscription": {
+      "type": "trial",
+      "status": "active"
+    },
     "points": 320,
     "level": 3,
     "testsTaken": 4,
-    "averageScore": 76
+    "averageScore": 76,
+    "devices": [
+      {
+        "deviceKey": "1231ef5e4f9325f20411e172b939c445",
+        "label": "جهاز متصفح",
+        "ipHash": "a880759876a1664d",
+        "userAgent": "curl/8.14.1",
+        "firstSeenAt": "2026-08-29T22:26:47.904Z",
+        "lastSeenAt": "2026-08-29T22:26:47.904Z"
+      },
+      {
+        "deviceKey": "cb5578aa6f7c8b4dea91b100800c86b4",
+        "label": "جهاز متصفح",
+        "ipHash": "a880759876a1664d",
+        "userAgent": "curl/8.14.1",
+        "firstSeenAt": "2026-08-29T22:26:48.188Z",
+        "lastSeenAt": "2026-08-29T22:26:48.188Z"
+      }
+    ]
   },
   {
     "id": 900003,
@@ -39,8 +63,14 @@
     "password": "$2b$10$Rv5YCCrEJmPtUbWIIhRAsOA3QIC1QbFp/MoclLvOxMtn2KzkiOIu.",
     "role": "institution_admin",
     "isDemo": true,
-    "institution": { "name": "مؤسسة قدراتك التجريبية", "type": "training_center" },
-    "subscription": { "type": "institution", "status": "active" },
+    "institution": {
+      "name": "مؤسسة قدراتك التجريبية",
+      "type": "training_center"
+    },
+    "subscription": {
+      "type": "institution",
+      "status": "active"
+    },
     "points": 0,
     "level": 1
   }

@@ -5,6 +5,7 @@ import { Eye, EyeOff, LogIn, Fingerprint, UserPlus, Shield, KeyRound, HelpCircle
 import { startAuthentication } from '@simplewebauthn/browser';
 import { SiTelegram } from "react-icons/si";
 import { setAdminAccessToken } from "@/lib/adminSession";
+import { getDeviceId } from "@/lib/device";
 
 const developmentAccounts = [
   { label: "الأدمن التجريبي", identifier: "admin-demo", password: "AdminDemo@2026", Icon: Shield },
@@ -452,6 +453,7 @@ export default function LoginPage() {
             phone: formData.identifier.trim(),
             otp: whatsappOtp.trim(),
             purpose: 'login',
+            deviceId: getDeviceId(),
           }),
           credentials: 'include',
         });
@@ -469,7 +471,7 @@ export default function LoginPage() {
       const response = await fetch('/api/auth/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ identifier: formData.identifier, password: formData.password }),
+        body: JSON.stringify({ identifier: formData.identifier, password: formData.password, deviceId: getDeviceId() }),
         credentials: 'include',
       });
       const result = await response.json();

@@ -31,6 +31,7 @@ export interface IUser extends Document {
   freeTrialActivated: boolean;
   freeTrialEmail?: string;
   webauthnCredentials?: IWebAuthnCredential[];
+  devices?: IRegisteredDevice[];
   avatar?: string;
   bio?: string;
   pinHash?: string;
@@ -79,6 +80,15 @@ export interface IWebAuthnCredential {
   createdAt: Date;
 }
 
+export interface IRegisteredDevice {
+  deviceKey: string;
+  label: string;
+  ipHash: string;
+  userAgent: string;
+  firstSeenAt: Date;
+  lastSeenAt: Date;
+}
+
 const webAuthnCredentialSchema = new Schema<IWebAuthnCredential>({
   credentialID: { type: String, required: true },
   credentialPublicKey: { type: String, required: true },
@@ -86,6 +96,15 @@ const webAuthnCredentialSchema = new Schema<IWebAuthnCredential>({
   deviceName: { type: String },
   createdAt: { type: Date, default: Date.now },
 });
+
+const registeredDeviceSchema = new Schema<IRegisteredDevice>({
+  deviceKey: { type: String, required: true },
+  label: { type: String, required: true },
+  ipHash: { type: String, required: true },
+  userAgent: { type: String, required: true },
+  firstSeenAt: { type: Date, default: Date.now },
+  lastSeenAt: { type: Date, default: Date.now },
+}, { _id: false });
 
 const userSchema = new Schema<IUser>({
   username: { type: String, required: true, unique: true },
@@ -116,6 +135,7 @@ const userSchema = new Schema<IUser>({
   freeTrialActivated: { type: Boolean, default: false },
   freeTrialEmail: { type: String },
   webauthnCredentials: { type: [webAuthnCredentialSchema], default: [] },
+  devices: { type: [registeredDeviceSchema], default: [] },
   avatar: { type: String },
   bio: { type: String },
   pinHash: { type: String },
