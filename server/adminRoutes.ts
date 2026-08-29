@@ -3,15 +3,17 @@ import bcrypt from 'bcryptjs';
 import multer from 'multer';
 import path from 'path';
 import fs from 'fs';
+import mongoose from 'mongoose';
 import { mongoStorage } from './mongodb/mongoStorage';
 import { storage } from './storage';
-import { Question, ChatMessage, Admin } from './mongodb/models';
+import { Question, ChatMessage, Admin, WhatsAppMessage } from './mongodb/models';
 import { sendSubscriptionApprovalEmail } from './services/emailService';
 import { createAdminAccessToken, verifyAdminAccessToken } from './adminSessionToken';
 import { getPrivateQuestionImageOriginal, processQuestionImage } from './services/questionImageProcessor';
 import {
   connectWhatsApp,
   disconnectWhatsApp,
+  getRecentWhatsAppMessages,
   getWhatsAppStatus,
   sendWhatsAppText,
 } from './services/whatsappService';
@@ -1376,6 +1378,84 @@ router.post('/whatsapp/test-message', requireAdminAuth, async (req: Request, res
       ? 'اربط واتساب أولاً'
       : 'تعذر إرسال رسالة الاختبار';
     res.status(400).json({ error: message });
+  }
+});
+
+router.get('/whatsapp/conversations', requireAdminAuth, async (_req: Request, res: Response) => {
+  try {
+    if (mongoose.connection.readyState === 1) {
+      const rows = await WhatsAppMessage.aggregate([
+        { $sort: { createdAt: -1 } },
+        {
+          $group: {
+            _id: '$phone',
+            senderName: { $first: '$senderName' },
+            lastMessage: { $first: '$content' },
+            lastTime: { $first: '$createdAt' },
+            direction: { $first: '$direction' },
+          },
+        },
+        { $sort: { lastTime: -1 } },
+        { $limit: 200 },
+      ]);
+      return res.json({
+        conversations: rows.map((row) => ({
+          phone: row._id,
+          senderName: row.senderName || row._id,
+          lastMessage: row.lastMessage,
+          lastTime: row.lastTime,
+          direction: row.direction,
+        })),
+      });
+    }
+
+    const grouped = new Map<string, any>();
+    for (const message of getRecentWhatsAppMessages().reverse()) {
+      if (!grouped.has(message.phone)) grouped.set(message.phone, message);
+    }
+    return res.json({
+      conversations: Array.from(grouped.values()).map((message) => ({
+        phone: message.phone,
+        senderName: message.senderName,
+        lastMessage: message.content,
+        lastTime: message.createdAt,
+        direction: message.direction,
+      })),
+    });
+  } catch (error) {
+    console.error('[WhatsApp] conversations error:', error);
+    return res.status(500).json({ error: 'تعذر تحميل محادثات واتساب' });
+  }
+});
+
+router.get('/whatsapp/messages/:phone', requireAdminAuth, async (req: Request, res: Response) => {
+  try {
+    const phone = String(req.params.phone || '').replace(/\D/g, '');
+    if (!phone) return res.status(400).json({ error: 'رقم المحادثة غير صالح' });
+    if (mongoose.connection.readyState === 1) {
+      const messages = await WhatsAppMessage.find({ phone }).sort({ createdAt: 1 }).limit(300).lean();
+      return res.json({ messages });
+    }
+    return res.json({ messages: getRecentWhatsAppMessages(phone) });
+  } catch (error) {
+    console.error('[WhatsApp] messages error:', error);
+    return res.status(500).json({ error: 'تعذر تحميل الرسائل' });
+  }
+});
+
+router.post('/whatsapp/messages/:phone', requireAdminAuth, async (req: Request, res: Response) => {
+  try {
+    const phone = String(req.params.phone || '').replace(/\D/g, '');
+    const content = String(req.body?.content || '').trim();
+    if (!phone || !content) return res.status(400).json({ error: 'الرقم ونص الرسالة مطلوبان' });
+    if (content.length > 4000) return res.status(400).json({ error: 'الرسالة طويلة جداً' });
+    await sendWhatsAppText(phone, content);
+    return res.status(201).json({ success: true });
+  } catch (error: any) {
+    const message = error?.message === 'WHATSAPP_NOT_CONNECTED'
+      ? 'واتساب غير متصل. اربط الرقم أولاً.'
+      : 'تعذر إرسال الرسالة';
+    return res.status(400).json({ error: message });
   }
 });
 

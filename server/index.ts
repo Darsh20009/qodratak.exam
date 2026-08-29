@@ -4,6 +4,7 @@ import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
 import fs from "fs";
 import path from "path";
+import mongoose from "mongoose";
 import MongoStore from "connect-mongo";
 import { connectToMongoDB } from "./mongodb/connection";
 import { mongoStorage } from "./mongodb/mongoStorage";
@@ -11,7 +12,7 @@ import adminRoutes from "./adminRoutes";
 import notificationRoutes from "./notificationRoutes";
 import multiplayerRoutes, { gameWebSocketServer } from "./multiplayerRoutes";
 import { Question } from "./mongodb/models";
-import { restoreWhatsAppSession } from "./services/whatsappService";
+import { onWhatsAppMessage, restoreWhatsAppSession } from "./services/whatsappService";
 
 const app = express();
 app.set('trust proxy', 1); // Trust the first reverse proxy for secure cookies
@@ -262,6 +263,15 @@ async function seedQuestionsIfEmpty() {
     log(`serving on port ${port}`);
   });
   void restoreWhatsAppSession();
+  onWhatsAppMessage(async (message) => {
+    if (mongoose.connection.readyState !== 1) return;
+    try {
+      const { WhatsAppMessage } = await import("./mongodb/models");
+      await WhatsAppMessage.updateOne({ messageId: message.messageId }, message, { upsert: true });
+    } catch (error) {
+      console.error("[WhatsApp] Could not persist message:", error);
+    }
+  });
 
   // Initialize WebSocket servers in noServer mode
   const { wss } = await import('./websocket');

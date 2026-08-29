@@ -382,6 +382,15 @@ export interface IChatMessage extends Document {
   attachmentUrl?: string;
 }
 
+export interface IWhatsAppMessage extends Document {
+  messageId: string;
+  phone: string;
+  senderName: string;
+  content: string;
+  direction: 'inbound' | 'outbound';
+  createdAt: Date;
+}
+
 const chatMessageSchema = new Schema<IChatMessage>({
   fromUserId: { type: String, required: true, index: true },
   fromUserName: { type: String, required: true },
@@ -391,6 +400,15 @@ const chatMessageSchema = new Schema<IChatMessage>({
   isRead: { type: Boolean, default: false },
   createdAt: { type: Date, default: Date.now },
   attachmentUrl: { type: String },
+});
+
+const whatsAppMessageSchema = new Schema<IWhatsAppMessage>({
+  messageId: { type: String, required: true, unique: true },
+  phone: { type: String, required: true, index: true },
+  senderName: { type: String, required: true },
+  content: { type: String, required: true },
+  direction: { type: String, enum: ['inbound', 'outbound'], required: true },
+  createdAt: { type: Date, default: Date.now, index: true },
 });
 
 export interface IActivityLog extends Document {
@@ -972,6 +990,7 @@ export const Subscription = mongoose.model<ISubscription>('Subscription', subscr
 export const TestResult = mongoose.model<ITestResult>('TestResult', testResultSchema);
 export const Question = mongoose.model<IQuestion>('Question', questionSchema);
 export const ChatMessage = mongoose.model<IChatMessage>('ChatMessage', chatMessageSchema);
+export const WhatsAppMessage = mongoose.model<IWhatsAppMessage>('WhatsAppMessage', whatsAppMessageSchema);
 export const ActivityLog = mongoose.model<IActivityLog>('ActivityLog', activityLogSchema);
 export const LeaderboardEntry = mongoose.model<ILeaderboardEntry>('LeaderboardEntry', leaderboardEntrySchema);
 export const PaperModelResult = mongoose.model<IPaperModelResult>('PaperModelResult', paperModelResultSchema);

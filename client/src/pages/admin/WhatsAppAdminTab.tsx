@@ -3,6 +3,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { CheckCircle2, Link2, Loader2, MessageCircle, Power, RefreshCw, Send, ShieldAlert } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
+import WhatsAppCrmPanel from "./WhatsAppCrmPanel";
 
 type Status = {
   state: "disconnected" | "connecting" | "waiting_for_qr" | "connected";
@@ -132,6 +133,8 @@ export default function WhatsAppAdminTab() {
           </button>
         </div>
       </div>
+
+      <WhatsAppCrmPanel connected={connected} />
     </div>
   );
 }

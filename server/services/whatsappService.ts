@@ -6,6 +6,7 @@ import makeWASocket, {
   type WASocket,
 } from "@whiskeysockets/baileys";
 import QRCode from "qrcode";
+import { EventEmitter } from "events";
 
 export type WhatsAppConnectionState =
   | "disconnected"
@@ -21,12 +22,23 @@ interface WhatsAppStatus {
   message: string;
 }
 
+export interface WhatsAppMessageEvent {
+  messageId: string;
+  phone: string;
+  senderName: string;
+  content: string;
+  direction: "inbound" | "outbound";
+  createdAt: string;
+}
+
 const authDir = path.resolve(process.cwd(), ".whatsapp-auth");
 let socket: WASocket | null = null;
 let connectPromise: Promise<WhatsAppStatus> | null = null;
 let reconnectTimer: NodeJS.Timeout | null = null;
 let manualDisconnect = false;
 let reconnectAttempts = 0;
+const messageEvents = new EventEmitter();
+const recentMessages: WhatsAppMessageEvent[] = [];
 
 let currentStatus: WhatsAppStatus = {
   state: "disconnected",
@@ -68,6 +80,24 @@ export function getWhatsAppStatus(): WhatsAppStatus & { hasSavedSession: boolean
   return { ...currentStatus, hasSavedSession: hasSavedSession() };
 }
 
+export function onWhatsAppMessage(listener: (message: WhatsAppMessageEvent) => void) {
+  messageEvents.on("message", listener);
+  return () => messageEvents.off("message", listener);
+}
+
+export function getRecentWhatsAppMessages(phone?: string) {
+  return recentMessages
+    .filter((message) => !phone || message.phone === phone)
+    .slice(-300);
+}
+
+function recordMessage(message: WhatsAppMessageEvent) {
+  if (recentMessages.some((existing) => existing.messageId === message.messageId)) return;
+  recentMessages.push(message);
+  if (recentMessages.length > 2000) recentMessages.splice(0, recentMessages.length - 2000);
+  messageEvents.emit("message", message);
+}
+
 export async function connectWhatsApp(): Promise<WhatsAppStatus> {
   if (currentStatus.state === "connected" && socket) return currentStatus;
   if (connectPromise) return connectPromise;
@@ -91,6 +121,27 @@ export async function connectWhatsApp(): Promise<WhatsAppStatus> {
     });
     socket = nextSocket;
     nextSocket.ev.on("creds.update", saveCreds);
+    nextSocket.ev.on("messages.upsert", ({ messages }) => {
+      for (const message of messages as any[]) {
+        if (message.key?.fromMe) continue;
+        const remoteJid = String(message.key?.remoteJid || "");
+        if (!remoteJid.endsWith("@s.whatsapp.net")) continue;
+        const content =
+          message.message?.conversation ||
+          message.message?.extendedTextMessage?.text ||
+          message.message?.imageMessage?.caption ||
+          message.message?.videoMessage?.caption;
+        if (!content?.trim()) continue;
+        recordMessage({
+          messageId: String(message.key?.id || `in-${Date.now()}-${remoteJid}`),
+          phone: remoteJid.split("@")[0],
+          senderName: String(message.pushName || remoteJid.split("@")[0]),
+          content: String(content).trim(),
+          direction: "inbound",
+          createdAt: new Date().toISOString(),
+        });
+      }
+    });
 
     nextSocket.ev.on("connection.update", async (update) => {
       if (update.qr) {
@@ -193,7 +244,15 @@ export async function sendWhatsAppText(phone: string, text: string) {
   }
   const digits = phone.replace(/\D/g, "");
   if (!digits) throw new Error("INVALID_PHONE");
-  await socket.sendMessage(`${digits}@s.whatsapp.net`, { text });
+  const sent = await socket.sendMessage(`${digits}@s.whatsapp.net`, { text });
+  recordMessage({
+    messageId: String(sent?.key?.id || `out-${Date.now()}-${digits}`),
+    phone: digits,
+    senderName: "منصة قدراتك",
+    content: text,
+    direction: "outbound",
+    createdAt: new Date().toISOString(),
+  });
 }
 
 export async function restoreWhatsAppSession() {
