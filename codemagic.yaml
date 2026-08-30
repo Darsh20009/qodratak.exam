@@ -1,0 +1,107 @@
+workflows:
+  qodratak-android-debug:
+    name: Qodratak Android Debug
+    max_build_duration: 30
+    instance_type: linux_x2
+    environment:
+      flutter: stable
+      vars:
+        API_BASE_URL: https://qodratak.sa
+    scripts:
+      - name: Get packages and analyze
+        script: |
+          cd flutter_app
+          flutter pub get
+          flutter analyze
+      - name: Build debug APK
+        script: |
+          cd flutter_app
+          flutter build apk --debug --dart-define=API_BASE_URL=$API_BASE_URL
+    artifacts:
+      - flutter_app/build/app/outputs/apk/debug/*.apk
+
+  qodratak-android-internal:
+    name: Qodratak Android Internal
+    max_build_duration: 60
+    instance_type: linux_x2
+    environment:
+      flutter: stable
+      groups:
+        - android_signing
+        - google_play
+      vars:
+        PACKAGE_NAME: studio.qirox.qodratak
+        API_BASE_URL: https://qodratak.sa
+    scripts:
+      - name: Configure signing
+        script: |
+          echo "$CM_KEYSTORE" | base64 --decode > flutter_app/android/app/qodratak-keystore.jks
+          cat > flutter_app/android/key.properties <<EOF
+          storeFile=qodratak-keystore.jks
+          storePassword=$CM_KEYSTORE_PASSWORD
+          keyAlias=$CM_KEY_ALIAS
+          keyPassword=$CM_KEY_PASSWORD
+          EOF
+      - name: Get packages and analyze
+        script: |
+          cd flutter_app
+          flutter pub get
+          flutter analyze
+      - name: Build App Bundle
+        script: |
+          cd flutter_app
+          flutter build appbundle --release --build-number=$BUILD_NUMBER \
+            --dart-define=API_BASE_URL=$API_BASE_URL
+    artifacts:
+      - flutter_app/build/app/outputs/bundle/release/*.aab
+    publishing:
+      google_play:
+        credentials: $GCLOUD_SERVICE_ACCOUNT_CREDENTIALS
+        track: internal
+        submit_as_draft: true
+
+  qodratak-ios-testflight:
+    name: Qodratak iOS TestFlight
+    max_build_duration: 90
+    instance_type: mac_mini_m2
+    environment:
+      flutter: stable
+      xcode: latest
+      cocoapods: default
+      ios_signing:
+        distribution_type: app_store
+        bundle_identifier: studio.qirox.qodratak
+      groups:
+        - app_store_connect
+      vars:
+        BUNDLE_ID: studio.qirox.qodratak
+        API_BASE_URL: https://qodratak.sa
+    scripts:
+      - name: Configure iOS signing
+        script: |
+          keychain initialize
+          app-store-connect fetch-signing-files "$BUNDLE_ID" --type IOS_APP_STORE --create
+          keychain add-certificates
+          cd flutter_app
+          xcode-project use-profiles
+      - name: Get packages and analyze
+        script: |
+          cd flutter_app
+          flutter pub get
+          flutter analyze
+          find ios -name "Podfile" -execdir pod install \;
+      - name: Build IPA
+        script: |
+          cd flutter_app
+          flutter build ipa --release --build-number=$BUILD_NUMBER \
+            --dart-define=API_BASE_URL=$API_BASE_URL
+    artifacts:
+      - flutter_app/build/ios/ipa/*.ipa
+      - /tmp/xcodebuild_logs/*.log
+    publishing:
+      app_store_connect:
+        api_key: $APP_STORE_CONNECT_PRIVATE_KEY
+        key_id: $APP_STORE_CONNECT_KEY_IDENTIFIER
+        issuer_id: $APP_STORE_CONNECT_ISSUER_ID
+        submit_to_testflight: true
+        submit_to_app_store: false

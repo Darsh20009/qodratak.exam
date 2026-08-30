@@ -656,6 +656,170 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Mobile exam flow keeps answer keys on the server and grades against the
+  // authenticated session. This prevents clients from forging scores/user IDs.
+  app.get("/api/mobile/questions/free-test/:category", requireAuth, async (req: Request, res: Response) => {
+    try {
+      const category = String(req.params.category);
+      const sessionUserId = String((req as any).session?.userId || '');
+      if (!sessionUserId) return res.status(401).json({ message: 'يجب تسجيل الدخول' });
+      if (category !== 'verbal' && category !== 'quantitative') {
+        return res.status(400).json({ message: "Category must be 'verbal' or 'quantitative'" });
+      }
+
+      let selectedQuestions: any[] = [];
+      try {
+        selectedQuestions = await mongoStorage.getUnseenQuestions(sessionUserId, 20, { category });
+      } catch {}
+      if (selectedQuestions.length === 0) {
+        const allQuestions = await storage.getQuestionsByCategory(category);
+        selectedQuestions = [...allQuestions].sort(() => Math.random() - 0.5).slice(0, 20);
+      }
+      if (selectedQuestions.length === 0) {
+        return res.status(404).json({ message: 'لا توجد أسئلة متاحة حالياً' });
+      }
+
+      const attemptId = crypto.randomUUID();
+      const attempts = (req.session as any).mobileExamAttempts || {};
+      const now = Date.now();
+      for (const [id, attempt] of Object.entries(attempts) as [string, any][]) {
+        if (!attempt?.createdAt || now - Number(attempt.createdAt) > 2 * 60 * 60 * 1000) delete attempts[id];
+      }
+      const questions = selectedQuestions.map((question: any) => {
+        const id = String(question._id || question.id || question.questionId);
+        attempts[attemptId] ??= {
+          userId: sessionUserId,
+          category,
+          createdAt: now,
+          questions: [],
+        };
+        attempts[attemptId].questions.push({
+          id,
+          correctOptionIndex: Number(question.correctOptionIndex ?? question.correctAnswer ?? 0),
+        });
+        return {
+          id,
+          text: question.text || question.question,
+          options: question.options || question.choices || [],
+          category: question.category || category,
+          difficulty: question.difficulty || 'mixed',
+        };
+      });
+      (req.session as any).mobileExamAttempts = attempts;
+      await new Promise<void>((resolve, reject) =>
+        req.session.save((error) => error ? reject(error) : resolve())
+      );
+      return res.json({ attemptId, questions, total: questions.length });
+    } catch (error) {
+      console.error('Mobile free-test error:', error);
+      return res.status(500).json({ message: 'تعذر تحميل الاختبار حالياً' });
+    }
+  });
+
+  app.post("/api/mobile/test-results", requireAuth, async (req: Request, res: Response) => {
+    try {
+      const sessionUserId = String((req as any).session?.userId || '');
+      const attemptId = String(req.body?.attemptId || '');
+      const attempts = (req.session as any).mobileExamAttempts || {};
+      const attempt = attempts[attemptId];
+      if (!attempt || attempt.userId !== sessionUserId) {
+        return res.status(400).json({ message: 'انتهت جلسة الاختبار أو تم إرسالها مسبقاً' });
+      }
+      if (Date.now() - Number(attempt.createdAt) > 2 * 60 * 60 * 1000) {
+        delete attempts[attemptId];
+        return res.status(410).json({ message: 'انتهت صلاحية الاختبار. ابدأ اختباراً جديداً.' });
+      }
+
+      const submitted = Array.isArray(req.body?.answers) ? req.body.answers : [];
+      const answerMap = new Map(
+        submitted.map((answer: any) => [String(answer?.questionId || ''), Number(answer?.selectedIndex)])
+      );
+      const totalQuestions = attempt.questions.length;
+      let score = 0;
+      let skippedQuestions = 0;
+      for (const question of attempt.questions) {
+        if (!answerMap.has(question.id)) skippedQuestions += 1;
+        else if (answerMap.get(question.id) === question.correctOptionIndex) score += 1;
+      }
+      const wrongAnswers = totalQuestions - score - skippedQuestions;
+      const pointsEarned = score * 10 - wrongAnswers - skippedQuestions * 0.5;
+      const percentage = totalQuestions > 0 ? score / totalQuestions * 100 : 0;
+      const timeTaken = Math.max(0, Math.min(Number(req.body?.timeTaken) || 0, 2 * 60 * 60));
+
+      let savedResult: any;
+      if (mongoose.Types.ObjectId.isValid(sessionUserId)) {
+        savedResult = await mongoStorage.createTestResult({
+          userId: sessionUserId,
+          testType: attempt.category,
+          difficulty: 'mixed',
+          score,
+          totalQuestions,
+          correctAnswers: score,
+          wrongAnswers,
+          skippedQuestions,
+          percentage,
+          timeTaken,
+          pointsEarned,
+          isOfficial: false,
+        } as any);
+      } else {
+        const numericUserId = Number(sessionUserId);
+        if (!Number.isFinite(numericUserId)) {
+          return res.status(400).json({ message: 'معرّف المستخدم غير صالح' });
+        }
+        savedResult = await storage.createTestResult({
+          userId: numericUserId,
+          testType: attempt.category,
+          difficulty: 'mixed',
+          score,
+          totalQuestions,
+          pointsEarned,
+        });
+      }
+
+      delete attempts[attemptId];
+      (req.session as any).mobileExamAttempts = attempts;
+      await new Promise<void>((resolve, reject) =>
+        req.session.save((error) => error ? reject(error) : resolve())
+      );
+      try {
+        await mongoStorage.markQuestionsAsSeen(
+          sessionUserId,
+          attempt.questions.map((question: any) => question.id),
+        );
+      } catch {}
+      return res.status(201).json({
+        ...(typeof savedResult?.toObject === 'function' ? savedResult.toObject() : savedResult),
+        score,
+        totalQuestions,
+        correctAnswers: score,
+        wrongAnswers,
+        skippedQuestions,
+        percentage,
+        pointsEarned,
+      });
+    } catch (error) {
+      console.error('Mobile test result error:', error);
+      return res.status(500).json({ message: 'تعذر حفظ نتيجة الاختبار' });
+    }
+  });
+
+  app.get("/api/mobile/test-results", requireAuth, async (req: Request, res: Response) => {
+    try {
+      const sessionUserId = String((req as any).session?.userId || '');
+      if (mongoose.Types.ObjectId.isValid(sessionUserId)) {
+        const { results } = await mongoStorage.getUserTestResults(sessionUserId, 1, 100);
+        return res.json(results);
+      }
+      const numericUserId = Number(sessionUserId);
+      if (!Number.isFinite(numericUserId)) return res.status(400).json({ message: 'معرّف المستخدم غير صالح' });
+      return res.json(await storage.getTestResultsByUser(numericUserId));
+    } catch (error) {
+      console.error('Mobile test results error:', error);
+      return res.status(500).json({ message: 'تعذر تحميل النتائج' });
+    }
+  });
+
   // Get a specific question by ID
   app.get("/api/questions/:id", async (req: Request, res: Response) => {
     try {
