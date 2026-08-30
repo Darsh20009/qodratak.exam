@@ -1,1 +1,2 @@
 - [Legacy API migration strategy](legacy-api-migration.md) — preserve Qodratak’s custom fetch layer and complex route startup wiring during future workspace changes.
+- [Deployment assets and Git LFS](deployment-assets-lfs.md) — Render must not depend on quota-limited LFS objects for files required during repository checkout.
