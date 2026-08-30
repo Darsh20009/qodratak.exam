@@ -32,7 +32,7 @@ workflows:
     scripts:
       - name: Configure Android signing
         script: |
-          echo "$CM_KEYSTORE" | base64 --decode > "$CM_BUILD_DIR/android/app/qodratak-keystore.jks"
+          echo "$CM_KEYSTORE" | base64 --decode > "$CM_BUILD_DIR/android/qodratak-keystore.jks"
           cat > "$CM_BUILD_DIR/android/key.properties" <<EOF
           storeFile=qodratak-keystore.jks
           storePassword=$CM_KEYSTORE_PASSWORD
