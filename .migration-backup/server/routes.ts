@@ -1374,14 +1374,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
         } catch (_) {}
       }
 
-      // قراءة ملف المستخدمين
-      let users = [];
+      // قراءة ملف المستخدمين المحلي للتوافق مع بيانات التطوير القديمة.
+      // في الإنتاج يكون مصدر الحقيقة هو MongoDB، لذلك لا نفشل تسجيل الدخول
+      // إذا لم يكن الملف المحلي موجوداً داخل صورة Docker.
+      let users: any[] = [];
       try {
         const usersData = fs.readFileSync("attached_assets/user.json", "utf-8");
         users = JSON.parse(usersData);
       } catch (error) {
-        console.error("Error reading users file:", error);
-        return res.status(500).json({ message: "خطأ في قراءة ملف المستخدمين" });
+        console.warn("Local users file unavailable; using MongoDB authentication:", error);
+        if (mongoose.connection.readyState !== 1) {
+          return res.status(503).json({
+            message: "خدمة تسجيل الدخول غير متاحة حالياً لأن قاعدة البيانات غير متصلة",
+            code: "AUTH_DATABASE_UNAVAILABLE",
+          });
+        }
       }
 
       // البحث عن المستخدم بالبريد أو اسم المستخدم أو رقم الجوال
