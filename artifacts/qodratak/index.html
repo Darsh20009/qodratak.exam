@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl" class="dark">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+    
+    <!-- Title & Description -->
+    <title>منصة قدراتك - رحلتك نحو التغيير والإبداع</title>
+    <meta name="description" content="منصة قدراتك التعليمية - اختبارات تفاعلية لتطوير مهاراتك في اختبارات القدرات والتحصيلي مع أكثر من 5000 سؤال عالي الجودة وشروحات مفصلة" />
+    <meta name="keywords" content="قدراتك، اختبار القدرات، اختبار قياس، التحصيلي، تدريب قدرات، منصة تعليمية" />
+    <meta name="author" content="Qodratak Platform" />
+    
+    <!-- PWA Manifest -->
+    <link rel="manifest" href="/manifest.json" />
+    
+    <!-- Favicons - Multiple sizes for different platforms -->
+    <link rel="icon" type="image/png" href="/qodratak-logo.png">
+    
+    <!-- Apple Touch Icons for iOS -->
+    <link rel="apple-touch-icon" href="/qodratak-logo.png" />
+    
+    <!-- Apple Mobile Web App Settings -->
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="قدراتك" />
+    
+    <!-- Microsoft Tiles -->
+    <meta name="msapplication-TileColor" content="#0D1B2A" />
+    <meta name="msapplication-TileImage" content="/qodratak-logo.png" />
+    <meta name="msapplication-config" content="none" />
+    
+    <!-- Mobile Web App Settings -->
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="application-name" content="قدراتك" />
+    
+    <!-- Open Graph / Facebook Meta Tags -->
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content="منصة قدراتك - رحلتك نحو التغيير والإبداع" />
+    <meta property="og:description" content="منصة قدراتك التعليمية - اختبارات تفاعلية لتطوير مهاراتك في اختبارات القدرات والتحصيلي مع أكثر من 5000 سؤال" />
+    <meta property="og:image" content="/qodratak-logo.png" />
+    <meta property="og:image:width" content="512" />
+    <meta property="og:image:height" content="512" />
+    <meta property="og:image:alt" content="شعار منصة قدراتك" />
+    <meta property="og:url" content="https://qodratak.sa" />
+    <meta property="og:site_name" content="منصة قدراتك" />
+    <meta property="og:locale" content="ar_SA" />
+    
+    <!-- Twitter Card Meta Tags -->
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="منصة قدراتك - رحلتك نحو التغيير والإبداع" />
+    <meta name="twitter:description" content="منصة قدراتك التعليمية - اختبارات تفاعلية لتطوير مهاراتك في اختبارات القدرات والتحصيلي" />
+    <meta property="twitter:image" content="/qodratak-logo.png" />
+    <meta property="twitter:url" content="https://qodratak.sa" />
+    
+    <!-- Theme Color -->
+    <meta name="theme-color" content="#0D1B2A" />
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;500;600;700;800&family=Tajawal:wght@300;400;500;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+      /* Custom Scrollbar */
+      .custom-scrollbar::-webkit-scrollbar {
+        width: 6px;
+      }
+      .custom-scrollbar::-webkit-scrollbar-track {
+        background: transparent;
+      }
+      .custom-scrollbar::-webkit-scrollbar-thumb {
+        background-color: #6a11cb;
+        border-radius: 3px;
+      }
+
+      /* Animations */
+      @keyframes pulse-glow {
+        0% { transform: scale(1); box-shadow: 0 8px 25px rgba(0, 91, 179, 0.3); }
+        50% { transform: scale(1.05); box-shadow: 0 12px 35px rgba(0, 91, 179, 0.4); }
+        100% { transform: scale(1); box-shadow: 0 8px 25px rgba(0, 91, 179, 0.3); }
+      }
+    </style>
+    
+    <!-- Structured Data (Schema.org) for Google -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "Organization",
+      "name": "منصة قدراتك",
+      "alternateName": "Qodratak Platform",
+      "url": "https://qodratak.sa",
+      "logo": {
+        "@type": "ImageObject",
+        "url": "/qodratak-logo.png",
+        "width": 512,
+        "height": 512
+      },
+      "description": "منصة قدراتك التعليمية - اختبارات تفاعلية لتطوير مهاراتك في اختبارات القدرات والتحصيلي مع أكثر من 5000 سؤال عالي الجودة وشروحات مفصلة",
+      "sameAs": [
+        "https://t.me/qodratak2030"
+      ]
+    }
+    </script>
+    
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "WebSite",
+      "name": "منصة قدراتك",
+      "url": "https://qodratak.sa",
+      "potentialAction": {
+        "@type": "SearchAction",
+        "target": "https://qodratak.sa/search?q={search_term_string}",
+        "query-input": "required name=search_term_string"
+      }
+    }
+    </script>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>

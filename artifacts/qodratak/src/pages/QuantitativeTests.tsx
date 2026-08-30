@@ -1,0 +1,622 @@
+import React, { useState, useEffect } from 'react';
+import { useQuery } from '@tanstack/react-query';
+import { Link, useLocation } from 'wouter';
+import { motion } from 'framer-motion';
+import { Card, CardContent, CardHeader } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { 
+  Calculator, 
+  TrendingUp, 
+  BarChart3, 
+  PieChart, 
+  Target, 
+  Clock, 
+  Calendar,
+  Trophy,
+  Brain,
+  Award,
+  Play,
+  PlayCircle,
+  Lock,
+  CheckCircle,
+  AlertTriangle,
+  Star,
+  BookOpen as BookOpenIcon
+} from 'lucide-react';
+
+interface QuantitativeTest {
+  id: string;
+  name: string;
+  subcategory: string;
+  description: string;
+  questionCount: number;
+  timeLimit: number;
+  difficulty: 'سهل' | 'متوسط' | 'صعب' | 'متقدم';
+  icon: React.ReactNode;
+  color: string;
+  gradientFrom: string;
+  gradientTo: string;
+}
+
+interface UserTestHistory {
+  testId: string;
+  date: string;
+  score: number;
+  percentage: number;
+  completedToday: boolean;
+}
+
+interface StatItem {
+  value: string;
+  label: string;
+  icon: React.ComponentType<{ className?: string }>;
+}
+
+export function QuantitativeTests() {
+  const [, setLocation] = useLocation();
+  const [dailyTestsTaken, setDailyTestsTaken] = useState(0);
+  const MAX_DAILY_FREE_TESTS = 1;
+
+  // جلب بيانات المستخدم
+  const { data: user } = useQuery({
+    queryKey: ['/api/user'],
+  });
+
+  // تحديد المستخدم المميز
+  const isPremiumUser = user && (
+    (user as any)?.subscription?.type === 'Pro' || 
+    (user as any)?.subscription?.type === 'Pro Life' || 
+    (user as any)?.subscription?.type === 'Pro Life Plus' ||
+    (user as any)?.subscription?.type === 'Pro Live' ||
+    (user as any)?.subscription === 'pro' ||
+    (user as any)?.subscription === 'pro_life' ||
+    (user as any)?.subscription === 'pro_life_plus'
+  );
+
+  // تحميل الحد اليومي للاختبارات
+  useEffect(() => {
+    const today = new Date().toDateString();
+    const testsToday = JSON.parse(localStorage.getItem(`dailyQuantitativeTests_${today}`) || '0');
+    setDailyTestsTaken(testsToday);
+  }, []);
+
+  const canTakeTest = !!isPremiumUser || dailyTestsTaken < MAX_DAILY_FREE_TESTS;
+
+  // تسجيل اختبار جديد للحسابات المجانية
+  const recordTestTaken = () => {
+    if (!isPremiumUser) {
+      const today = new Date().toDateString();
+      const newCount = dailyTestsTaken + 1;
+      localStorage.setItem(`dailyQuantitativeTests_${today}`, JSON.stringify(newCount));
+      setDailyTestsTaken(newCount);
+    }
+  };
+
+  // اختبارات الكمي المتاحة
+  const quantitativeTests: QuantitativeTest[] = [
+    {
+      id: 'free-quantitative-test',
+      name: 'الاختبار الكمي المجاني',
+      subcategory: 'اختبار مجاني - 20 سؤال',
+      description: 'اختبار مجاني للحسابات المسجلة - 20 سؤال متنوع في 20 دقيقة (مرة واحدة يومياً)',
+      questionCount: 20,
+      timeLimit: 20,
+      difficulty: 'متوسط',
+      icon: <Star className="w-6 h-6" />,
+      color: 'green',
+      gradientFrom: 'from-green-500',
+      gradientTo: 'to-emerald-500'
+    },
+    {
+      id: 'statistics',
+      name: 'اختبار الإحصاء المتقدم',
+      subcategory: 'الإحصاء - 5 أقسام',
+      description: 'اختبار متخصص مكون من 5 أقسام في الإحصاء فقط - 55 سؤال في 55 دقيقة',
+      questionCount: 55,
+      timeLimit: 55,
+      difficulty: 'متقدم',
+      icon: <PieChart className="w-6 h-6" />,
+      color: "green",
+      gradientFrom: 'from-green-600',
+      gradientTo: 'to-teal-500'
+    },
+    {
+      id: 'arithmetic',
+      name: 'اختبار العمليات الحسابية المتقدم',
+      subcategory: 'عمليات حسابية - 5 أقسام',
+      description: 'اختبار متخصص مكون من 5 أقسام في العمليات الحسابية فقط - 55 سؤال في 55 دقيقة',
+      questionCount: 55,
+      timeLimit: 55,
+      difficulty: 'متقدم',
+      icon: <Calculator className="w-6 h-6" />,
+      color: 'blue',
+      gradientFrom: 'from-blue-500',
+      gradientTo: 'to-cyan-500'
+    },
+    {
+      id: 'patterns',
+      name: 'اختبار الحركة والأنماط المتقدم',
+      subcategory: 'الحركة والأنماط - 5 أقسام',
+      description: 'اختبار متخصص مكون من 5 أقسام في الحركة والأنماط فقط - 55 سؤال في 55 دقيقة',
+      questionCount: 55,
+      timeLimit: 55,
+      difficulty: 'متقدم',
+      icon: <TrendingUp className="w-6 h-6" />,
+      color: 'green',
+      gradientFrom: 'from-green-500',
+      gradientTo: 'to-emerald-500'
+    },
+    {
+      id: 'proportions',
+      name: 'اختبار النسبة والتناسب المتقدم',
+      subcategory: 'النسبة والتناسب - 5 أقسام',
+      description: 'اختبار متخصص مكون من 5 أقسام في النسبة والتناسب فقط - 55 سؤال في 55 دقيقة',
+      questionCount: 55,
+      timeLimit: 55,
+      difficulty: 'متقدم',
+      icon: <BarChart3 className="w-6 h-6" />,
+      color: 'teal',
+      gradientFrom: 'from-teal-500',
+      gradientTo: 'to-cyan-500'
+    },
+    {
+      id: 'equations',
+      name: 'اختبار المعادلات المتقدم',
+      subcategory: 'المعادلات - 5 أقسام',
+      description: 'اختبار متخصص مكون من 5 أقسام في المعادلات فقط - 55 سؤال في 55 دقيقة',
+      questionCount: 55,
+      timeLimit: 55,
+      difficulty: 'متقدم',
+      icon: <Brain className="w-6 h-6" />,
+      color: 'red',
+      gradientFrom: 'from-red-500',
+      gradientTo: 'to-amber-600'
+    },
+    {
+      id: 'geometry',
+      name: 'اختبار الهندسة المتقدم',
+      subcategory: 'الهندسة - 5 أقسام',
+      description: 'اختبار متخصص مكون من 5 أقسام في الهندسة فقط - 55 سؤال في 55 دقيقة',
+      questionCount: 55,
+      timeLimit: 55,
+      difficulty: 'متقدم',
+      icon: <Target className="w-6 h-6" />,
+      color: 'orange',
+      gradientFrom: 'from-orange-500',
+      gradientTo: 'to-yellow-500'
+    },
+    {
+      id: 'percentages',
+      name: 'اختبار النسبة المئوية المتقدم',
+      subcategory: 'النسبة المئوية - 5 أقسام',
+      description: 'اختبار متخصص مكون من 5 أقسام في النسبة المئوية فقط - 55 سؤال في 55 دقيقة',
+      questionCount: 55,
+      timeLimit: 55,
+      difficulty: 'متقدم',
+      icon: <Award className="w-6 h-6" />,
+      color: 'amber',
+      gradientFrom: 'from-amber-500',
+      gradientTo: 'to-orange-500'
+    },
+    {
+      id: 'mixed',
+      name: 'اختبار أفكار متنوعة المتقدم',
+      subcategory: 'أفكار متنوعة - 5 أقسام',
+      description: 'اختبار متخصص مكون من 5 أقسام في أفكار متنوعة فقط - 55 سؤال في 55 دقيقة',
+      questionCount: 55,
+      timeLimit: 55,
+      difficulty: 'متقدم',
+      icon: <Trophy className="w-6 h-6" />,
+      color: "teal",
+      gradientFrom: 'from-green-500',
+      gradientTo: 'to-emerald-600'
+    },
+    {
+      id: 'comparisons',
+      name: 'اختبار المقارنات المتقدم',
+      subcategory: 'المقارنات - 5 أقسام',
+      description: 'اختبار متخصص مكون من 5 أقسام في المقارنات فقط - 55 سؤال في 55 دقيقة',
+      questionCount: 55,
+      timeLimit: 55,
+      difficulty: 'متقدم',
+      icon: <Clock className="w-6 h-6" />,
+      color: 'slate',
+      gradientFrom: 'from-slate-500',
+      gradientTo: 'to-gray-500'
+    },
+    {
+      id: 'advanced-quantitative-test',
+      name: 'الاختبار الكمي المتقدم الشامل',
+      subcategory: 'شامل - 5 أقسام',
+      description: 'اختبار شامل مكون من 5 أقسام يشمل جميع الأقسام الكمية - 55 سؤال في 55 دقيقة',
+      questionCount: 55,
+      timeLimit: 55,
+      difficulty: 'متقدم',
+      icon: <Award className="w-6 h-6" />,
+      color: 'rainbow',
+      gradientFrom: 'from-orange-500',
+      gradientTo: 'to-red-500'
+    }
+  ];
+
+  // التحقق من إمكانية أخذ اختبار معين
+  const checkDailyLimit = (testId: string): boolean => {
+    // Must be logged in to take tests
+    if (!user) return false;
+
+    // For the free test, allow only one per day for free users
+    if (testId === 'free-quantitative-test') {
+      return canTakeTest;
+    }
+
+    // All other tests require premium subscription
+    return !!isPremiumUser;
+  };
+
+  const canTakeThisTest = canTakeTest;
+
+  const startTest = (test: QuantitativeTest) => {
+    // Must be logged in first
+    if (!user) {
+      alert('يجب عليك تسجيل الدخول أولاً للوصول إلى اختبارات الكمي');
+      setLocation('/login');
+      return;
+    }
+
+    // Check permissions for the specific test
+    if (!checkDailyLimit(test.id)) {
+      if (test.id === 'free-quantitative-test') {
+        alert(`لقد أكملت اختبارك المجاني اليوم. يمكن للحسابات المجانية أخذ اختبار واحد يومياً فقط. قم بالترقية للوصول غير المحدود!`);
+      } else {
+        alert('هذا الاختبار متاح للحسابات المميزة فقط. قم بالترقية للوصول إلى جميع الاختبارات المتقدمة!');
+      }
+      return;
+    }
+
+    // Record the test attempt for free users on free test only
+    if (test.id === 'free-quantitative-test' && !isPremiumUser) {
+      recordTestTaken();
+    }
+
+    // بدء الاختبار مع التكوين الصحيح
+    const testData = {
+      testId: test.id,
+      testType: 'quantitative',
+      subcategory: test.subcategory,
+      testName: test.name,
+      questionCount: test.questionCount,
+      timeLimit: test.timeLimit
+    };
+
+    localStorage.setItem('currentTest', JSON.stringify(testData));
+    
+    // Navigate to appropriate test runner
+    if (test.id === 'free-quantitative-test') {
+      window.location.href = '/free-quantitative-test';
+    } else {
+      window.location.href = '/advanced-quantitative-test';
+    }
+  };
+
+  // إحصائيات المستخدم
+  const stats: StatItem[] = [
+    {
+      value: dailyTestsTaken.toString(),
+      label: "اختباراتك اليوم",
+      icon: Calendar
+    },
+    {
+      value: MAX_DAILY_FREE_TESTS.toString(),
+      label: "الحد الأقصى اليومي",
+      icon: Target
+    },
+    {
+      value: "55",
+      label: "أسئلة لكل اختبار",
+      icon: Brain
+    },
+    {
+      value: "55",
+      label: "دقائق لكل اختبار",
+      icon: Clock
+    }
+  ];
+
+  // Show login prompt for non-authenticated users
+  if (!user) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-gray-50 via-blue-50 to-teal-500 dark:from-gray-900 dark:via-blue-900 dark:to-teal-500 relative overflow-hidden flex items-center justify-center">
+        <motion.div
+          initial={{ opacity: 0, y: 50 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="text-center p-8 bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm rounded-3xl border border-white/20 shadow-2xl max-w-md mx-4"
+        >
+          <div className="w-20 h-20 bg-gradient-to-br from-red-500 to-orange-500 rounded-2xl flex items-center justify-center mx-auto mb-6">
+            <Lock className="w-10 h-10 text-white" />
+          </div>
+          <h2 className="text-3xl font-bold text-gray-800 dark:text-white mb-4">
+            تسجيل الدخول مطلوب
+          </h2>
+          <p className="text-gray-600 dark:text-gray-300 mb-6 leading-relaxed">
+            يجب تسجيل الدخول للوصول إلى اختبارات الكمي. الحسابات المجانية تحصل على اختبار واحد يومياً (20 سؤال)، والحسابات المميزة تحصل على وصول غير محدود لجميع الاختبارات المتقدمة
+          </p>
+          <Button
+            onClick={() => setLocation('/login')}
+            className="w-full bg-gradient-to-r from-blue-500 to-emerald-600 text-white font-semibold py-3 px-6 rounded-xl hover:shadow-lg transition-all duration-300"
+          >
+            تسجيل الدخول الآن
+          </Button>
+        </motion.div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-teal-500 dark:from-gray-900 dark:via-blue-900/20 dark:to-teal-500/20">
+      <div className="container mx-auto px-4 py-8 space-y-8">
+        {/* العنوان الرئيسي */}
+        <motion.div
+          initial={{ opacity: 0, y: -30 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="text-center space-y-4"
+        >
+          <div className="flex items-center justify-center gap-4">
+            <motion.div
+              animate={{ rotate: [0, 360] }}
+              transition={{ duration: 20, repeat: Infinity, ease: "linear" }}
+            >
+              <Calculator className="w-12 h-12 text-blue-600" />
+            </motion.div>
+            <h1 className="text-4xl md:text-5xl font-bold bg-gradient-to-r from-blue-600 via-green-600 to-amber-600 bg-clip-text text-transparent">
+              اختبارات القدرات الكمية
+            </h1>
+          </div>
+          <p className="text-lg text-gray-600 dark:text-gray-300 max-w-2xl mx-auto">
+            اختبارات متقدمة مقسمة إلى 5 أقسام في القدرات الكمية وفقاً لمعايير قدراتك - 55 سؤال في 55 دقيقة
+          </p>
+        </motion.div>
+
+        {/* إحصائيات سريعة */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.2 }}
+          className="grid grid-cols-2 md:grid-cols-4 gap-4"
+        >
+          {stats.map((stat, index) => (
+            <Card key={index} className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm border-2 border-blue-100 dark:border-blue-800/50">
+              <CardContent className="p-4 text-center">
+                <div className="flex justify-center mb-2">
+                  <div className="w-10 h-10 bg-gradient-to-br from-blue-100 to-emerald-600 dark:from-blue-900/50 dark:to-emerald-600/50 rounded-xl flex items-center justify-center">
+                    <stat.icon className="w-5 h-5 text-blue-600 dark:text-blue-400" />
+                  </div>
+                </div>
+                <div className="text-2xl font-bold text-blue-600 dark:text-blue-400">
+                  {stat.value}
+                </div>
+                <div className="text-xs text-gray-500 dark:text-gray-400">
+                  {stat.label}
+                </div>
+                {stat.label === "اختباراتك اليوم" && (
+                  <div className="mt-2">
+                    {!isPremiumUser && (
+                      <p className="text-xs text-gray-500 dark:text-gray-400">حسب معايير قدراتك</p>
+                    )}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          ))}
+        </motion.div>
+
+        {/* اختبار متقدم مميز */}
+        <motion.div
+          initial={{ opacity: 0, scale: 0.9 }}
+          animate={{ opacity: 1, scale: 1 }}
+          className="mb-8"
+        >
+          <Card className="bg-gradient-to-r from-emerald-600 via-teal-600 to-cyan-600 text-white shadow-2xl border-0 overflow-hidden relative">
+            <div className="absolute inset-0 bg-gradient-to-r from-emerald-400/20 via-teal-400/20 to-cyan-400/20 animate-pulse"></div>
+            <CardContent className="p-8 relative z-10">
+              <div className="flex flex-col md:flex-row items-center justify-between gap-6">
+                <div className="flex items-center gap-6">
+                  <motion.div
+                    className="w-20 h-20 bg-white/20 rounded-2xl flex items-center justify-center backdrop-blur-sm"
+                    whileHover={{ rotate: 360 }}
+                    transition={{ duration: 0.6 }}
+                  >
+                    <Calculator className="w-10 h-10 text-white" />
+                  </motion.div>
+                  <div>
+                    <h3 className="text-2xl font-bold mb-2">الاختبار المتقدم للقدرات الكمية</h3>
+                    <p className="text-white/90 mb-4">اختبار شامل بـ 5 أقسام - 55 سؤال في 55 دقيقة</p>
+                    <div className="flex items-center gap-4 text-sm">
+                      <div className="flex items-center gap-1">
+                        <Clock className="w-4 h-4" />
+                        <span>55 دقيقة</span>
+                      </div>
+                      <div className="flex items-center gap-1">
+                        <Target className="w-4 h-4" />
+                        <span>55 سؤال</span>
+                      </div>
+                      <div className="flex items-center gap-1">
+                        <Award className="w-4 h-4" />
+                        <span>5 أقسام</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                <Button 
+                  onClick={() => window.location.href = '/advanced-quantitative-test'}
+                  className="bg-white text-emerald-600 hover:bg-white/90 px-8 py-3 rounded-xl font-bold text-lg shadow-lg hover:shadow-xl transition-all duration-300 whitespace-nowrap"
+                >
+                  ابدأ الاختبار المتقدم
+                  <PlayCircle className="w-5 h-5 mr-2" />
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        </motion.div>
+
+        {/* قائمة الاختبارات */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {quantitativeTests.map((test, index) => {
+            const canTakeThisTest = checkDailyLimit(test.id);
+            
+            return (
+              <motion.div
+                key={test.id}
+                initial={{ opacity: 0, y: 30 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.3 + index * 0.1 }}
+              >
+                <Card className={`relative overflow-hidden transition-all duration-300 hover:shadow-xl ${
+                  canTakeThisTest 
+                    ? 'bg-white dark:bg-gray-800 border-2 border-transparent hover:border-blue-300 dark:hover:border-blue-600 hover:scale-105' 
+                    : 'bg-gray-100 dark:bg-gray-700 border-2 border-gray-200 dark:border-gray-600 opacity-75'
+                }`}>
+                  <div className={`absolute inset-0 bg-gradient-to-br ${test.gradientFrom} ${test.gradientTo} opacity-5`} />
+                  
+                  <CardHeader className="relative">
+                    <div className="flex items-center justify-between">
+                      <div className={`w-12 h-12 rounded-xl bg-gradient-to-br ${test.gradientFrom} ${test.gradientTo} flex items-center justify-center text-white shadow-lg`}>
+                        {test.icon}
+                      </div>
+                      <Badge variant={test.difficulty === 'سهل' ? 'default' : test.difficulty === 'متوسط' ? 'secondary' : 'destructive'}>
+                        {test.difficulty}
+                      </Badge>
+                    </div>
+                    <div>
+                      <h3 className="text-xl font-bold text-gray-800 dark:text-white mb-2">
+                        {test.name}
+                      </h3>
+                      <p className="text-sm text-gray-600 dark:text-gray-300">
+                        {test.description}
+                      </p>
+                    </div>
+                  </CardHeader>
+
+                  <CardContent className="relative space-y-4">
+                    <div className="flex items-center justify-between text-sm text-gray-500 dark:text-gray-400">
+                      <div className="flex items-center gap-1">
+                        <Brain className="w-3 h-3" />
+                        <span>{test.questionCount} سؤال</span>
+                      </div>
+                      <div className="flex items-center gap-1">
+                        <Clock className="w-3 h-3" />
+                        <span>وقت الاختبار: {test.timeLimit} دقائق</span>
+                      </div>
+                      <div className="flex items-center gap-1">
+                        <Target className="w-3 h-3" />
+                        <span>معايير قدراتك</span>
+                      </div>
+                    </div>
+
+                    <Button 
+                      onClick={() => startTest(test)}
+                      disabled={!canTakeThisTest}
+                      className={`w-full ${
+                        canTakeThisTest 
+                          ? `bg-gradient-to-r ${test.gradientFrom} ${test.gradientTo} hover:opacity-90 text-white shadow-lg hover:shadow-xl transition-all duration-300`
+                          : 'bg-gray-400 dark:bg-gray-600 cursor-not-allowed'
+                      }`}
+                    >
+                      {canTakeThisTest ? (
+                        <>
+                          <Play className="w-4 h-4 mr-2" />
+                          ابدأ الاختبار
+                        </>
+                      ) : (
+                        <>
+                          <Lock className="w-4 h-4 mr-2" />
+                          {!user ? 'يجب تسجيل الدخول' : 'وصلت للحد اليومي'}
+                        </>
+                      )}
+                    </Button>
+
+                    {/* رسالة للمستخدمين المجانيين مع ميزات قياس */}
+                    {!isPremiumUser && !canTakeThisTest && (
+                      <motion.div
+                        initial={{ opacity: 0, y: 10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        className="mt-3 p-3 bg-gradient-to-r from-yellow-50 to-orange-50 dark:from-yellow-900/20 dark:to-orange-900/20 rounded-xl border border-yellow-200 dark:border-yellow-800"
+                      >
+                        <div className="flex items-center gap-2 mb-2">
+                          <div className="w-5 h-5 bg-yellow-100 dark:bg-yellow-900/50 rounded-full flex items-center justify-center">
+                            <Calendar className="w-3 h-3 text-yellow-600 dark:text-yellow-400" />
+                          </div>
+                          <p className="text-xs font-bold text-yellow-700 dark:text-yellow-300">
+                            نظام قدراتك - حد يومي
+                          </p>
+                        </div>
+                        <p className="text-xs text-yellow-600 dark:text-yellow-400 leading-relaxed">
+                          حسب معايير منصة قدراتك: المستخدمون المجانيون لديهم اختبار واحد فقط يومياً من جميع اختبارات الكمي
+                        </p>
+                      </motion.div>
+                    )}
+                  </CardContent>
+                </Card>
+              </motion.div>
+            );
+          })}
+        </div>
+
+        {/* معلومات إضافية */}
+        <motion.div
+          initial={{ opacity: 0, y: 30 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.8 }}
+          className="mt-16 text-center"
+        >
+          <Card className="bg-gradient-to-r from-blue-50 via-teal-600 to-emerald-600 dark:from-blue-900/20 dark:via-teal-600/20 dark:to-emerald-600/20 border-2 border-blue-200 dark:border-blue-800 p-8">
+            <CardContent>
+              <div className="flex items-center justify-center gap-4 mb-6">
+                <motion.div
+                  animate={{ scale: [1, 1.1, 1] }}
+                  transition={{ duration: 2, repeat: Infinity }}
+                >
+                  <Trophy className="w-12 h-12 text-yellow-500" />
+                </motion.div>
+                <div>
+                  <h3 className="text-2xl font-bold text-gray-800 dark:text-white mb-2">
+                    اختبارات كمية بمعايير قدراتك الحقيقية
+                  </h3>
+                  <p className="text-gray-600 dark:text-gray-300">
+                    جميع اختباراتنا مصممة وفقاً لمعايير منصة قدراتك للتميز الكمي
+                  </p>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div className="text-center">
+                  <div className="w-12 h-12 bg-blue-100 dark:bg-blue-900/30 rounded-xl flex items-center justify-center mx-auto mb-3">
+                    <Target className="w-6 h-6 text-blue-600" />
+                  </div>
+                  <h4 className="font-semibold text-gray-800 dark:text-white mb-2">دقة عالية</h4>
+                  <p className="text-sm text-gray-600 dark:text-gray-400">أسئلة مطابقة لمعايير قدراتك الكمية</p>
+                </div>
+
+                <div className="text-center">
+                  <div className="w-12 h-12 bg-green-100 dark:bg-green-900/30 rounded-xl flex items-center justify-center mx-auto mb-3">
+                    <Brain className="w-6 h-6 text-green-600" />
+                  </div>
+                  <h4 className="font-semibold text-gray-800 dark:text-white mb-2">تطوير مهارات</h4>
+                  <p className="text-sm text-gray-600 dark:text-gray-400">تحسين مستمر لقدراتك الرياضية</p>
+                </div>
+
+                <div className="text-center">
+                  <div className="w-12 h-12 bg-green-100 dark:bg-green-100/30 rounded-xl flex items-center justify-center mx-auto mb-3">
+                    <Award className="w-6 h-6 text-green-700" />
+                  </div>
+                  <h4 className="font-semibold text-gray-800 dark:text-white mb-2">تقييم شامل</h4>
+                  <p className="text-sm text-gray-600 dark:text-gray-400">تحليل مفصل لأدائك في كل قسم كمي</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </motion.div>
+      </div>
+    </div>
+  );
+}

@@ -1,0 +1,862 @@
+import React, { useState, useEffect, useRef } from 'react';
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+  CardFooter,
+} from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from "@/components/ui/dialog";
+import { Separator } from "@/components/ui/separator";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+    CopyIcon, CheckIcon, SparklesIcon, StarIcon, ShieldCheckIcon, RocketIcon,
+    ArrowLeftIcon, ArrowRightIcon, ExternalLinkIcon, UserRoundIcon, CreditCardIcon, BanknoteIcon, SmartphoneNfcIcon,
+    TriangleAlertIcon, MessageSquareTextIcon, KeyRoundIcon, ShieldQuestionIcon,
+} from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
+
+// Constants
+const PAYPAL_PRO_LINK = "https://www.paypal.com/ncp/payment/XZWPA8WLMNDGS";
+const PAYPAL_PRO_LIFE_LINK = "https://www.paypal.com/ncp/payment/SWGPHGE2JM9NN";
+const PAYPAL_PRO_LIFE_PLUS_LINK = "https://www.paypal.com/ncp/payment/WY6E8L94ZCTY2";
+const BANK_ACCOUNT_NUMBER = "SA2330100991101097197438";
+const BANK_NAME = "البنك العربي الوطني";
+const OTP_COUNTDOWN_SECONDS = 180; // 3 دقائق
+
+const countryCodes = [
+  { value: "+966", label: "🇸🇦 +966 (السعودية)" },
+  { value: "+20", label: "🇪🇬 +20 (مصر)" },
+  { value: "+971", label: "🇦🇪 +971 (الإمارات)" },
+];
+
+export function SubscriptionPlans() {
+  const { toast } = useToast();
+
+  // State Management
+  const [isPaymentDialogOpen, setIsPaymentDialogOpen] = useState(false);
+  const [selectedPlan, setSelectedPlan] = useState<'pro' | 'proLife' | null>(null);
+  const [currentStep, setCurrentStep] = useState(1);
+
+  // Step 1: User Data
+  const [userData, setUserData] = useState<{ name?: string, email?: string, password?: string, phoneNumber?: string }>({});
+  const [phoneCountryCode, setPhoneCountryCode] = useState(countryCodes[0].value);
+  const [termsAccepted, setTermsAccepted] = useState(false); // <-- إضافة جديدة
+
+  // Step 2: OTP
+  const [generatedOtp, setGeneratedOtp] = useState<string | null>(null);
+  const [otpInput, setOtpInput] = useState<string[]>(new Array(6).fill(""));
+  const [isOtpSent, setIsOtpSent] = useState(false);
+  const [countdown, setCountdown] = useState(OTP_COUNTDOWN_SECONDS);
+  const [isVerifying, setIsVerifying] = useState(false);
+  const otpInputRefs = useRef<(HTMLInputElement | null)[]>([]);
+
+  // Step 2.5: Email Verification
+  const [generatedEmailOtp, setGeneratedEmailOtp] = useState<string | null>(null);
+  const [emailOtpInput, setEmailOtpInput] = useState<string[]>(new Array(6).fill(""));
+  const [isEmailOtpSent, setIsEmailOtpSent] = useState(false);
+  const [emailCountdown, setEmailCountdown] = useState(OTP_COUNTDOWN_SECONDS);
+  const [isVerifyingEmail, setIsVerifyingEmail] = useState(false);
+  const emailOtpInputRefs = useRef<(HTMLInputElement | null)[]>([]);
+
+  // Step 3: Payment
+  const [selectedPaymentMethod, setSelectedPaymentMethod] = useState<'bank' | 'paypal' | 'creditcard' | 'applepay' | null>(null);
+  const [copySuccess, setCopySuccess] = useState<'bank' | null>(null);
+
+  // Effects
+  useEffect(() => {
+    const storedUser = localStorage.getItem('user');
+    if (storedUser) {
+      try {
+        const localStorageUserData = JSON.parse(storedUser);
+        setUserData(prev => ({ ...prev, name: localStorageUserData?.name || '', email: localStorageUserData?.email || '' }));
+      } catch (error) { console.error("Failed to parse user data from localStorage", error); }
+    }
+  }, []);
+
+  useEffect(() => {
+    if (isOtpSent && countdown > 0) {
+      const timer = setTimeout(() => setCountdown(countdown - 1), 1000);
+      return () => clearTimeout(timer);
+    } else if (countdown === 0) {
+        setIsOtpSent(true); 
+    }
+  }, [isOtpSent, countdown]);
+
+  useEffect(() => {
+    if (isEmailOtpSent && emailCountdown > 0) {
+      const timer = setTimeout(() => setEmailCountdown(emailCountdown - 1), 1000);
+      return () => clearTimeout(timer);
+    } else if (emailCountdown === 0) {
+        setIsEmailOtpSent(true); 
+    }
+  }, [isEmailOtpSent, emailCountdown]);
+
+
+  // Handlers
+  const handleCopy = async (text: string, type: 'bank') => {
+    await navigator.clipboard.writeText(text);
+    setCopySuccess(type);
+    toast({
+      title: "✅ تم النسخ بنجاح!",
+      description: "تم نسخ رقم الحساب إلى الحافظة.",
+      className: "bg-green-500 text-white dark:bg-green-600 dark:text-white",
+    });
+    setTimeout(() => setCopySuccess(null), 2500);
+  };
+
+  const resetState = () => {
+    setCurrentStep(1);
+    setTermsAccepted(false);
+    setIsOtpSent(false);
+    setGeneratedOtp(null);
+    setOtpInput(new Array(6).fill(""));
+    setCountdown(OTP_COUNTDOWN_SECONDS);
+    setIsEmailOtpSent(false);
+    setGeneratedEmailOtp(null);
+    setEmailOtpInput(new Array(6).fill(""));
+    setEmailCountdown(OTP_COUNTDOWN_SECONDS);
+    setSelectedPaymentMethod(null);
+    setUserData(prev => ({ name: prev.name, email: prev.email, password: '', phoneNumber: '' }));
+  };
+
+  const handleSubscribe = (plan: 'pro' | 'proLife') => {
+    resetState();
+    setSelectedPlan(plan);
+    setIsPaymentDialogOpen(true);
+  };
+
+  const handleDialogClose = (open: boolean) => {
+    setIsPaymentDialogOpen(open);
+    if (!open) {
+      resetState();
+    }
+  };
+
+  const handleSendOtp = (method: 'whatsapp') => {
+    const otp = Math.floor(100000 + Math.random() * 900000).toString();
+    setGeneratedOtp(otp);
+
+    const message = encodeURIComponent(`${otp} هو الرمز السري لمرة واحدة لهذه المعاملة. يرجى عدم مشاركته مع أحد.`);
+    const userPhoneNumber = phoneCountryCode.replace('+', '') + userData.phoneNumber;
+    const url = `https://api.whatsapp.com/send/?phone=${userPhoneNumber}&text=${message}&type=phone_number&app_absent=0`;
+
+    window.open(url, '_blank', 'noopener,noreferrer');
+    setIsOtpSent(true);
+    setCountdown(OTP_COUNTDOWN_SECONDS);
+    toast({
+        title: "📲 تم إرسال الرمز!",
+        description: `لقد أرسلنا رمز التحقق إلى حسابك في واتساب.`,
+    });
+  };
+
+  const handleOtpInputChange = (e: React.ChangeEvent<HTMLInputElement>, index: number) => {
+    const { value } = e.target;
+    if (/^[0-9]$/.test(value) || value === "") {
+        const newOtpInput = [...otpInput];
+        newOtpInput[index] = value;
+        setOtpInput(newOtpInput);
+
+        if (value && index < 5) {
+            otpInputRefs.current[index + 1]?.focus();
+        }
+    }
+  };
+
+  const handleOtpKeyDown = (e: React.KeyboardEvent<HTMLInputElement>, index: number) => {
+    if (e.key === 'Backspace' && !otpInput[index] && index > 0) {
+      otpInputRefs.current[index - 1]?.focus();
+    }
+  };
+
+  const handleOtpPaste = (e: React.ClipboardEvent<HTMLInputElement>) => {
+    const pastedData = e.clipboardData.getData('text').replace(/\D/g, '');
+    if (pastedData.length === 6) {
+      e.preventDefault();
+      const newOtp = pastedData.split('');
+      setOtpInput(newOtp);
+      otpInputRefs.current[5]?.focus();
+    }
+  };
+
+  // Email OTP Functions
+  const handleSendEmailOtp = () => {
+    const emailOtp = Math.floor(100000 + Math.random() * 900000).toString();
+    setGeneratedEmailOtp(emailOtp);
+
+    // إنشاء بريد إلكتروني مصمم بشكل إبداعي مع CSS متقدم
+    const subject = encodeURIComponent('🔐 رمز التحقق من منصة قدراتك - تأكيد الاشتراك');
+    
+    const textMessage = `
+🔐 رمز التحقق من منصة قدراتك - تأكيد الاشتراك
+
+مرحباً بك في عائلة قدراتك! 🎉
+
+نحن سعداء بانضمامك إلينا. لإكمال عملية التحقق من حسابك، يرجى استخدام الرمز التالي:
+
+📧 البريد الإلكتروني: ${userData.email}
+🔐 رمز التحقق: ${emailOtp}
+
+⏰ هذا الرمز صالح لمدة 3 دقائق فقط
+🔒 لا تشارك هذا الرمز مع أي شخص آخر لحماية حسابك
+
+مع تحيات فريق قدراتك
+📧 للدعم الفني: qoudratak@gmail.com
+🌐 الموقع الرسمي: qodratak.sa
+
+---
+منصة شاملة ومتطورة للتدريب على اختبارات القياس
+نساعدك على تحقيق أحلامك الأكاديمية والمهنية
+    `;
+
+    const encodedMessage = encodeURIComponent(textMessage);
+    const targetEmail = 'qoudratak@gmail.com';
+    const gmailUrl = `https://mail.google.com/mail/?view=cm&to=${targetEmail}&su=${subject}&body=${encodedMessage}`;
+    
+    window.open(gmailUrl, '_blank', 'noopener,noreferrer');
+    
+    setIsEmailOtpSent(true);
+    setEmailCountdown(OTP_COUNTDOWN_SECONDS);
+    toast({
+      title: "📧 تم فتح Gmail بنجاح!",
+      description: "يرجى إرسال البريد الإلكتروني إلى فريق قدراتك، ثم إدخال الرمز هنا للتحقق.",
+      className: "bg-green-500 text-white dark:bg-green-600 dark:text-white",
+    });
+  };
+
+  const handleEmailOtpInputChange = (e: React.ChangeEvent<HTMLInputElement>, index: number) => {
+    const { value } = e.target;
+    if (/^[0-9]$/.test(value) || value === "") {
+        const newEmailOtpInput = [...emailOtpInput];
+        newEmailOtpInput[index] = value;
+        setEmailOtpInput(newEmailOtpInput);
+
+        if (value && index < 5) {
+            emailOtpInputRefs.current[index + 1]?.focus();
+        }
+    }
+  };
+
+  const handleEmailOtpKeyDown = (e: React.KeyboardEvent<HTMLInputElement>, index: number) => {
+    if (e.key === 'Backspace' && !emailOtpInput[index] && index > 0) {
+      emailOtpInputRefs.current[index - 1]?.focus();
+    }
+  };
+
+  const handleEmailOtpPaste = (e: React.ClipboardEvent<HTMLInputElement>) => {
+    const pastedData = e.clipboardData.getData('text').replace(/\D/g, '');
+    if (pastedData.length === 6) {
+      e.preventDefault();
+      const newEmailOtp = pastedData.split('');
+      setEmailOtpInput(newEmailOtp);
+      emailOtpInputRefs.current[5]?.focus();
+    }
+  };
+
+  const handleVerifyEmailOtp = () => {
+    setIsVerifyingEmail(true);
+    const enteredEmailOtp = emailOtpInput.join("");
+
+    setTimeout(() => {
+        if (enteredEmailOtp === generatedEmailOtp) {
+            toast({ title: "✅ تم التحقق من البريد الإلكتروني بنجاح!", description: "تم تأكيد بريدك الإلكتروني. يرجى اختيار طريقة الدفع.", className: "bg-green-500 text-white dark:bg-green-600 dark:text-white" });
+            setCurrentStep(3);
+        } else {
+            toast({ title: "❌ رمز غير صحيح", description: "الرمز الذي أدخلته غير صحيح. يرجى المحاولة مرة أخرى.", variant: "destructive" });
+            setEmailOtpInput(new Array(6).fill(""));
+            emailOtpInputRefs.current[0]?.focus();
+        }
+        setIsVerifyingEmail(false);
+    }, 1000);
+  };
+
+  const handleVerifyOtp = () => {
+    setIsVerifying(true);
+    const enteredOtp = otpInput.join("");
+
+    setTimeout(() => {
+        if (enteredOtp === generatedOtp) {
+            toast({ title: "✅ تم التحقق من الهاتف بنجاح!", description: "تم تأكيد رقم هاتفك. الآن يرجى التحقق من بريدك الإلكتروني.", className: "bg-green-500 text-white dark:bg-green-600 dark:text-white" });
+            setCurrentStep(2.5);
+        } else {
+            toast({ title: "❌ رمز غير صحيح", description: "الرمز الذي أدخلته غير صحيح. يرجى المحاولة مرة أخرى.", variant: "destructive" });
+            setOtpInput(new Array(6).fill(""));
+            otpInputRefs.current[0]?.focus();
+        }
+        setIsVerifying(false);
+    }, 1000);
+  };
+
+  const handlePaymentAndRedirect = (_paymentMethod: 'Bank Transfer') => {
+    toast({
+        title: "تم تسجيل طلبك",
+        description: "سيتم مراجعة طلبك وتفعيل اشتراكك خلال 24 ساعة",
+    });
+    setIsPaymentDialogOpen(false);
+  };
+
+  const handlePayPalPayment = () => {
+    const payPalLink = selectedPlan === 'pro' ? PAYPAL_PRO_LINK : PAYPAL_PRO_LIFE_LINK;
+    if (!payPalLink) {
+        toast({ title: "⚠️ خطأ", description: "رابط PayPal غير متوفر.", variant: "destructive" });
+        return;
+    }
+
+    window.open(payPalLink, '_blank', 'noopener,noreferrer');
+    setIsPaymentDialogOpen(false);
+
+    toast({
+        title: "تم توجيهك إلى PayPal",
+        description: "أكمل الدفع في نافذة PayPal. سيتم تفعيل اشتراكك تلقائياً عند تأكيد الدفع.",
+        duration: 10000,
+    });
+  };
+
+  // Render Functions
+  const planDetails = {
+    pro: { name: "Pro", price: "149", description: "باقة سنوية مميزة لكل احتياجاتك" },
+    proLife: { name: "Pro Life", price: "299", originalPrice: "500", discount: "40%", description: "الاشتراك الذهبي، مرة واحدة مدى الحياة" }
+  };
+  const currentPlanDetails = selectedPlan ? planDetails[selectedPlan] : null;
+
+  // --- تحديث منطق التحقق ---
+  const isStepOneValid = userData.name && userData.email && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(userData.email) && userData.password && userData.password.length >= 6 && userData.phoneNumber && userData.phoneNumber.length >= 7 && termsAccepted;
+
+  const renderStepOneInfo = () => (
+    <div className="space-y-6 pt-4">
+      <div className="space-y-4">
+        <h3 className="font-semibold text-lg flex items-center">
+            <UserRoundIcon className="h-5 w-5 ml-2 text-primary" />
+            المعلومات الشخصية لإعداد الحساب
+        </h3>
+        <p className="text-sm text-muted-foreground">
+          نحتاج إلى هذه المعلومات لإعداد حسابك وتفعيل اشتراكك في باقة <span className="font-semibold text-primary">{currentPlanDetails?.name}</span>.
+          {(userData?.name && userData?.email && !userData.password && !userData.phoneNumber) && <span className="text-xs block mt-1 text-green-600 dark:text-green-400">(الاسم والبريد مسترجعان من بياناتك المحفوظة)</span>}
+        </p>
+        <div className="space-y-3">
+          <Input
+            placeholder="الاسم الكامل (مثال: محمد عبدالله)"
+            value={userData?.name || ''}
+            onChange={(e) => setUserData(prev => ({ ...prev, name: e.target.value }))}
+            aria-label="الاسم الكامل"
+            required
+            className="focus:ring-2 focus:ring-primary dark:bg-slate-700 dark:border-slate-600"
+          />
+          <Input
+            type="email"
+            placeholder="البريد الإلكتروني (example@mail.com)"
+            value={userData?.email || ''}
+            onChange={(e) => setUserData(prev => ({ ...prev, email: e.target.value }))}
+            aria-label="البريد الإلكتروني"
+            required
+            className="focus:ring-2 focus:ring-primary dark:bg-slate-700 dark:border-slate-600"
+          />
+          <Input
+            type="password"
+            placeholder="كلمة المرور (6 أحرف على الأقل)"
+            value={userData?.password || ''}
+            onChange={(e) => setUserData(prev => ({ ...prev, password: e.target.value }))}
+            aria-label="كلمة المرور"
+            required
+            className="focus:ring-2 focus:ring-primary dark:bg-slate-700 dark:border-slate-600"
+          />
+          <div className="flex gap-2">
+            <Select value={phoneCountryCode} onValueChange={setPhoneCountryCode}>
+              <SelectTrigger className="w-[160px] focus:ring-2 focus:ring-primary dark:bg-slate-700 dark:border-slate-600">
+                <SelectValue placeholder="رمز الدولة" />
+              </SelectTrigger>
+              <SelectContent className="dark:bg-slate-800">
+                {countryCodes.map(country => (
+                  <SelectItem key={country.value} value={country.value} className="dark:focus:bg-slate-700">{country.label}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <Input
+              type="tel"
+              placeholder="رقم الجوال (مثل 5xxxxxxxx)"
+              value={userData?.phoneNumber || ''}
+              onChange={(e) => setUserData(prev => ({ ...prev, phoneNumber: e.target.value.replace(/\D/g, '') }))}
+              aria-label="رقم الهاتف"
+              className="flex-1 focus:ring-2 focus:ring-primary dark:bg-slate-700 dark:border-slate-600"
+              required
+            />
+          </div>
+        </div>
+        {/* --- هذا هو الجزء المضاف --- */}
+        <div className="flex items-center space-x-2 pt-2" dir="rtl">
+          <input
+            type="checkbox"
+            id="terms"
+            checked={termsAccepted}
+            onChange={(e) => setTermsAccepted(e.target.checked)}
+            className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary accent-primary"
+          />
+          <label htmlFor="terms" className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
+            أوافق على <a href="https://qodratak.sa/privacy" target="_blank" rel="noopener noreferrer" className="underline text-primary hover:text-primary/80">الشروط والأحكام</a>.
+          </label>
+        </div>
+        {/* --- نهاية الجزء المضاف --- */}
+      </div>
+    </div>
+  );
+
+  const renderStepTwoOTP = () => (
+    <div className="space-y-6 pt-4 text-center">
+      {!isOtpSent ? (
+        <>
+            <h3 className="font-semibold text-lg flex items-center justify-center">
+                <ShieldQuestionIcon className="h-5 w-5 ml-2 text-primary" />
+                كيف تود استلام رمز التحقق؟
+            </h3>
+            <p className="text-sm text-muted-foreground">
+                سنرسل رمزًا سريًا مكونًا من 6 أرقام إلى حسابك للتحقق من رقم هاتفك.
+            </p>
+            <div className="flex gap-4 pt-4">
+                <Button variant="outline" className="w-full h-20 flex-col gap-2 text-lg dark:hover:bg-slate-700" onClick={() => handleSendOtp('whatsapp')}>
+                    <MessageSquareTextIcon className="h-8 w-8 text-green-500"/> واتساب
+                </Button>
+            </div>
+        </>
+      ) : (
+        <>
+            <h3 className="font-semibold text-lg">أدخل رمز التحقق</h3>
+            <p className="text-sm text-muted-foreground">
+                تم إرسال الرمز إلى <span className="font-bold text-primary">{phoneCountryCode}{userData.phoneNumber}</span>.
+            </p>
+            <div dir="ltr" className="flex justify-center gap-2 md:gap-3 pt-4" onPaste={handleOtpPaste}>
+                {otpInput.map((digit, index) => (
+                    <Input
+                        key={index}
+                        ref={el => otpInputRefs.current[index] = el}
+                        type="tel"
+                        maxLength={1}
+                        value={digit}
+                        onChange={(e) => handleOtpInputChange(e, index)}
+                        onKeyDown={(e) => handleOtpKeyDown(e, index)}
+                        className="w-12 h-14 md:w-14 md:h-16 text-center text-2xl font-bold rounded-lg focus:ring-2 focus:ring-primary dark:bg-slate-700"
+                    />
+                ))}
+            </div>
+            <div className="h-6 pt-4">
+              {countdown > 0 ? (
+                  <p className="text-muted-foreground text-sm ">إعادة إرسال الرمز بعد: <span className="font-bold text-primary">{Math.floor(countdown / 60)}:{('0' + countdown % 60).slice(-2)}</span></p>
+              ) : (
+                  <Button variant="link" className="text-primary" onClick={() => handleSendOtp('whatsapp')}>لم تستلم الرمز؟ أعد الإرسال</Button>
+              )}
+            </div>
+        </>
+      )}
+    </div>
+  );
+
+  const renderStepTwoEmailOTP = () => (
+    <div className="space-y-6 pt-4 text-center">
+      {!isEmailOtpSent ? (
+        <>
+            <h3 className="font-semibold text-lg flex items-center justify-center">
+                <MessageSquareTextIcon className="h-5 w-5 ml-2 text-primary" />
+                التحقق من البريد الإلكتروني
+            </h3>
+            <p className="text-sm text-muted-foreground">
+                الآن نحتاج للتحقق من بريدك الإلكتروني <span className="font-bold text-primary">{userData.email}</span>
+            </p>
+            <Button onClick={handleSendEmailOtp} className="w-full h-12 text-lg bg-gradient-to-r from-green-600 to-amber-600 hover:from-green-600 hover:to-amber-600">
+                📧 إرسال رمز التحقق عبر البريد الإلكتروني
+            </Button>
+            <p className="text-xs text-muted-foreground mt-2">
+              سيتم فتح Gmail مع رسالة مصممة بشكل احترافي لإرسالها إلى فريق قدراتك
+            </p>
+        </>
+      ) : (
+        <>
+            <h3 className="font-semibold text-lg">أدخل رمز التحقق من البريد الإلكتروني</h3>
+            <p className="text-sm text-muted-foreground">
+                تم إرسال الرمز إلى <span className="font-bold text-primary">{userData.email}</span>.
+            </p>
+            <div dir="ltr" className="flex justify-center gap-2 md:gap-3 pt-4" onPaste={handleEmailOtpPaste}>
+                {emailOtpInput.map((digit, index) => (
+                    <Input
+                        key={index}
+                        ref={el => emailOtpInputRefs.current[index] = el}
+                        type="tel"
+                        maxLength={1}
+                        value={digit}
+                        onChange={(e) => handleEmailOtpInputChange(e, index)}
+                        onKeyDown={(e) => handleEmailOtpKeyDown(e, index)}
+                        className="w-12 h-14 md:w-14 md:h-16 text-center text-2xl font-bold rounded-lg focus:ring-2 focus:ring-primary dark:bg-slate-700"
+                    />
+                ))}
+            </div>
+            <div className="h-6 pt-4">
+              {emailCountdown > 0 ? (
+                  <p className="text-muted-foreground text-sm ">إعادة إرسال الرمز بعد: <span className="font-bold text-primary">{Math.floor(emailCountdown / 60)}:{('0' + emailCountdown % 60).slice(-2)}</span></p>
+              ) : (
+                  <Button variant="link" className="text-primary" onClick={handleSendEmailOtp}>لم تستلم الرمز؟ أعد الإرسال</Button>
+              )}
+            </div>
+        </>
+      )}
+    </div>
+  );
+
+  const renderStepThreePayment = () => {
+    return (
+    <div className="space-y-6 pt-4">
+      <div>
+        <h3 className="font-semibold text-lg mb-1 flex items-center">
+            <CreditCardIcon className="h-5 w-5 ml-2 text-primary"/>
+            اختر طريقة الدفع
+        </h3>
+        <p className="text-sm text-muted-foreground">
+          لدفع مبلغ <span className="font-bold text-primary">{currentPlanDetails?.price} ريال</span> للاشتراك في باقة <span className="font-semibold text-primary">{currentPlanDetails?.name}</span>.
+        </p>
+      </div>
+
+      <RadioGroup
+        value={selectedPaymentMethod || undefined}
+        onValueChange={(value: 'bank' | 'paypal' | 'creditcard' | 'applepay') => setSelectedPaymentMethod(value as 'bank' | 'paypal' | 'creditcard' | 'applepay')}
+        className="space-y-3"
+      >
+        {['bank', 'paypal', 'creditcard', 'applepay'].map((method) => {
+          const isSelected = selectedPaymentMethod === method;
+          let icon, title, subtitle = "";
+          if (method === 'bank') {
+            icon = <BanknoteIcon className={`h-5 w-5 ml-2 ${isSelected ? 'text-green-700 dark:text-green-400' : 'text-green-600'}`}/>;
+            title = "تحويل بنكي";
+            subtitle = "تحويل مباشر من حسابك البنكي";
+          } else if (method === 'applepay') {
+            icon = <div className="ml-2 text-xl">{isSelected ? '🍎' : '🍏'}</div>;
+            title = "Apple Pay";
+            subtitle = "للأجهزة المتوافقة مع Apple Pay";
+          } else if (method === 'paypal') {
+            icon = <div className="ml-2 text-2xl">{isSelected ? '🟦' : '🔵'}</div>;
+            title = "PayPal";
+            subtitle = "الدفع الآمن عبر PayPal";
+          } else if (method === 'creditcard') {
+            icon = <CreditCardIcon className={`h-5 w-5 ml-2 ${isSelected ? 'text-blue-700 dark:text-blue-400' : 'text-blue-600'}`}/>;
+            title = "البطاقة الائتمانية";
+            subtitle = "Visa, Mastercard, Mada عبر PayPal";
+          }
+
+          return (
+            <Label key={method} htmlFor={method}
+              className={`flex flex-col p-4 border rounded-lg cursor-pointer transition-all duration-300 ease-in-out hover:shadow-xl dark:border-slate-700
+                          ${isSelected ? 'border-primary ring-2 ring-offset-2 ring-offset-background dark:ring-offset-slate-900 ring-primary bg-primary/10 dark:bg-primary/20 shadow-2xl scale-[1.03]'
+                                      : 'hover:border-slate-400 dark:hover:border-slate-500 hover:bg-slate-50 dark:hover:bg-slate-800/70'}`}>
+              <div className="flex items-center justify-between">
+                <div className={`flex flex-col ${isSelected ? 'text-primary dark:text-primary-foreground' : 'text-slate-800 dark:text-slate-200'}`}>
+                    <div className="flex items-center font-medium">
+                        {icon} {title}
+                    </div>
+                    {subtitle && (
+                        <div className="text-xs text-muted-foreground mt-1 mr-7">
+                            {subtitle}
+                        </div>
+                    )}
+                </div>
+                <RadioGroupItem value={method} id={method} className="border-slate-400 dark:border-slate-500 data-[state=checked]:border-primary" />
+              </div>
+              {isSelected && (
+                <div className="mt-3 pt-3 border-t border-slate-200 dark:border-slate-600 space-y-2">
+                  {method === 'bank' && (
+                    <>
+                      <p className="text-sm text-muted-foreground">
+                        قم بتحويل المبلغ (<span className="font-semibold">{currentPlanDetails?.price} ريال</span>) إلى الحساب التالي:
+                      </p>
+                      <div className="flex items-center justify-between p-3 bg-slate-100 dark:bg-slate-700/50 rounded-lg border border-slate-200 dark:border-slate-600">
+                        <code className="text-sm font-mono text-slate-700 dark:text-slate-300 tracking-wider">{BANK_ACCOUNT_NUMBER}</code>
+                        <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-slate-200 dark:hover:bg-slate-600" onClick={(e) => { e.preventDefault(); handleCopy(BANK_ACCOUNT_NUMBER, 'bank'); }}>
+                          {copySuccess === 'bank' ? <CheckIcon className="h-5 w-5 text-green-500" /> : <CopyIcon className="h-4 w-4 text-slate-500 dark:text-slate-400" />}
+                        </Button>
+                      </div>
+                    </>
+                  )}
+                  {method === 'applepay' && (
+                     <>
+                      <p className="text-sm text-muted-foreground">
+                        سيتم توجيهك لإكمال الدفع عبر Apple Pay بقيمة <span className="font-semibold">{currentPlanDetails?.price} ريال</span>
+                      </p>
+                      <div className="p-3 bg-slate-100 dark:bg-slate-700/50 rounded-lg border border-slate-200 dark:border-slate-600">
+                        <p className="text-sm text-center text-slate-600 dark:text-slate-300">متوفر على iPhone وiPad وMac</p>
+                      </div>
+                    </>
+                  )}
+                  {method === 'paypal' && (
+                    <>
+                      <p className="text-sm text-muted-foreground">
+                        🔵 سيتم توجيهك إلى منصة PayPal الآمنة لإتمام دفع مبلغ <span className="font-semibold">{currentPlanDetails?.price} ريال</span> بأمان تام.
+                      </p>
+                      <div className="grid grid-cols-1 gap-2 mt-3">
+                        <div className="flex items-center gap-2 text-xs text-blue-600 dark:text-blue-400">
+                          <div className="w-4 h-4 bg-blue-100 dark:bg-blue-900 rounded-full flex items-center justify-center">✓</div>
+                          حماية مشتري PayPal
+                        </div>
+                        <div className="flex items-center gap-2 text-xs text-green-600 dark:text-green-400">
+                          <div className="w-4 h-4 bg-green-100 dark:bg-green-900 rounded-full flex items-center justify-center">🔒</div>
+                          تشفير SSL متقدم
+                        </div>
+                      </div>
+                    </>
+                  )}
+                  {method === 'creditcard' && (
+                    <>
+                      <p className="text-sm text-muted-foreground">
+                        💳 ادفع بأمان باستخدام بطاقتك الائتمانية عبر منصة PayPal الآمنة (<span className="font-semibold">{currentPlanDetails?.price} ريال</span>).
+                      </p>
+                      <div className="grid grid-cols-2 gap-2 mt-3">
+                        <div className="flex items-center gap-2 text-xs">
+                          <span className="text-blue-600">💳</span>
+                          <span>Visa</span>
+                        </div>
+                        <div className="flex items-center gap-2 text-xs">
+                          <span className="text-red-600">💳</span>
+                          <span>Mastercard</span>
+                        </div>
+                        <div className="flex items-center gap-2 text-xs">
+                          <span className="text-green-600">💳</span>
+                          <span>مدى Mada</span>
+                        </div>
+                        <div className="flex items-center gap-2 text-xs">
+                          <span className="text-green-700">💳</span>
+                          <span>American Express</span>
+                        </div>
+                      </div>
+                      <p className="text-xs text-muted-foreground mt-2">
+                        لا تحتاج لحساب PayPal - ادفع مباشرة ببطاقتك
+                      </p>
+                    </>
+                  )}
+                </div>
+              )}
+            </Label>
+          );
+        })}
+      </RadioGroup>
+
+      {selectedPaymentMethod === 'bank' && (
+        <div className="mt-6 text-center space-y-3">
+          <Separator className="my-4 dark:bg-slate-700" />
+          <p className="text-sm text-muted-foreground">
+            بعد إتمام التحويل، يرجى الضغط على الزر أدناه لتسجيل طلبك. سيتم مراجعته وتفعيل اشتراكك خلال 24 ساعة.
+          </p>
+          <Button
+            className="w-full md:w-auto text-base py-3 px-6 bg-green-600 hover:bg-green-700 text-white shadow-md hover:shadow-lg transition-all transform hover:scale-105"
+            onClick={() => handlePaymentAndRedirect('Bank Transfer')}
+          >
+            <RocketIcon className="ml-2 h-5 w-5" />
+            تأكيد وإرسال طلب الاشتراك
+          </Button>
+        </div>
+      )}
+
+      {(selectedPaymentMethod === 'paypal' || selectedPaymentMethod === 'creditcard') && (
+        <div className="mt-6 text-center space-y-4">
+          <Separator className="my-4 dark:bg-slate-700" />
+          
+          {/* PayPal Payment Button */}
+          {selectedPaymentMethod === 'paypal' && (
+            <>
+              <p className="text-sm text-muted-foreground">
+                🔵 انقر للانتقال إلى PayPal والدفع بأمان. بعد إتمام الدفع، اتبع التعليمات لإرسال تأكيد الطلب.
+              </p>
+              <Button
+                className="w-full md:w-auto text-base py-3 px-8 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white shadow-xl hover:shadow-2xl transition-all transform hover:scale-105"
+                onClick={handlePayPalPayment}
+              >
+                🔵 الدفع عبر PayPal
+                <ExternalLinkIcon className="ml-2 h-5 w-5" />
+              </Button>
+            </>
+          )}
+
+          {/* Credit Card Payment Button */}
+          {selectedPaymentMethod === 'creditcard' && (
+            <>
+              <p className="text-sm text-muted-foreground">
+                💳 ادفع بأمان باستخدام بطاقتك الائتمانية. سيتم توجيهك إلى PayPal للدفع الآمن (لا تحتاج حساب PayPal).
+              </p>
+              <Button
+                className="w-full md:w-auto text-base py-3 px-8 bg-gradient-to-r from-green-600 to-emerald-700 hover:from-green-700 hover:to-emerald-800 text-white shadow-xl hover:shadow-2xl transition-all transform hover:scale-105"
+                onClick={handlePayPalPayment}
+              >
+                💳 الدفع بالبطاقة الائتمانية
+                <ExternalLinkIcon className="ml-2 h-5 w-5" />
+              </Button>
+            </>
+          )}
+
+
+
+          <div className="text-xs text-amber-700 dark:text-amber-400 p-3 bg-amber-50 dark:bg-amber-900/40 rounded-md border border-amber-300 dark:border-amber-600/50 flex items-start gap-2 mt-4">
+            <TriangleAlertIcon className="h-4 w-4 mt-0.5 text-amber-500 flex-shrink-0" />
+            <div className="text-right">
+              <strong>خطوات إتمام الاشتراك:</strong>
+              <ol className="list-decimal list-inside mt-1 space-y-1 text-xs">
+                <li>اضغط على زر الدفع أعلاه</li>
+                <li>أكمل عملية الدفع في الصفحة الآمنة</li>
+                <li>احتفظ بلقطة شاشة لتأكيد الدفع</li>
+                <li>احتفظ بلقطة الشاشة للرجوع إليها</li>
+              </ol>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+    );
+  };
+
+
+  // Main Component Render
+  return (
+      <div className="container mx-auto py-12 px-4 md:px-6 lg:px-8 dark:bg-slate-900 dark:text-slate-50 rounded-lg">
+        <div className="text-center mb-16">
+          <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold tracking-tight mb-4 bg-clip-text text-transparent bg-gradient-to-r from-primary via-pink-500 to-orange-500">
+            اختر باقتك المثالية نحو التميز
+          </h1>
+          <p className="text-lg md:text-xl text-muted-foreground dark:text-slate-300 mt-3 max-w-3xl mx-auto">
+            استثمر في مستقبلك التعليمي مع باقاتنا المصممة خصيصًا لتمكينك من تحقيق أهدافك بكفاءة وتميز لا حدود لهما. انطلق الآن!
+          </p>
+        </div>
+
+        <div className="grid md:grid-cols-2 gap-8 md:gap-10 lg:gap-12 max-w-5xl mx-auto">
+          <Card className="group relative overflow-hidden border-2 border-slate-200 dark:border-slate-700 hover:border-primary dark:hover:border-primary transition-all duration-300 ease-in-out flex flex-col shadow-lg hover:shadow-primary/20 dark:hover:shadow-primary/30 rounded-xl transform hover:-translate-y-1 bg-white dark:bg-slate-800">
+            <div className="absolute top-4 right-4 transform transition-transform duration-300 group-hover:rotate-12 group-hover:scale-110">
+              <ShieldCheckIcon className="h-8 w-8 text-primary opacity-70 group-hover:opacity-100" />
+            </div>
+            <CardHeader className="pb-4">
+              <CardTitle className="text-3xl font-semibold text-slate-800 dark:text-slate-100">Pro</CardTitle>
+              <CardDescription className="text-sm text-muted-foreground dark:text-slate-400 pt-1">{planDetails.pro.description}</CardDescription>
+            </CardHeader>
+            <CardContent className="flex-grow space-y-6">
+              <div className="text-5xl font-bold mb-6 text-primary">
+                {planDetails.pro.price} <span className="text-xl font-normal text-muted-foreground dark:text-slate-400">ريال / سنة</span>
+              </div>
+              <ul className="space-y-4 text-sm text-slate-700 dark:text-slate-300">
+                <li className="flex items-center gap-3 transition-colors duration-200 group-hover:text-primary"><StarIcon className="h-5 w-5 text-yellow-400 group-hover:text-yellow-300" /> <span>جميع الاختبارات المتاحة</span></li>
+                <li className="flex items-center gap-3 transition-colors duration-200 group-hover:text-primary"><SparklesIcon className="h-5 w-5 text-amber-700 group-hover:text-amber-700" /> <span>مجلدات خاصة لتنظيم دراستك</span></li>
+                <li className="flex items-center gap-3 transition-colors duration-200 group-hover:text-primary"><RocketIcon className="h-5 w-5 text-teal-400 group-hover:text-teal-300" /> <span>تحديات ومنافسات شيقة</span></li>
+              </ul>
+            </CardContent>
+            <CardFooter className="mt-auto p-6">
+              <Button onClick={() => handleSubscribe('pro')} className="w-full text-lg py-6 rounded-lg border-2 border-primary text-primary bg-transparent hover:bg-primary hover:text-primary-foreground dark:hover:text-white shadow-md hover:shadow-lg transition-all duration-200 transform hover:scale-105">
+                اشترك الآن في Pro
+              </Button>
+            </CardFooter>
+          </Card>
+
+          <Card className="group relative overflow-hidden border-2 border-primary bg-gradient-to-br from-primary/10 via-background to-background dark:from-primary/20 dark:via-slate-800 dark:to-slate-800 flex flex-col shadow-xl hover:shadow-primary/40 dark:hover:shadow-primary/50 rounded-xl transform hover:-translate-y-1 bg-white dark:bg-slate-800">
+            <div className="absolute -top-1 -left-1 -right-1 h-2.5 bg-gradient-to-r from-amber-500 to-orange-500 animate-pulse-slow rounded-t-lg"></div>
+            <div className="absolute top-0 -right-0 m-1 z-20">
+                <div className="relative">
+                    <div className="absolute -top-2 -right-10 bg-gradient-to-r from-amber-500 to-orange-500 text-white px-8 py-3 transform rotate-[20deg] shadow-xl text-center group-hover:scale-110 transition-transform duration-300 ease-out">
+                        <span className="block text-xs font-bold uppercase tracking-wider">الأفضل</span>
+                        <span className="block text-sm font-semibold">قيمة</span>
+                    </div>
+                </div>
+            </div>
+            <CardHeader className="pb-4 pt-10">
+              <CardTitle className="text-3xl font-semibold text-slate-800 dark:text-slate-100">Pro Life</CardTitle>
+              <CardDescription className="text-sm text-muted-foreground dark:text-slate-400 pt-1">{planDetails.proLife.description}</CardDescription>
+            </CardHeader>
+            <CardContent className="flex-grow space-y-6">
+              <div className="relative mb-6">
+                <div className="text-5xl font-bold text-primary">
+                  {planDetails.proLife.price} <span className="text-xl font-normal text-muted-foreground dark:text-slate-400">ريال</span>
+                </div>
+                <div className="flex items-baseline gap-2 mt-1">
+                    {planDetails.proLife.originalPrice && (
+                       <span className="line-through text-muted-foreground dark:text-slate-500 text-lg">{planDetails.proLife.originalPrice} ريال</span>
+                    )}
+                    {planDetails.proLife.discount && (
+                        <span className="bg-green-500 text-white text-xs font-semibold px-2.5 py-1 rounded-full shadow-sm">
+                        خصم {planDetails.proLife.discount}!
+                        </span>
+                    )}
+                </div>
+              </div>
+              <ul className="space-y-4 text-sm text-slate-700 dark:text-slate-300">
+                <li className="flex items-center gap-3 transition-colors duration-200 group-hover:text-primary"><StarIcon className="h-5 w-5 text-yellow-400 group-hover:text-yellow-300" /> <span>جميع مميزات باقة Pro</span></li>
+                <li className="flex items-center gap-3 transition-colors duration-200 group-hover:text-primary"><SparklesIcon className="h-5 w-5 text-amber-700 group-hover:text-amber-700" /> <span>تحديثات مجانية مدى الحياة</span></li>
+                <li className="flex items-center gap-3 transition-colors duration-200 group-hover:text-primary"><ShieldCheckIcon className="h-5 w-5 text-green-400 group-hover:text-green-300" /> <span>أولوية في الدعم الفني المتميز</span></li>
+              </ul>
+            </CardContent>
+            <CardFooter className="mt-auto p-6">
+              <Button onClick={() => handleSubscribe('proLife')} className="w-full text-lg py-6 rounded-lg bg-gradient-to-r from-primary via-pink-500 to-orange-500 text-white shadow-lg hover:shadow-xl hover:opacity-90 transition-all duration-200 transform hover:scale-105" variant="default">
+                اشترك الآن (مدى الحياة)
+              </Button>
+            </CardFooter>
+          </Card>
+        </div>
+
+        <Dialog open={isPaymentDialogOpen} onOpenChange={handleDialogClose}>
+          <DialogContent className="sm:max-w-lg md:max-w-xl dark:bg-slate-800 dark:border-slate-700">
+            <DialogHeader className="pb-4 text-center">
+              <DialogTitle className="text-xl md:text-2xl dark:text-slate-50">
+                استمارة اشتراك: <span className="text-primary">{currentPlanDetails?.name}</span>
+              </DialogTitle>
+              <DialogDescription className="pt-1 dark:text-slate-400">
+                {currentStep === 1 && `الخطوة 1 من 4: المعلومات الشخصية`}
+                {currentStep === 2 && `الخطوة 2 من 4: التحقق من رقم الهاتف`}
+                {currentStep === 2.5 && `الخطوة 3 من 4: التحقق من البريد الإلكتروني`}
+                {currentStep === 3 && `الخطوة 4 من 4: اختيار طريقة الدفع`}
+              </DialogDescription>
+            </DialogHeader>
+
+            {currentStep === 1 && renderStepOneInfo()}
+            {currentStep === 2 && renderStepTwoOTP()}
+            {currentStep === 2.5 && renderStepTwoEmailOTP()}
+            {currentStep === 3 && renderStepThreePayment()}
+
+            <DialogFooter className="pt-6 flex flex-col-reverse sm:flex-row sm:justify-between gap-2 mt-4">
+                {currentStep > 1 && currentStep !== 2.5 && (
+                    <Button variant="outline" className="w-full sm:w-auto dark:border-slate-600" onClick={() => setCurrentStep(currentStep - 1)}>
+                         السابق <ArrowRightIcon className="mr-2 h-4 w-4" />
+                    </Button>
+                )}
+                {currentStep === 2.5 && (
+                    <Button variant="outline" className="w-full sm:w-auto dark:border-slate-600" onClick={() => setCurrentStep(2)}>
+                         السابق <ArrowRightIcon className="mr-2 h-4 w-4" />
+                    </Button>
+                )}
+               <div className="flex-grow sm:flex-grow-0"></div>
+                {currentStep === 1 && (
+                    <Button className="w-full sm:w-auto" onClick={() => setCurrentStep(2)} disabled={!isStepOneValid}>
+                        التالي (التحقق من الهاتف) <ArrowLeftIcon className="mr-2 h-4 w-4" />
+                    </Button>
+                )}
+                {currentStep === 2 && isOtpSent && (
+                    <Button className="w-full sm:w-auto" onClick={handleVerifyOtp} disabled={otpInput.join("").length !== 6 || isVerifying}>
+                        {isVerifying ? "جارٍ التحقق..." : "تحقق وتابع للبريد الإلكتروني"}
+                        {!isVerifying && <KeyRoundIcon className="mr-2 h-4 w-4" />}
+                    </Button>
+                )}
+                {currentStep === 2.5 && isEmailOtpSent && (
+                    <Button className="w-full sm:w-auto" onClick={handleVerifyEmailOtp} disabled={emailOtpInput.join("").length !== 6 || isVerifyingEmail}>
+                        {isVerifyingEmail ? "جارٍ التحقق..." : "تحقق وتابع للدفع"}
+                        {!isVerifyingEmail && <KeyRoundIcon className="mr-2 h-4 w-4" />}
+                    </Button>
+                )}
+                {currentStep === 2.5 && !isEmailOtpSent && (
+                    <Button className="w-full sm:w-auto" onClick={handleSendEmailOtp}>
+                        إرسال رمز التحقق عبر البريد الإلكتروني
+                        <MessageSquareTextIcon className="mr-2 h-4 w-4" />
+                    </Button>
+                )}
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+      </div>
+  );
+}

@@ -1,0 +1,28 @@
+kind = "web"
+previewPath = "/"
+title = "قدراتك"
+description = "The existing Qodratak learning platform for Arabic aptitude-test preparation, practice exams, progress tracking, subscriptions, and student tools."
+version = "1.0.0"
+id = "artifacts/qodratak"
+router = "path"
+
+[[services]]
+name = "web"
+paths = [ "/" ]
+localPort = 25588
+
+[services.development]
+run = "pnpm --filter @workspace/qodratak run dev"
+
+[services.production]
+build = [ "pnpm", "--filter", "@workspace/qodratak", "run", "build" ]
+serve = "static"
+publicDir = "artifacts/qodratak/dist/public"
+
+[[services.production.rewrites]]
+from = "/*"
+to = "/index.html"
+
+[services.env]
+PORT = "25588"
+BASE_PATH = "/"

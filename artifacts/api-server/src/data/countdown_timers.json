@@ -1,0 +1,13 @@
+[
+  {
+    "id": 1755168579039,
+    "userId": 1,
+    "subscriptionId": 1755168579038,
+    "endDate": "2025-09-13T10:49:39.038Z",
+    "isActive": true,
+    "notificationSent": false,
+    "daysRemaining": 30,
+    "createdAt": "2025-08-14T10:49:39.038Z",
+    "updatedAt": "2025-08-14T10:49:39.038Z"
+  }
+]

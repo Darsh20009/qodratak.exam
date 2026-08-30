@@ -1,0 +1,935 @@
+import React, { useState, useEffect } from 'react';
+import { motion } from 'framer-motion';
+import { useQuery } from '@tanstack/react-query';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { Progress } from '@/components/ui/progress';
+import { 
+  Crown, 
+  Settings, 
+  Target, 
+  Brain, 
+  Trophy, 
+  Lightning, 
+  Flame, 
+  Star, 
+  Zap,
+  Clock,
+  BookOpen,
+  Calculator,
+  Pause,
+  Play,
+  Home
+} from 'lucide-react';
+
+interface AdvancedQuestion {
+  id: number;
+  category: string;
+  subcategory: string;
+  text: string;
+  options: string[];
+  correctOptionIndex: number;
+  explanation: string;
+  difficulty: 'beginner' | 'intermediate' | 'advanced' | 'expert';
+  timeLimit: number;
+  points: number;
+  skill: string;
+}
+
+interface AssessmentConfig {
+  mode: 'adaptive' | 'timed' | 'endurance' | 'speed' | 'precision' | 'marathon';
+  difficulty: 'auto' | 'beginner' | 'intermediate' | 'advanced' | 'expert';
+  questionCount: number;
+  timeLimit: number;
+  showHints: boolean;
+  showProgress: boolean;
+  enableSounds: boolean;
+  focusMode: boolean;
+}
+
+interface PerformanceMetrics {
+  accuracy: number;
+  speed: number;
+  consistency: number;
+  confidence: number;
+  streak: number;
+  adaptability: number;
+}
+
+interface Assessment {
+  questions: AdvancedQuestion[];
+  currentIndex: number;
+  answers: { [key: number]: number };
+  startTime: number;
+  metrics: PerformanceMetrics;
+  subcategory: string;
+  type: 'verbal' | 'quantitative';
+}
+
+export function AdvancedAssessmentsPage() {
+  const [config, setConfig] = useState<AssessmentConfig>({
+    mode: 'adaptive',
+    difficulty: 'auto',
+    questionCount: 20,
+    timeLimit: 1200, // 20 minutes
+    showHints: true,
+    showProgress: true,
+    enableSounds: true,
+    focusMode: false
+  });
+
+  const [currentAssessment, setCurrentAssessment] = useState<Assessment | null>(null);
+  const [timeRemaining, setTimeRemaining] = useState(0);
+  const [isPaused, setIsPaused] = useState(false);
+  const [showResults, setShowResults] = useState(false);
+  const [selectedAnswer, setSelectedAnswer] = useState<number | null>(null);
+  const [showHint, setShowHint] = useState(false);
+  const [streak, setStreak] = useState(0);
+  const [totalXP, setTotalXP] = useState(0);
+  
+  // Premium and daily limit state
+  const [user, setUser] = useState<any>(null);
+  const [dailyTestsTaken, setDailyTestsTaken] = useState(0);
+  const MAX_DAILY_FREE_TESTS = 1;
+
+  // Load user data and daily limits
+  useEffect(() => {
+    const storedUser = localStorage.getItem('user');
+    if (storedUser) {
+      try {
+        setUser(JSON.parse(storedUser));
+      } catch (error) {
+        console.error("Error parsing user:", error);
+      }
+    }
+
+    // Load daily test count
+    const today = new Date().toDateString();
+    const testsToday = JSON.parse(localStorage.getItem(`dailyAdvancedLabTests_${today}`) || '0');
+    setDailyTestsTaken(testsToday);
+  }, []);
+
+  // Check premium status
+  const isPremiumUser = user && (
+    user.subscription?.type === 'Pro' || 
+    user.subscription?.type === 'Pro Life' || 
+    user.subscription?.type === 'Pro Live'
+  );
+
+  const canTakeTest = isPremiumUser || dailyTestsTaken < MAX_DAILY_FREE_TESTS;
+
+  // Record test taken for free users
+  const recordTestTaken = () => {
+    if (!isPremiumUser) {
+      const today = new Date().toDateString();
+      const newCount = dailyTestsTaken + 1;
+      localStorage.setItem(`dailyAdvancedLabTests_${today}`, JSON.stringify(newCount));
+      setDailyTestsTaken(newCount);
+    }
+  };
+
+  // Fetch questions from the API
+  const { data: questions, isLoading } = useQuery({
+    queryKey: ['/api/questions'],
+    enabled: true,
+  });
+
+  // Timer effect
+  useEffect(() => {
+    if (currentAssessment && !isPaused && timeRemaining > 0) {
+      const timer = setInterval(() => {
+        setTimeRemaining(prev => {
+          if (prev <= 1) {
+            completeAssessment();
+            return 0;
+          }
+          return prev - 1;
+        });
+      }, 1000);
+      return () => clearInterval(timer);
+    }
+  }, [currentAssessment, isPaused, timeRemaining]);
+
+  const getDifficultyPoints = (difficulty: string): number => {
+    const points = { beginner: 10, intermediate: 20, advanced: 30, expert: 50 };
+    return points[difficulty as keyof typeof points] || 10;
+  };
+
+  const getQuestionSkill = (subcategory: string): string => {
+    const skills: Record<string, string> = {
+      'التناظر اللفظي': 'تحليل العلاقات',
+      'إكمال الجمل': 'فهم السياق',
+      'استيعاب المقروء': 'الاستيعاب',
+      'الهندسة': 'التفكير المكاني',
+      'عمليات حسابية': 'العمليات الرياضية',
+      'النسبة والتناسب': 'التناسب',
+      'الإحصاء': 'تحليل البيانات'
+    };
+    return skills[subcategory] || 'مهارة عامة';
+  };
+
+  const startQuickAssessment = (category: 'verbal' | 'quantitative', subcategory: string) => {
+    if (!questions) return;
+    
+    // Check premium access and daily limits
+    if (!canTakeTest) {
+      alert('🚫 لقد وصلت إلى الحد الأقصى للاختبارات المجانية اليوم (1 اختبار). اشترك في الباقة المدفوعة للوصول الكامل!');
+      return;
+    }
+    
+    // Record test taken for free users
+    recordTestTaken();
+
+    let filteredQuestions = questions
+      .filter((q: any) => q.category === category && q.subcategory === subcategory)
+      .slice(0, 15);
+
+    const enhancedQuestions: AdvancedQuestion[] = filteredQuestions.map((q: any) => ({
+      ...q,
+      timeLimit: 60,
+      points: getDifficultyPoints(q.difficulty || 'beginner'),
+      skill: getQuestionSkill(q.subcategory)
+    }));
+
+    const assessment: Assessment = {
+      questions: enhancedQuestions,
+      currentIndex: 0,
+      startTime: Date.now(),
+      answers: {},
+      metrics: {
+        accuracy: 0,
+        speed: 0,
+        consistency: 0,
+        confidence: 0,
+        streak: 0,
+        adaptability: 0
+      },
+      subcategory: subcategory,
+      type: category
+    };
+
+    setCurrentAssessment(assessment);
+    setTimeRemaining(15 * 60);
+    setIsPaused(false);
+    setSelectedAnswer(null);
+    setShowHint(false);
+    setStreak(0);
+  };
+
+  const startAssessment = (subcategory: any, type: 'verbal' | 'quantitative') => {
+    if (!questions) return;
+    
+    // Check premium access and daily limits
+    if (!canTakeTest) {
+      alert('🚫 لقد وصلت إلى الحد الأقصى للاختبارات المجانية اليوم (1 اختبار). اشترك في الباقة المدفوعة للوصول الكامل!');
+      return;
+    }
+    
+    // Record test taken for free users
+    recordTestTaken();
+
+    let filteredQuestions = questions
+      .filter((q: any) => q.category === type && q.subcategory === subcategory.id)
+      .slice(0, config.questionCount);
+
+    if (config.difficulty !== 'auto') {
+      filteredQuestions = filteredQuestions.filter((q: any) => q.difficulty === config.difficulty);
+    }
+
+    const enhancedQuestions: AdvancedQuestion[] = filteredQuestions.map((q: any) => ({
+      ...q,
+      timeLimit: Math.floor(config.timeLimit / config.questionCount),
+      points: getDifficultyPoints(q.difficulty || 'beginner'),
+      skill: getQuestionSkill(q.subcategory)
+    }));
+
+    const assessment: Assessment = {
+      questions: enhancedQuestions,
+      currentIndex: 0,
+      startTime: Date.now(),
+      answers: {},
+      metrics: {
+        accuracy: 0,
+        speed: 0,
+        consistency: 0,
+        confidence: 0,
+        streak: 0,
+        adaptability: 0
+      },
+      subcategory: subcategory.id,
+      type: type
+    };
+
+    setCurrentAssessment(assessment);
+    setTimeRemaining(config.timeLimit * 60);
+    setIsPaused(false);
+  };
+
+  const submitAnswer = () => {
+    if (!currentAssessment || selectedAnswer === null) return;
+
+    const isCorrect = selectedAnswer === currentAssessment.questions[currentAssessment.currentIndex].correctOptionIndex;
+    
+    if (isCorrect) {
+      setStreak(prev => prev + 1);
+      setTotalXP(prev => prev + currentAssessment.questions[currentAssessment.currentIndex].points);
+    } else {
+      setStreak(0);
+    }
+
+    if (currentAssessment.currentIndex < currentAssessment.questions.length - 1) {
+      setCurrentAssessment(prev => prev ? {
+        ...prev,
+        answers: { ...prev.answers, [prev.currentIndex]: selectedAnswer },
+        currentIndex: prev.currentIndex + 1
+      } : null);
+    } else {
+      setCurrentAssessment(prev => prev ? {
+        ...prev,
+        answers: { ...prev.answers, [prev.currentIndex]: selectedAnswer }
+      } : null);
+      completeAssessment();
+    }
+
+    setSelectedAnswer(null);
+    setShowHint(false);
+  };
+
+  const calculateMetrics = (answers: { [key: number]: number }, questions: AdvancedQuestion[]): PerformanceMetrics => {
+    const correctAnswers = Object.entries(answers).filter(([index, answer]) => {
+      const questionIndex = parseInt(index);
+      return answer === questions[questionIndex]?.correctOptionIndex;
+    }).length;
+
+    const accuracy = (correctAnswers / questions.length) * 100;
+    
+    return {
+      accuracy,
+      speed: streak >= 5 ? 85 : 70,
+      consistency: accuracy > 80 ? 90 : 60,
+      confidence: 75,
+      streak,
+      adaptability: 80
+    };
+  };
+
+  const completeAssessment = () => {
+    if (!currentAssessment) return;
+    
+    const metrics = calculateMetrics(currentAssessment.answers, currentAssessment.questions);
+    setCurrentAssessment(prev => prev ? { ...prev, metrics, totalXP } : null);
+    setShowResults(true);
+  };
+
+  const togglePause = () => {
+    setIsPaused(!isPaused);
+  };
+
+  const resetAssessment = () => {
+    setCurrentAssessment(null);
+    setShowResults(false);
+    setSelectedAnswer(null);
+    setShowHint(false);
+    setStreak(0);
+  };
+
+  // Assessment Interface
+  if (currentAssessment && !showResults) {
+    const currentQuestion = currentAssessment.questions[currentAssessment.currentIndex];
+    const progress = ((currentAssessment.currentIndex + 1) / currentAssessment.questions.length) * 100;
+    const timePercentage = (timeRemaining / (15 * 60)) * 100;
+
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100 dark:from-slate-900 dark:via-blue-900 dark:to-indigo-900 p-4">
+        <div className="max-w-4xl mx-auto">
+          {/* Header with Timer and Progress */}
+          <motion.div
+            initial={{ opacity: 0, y: -20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="mb-6"
+          >
+            <Card className="bg-white/80 dark:bg-gray-900/80 backdrop-blur-sm border-0 shadow-xl">
+              <CardContent className="p-6">
+                <div className="flex flex-col lg:flex-row justify-between items-center gap-4">
+                  <div className="flex items-center gap-6">
+                    <div className="text-center">
+                      <div className="text-2xl font-bold text-blue-600 dark:text-blue-400">
+                        {currentAssessment.currentIndex + 1}
+                      </div>
+                      <div className="text-sm text-muted-foreground">
+                        من {currentAssessment.questions.length}
+                      </div>
+                    </div>
+                    <div className="w-32">
+                      <Progress value={progress} className="h-3" />
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-4">
+                    <div className="text-center">
+                      <div className={`text-2xl font-bold ${timeRemaining < 300 ? 'text-red-500' : 'text-green-600 dark:text-green-400'}`}>
+                        {Math.floor(timeRemaining / 60)}:{(timeRemaining % 60).toString().padStart(2, '0')}
+                      </div>
+                      <div className="text-sm text-muted-foreground">الوقت المتبقي</div>
+                    </div>
+                    
+                    <Button
+                      onClick={togglePause}
+                      variant="outline"
+                      size="sm"
+                      className="px-4"
+                    >
+                      {isPaused ? <Play className="h-4 w-4" /> : <Pause className="h-4 w-4" />}
+                    </Button>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </motion.div>
+
+          {/* Question Card */}
+          <motion.div
+            key={currentAssessment.currentIndex}
+            initial={{ opacity: 0, x: 20 }}
+            animate={{ opacity: 1, x: 0 }}
+            className="mb-6"
+          >
+            <Card className="bg-white/95 dark:bg-gray-900/95 backdrop-blur-sm border-0 shadow-2xl">
+              <CardHeader className="text-center">
+                <div className="flex items-center justify-center gap-4 mb-4">
+                  <Badge variant="outline" className="text-sm">
+                    صعوبة: {currentQuestion.difficulty || 'متوسط'}
+                  </Badge>
+                  <Badge variant="outline" className="text-sm">
+                    النقاط: {currentQuestion.points}
+                  </Badge>
+                </div>
+                <CardTitle className="text-xl font-bold text-right leading-relaxed">
+                  {currentQuestion.text}
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-3">
+                  {currentQuestion.options.map((option, index) => (
+                    <Button
+                      key={index}
+                      variant={selectedAnswer === index ? "default" : "outline"}
+                      className={`w-full text-right justify-start p-4 h-auto ${
+                        selectedAnswer === index 
+                          ? 'bg-blue-600 hover:bg-blue-700 text-white' 
+                          : 'hover:bg-blue-50 dark:hover:bg-blue-900/20'
+                      }`}
+                      onClick={() => setSelectedAnswer(index)}
+                    >
+                      <span className="mr-3 font-bold">{String.fromCharCode(65 + index)})</span>
+                      <span className="flex-1">{option}</span>
+                    </Button>
+                  ))}
+                </div>
+
+                <div className="flex justify-between items-center mt-6">
+                  <Button
+                    onClick={() => setShowHint(!showHint)}
+                    variant="ghost"
+                    size="sm"
+                    className="text-blue-600 dark:text-blue-400"
+                  >
+                    💡 تلميح
+                  </Button>
+                  
+                  <Button
+                    onClick={submitAnswer}
+                    disabled={selectedAnswer === null}
+                    className="bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white px-8"
+                  >
+                    {currentAssessment.currentIndex === currentAssessment.questions.length - 1 
+                      ? 'إنهاء الاختبار' 
+                      : 'التالي'
+                    }
+                  </Button>
+                </div>
+
+                {showHint && currentQuestion.explanation && (
+                  <motion.div
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="mt-4 p-4 bg-yellow-50 dark:bg-yellow-900/20 rounded-lg border border-yellow-200 dark:border-yellow-700"
+                  >
+                    <p className="text-sm text-yellow-800 dark:text-yellow-200 text-right">
+                      💡 {currentQuestion.explanation}
+                    </p>
+                  </motion.div>
+                )}
+              </CardContent>
+            </Card>
+          </motion.div>
+        </div>
+      </div>
+    );
+  }
+
+  // Results Interface
+  if (showResults && currentAssessment) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100 dark:from-slate-900 dark:via-blue-900 dark:to-indigo-900 p-4">
+        <motion.div
+          initial={{ opacity: 0, scale: 0.9 }}
+          animate={{ opacity: 1, scale: 1 }}
+          className="max-w-4xl mx-auto"
+        >
+          <Card className="bg-white/95 dark:bg-gray-900/95 backdrop-blur-sm shadow-2xl">
+            <CardHeader className="text-center">
+              <div className="flex items-center justify-center gap-3 mb-4">
+                <Trophy className="h-12 w-12 text-yellow-500" />
+                <h1 className="text-4xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+                  نتائج الاختبار
+                </h1>
+              </div>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
+                <div className="text-center p-6 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
+                  <div className="text-3xl font-bold text-blue-600 dark:text-blue-400">
+                    {currentAssessment.metrics.accuracy.toFixed(0)}%
+                  </div>
+                  <div className="text-muted-foreground">الدقة</div>
+                </div>
+                <div className="text-center p-6 bg-green-50 dark:bg-green-900/20 rounded-lg">
+                  <div className="text-3xl font-bold text-green-600 dark:text-green-400">
+                    {streak}
+                  </div>
+                  <div className="text-muted-foreground">أطول تسلسل صحيح</div>
+                </div>
+                <div className="text-center p-6 bg-purple-50 dark:bg-purple-900/20 rounded-lg">
+                  <div className="text-3xl font-bold text-purple-600 dark:text-purple-400">
+                    {totalXP}
+                  </div>
+                  <div className="text-muted-foreground">نقاط الخبرة</div>
+                </div>
+              </div>
+
+              <div className="flex justify-center gap-4">
+                <Button
+                  onClick={resetAssessment}
+                  className="bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white px-8"
+                >
+                  اختبار آخر
+                </Button>
+                <Button
+                  onClick={() => window.location.href = '/'}
+                  variant="outline"
+                  className="px-8"
+                >
+                  العودة للرئيسية
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        </motion.div>
+      </div>
+    );
+  }
+
+  // Main Interface
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100 dark:from-slate-900 dark:via-blue-900 dark:to-indigo-900 p-6 relative overflow-hidden">
+      {/* Animated Background Elements */}
+      <div className="absolute inset-0 overflow-hidden">
+        <div className="absolute -top-10 -right-10 w-40 h-40 bg-blue-500/10 rounded-full blur-3xl animate-pulse"></div>
+        <div className="absolute top-1/3 -left-10 w-60 h-60 bg-purple-500/10 rounded-full blur-3xl animate-pulse delay-1000"></div>
+        <div className="absolute bottom-1/4 right-1/4 w-32 h-32 bg-pink-500/10 rounded-full blur-3xl animate-pulse delay-2000"></div>
+      </div>
+      
+      <div className="max-w-7xl mx-auto relative z-10">
+        {/* Enhanced Hero Section */}
+        <motion.div 
+          initial={{ opacity: 0, y: -30 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="text-center mb-16"
+        >
+          {/* Main Title with Enhanced Design */}
+          <div className="relative mb-8">
+            <motion.div
+              initial={{ scale: 0.8, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              transition={{ duration: 0.8, ease: "easeOut" }}
+              className="inline-block"
+            >
+              <h1 className="text-7xl md:text-8xl font-black bg-gradient-to-r from-blue-600 via-purple-600 to-pink-600 bg-clip-text text-transparent mb-6 relative">
+                مختبر القدرات المتقدم
+                {/* Decorative Elements */}
+                <div className="absolute -top-4 -right-4 w-8 h-8 bg-gradient-to-r from-yellow-400 to-orange-500 rounded-full opacity-80 animate-bounce"></div>
+                <div className="absolute -bottom-2 -left-2 w-6 h-6 bg-gradient-to-r from-green-400 to-blue-500 rounded-full opacity-80 animate-bounce delay-500"></div>
+              </h1>
+            </motion.div>
+          </div>
+          
+          {/* Enhanced Subtitle */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.3 }}
+            className="relative"
+          >
+            <div className="max-w-5xl mx-auto">
+              <p className="text-2xl md:text-3xl text-gray-600 dark:text-gray-300 mb-8 leading-relaxed font-medium">
+                <span className="bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent font-bold">تجربة اختبار ثورية</span> مع 
+                <span className="mx-2 px-3 py-1 bg-gradient-to-r from-purple-500/20 to-pink-500/20 rounded-full border border-purple-300/30">تحليل ذكي</span>، 
+                <span className="mx-2 px-3 py-1 bg-gradient-to-r from-blue-500/20 to-cyan-500/20 rounded-full border border-blue-300/30">مقاييس أداء متقدمة</span>، 
+                وتجربة تفاعلية لا مثيل لها
+              </p>
+              
+              {/* Animated Stats */}
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-2xl mx-auto mb-8">
+                <motion.div
+                  initial={{ opacity: 0, scale: 0.8 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  transition={{ delay: 0.5 }}
+                  className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm rounded-2xl p-4 border border-white/20 shadow-lg"
+                >
+                  <div className="text-3xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">1500+</div>
+                  <div className="text-sm text-gray-600 dark:text-gray-400">سؤال متنوع</div>
+                </motion.div>
+                
+                <motion.div
+                  initial={{ opacity: 0, scale: 0.8 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  transition={{ delay: 0.7 }}
+                  className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm rounded-2xl p-4 border border-white/20 shadow-lg"
+                >
+                  <div className="text-3xl font-bold bg-gradient-to-r from-green-600 to-emerald-600 bg-clip-text text-transparent">6</div>
+                  <div className="text-sm text-gray-600 dark:text-gray-400">أنماط اختبار</div>
+                </motion.div>
+                
+                <motion.div
+                  initial={{ opacity: 0, scale: 0.8 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  transition={{ delay: 0.9 }}
+                  className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm rounded-2xl p-4 border border-white/20 shadow-lg"
+                >
+                  <div className="text-3xl font-bold bg-gradient-to-r from-orange-600 to-red-600 bg-clip-text text-transparent">AI</div>
+                  <div className="text-sm text-gray-600 dark:text-gray-400">تحليل ذكي</div>
+                </motion.div>
+              </div>
+            </div>
+          </motion.div>
+
+          {/* Enhanced Premium Access Status */}
+          {user && !isPremiumUser && (
+            <motion.div 
+              initial={{ opacity: 0, scale: 0.9 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ delay: 1.1 }}
+              className="max-w-lg mx-auto mb-8"
+            >
+              <Card className="bg-gradient-to-r from-orange-50 via-red-50 to-pink-50 dark:from-orange-900/20 dark:via-red-900/20 dark:to-pink-900/20 border-orange-200 dark:border-orange-700 shadow-xl overflow-hidden relative">
+                <div className="absolute inset-0 bg-gradient-to-r from-orange-500/5 to-red-500/5 animate-pulse"></div>
+                <CardContent className="p-6 relative z-10">
+                  <div className="flex items-center justify-center gap-4 mb-4">
+                    <div className="w-12 h-12 bg-gradient-to-r from-orange-500 to-red-600 rounded-full flex items-center justify-center shadow-lg">
+                      <Target className="w-6 h-6 text-white" />
+                    </div>
+                    <div className="text-center">
+                      <span className="font-bold text-xl text-orange-700 dark:text-orange-300">حساب مجاني</span>
+                      <div className="text-sm text-orange-600 dark:text-orange-400 mt-1">اختبار واحد يومياً</div>
+                    </div>
+                  </div>
+                  
+                  <div className="bg-white/50 dark:bg-gray-800/50 rounded-lg p-4 mb-4">
+                    <div className="flex justify-between items-center mb-2">
+                      <span className="text-sm font-medium text-gray-700 dark:text-gray-300">الاستخدام اليومي</span>
+                      <span className="text-sm font-bold text-orange-600 dark:text-orange-400">{dailyTestsTaken}/{MAX_DAILY_FREE_TESTS}</span>
+                    </div>
+                    <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-3 overflow-hidden">
+                      <motion.div 
+                        initial={{ width: 0 }}
+                        animate={{ width: `${(dailyTestsTaken / MAX_DAILY_FREE_TESTS) * 100}%` }}
+                        transition={{ duration: 1, delay: 1.5 }}
+                        className="bg-gradient-to-r from-orange-500 to-red-600 h-3 rounded-full relative"
+                      >
+                        <div className="absolute inset-0 bg-white/30 animate-pulse"></div>
+                      </motion.div>
+                    </div>
+                  </div>
+                  
+                  {!canTakeTest && (
+                    <motion.div
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      className="text-center p-3 bg-red-50 dark:bg-red-900/20 rounded-lg border border-red-200 dark:border-red-700"
+                    >
+                      <p className="text-sm text-red-600 dark:text-red-400 font-medium">
+                        🔒 تم الوصول للحد الأقصى اليوم
+                      </p>
+                      <p className="text-xs text-red-500 dark:text-red-500 mt-1">
+                        اشترك للحصول على وصول غير محدود
+                      </p>
+                    </motion.div>
+                  )}
+                </CardContent>
+              </Card>
+            </motion.div>
+          )}
+
+          {user && isPremiumUser && (
+            <motion.div 
+              initial={{ opacity: 0, scale: 0.9 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ delay: 1.1 }}
+              className="max-w-lg mx-auto mb-8"
+            >
+              <Card className="bg-gradient-to-r from-green-50 via-emerald-50 to-teal-50 dark:from-green-900/20 dark:via-emerald-900/20 dark:to-teal-900/20 border-green-200 dark:border-green-700 shadow-xl overflow-hidden relative">
+                <div className="absolute inset-0 bg-gradient-to-r from-green-500/5 to-emerald-500/5 animate-pulse"></div>
+                <CardContent className="p-6 relative z-10">
+                  <div className="flex items-center justify-center gap-4">
+                    <div className="w-12 h-12 bg-gradient-to-r from-green-500 to-emerald-600 rounded-full flex items-center justify-center shadow-lg relative">
+                      <Crown className="w-6 h-6 text-white" />
+                      <div className="absolute -top-1 -right-1 w-4 h-4 bg-yellow-400 rounded-full animate-ping"></div>
+                    </div>
+                    <div className="text-center">
+                      <span className="font-bold text-xl text-green-700 dark:text-green-300">مشترك مميز</span>
+                      <div className="flex items-center gap-2 mt-1">
+                        <Badge className="bg-gradient-to-r from-green-500 to-emerald-600 text-white shadow-lg">
+                          وصول كامل
+                        </Badge>
+                        <Badge className="bg-gradient-to-r from-yellow-500 to-orange-500 text-white shadow-lg">
+                          ∞ اختبار
+                        </Badge>
+                      </div>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            </motion.div>
+          )}
+          
+          {/* Enhanced Quick Level Assessment Section */}
+          <motion.div
+            initial={{ opacity: 0, y: 30 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 1.3 }}
+          >
+            <Card className="max-w-7xl mx-auto mb-12 bg-gradient-to-r from-green-500/10 via-emerald-500/10 to-teal-500/10 dark:from-green-500/20 dark:via-emerald-500/20 dark:to-teal-500/20 border-green-200 dark:border-green-700 shadow-2xl overflow-hidden relative">
+              <div className="absolute inset-0 bg-gradient-to-r from-green-400/5 to-emerald-400/5 animate-pulse"></div>
+              
+              <CardHeader className="text-center pb-8 relative z-10">
+                <motion.div
+                  initial={{ scale: 0.8, opacity: 0 }}
+                  animate={{ scale: 1, opacity: 1 }}
+                  transition={{ delay: 1.5 }}
+                  className="flex items-center justify-center gap-4 mb-4"
+                >
+                  <div className="p-3 bg-gradient-to-r from-green-500 to-emerald-600 rounded-2xl shadow-lg relative">
+                    <Zap className="h-8 w-8 text-white" />
+                    <div className="absolute -top-1 -right-1 w-4 h-4 bg-yellow-400 rounded-full animate-bounce"></div>
+                  </div>
+                  <div>
+                    <h2 className="text-3xl font-bold bg-gradient-to-r from-green-600 to-emerald-600 bg-clip-text text-transparent">
+                      قياس المستوى السريع
+                    </h2>
+                    <div className="text-green-600 dark:text-green-400 font-medium">⚡ نتائج فورية مع تحليل ذكي</div>
+                  </div>
+                </motion.div>
+                
+                <motion.div
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  transition={{ delay: 1.7 }}
+                  className="max-w-2xl mx-auto"
+                >
+                  <p className="text-lg text-green-700 dark:text-green-300 mb-4">
+                    اختبارات سريعة ومتخصصة لكل فئة - 15 سؤال في 15 دقيقة
+                  </p>
+                  <div className="flex items-center justify-center gap-6 text-sm text-green-600 dark:text-green-400">
+                    <div className="flex items-center gap-2">
+                      <Clock className="w-4 h-4" />
+                      <span>15 دقيقة</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <BookOpen className="w-4 h-4" />
+                      <span>15 سؤال</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Brain className="w-4 h-4" />
+                      <span>تحليل ذكي</span>
+                    </div>
+                  </div>
+                </motion.div>
+              </CardHeader>
+              
+              <CardContent className="relative z-10">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                  {[
+                    { name: "التناظر اللفظي", category: "verbal", subcategory: "التناظر اللفظي", icon: "📚", color: "from-blue-500 to-blue-600", description: "تحليل العلاقات" },
+                    { name: "إكمال الجمل", category: "verbal", subcategory: "إكمال الجمل", icon: "✏️", color: "from-purple-500 to-purple-600", description: "فهم السياق" },
+                    { name: "الاستيعاب المقروء", category: "verbal", subcategory: "استيعاب المقروء", icon: "📖", color: "from-indigo-500 to-indigo-600", description: "فهم النصوص" },
+                    { name: "المترادفات والأضداد", category: "verbal", subcategory: "المترادفات والأضداد", icon: "🔤", color: "from-pink-500 to-pink-600", description: "المعاني والألفاظ" },
+                    { name: "الأخطاء الشائعة", category: "verbal", subcategory: "الخطأ السياقي", icon: "🎯", color: "from-rose-500 to-rose-600", description: "دقة اللغة" },
+                    { name: "الهندسة", category: "quantitative", subcategory: "الهندسة", icon: "📐", color: "from-orange-500 to-orange-600", description: "الأشكال والمساحات" },
+                    { name: "العمليات الحسابية", category: "quantitative", subcategory: "عمليات حسابية", icon: "➕", color: "from-yellow-500 to-yellow-600", description: "الحسابات الأساسية" },
+                    { name: "النسب والتناسب", category: "quantitative", subcategory: "النسبة والتناسب", icon: "📊", color: "from-teal-500 to-teal-600", description: "العلاقات الرقمية" },
+                    { name: "الإحصاء", category: "quantitative", subcategory: "الإحصاء", icon: "📈", color: "from-cyan-500 to-cyan-600", description: "تحليل البيانات" },
+                  ].map((test, index) => (
+                    <motion.div
+                      key={test.name}
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: 1.8 + index * 0.1 }}
+                    >
+                      <Button
+                        variant="outline"
+                        className={`h-auto p-6 bg-gradient-to-r ${test.color} text-white border-0 hover:scale-105 transition-all duration-500 shadow-lg hover:shadow-2xl w-full relative overflow-hidden group`}
+                        onClick={() => startQuickAssessment(test.category as 'verbal' | 'quantitative', test.subcategory)}
+                      >
+                        <div className="absolute inset-0 bg-white/10 translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-700"></div>
+                        <div className="flex flex-col items-center gap-3 relative z-10">
+                          <div className="text-3xl mb-1 transform group-hover:scale-110 transition-transform duration-300">
+                            {test.icon}
+                          </div>
+                          <div className="text-center">
+                            <div className="text-base font-bold mb-1">{test.name}</div>
+                            <div className="text-xs opacity-90 mb-2">{test.description}</div>
+                            <div className="text-xs bg-white/20 px-3 py-1 rounded-full">
+                              15 سؤال • 15 دقيقة
+                            </div>
+                          </div>
+                        </div>
+                      </Button>
+                    </motion.div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          </motion.div>
+
+          {/* Enhanced Configuration Panel */}
+          <motion.div
+            initial={{ opacity: 0, y: 30 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 2.5 }}
+          >
+            <Card className="max-w-6xl mx-auto mb-16 bg-gradient-to-r from-slate-50 to-gray-50 dark:from-gray-800 dark:to-gray-900 shadow-2xl border-0 overflow-hidden relative">
+              <div className="absolute inset-0 bg-gradient-to-r from-blue-500/5 to-purple-500/5"></div>
+              
+              <CardHeader className="text-center pb-8 relative z-10">
+                <motion.div
+                  initial={{ scale: 0.8, opacity: 0 }}
+                  animate={{ scale: 1, opacity: 1 }}
+                  transition={{ delay: 2.7 }}
+                  className="flex items-center justify-center gap-4 mb-4"
+                >
+                  <div className="p-3 bg-gradient-to-r from-blue-500 to-purple-600 rounded-2xl shadow-lg">
+                    <Settings className="h-8 w-8 text-white" />
+                  </div>
+                  <div>
+                    <h2 className="text-3xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+                      إعدادات الاختبار المتقدمة
+                    </h2>
+                    <p className="text-gray-600 dark:text-gray-400 mt-2">
+                      خصص تجربة الاختبار لتناسب مستواك وأهدافك
+                    </p>
+                  </div>
+                </motion.div>
+              </CardHeader>
+              
+              <CardContent className="relative z-10">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                {/* Assessment Mode */}
+                <div className="space-y-3">
+                  <label className="text-sm font-medium">نمط الاختبار</label>
+                  <select 
+                    value={config.mode}
+                    onChange={(e) => setConfig(prev => ({ ...prev, mode: e.target.value as any }))}
+                    className="w-full p-3 border rounded-lg bg-white dark:bg-gray-800"
+                  >
+                    <option value="adaptive">تكيفي ذكي</option>
+                    <option value="timed">محدود الوقت</option>
+                    <option value="endurance">اختبار التحمل</option>
+                    <option value="speed">سريع البرق</option>
+                    <option value="precision">عالي الدقة</option>
+                    <option value="marathon">الماراثون</option>
+                  </select>
+                </div>
+
+                {/* Difficulty Level */}
+                <div className="space-y-3">
+                  <label className="text-sm font-medium">مستوى الصعوبة</label>
+                  <select 
+                    value={config.difficulty}
+                    onChange={(e) => setConfig(prev => ({ ...prev, difficulty: e.target.value as any }))}
+                    className="w-full p-3 border rounded-lg bg-white dark:bg-gray-800"
+                  >
+                    <option value="auto">تلقائي</option>
+                    <option value="beginner">مبتدئ</option>
+                    <option value="intermediate">متوسط</option>
+                    <option value="advanced">متقدم</option>
+                    <option value="expert">خبير</option>
+                  </select>
+                </div>
+
+                {/* Question Count */}
+                <div className="space-y-3">
+                  <label className="text-sm font-medium">عدد الأسئلة</label>
+                  <select 
+                    value={config.questionCount}
+                    onChange={(e) => setConfig(prev => ({ ...prev, questionCount: parseInt(e.target.value) }))}
+                    className="w-full p-3 border rounded-lg bg-white dark:bg-gray-800"
+                  >
+                    <option value={10}>10 أسئلة</option>
+                    <option value={20}>20 سؤال</option>
+                    <option value={30}>30 سؤال</option>
+                    <option value={50}>50 سؤال</option>
+                  </select>
+                </div>
+
+                {/* Time Limit */}
+                <div className="space-y-3">
+                  <label className="text-sm font-medium">الحد الزمني (دقيقة)</label>
+                  <select 
+                    value={config.timeLimit}
+                    onChange={(e) => setConfig(prev => ({ ...prev, timeLimit: parseInt(e.target.value) }))}
+                    className="w-full p-3 border rounded-lg bg-white dark:bg-gray-800"
+                  >
+                    <option value={600}>10 دقائق</option>
+                    <option value={1200}>20 دقيقة</option>
+                    <option value={1800}>30 دقيقة</option>
+                    <option value={3600}>60 دقيقة</option>
+                  </select>
+                </div>
+
+                {/* Show Hints */}
+                <div className="space-y-3">
+                  <label className="text-sm font-medium">إظهار التلميحات</label>
+                  <div className="flex items-center space-x-2">
+                    <input
+                      type="checkbox"
+                      checked={config.showHints}
+                      onChange={(e) => setConfig(prev => ({ ...prev, showHints: e.target.checked }))}
+                      className="rounded"
+                    />
+                    <span className="text-sm">تفعيل</span>
+                  </div>
+                </div>
+
+                {/* Focus Mode */}
+                <div className="space-y-3">
+                  <label className="text-sm font-medium">وضع التركيز</label>
+                  <div className="flex items-center space-x-2">
+                    <input
+                      type="checkbox"
+                      checked={config.focusMode}
+                      onChange={(e) => setConfig(prev => ({ ...prev, focusMode: e.target.checked }))}
+                      className="rounded"
+                    />
+                    <span className="text-sm">تفعيل</span>
+                  </div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </motion.div>
+      </motion.div>
+    </div>
+  );
+}
