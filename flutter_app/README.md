@@ -33,9 +33,23 @@ Codemagic أو بأمر البناء دون تعديل ملفات المصدر.
 - `../codemagic.yaml` عند ربط مستودع قدراتك الكامل.
 - `codemagic.yaml` عند رفع مجلد `flutter_app` كمستودع مستقل.
 
-ابدأ بـ workflow المسمى **Qodratak Android Debug** لأنه لا يحتاج توقيعاً.
+### مسار الآيفون (المسار المطلوب)
 
-للنشر الداخلي على Google Play أضف مجموعتي البيئة:
+ابدأ بـ workflow المسمى **Qodratak iOS TestFlight**. هذا المسار ينشئ ملف IPA
+ويرفعه إلى TestFlight، ولا يحتاج إلى إعدادات Android.
+
+قبل التشغيل:
+
+1. سجّل Bundle ID التالي في Apple Developer وApp Store Connect:
+   `studio.qirox.qodratak`.
+2. أضف مجموعة Codemagic باسم `app_store_connect`، ثم اربطها بالـ workflow.
+3. تأكد من أن `API_BASE_URL` يشير إلى عنوان API الإنتاجي الصحيح.
+
+يستخدم المشروع iOS 13.0 كحد أدنى، ويشغّل CocoaPods تلقائياً أثناء البناء.
+
+### إعداد Android (اختياري، وليس مطلوباً للآيفون)
+
+إذا أردت لاحقاً نشر نسخة Android، أضف مجموعتي البيئة:
 
 - `android_signing`: القيم `CM_KEYSTORE`, `CM_KEYSTORE_PASSWORD`,
   `CM_KEY_ALIAS`, `CM_KEY_PASSWORD`.
