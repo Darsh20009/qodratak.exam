@@ -1,7 +1,7 @@
 {
   "name": "منصة قدراتك",
   "short_name": "قدراتك",
-  "description": "منصة قدراتك التعليمية – اختبارات القدرات والتحصيلي",
+  "description": "منصة قدراتك التعليمية للاستعداد لاختبارات القدرات والتحصيلي عبر تدريب منظم واختبارات محاكية.",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#0f172a",
@@ -12,13 +12,13 @@
   "scope": "/",
   "icons": [
     {
-      "src": "/qodratak-logo.png",
+      "src": "/qodratak-app-icon-192.png",
       "sizes": "192x192",
       "type": "image/png",
       "purpose": "any maskable"
     },
     {
-      "src": "/qodratak-logo.png",
+      "src": "/qodratak-app-icon.png",
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "any maskable"
@@ -30,12 +30,12 @@
     {
       "name": "بنك الأسئلة",
       "url": "/question-bank",
-      "icons": [{ "src": "/qodratak-logo.png", "sizes": "192x192" }]
+       "icons": [{ "src": "/qodratak-app-icon.png", "sizes": "512x512" }]
     },
     {
       "name": "اختبار قياس",
       "url": "/qiyas",
-      "icons": [{ "src": "/qodratak-logo.png", "sizes": "192x192" }]
+       "icons": [{ "src": "/qodratak-app-icon.png", "sizes": "512x512" }]
     }
   ]
 }

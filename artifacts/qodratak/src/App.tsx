@@ -125,6 +125,7 @@ import InstallPrompt from "@/components/InstallPrompt";
 import { FloatingInstallButton } from "@/components/PermanentInstallButton";
 import LandingPage from "@/pages/LandingPage";
 import { SplashScreen } from "@/components/SplashScreen";
+import { RouteSEO } from "@/components/RouteSEO";
 import MultiplayerPage from "@/pages/MultiplayerPage";
 import MultiplayerRoom from "@/pages/MultiplayerRoom";
 import NotificationBell from "@/components/NotificationBell";
@@ -737,6 +738,7 @@ function Router({ splashDone }: { splashDone: boolean }) {
   return (
     <>
       {splashDone && <RotateDevicePrompt />}
+      <RouteSEO />
       <Switch>
       {/* Multiplayer routes - no sidebar needed */}
       <Route path="/multiplayer">

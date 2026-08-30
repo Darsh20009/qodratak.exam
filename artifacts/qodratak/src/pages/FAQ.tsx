@@ -2,6 +2,38 @@ import React, { useState } from 'react';
 import { ChevronDownIcon, ChevronUpIcon, HelpCircleIcon, MessageCircleIcon, BookOpenIcon, ClockIcon, CrownIcon, StarIcon } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import { Helmet } from 'react-helmet-async';
+
+const featuredFaqs = [
+  {
+    question: 'ما هي منصة قدراتك؟',
+    answer:
+      'منصة قدراتك منصة تعليمية عربية تساعد الطلاب على الاستعداد لاختبارات القدرات والتحصيلي من خلال تدريب منظم، اختبارات محاكية، وبنك أسئلة.',
+  },
+  {
+    question: 'ما الذي يمكنني التدريب عليه في قدراتك؟',
+    answer:
+      'يمكنك التدريب على المهارات اللفظية والكمية، خوض اختبارات محاكية، ومراجعة النتائج لمعرفة الجوانب التي تحتاج إلى مزيد من التدريب.',
+  },
+  {
+    question: 'كيف أبدأ استخدام المنصة؟',
+    answer:
+      'ابدأ بإنشاء حساب، ثم اختر نقطة البداية المناسبة لك واتبع المسار التدريبي المتاح في حسابك.',
+  },
+];
+
+const faqStructuredData = {
+  '@context': 'https://schema.org',
+  '@type': 'FAQPage',
+  mainEntity: featuredFaqs.map(({ question, answer }) => ({
+    '@type': 'Question',
+    name: question,
+    acceptedAnswer: {
+      '@type': 'Answer',
+      text: answer,
+    },
+  })),
+};
 
 const faqs = [
   {
@@ -10,16 +42,16 @@ const faqs = [
     color: 'from-blue-500 to-emerald-600',
     questions: [
       {
-        question: 'ما هو موقع قدراتك؟',
-        answer: 'قدراتك هو منصة تعليمية شاملة مصممة لمساعدة الطلاب في التحضير لاختبارات القياس. نوفر اختبارات تفاعلية، وتحليلات مفصلة، وأدوات إدارة الوقت لضمان نجاحك.'
+        question: 'ما هي منصة قدراتك؟',
+        answer: 'منصة قدراتك منصة تعليمية عربية تساعد الطلاب على الاستعداد لاختبارات القدرات والتحصيلي من خلال تدريب منظم، اختبارات محاكية، وبنك أسئلة.'
       },
       {
-        question: 'هل الموقع مجاني؟',
-        answer: 'نعم! نؤمن أن التعليم حق للجميع. جميع الميزات الأساسية متاحة مجاناً مع تجربة 7 أيام للمستخدمين الجدد. الاشتراكات المدفوعة تساعد في دعم المنصة وتوفير المحتوى المجاني للجميع.'
+        question: 'ما الذي يمكنني التدريب عليه في قدراتك؟',
+        answer: 'يمكنك التدريب على المهارات اللفظية والكمية، خوض اختبارات محاكية، ومراجعة النتائج لمعرفة الجوانب التي تحتاج إلى مزيد من التدريب.'
       },
       {
-        question: 'كيف يمكنني إنشاء حساب؟',
-        answer: 'يمكنك البدء مباشرة كمستخدم مجاني دون تسجيل. للحصول على مميزات إضافية، يمكنك التسجيل أو الاشتراك في الخطط المدفوعة.'
+        question: 'كيف أبدأ استخدام المنصة؟',
+        answer: 'ابدأ بإنشاء حساب، ثم اختر نقطة البداية المناسبة لك واتبع المسار التدريبي المتاح في حسابك.'
       }
     ]
   },
@@ -142,6 +174,9 @@ export const FAQPage: React.FC = () => {
 
   return (
     <div className="container mx-auto px-4 py-8 max-w-6xl">
+      <Helmet>
+        <script type="application/ld+json">{JSON.stringify(faqStructuredData)}</script>
+      </Helmet>
       {/* Header */}
       <div className="text-center mb-12">
         <div className="flex justify-center mb-6">
@@ -156,6 +191,25 @@ export const FAQPage: React.FC = () => {
           نجيب على جميع استفساراتك حول منصة قدراتك وخدماتنا التعليمية
         </p>
       </div>
+
+      <section aria-labelledby="quick-answers-title" className="mb-12">
+        <div className="mb-6 text-center">
+          <h2 id="quick-answers-title" className="text-2xl font-bold text-gray-900 dark:text-white">
+            إجابات سريعة عن منصة قدراتك
+          </h2>
+          <p className="mt-2 text-gray-600 dark:text-gray-300">
+            تعريف مختصر بالخدمات الأساسية وطريقة البدء.
+          </p>
+        </div>
+        <div className="grid gap-4 md:grid-cols-3">
+          {featuredFaqs.map(({ question, answer }) => (
+            <article key={question} className="rounded-2xl border border-gray-200 bg-white p-5 dark:border-gray-700 dark:bg-gray-900">
+              <h3 className="font-bold text-gray-900 dark:text-white">{question}</h3>
+              <p className="mt-3 text-sm leading-7 text-gray-600 dark:text-gray-300">{answer}</p>
+            </article>
+          ))}
+        </div>
+      </section>
 
       {/* فيديو شرح المنصة */}
       <Card className="mb-12 overflow-hidden">

@@ -62,7 +62,7 @@ function Header({ onSignup, onLogin }: { onSignup: () => void; onLogin: () => vo
     <header className="relative z-30 border-b border-[#24202D]/[.09] bg-[#F7F4EE]">
       <div className="mx-auto flex max-w-7xl items-center justify-between px-5 py-4 sm:px-8">
         <Link href="/" className="qodratak-focus-ring flex items-center gap-2.5 rounded-lg">
-          <img src="/qodratak-logo-transparent.png" alt="قدراتك" className="h-10 w-10 object-contain" />
+          <img src="/qodratak-logo-transparent.png" alt="شعار منصة قدراتك" width="40" height="40" className="h-10 w-10 object-contain" />
            <span className="text-base font-black" style={{ color: NAVY }}>قدراتك</span>
         </Link>
 
@@ -346,7 +346,7 @@ export default function LandingPage({ initialModal }: { initialModal?: "signup" 
             ))}
           </div>
           <button
-            onClick={() => setSignupOpen(true)}
+             onClick={() => setAuthMode("signup")}
             className="qodratak-focus-ring mt-7 inline-flex items-center gap-2 rounded-xl px-5 py-3 text-sm font-black transition hover:-translate-y-0.5"
             style={{ background: NAVY, color: SIGNAL }}
           >
@@ -398,7 +398,7 @@ export default function LandingPage({ initialModal }: { initialModal?: "signup" 
           </div>
           <div className="mt-10 flex justify-center">
             <button
-              onClick={() => setSignupOpen(true)}
+               onClick={() => setAuthMode("signup")}
               className="inline-flex items-center gap-2 rounded-xl px-6 py-3.5 text-sm font-black transition hover:-translate-y-0.5"
               style={{ background: SIGNAL, color: NAVY }}
             >
@@ -428,7 +428,7 @@ export default function LandingPage({ initialModal }: { initialModal?: "signup" 
               ))}
             </div>
             <button
-              onClick={() => setSignupOpen(true)}
+               onClick={() => setAuthMode("signup")}
               className="qodratak-focus-ring mt-8 inline-flex items-center gap-2 text-sm font-black text-[#0D1B2A]"
             >
               أنشئ حسابك وابدأ <ArrowLeft size={16} />
@@ -445,7 +445,7 @@ export default function LandingPage({ initialModal }: { initialModal?: "signup" 
             <h2 className="mt-3 text-3xl font-black leading-tight sm:text-4xl" style={{ color: NAVY }}>لكل جزء من استعدادك مكان واضح.</h2>
           </div>
           <button
-            onClick={() => setSignupOpen(true)}
+                 onClick={() => setAuthMode("signup")}
             className="qodratak-focus-ring inline-flex items-center gap-2 text-sm font-black text-[#0D1B2A]"
           >استكشفها من حسابك <ArrowLeft size={16} /></button>
         </div>
@@ -461,7 +461,7 @@ export default function LandingPage({ initialModal }: { initialModal?: "signup" 
       </section>
 
       {/* ── Testimonials ── */}
-      <TestimonialsSection onSignup={() => setSignupOpen(true)} />
+      <TestimonialsSection onSignup={() => setAuthMode("signup")} />
 
       {/* ── Difference + big student photo ── */}
       <section className="border-y border-slate-200 bg-[#0D1B2A]">
@@ -479,7 +479,7 @@ export default function LandingPage({ initialModal }: { initialModal?: "signup" 
             </div>
           </div>
           <div className="relative min-h-80 overflow-hidden lg:min-h-full">
-            <img src="/attached_assets/generated_images/qodratak-student-focus.jpg" alt="طالب يستعد للاختبار" className="absolute inset-0 h-full w-full object-cover" />
+             <img src="/attached_assets/generated_images/qodratak-student-focus.jpg" alt="طالب يستعد لاختبار القدرات" loading="lazy" width="1024" height="1024" className="absolute inset-0 h-full w-full object-cover" />
             <div className="absolute inset-0 bg-gradient-to-l from-transparent to-[#0D1B2A]/45" />
             <div className="absolute bottom-5 right-5 rounded-xl border border-white/15 bg-[#0D1B2A]/85 px-4 py-3 text-xs font-bold leading-5 text-white backdrop-blur-sm">استعداد هادئ، وقرار واضح بعد كل محاولة.</div>
           </div>
@@ -492,7 +492,10 @@ export default function LandingPage({ initialModal }: { initialModal?: "signup" 
           <div className="relative min-h-72 overflow-hidden lg:min-h-[420px]">
             <img
               src="/students/students-group.png"
-              alt="مجموعة طلاب سعوديين"
+              alt="طلاب سعوديون يستعدون لاختبارات القدرات"
+              loading="lazy"
+              width="590"
+              height="226"
               className="h-full w-full object-cover"
               style={{ objectPosition: "center 20%" }}
             />
@@ -507,7 +510,7 @@ export default function LandingPage({ initialModal }: { initialModal?: "signup" 
               قدراتك ليست منصة أسئلة فقط. هي مساحة تتعلم فيها بطريقة مرتبة تناسب مستواك واشتراكك وهدفك.
             </p>
             <button
-              onClick={() => setSignupOpen(true)}
+              onClick={() => setAuthMode("signup")}
               className="mt-8 inline-flex items-center gap-2 rounded-xl px-5 py-3.5 text-sm font-black transition hover:-translate-y-0.5"
               style={{ background: NAVY, color: SIGNAL }}
             >
@@ -542,7 +545,7 @@ export default function LandingPage({ initialModal }: { initialModal?: "signup" 
                 ))}
               </div>
               <button
-                onClick={() => setSignupOpen(true)}
+                onClick={() => setAuthMode("signup")}
                 className="qodratak-focus-ring inline-flex items-center gap-2 rounded-xl px-5 py-3.5 text-sm font-black transition hover:-translate-y-0.5"
                 style={{ background: SIGNAL, color: NAVY }}
               >إنشاء حساب طالب <ArrowLeft size={17} /></button>

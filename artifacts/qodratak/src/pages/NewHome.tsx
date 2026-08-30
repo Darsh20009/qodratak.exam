@@ -453,6 +453,7 @@ export default function NewHome() {
           title="لوحة التحكم — منصة قدراتك"
           description="منصة قدراتك التعليمية — لوحة المستخدم الشخصية"
           url="/"
+          noIndex
         />
         <LoggedInDashboard user={user} />
       </>

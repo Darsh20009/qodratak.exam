@@ -1,10 +1,32 @@
-# robots.txt for Qodratak Platform
 User-agent: *
 Allow: /
 
-# Sitemap location
 Sitemap: https://qodratak.sa/sitemap.xml
 
-# Disallow sensitive areas
+# APIs, administration, authentication and student-only areas are not search content.
 Disallow: /admin
 Disallow: /api
+Disallow: /login
+Disallow: /signup
+Disallow: /forgot-password
+Disallow: /reset-password
+Disallow: /guest-signup
+Disallow: /free-signup
+Disallow: /profile
+Disallow: /analytics
+Disallow: /records
+Disallow: /wallet
+Disallow: /invite/
+Disallow: /subscription
+Disallow: /enhanced-subscription
+Disallow: /test-results
+Disallow: /exam-review
+Disallow: /tahsili
+Disallow: /tahsili-dashboard
+Disallow: /tahsilik
+Disallow: /question-bank
+Disallow: /qiyas
+Disallow: /multiplayer
+Disallow: /study-rooms
+Disallow: /ai-hub
+Disallow: /ai-tutor
