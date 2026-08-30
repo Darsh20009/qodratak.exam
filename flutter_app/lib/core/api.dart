@@ -78,6 +78,12 @@ class Api {
     return response.data;
   }
 
+  static Future<dynamic> delete(String path) async {
+    _ensureInitialized();
+    final response = await _dio.delete<dynamic>(path);
+    return response.data;
+  }
+
   static String errorMessage(Object error) {
     if (error is FormatException) return error.message;
     if (error is StateError) return error.message.replaceFirst('Bad state: ', '');

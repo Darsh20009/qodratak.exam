@@ -2,6 +2,9 @@ import 'package:flutter/material.dart';
 import '../core/api.dart';
 import '../core/colors.dart';
 import '../core/storage.dart';
+import '../screens/devices_screen.dart';
+import '../screens/notification_settings_screen.dart';
+import '../screens/subscription_screen.dart';
 
 class ProfileTab extends StatefulWidget {
   final Future<void> Function() onLogout;
@@ -137,8 +140,21 @@ class _ProfileTabState extends State<ProfileTab> {
                   ),
                 ),
                 const SizedBox(height: 22),
-                _MenuTile(icon: Icons.notifications_outlined, title: 'الإشعارات', onTap: () => _notReady(context)),
-                _MenuTile(icon: Icons.devices_outlined, title: 'إدارة الأجهزة', onTap: () => _notReady(context)),
+                _MenuTile(
+                  icon: Icons.notifications_outlined,
+                  title: 'الإشعارات',
+                  onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const NotificationSettingsScreen())),
+                ),
+                _MenuTile(
+                  icon: Icons.devices_outlined,
+                  title: 'إدارة الأجهزة',
+                  onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const DevicesScreen())),
+                ),
+                _MenuTile(
+                  icon: Icons.workspace_premium_outlined,
+                  title: 'الباقات والاشتراك',
+                  onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const SubscriptionScreen())),
+                ),
                 _MenuTile(icon: Icons.lock_outline_rounded, title: 'الخصوصية والأمان', onTap: () => _notReady(context)),
                 _MenuTile(icon: Icons.help_outline_rounded, title: 'الدعم والمساعدة', onTap: () => _notReady(context)),
                 _MenuTile(
