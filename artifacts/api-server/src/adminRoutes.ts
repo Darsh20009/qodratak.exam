@@ -693,7 +693,7 @@ router.get('/question-images/original/:filename', requireAdminAuth, (req: Reques
 
 router.post('/questions/seed-from-json', requireAdminAuth, async (req: Request, res: Response) => {
   try {
-    const questionsPath = path.resolve(process.cwd(), 'server/questions.json');
+    const questionsPath = path.resolve(process.cwd(), 'artifacts/api-server/server/questions.json');
     if (!fs.existsSync(questionsPath)) {
       return res.status(404).json({ error: 'ملف الأسئلة غير موجود' });
     }

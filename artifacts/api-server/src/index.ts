@@ -31,7 +31,7 @@ if (Number.isNaN(port) || port <= 0) {
 async function seedMongoQuestionsIfEmpty() {
   if ((await Question.countDocuments()) > 0) return;
 
-  const questionsPath = path.resolve(process.cwd(), "server/questions.json");
+  const questionsPath = path.resolve(process.cwd(), "artifacts/api-server/server/questions.json");
   if (!fs.existsSync(questionsPath)) return;
 
   const raw = JSON.parse(fs.readFileSync(questionsPath, "utf-8"));

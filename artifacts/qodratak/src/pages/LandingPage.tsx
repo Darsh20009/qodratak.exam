@@ -12,8 +12,7 @@ import {
   Target,
   X,
 } from "lucide-react";
-import { SignupModal } from "@/components/SignupModal";
-import { LoginModal } from "@/components/LoginModal";
+import { AuthModal } from "@/components/AuthModal";
 import { TestimonialsSection } from "@/components/TestimonialsSection";
 
 const NAVY = "#171723";
@@ -252,28 +251,18 @@ function StudentStrip({ onSignup }: { onSignup: () => void }) {
 }
 
 export default function LandingPage({ initialModal }: { initialModal?: "signup" | "login" } = {}) {
-  const [signupOpen, setSignupOpen] = useState(initialModal === "signup");
-  const [loginOpen, setLoginOpen] = useState(initialModal === "login");
+  const [authMode, setAuthMode] = useState<"signup" | "login" | null>(initialModal || null);
 
   return (
     <main className="min-h-screen overflow-hidden bg-[#F7F4EE] text-slate-900" dir="rtl">
-      <SignupModal
-        open={signupOpen}
-        onClose={() => setSignupOpen(false)}
-        onSwitchToLogin={() => setLoginOpen(true)}
-      />
-      <LoginModal
-        open={loginOpen}
-        onClose={() => setLoginOpen(false)}
-        onSwitchToSignup={() => setSignupOpen(true)}
-      />
+      <AuthModal open={authMode !== null} mode={authMode || "login"} onClose={() => setAuthMode(null)} onModeChange={setAuthMode} />
 
       {/* ── Hero ── */}
       <section className="relative isolate overflow-hidden bg-[#F7F4EE]">
         <div className="pointer-events-none absolute inset-0" style={{ background: `radial-gradient(circle at 9% 18%, ${MINT}20, transparent 24%), radial-gradient(circle at 78% 105%, ${SIGNAL}18, transparent 38%)` }} />
         <div className="pointer-events-none absolute left-[-12rem] top-28 h-[28rem] w-[28rem] rounded-full border border-[#24202D]/[.055]" />
         <div className="pointer-events-none absolute -bottom-32 right-[38%] h-72 w-72 rounded-full border border-[#24202D]/[.055]" />
-        <Header onSignup={() => setSignupOpen(true)} onLogin={() => setLoginOpen(true)} />
+        <Header onSignup={() => setAuthMode("signup")} onLogin={() => setAuthMode("login")} />
         <div className="relative mx-auto grid max-w-7xl items-center gap-12 px-5 pb-20 pt-14 sm:px-8 lg:grid-cols-[1.08fr_.92fr] lg:pb-28 lg:pt-20">
           <div className="max-w-2xl">
             <div className="inline-flex items-center gap-2 border-b border-[#24202D]/[.16] pb-2 text-xs font-bold text-[#6B625B]">
@@ -290,7 +279,7 @@ export default function LandingPage({ initialModal }: { initialModal?: "signup" 
             </p>
             <div className="mt-8 flex flex-wrap gap-3">
               <button
-                onClick={() => setSignupOpen(true)}
+                onClick={() => setAuthMode("signup")}
                 className="qodratak-focus-ring inline-flex items-center gap-2 rounded-md px-5 py-3.5 text-sm font-black transition hover:-translate-y-0.5"
                 style={{ background: SIGNAL, color: NAVY }}
               >
@@ -307,7 +296,7 @@ export default function LandingPage({ initialModal }: { initialModal?: "signup" 
               <span className="text-3xl font-black" style={{ color: NAVY }}>+٢١٠٠</span>
               <span className="max-w-[9rem] text-xs font-bold leading-5 text-[#8B8278]">طالب يبنون خطة استعدادهم الآن</span>
               <span className="h-8 w-px bg-[#24202D]/15" />
-              <button onClick={() => setSignupOpen(true)} className="text-xs font-bold underline underline-offset-4 transition hover:text-[#24202D]" style={{ color: "#398B79" }}>انضم إليهم مجانًا</button>
+              <button onClick={() => setAuthMode("signup")} className="text-xs font-bold underline underline-offset-4 transition hover:text-[#24202D]" style={{ color: "#398B79" }}>انضم إليهم مجانًا</button>
             </div>
           </div>
           <ScorePreview />

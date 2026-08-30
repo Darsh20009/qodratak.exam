@@ -1006,7 +1006,7 @@ function Router({ splashDone }: { splashDone: boolean }) {
         {() => <LandingPage initialModal="signup" />}
       </Route>
       <Route path="/login">
-        {() => <LoginPage />}
+        {() => <LandingPage initialModal="login" />}
       </Route>
       <Route path="/forgot-password">
         {() => <MainLayout><ForgotPasswordPage /></MainLayout>}

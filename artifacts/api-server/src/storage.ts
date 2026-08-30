@@ -1044,7 +1044,7 @@ export class MemStorage implements IStorage {
       }
 
       // ── Fallback: load from JSON file ──
-      const questionsPath = path.resolve(process.cwd(), "server/questions.json");
+      const questionsPath = path.resolve(process.cwd(), "artifacts/api-server/server/questions.json");
 
       if (fs.existsSync(questionsPath)) {
         const fileContent = fs.readFileSync(questionsPath, "utf-8");
@@ -2178,7 +2178,7 @@ export class MemStorage implements IStorage {
       // Load stable models from JSON file (NEVER regenerated unless manually done)
       const fs = await import('fs');
       const path = await import('path');
-      const modelsFile = path.join(process.cwd(), 'server', 'data', 'paper-models.json');
+      const modelsFile = path.join(process.cwd(), 'artifacts', 'api-server', 'server', 'data', 'paper-models.json');
       
       if (!fs.existsSync(modelsFile)) {
         console.error('❌ CRITICAL: Paper models file not found at', modelsFile);

@@ -29,10 +29,10 @@ function recordKey(phone: string, purpose: OtpPurpose) {
 
 export function normalizeSaudiPhone(value: unknown) {
   let digits = String(value || "").replace(/\D/g, "");
-  if (digits.startsWith("00966")) digits = digits.slice(2);
+  if (digits.startsWith("00")) digits = digits.slice(2);
   if (digits.startsWith("05")) digits = `966${digits.slice(1)}`;
-  else if (digits.startsWith("5")) digits = `966${digits}`;
-  if (!/^9665\d{8}$/.test(digits)) {
+  else if (digits.startsWith("5") && digits.length === 9) digits = `966${digits}`;
+  if (!/^[1-9]\d{7,14}$/.test(digits)) {
     throw new Error("INVALID_PHONE");
   }
   return digits;

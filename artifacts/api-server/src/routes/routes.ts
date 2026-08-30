@@ -398,7 +398,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       const questionsPath = path.resolve(
         process.cwd(),
-        "server/questions.json"
+        "artifacts/api-server/server/questions.json"
       );
 
       if (!fs.existsSync(questionsPath)) {
@@ -536,7 +536,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const questionsPath = path.resolve(
         process.cwd(),
-        "server/questions.json"
+        "artifacts/api-server/server/questions.json"
       );
 
       if (!fs.existsSync(questionsPath)) {
@@ -569,7 +569,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const questionsPath = path.resolve(
         process.cwd(),
-        "server/questions.json"
+        "artifacts/api-server/server/questions.json"
       );
 
       if (!fs.existsSync(questionsPath)) {
@@ -1039,7 +1039,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Save to file-based storage
       try {
-        const filePath = path.join(process.cwd(), 'server/data/advanced_results.json');
+        const filePath = path.join(process.cwd(), 'artifacts/api-server/server/data/advanced_results.json');
         let existingResults = [];
 
         try {
@@ -1110,7 +1110,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const userId = parseInt(req.params.userId);
 
-      const filePath = path.join(process.cwd(), 'server/data/advanced_results.json');
+      const filePath = path.join(process.cwd(), 'artifacts/api-server/server/data/advanced_results.json');
       let existingResults = [];
 
       try {
@@ -1134,7 +1134,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const userId = parseInt(req.params.userId);
 
-      const filePath = path.join(process.cwd(), 'server/data/achievements.json');
+      const filePath = path.join(process.cwd(), 'artifacts/api-server/server/data/achievements.json');
       let achievements = [];
 
       try {
@@ -1159,7 +1159,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const userId = parseInt(req.params.userId);
       const { category, days } = req.query;
 
-      const filePath = path.join(process.cwd(), 'server/data/analytics.json');
+      const filePath = path.join(process.cwd(), 'artifacts/api-server/server/data/analytics.json');
       let analytics = [];
 
       try {
@@ -1193,7 +1193,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Helper function to update user achievements
   async function updateUserAchievements(userId: number, testResult: any) {
     try {
-      const filePath = path.join(process.cwd(), 'server/data/achievements.json');
+      const filePath = path.join(process.cwd(), 'artifacts/api-server/server/data/achievements.json');
       let achievements = [];
 
       try {
@@ -1258,7 +1258,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Helper function to update performance analytics
   async function updatePerformanceAnalytics(userId: number, testResult: any) {
     try {
-      const filePath = path.join(process.cwd(), 'server/data/analytics.json');
+      const filePath = path.join(process.cwd(), 'artifacts/api-server/server/data/analytics.json');
       let analytics = [];
 
       try {
@@ -1706,7 +1706,7 @@ const phoneOtpStore = new Map<string, { otp: string; expiry: Date; chatId?: numb
         return res.status(503).json({ error: 'خدمة واتساب غير مرتبطة بعد. تواصل مع إدارة المنصة.' });
       }
       if (error?.message === 'INVALID_PHONE') {
-        return res.status(400).json({ error: 'أدخل رقم جوال سعودي صحيحاً' });
+        return res.status(400).json({ error: 'أدخل رقم الجوال مع رمز الدولة بشكل صحيح' });
       }
       console.error('WhatsApp OTP request error:', error);
       return res.status(500).json({ error: 'تعذر إرسال رمز التحقق حالياً' });
@@ -2296,10 +2296,10 @@ app.post("/api/auth/register", async (req: Request, res: Response) => {
   // NOTE: Institutions must use /api/auth/institution-request instead
   app.post("/api/auth/register-multi", async (req: Request, res: Response) => {
     try {
-      const { fullName, email, phone, password, role, whatsapp, telegramUsername, academicTrack, gradeLevel, studyGoal, targetScore, phoneVerificationToken } = req.body;
+      const { fullName, username, email, phone, password, role, whatsapp, telegramUsername, academicTrack, gradeLevel, studyGoal, targetScore, phoneVerificationToken } = req.body;
 
       // Validate required fields
-      if (!fullName || !email || !password || !role) {
+      if (!fullName || !username || !password || !role) {
         return res.status(400).json({ message: "يرجى إدخال جميع البيانات المطلوبة" });
       }
 
@@ -2310,6 +2310,12 @@ app.post("/api/auth/register", async (req: Request, res: Response) => {
       // Validate password length
       if (password.length < 6) {
         return res.status(400).json({ message: "كلمة المرور يجب أن تكون 6 أحرف على الأقل" });
+      }
+
+      const normalizedUsername = String(username).trim();
+      const normalizedRegEmail = email ? String(email).trim().toLowerCase() : undefined;
+      if (normalizedUsername.length < 3) {
+        return res.status(400).json({ message: "اسم المستخدم يجب أن يكون 3 أحرف على الأقل" });
       }
 
       // Only allow student and teacher registration directly
@@ -2335,8 +2341,11 @@ app.post("/api/auth/register", async (req: Request, res: Response) => {
         fs.writeFileSync("attached_assets/user.json", "[]");
       }
 
-      // Check if email already exists
-      if (users.some((u: any) => u.email === email)) {
+      // Check if username or optional email already exists
+      if (users.some((u: any) => u.username === normalizedUsername)) {
+        return res.status(400).json({ message: "اسم المستخدم مستخدم من قبل" });
+      }
+      if (normalizedRegEmail && users.some((u: any) => u.email && u.email.trim().toLowerCase() === normalizedRegEmail)) {
         return res.status(400).json({ message: "البريد الإلكتروني مستخدم من قبل" });
       }
       const normalizedPhone = normalizeSaudiPhone(phone);
@@ -2381,7 +2390,8 @@ app.post("/api/auth/register", async (req: Request, res: Response) => {
         id: newUserId,
         name: fullName,
         fullName,
-        email,
+        username: normalizedUsername,
+        ...(normalizedRegEmail ? { email: normalizedRegEmail } : {}),
         phone: normalizedPhone,
         whatsapp: normalizedPhone,
         telegramUsername: telegramUsername || undefined,
@@ -2413,17 +2423,17 @@ app.post("/api/auth/register", async (req: Request, res: Response) => {
       users.push(newUser);
       fs.writeFileSync("attached_assets/user.json", JSON.stringify(users, null, 2));
 
-      console.log(`New ${role} account created: ${fullName} (${email}) - ${role === 'student' ? '7-day trial' : 'free forever'}`);
+      console.log(`New ${role} account created: ${fullName} (${normalizedUsername}) - ${role === 'student' ? '7-day trial' : 'free forever'}`);
 
       // Sync to MongoDB so WebAuthn and Telegram flows can find the user
       try {
         const { User: MongoUser } = await import('./mongodb/models');
-        const exists = await MongoUser.findOne({ email });
+        const exists = await MongoUser.findOne({ username: normalizedUsername });
         if (!exists) {
           await MongoUser.create({
-            username: email,
+            username: normalizedUsername,
             password: hashedPassword,
-            email,
+            ...(normalizedRegEmail ? { email: normalizedRegEmail } : {}),
             phone: normalizedPhone,
             fullName,
             role,
@@ -2445,7 +2455,7 @@ app.post("/api/auth/register", async (req: Request, res: Response) => {
 
       // Set user session
       (req.session as any).userId = newUser.id;
-      (req.session as any).userEmail = newUser.email;
+      (req.session as any).userEmail = newUser.email || newUser.username;
       (req.session as any).userRole = newUser.role;
 
       req.session.save((err) => {
@@ -3294,7 +3304,7 @@ app.post("/api/auth/register", async (req: Request, res: Response) => {
       }
 
       // Check if device already used trial
-      const filePath = path.join(process.cwd(), 'server/data/device_trials.json');
+      const filePath = path.join(process.cwd(), 'artifacts/api-server/server/data/device_trials.json');
       let deviceTrials = [];
 
       try {
@@ -3355,7 +3365,7 @@ app.post("/api/auth/register", async (req: Request, res: Response) => {
     try {
       const { deviceId } = req.params;
 
-      const filePath = path.join(process.cwd(), 'server/data/device_trials.json');
+      const filePath = path.join(process.cwd(), 'artifacts/api-server/server/data/device_trials.json');
       let deviceTrials = [];
 
       try {
@@ -3433,7 +3443,7 @@ app.post("/api/auth/register", async (req: Request, res: Response) => {
       };
 
       // Save subscription
-      const filePath = path.join(process.cwd(), 'server/data/subscriptions.json');
+      const filePath = path.join(process.cwd(), 'artifacts/api-server/server/data/subscriptions.json');
       let subscriptions = [];
 
       try {
@@ -3467,7 +3477,7 @@ app.post("/api/auth/register", async (req: Request, res: Response) => {
       };
 
       // Save timer
-      const timerPath = path.join(process.cwd(), 'server/data/countdown_timers.json');
+      const timerPath = path.join(process.cwd(), 'artifacts/api-server/server/data/countdown_timers.json');
       let timers = [];
 
       try {
@@ -3497,7 +3507,7 @@ app.post("/api/auth/register", async (req: Request, res: Response) => {
     try {
       const userId = parseInt(req.params.userId);
 
-      const filePath = path.join(process.cwd(), 'server/data/subscriptions.json');
+      const filePath = path.join(process.cwd(), 'artifacts/api-server/server/data/subscriptions.json');
       let subscriptions = [];
 
       try {
@@ -5338,7 +5348,7 @@ app.post("/api/auth/register", async (req: Request, res: Response) => {
 
   app.post("/api/admin/questions/seed-from-json", requireAdmin, async (req: Request, res: Response) => {
     try {
-      const questionsPath = path.resolve(process.cwd(), 'server/questions.json');
+      const questionsPath = path.resolve(process.cwd(), 'artifacts/api-server/server/questions.json');
       if (!fs.existsSync(questionsPath)) {
         return res.status(404).json({ error: 'ملف الأسئلة غير موجود' });
       }
