@@ -1,64 +1,53 @@
-node_modules
+# See https://docs.github.com/en/get-started/getting-started-with-git/ignoring-files for more about ignoring files.
+
+# compiled output
 dist
-.DS_Store
-server/public
-vite.config.ts.*
-*.tar.gz
-
-# Logs
-logs
-*.log
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
-pnpm-debug.log*
-lerna-debug.log*
-
-# Environment variables
-.env
-.env.local
-.env.development.local
-.env.test.local
-.env.production.local
-
-# Editor directories and files
-.vscode/*
-!.vscode/extensions.json
-.idea
-*.suo
-*.ntvs*
-*.njsproj
-*.sln
-*.sw?
-
-# OS
-.DS_Store
-*.swp
-*.swo
-*~
-
-# Build outputs
+tmp
+out-tsc
 *.tsbuildinfo
+.expo
+.expo-shared
 
-# Local platform configuration and private application data
-.replit
-replit.md
+# dependencies
+node_modules
+
+# IDEs and editors
+/.idea
+.project
+.classpath
+.c9/
+*.launch
+.settings/
+*.sublime-workspace
+
+# IDE - VSCode
+.vscode/*
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
+
+# misc
+/.sass-cache
+/connect.lock
+/coverage
+/libpeerconnection.log
+npm-debug.log
+yarn-error.log
+testem.log
+/typings
+
+# System Files
+.DS_Store
+Thumbs.db
+
+.cursor/rules/nx-rules.mdc
+.github/instructions/nx.instructions.md
+
+# Replit
+.cache/
 .local/
-.agents/
-.whatsapp-auth/
+
+# Runtime user data
 attached_assets/user.json
-uploads/receipts/
-attached_assets/*.txt
-attached_assets/*.tsx
-attached_assets/*.css
-attached_assets/*.apk
-*.apk
-
-# Testing
-coverage
-.nyc_output
-
-# Misc
-.cache
-.temp
-tmp/
+artifacts/api-server/attached_assets/user.json
