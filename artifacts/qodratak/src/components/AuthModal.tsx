@@ -511,7 +511,7 @@ export function AuthModal({ open, mode, onClose, onModeChange }: { open: boolean
 
                 {/* Login Fields */}
                 {mode === "login" && <label className="block"><span className="mb-1.5 flex items-center gap-1.5 text-xs font-black text-[#4F4A58]"><Phone className="h-3.5 w-3.5" /> رقم الجوال</span><PhoneField code={countryCode} number={phone} onCode={setCountryCode} onNumber={setPhone} /></label>}
-                {mode === "login" && otpSent && <div className="relative"><KeyRound className="pointer-events-none absolute right-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-[#8B8278]" /><input required inputMode="numeric" autoComplete="one-time-code" value={otp} onChange={(event) => setOtp(event.target.value.replace(/\D/g, "").slice(0, 6))} placeholder="رمز التحقق المكون من 6 أرقام" dir="ltr" className="h-12 w-full rounded-xl border border-[#24202D]/15 bg-[#F8F6F1] px-11 text-center text-sm tracking-[.2em] outline-none focus:border-[#171723]" /></div>}
+                {mode === "login" && otpSent && <div className="relative"><KeyRound className="pointer-events-none absolute right-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-[#8B8278]" /><input required inputMode="numeric" autoComplete="one-time-code" value={otp} onChange={(event) => setOtp(event.target.value.replace(/\D/g, "").slice(0, 6))} placeholder="رمز التحقق المكون من 6 أرقام" dir="ltr" className="h-12 w-full rounded-xl border border-[#24202D]/15 bg-[#F8F6F1] px-11 text-center text-sm text-[#171723] placeholder:text-[#8B8278] tracking-[.2em] outline-none focus:border-[#171723]" /></div>}
               </div>
             ) : null}
 
