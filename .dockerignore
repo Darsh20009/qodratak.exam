@@ -4,9 +4,7 @@
 .agents
 node_modules
 **/node_modules
-artifacts
-attached_assets
 flutter_app
-lib
-scripts
+.migration-backup
+.whatsapp-auth
 *.log

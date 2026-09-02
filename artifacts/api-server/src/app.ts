@@ -3,6 +3,7 @@ import cors from "cors";
 import MongoStore from "connect-mongo";
 import session from "express-session";
 import pinoHttp from "pino-http";
+import path from "node:path";
 import router from "./routes";
 import adminRouter from "./adminRoutes";
 import multiplayerRouter from "./multiplayerRoutes";
@@ -87,5 +88,29 @@ app.use("/api/admin", adminRouter);
 app.use("/api", router);
 app.use("/api/multiplayer", multiplayerRouter);
 app.use("/api/notifications", notificationRouter);
+
+if (process.env.NODE_ENV === "production") {
+  const frontendDistPath = path.resolve(
+    process.cwd(),
+    "artifacts/qodratak/dist/public",
+  );
+
+  app.use(express.static(frontendDistPath, { index: false }));
+  app.use((request, response, next) => {
+    if (
+      request.method !== "GET" ||
+      request.path === "/api" ||
+      request.path.startsWith("/api/") ||
+      request.path.startsWith("/ws/")
+    ) {
+      next();
+      return;
+    }
+
+    response.sendFile(path.join(frontendDistPath, "index.html"), (error) => {
+      if (error) next(error);
+    });
+  });
+}
 
 export default app;
