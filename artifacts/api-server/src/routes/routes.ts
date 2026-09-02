@@ -18,6 +18,10 @@ import { sendTestEmail, sendOTPEmail, sendWelcomeEmail, sendSubscriptionApproval
 import crypto from 'crypto';
 import { createAdminAccessToken } from '../adminSessionToken';
 import {
+  notifyAdminNewStudent,
+  notifyAdminSubscription,
+} from '../services/adminWhatsAppNotifications';
+import {
   normalizeSaudiPhone,
   requestPhoneOtp,
   verifyPhoneOtp,
@@ -1688,15 +1692,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       const normalizedId = loginId.toLowerCase();
 
-      // أولاً: تحقق من الأدمن (بالبريد أو اسم المستخدم)
+      // أولاً: تحقق من الأدمن (بالبريد أو اسم المستخدم أو رقم الجوال)
       if (mongoose.connection.readyState === 1) {
         try {
           const { Admin } = await import('./mongodb/models');
+          let normalizedPhoneId: string | null = null;
+          try {
+            normalizedPhoneId = normalizeSaudiPhone(loginId);
+          } catch {}
           const adminDoc = await Admin.findOne({
             $or: [
               { email: normalizedId },
               { username: normalizedId },
-              { username: loginId }
+              { username: loginId },
+              ...(normalizedPhoneId ? [{ phone: normalizedPhoneId }] : []),
             ]
           });
           if (adminDoc) {
@@ -2035,15 +2044,17 @@ const phoneOtpStore = new Map<string, { otp: string; expiry: Date; chatId?: numb
         try { return normalizeSaudiPhone(user.phone || user.whatsapp) === phone; } catch { return false; }
       });
       let phoneExistsInMongo = false;
+      let phoneExistsForAdmin = false;
       if (mongoose.connection.readyState === 1) {
-        const { User: MongoUser } = await import('./mongodb/models');
+        const { User: MongoUser, Admin } = await import('./mongodb/models');
         phoneExistsInMongo = Boolean(await MongoUser.exists({ phone }));
+        phoneExistsForAdmin = Boolean(await Admin.exists({ phone, isActive: true }));
       }
 
       if (purpose === 'signup' && (phoneExistsLocally || phoneExistsInMongo)) {
         return res.status(409).json({ error: 'رقم الجوال مستخدم مسبقاً' });
       }
-      if (purpose === 'login' && !phoneExistsLocally && !phoneExistsInMongo) {
+      if (purpose === 'login' && !phoneExistsLocally && !phoneExistsInMongo && !phoneExistsForAdmin) {
         return res.status(404).json({ error: 'لا يوجد حساب مرتبط بهذا الرقم' });
       }
 
@@ -2090,6 +2101,37 @@ const phoneOtpStore = new Map<string, { otp: string; expiry: Date; chatId?: numb
       });
 
       let loginUser: any = localUser;
+      if (mongoose.connection.readyState === 1) {
+        const { Admin } = await import('./mongodb/models');
+        const adminDoc = await Admin.findOne({
+          phone: verification.phone,
+          isActive: true,
+        });
+        if (adminDoc) {
+          const adminIdentity = {
+            adminId: String(adminDoc._id),
+            username: adminDoc.username,
+            fullName: adminDoc.fullName,
+            role: adminDoc.role,
+            permissions: adminDoc.permissions || ['all'],
+          };
+          (req.session as any).isAdmin = true;
+          (req.session as any).adminId = String(adminDoc._id);
+          (req.session as any).admin = adminIdentity;
+          return req.session.save((sessionError) => {
+            if (sessionError) return res.status(500).json({ error: 'تعذر حفظ جلسة الدخول' });
+            return res.json({
+              isAdmin: true,
+              admin: {
+                username: adminDoc.username,
+                fullName: adminDoc.fullName,
+                role: adminDoc.role,
+              },
+              adminAccessToken: createAdminAccessToken(adminIdentity),
+            });
+          });
+        }
+      }
       if (!loginUser && mongoose.connection.readyState === 1) {
         const { User: MongoUser } = await import('./mongodb/models');
         const mongoUser = await MongoUser.findOne({ phone: verification.phone }) as any;
@@ -2999,6 +3041,16 @@ app.post("/api/auth/register", async (req: Request, res: Response) => {
       fs.writeFileSync("attached_assets/user.json", JSON.stringify(users, null, 2));
 
       console.log(`New ${role} account created: ${fullName} (${normalizedUsername}) - ${role === 'student' ? '7-day trial' : 'free forever'}`);
+      if (role === 'student') {
+        void notifyAdminNewStudent({
+          fullName,
+          username: normalizedUsername,
+          phone: normalizedPhone,
+          role,
+        }).catch((error) =>
+          console.error('Admin new-student WhatsApp notification failed:', error),
+        );
+      }
 
       // Sync to MongoDB so WebAuthn and Telegram flows can find the user
       try {
@@ -6248,6 +6300,15 @@ app.post("/api/auth/register", async (req: Request, res: Response) => {
         transferReceiptFilename: receiptFilename || undefined,
         price: prices[planType] || 29,
       });
+      void notifyAdminSubscription({
+        studentName: name,
+        plan: planType,
+        price: prices[planType] || 29,
+        paymentMethod: paymentMethod || 'bank',
+        status: 'pending',
+      }).catch((error) =>
+        console.error('Admin subscription WhatsApp notification failed:', error),
+      );
 
       try {
         notifyAdminNewSubscription(name, (email || '').trim().toLowerCase(), planType, paymentMethod || 'bank', !!receiptUrl).catch(() => {});
@@ -6327,6 +6388,15 @@ app.post("/api/auth/register", async (req: Request, res: Response) => {
         paymentMethod: 'wallet',
         price,
       });
+      void notifyAdminSubscription({
+        studentName: String((req.session as any).userEmail || sessionUserId),
+        plan: planType,
+        price,
+        paymentMethod: 'wallet',
+        status: 'active',
+      }).catch((error) =>
+        console.error('Admin wallet subscription WhatsApp notification failed:', error),
+      );
 
       // Also update the user's subscription in file-based storage
       try {
@@ -6399,6 +6469,15 @@ app.post("/api/auth/register", async (req: Request, res: Response) => {
         transferReceiptFilename: receiptFilename || undefined,
         price: prices[planType] || 99,
       });
+      void notifyAdminSubscription({
+        studentName: String((req.session as any)?.userEmail || userId),
+        plan: planType,
+        price: prices[planType] || 99,
+        paymentMethod: paymentMethod || 'manual',
+        status: 'pending',
+      }).catch((error) =>
+        console.error('Admin subscription WhatsApp notification failed:', error),
+      );
 
       // إرسال إشعار للأدمن
       try {

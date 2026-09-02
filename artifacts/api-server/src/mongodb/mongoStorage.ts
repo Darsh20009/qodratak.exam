@@ -28,6 +28,7 @@ export class MongoStorage {
   private async seedDefaultAdmin() {
     const existingAdmin = await Admin.findOne({ username: 'admin' });
     const adminEmail = process.env.ADMIN_EMAIL || 'qoudratak@gmail.com';
+    const adminPhone = (process.env.ADMIN_WHATSAPP_PHONE || '966555053567').replace(/\D/g, '');
     const initialAdminPassword = process.env.ADMIN_INITIAL_PASSWORD;
     if (!existingAdmin) {
       if (!initialAdminPassword) {
@@ -39,14 +40,22 @@ export class MongoStorage {
         username: 'admin',
         password: hashedPassword,
         email: adminEmail,
+        phone: adminPhone,
         fullName: 'مدير النظام',
         role: 'super_admin',
         permissions: ['all'],
       });
       console.log('✅ Default admin created (username: admin; configure ADMIN_INITIAL_PASSWORD for the initial password)');
-    } else if (existingAdmin.email === 'admin@qudratuk.com' || existingAdmin.email === 'admin@qodratak.sa') {
-      await Admin.updateOne({ username: 'admin' }, { $set: { email: adminEmail } });
-      console.log(`✅ Updated admin email to ${adminEmail}`);
+    } else {
+      const updates: Record<string, string> = {};
+      if (existingAdmin.email === 'admin@qudratuk.com' || existingAdmin.email === 'admin@qodratak.sa') {
+        updates.email = adminEmail;
+      }
+      if (existingAdmin.phone !== adminPhone) updates.phone = adminPhone;
+      if (Object.keys(updates).length > 0) {
+        await Admin.updateOne({ username: 'admin' }, { $set: updates });
+        console.log('✅ Updated default admin contact details');
+      }
     }
   }
 

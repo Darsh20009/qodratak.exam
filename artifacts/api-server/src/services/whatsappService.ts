@@ -39,6 +39,18 @@ let manualDisconnect = false;
 let reconnectAttempts = 0;
 const messageEvents = new EventEmitter();
 const recentMessages: WhatsAppMessageEvent[] = [];
+const outboundQueue: Array<{
+  phone: string;
+  text: string;
+  resolve: () => void;
+  reject: (error: Error) => void;
+}> = [];
+let processingOutboundQueue = false;
+let lastOutboundSentAt = 0;
+const outboundMessageDelayMs = Math.max(
+  2_000,
+  Number(process.env.WHATSAPP_MESSAGE_DELAY_MS || 4_000),
+);
 
 let currentStatus: WhatsAppStatus = {
   state: "disconnected",
@@ -238,20 +250,57 @@ export async function disconnectWhatsApp(clearSession = false) {
   return getWhatsAppStatus();
 }
 
-export async function sendWhatsAppText(phone: string, text: string) {
-  if (!socket || currentStatus.state !== "connected") {
-    throw new Error("WHATSAPP_NOT_CONNECTED");
+function wait(milliseconds: number) {
+  return new Promise((resolve) => setTimeout(resolve, milliseconds));
+}
+
+async function processOutboundQueue() {
+  if (processingOutboundQueue) return;
+  processingOutboundQueue = true;
+
+  while (outboundQueue.length > 0) {
+    const job = outboundQueue.shift()!;
+    try {
+      if (!socket || currentStatus.state !== "connected") {
+        throw new Error("WHATSAPP_NOT_CONNECTED");
+      }
+
+      const remainingDelay =
+        outboundMessageDelayMs - (Date.now() - lastOutboundSentAt);
+      if (remainingDelay > 0) await wait(remainingDelay);
+
+      const digits = job.phone.replace(/\D/g, "");
+      if (!digits) throw new Error("INVALID_PHONE");
+      const sent = await socket.sendMessage(`${digits}@s.whatsapp.net`, {
+        text: job.text,
+      });
+      lastOutboundSentAt = Date.now();
+      recordMessage({
+        messageId: String(sent?.key?.id || `out-${Date.now()}-${digits}`),
+        phone: digits,
+        senderName: "منصة قدراتك",
+        content: job.text,
+        direction: "outbound",
+        createdAt: new Date().toISOString(),
+      });
+      job.resolve();
+    } catch (error) {
+      job.reject(error instanceof Error ? error : new Error(String(error)));
+    }
   }
+
+  processingOutboundQueue = false;
+}
+
+export function sendWhatsAppText(phone: string, text: string) {
   const digits = phone.replace(/\D/g, "");
   if (!digits) throw new Error("INVALID_PHONE");
-  const sent = await socket.sendMessage(`${digits}@s.whatsapp.net`, { text });
-  recordMessage({
-    messageId: String(sent?.key?.id || `out-${Date.now()}-${digits}`),
-    phone: digits,
-    senderName: "منصة قدراتك",
-    content: text,
-    direction: "outbound",
-    createdAt: new Date().toISOString(),
+  if (!text.trim()) throw new Error("EMPTY_MESSAGE");
+  if (outboundQueue.length >= 1_000) throw new Error("WHATSAPP_QUEUE_FULL");
+
+  return new Promise<void>((resolve, reject) => {
+    outboundQueue.push({ phone: digits, text: text.trim(), resolve, reject });
+    void processOutboundQueue();
   });
 }
 

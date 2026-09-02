@@ -233,6 +233,7 @@ export interface IAdmin extends Document {
   username: string;
   password: string;
   email: string;
+  phone?: string;
   fullName: string;
   role: 'super_admin' | 'admin' | 'moderator';
   permissions: string[];
@@ -245,6 +246,7 @@ const adminSchema = new Schema<IAdmin>({
   username: { type: String, required: true, unique: true },
   password: { type: String, required: true },
   email: { type: String, required: true, unique: true },
+  phone: { type: String, sparse: true, unique: true },
   fullName: { type: String, required: true },
   role: { type: String, enum: ['super_admin', 'admin', 'moderator'], default: 'admin' },
   permissions: { type: [String], default: ['view_students', 'view_subscriptions'] },

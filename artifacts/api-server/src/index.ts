@@ -8,6 +8,7 @@ import { ExamBooking, Question } from "./mongodb/models";
 import { gameWebSocketServer } from "./multiplayerRoutes";
 import { startNotificationScheduler } from "./services/notificationService";
 import { startPushScheduler } from "./services/pushService";
+import { startAdminWhatsAppReportScheduler } from "./services/adminWhatsAppNotifications";
 import { onWhatsAppMessage, restoreWhatsAppSession } from "./services/whatsappService";
 import { storage } from "./storage";
 import { chatWebSocketServer } from "./websocket";
@@ -110,6 +111,7 @@ onWhatsAppMessage(async (message) => {
 });
 startNotificationScheduler();
 startPushScheduler();
+startAdminWhatsAppReportScheduler();
 
 setInterval(() => {
   storage.updateBotStudentsPoints();

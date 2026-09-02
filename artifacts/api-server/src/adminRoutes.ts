@@ -8,6 +8,7 @@ import { mongoStorage } from './mongodb/mongoStorage';
 import { storage } from './storage';
 import { Question, ChatMessage, Admin, WhatsAppMessage } from './mongodb/models';
 import { sendSubscriptionApprovalEmail } from './services/emailService';
+import { notifyAdminSubscription } from './services/adminWhatsAppNotifications';
 import { createAdminAccessToken, verifyAdminAccessToken } from './adminSessionToken';
 import { getPrivateQuestionImageOriginal, processQuestionImage } from './services/questionImageProcessor';
 import {
@@ -479,6 +480,15 @@ router.post('/subscriptions/:id/approve', requireAdminAuth, async (req: Request,
     } catch (emailErr) {
       console.error('Error sending approval email:', emailErr);
     }
+    void notifyAdminSubscription({
+      studentName: String((sub.userId as any)?.fullName || (sub.userId as any)?.username || sub.userId),
+      plan: sub.type,
+      price: sub.price,
+      paymentMethod: sub.paymentMethod,
+      status: 'active',
+    }).catch((error) =>
+      console.error('Admin approved-subscription WhatsApp notification failed:', error),
+    );
 
     res.json({ success: true, subscription: sub });
   } catch (error) {
@@ -1016,6 +1026,15 @@ router.post('/subscriptions/create-manual', requireAdminAuth, async (req: Reques
       subscriptionEndDate: endDate,
       isSubscribed: true,
     });
+    void notifyAdminSubscription({
+      studentName: user.fullName || user.username,
+      plan: type,
+      price: parsedPrice,
+      paymentMethod: 'manual',
+      status: 'active',
+    }).catch((error) =>
+      console.error('Admin manual-subscription WhatsApp notification failed:', error),
+    );
 
     res.status(201).json({ success: true, subscription: sub });
   } catch (error) {
