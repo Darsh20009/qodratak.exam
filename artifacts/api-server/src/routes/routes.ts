@@ -6669,7 +6669,13 @@ app.post("/api/auth/register", async (req: Request, res: Response) => {
 
       // Create pending subscription in MongoDB
       const now = new Date();
-      const endDate = new Date(now);
+      const activeSubscription = sessionUserId
+        ? await mongoStorage.getActiveSubscription(String(sessionUserId))
+        : null;
+      const baseDate = activeSubscription?.endDate && activeSubscription.endDate > now
+        ? new Date(activeSubscription.endDate)
+        : now;
+      const endDate = new Date(baseDate);
       endDate.setDate(endDate.getDate() + planDuration);
 
       let receiptUrl = null;
@@ -6758,7 +6764,11 @@ app.post("/api/auth/register", async (req: Request, res: Response) => {
 
       // Create active subscription immediately (no admin approval needed)
       const now = new Date();
-      const endDate = new Date(now);
+      const activeSubscription = await mongoStorage.getActiveSubscription(String(sessionUserId));
+      const baseDate = activeSubscription?.endDate && activeSubscription.endDate > now
+        ? new Date(activeSubscription.endDate)
+        : now;
+      const endDate = new Date(baseDate);
       endDate.setDate(endDate.getDate() + primaryPlan.durationDays);
 
       const subscription = await mongoStorage.createSubscription({

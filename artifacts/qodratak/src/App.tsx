@@ -60,7 +60,7 @@ import LoginPage from "@/pages/LoginPage";
 import ForgotPasswordPage from "@/pages/ForgotPasswordPage";
 import ResetPasswordPage from "@/pages/ResetPasswordPage";
 import GuestSignupPage from "@/pages/GuestSignupPage";
-import SubscriptionPage from "@/pages/SubscriptionPage";
+import { Redirect } from "wouter";
 import TestResultsPage from './pages/TestResultsPage';
 import ExamReviewPage from './pages/ExamReviewPage';
 import FAQPage from "@/pages/FAQ";
@@ -1146,7 +1146,7 @@ function Router({ splashDone }: { splashDone: boolean }) {
         {() => <MainLayout><SeasonalExamsPage /></MainLayout>}
       </Route>
       <Route path="/subscription">
-        {() => <MainLayout><SubscriptionPage /></MainLayout>}
+        {() => <Redirect to="/" />}
       </Route>
       <Route path="/enhanced-subscription">
         {() => <MainLayout><EnhancedSubscriptionPlans /></MainLayout>}

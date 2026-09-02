@@ -11,6 +11,8 @@ import {
   Timer, Dna, Users, BarChart3, BookOpen, Swords
 } from "lucide-react";
 import { DailyGoalWidget } from "@/components/DailyGoalWidget";
+import SubscriptionRenewalDialog from "@/components/SubscriptionRenewalDialog";
+import { Button } from "@/components/ui/button";
 
 // ─── Landing page data ────────────────────────────────────────────────────────
 
@@ -241,6 +243,7 @@ const GREEN = "#0D1B2A";
 const GREEN_LIGHT = "#E5E7EB";
 
 function LoggedInDashboard({ user }: { user: any }) {
+  const [subscriptionDialogOpen, setSubscriptionDialogOpen] = useState(false);
   const name = user?.name || user?.username || "طالب";
   const firstName = name.split(" ")[0];
   const isPremium = ['Pro', 'Pro Life', 'Pro Life Plus', 'Pro Live', 'free_trial'].includes(user?.subscription?.type);
@@ -291,6 +294,14 @@ function LoggedInDashboard({ user }: { user: any }) {
               {firstName.charAt(0)}
             </div>
           </Link>
+          <Button
+            type="button"
+            onClick={() => setSubscriptionDialogOpen(true)}
+            className="hidden rounded-xl bg-[#F7F775] px-4 font-black text-[#0D1B2A] hover:bg-[#F7F775]/85 sm:flex"
+          >
+            <CrownIcon className="ml-2 h-4 w-4" />
+            تمديد الاشتراك
+          </Button>
         </header>
 
         <section>
@@ -389,7 +400,7 @@ function LoggedInDashboard({ user }: { user: any }) {
         </section>
 
         {!isPremium && (
-          <Link href="/subscription">
+            <button type="button" onClick={() => setSubscriptionDialogOpen(true)} className="w-full text-right">
             <div className="flex items-center justify-between gap-4 rounded-2xl border border-[#F7F775] bg-[#FFFFE4] p-4 transition hover:border-[#0D1B2A]/30">
               <div className="flex items-center gap-3">
                 <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#F7F775] text-[#0D1B2A]">
@@ -402,9 +413,10 @@ function LoggedInDashboard({ user }: { user: any }) {
               </div>
               <ChevronLeft className="h-5 w-5 text-[#0D1B2A]" />
             </div>
-          </Link>
+          </button>
         )}
       </div>
+      <SubscriptionRenewalDialog open={subscriptionDialogOpen} onOpenChange={setSubscriptionDialogOpen} user={user} />
     </div>
   );
 }
@@ -1091,8 +1103,9 @@ export default function NewHome() {
                 ))}
               </div>
 
-              <Link href="/subscription">
                 <button
+                  type="button"
+                  onClick={() => window.location.href = "/signup"}
                   className="group inline-flex items-center gap-3 px-10 py-4 rounded-2xl text-base font-bold text-white transition-all duration-300 hover:scale-105 hover:shadow-2xl"
                   style={{ background: "linear-gradient(135deg, #f59e0b, #ef4444, #ec4899)" }}
                   data-testid="button-upgrade"
@@ -1101,7 +1114,6 @@ export default function NewHome() {
                   ترقية الآن
                   <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
                 </button>
-              </Link>
             </div>
           </div>
         </section>

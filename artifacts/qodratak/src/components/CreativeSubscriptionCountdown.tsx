@@ -9,12 +9,14 @@ interface CreativeSubscriptionCountdownProps {
   className?: string;
   variant?: 'card' | 'banner' | 'modal' | 'compact';
   showAnimation?: boolean;
+  onRenew?: () => void;
 }
 
 const CreativeSubscriptionCountdown: React.FC<CreativeSubscriptionCountdownProps> = ({ 
   className = "", 
   variant = 'card',
-  showAnimation = true 
+  showAnimation = true,
+  onRenew,
 }) => {
   const { subscription, countdown, startTrial, isStartingTrial } = useSubscription();
   const { toast } = useToast();
@@ -169,7 +171,7 @@ const CreativeSubscriptionCountdown: React.FC<CreativeSubscriptionCountdownProps
             </div>
             
             <Button
-              onClick={() => window.location.href = '/subscription'}
+              onClick={onRenew}
               className="w-full bg-gradient-to-r from-red-600 to-amber-600 hover:from-red-700 hover:to-amber-600 text-white font-bold py-3 transform transition-all duration-200 hover:scale-105 shadow-lg"
             >
               <Crown className="w-5 h-5 mr-2" />
@@ -260,7 +262,7 @@ const CreativeSubscriptionCountdown: React.FC<CreativeSubscriptionCountdownProps
           )}
           
           <Button
-            onClick={() => window.location.href = '/subscription'}
+            onClick={onRenew}
             variant="outline"
             className={`w-full font-medium ${
               isUrgent 

@@ -17,6 +17,7 @@ import {
 import CreativeSubscriptionCountdown from "@/components/CreativeSubscriptionCountdown";
 import { FreeTrialCountdown } from "@/components/FreeTrialCountdown";
 import { usePushNotifications } from "@/hooks/usePushNotifications";
+import SubscriptionRenewalDialog from "@/components/SubscriptionRenewalDialog";
 
 const GREEN = "#1a7c3e";
 const GREEN_LIGHT = "#e8f5ee";
@@ -116,6 +117,7 @@ function PushSettingsCard() {
 
 export default function NewWorkingProfile() {
   const { toast } = useToast();
+  const [subscriptionDialogOpen, setSubscriptionDialogOpen] = useState(false);
   const { data: serverUser, isLoading, refetch } = useQuery<any>({ queryKey: ['/api/user'], retry: false, staleTime: 0 });
   const { data: mySubscriptions = [] } = useQuery<any[]>({ queryKey: ['/api/user/my-subscriptions'], retry: false, staleTime: 60000, enabled: true });
   const { data: securityStatus, refetch: refetchSecurity } = useQuery<any>({ queryKey: ['/api/auth/security-status'], retry: false, staleTime: 0 });
@@ -391,9 +393,9 @@ export default function NewWorkingProfile() {
 
         {/* ── تنبيه التجربة أو الاشتراك ─────────────────────── */}
         {currentUser.freeTrialData?.isActive && (
-          <FreeTrialCountdown user={currentUser} onUpgrade={() => window.location.href = '/subscription'} />
+          <FreeTrialCountdown user={currentUser} onUpgrade={() => setSubscriptionDialogOpen(true)} />
         )}
-        {isPremium && subscriptionType !== 'free_trial' && <CreativeSubscriptionCountdown />}
+        {isPremium && subscriptionType !== 'free_trial' && <CreativeSubscriptionCountdown onRenew={() => setSubscriptionDialogOpen(true)} />}
 
         {/* ── إدارة الحساب ────────────────────────────────────── */}
         <div className="bg-white rounded-3xl border border-gray-100 shadow-sm overflow-hidden">
@@ -414,12 +416,10 @@ export default function NewWorkingProfile() {
               </span>
             </div>
 
-            <Link href="/subscription">
-              <Button className="w-full h-11 rounded-2xl font-bold text-white text-sm" style={{ background: isPremium ? '#f59e0b' : GREEN }} data-testid="button-upgrade">
+              <Button onClick={() => setSubscriptionDialogOpen(true)} className="w-full h-11 rounded-2xl font-bold text-white text-sm" style={{ background: isPremium ? '#f59e0b' : GREEN }} data-testid="button-upgrade">
                 <Crown className="w-4 h-4 ml-2" />
                 {isPremium ? 'تجديد الاشتراك' : 'ترقية حسابك الآن'}
               </Button>
-            </Link>
 
             <button
               onClick={handleLogout}
@@ -494,11 +494,9 @@ export default function NewWorkingProfile() {
               <div className="text-center py-6">
                 <FileText className="w-8 h-8 mx-auto mb-2 text-gray-300" />
                 <p className="text-sm text-gray-400 mb-3">لا توجد طلبات اشتراك بعد</p>
-                <Link href="/subscription">
-                  <Button size="sm" className="rounded-xl text-white text-xs" style={{ background: GREEN }}>
+                  <Button size="sm" onClick={() => setSubscriptionDialogOpen(true)} className="rounded-xl text-white text-xs" style={{ background: GREEN }}>
                     <Crown className="w-3 h-3 ml-1" /> اشترك الآن
                   </Button>
-                </Link>
               </div>
             ) : (
               <div className="space-y-3">
@@ -544,11 +542,9 @@ export default function NewWorkingProfile() {
                     </div>
                   );
                 })}
-                <Link href="/subscription">
-                  <Button size="sm" variant="outline" className="w-full border-dashed text-xs mt-1 rounded-xl" style={{ borderColor: GREEN, color: GREEN }}>
+                <Button size="sm" variant="outline" onClick={() => setSubscriptionDialogOpen(true)} className="w-full border-dashed text-xs mt-1 rounded-xl" style={{ borderColor: GREEN, color: GREEN }}>
                     <Crown className="w-3 h-3 ml-1" /> تجديد أو رفع مستوى الاشتراك
                   </Button>
-                </Link>
               </div>
             )}
           </div>
@@ -666,6 +662,11 @@ export default function NewWorkingProfile() {
         {/* ── زر مغادرة ────────────────────────────────────────── */}
         <div className="h-6" />
       </div>
+      <SubscriptionRenewalDialog
+        open={subscriptionDialogOpen}
+        onOpenChange={setSubscriptionDialogOpen}
+        user={currentUser}
+      />
     </div>
   );
 }
