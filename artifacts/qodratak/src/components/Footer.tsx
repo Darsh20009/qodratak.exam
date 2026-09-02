@@ -101,9 +101,6 @@ export function Footer() {
                 <MessageCircle className="h-4 w-4 text-[#398B79]" />
                 مركز الدعم والتواصل
               </a>
-              <a href="mailto:support@qodrat.ai" className="block font-bold text-[#398B79] hover:underline">
-                support@qodrat.ai
-              </a>
               <p className="flex items-start gap-2 font-bold">
                 <Clock3 className="mt-0.5 h-4 w-4 shrink-0 text-[#398B79]" />
                 ساعات العمل: 9:00 ص - 10:00 م
