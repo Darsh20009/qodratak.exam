@@ -362,13 +362,12 @@ export function QuantitativeTests() {
           className="text-center space-y-4"
         >
           <div className="flex items-center justify-center gap-4">
-            <motion.div
-              animate={{ rotate: [0, 360] }}
-              transition={{ duration: 20, repeat: Infinity, ease: "linear" }}
-            >
-              <Calculator className="w-12 h-12 text-blue-600" />
-            </motion.div>
-            <h1 className="text-4xl md:text-5xl font-bold bg-gradient-to-r from-blue-600 via-green-600 to-amber-600 bg-clip-text text-transparent">
+            <img
+              src="/qodratak-logo.png"
+              alt="شعار قدراتك"
+              className="h-12 w-12 object-contain"
+            />
+            <h1 className="text-4xl md:text-5xl font-bold text-foreground">
               اختبارات القدرات الكمية
             </h1>
           </div>

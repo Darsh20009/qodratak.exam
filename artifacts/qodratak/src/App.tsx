@@ -397,10 +397,13 @@ function MainLayout({ children }: { children: React.ReactNode }) {
     ielts: "IELTS",
     gat: "GAT",
   }[activeProgram || "qudrat"];
+  const activePracticeLabel = activeProgram === "ielts" || activeProgram === "gat"
+    ? "المهارات والتدريب"
+    : "المحوسب";
 
   const programSubNavItems = activeProgram ? [
     { name: "التأسيس", href: `/student-program/${activeProgram}?section=foundation`, icon: BookOpenIcon },
-    { name: "المحوسب", href: `/student-program/${activeProgram}?section=computer`, icon: Brain },
+    { name: activePracticeLabel, href: `/student-program/${activeProgram}?section=computer`, icon: Brain },
     { name: "مجلداتي", href: `/folders?program=${activeProgram}`, icon: FolderIcon },
   ] : [];
 
