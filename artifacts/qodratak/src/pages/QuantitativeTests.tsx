@@ -410,26 +410,17 @@ export function QuantitativeTests() {
         </motion.div>
 
         {/* اختبار متقدم مميز */}
-        <motion.div
-          initial={{ opacity: 0, scale: 0.9 }}
-          animate={{ opacity: 1, scale: 1 }}
-          className="mb-8"
-        >
-          <Card className="bg-gradient-to-r from-emerald-600 via-teal-600 to-cyan-600 text-white shadow-2xl border-0 overflow-hidden relative">
-            <div className="absolute inset-0 bg-gradient-to-r from-emerald-400/20 via-teal-400/20 to-cyan-400/20 animate-pulse"></div>
+        <div className="mb-8">
+          <Card className="overflow-hidden border border-border bg-card text-foreground">
             <CardContent className="p-8 relative z-10">
               <div className="flex flex-col md:flex-row items-center justify-between gap-6">
                 <div className="flex items-center gap-6">
-                  <motion.div
-                    className="w-20 h-20 bg-white/20 rounded-2xl flex items-center justify-center backdrop-blur-sm"
-                    whileHover={{ rotate: 360 }}
-                    transition={{ duration: 0.6 }}
-                  >
-                    <Calculator className="w-10 h-10 text-white" />
-                  </motion.div>
+                  <div className="flex h-20 w-20 items-center justify-center rounded-2xl bg-muted text-primary">
+                    <Calculator className="w-10 h-10" />
+                  </div>
                   <div>
-                    <h3 className="text-2xl font-bold mb-2">الاختبار المتقدم للقدرات الكمية</h3>
-                    <p className="text-white/90 mb-4">اختبار شامل بـ 5 أقسام - 55 سؤال في 55 دقيقة</p>
+                    <h3 className="mb-2 text-2xl font-bold text-foreground">الاختبار المتقدم للقدرات الكمية</h3>
+                    <p className="mb-4 text-muted-foreground">اختبار شامل بـ 5 أقسام - 55 سؤال في 55 دقيقة</p>
                     <div className="flex items-center gap-4 text-sm">
                       <div className="flex items-center gap-1">
                         <Clock className="w-4 h-4" />
@@ -448,7 +439,7 @@ export function QuantitativeTests() {
                 </div>
                 <Button 
                   onClick={() => window.location.href = '/advanced-quantitative-test'}
-                  className="bg-white text-emerald-600 hover:bg-white/90 px-8 py-3 rounded-xl font-bold text-lg shadow-lg hover:shadow-xl transition-all duration-300 whitespace-nowrap"
+                   className="whitespace-nowrap rounded-xl bg-primary px-8 py-3 text-lg font-bold text-primary-foreground transition-colors hover:bg-primary/90"
                 >
                   ابدأ الاختبار المتقدم
                   <PlayCircle className="w-5 h-5 mr-2" />
@@ -456,7 +447,7 @@ export function QuantitativeTests() {
               </div>
             </CardContent>
           </Card>
-        </motion.div>
+        </div>
 
         {/* قائمة الاختبارات */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">

@@ -279,7 +279,7 @@ function LoggedInDashboard({ user }: { user: any }) {
           <Button
             type="button"
             onClick={() => setSubscriptionDialogOpen(true)}
-             className="hidden rounded-xl bg-[#F7F775] px-4 font-black text-[#0D1B2A] hover:bg-[#F7F775]/85 dark:bg-primary dark:text-primary-foreground dark:hover:bg-primary/90 sm:flex"
+             className="hidden rounded-xl bg-[#F7F775] px-4 font-black text-foreground hover:bg-[#F7F775]/85 dark:bg-primary dark:hover:bg-primary/90 sm:flex"
           >
             <CrownIcon className="ml-2 h-4 w-4" />
             تمديد الاشتراك
