@@ -73,7 +73,16 @@ import {
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-async function notifyLinkedParentsOfResult(studentId: string | number, result: any) {
+type ParentNotificationSummary = {
+  linkedParents: number;
+  sent: number;
+  failed: number;
+};
+
+async function notifyLinkedParentsOfResult(
+  studentId: string | number,
+  result: any,
+): Promise<ParentNotificationSummary> {
   try {
     const id = String(studentId);
     const percentage = Math.round(Number(result.percentage ?? (result.totalQuestions ? result.score / result.totalQuestions * 100 : 0)));
@@ -93,6 +102,14 @@ async function notifyLinkedParentsOfResult(studentId: string | number, result: a
     const total = Number(result.totalQuestions || 0);
     let studentName = 'الطالب';
     const parentPhones = new Set<string>();
+    const addParentPhone = (rawPhone: unknown) => {
+      if (!rawPhone) return;
+      try {
+        parentPhones.add(normalizeSaudiPhone(String(rawPhone)));
+      } catch (error) {
+        console.warn('[Parent Results] Ignoring invalid parent phone number');
+      }
+    };
 
     try {
       const users = JSON.parse(fs.readFileSync('attached_assets/user.json', 'utf-8'));
@@ -101,7 +118,7 @@ async function notifyLinkedParentsOfResult(studentId: string | number, result: a
       users
         .filter((user: any) => user.role === 'parent' && (user.childIds || []).map(String).includes(id))
         .forEach((parent: any) => {
-          if (parent.phone || parent.whatsapp) parentPhones.add(normalizeSaudiPhone(parent.phone || parent.whatsapp));
+          addParentPhone(parent.phone || parent.whatsapp);
         });
     } catch {}
 
@@ -111,8 +128,13 @@ async function notifyLinkedParentsOfResult(studentId: string | number, result: a
       studentName = student?.fullName || student?.username || studentName;
       const parents = await User.find({ role: 'parent', childIds: id }).lean() as any[];
       parents.forEach(parent => {
-        if (parent.phone || parent.whatsappPhone) parentPhones.add(normalizeSaudiPhone(parent.phone || parent.whatsappPhone));
+        addParentPhone(parent.phone || parent.whatsappPhone);
       });
+    }
+
+    if (parentPhones.size === 0) {
+      console.info(`[Parent Results] No linked parent found for student ${id}`);
+      return { linkedParents: 0, sent: 0, failed: 0 };
     }
 
     const message = [
@@ -126,13 +148,25 @@ async function notifyLinkedParentsOfResult(studentId: string | number, result: a
       [...parentPhones].map(phone => sendWhatsAppText(phone, message)),
     );
     const failedDeliveries = deliveries.filter(delivery => delivery.status === 'rejected').length;
+    const sentDeliveries = deliveries.length - failedDeliveries;
     if (failedDeliveries > 0) {
       console.warn(
         `[Parent Results] ${failedDeliveries}/${deliveries.length} WhatsApp notifications failed for student ${id}`,
       );
     }
+    if (sentDeliveries > 0) {
+      console.info(
+        `[Parent Results] ${sentDeliveries}/${deliveries.length} WhatsApp notifications sent for student ${id}`,
+      );
+    }
+    return {
+      linkedParents: parentPhones.size,
+      sent: sentDeliveries,
+      failed: failedDeliveries,
+    };
   } catch (error) {
     console.error('Parent result notification error:', error);
+    return { linkedParents: 0, sent: 0, failed: 1 };
   }
 }
 
@@ -890,7 +924,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           attempt.questions.map((question: any) => question.id),
         );
       } catch {}
-      void notifyLinkedParentsOfResult(sessionUserId, {
+      const parentNotification = await notifyLinkedParentsOfResult(sessionUserId, {
         ...savedResult,
         testType: attempt.category,
         score,
@@ -906,6 +940,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         skippedQuestions,
         percentage,
         pointsEarned,
+        parentNotification,
       });
     } catch (error) {
       console.error('Mobile test result error:', error);
@@ -1085,7 +1120,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       const serializedResult =
         typeof result?.toObject === 'function' ? result.toObject() : result;
-      void notifyLinkedParentsOfResult(sessionUserId, {
+      const parentNotification = await notifyLinkedParentsOfResult(sessionUserId, {
         ...serializedResult,
         testType,
         score,
@@ -1143,13 +1178,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(201).json({
           ...serializedResult,
           pointsEarned: totalPoints,
-          badges
+          badges,
+          parentNotification,
         });
       } catch (error) {
         console.error("Error checking badges:", error);
         return res.status(201).json({
           ...serializedResult,
-          pointsEarned: totalPoints
+          pointsEarned: totalPoints,
+          parentNotification,
         });
       }
     } catch (error) {
@@ -1284,10 +1321,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Advanced Test Results API for specialized tests
-  app.post("/api/test-results/advanced", async (req: Request, res: Response) => {
+  app.post("/api/test-results/advanced", requireAuth, async (req: Request, res: Response) => {
     try {
+      const userId: any = String((req.session as any)?.userId || '');
       const {
-        userId,
         testId,
         testName,
         testCategory,
@@ -1397,11 +1434,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
           console.error("Error updating leaderboard:", error);
         }
 
+        const parentNotification = await notifyLinkedParentsOfResult(userId, {
+          testName,
+          testType: testCategory,
+          score: correctAnswers || 0,
+          totalQuestions: totalQuestions || 0,
+          percentage: percentage || 0,
+        });
+
         res.status(201).json({
           success: true,
           message: "Advanced test result saved successfully",
           result: advancedResult,
-          pointsEarned: calculatedPoints
+          pointsEarned: calculatedPoints,
+          parentNotification,
         });
 
       } catch (fileError) {
@@ -4828,10 +4874,18 @@ app.post("/api/auth/register", async (req: Request, res: Response) => {
         const newResult = await storage.createPaperModelResult(resultData);
 
         console.log(`✅ Successfully saved result for user ${userId}, model ${modelNumber}`);
+        const parentNotification = await notifyLinkedParentsOfResult(String(userId), {
+          testName: `النموذج الورقي ${modelNumber}`,
+          testType: 'paper_model',
+          score: totalCorrect,
+          totalQuestions,
+          percentage: totalPercentage,
+        });
 
         return res.status(201).json({
           message: "تم حفظ النتيجة بنجاح",
-          result: newResult
+          result: newResult,
+          parentNotification,
         });
       } catch (storageError) {
         console.error('❌ Error saving paper model result:', storageError);

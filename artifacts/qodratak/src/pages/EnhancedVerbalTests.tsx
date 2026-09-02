@@ -315,8 +315,8 @@ export function EnhancedVerbalTests() {
       const response = await fetch('/api/test-results/advanced', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
         body: JSON.stringify({
-          userId: (user as any)?.id || 1,
           testId: result.testId,
           testName: result.testName,
           testCategory: 'verbal_specialized',
@@ -333,7 +333,9 @@ export function EnhancedVerbalTests() {
           sessionId: currentSession?.id
         })
       });
-      return response.json();
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.message || 'تعذر حفظ نتيجة الاختبار');
+      return data;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/user'] });
