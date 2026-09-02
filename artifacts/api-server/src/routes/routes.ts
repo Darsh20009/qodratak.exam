@@ -2145,7 +2145,7 @@ const phoneOtpStore = new Map<string, { otp: string; expiry: Date; chatId?: numb
         try { return normalizeSaudiPhone(user.phone || user.whatsapp) === verification.phone; } catch { return false; }
       });
 
-      let loginUser: any = localUser;
+      let loginUser: any = null;
       if (mongoose.connection.readyState === 1) {
         const { Admin } = await import('./mongodb/models');
         const adminDoc = await Admin.findOne({
@@ -2177,7 +2177,7 @@ const phoneOtpStore = new Map<string, { otp: string; expiry: Date; chatId?: numb
           });
         }
       }
-      if (!loginUser && mongoose.connection.readyState === 1) {
+      if (mongoose.connection.readyState === 1) {
         const { User: MongoUser } = await import('./mongodb/models');
         const mongoUser = await MongoUser.findOne({ phone: verification.phone }) as any;
         if (mongoUser) {
@@ -2207,7 +2207,7 @@ const phoneOtpStore = new Map<string, { otp: string; expiry: Date; chatId?: numb
           };
         }
       }
-      if (localUser) {
+      if (localUser && !loginUser) {
         const deviceAccess = registerDevice(localUser.devices, req, req.body?.deviceId);
         if (!deviceAccess.allowed) {
           notifyDeviceLimitReached(localUser);
@@ -2321,11 +2321,11 @@ const phoneOtpStore = new Map<string, { otp: string; expiry: Date; chatId?: numb
           try { return normalizeSaudiPhone(user.phone || user.whatsapp) === childPhone && (user.role || 'student') === 'student'; } catch { return false; }
         });
         let mongoChild: any = null;
-        if (!localChild && mongoose.connection.readyState === 1) {
+        if (mongoose.connection.readyState === 1) {
           const { User } = await import('./mongodb/models');
           mongoChild = await User.findOne({ phone: childPhone, role: 'student' }).lean();
         }
-        const found = localChild || mongoChild;
+        const found = mongoChild || localChild;
         if (!found) return res.status(404).json({ error: `لم نجد حساب الطالب المرتبط بالرقم ${childPhone}` });
         verifiedChildren.push({ id: String(found.id || found._id), phone: childPhone });
       }
@@ -2345,31 +2345,39 @@ const phoneOtpStore = new Map<string, { otp: string; expiry: Date; chatId?: numb
         level: 1,
         createdAt: now.toISOString(),
       };
-      users.push(newUser);
-      fs.writeFileSync('attached_assets/user.json', JSON.stringify(users, null, 2));
-
-      if (mongoose.connection.readyState === 1) {
-        const { User } = await import('./mongodb/models');
-        await User.create({
-          username: newUser.username,
-          password: newUser.password,
-          phone,
-          whatsappPhone: phone,
-          fullName,
-          role: 'parent',
-          childIds: newUser.childIds,
-          points: 0,
-          level: 1,
-          isVerified: true,
-        });
+      if (mongoose.connection.readyState !== 1) {
+        return res.status(503).json({ error: 'تعذر حفظ حساب ولي الأمر بشكل دائم. حاول مرة أخرى بعد قليل.' });
       }
-      (req.session as any).userId = newUser.id;
+
+      const { User } = await import('./mongodb/models');
+      const mongoParent = await User.create({
+        username: newUser.username,
+        password: newUser.password,
+        phone,
+        whatsappPhone: phone,
+        fullName,
+        role: 'parent',
+        childIds: newUser.childIds,
+        points: 0,
+        level: 1,
+        isVerified: true,
+      });
+      newUser.mongoId = String(mongoParent._id);
+
+      users.push(newUser);
+      try {
+        fs.writeFileSync('attached_assets/user.json', JSON.stringify(users, null, 2));
+      } catch (localWriteError) {
+        console.error('Local parent compatibility copy failed:', localWriteError);
+      }
+
+      (req.session as any).userId = String(mongoParent._id);
       (req.session as any).userEmail = newUser.username;
       (req.session as any).userRole = 'parent';
       return req.session.save((error) => {
         if (error) return res.status(500).json({ error: 'تعذر حفظ جلسة ولي الأمر' });
         const { password: _password, ...safeUser } = newUser;
-        return res.status(201).json(safeUser);
+        return res.status(201).json({ ...safeUser, id: String(mongoParent._id) });
       });
     } catch (error: any) {
       if (error?.message === 'INVALID_PHONE') return res.status(400).json({ error: 'أحد أرقام الجوال غير صحيح' });
@@ -2392,36 +2400,53 @@ const phoneOtpStore = new Map<string, { otp: string; expiry: Date; chatId?: numb
 
       const childIds = (parent.childIds || []).map(String);
       const children = [];
+      const loadMongoChildResults = async (mongoChildId: string) => {
+        const { TestResult, ExamBooking } = await import('./mongodb/models');
+        const [testResults, bookedExamResults] = await Promise.all([
+          TestResult.find({ userId: mongoChildId }).sort({ completedAt: -1 }).limit(100).lean(),
+          ExamBooking.find({
+            userId: mongoChildId,
+            status: 'completed',
+            aiReviewDone: true,
+            resultVisibleAt: { $lte: new Date() },
+          }).sort({ completedAt: -1 }).limit(50).lean(),
+        ]);
+        return [
+          ...testResults,
+          ...bookedExamResults.map((exam: any) => ({
+            _id: exam._id,
+            testType: exam.examType || 'standard',
+            testName: exam.examType || 'اختبار القدرات',
+            score: exam.correctAnswers || 0,
+            totalQuestions: exam.totalQuestions || 100,
+            percentage: exam.totalScoreOutOf100 || 0,
+            completedAt: exam.completedAt,
+            pointsEarned: 0,
+          })),
+        ];
+      };
       for (const childId of childIds) {
         let child: any = users.find((user: any) => String(user.id) === childId);
         let results: any[] = [];
-        if (child) {
+        if (child && mongoose.connection.readyState === 1) {
+          const { User } = await import('./mongodb/models');
+          let normalizedChildPhone = '';
+          try { normalizedChildPhone = normalizeSaudiPhone(child.phone || child.whatsapp); } catch {}
+          const durableChild = normalizedChildPhone
+            ? await User.findOne({ phone: normalizedChildPhone, role: 'student' }).lean()
+            : null;
+          if (durableChild) {
+            child = durableChild;
+            results = await loadMongoChildResults(String((durableChild as any)._id));
+          } else {
+            results = await storage.getTestResultsByUser(Number(child.id));
+          }
+        } else if (child) {
           results = await storage.getTestResultsByUser(Number(child.id));
         } else if (mongoose.connection.readyState === 1 && mongoose.Types.ObjectId.isValid(childId)) {
-          const { User, TestResult, ExamBooking } = await import('./mongodb/models');
+          const { User } = await import('./mongodb/models');
           child = await User.findById(childId).lean();
-          const [testResults, bookedExamResults] = await Promise.all([
-            TestResult.find({ userId: childId }).sort({ completedAt: -1 }).limit(100).lean(),
-            ExamBooking.find({
-              userId: childId,
-              status: 'completed',
-              aiReviewDone: true,
-              resultVisibleAt: { $lte: new Date() },
-            }).sort({ completedAt: -1 }).limit(50).lean(),
-          ]);
-          results = [
-            ...testResults,
-            ...bookedExamResults.map((exam: any) => ({
-              _id: exam._id,
-              testType: exam.examType || 'standard',
-              testName: exam.examType || 'اختبار القدرات',
-              score: exam.correctAnswers || 0,
-              totalQuestions: exam.totalQuestions || 100,
-              percentage: exam.totalScoreOutOf100 || 0,
-              completedAt: exam.completedAt,
-              pointsEarned: 0,
-            })),
-          ];
+          results = await loadMongoChildResults(childId);
         }
         if (!child) continue;
         const normalized = results.map((result: any) => ({
@@ -2507,7 +2532,7 @@ const phoneOtpStore = new Map<string, { otp: string; expiry: Date; chatId?: numb
           return false;
         }
       });
-      const child = localChild || mongoChild;
+      const child = mongoChild || localChild;
       if (!child) {
         return res.status(404).json({ error: 'لم نجد حساب طالب مرتبطًا بهذا الرقم' });
       }
@@ -3173,8 +3198,50 @@ app.post("/api/auth/register", async (req: Request, res: Response) => {
         createdAt: today.toISOString()
       };
 
+      if (mongoose.connection.readyState !== 1) {
+        return res.status(503).json({ message: "تعذر حفظ الحساب بشكل دائم. حاول مرة أخرى بعد قليل." });
+      }
+
+      const { User: MongoUser } = await import('./mongodb/models');
+      const existingMongoUser = await MongoUser.findOne({
+        $or: [
+          { username: normalizedUsername },
+          { phone: normalizedPhone },
+          ...(normalizedRegEmail ? [{ email: normalizedRegEmail }] : []),
+        ],
+      }).lean();
+      if (existingMongoUser) {
+        if (existingMongoUser.phone === normalizedPhone) {
+          return res.status(400).json({ message: "رقم الجوال مستخدم من قبل" });
+        }
+        if (existingMongoUser.username === normalizedUsername) {
+          return res.status(400).json({ message: "اسم المستخدم مستخدم من قبل" });
+        }
+        return res.status(400).json({ message: "البريد الإلكتروني مستخدم من قبل" });
+      }
+
+      const mongoUser = await MongoUser.create({
+        username: normalizedUsername,
+        password: hashedPassword,
+        ...(normalizedRegEmail ? { email: normalizedRegEmail } : {}),
+        phone: normalizedPhone,
+        whatsappPhone: normalizedPhone,
+        fullName,
+        role,
+        points: 100,
+        level: 1,
+        subscription,
+      });
+      newUser.mongoId = String(mongoUser._id);
+
+      // Compatibility copy for legacy numeric-account routes. MongoDB remains
+      // the source of truth and its ObjectId is used for the active session.
       users.push(newUser);
-      fs.writeFileSync("attached_assets/user.json", JSON.stringify(users, null, 2));
+      try {
+        fs.writeFileSync("attached_assets/user.json", JSON.stringify(users, null, 2));
+      } catch (localWriteError) {
+        console.error('Local compatibility user copy failed:', localWriteError);
+      }
 
       console.log(`New ${role} account created: ${fullName} (${normalizedUsername}) - ${role === 'student' ? '7-day trial' : 'free forever'}`);
       if (role === 'student') {
@@ -3188,27 +3255,6 @@ app.post("/api/auth/register", async (req: Request, res: Response) => {
         );
       }
 
-      // Sync to MongoDB so WebAuthn and Telegram flows can find the user
-      try {
-        const { User: MongoUser } = await import('./mongodb/models');
-        const exists = await MongoUser.findOne({ username: normalizedUsername });
-        if (!exists) {
-          await MongoUser.create({
-            username: normalizedUsername,
-            password: hashedPassword,
-            ...(normalizedRegEmail ? { email: normalizedRegEmail } : {}),
-            phone: normalizedPhone,
-            fullName,
-            role,
-            points: 100,
-            level: 1,
-            subscription,
-          });
-        }
-      } catch (mongoSyncErr) {
-        console.error('MongoDB sync on register error (non-fatal):', mongoSyncErr);
-      }
-
       // Add to leaderboard
       try {
         await storage.updateLeaderboardEntry(newUser.id, 0, newUser.name);
@@ -3217,7 +3263,7 @@ app.post("/api/auth/register", async (req: Request, res: Response) => {
       }
 
       // Set user session
-      (req.session as any).userId = newUser.id;
+      (req.session as any).userId = String(mongoUser._id);
       (req.session as any).userEmail = newUser.email || newUser.username;
       (req.session as any).userRole = newUser.role;
 
@@ -3229,7 +3275,7 @@ app.post("/api/auth/register", async (req: Request, res: Response) => {
 
         // Return user without password
         const { password: _, ...userWithoutPassword } = newUser;
-        return res.status(201).json(userWithoutPassword);
+        return res.status(201).json({ ...userWithoutPassword, id: String(mongoUser._id) });
       });
     } catch (error) {
       console.error("Error in multi-role registration:", error);

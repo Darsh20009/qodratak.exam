@@ -8,7 +8,10 @@ import { mongoStorage } from './mongodb/mongoStorage';
 import { storage } from './storage';
 import { Question, ChatMessage, Admin, WhatsAppMessage } from './mongodb/models';
 import { sendSubscriptionApprovalEmail } from './services/emailService';
-import { notifyAdminSubscription } from './services/adminWhatsAppNotifications';
+import {
+  notifyAdminSubscription,
+  sendAdminFinancialReport,
+} from './services/adminWhatsAppNotifications';
 import { createAdminAccessToken, verifyAdminAccessToken } from './adminSessionToken';
 import { getPrivateQuestionImageOriginal, processQuestionImage } from './services/questionImageProcessor';
 import {
@@ -1406,6 +1409,24 @@ router.post('/whatsapp/test-message', requireAdminAuth, async (req: Request, res
         : error?.message === 'INVALID_PHONE'
           ? 'أدخل رقم واتساب صحيحًا مع رمز الدولة'
           : 'تعذر إرسال رسالة الاختبار. تحقق من الرقم وحالة الاتصال.';
+    res.status(400).json({ error: message });
+  }
+});
+
+router.post('/whatsapp/financial-report', requireAdminAuth, async (req: Request, res: Response) => {
+  try {
+    const period = String(req.body?.period || '');
+    if (!['daily', 'weekly', 'monthly'].includes(period)) {
+      return res.status(400).json({ error: 'نوع التقرير غير صالح' });
+    }
+    await sendAdminFinancialReport(period as 'daily' | 'weekly' | 'monthly');
+    res.json({ success: true, message: 'تم إرسال التقرير المالي إلى رقم الإدارة' });
+  } catch (error: any) {
+    console.error('[WhatsApp] Financial report failed:', error?.message || error);
+    const message =
+      error?.message === 'WHATSAPP_NOT_CONNECTED'
+        ? 'اربط واتساب أولاً'
+        : 'تعذر إرسال التقرير المالي حاليًا';
     res.status(400).json({ error: message });
   }
 });

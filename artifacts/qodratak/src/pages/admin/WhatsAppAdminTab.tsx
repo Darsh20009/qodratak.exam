@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { CheckCircle2, Link2, Loader2, MessageCircle, Power, RefreshCw, Send, ShieldAlert } from "lucide-react";
+import { BarChart3, CheckCircle2, Link2, Loader2, MessageCircle, Power, RefreshCw, Send, ShieldAlert } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
 
@@ -52,6 +52,13 @@ export default function WhatsAppAdminTab() {
     mutationFn: () => request("/api/admin/whatsapp/test-message", { phone: testPhone.trim() }),
     onSuccess: () => toast({ title: "تم الإرسال", description: "وصلت رسالة الاختبار إلى الرقم المحدد." }),
     onError: (error: Error) => toast({ title: "تعذر إرسال الرسالة", description: error.message, variant: "destructive" }),
+  });
+
+  const sendFinancialReport = useMutation({
+    mutationFn: (period: "daily" | "weekly" | "monthly") =>
+      request("/api/admin/whatsapp/financial-report", { period }),
+    onSuccess: () => toast({ title: "تم إرسال التقرير", description: "وصل التقرير المالي إلى رقم الإدارة." }),
+    onError: (error: Error) => toast({ title: "تعذر إرسال التقرير", description: error.message, variant: "destructive" }),
   });
 
   const connected = status?.state === "connected";
@@ -133,6 +140,36 @@ export default function WhatsAppAdminTab() {
             {sendTest.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
             إرسال
           </button>
+        </div>
+      </div>
+
+      <div className="rounded-2xl border border-[#24202D]/10 bg-[#FFFCF7] p-5">
+        <h3 className="flex items-center gap-2 font-bold text-[#24202D]">
+          <BarChart3 className="h-5 w-5 text-[#2E8B70]" />
+          التقارير المالية عبر واتساب
+        </h3>
+        <p className="mt-1 text-xs text-[#625D69]">
+          أرسل تقريرًا فوريًا إلى رقم الإدارة. تشمل التقارير الطلاب والاختبارات والاشتراكات والإيرادات والمصروفات والصافي.
+        </p>
+        <div className="mt-4 flex flex-wrap gap-2">
+          {[
+            { period: "daily" as const, label: "التقرير اليومي" },
+            { period: "weekly" as const, label: "التقرير الأسبوعي" },
+            { period: "monthly" as const, label: "التقرير الشهري" },
+          ].map(({ period, label }) => (
+            <button
+              key={period}
+              type="button"
+              onClick={() => sendFinancialReport.mutate(period)}
+              disabled={!connected || sendFinancialReport.isPending}
+              className="flex items-center gap-2 rounded-xl border border-[#2E8B70]/25 bg-[#2E8B70]/5 px-4 py-2.5 text-sm font-bold text-[#216953] disabled:opacity-40"
+            >
+              {sendFinancialReport.isPending && sendFinancialReport.variables === period
+                ? <Loader2 className="h-4 w-4 animate-spin" />
+                : <Send className="h-4 w-4" />}
+              {label}
+            </button>
+          ))}
         </div>
       </div>
     </div>
