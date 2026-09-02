@@ -479,7 +479,7 @@ function MainLayout({ children }: { children: React.ReactNode }) {
 
 
   return (
-    <div className="flex min-h-screen bg-gray-100 dark:bg-gray-900">
+    <div className="qodratak-app-shell flex min-h-screen bg-background text-foreground">
       {/* Sidebar - مخفي في وضع الاختبار */}
       {!isInTestMode && (
         <div className="hidden md:flex w-64 flex-col bg-white dark:bg-gray-900 border-l dark:border-gray-800" dir="rtl">
@@ -765,7 +765,7 @@ function MainLayout({ children }: { children: React.ReactNode }) {
 
         {/* Content */}
         <main className="flex-1 overflow-y-auto pb-16 md:pb-0">
-          <div key={location} className="page-enter min-h-full">
+          <div key={location} className="qodratak-page-surface page-enter min-h-full">
             <ErrorBoundary>
               {children}
             </ErrorBoundary>
