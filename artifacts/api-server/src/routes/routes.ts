@@ -2457,6 +2457,97 @@ const phoneOtpStore = new Map<string, { otp: string; expiry: Date; chatId?: numb
     }
   });
 
+  app.post('/api/parent/children', requireAuth, async (req: Request, res: Response) => {
+    try {
+      if ((req.session as any).userRole !== 'parent') {
+        return res.status(403).json({ error: 'هذه العملية مخصصة لولي الأمر' });
+      }
+
+      const childPhone = normalizeSaudiPhone(req.body?.phone);
+      if (!verifyPhoneVerificationToken(req.body?.verificationToken, childPhone, 'link_child')) {
+        return res.status(400).json({ error: 'يجب تأكيد رقم الطالب أولًا' });
+      }
+
+      let users: any[] = [];
+      try { users = JSON.parse(fs.readFileSync('attached_assets/user.json', 'utf-8')); } catch {}
+
+      const sessionUserId = String((req.session as any).userId || '');
+      const sessionUsername = String((req.session as any).userEmail || '');
+      const localParent = users.find((user: any) =>
+        String(user.id) === sessionUserId ||
+        (sessionUsername && String(user.username || '') === sessionUsername),
+      );
+      if (localParent && localParent.role !== 'parent') {
+        return res.status(403).json({ error: 'هذه العملية مخصصة لولي الأمر' });
+      }
+
+      let mongoUserModel: any = null;
+      let mongoParent: any = null;
+      let mongoChild: any = null;
+      if (mongoose.connection.readyState === 1) {
+        const models = await import('./mongodb/models');
+        mongoUserModel = models.User;
+        if (mongoose.Types.ObjectId.isValid(sessionUserId)) {
+          mongoParent = await mongoUserModel.findOne({ _id: sessionUserId, role: 'parent' });
+        }
+        if (!mongoParent && localParent?.phone) {
+          mongoParent = await mongoUserModel.findOne({ role: 'parent', phone: localParent.phone });
+        }
+        if (!mongoParent && sessionUsername) {
+          mongoParent = await mongoUserModel.findOne({ role: 'parent', username: sessionUsername });
+        }
+        mongoChild = await mongoUserModel.findOne({ phone: childPhone, role: 'student' }).lean();
+      }
+
+      const localChild = users.find((user: any) => {
+        try {
+          return normalizeSaudiPhone(user.phone || user.whatsapp) === childPhone &&
+            (user.role || 'student') === 'student';
+        } catch {
+          return false;
+        }
+      });
+      const child = localChild || mongoChild;
+      if (!child) {
+        return res.status(404).json({ error: 'لم نجد حساب طالب مرتبطًا بهذا الرقم' });
+      }
+      if (!localParent && !mongoParent) {
+        return res.status(403).json({ error: 'لم نجد حساب ولي الأمر الحالي' });
+      }
+
+      const childId = String(child.id || child._id);
+      const existingChildIds = new Set((localParent?.childIds || []).map(String));
+      if (existingChildIds.has(childId) || (mongoParent?.childIds || []).map(String).includes(childId)) {
+        return res.status(409).json({ error: 'هذا الطالب مضاف إلى حسابك مسبقًا' });
+      }
+
+      if (localParent) {
+        localParent.childIds = Array.from(new Set([...(localParent.childIds || []).map(String), childId]));
+        fs.writeFileSync('attached_assets/user.json', JSON.stringify(users, null, 2));
+      }
+
+      if (mongoParent) {
+        await mongoUserModel.updateOne(
+          { _id: mongoParent._id },
+          { $addToSet: { childIds: childId } },
+        );
+      }
+
+      return res.json({
+        success: true,
+        child: {
+          id: childId,
+          fullName: child.fullName || child.name || child.username || 'الطالب',
+          phone: child.phone || child.whatsapp || childPhone,
+        },
+      });
+    } catch (error: any) {
+      if (error?.message === 'INVALID_PHONE') return res.status(400).json({ error: 'أدخل رقم جوال الطالب بشكل صحيح' });
+      console.error('Add parent child error:', error);
+      return res.status(500).json({ error: 'تعذر إضافة الطالب حاليًا' });
+    }
+  });
+
   app.get('/api/user/devices', requireAuth, async (req: Request, res: Response) => {
     try {
       const userId = String((req.session as any).userId);

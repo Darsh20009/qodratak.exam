@@ -13,7 +13,11 @@ import {
   CheckCircle2,
   UsersRound,
   AlertCircle,
-  FileText
+  FileText,
+  KeyRound,
+  Loader2,
+  UserPlus,
+  X,
 } from "lucide-react";
 
 type TestResult = {
@@ -56,6 +60,12 @@ export default function ParentDashboardPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [loggingOut, setLoggingOut] = useState(false);
+  const [addChildOpen, setAddChildOpen] = useState(false);
+  const [addChildPhone, setAddChildPhone] = useState("");
+  const [addChildOtp, setAddChildOtp] = useState("");
+  const [addChildOtpSent, setAddChildOtpSent] = useState(false);
+  const [addChildLoading, setAddChildLoading] = useState(false);
+  const [addChildNotice, setAddChildNotice] = useState<{ type: "success" | "error"; text: string } | null>(null);
 
   const fetchDashboard = async () => {
     setLoading(true);
@@ -94,6 +104,80 @@ export default function ParentDashboardPage() {
       // Ignore errors on logout
     } finally {
       setLoggingOut(false);
+    }
+  };
+
+  const resetAddChild = () => {
+    setAddChildPhone("");
+    setAddChildOtp("");
+    setAddChildOtpSent(false);
+    setAddChildNotice(null);
+  };
+
+  const requestAddChildOtp = async () => {
+    const digits = addChildPhone.replace(/\D/g, "");
+    if (digits.length < 9) {
+      setAddChildNotice({ type: "error", text: "أدخل رقم جوال الطالب المكوّن من 9 أرقام." });
+      return;
+    }
+
+    setAddChildLoading(true);
+    setAddChildNotice(null);
+    try {
+      const phone = `+966${digits.replace(/^0+/, "")}`;
+      const response = await fetch("/api/parent/phone-otp/request", {
+        method: "POST",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ phone, kind: "child" }),
+      });
+      const result = await response.json();
+      if (!response.ok) throw new Error(result.error || "تعذر إرسال رمز التحقق للطالب");
+      setAddChildOtpSent(true);
+      setAddChildNotice({ type: "success", text: "تم إرسال رمز التحقق إلى جوال الطالب." });
+    } catch (err) {
+      setAddChildNotice({ type: "error", text: err instanceof Error ? err.message : "تعذر إرسال رمز التحقق." });
+    } finally {
+      setAddChildLoading(false);
+    }
+  };
+
+  const verifyAndAddChild = async () => {
+    if (addChildOtp.length < 6) {
+      setAddChildNotice({ type: "error", text: "أدخل رمز التحقق المكوّن من 6 أرقام." });
+      return;
+    }
+
+    setAddChildLoading(true);
+    setAddChildNotice(null);
+    try {
+      const phone = `+966${addChildPhone.replace(/\D/g, "").replace(/^0+/, "")}`;
+      const verifyResponse = await fetch("/api/parent/phone-otp/verify", {
+        method: "POST",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ phone, otp: addChildOtp, kind: "child" }),
+      });
+      const verification = await verifyResponse.json();
+      if (!verifyResponse.ok) throw new Error(verification.error || "رمز التحقق غير صحيح");
+
+      const addResponse = await fetch("/api/parent/children", {
+        method: "POST",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ phone, verificationToken: verification.verificationToken }),
+      });
+      const result = await addResponse.json();
+      if (!addResponse.ok) throw new Error(result.error || "تعذر إضافة الطالب");
+
+      setAddChildNotice({ type: "success", text: `تمت إضافة ${result.child?.fullName || "الطالب"} إلى حسابك.` });
+      resetAddChild();
+      setAddChildOpen(false);
+      await fetchDashboard();
+    } catch (err) {
+      setAddChildNotice({ type: "error", text: err instanceof Error ? err.message : "تعذر إضافة الطالب." });
+    } finally {
+      setAddChildLoading(false);
     }
   };
 
@@ -173,6 +257,114 @@ export default function ParentDashboardPage() {
                 </div>
               </div>
             </div>
+
+            <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+              <div>
+                <h2 className="text-2xl font-black text-[#0D1B2A]">الأبناء</h2>
+                <p className="mt-1 text-sm font-medium text-slate-500">تابع نتائج كل أبنائك من حساب واحد.</p>
+              </div>
+              <button
+                type="button"
+                onClick={() => { setAddChildOpen((open) => !open); setAddChildNotice(null); }}
+                className="inline-flex items-center justify-center gap-2 rounded-xl bg-[#0D1B2A] px-4 py-3 text-sm font-black text-white transition hover:bg-[#1E2938] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#FF8A70] focus-visible:ring-offset-2"
+                data-testid="button-parent-add-child"
+              >
+                {addChildOpen ? <X className="h-4 w-4" /> : <UserPlus className="h-4 w-4" />}
+                {addChildOpen ? "إغلاق" : "إضافة ابن"}
+              </button>
+            </div>
+
+            {addChildOpen && (
+              <div className="rounded-3xl border border-[#B9E2D6] bg-[#EAF8F3] p-6 shadow-sm sm:p-7">
+                <div className="max-w-2xl">
+                  <div className="flex items-start gap-3">
+                    <div className="grid h-11 w-11 shrink-0 place-items-center rounded-2xl bg-[#0D1B2A] text-[#91D7C5]">
+                      <UserPlus className="h-5 w-5" />
+                    </div>
+                    <div>
+                      <h3 className="text-lg font-black text-[#0D1B2A]">إضافة ابن جديد</h3>
+                      <p className="mt-1 text-sm leading-6 text-[#5E7180]">
+                        أدخل رقم الطالب، وسنرسل رمز التحقق إلى جواله للتأكد من موافقته على الربط.
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="mt-5 flex flex-col gap-3 sm:flex-row sm:items-end">
+                    <label className="flex-1">
+                      <span className="mb-1.5 block text-xs font-black text-[#4F4A58]">رقم جوال الطالب</span>
+                      <div className="flex h-12 overflow-hidden rounded-xl border border-[#24202D]/15 bg-white focus-within:border-[#171723] focus-within:ring-4 focus-within:ring-[#171723]/10" dir="ltr">
+                        <span className="flex items-center border-r border-[#24202D]/10 bg-[#F3F0EA] px-3 text-sm font-black text-[#4F4A58]">+966</span>
+                        <input
+                          type="tel"
+                          inputMode="tel"
+                          autoComplete="tel-national"
+                          value={addChildPhone}
+                          onChange={(event) => setAddChildPhone(event.target.value.replace(/\D/g, "").slice(0, 10))}
+                          disabled={addChildOtpSent || addChildLoading}
+                          placeholder="5XXXXXXXX"
+                          className="min-w-0 flex-1 bg-transparent px-3 text-left text-sm text-[#171723] outline-none"
+                          data-testid="input-parent-child-phone"
+                        />
+                      </div>
+                    </label>
+
+                    {!addChildOtpSent ? (
+                      <button
+                        type="button"
+                        onClick={requestAddChildOtp}
+                        disabled={addChildLoading}
+                        className="inline-flex h-12 items-center justify-center gap-2 rounded-xl bg-[#0D1B2A] px-5 text-sm font-black text-white disabled:opacity-50"
+                        data-testid="button-parent-send-child-otp"
+                      >
+                        {addChildLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Phone className="h-4 w-4" />}
+                        إرسال الرمز
+                      </button>
+                    ) : (
+                      <button
+                        type="button"
+                        onClick={verifyAndAddChild}
+                        disabled={addChildLoading}
+                        className="inline-flex h-12 items-center justify-center gap-2 rounded-xl bg-[#287966] px-5 text-sm font-black text-white disabled:opacity-50"
+                        data-testid="button-parent-confirm-child"
+                      >
+                        {addChildLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <CheckCircle2 className="h-4 w-4" />}
+                        تأكيد وإضافة
+                      </button>
+                    )}
+                  </div>
+
+                  {addChildOtpSent && (
+                    <div className="mt-3 flex items-center gap-2">
+                      <KeyRound className="h-4 w-4 text-[#287966]" />
+                      <input
+                        type="text"
+                        inputMode="numeric"
+                        autoComplete="one-time-code"
+                        value={addChildOtp}
+                        onChange={(event) => setAddChildOtp(event.target.value.replace(/\D/g, "").slice(0, 6))}
+                        placeholder="رمز التحقق من واتساب"
+                        dir="ltr"
+                        className="h-11 min-w-0 flex-1 rounded-xl border border-[#24202D]/15 bg-white px-3 text-center text-sm tracking-[.2em] outline-none focus:border-[#171723]"
+                        data-testid="input-parent-child-otp"
+                      />
+                      <button
+                        type="button"
+                        onClick={resetAddChild}
+                        className="h-11 rounded-xl px-3 text-xs font-bold text-[#5E7180] hover:bg-white/70"
+                      >
+                        تعديل
+                      </button>
+                    </div>
+                  )}
+
+                  {addChildNotice && (
+                    <p className={`mt-3 text-sm font-bold ${addChildNotice.type === "success" ? "text-[#287966]" : "text-red-600"}`} role="status">
+                      {addChildNotice.text}
+                    </p>
+                  )}
+                </div>
+              </div>
+            )}
 
             {/* Children List */}
             {data.children.length > 0 ? (
