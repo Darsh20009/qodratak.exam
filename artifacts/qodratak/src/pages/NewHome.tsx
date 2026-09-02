@@ -454,32 +454,6 @@ export default function NewHome() {
         <section className="relative overflow-hidden bg-mesh">
           <div className="absolute inset-0 bg-dots opacity-60" />
 
-          <FloatingOrb className="orb-blue animate-float top-[-80px] right-[-80px]" size={400} delay={0} />
-          <FloatingOrb className="orb-green animate-float-gentle top-[20%] left-[-100px]" size={350} delay={1.5} />
-          <FloatingOrb className="orb-cyan animate-float bottom-[-60px] right-[20%]" size={300} delay={3} />
-          <FloatingOrb className="orb-amber animate-float-random top-[50%] left-[60%]" size={200} delay={0.5} />
-
-          <div className="absolute inset-0 overflow-hidden pointer-events-none">
-            {[
-              { icon: Star, x: "10%", y: "20%", size: "w-5 h-5", color: "text-amber-400/40", delay: 0 },
-              { icon: Sparkles, x: "85%", y: "15%", size: "w-6 h-6", color: "text-teal-700/40", delay: 1 },
-              { icon: Rocket, x: "5%", y: "65%", size: "w-5 h-5", color: "text-blue-400/40", delay: 2 },
-              { icon: Target, x: "90%", y: "55%", size: "w-5 h-5", color: "text-emerald-400/40", delay: 1.5 },
-              { icon: Trophy, x: "15%", y: "80%", size: "w-6 h-6", color: "text-amber-400/30", delay: 0.8 },
-              { icon: Brain, x: "80%", y: "80%", size: "w-5 h-5", color: "text-amber-700/30", delay: 2.5 },
-              { icon: Zap, x: "50%", y: "90%", size: "w-4 h-4", color: "text-cyan-400/30", delay: 1.2 },
-              { icon: Award, x: "30%", y: "10%", size: "w-4 h-4", color: "text-rose-400/30", delay: 3.5 },
-            ].map((item, i) => (
-              <div
-                key={i}
-                className={`absolute animate-float-particle ${item.size} ${item.color}`}
-                style={{ left: item.x, top: item.y, animationDelay: `${item.delay}s` }}
-              >
-                <item.icon className="w-full h-full" />
-              </div>
-            ))}
-          </div>
-
           <div className="relative container mx-auto px-4 py-16 md:py-24">
             <div className="text-center space-y-6 max-w-4xl mx-auto">
 

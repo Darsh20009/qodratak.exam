@@ -51,7 +51,7 @@ function PhoneField({ code, number, onCode, onNumber, disabled }: { code: string
     <div className="flex h-12 overflow-hidden rounded-xl border border-[#24202D]/15 bg-[#F8F6F1] focus-within:border-[#171723] focus-within:ring-4 focus-within:ring-[#171723]/10" dir="ltr">
       <div className="relative flex shrink-0 items-center border-r border-[#24202D]/10 bg-[#EEEAE2]">
         <select aria-label="رمز الدولة" value={code} onChange={(event) => onCode(event.target.value)} disabled={disabled} className="h-full appearance-none bg-transparent py-0 pl-7 pr-2 text-xs font-black text-[#4F4A58] outline-none">
-          {countries.map(([name, callingCode, flag]) => <option key={`${name}-${callingCode}`} value={callingCode}>{flag} {name} +{callingCode}</option>)}
+          {countries.map(([name, callingCode]) => <option key={`${name}-${callingCode}`} value={callingCode}>{name} +{callingCode}</option>)}
         </select>
         <ChevronDown className="pointer-events-none absolute left-2 h-3.5 w-3.5 text-[#8B8278]" />
       </div>
@@ -367,7 +367,7 @@ export function AuthModal({ open, mode, onClose, onModeChange }: { open: boolean
   return (
     <>
     <Dialog open={open} onOpenChange={(value) => !value && onClose()}>
-      <DialogContent className="max-h-[calc(100vh-20px)] overflow-hidden border-0 bg-[#FFFCF7] p-0 shadow-[0_25px_90px_rgba(23,23,35,.22)]" style={{ maxWidth: 460, borderRadius: 24, direction: "rtl" }}>
+      <DialogContent className="max-h-[calc(100vh-20px)] overflow-hidden border border-[#24202D]/15 bg-[#FFFCF7] p-0 shadow-none" style={{ maxWidth: 460, borderRadius: 24, direction: "rtl" }}>
         <div className="flex max-h-[calc(100vh-20px)] flex-col">
           <div className="flex items-center justify-between border-b border-[#24202D]/10 px-6 py-4">
             <div className="flex items-center gap-2.5">
@@ -541,7 +541,7 @@ export function AuthModal({ open, mode, onClose, onModeChange }: { open: boolean
       </DialogContent>
     </Dialog>
     <Dialog open={Boolean(deviceLimit)} onOpenChange={(value) => !value && setDeviceLimit(null)}>
-      <DialogContent className="border-0 bg-[#FFFCF7] p-0 shadow-[0_25px_90px_rgba(23,23,35,.22)]" style={{ maxWidth: 460, borderRadius: 24, direction: "rtl" }}>
+      <DialogContent className="border border-[#24202D]/15 bg-[#FFFCF7] p-0 shadow-none" style={{ maxWidth: 460, borderRadius: 24, direction: "rtl" }}>
         <div className="p-6 sm:p-8">
           <div className="flex items-start gap-3">
             <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-[#FFF1E9] text-[#B85A36]">
