@@ -27,3 +27,9 @@ localPort = 24678
 externalPort = 80
 
 [nix]
+
+[userenv]
+
+[userenv.shared]
+QIROX_API_BASE_URL = "https://qiroxstudio.online/api/v1"
+QIROX_PROJECT_ID = "69ce3ccc19655b861285386c"
