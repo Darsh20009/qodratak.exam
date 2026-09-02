@@ -95,6 +95,12 @@
   --sidebar-accent-foreground: 211 54% 11%;
 }
 
+/* الشعار الأبيض المرفق مخصص للخلفيات الداكنة، مع إبقاء نسخة النهار كما هي. */
+.dark img[src="/qodratak-logo-transparent.png"],
+.dark img[src="/qodratak-logo.png"] {
+  content: url("/qodratak-logo-dark.png");
+}
+
 /* ===============================================
    Base Layer Styles
    =============================================== */
