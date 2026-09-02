@@ -1388,40 +1388,71 @@ export async function registerRoutes(app: Express): Promise<Server> {
         completedAt: new Date().toISOString()
       };
 
-      // Save to file-based storage
+      // MongoDB is the durable source for modern accounts. The JSON branch is
+      // retained only for legacy numeric accounts.
       try {
-        const filePath = path.join(process.cwd(), 'artifacts/api-server/server/data/advanced_results.json');
-        let existingResults = [];
-
-        try {
-          const data = fs.readFileSync(filePath, 'utf8');
-          existingResults = JSON.parse(data);
-        } catch (error) {
-          // File doesn't exist, create empty array
-          existingResults = [];
+        const useMongoStorage =
+          mongoose.connection.readyState === 1 &&
+          mongoose.Types.ObjectId.isValid(userId);
+        let persistedResult: any = advancedResult;
+        if (useMongoStorage) {
+          const { TestResult, User } = await import('./mongodb/models');
+          const normalizedTestType =
+            String(testCategory).toLowerCase().includes('verbal') ||
+            String(testCategory).includes('لفظ')
+              ? 'verbal'
+              : String(testCategory).toLowerCase().includes('quant') ||
+                  String(testCategory).includes('كم')
+                ? 'quantitative'
+                : 'custom';
+          const normalizedDifficulty =
+            difficulty === 'beginner' || difficulty === 'advanced' || difficulty === 'mixed'
+              ? difficulty
+              : 'intermediate';
+          persistedResult = await TestResult.create({
+            userId,
+            testId: String(testId),
+            testName,
+            testType: normalizedTestType,
+            difficulty: normalizedDifficulty,
+            subcategory,
+            score: Number(correctAnswers || 0),
+            totalQuestions: Number(totalQuestions || 0),
+            correctAnswers: Number(correctAnswers || 0),
+            wrongAnswers: Number(wrongAnswers || 0),
+            skippedQuestions: Number(skippedQuestions || 0),
+            percentage: Number(percentage || 0),
+            timeTaken: Number(timeTaken || 0),
+            timeLimit: Number(timeLimit || 0),
+            pointsEarned: calculatedPoints,
+            isOfficial: false,
+            questionDetails: questionDetails || [],
+            weakAreas: weakAreas || [],
+            strongAreas: strongAreas || [],
+            completedAt: new Date(),
+          });
+          await User.findByIdAndUpdate(userId, {
+            $inc: { points: calculatedPoints, totalTestsTaken: 1 },
+          });
+        } else {
+          const filePath = path.join(process.cwd(), 'artifacts/api-server/server/data/advanced_results.json');
+          let existingResults: any[] = [];
+          try {
+            existingResults = JSON.parse(fs.readFileSync(filePath, 'utf8'));
+          } catch {}
+          existingResults.push({ id: Date.now(), ...advancedResult });
+          fs.mkdirSync(path.dirname(filePath), { recursive: true });
+          fs.writeFileSync(filePath, JSON.stringify(existingResults, null, 2));
         }
-
-        existingResults.push({
-          id: Date.now(),
-          ...advancedResult
-        });
-
-        // Ensure directory exists
-        const dirPath = path.dirname(filePath);
-        if (!fs.existsSync(dirPath)) {
-          fs.mkdirSync(dirPath, { recursive: true });
-        }
-
-        fs.writeFileSync(filePath, JSON.stringify(existingResults, null, 2));
 
         // Update user achievements and stats
         await updateUserAchievements(userId, advancedResult);
         await updatePerformanceAnalytics(userId, advancedResult);
 
         // تحديث نقاط المستخدم والتصنيف
-        try {
+        if (!useMongoStorage) try {
           const users = JSON.parse(fs.readFileSync("attached_assets/user.json", "utf-8"));
-          const userIndex = users.findIndex((u: any) => u.id === userId);
+          const userIndex = users.findIndex((u: any) => String(u.id) === userId);
 
           if (userIndex !== -1) {
             users[userIndex].points = (users[userIndex].points || 0) + calculatedPoints;
@@ -1450,6 +1481,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           success: true,
           message: "Advanced test result saved successfully",
           result: advancedResult,
+          persistedResultId: String(persistedResult?._id || persistedResult?.id || ''),
           pointsEarned: calculatedPoints,
           parentNotification,
         });
@@ -1466,9 +1498,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Get advanced test results for a user
-  app.get("/api/test-results/advanced/:userId", async (req: Request, res: Response) => {
+  app.get("/api/test-results/advanced/:userId", requireAuth, async (req: Request, res: Response) => {
     try {
-      const userId = parseInt(req.params.userId);
+      const userId = String(req.params.userId);
+      const sessionUserId = String((req.session as any)?.userId || '');
+      if (!sessionUserId || sessionUserId !== userId) {
+        return res.status(403).json({ message: "لا يمكنك قراءة نتائج حساب آخر" });
+      }
+
+      if (mongoose.connection.readyState === 1 && mongoose.Types.ObjectId.isValid(userId)) {
+        const { TestResult } = await import('./mongodb/models');
+        const results = await TestResult.find({
+          userId,
+          testType: { $in: ['verbal', 'quantitative', 'custom'] },
+        }).sort({ completedAt: -1 }).lean();
+        return res.json(results);
+      }
 
       const filePath = path.join(process.cwd(), 'artifacts/api-server/server/data/advanced_results.json');
       let existingResults = [];
@@ -1480,7 +1525,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         existingResults = [];
       }
 
-      const userResults = existingResults.filter((result: any) => result.userId === userId);
+      const userResults = existingResults.filter((result: any) => String(result.userId) === userId);
 
       res.json(userResults);
     } catch (error) {
@@ -4867,7 +4912,7 @@ app.post("/api/auth/register", async (req: Request, res: Response) => {
   });
 
   // Submit paper model result
-  app.post("/api/paper-model-result", async (req: Request, res: Response) => {
+  app.post("/api/paper-model-result", requireAuth, async (req: Request, res: Response) => {
     try {
       console.log('📝 Paper model result submission received');
 
@@ -4886,8 +4931,22 @@ app.post("/api/auth/register", async (req: Request, res: Response) => {
       try {
         console.log(`📝 Attempting to save result: userId=${userId}, modelId=${modelId}`);
 
-        // Check if result already exists
-        const existingResult = await storage.getPaperModelResultsByModel(userId, modelId);
+        const useMongoStorage =
+          mongoose.connection.readyState === 1 &&
+          mongoose.Types.ObjectId.isValid(String(userId));
+        let existingResult: any;
+        if (useMongoStorage) {
+          const { PaperModelResult } = await import('./mongodb/models');
+          existingResult = await PaperModelResult.findOne({
+            userId: String(userId),
+            modelId: Number(modelId),
+          }).lean();
+        } else {
+          existingResult = await storage.getPaperModelResultsByModel(
+            Number(userId),
+            Number(modelId),
+          );
+        }
 
         if (existingResult) {
           console.log(`⚠️ Result already exists for user ${userId}, model ${modelId}`);
@@ -4923,7 +4982,33 @@ app.post("/api/auth/register", async (req: Request, res: Response) => {
 
         console.log(`📊 Result data to save:`, resultData);
 
-        const newResult = await storage.createPaperModelResult(resultData);
+        let newResult: any;
+        if (useMongoStorage) {
+          const { PaperModelResult, TestResult, User } = await import('./mongodb/models');
+          newResult = await PaperModelResult.create(resultData);
+          await TestResult.create({
+            userId: String(userId),
+            testId: `paper-${modelId}`,
+            testName: `النموذج الورقي ${modelNumber}`,
+            testType: 'paper_model',
+            difficulty: 'mixed',
+            score: totalCorrect,
+            totalQuestions,
+            correctAnswers: totalCorrect,
+            wrongAnswers: totalQuestions - totalCorrect,
+            skippedQuestions: 0,
+            percentage: totalPercentage,
+            timeTaken: 0,
+            pointsEarned: 0,
+            isOfficial: false,
+            completedAt: new Date(),
+          });
+          await User.findByIdAndUpdate(String(userId), {
+            $inc: { totalTestsTaken: 1 },
+          });
+        } else {
+          newResult = await storage.createPaperModelResult(resultData);
+        }
 
         console.log(`✅ Successfully saved result for user ${userId}, model ${modelNumber}`);
         const parentNotification = await notifyLinkedParentsOfResult(String(userId), {
@@ -4961,8 +5046,23 @@ app.post("/api/auth/register", async (req: Request, res: Response) => {
       }
 
       const userId = (req.session as any).userId;
-      const results = await storage.getPaperModelResults(userId);
-      const averages = await storage.getPaperModelAverages(userId);
+      if (mongoose.connection.readyState === 1 && mongoose.Types.ObjectId.isValid(String(userId))) {
+        const { PaperModelResult } = await import('./mongodb/models');
+        const results = await PaperModelResult.find({ userId: String(userId) })
+          .sort({ completedAt: -1 })
+          .lean();
+        const averages = results.length
+          ? {
+              totalExams: results.length,
+              verbalAverage: results.reduce((sum, item) => sum + item.verbalPercentage, 0) / results.length,
+              quantitativeAverage: results.reduce((sum, item) => sum + item.quantitativePercentage, 0) / results.length,
+              totalAverage: results.reduce((sum, item) => sum + item.totalPercentage, 0) / results.length,
+            }
+          : { totalExams: 0, verbalAverage: 0, quantitativeAverage: 0, totalAverage: 0 };
+        return res.json({ results, averages });
+      }
+      const results = await storage.getPaperModelResults(Number(userId));
+      const averages = await storage.getPaperModelAverages(Number(userId));
 
       res.json({ results, averages });
     } catch (error) {
