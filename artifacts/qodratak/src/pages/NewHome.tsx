@@ -264,13 +264,13 @@ function LoggedInDashboard({ user }: { user: any }) {
       <div className="mx-auto max-w-6xl space-y-5 px-4 py-6 pb-24 lg:px-8">
         <header className="flex items-center justify-between gap-4">
           <div>
-            <p className="text-sm font-medium text-[#94A3B8]">{greeting}،</p>
-            <h1 className="mt-1 text-2xl font-black tracking-tight text-[#0D1B2A]">{firstName}</h1>
-            <p className="mt-1 text-sm text-[#64748B]">من هنا تبدأ خطوتك التالية في التدريب.</p>
+            <p className="text-sm font-medium text-muted-foreground">{greeting}،</p>
+            <h1 className="mt-1 text-2xl font-black tracking-tight text-foreground">{firstName}</h1>
+            <p className="mt-1 text-sm text-muted-foreground">من هنا تبدأ خطوتك التالية في التدريب.</p>
           </div>
           <Link href="/profile">
             <div
-              className="flex h-11 w-11 cursor-pointer items-center justify-center rounded-full bg-[#0D1B2A] text-base font-black text-white transition hover:bg-[#1E2938]"
+              className="flex h-11 w-11 cursor-pointer items-center justify-center rounded-full bg-primary text-base font-black text-primary-foreground transition hover:bg-primary/90"
               data-testid="link-profile-avatar"
             >
               {firstName.charAt(0)}
@@ -279,7 +279,7 @@ function LoggedInDashboard({ user }: { user: any }) {
           <Button
             type="button"
             onClick={() => setSubscriptionDialogOpen(true)}
-            className="hidden rounded-xl bg-[#F7F775] px-4 font-black text-[#0D1B2A] hover:bg-[#F7F775]/85 sm:flex"
+             className="hidden rounded-xl bg-[#F7F775] px-4 font-black text-[#0D1B2A] hover:bg-[#F7F775]/85 dark:bg-primary dark:text-primary-foreground dark:hover:bg-primary/90 sm:flex"
           >
             <CrownIcon className="ml-2 h-4 w-4" />
             تمديد الاشتراك
@@ -288,50 +288,50 @@ function LoggedInDashboard({ user }: { user: any }) {
 
         <section>
           <div className="mb-3">
-            <h2 className="text-xl font-black text-[#0D1B2A]">مساراتك التعليمية</h2>
-            <p className="mt-1 text-sm text-[#64748B]">اختر القسم، ثم انتقل إلى التأسيس أو المحوسب.</p>
+            <h2 className="text-xl font-black text-foreground">مساراتك التعليمية</h2>
+            <p className="mt-1 text-sm text-muted-foreground">اختر القسم، ثم انتقل إلى التأسيس أو المحوسب.</p>
           </div>
           <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
             {STUDENT_PROGRAMS.map((program) => (
               <Link key={program.href} href={program.href}>
-                <div className="group h-full rounded-2xl border border-[#E5E7EB] bg-white p-4 transition hover:-translate-y-0.5 hover:border-[#0D1B2A]/35 hover:shadow-sm">
+                <div className="group h-full rounded-2xl border border-border bg-card p-4 transition hover:-translate-y-0.5 hover:border-primary/35 hover:shadow-sm">
                   <div className="flex items-center justify-between gap-2">
-                    <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#E5E7EB] text-[#0D1B2A]">
+                    <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-muted text-foreground">
                       <program.icon className="h-5 w-5" />
                     </div>
-                    <ChevronLeft className="h-4 w-4 text-[#94A3B8] transition group-hover:text-[#0D1B2A]" />
+                    <ChevronLeft className="h-4 w-4 text-muted-foreground transition group-hover:text-foreground" />
                   </div>
-                  <p className="mt-4 text-base font-black text-[#0D1B2A]">{program.title}</p>
-                  <p className="mt-0.5 text-xs font-bold text-[#94A3B8]">{program.english}</p>
-                  <p className="mt-2 text-xs leading-5 text-[#64748B]">{program.description}</p>
+                  <p className="mt-4 text-base font-black text-foreground">{program.title}</p>
+                  <p className="mt-0.5 text-xs font-bold text-muted-foreground">{program.english}</p>
+                  <p className="mt-2 text-xs leading-5 text-muted-foreground">{program.description}</p>
                 </div>
               </Link>
             ))}
           </div>
         </section>
 
-        <section className="rounded-2xl border border-[#E5E7EB] bg-white p-5">
+        <section className="rounded-2xl border border-border bg-card p-5">
           <div className="flex items-start justify-between gap-3">
             <div>
-              <p className="text-sm font-bold text-[#64748B]">هدف اليوم</p>
-              <p className="mt-2 text-3xl font-black text-[#0D1B2A]">
-                {dailyDone} <span className="text-base font-bold text-[#94A3B8]">/ {dailyTarget} سؤال</span>
+              <p className="text-sm font-bold text-muted-foreground">هدف اليوم</p>
+              <p className="mt-2 text-3xl font-black text-foreground">
+                {dailyDone} <span className="text-base font-bold text-muted-foreground">/ {dailyTarget} سؤال</span>
               </p>
             </div>
-            <div className="rounded-xl bg-[#E5E7EB] p-2.5 text-[#0D1B2A]">
+            <div className="rounded-xl bg-muted p-2.5 text-foreground">
               <Target className="h-5 w-5" />
             </div>
           </div>
-          <div className="mt-6 h-2 rounded-full bg-[#E5E7EB]">
-            <div className="h-full rounded-full bg-[#0D1B2A] transition-all duration-700" style={{ width: `${dailyPct}%` }} />
+          <div className="mt-6 h-2 rounded-full bg-muted">
+            <div className="h-full rounded-full bg-primary transition-all duration-700" style={{ width: `${dailyPct}%` }} />
           </div>
           <div className="mt-3 flex items-center justify-between gap-3 text-xs">
-            <span className="font-bold text-[#64748B]">{dailyPct}% مكتمل</span>
-            <span className="text-[#94A3B8]">{dailyPct >= 100 ? "اكتمل هدفك اليوم" : "واصل التدريب"}</span>
+            <span className="font-bold text-muted-foreground">{dailyPct}% مكتمل</span>
+            <span className="text-muted-foreground">{dailyPct >= 100 ? "اكتمل هدفك اليوم" : "واصل التدريب"}</span>
           </div>
           {prediction && (
-            <div className="mt-5 flex items-center justify-between border-t border-[#E5E7EB] pt-4">
-              <span className="text-xs font-bold text-[#64748B]">متوسطك المتوقع</span>
+            <div className="mt-5 flex items-center justify-between border-t border-border pt-4">
+              <span className="text-xs font-bold text-muted-foreground">متوسطك المتوقع</span>
               <span className={`text-lg font-black ${scoreColor}`}>{prediction.predictedScore}%</span>
             </div>
           )}
@@ -344,13 +344,13 @@ function LoggedInDashboard({ user }: { user: any }) {
             { label: "الاختبارات", value: prediction?.totalTests ?? "—", icon: BarChart2, href: "/profile" },
           ].map((stat, index) => (
             <Link key={stat.label} href={stat.href}>
-              <div className="flex items-center gap-3 rounded-2xl border border-[#E5E7EB] bg-white p-4 transition hover:border-[#0D1B2A]/30 hover:shadow-sm" data-testid={`stat-${index}`}>
-                <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-[#E5E7EB] text-[#0D1B2A]">
+              <div className="flex items-center gap-3 rounded-2xl border border-border bg-card p-4 transition hover:border-primary/30 hover:shadow-sm" data-testid={`stat-${index}`}>
+                <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-muted text-foreground">
                   <stat.icon className="h-4 w-4" />
                 </div>
                 <div className="min-w-0">
-                  <p className="truncate text-lg font-black text-[#0D1B2A]">{stat.value}</p>
-                  <p className="truncate text-[11px] font-bold text-[#94A3B8]">{stat.label}</p>
+                  <p className="truncate text-lg font-black text-foreground">{stat.value}</p>
+                  <p className="truncate text-[11px] font-bold text-muted-foreground">{stat.label}</p>
                 </div>
               </div>
             </Link>
@@ -359,21 +359,21 @@ function LoggedInDashboard({ user }: { user: any }) {
 
         <section>
           <div className="mb-3 flex items-center justify-between">
-            <h2 className="text-lg font-black text-[#0D1B2A]">الوصول السريع</h2>
-            <Link href="/question-bank" className="text-xs font-bold text-[#64748B] hover:text-[#0D1B2A]">عرض الكل</Link>
+            <h2 className="text-lg font-black text-foreground">الوصول السريع</h2>
+            <Link href="/question-bank" className="text-xs font-bold text-muted-foreground hover:text-foreground">عرض الكل</Link>
           </div>
           <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
             {SECONDARY_TOOLS.slice(0, 4).map((tool) => (
               <Link key={tool.href} href={tool.href}>
-                <div className="flex items-center gap-3 rounded-2xl border border-[#E5E7EB] bg-white p-4 transition hover:-translate-y-0.5 hover:border-[#0D1B2A]/30 hover:shadow-sm">
-                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#E5E7EB] text-[#0D1B2A]">
+                <div className="flex items-center gap-3 rounded-2xl border border-border bg-card p-4 transition hover:-translate-y-0.5 hover:border-primary/30 hover:shadow-sm">
+                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-muted text-foreground">
                     <tool.icon className="h-5 w-5" />
                   </div>
                   <div className="min-w-0 flex-1">
-                    <p className="truncate text-sm font-black text-[#0D1B2A]">{tool.title}</p>
-                    <p className="mt-0.5 text-[11px] font-bold text-[#94A3B8]">{tool.badge}</p>
+                    <p className="truncate text-sm font-black text-foreground">{tool.title}</p>
+                    <p className="mt-0.5 text-[11px] font-bold text-muted-foreground">{tool.badge}</p>
                   </div>
-                  <ChevronLeft className="h-4 w-4 shrink-0 text-[#94A3B8]" />
+                  <ChevronLeft className="h-4 w-4 shrink-0 text-muted-foreground" />
                 </div>
               </Link>
             ))}
@@ -382,17 +382,17 @@ function LoggedInDashboard({ user }: { user: any }) {
 
         {!isPremium && (
             <button type="button" onClick={() => setSubscriptionDialogOpen(true)} className="w-full text-right">
-            <div className="flex items-center justify-between gap-4 rounded-2xl border border-[#F7F775] bg-[#FFFFE4] p-4 transition hover:border-[#0D1B2A]/30">
+            <div className="flex items-center justify-between gap-4 rounded-2xl border border-[#F7F775] bg-[#FFFFE4] p-4 transition hover:border-[#0D1B2A]/30 dark:border-primary/40 dark:bg-primary/10">
               <div className="flex items-center gap-3">
-                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#F7F775] text-[#0D1B2A]">
+                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#F7F775] text-[#0D1B2A] dark:bg-primary dark:text-primary-foreground">
                   <CrownIcon className="h-5 w-5" />
                 </div>
                 <div>
-                  <p className="text-sm font-black text-[#0D1B2A]">اكتشف خطط قدراتك</p>
-                  <p className="mt-0.5 text-xs font-medium text-[#64748B]">اختر الخطة المناسبة لرحلتك التعليمية</p>
+                  <p className="text-sm font-black text-foreground">اكتشف خطط قدراتك</p>
+                  <p className="mt-0.5 text-xs font-medium text-muted-foreground">اختر الخطة المناسبة لرحلتك التعليمية</p>
                 </div>
               </div>
-              <ChevronLeft className="h-5 w-5 text-[#0D1B2A]" />
+              <ChevronLeft className="h-5 w-5 text-foreground" />
             </div>
           </button>
         )}

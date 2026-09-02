@@ -183,6 +183,34 @@
   animation: none !important;
 }
 
+/* Keep legacy page components readable when the shared dark theme is active.
+   These selectors only apply inside the app surface, so embedded previews and
+   unrelated artifacts keep their own palettes. */
+.dark .qodratak-page-surface [class~="bg-white"],
+.dark .qodratak-page-surface [class~="bg-white/70"],
+.dark .qodratak-page-surface [class~="bg-white/80"],
+.dark .qodratak-page-surface [class~="bg-white/90"],
+.dark .qodratak-page-surface [class~="bg-[#FFFCF7]"] {
+  background-color: hsl(var(--card)) !important;
+}
+
+.dark .qodratak-page-surface [class~="text-black"],
+.dark .qodratak-page-surface [class~="text-gray-900"],
+.dark .qodratak-page-surface [class~="text-gray-800"],
+.dark .qodratak-page-surface [class~="text-[#0D1B2A]"],
+.dark .qodratak-page-surface [class~="text-[#171723]"],
+.dark .qodratak-page-surface [class~="text-[#172337]"] {
+  color: hsl(var(--foreground)) !important;
+}
+
+.dark .qodratak-page-surface [class~="text-gray-500"],
+.dark .qodratak-page-surface [class~="text-gray-400"],
+.dark .qodratak-page-surface [class~="text-[#64748B]"],
+.dark .qodratak-page-surface [class~="text-[#5E7180]"],
+.dark .qodratak-page-surface [class~="text-[#94A3B8]"] {
+  color: hsl(var(--muted-foreground)) !important;
+}
+
 .dark body {
   background-color: hsl(var(--background)) !important;
 }
