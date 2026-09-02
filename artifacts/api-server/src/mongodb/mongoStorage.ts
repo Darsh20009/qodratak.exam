@@ -28,8 +28,12 @@ export class MongoStorage {
   private async seedDefaultAdmin() {
     const existingAdmin = await Admin.findOne({ username: 'admin' });
     const adminEmail = process.env.ADMIN_EMAIL || 'qoudratak@gmail.com';
-    const initialAdminPassword = process.env.ADMIN_INITIAL_PASSWORD || 'admin123';
+    const initialAdminPassword = process.env.ADMIN_INITIAL_PASSWORD;
     if (!existingAdmin) {
+      if (!initialAdminPassword) {
+        console.warn('⚠️ Default admin was not created because ADMIN_INITIAL_PASSWORD is not configured');
+        return;
+      }
       const hashedPassword = await bcrypt.hash(initialAdminPassword, 10);
       await Admin.create({
         username: 'admin',

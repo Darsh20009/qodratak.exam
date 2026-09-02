@@ -1,3 +1,4 @@
 - [Legacy API migration strategy](legacy-api-migration.md) — preserve Qodratak’s custom fetch layer and complex route startup wiring during future workspace changes.
 - [Deployment assets and Git LFS](deployment-assets-lfs.md) — Render must not depend on quota-limited LFS objects for files required during repository checkout.
 - [SPA metadata ownership](spa-metadata-ownership.md) — keep canonical and robots under one route-level owner when React Helmet coexists with static fallback metadata.
+- [MongoDB data preservation](mongodb-data-preservation.md) — treat the connected MongoDB as an existing dataset; future migrations must be additive and non-destructive.

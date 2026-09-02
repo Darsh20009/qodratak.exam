@@ -1001,10 +1001,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/test-results", requireAuth, async (req: Request, res: Response) => {
     try {
       const { userId, testType, difficulty, score, totalQuestions, timeTaken, skippedQuestions, questionIds } = req.body;
-      const sessionUserId = (req as any).session?.userId;
+      const sessionUserId = String((req as any).session?.userId || '');
 
       if (!userId || !testType || !difficulty || score === undefined || !totalQuestions) {
         return res.status(400).json({ message: "Missing required fields" });
+      }
+      if (!sessionUserId || String(userId) !== sessionUserId) {
+        return res.status(403).json({ message: "لا يمكنك حفظ نتيجة لحساب آخر" });
       }
 
       // نظام النقاط الموحد: +10 صح، -1 خطأ، -0.5 متروك (يمكن أن تكون سالبة)
@@ -1021,16 +1024,43 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       const percentage = (score / totalQuestions) * 100;
 
-      const result = await storage.createTestResult({
-        userId,
-        testType,
-        difficulty,
-        score,
-        totalQuestions,
-        pointsEarned: totalPoints
-      });
-      void notifyLinkedParentsOfResult(sessionUserId || userId, {
-        ...result,
+      const useMongoStorage =
+        mongoose.connection.readyState === 1 &&
+        mongoose.Types.ObjectId.isValid(sessionUserId);
+      let result: any;
+      if (useMongoStorage) {
+        result = await mongoStorage.createTestResult({
+          userId: sessionUserId,
+          testType,
+          difficulty,
+          score,
+          totalQuestions,
+          correctAnswers,
+          wrongAnswers,
+          skippedQuestions: skipped,
+          percentage,
+          timeTaken: Number(timeTaken) || 0,
+          pointsEarned: totalPoints,
+          isOfficial: false,
+        } as any);
+      } else {
+        const numericUserId = Number(sessionUserId);
+        if (!Number.isFinite(numericUserId)) {
+          return res.status(400).json({ message: "معرّف المستخدم غير صالح" });
+        }
+        result = await storage.createTestResult({
+          userId: numericUserId,
+          testType,
+          difficulty,
+          score,
+          totalQuestions,
+          pointsEarned: totalPoints
+        });
+      }
+      const serializedResult =
+        typeof result?.toObject === 'function' ? result.toObject() : result;
+      void notifyLinkedParentsOfResult(sessionUserId, {
+        ...serializedResult,
         testType,
         score,
         totalQuestions,
@@ -1045,9 +1075,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       // تحديث نقاط المستخدم
-      try {
+      if (!useMongoStorage) try {
         const users = JSON.parse(fs.readFileSync("attached_assets/user.json", "utf-8"));
-        const userIndex = users.findIndex((u: any) => u.id === userId);
+        const userIndex = users.findIndex((u: any) => String(u.id) === sessionUserId);
 
         if (userIndex !== -1) {
           users[userIndex].points = (users[userIndex].points || 0) + totalPoints;
@@ -1085,14 +1115,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
         } as any);
 
         return res.status(201).json({
-          ...result,
+          ...serializedResult,
           pointsEarned: totalPoints,
           badges
         });
       } catch (error) {
         console.error("Error checking badges:", error);
         return res.status(201).json({
-          ...result,
+          ...serializedResult,
           pointsEarned: totalPoints
         });
       }
