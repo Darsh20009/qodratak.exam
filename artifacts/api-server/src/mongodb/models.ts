@@ -1,6 +1,6 @@
 import mongoose, { Schema, Document } from 'mongoose';
 
-export type UserRole = 'student' | 'teacher' | 'institution_admin' | 'system_admin' | 'support_admin';
+export type UserRole = 'student' | 'parent' | 'teacher' | 'institution_admin' | 'system_admin' | 'support_admin';
 
 export interface IUser extends Document {
   username: string;
@@ -46,6 +46,7 @@ export interface IUser extends Document {
   telegramId?: string;
   telegramChatId?: number;
   whatsappPhone?: string;
+  childIds?: string[];
   notifExamReminder?: boolean;
   notifWeeklyReport?: boolean;
   weeklyReportLastSent?: Date;
@@ -130,7 +131,7 @@ const userSchema = new Schema<IUser>({
   email: { type: String, sparse: true, index: true },
   phone: { type: String, sparse: true },
   fullName: { type: String },
-  role: { type: String, enum: ['student', 'teacher', 'institution_admin', 'system_admin', 'support_admin'], default: 'student' },
+  role: { type: String, enum: ['student', 'parent', 'teacher', 'institution_admin', 'system_admin', 'support_admin'], default: 'student' },
   institutionId: { type: Schema.Types.ObjectId, ref: 'Institution' },
   points: { type: Number, default: 0 },
   level: { type: Number, default: 1 },
@@ -167,6 +168,7 @@ const userSchema = new Schema<IUser>({
   telegramId: { type: String, sparse: true },
   telegramChatId: { type: Number },
   whatsappPhone: { type: String },
+  childIds: { type: [String], default: [] },
   notifExamReminder: { type: Boolean, default: true },
   notifWeeklyReport: { type: Boolean, default: true },
   weeklyReportLastSent: { type: Date },

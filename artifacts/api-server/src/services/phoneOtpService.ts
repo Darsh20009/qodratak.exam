@@ -1,7 +1,7 @@
 import crypto from "crypto";
 import { sendWhatsAppText } from "./whatsappService";
 
-type OtpPurpose = "signup" | "login";
+export type OtpPurpose = "signup" | "login" | "parent_signup" | "link_child";
 
 interface OtpRecord {
   digest: string;

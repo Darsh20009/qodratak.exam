@@ -159,6 +159,7 @@ import TeacherSystemPage from "@/pages/TeacherSystemPage";
 import SecuritySettingsPage from "@/pages/SecuritySettingsPage";
 import NotificationsPage from "@/pages/NotificationsPage";
 import InstitutionPortalPage from "@/pages/InstitutionPortalPage";
+import ParentDashboardPage from "@/pages/ParentDashboardPage";
 
 installAdminFetchBridge();
 
@@ -740,6 +741,11 @@ function Router({ splashDone }: { splashDone: boolean }) {
       {splashDone && <RotateDevicePrompt />}
       <RouteSEO />
       <Switch>
+      <Route path="/parent-dashboard">
+        <ProtectedRoute>
+          <ParentDashboardPage />
+        </ProtectedRoute>
+      </Route>
       {/* Multiplayer routes - no sidebar needed */}
       <Route path="/multiplayer">
         {() => <MainLayout><MultiplayerPage /></MainLayout>}
@@ -753,6 +759,7 @@ function Router({ splashDone }: { splashDone: boolean }) {
         {() => {
           const _u = (() => { try { return JSON.parse(localStorage.getItem('user') || '{}'); } catch { return {}; } })();
           const _loggedIn = !!(_u?.id || _u?._id);
+          if (_loggedIn && _u?.role === 'parent') return <ParentDashboardPage />;
           return _loggedIn ? <MainLayout><Home /></MainLayout> : <LandingPage />;
         }}
       </Route>

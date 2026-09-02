@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 import { useLocation } from "wouter";
-import { CheckCircle2, ChevronDown, Eye, EyeOff, KeyRound, Loader2, Lock, Mail, MessageCircle, Phone, User, X } from "lucide-react";
+import { CheckCircle2, ChevronDown, Eye, EyeOff, KeyRound, Loader2, Lock, Mail, MessageCircle, Phone, User, UsersRound, X } from "lucide-react";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
 import { getDeviceId } from "@/lib/device";
@@ -8,6 +8,7 @@ import { setAdminAccessToken } from "@/lib/adminSession";
 
 type AuthMode = "login" | "signup";
 type LoginMethod = "phone" | "email";
+type AccountType = "student" | "parent" | null;
 
 const countries = [
   ["السعودية", "966", "🇸🇦"], ["الإمارات", "971", "🇦🇪"], ["الكويت", "965", "🇰🇼"], ["البحرين", "973", "🇧🇭"],
@@ -78,6 +79,9 @@ export function AuthModal({ open, mode, onClose, onModeChange }: { open: boolean
   const [, setLocation] = useLocation();
   const { toast } = useToast();
   const [method, setMethod] = useState<LoginMethod>("phone");
+  const [accountType, setAccountType] = useState<AccountType>(null);
+
+  // Student & General Login state
   const [countryCode, setCountryCode] = useState("966");
   const [phone, setPhone] = useState("");
   const [otp, setOtp] = useState("");
@@ -91,8 +95,26 @@ export function AuthModal({ open, mode, onClose, onModeChange }: { open: boolean
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
 
+  // Parent specific state
+  const [parentName, setParentName] = useState("");
+  const [parentCountry, setParentCountry] = useState("966");
+  const [parentPhone, setParentPhone] = useState("");
+  const [parentOtp, setParentOtp] = useState("");
+  const [parentOtpSent, setParentOtpSent] = useState(false);
+  const [parentToken, setParentToken] = useState("");
+
+  // Child adding state (for Parent flow)
+  const [childCountry, setChildCountry] = useState("966");
+  const [childPhone, setChildPhone] = useState("");
+  const [childOtp, setChildOtp] = useState("");
+  const [childOtpSent, setChildOtpSent] = useState(false);
+  const [verifiedChildren, setVerifiedChildren] = useState<{phone: string, verificationToken: string}[]>([]);
+
   const resetFlow = (nextMode?: AuthMode) => {
     setOtp(""); setOtpSent(false); setPhoneToken(""); setFullName(""); setUsername(""); setEmail(""); setPassword(""); setConfirmPassword(""); setLoading(false);
+    setAccountType(null);
+    setParentName(""); setParentPhone(""); setParentOtp(""); setParentOtpSent(false); setParentToken("");
+    setChildPhone(""); setChildOtp(""); setChildOtpSent(false); setVerifiedChildren([]);
     if (nextMode) onModeChange(nextMode);
   };
 
@@ -106,7 +128,11 @@ export function AuthModal({ open, mode, onClose, onModeChange }: { open: boolean
     localStorage.setItem("isLoggedIn", "true");
     window.dispatchEvent(new CustomEvent("userLoggedIn", { detail: user }));
     onClose();
-    setLocation(user.role === "institution_admin" ? "/institution" : "/");
+    if (user.role === "parent") {
+      setLocation("/parent-dashboard");
+    } else {
+      setLocation(user.role === "institution_admin" ? "/institution" : "/");
+    }
   };
 
   const requestOrVerifyPhone = async () => {
@@ -132,15 +158,59 @@ export function AuthModal({ open, mode, onClose, onModeChange }: { open: boolean
     }
   };
 
-  const submit = async (event: React.FormEvent) => {
-    event.preventDefault();
+  const requestChildPhone = async () => {
     setLoading(true);
     try {
-      if (mode === "login" && method === "phone") {
-        await requestOrVerifyPhone();
-        return;
-      }
+      const number = fullPhone(childCountry, childPhone);
+      if (childPhone.replace(/\D/g, "").length < 6) throw new Error("أدخل رقم جوال صحيحاً");
+      if (verifiedChildren.some(c => c.phone === number)) throw new Error("تمت إضافة هذا الرقم مسبقاً");
+      const response = await fetch("/api/parent/phone-otp/request", {
+        method: "POST", credentials: "include", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ phone: number, kind: "child" }),
+      });
+      const result = await response.json();
+      if (!response.ok) throw new Error(result.error || result.message || "تعذر إرسال الرمز للطالب");
+      setChildOtpSent(true);
+      toast({ title: "تم إرسال الرمز", description: "أدخل الرمز الذي وصل إلى جوال الطالب." });
+    } catch (error: any) {
+      toast({ title: "تنبيه", description: error.message, variant: "destructive" });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const verifyChildPhone = async () => {
+    setLoading(true);
+    try {
+      const number = fullPhone(childCountry, childPhone);
+      const response = await fetch("/api/parent/phone-otp/verify", {
+        method: "POST", credentials: "include", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ phone: number, otp: childOtp, kind: "child" }),
+      });
+      const result = await response.json();
+      if (!response.ok) throw new Error(result.error || result.message || "تعذر التحقق من رمز الطالب");
+      setVerifiedChildren([...verifiedChildren, { phone: number, verificationToken: result.verificationToken }]);
+      setChildPhone("");
+      setChildOtp("");
+      setChildOtpSent(false);
+      toast({ title: "تم تأكيد الرقم", description: "تم ربط حساب الطالب بنجاح." });
+    } catch (error: any) {
+      toast({ title: "تنبيه", description: error.message, variant: "destructive" });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const submit = async (event: React.FormEvent) => {
+    event.preventDefault();
+    if (loading) return;
+    setLoading(true);
+    try {
       if (mode === "login") {
+        if (method === "phone") {
+          await requestOrVerifyPhone();
+          return;
+        }
         const response = await fetch("/api/auth/login", {
           method: "POST", credentials: "include", headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ identifier: email, password, deviceId: getDeviceId() }),
@@ -151,25 +221,74 @@ export function AuthModal({ open, mode, onClose, onModeChange }: { open: boolean
         await finishLogin(result);
         return;
       }
-      if (!phoneToken) {
-        await requestOrVerifyPhone();
-        return;
+
+      // signup - student flow
+      if (accountType === "student") {
+        if (!phoneToken) {
+          await requestOrVerifyPhone();
+          return;
+        }
+        if (fullName.trim().split(/\s+/).length < 2) throw new Error("أدخل الاسم الثنائي");
+        if (username.trim().length < 3) throw new Error("أدخل اسم مستخدم من 3 أحرف على الأقل");
+        if (email && !email.includes("@")) throw new Error("أدخل بريداً إلكترونياً صحيحاً أو اتركه فارغاً");
+        if (password.length < 6) throw new Error("كلمة المرور 6 أحرف على الأقل");
+        if (password !== confirmPassword) throw new Error("كلمتا المرور غير متطابقتين");
+        const number = fullPhone(countryCode, phone);
+        const response = await fetch("/api/auth/register-multi", {
+          method: "POST", credentials: "include", headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ fullName: fullName.trim(), username: username.trim(), email: email ? email.toLowerCase() : undefined, phone: number, whatsapp: number, password, role: "student", phoneVerificationToken: phoneToken }),
+        });
+        const result = await response.json();
+        if (!response.ok) throw new Error(result.message || "تعذر إنشاء الحساب");
+        await finishLogin(result);
       }
-      if (fullName.trim().split(/\s+/).length < 2) throw new Error("أدخل الاسم الثنائي");
-      if (username.trim().length < 3) throw new Error("أدخل اسم مستخدم من 3 أحرف على الأقل");
-      if (email && !email.includes("@")) throw new Error("أدخل بريداً إلكترونياً صحيحاً أو اتركه فارغاً");
-      if (password.length < 6) throw new Error("كلمة المرور 6 أحرف على الأقل");
-      if (password !== confirmPassword) throw new Error("كلمتا المرور غير متطابقتين");
-      const number = fullPhone(countryCode, phone);
-      const response = await fetch("/api/auth/register-multi", {
-        method: "POST", credentials: "include", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ fullName: fullName.trim(), username: username.trim(), email: email ? email.toLowerCase() : undefined, phone: number, whatsapp: number, password, role: "student", phoneVerificationToken: phoneToken }),
-      });
-      const result = await response.json();
-      if (!response.ok) throw new Error(result.message || "تعذر إنشاء الحساب");
-      await finishLogin(result);
+      // signup - parent flow
+      else if (accountType === "parent") {
+        if (!parentToken) {
+          if (!parentOtpSent) {
+            if (parentName.trim().split(/\s+/).length < 2) throw new Error("أدخل الاسم الثنائي");
+            const number = fullPhone(parentCountry, parentPhone);
+            if (parentPhone.replace(/\D/g, "").length < 6) throw new Error("أدخل رقم جوال صحيحاً");
+            const response = await fetch("/api/parent/phone-otp/request", {
+              method: "POST", credentials: "include", headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ phone: number, kind: "parent" }),
+            });
+            const result = await response.json();
+            if (!response.ok) throw new Error(result.error || result.message || "تعذر إرسال الرمز");
+            setParentOtpSent(true);
+            toast({ title: "تم إرسال الرمز", description: "أدخل الرمز الذي وصلك عبر واتساب." });
+          } else {
+            const number = fullPhone(parentCountry, parentPhone);
+            const response = await fetch("/api/parent/phone-otp/verify", {
+              method: "POST", credentials: "include", headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ phone: number, otp: parentOtp, kind: "parent" }),
+            });
+            const result = await response.json();
+            if (!response.ok) throw new Error(result.error || result.message || "تعذر التحقق من الرمز");
+            setParentToken(result.verificationToken);
+            toast({ title: "تم تأكيد الرقم", description: "يمكنك الآن إضافة أبنائك." });
+          }
+        } else {
+          if (verifiedChildren.length === 0) {
+            throw new Error("يجب إضافة طالب واحد على الأقل");
+          }
+          const number = fullPhone(parentCountry, parentPhone);
+          const response = await fetch("/api/parent/register", {
+            method: "POST", credentials: "include", headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              fullName: parentName.trim(),
+              phone: number,
+              parentVerificationToken: parentToken,
+              children: verifiedChildren
+            }),
+          });
+          const result = await response.json();
+          if (!response.ok) throw new Error(result.error || result.message || "تعذر إنشاء حساب ولي الأمر");
+          await finishLogin(result);
+        }
+      }
     } catch (error: any) {
-      toast({ title: mode === "login" ? "تعذر تسجيل الدخول" : "تعذر إنشاء الحساب", description: error.message, variant: "destructive" });
+      toast({ title: mode === "login" ? "تعذر تسجيل الدخول" : "تنبيه", description: error.message, variant: "destructive" });
     } finally {
       setLoading(false);
     }
@@ -180,7 +299,13 @@ export function AuthModal({ open, mode, onClose, onModeChange }: { open: boolean
       <DialogContent className="max-h-[calc(100vh-20px)] overflow-hidden border-0 bg-[#FFFCF7] p-0 shadow-[0_25px_90px_rgba(23,23,35,.22)]" style={{ maxWidth: 460, borderRadius: 24, direction: "rtl" }}>
         <div className="flex max-h-[calc(100vh-20px)] flex-col">
           <div className="flex items-center justify-between border-b border-[#24202D]/10 px-6 py-4">
-            <div className="flex items-center gap-2.5"><img src="/qodratak-logo-transparent.png" alt="قدراتك" className="h-10 w-10 object-contain" /><div><p className="text-sm font-black text-[#171723]">قدراتك</p><p className="text-[11px] text-[#8B8278]">{mode === "login" ? "دخول سريع وآمن" : "حسابك في دقائق"}</p></div></div>
+            <div className="flex items-center gap-2.5">
+              <img src="/qodratak-logo-transparent.png" alt="قدراتك" className="h-10 w-10 object-contain" />
+              <div>
+                <p className="text-sm font-black text-[#171723]">قدراتك</p>
+                <p className="text-[11px] text-[#8B8278]">{mode === "login" ? "دخول سريع وآمن" : "حسابك في دقائق"}</p>
+              </div>
+            </div>
             <button onClick={onClose} aria-label="إغلاق" className="rounded-lg p-2 text-[#8B8278] hover:bg-[#24202D]/5"><X className="h-4 w-4" /></button>
           </div>
           <div className="grid grid-cols-2 border-b border-[#24202D]/10 bg-[#F7F4EE] p-1.5">
@@ -189,7 +314,30 @@ export function AuthModal({ open, mode, onClose, onModeChange }: { open: boolean
           </div>
           <form onSubmit={submit} className="min-h-0 overflow-y-auto px-6 py-5 sm:px-8">
             <h2 className="text-xl font-black text-[#171723]">{mode === "login" ? "أهلًا بعودتك" : "ابدأ رحلتك الآن"}</h2>
-            <p className="mt-1 text-xs leading-5 text-[#6B625B]">{mode === "login" ? "الجوال هو الطريقة الأسرع، ويمكنك استخدام البريد أيضاً." : "أدخل بيانات بسيطة، ثم أكّد رقمك عبر واتساب."}</p>
+            <p className="mt-1 text-xs leading-5 text-[#6B625B]">{mode === "login" ? "الجوال هو الطريقة الأسرع، ويمكنك استخدام البريد أيضاً." : (!accountType ? "اختر نوع الحساب الذي ترغب بإنشائه." : "أدخل بيانات بسيطة، ثم أكّد رقمك عبر واتساب.")}</p>
+
+            {mode === "signup" && !accountType && (
+              <div className="grid gap-3 sm:grid-cols-2 mt-6">
+                <button
+                  type="button"
+                  onClick={() => setAccountType("student")}
+                  className="flex flex-col items-center justify-center p-6 border-2 border-[#24202D]/10 rounded-2xl hover:border-[#171723] hover:bg-[#F8F6F1] transition-all"
+                >
+                  <User className="h-8 w-8 text-[#171723] mb-3" />
+                  <span className="text-base font-black text-[#171723]">طالب</span>
+                  <span className="text-xs text-[#8B8278] mt-1 text-center">للتدريب والاختبارات</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setAccountType("parent")}
+                  className="flex flex-col items-center justify-center p-6 border-2 border-[#24202D]/10 rounded-2xl hover:border-[#398B79] hover:bg-[#EFF8F4] transition-all"
+                >
+                  <UsersRound className="h-8 w-8 text-[#398B79] mb-3" />
+                  <span className="text-base font-black text-[#171723]">ولي أمر</span>
+                  <span className="text-xs text-[#8B8278] mt-1 text-center">لمتابعة الأبناء</span>
+                </button>
+              </div>
+            )}
 
             {mode === "login" && method === "email" ? (
               <div className="mt-5 space-y-3">
@@ -200,18 +348,17 @@ export function AuthModal({ open, mode, onClose, onModeChange }: { open: boolean
                   <button type="button" onClick={() => setShowPassword((value) => !value)} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[#8B8278]">{showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}</button>
                 </div>
               </div>
-            ) : (
+            ) : (mode === "login" || (mode === "signup" && accountType)) ? (
               <div className="mt-5 space-y-3">
-                {mode === "signup" && !otpSent && !phoneToken && <label className="block"><span className="mb-1.5 flex items-center gap-1.5 text-xs font-black text-[#4F4A58]"><Phone className="h-3.5 w-3.5" /> رقم الجوال</span><PhoneField code={countryCode} number={phone} onCode={setCountryCode} onNumber={setPhone} /></label>}
-                {mode === "signup" && otpSent && !phoneToken && <div className="relative"><KeyRound className="pointer-events-none absolute right-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-[#8B8278]" /><input required inputMode="numeric" autoComplete="one-time-code" value={otp} onChange={(event) => setOtp(event.target.value.replace(/\D/g, "").slice(0, 6))} placeholder="رمز واتساب المكون من 6 أرقام" dir="ltr" className="h-12 w-full rounded-xl border border-[#24202D]/15 bg-[#F8F6F1] px-11 text-center text-sm tracking-[.2em] outline-none focus:border-[#171723]" /></div>}
-                {mode === "signup" && phoneToken && <>
+                {/* Student Signup Fields */}
+                {mode === "signup" && accountType === "student" && !otpSent && !phoneToken && <label className="block"><span className="mb-1.5 flex items-center gap-1.5 text-xs font-black text-[#4F4A58]"><Phone className="h-3.5 w-3.5" /> رقم الجوال</span><PhoneField code={countryCode} number={phone} onCode={setCountryCode} onNumber={setPhone} /></label>}
+                {mode === "signup" && accountType === "student" && otpSent && !phoneToken && <div className="relative"><KeyRound className="pointer-events-none absolute right-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-[#8B8278]" /><input required inputMode="numeric" autoComplete="one-time-code" value={otp} onChange={(event) => setOtp(event.target.value.replace(/\D/g, "").slice(0, 6))} placeholder="رمز واتساب المكون من 6 أرقام" dir="ltr" className="h-12 w-full rounded-xl border border-[#24202D]/15 bg-[#F8F6F1] px-11 text-center text-sm tracking-[.2em] outline-none focus:border-[#171723]" /></div>}
+                {mode === "signup" && accountType === "student" && phoneToken && <>
                   <div className="flex items-center gap-2 rounded-xl bg-[#EFF8F4] px-3 py-2 text-xs font-bold text-[#398B79]"><CheckCircle2 className="h-4 w-4" /> تم تأكيد رقم الجوال، أكمل بياناتك</div>
                   <div className="relative"><User className="pointer-events-none absolute right-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-[#8B8278]" /><input required value={fullName} onChange={(event) => setFullName(event.target.value)} placeholder="الاسم الثنائي" autoComplete="name" className="h-12 w-full rounded-xl border border-[#24202D]/15 bg-[#F8F6F1] px-11 text-sm outline-none focus:border-[#171723]" /></div>
                   <div className="relative"><User className="pointer-events-none absolute right-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-[#8B8278]" /><input required value={username} onChange={(event) => setUsername(event.target.value.replace(/\s/g, "").slice(0, 30))} placeholder="اسم المستخدم" autoComplete="username" dir="ltr" className="h-12 w-full rounded-xl border border-[#24202D]/15 bg-[#F8F6F1] px-11 text-left text-sm outline-none focus:border-[#171723]" /></div>
                 </>}
-                {mode === "login" && <label className="block"><span className="mb-1.5 flex items-center gap-1.5 text-xs font-black text-[#4F4A58]"><Phone className="h-3.5 w-3.5" /> رقم الجوال</span><PhoneField code={countryCode} number={phone} onCode={setCountryCode} onNumber={setPhone} /></label>}
-                {mode === "login" && otpSent && <div className="relative"><KeyRound className="pointer-events-none absolute right-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-[#8B8278]" /><input required inputMode="numeric" autoComplete="one-time-code" value={otp} onChange={(event) => setOtp(event.target.value.replace(/\D/g, "").slice(0, 6))} placeholder="رمز التحقق المكون من 6 أرقام" dir="ltr" className="h-12 w-full rounded-xl border border-[#24202D]/15 bg-[#F8F6F1] px-11 text-center text-sm tracking-[.2em] outline-none focus:border-[#171723]" /></div>}
-                {mode === "signup" && phoneToken && <>
+                {mode === "signup" && accountType === "student" && phoneToken && <>
                   <EmailField value={email} onChange={setEmail} required={false} />
                   <div className="grid gap-2 sm:grid-cols-2">
                     <input type={showPassword ? "text" : "password"} required value={password} onChange={(event) => setPassword(event.target.value)} placeholder="كلمة المرور" autoComplete="new-password" className="h-11 rounded-xl border border-[#24202D]/15 bg-[#F8F6F1] px-3 text-sm outline-none focus:border-[#171723]" />
@@ -219,13 +366,98 @@ export function AuthModal({ open, mode, onClose, onModeChange }: { open: boolean
                   </div>
                   <button type="button" onClick={() => setShowPassword((value) => !value)} className="text-right text-[11px] font-bold text-[#6B625B]">{showPassword ? "إخفاء كلمة المرور" : "إظهار كلمة المرور"}</button>
                 </>}
-              </div>
-            )}
 
-            <button type="submit" disabled={loading} className="mt-4 flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-[#171723] text-sm font-black text-white disabled:opacity-50">
-              {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : mode === "login" && method === "email" ? <Mail className="h-4 w-4" /> : <MessageCircle className="h-4 w-4" />}
-              {mode === "login" ? method === "email" ? "الدخول بالبريد" : otpSent ? "تأكيد الرمز والدخول" : "إرسال رمز واتساب" : !phoneToken ? otpSent ? "تأكيد رمز واتساب" : "إرسال رمز واتساب" : "إنشاء الحساب"}
-            </button>
+                {/* Parent Signup Fields */}
+                {mode === "signup" && accountType === "parent" && (
+                  <div className="space-y-4">
+                    {!parentToken ? (
+                      <>
+                        <div className="relative">
+                          <User className="pointer-events-none absolute right-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-[#8B8278]" />
+                          <input required disabled={parentOtpSent} value={parentName} onChange={(event) => setParentName(event.target.value)} placeholder="الاسم الثنائي (ولي الأمر)" autoComplete="name" className="h-12 w-full rounded-xl border border-[#24202D]/15 bg-[#F8F6F1] px-11 text-sm outline-none focus:border-[#171723]" />
+                        </div>
+                        <label className="block">
+                          <span className="mb-1.5 flex items-center gap-1.5 text-xs font-black text-[#4F4A58]"><Phone className="h-3.5 w-3.5" /> رقم جوال ولي الأمر</span>
+                          <PhoneField code={parentCountry} number={parentPhone} onCode={setParentCountry} onNumber={setParentPhone} disabled={parentOtpSent} />
+                        </label>
+
+                        {parentOtpSent && (
+                          <div className="relative animate-fade-in-up">
+                            <KeyRound className="pointer-events-none absolute right-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-[#8B8278]" />
+                            <input required inputMode="numeric" autoComplete="one-time-code" value={parentOtp} onChange={(event) => setParentOtp(event.target.value.replace(/\D/g, "").slice(0, 6))} placeholder="رمز واتساب لولي الأمر" dir="ltr" className="h-12 w-full rounded-xl border border-[#24202D]/15 bg-[#F8F6F1] px-11 text-center text-sm tracking-[.2em] outline-none focus:border-[#171723]" />
+                          </div>
+                        )}
+                      </>
+                    ) : (
+                      <div className="animate-fade-in-up space-y-4">
+                        <div className="flex items-center gap-2 rounded-xl bg-[#EFF8F4] px-3 py-3 text-xs font-bold text-[#398B79] border border-[#398B79]/20">
+                          <CheckCircle2 className="h-4 w-4 shrink-0" />
+                          مرحباً {parentName}، يمكنك الآن ربط حسابات الأبناء.
+                        </div>
+
+                        {verifiedChildren.length > 0 && (
+                          <div className="space-y-2">
+                            <h4 className="text-xs font-black text-[#171723]">الأبناء المضافين:</h4>
+                            {verifiedChildren.map((c, i) => (
+                              <div key={i} className="flex items-center justify-between bg-white border border-[#24202D]/10 rounded-xl p-3">
+                                <div className="flex items-center gap-2">
+                                  <User className="h-4 w-4 text-[#398B79]" />
+                                  <span className="text-sm font-bold text-[#171723]" dir="ltr">{c.phone}</span>
+                                </div>
+                                <button type="button" onClick={() => setVerifiedChildren(verifiedChildren.filter((_, idx) => idx !== i))} className="text-red-500 text-xs font-bold px-2">إزالة</button>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+
+                        <div className="bg-[#F8F6F1] p-4 rounded-xl border border-[#24202D]/10 space-y-3">
+                          <h4 className="text-xs font-black text-[#4F4A58] flex items-center gap-1.5"><User className="h-3.5 w-3.5" /> إضافة طالب</h4>
+                          <PhoneField code={childCountry} number={childPhone} onCode={setChildCountry} onNumber={setChildPhone} disabled={childOtpSent} />
+                          {childOtpSent && (
+                            <div className="relative animate-fade-in-up">
+                              <KeyRound className="pointer-events-none absolute right-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-[#8B8278]" />
+                              <input inputMode="numeric" autoComplete="off" value={childOtp} onChange={(event) => setChildOtp(event.target.value.replace(/\D/g, "").slice(0, 6))} placeholder="رمز واتساب المرسل للطالب" dir="ltr" className="h-11 w-full rounded-xl border border-[#24202D]/15 bg-white px-11 text-center text-sm tracking-[.2em] outline-none focus:border-[#171723]" />
+                            </div>
+                          )}
+                          <button
+                            type="button"
+                            disabled={loading || childPhone.length < 6 || (childOtpSent && childOtp.length < 6)}
+                            onClick={childOtpSent ? verifyChildPhone : requestChildPhone}
+                            className="w-full flex justify-center items-center h-10 rounded-lg bg-[#24202D] text-white text-xs font-black disabled:opacity-50"
+                          >
+                            {loading && (childOtpSent || !childOtpSent && childPhone.length > 5) ? <Loader2 className="h-4 w-4 animate-spin" /> : (childOtpSent ? "تأكيد وإضافة الطالب" : "إرسال رمز لطالب")}
+                          </button>
+                          {childOtpSent && (
+                            <button type="button" onClick={() => { setChildOtpSent(false); setChildOtp(""); }} className="w-full text-center text-[11px] font-bold text-[#6B625B] pt-1">
+                              تعديل الرقم
+                            </button>
+                          )}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {/* Login Fields */}
+                {mode === "login" && <label className="block"><span className="mb-1.5 flex items-center gap-1.5 text-xs font-black text-[#4F4A58]"><Phone className="h-3.5 w-3.5" /> رقم الجوال</span><PhoneField code={countryCode} number={phone} onCode={setCountryCode} onNumber={setPhone} /></label>}
+                {mode === "login" && otpSent && <div className="relative"><KeyRound className="pointer-events-none absolute right-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-[#8B8278]" /><input required inputMode="numeric" autoComplete="one-time-code" value={otp} onChange={(event) => setOtp(event.target.value.replace(/\D/g, "").slice(0, 6))} placeholder="رمز التحقق المكون من 6 أرقام" dir="ltr" className="h-12 w-full rounded-xl border border-[#24202D]/15 bg-[#F8F6F1] px-11 text-center text-sm tracking-[.2em] outline-none focus:border-[#171723]" /></div>}
+              </div>
+            ) : null}
+
+            {(mode === "login" || (mode === "signup" && accountType)) && (
+              <button
+                type="submit"
+                disabled={loading || (mode === "signup" && accountType === "parent" && parentToken && verifiedChildren.length === 0)}
+                className="mt-4 flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-[#171723] text-sm font-black text-white disabled:opacity-50"
+              >
+                {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : mode === "login" && method === "email" ? <Mail className="h-4 w-4" /> : <MessageCircle className="h-4 w-4" />}
+                {mode === "login"
+                  ? (method === "email" ? "الدخول بالبريد" : otpSent ? "تأكيد الرمز والدخول" : "إرسال رمز واتساب")
+                  : (accountType === "student"
+                      ? (!phoneToken ? (otpSent ? "تأكيد رمز واتساب" : "إرسال رمز واتساب") : "إنشاء الحساب")
+                      : (!parentToken ? (parentOtpSent ? "تأكيد رمز ولي الأمر" : "إرسال رمز لولي الأمر") : "إنشاء حساب ولي الأمر"))}
+              </button>
+            )}
 
             {mode === "login" && (
               <button type="button" onClick={() => { setMethod(method === "phone" ? "email" : "phone"); resetFlow(); }} className="mt-3 flex w-full items-center justify-center gap-2 rounded-xl border border-[#24202D]/12 py-3 text-xs font-black text-[#4F4A58]">

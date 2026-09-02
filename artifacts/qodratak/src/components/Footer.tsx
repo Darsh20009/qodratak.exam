@@ -1,4 +1,4 @@
-import { Clock3, ExternalLink, MapPin, MessageCircle, ShieldCheck } from "lucide-react";
+import { Clock3, ExternalLink, MapPin, MessageCircle, Phone, ShieldCheck } from "lucide-react";
 
 const learningLinks = [
   { label: "تدريب اختبار القدرات", href: "/qiyas-hub" },
@@ -100,6 +100,10 @@ export function Footer() {
               <a href="/support" className="flex items-center gap-2 font-bold transition hover:text-[#17354A]">
                 <MessageCircle className="h-4 w-4 text-[#398B79]" />
                 مركز الدعم والتواصل
+              </a>
+              <a href="https://wa.me/966511500913" target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 font-bold text-[#398B79] transition hover:text-[#17354A]">
+                <Phone className="h-4 w-4" />
+                <span dir="ltr">0511500913</span>
               </a>
               <p className="flex items-start gap-2 font-bold">
                 <Clock3 className="mt-0.5 h-4 w-4 shrink-0 text-[#398B79]" />

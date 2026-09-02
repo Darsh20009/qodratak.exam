@@ -23,6 +23,7 @@ import {
   verifyPhoneOtp,
   verifyPhoneVerificationToken,
 } from '../services/phoneOtpService';
+import { sendWhatsAppText } from '../services/whatsappService';
 import {
   getDeviceKey,
   MAX_REGISTERED_DEVICES,
@@ -45,6 +46,50 @@ import {
 // Get __dirname equivalent for ES modules
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
+
+async function notifyLinkedParentsOfResult(studentId: string | number, result: any) {
+  try {
+    const id = String(studentId);
+    const percentage = Math.round(Number(result.percentage ?? (result.totalQuestions ? result.score / result.totalQuestions * 100 : 0)));
+    const testName = String(result.testName || result.testType || 'الاختبار');
+    const score = Number(result.score || 0);
+    const total = Number(result.totalQuestions || 0);
+    let studentName = 'الطالب';
+    const parentPhones = new Set<string>();
+
+    try {
+      const users = JSON.parse(fs.readFileSync('attached_assets/user.json', 'utf-8'));
+      const student = users.find((user: any) => String(user.id) === id);
+      studentName = student?.fullName || student?.name || student?.username || studentName;
+      users
+        .filter((user: any) => user.role === 'parent' && (user.childIds || []).map(String).includes(id))
+        .forEach((parent: any) => {
+          if (parent.phone || parent.whatsapp) parentPhones.add(normalizeSaudiPhone(parent.phone || parent.whatsapp));
+        });
+    } catch {}
+
+    if (mongoose.connection.readyState === 1) {
+      const { User } = await import('./mongodb/models');
+      const student = await User.findById(id).lean().catch(() => null) as any;
+      studentName = student?.fullName || student?.username || studentName;
+      const parents = await User.find({ role: 'parent', childIds: id }).lean() as any[];
+      parents.forEach(parent => {
+        if (parent.phone || parent.whatsappPhone) parentPhones.add(normalizeSaudiPhone(parent.phone || parent.whatsappPhone));
+      });
+    }
+
+    const message = [
+      `نتيجة جديدة للطالب ${studentName}`,
+      `الاختبار: ${testName}`,
+      `النتيجة: ${score} من ${total} (${percentage}%)`,
+      'يمكنك مشاهدة جميع الإحصائيات من لوحة ولي الأمر في منصة قدراتك.',
+      'للدعم: 0511500913',
+    ].join('\n');
+    await Promise.allSettled([...parentPhones].map(phone => sendWhatsAppText(phone, message)));
+  } catch (error) {
+    console.error('Parent result notification error:', error);
+  }
+}
 
 async function scheduleAiReviewAndEmail(bookingId: string, userId: string): Promise<void> {
   const { ExamBooking, User } = await import('./mongodb/models');
@@ -788,6 +833,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
           attempt.questions.map((question: any) => question.id),
         );
       } catch {}
+      void notifyLinkedParentsOfResult(sessionUserId, {
+        ...savedResult,
+        testType: attempt.category,
+        score,
+        totalQuestions,
+        percentage,
+      });
       return res.status(201).json({
         ...(typeof savedResult?.toObject === 'function' ? savedResult.toObject() : savedResult),
         score,
@@ -945,6 +997,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
         score,
         totalQuestions,
         pointsEarned: totalPoints
+      });
+      void notifyLinkedParentsOfResult(sessionUserId || userId, {
+        ...result,
+        testType,
+        score,
+        totalQuestions,
+        percentage,
       });
 
       // تسجيل الأسئلة المشاهدة لمنع التكرار في الاختبارات القادمة
@@ -1956,6 +2015,200 @@ const phoneOtpStore = new Map<string, { otp: string; expiry: Date; chatId?: numb
       };
       const message = messages[error?.message];
       return res.status(message ? 400 : 500).json({ error: message || 'تعذر التحقق من الرمز' });
+    }
+  });
+
+  app.post('/api/parent/phone-otp/request', async (req: Request, res: Response) => {
+    try {
+      const phone = normalizeSaudiPhone(req.body?.phone);
+      const kind = req.body?.kind === 'child' ? 'child' : 'parent';
+      let users: any[] = [];
+      try { users = JSON.parse(fs.readFileSync('attached_assets/user.json', 'utf-8')); } catch {}
+      const localUser = users.find((user: any) => {
+        try { return normalizeSaudiPhone(user.phone || user.whatsapp) === phone; } catch { return false; }
+      });
+      let mongoUser: any = null;
+      if (mongoose.connection.readyState === 1) {
+        const { User } = await import('./mongodb/models');
+        mongoUser = await User.findOne({ phone }).lean();
+      }
+      const existing = localUser || mongoUser;
+      if (kind === 'parent' && existing) {
+        return res.status(409).json({ error: 'يوجد حساب مرتبط بهذا الرقم. استخدم تسجيل الدخول.' });
+      }
+      if (kind === 'child' && (!existing || (existing.role || 'student') !== 'student')) {
+        return res.status(404).json({ error: 'لم نجد حساب طالب مرتبطًا بهذا الرقم' });
+      }
+      const result = await requestPhoneOtp(phone, kind === 'child' ? 'link_child' : 'parent_signup');
+      if (!result.sent) {
+        return res.status(429).json({ error: `يمكن إعادة إرسال الرمز بعد ${result.retryAfter} ثانية`, retryAfter: result.retryAfter });
+      }
+      return res.json({ success: true, message: 'تم إرسال رمز التحقق عبر واتساب', retryAfter: result.retryAfter });
+    } catch (error: any) {
+      if (error?.message === 'WHATSAPP_NOT_CONNECTED') {
+        return res.status(503).json({ error: 'خدمة واتساب غير مرتبطة بعد. تواصل مع المنصة على 0511500913.' });
+      }
+      if (error?.message === 'INVALID_PHONE') return res.status(400).json({ error: 'أدخل رقم جوال صحيحًا' });
+      console.error('Parent OTP request error:', error);
+      return res.status(500).json({ error: 'تعذر إرسال رمز التحقق حاليًا' });
+    }
+  });
+
+  app.post('/api/parent/phone-otp/verify', async (req: Request, res: Response) => {
+    try {
+      const kind = req.body?.kind === 'child' ? 'child' : 'parent';
+      const result = verifyPhoneOtp(req.body?.phone, req.body?.otp, kind === 'child' ? 'link_child' : 'parent_signup');
+      return res.json({ success: true, phone: result.phone, verificationToken: result.verificationToken });
+    } catch (error: any) {
+      const messages: Record<string, string> = {
+        INVALID_PHONE: 'أدخل رقم جوال صحيحًا',
+        OTP_EXPIRED: 'انتهت صلاحية الرمز. اطلب رمزًا جديدًا.',
+        OTP_INVALID: 'رمز التحقق غير صحيح',
+        OTP_ATTEMPTS_EXCEEDED: 'تم تجاوز عدد المحاولات. اطلب رمزًا جديدًا.',
+      };
+      return res.status(messages[error?.message] ? 400 : 500).json({ error: messages[error?.message] || 'تعذر التحقق من الرمز' });
+    }
+  });
+
+  app.post('/api/parent/register', async (req: Request, res: Response) => {
+    try {
+      const fullName = String(req.body?.fullName || '').trim();
+      const phone = normalizeSaudiPhone(req.body?.phone);
+      const children = Array.isArray(req.body?.children) ? req.body.children : [];
+      if (fullName.split(/\s+/).length < 2) return res.status(400).json({ error: 'أدخل اسم ولي الأمر الثنائي' });
+      if (!verifyPhoneVerificationToken(req.body?.parentVerificationToken, phone, 'parent_signup')) {
+        return res.status(400).json({ error: 'يجب تأكيد رقم ولي الأمر أولًا' });
+      }
+      if (children.length === 0) return res.status(400).json({ error: 'أضف طالبًا واحدًا على الأقل' });
+
+      let users: any[] = [];
+      try { users = JSON.parse(fs.readFileSync('attached_assets/user.json', 'utf-8')); } catch {}
+      if (users.some((user: any) => {
+        try { return normalizeSaudiPhone(user.phone || user.whatsapp) === phone; } catch { return false; }
+      })) return res.status(409).json({ error: 'رقم ولي الأمر مستخدم مسبقًا' });
+
+      const verifiedChildren = [];
+      for (const child of children) {
+        const childPhone = normalizeSaudiPhone(child?.phone);
+        if (!verifyPhoneVerificationToken(child?.verificationToken, childPhone, 'link_child')) {
+          return res.status(400).json({ error: `لم يتم تأكيد رقم الطالب ${childPhone}` });
+        }
+        const localChild = users.find((user: any) => {
+          try { return normalizeSaudiPhone(user.phone || user.whatsapp) === childPhone && (user.role || 'student') === 'student'; } catch { return false; }
+        });
+        let mongoChild: any = null;
+        if (!localChild && mongoose.connection.readyState === 1) {
+          const { User } = await import('./mongodb/models');
+          mongoChild = await User.findOne({ phone: childPhone, role: 'student' }).lean();
+        }
+        const found = localChild || mongoChild;
+        if (!found) return res.status(404).json({ error: `لم نجد حساب الطالب المرتبط بالرقم ${childPhone}` });
+        verifiedChildren.push({ id: String(found.id || found._id), phone: childPhone });
+      }
+
+      const now = new Date();
+      const newUser: any = {
+        id: users.length + 1,
+        name: fullName,
+        fullName,
+        username: `parent_${phone}_${Date.now().toString(36)}`,
+        phone,
+        whatsapp: phone,
+        password: await bcrypt.hash(crypto.randomBytes(24).toString('hex'), 10),
+        role: 'parent',
+        childIds: verifiedChildren.map(child => child.id),
+        points: 0,
+        level: 1,
+        createdAt: now.toISOString(),
+      };
+      users.push(newUser);
+      fs.writeFileSync('attached_assets/user.json', JSON.stringify(users, null, 2));
+
+      if (mongoose.connection.readyState === 1) {
+        const { User } = await import('./mongodb/models');
+        await User.create({
+          username: newUser.username,
+          password: newUser.password,
+          phone,
+          whatsappPhone: phone,
+          fullName,
+          role: 'parent',
+          childIds: newUser.childIds,
+          points: 0,
+          level: 1,
+          isVerified: true,
+        });
+      }
+      (req.session as any).userId = newUser.id;
+      (req.session as any).userEmail = newUser.username;
+      (req.session as any).userRole = 'parent';
+      return req.session.save((error) => {
+        if (error) return res.status(500).json({ error: 'تعذر حفظ جلسة ولي الأمر' });
+        const { password: _password, ...safeUser } = newUser;
+        return res.status(201).json(safeUser);
+      });
+    } catch (error: any) {
+      if (error?.message === 'INVALID_PHONE') return res.status(400).json({ error: 'أحد أرقام الجوال غير صحيح' });
+      console.error('Parent registration error:', error);
+      return res.status(500).json({ error: 'تعذر إنشاء حساب ولي الأمر' });
+    }
+  });
+
+  app.get('/api/parent/dashboard', requireAuth, async (req: Request, res: Response) => {
+    try {
+      const sessionUserId = String((req.session as any).userId || '');
+      let users: any[] = [];
+      try { users = JSON.parse(fs.readFileSync('attached_assets/user.json', 'utf-8')); } catch {}
+      let parent: any = users.find((user: any) => String(user.id) === sessionUserId);
+      if (!parent && mongoose.connection.readyState === 1 && mongoose.Types.ObjectId.isValid(sessionUserId)) {
+        const { User } = await import('./mongodb/models');
+        parent = await User.findById(sessionUserId).lean();
+      }
+      if (!parent || parent.role !== 'parent') return res.status(403).json({ error: 'هذه الصفحة مخصصة لولي الأمر' });
+
+      const childIds = (parent.childIds || []).map(String);
+      const children = [];
+      for (const childId of childIds) {
+        let child: any = users.find((user: any) => String(user.id) === childId);
+        let results: any[] = [];
+        if (child) {
+          results = await storage.getTestResultsByUser(Number(child.id));
+        } else if (mongoose.connection.readyState === 1 && mongoose.Types.ObjectId.isValid(childId)) {
+          const { User, TestResult } = await import('./mongodb/models');
+          child = await User.findById(childId).lean();
+          results = await TestResult.find({ userId: childId }).sort({ completedAt: -1 }).limit(100).lean();
+        }
+        if (!child) continue;
+        const normalized = results.map((result: any) => ({
+          id: String(result.id || result._id),
+          testType: result.testType || result.testName || 'اختبار',
+          score: Number(result.score || 0),
+          totalQuestions: Number(result.totalQuestions || 0),
+          percentage: Number(result.percentage ?? (result.totalQuestions ? result.score / result.totalQuestions * 100 : 0)),
+          completedAt: result.completedAt,
+          pointsEarned: Number(result.pointsEarned || 0),
+        })).sort((a: any, b: any) => new Date(b.completedAt).getTime() - new Date(a.completedAt).getTime());
+        const totalTests = normalized.length;
+        children.push({
+          id: childId,
+          fullName: child.fullName || child.name || child.username || 'الطالب',
+          phone: child.phone || child.whatsapp || '',
+          stats: {
+            totalTests,
+            averageScore: totalTests ? normalized.reduce((sum: number, item: any) => sum + item.percentage, 0) / totalTests : 0,
+            bestScore: totalTests ? Math.max(...normalized.map((item: any) => item.percentage)) : 0,
+            totalPoints: normalized.reduce((sum: number, item: any) => sum + item.pointsEarned, 0),
+          },
+          recentResults: normalized.slice(0, 10),
+        });
+      }
+      return res.json({
+        parent: { fullName: parent.fullName || parent.name || parent.username, phone: parent.phone || parent.whatsapp || '' },
+        children,
+      });
+    } catch (error) {
+      console.error('Parent dashboard error:', error);
+      return res.status(500).json({ error: 'تعذر تحميل إحصائيات الأبناء' });
     }
   });
 
