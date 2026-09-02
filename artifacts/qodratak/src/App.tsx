@@ -160,6 +160,8 @@ import SecuritySettingsPage from "@/pages/SecuritySettingsPage";
 import NotificationsPage from "@/pages/NotificationsPage";
 import InstitutionPortalPage from "@/pages/InstitutionPortalPage";
 import ParentDashboardPage from "@/pages/ParentDashboardPage";
+import FooterDocumentsPage from "@/pages/FooterDocumentsPage";
+import FooterGuidePage from "@/pages/FooterGuidePage";
 
 installAdminFetchBridge();
 
@@ -832,6 +834,9 @@ function Router({ splashDone }: { splashDone: boolean }) {
       <Route path="/usage-guide">
         {() => <MainLayout><UsageGuidePage /></MainLayout>}
       </Route>
+      <Route path="/guide">
+        {() => <MainLayout><FooterGuidePage /></MainLayout>}
+      </Route>
       <Route path="/courses">
         {() => <MainLayout><ProtectedRoute requiresPremium={true}><CoursesPage /></ProtectedRoute></MainLayout>}
       </Route>
@@ -1081,6 +1086,15 @@ function Router({ splashDone }: { splashDone: boolean }) {
       </Route>
       <Route path="/pricing">
         {() => <MainLayout><PricingPage /></MainLayout>}
+      </Route>
+      <Route path="/terms">
+        {() => <MainLayout><FooterDocumentsPage documentKey="terms" /></MainLayout>}
+      </Route>
+      <Route path="/privacy">
+        {() => <MainLayout><FooterDocumentsPage documentKey="privacy" /></MainLayout>}
+      </Route>
+      <Route path="/refund-policy">
+        {() => <MainLayout><FooterDocumentsPage documentKey="refund" /></MainLayout>}
       </Route>
       <Route path="/platform-guide">
         {() => <MainLayout><PlatformGuidePage /></MainLayout>}

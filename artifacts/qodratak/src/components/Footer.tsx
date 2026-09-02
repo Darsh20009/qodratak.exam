@@ -3,16 +3,15 @@ import { Clock3, ExternalLink, MapPin, MessageCircle, Phone, ShieldCheck } from 
 const learningLinks = [
   { label: "تدريب اختبار القدرات", href: "/qiyas-hub" },
   { label: "تدريب اختبار التحصيلي", href: "/tahsilik" },
+  { label: "اختبارات تجريبية مجانية", href: "/free-verbal-test" },
   { label: "الدورات", href: "/courses" },
   { label: "مقالات ودلائل", href: "/learn" },
-  { label: "الأسعار والاشتراكات", href: "/pricing" },
-  { label: "اختبارات تجريبية مجانية", href: "/free-verbal-test" },
 ];
 
 const policyLinks = [
-  "الشروط والأحكام",
-  "سياسة الخصوصية (PDPL)",
-  "سياسة الاسترجاع والاستبدال",
+  { label: "الشروط والأحكام", href: "/terms" },
+  { label: "الخصوصية وحماية البيانات (PDPL)", href: "/privacy" },
+  { label: "الاسترجاع والاستبدال", href: "/refund-policy" },
 ];
 
 const paymentMethods = ["مدى Mada", "Apple Pay", "Visa", "MasterCard"];
@@ -78,18 +77,18 @@ export function Footer() {
           </div>
 
           <div>
-            <h3 className="text-sm font-black">طريقة العمل والأسعار</h3>
+            <h3 className="text-sm font-black">ابدأ مع قدراتك</h3>
             <nav className="mt-4 space-y-3" aria-label="طريقة العمل والأسعار">
-              <a href="/platform-guide" className="block text-sm font-bold text-[#5E7180] transition hover:text-[#17354A]">طريقة العمل</a>
+              <a href="/guide" className="block text-sm font-bold text-[#5E7180] transition hover:text-[#17354A]">دليل الخدمات وطريقة الاستخدام</a>
+              <a href="/platform-guide" className="block text-sm font-bold text-[#5E7180] transition hover:text-[#17354A]">دليل التدريب المتقدم</a>
               <a href="/pricing" className="block text-sm font-bold text-[#5E7180] transition hover:text-[#17354A]">الأسعار والاشتراكات</a>
               <a href="/faq" className="block text-sm font-bold text-[#5E7180] transition hover:text-[#17354A]">الأسئلة الشائعة</a>
-              <span className="block text-sm font-bold text-[#5E7180]">حاسبة المعدل الموزون</span>
             </nav>
 
             <h3 className="mt-8 text-sm font-black">السياسات والأنظمة</h3>
             <div className="mt-4 space-y-3">
               {policyLinks.map((link) => (
-                <span key={link} className="block text-sm font-bold text-[#5E7180]">{link}</span>
+                <a key={link.href} href={link.href} className="block text-sm font-bold text-[#5E7180] transition hover:text-[#17354A]">{link.label}</a>
               ))}
             </div>
           </div>
@@ -121,11 +120,11 @@ export function Footer() {
           <div className="flex flex-col gap-4 text-xs font-bold text-[#5E7180] sm:flex-row sm:items-center sm:justify-between">
             <p>© 2026 منصة قدرات التعليمية. جميع الحقوق محفوظة.</p>
             <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
-              <span>الشروط والأحكام</span>
+              <a href="/terms" className="hover:text-[#17354A]">الشروط والأحكام</a>
               <span aria-hidden="true">•</span>
-              <span>الخصوصية</span>
+              <a href="/privacy" className="hover:text-[#17354A]">الخصوصية</a>
               <span aria-hidden="true">•</span>
-              <span>الاسترجاع</span>
+              <a href="/refund-policy" className="hover:text-[#17354A]">الاسترجاع</a>
               <span aria-hidden="true">•</span>
               <a href="/support" className="hover:text-[#17354A]">الشكاوى والدعم</a>
             </div>
