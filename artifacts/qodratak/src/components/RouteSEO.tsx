@@ -4,13 +4,33 @@ import { SEO, PLATFORM_DESCRIPTION, PLATFORM_NAME } from "@/components/SEO";
 type RouteMetadata = {
   title: string;
   description: string;
+  structuredData?: Record<string, unknown>;
 };
 
 const PUBLIC_ROUTE_METADATA: Record<string, RouteMetadata> = {
   "/": {
-    title: "منصة قدراتك | تدريب القدرات والتحصيلي بخطة واضحة",
+    title: "منصة قدراتك | القدرات والتحصيلي وIELTS وGAT",
     description:
-      "منصة قدراتك التعليمية تساعدك على الاستعداد لاختبارات القدرات والتحصيلي عبر تدريب منظم، اختبارات محاكية، وبنك أسئلة وتحليل واضح للتقدم.",
+      "منصة قدرات تعليمية لطلاب السعودية: تأسيس ومحوسب للقدرات، تدريب التحصيلي، IELTS وGAT، اختبارات يومية وتحليل واضح للتقدم.",
+    structuredData: {
+      "@context": "https://schema.org",
+      "@type": "EducationalOrganization",
+      name: "منصة قدرات التعليمية - قدراتك",
+      alternateName: ["Qodratak", "منصة قدراتك"],
+      description: "منصة تعليمية وتدريبية متكاملة لطلاب الثانوية في السعودية للاستعداد للقدرات والتحصيلي وIELTS وGAT.",
+      url: "https://qodratak.sa/",
+      areaServed: { "@type": "Country", name: "Saudi Arabia" },
+      hasOfferCatalog: {
+        "@type": "OfferCatalog",
+        name: "مسارات الاختبارات",
+        itemListElement: [
+          { "@type": "Course", name: "تدريب اختبار القدرات العامة" },
+          { "@type": "Course", name: "تدريب اختبار التحصيلي" },
+          { "@type": "Course", name: "الاستعداد لاختبار IELTS" },
+          { "@type": "Course", name: "التدريب على GAT" },
+        ],
+      },
+    },
   },
   "/qiyas-hub": {
     title: "اختبارات القدرات وقياس | منصة قدراتك",
@@ -77,6 +97,7 @@ export function RouteSEO() {
       noIndex={!isPublicRoute}
       manageCanonical
       manageRobots
+      structuredData={metadata?.structuredData}
     />
   );
 }

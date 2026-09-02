@@ -4,12 +4,18 @@ import {
   ArrowLeft,
   BarChart3,
   BookOpenCheck,
+  Calculator,
   Check,
+  GraduationCap,
+  Languages,
   Menu,
+  MessageCircle,
   Target,
+  UsersRound,
   X,
 } from "lucide-react";
 import { AuthModal } from "@/components/AuthModal";
+import { Footer } from "@/components/Footer";
 
 const NAVY = "#171723";
 const SIGNAL = "#FF8A70";
@@ -33,6 +39,9 @@ function Header({ onSignup, onLogin }: { onSignup: () => void; onLogin: () => vo
         </Link>
 
         <nav className="hidden items-center gap-6 sm:flex">
+          <a href="#tracks" className="qodratak-focus-ring text-sm font-bold text-[#6B625B] transition hover:text-[#24202D]">
+            المسارات
+          </a>
           <a href="#benefits" className="qodratak-focus-ring text-sm font-bold text-[#6B625B] transition hover:text-[#24202D]">
             المزايا
           </a>
@@ -66,6 +75,9 @@ function Header({ onSignup, onLogin }: { onSignup: () => void; onLogin: () => vo
       {menuOpen && (
         <div className="border-t border-[#24202D]/[.09] px-5 py-3 sm:hidden">
           <nav className="mx-auto flex max-w-6xl flex-col gap-1">
+            <a href="#tracks" onClick={() => setMenuOpen(false)} className="rounded-lg px-3 py-2.5 text-sm font-bold text-[#6B625B]">
+              المسارات
+            </a>
             <a href="#benefits" onClick={() => setMenuOpen(false)} className="rounded-lg px-3 py-2.5 text-sm font-bold text-[#6B625B]">
               المزايا
             </a>
@@ -111,7 +123,7 @@ function OfferPreview({ onSignup }: { onSignup: () => void }) {
           <span className="text-[#FF8A70]">لمدة ٣ أيام</span>
         </h2>
         <p className="mt-3 text-sm leading-7 text-slate-300">
-          جرّب كل الصلاحيات، واكتشف الطريقة الأسهل للاستعداد للقدرات والتحصيلي.
+          جرّب كل الصلاحيات، واكتشف الطريقة الأسهل للاستعداد للقدرات والتحصيلي وIELTS وGAT.
         </p>
         <div className="mt-7 space-y-3 border-y border-white/10 py-5">
           {["كل الصلاحيات مفتوحة", "اختبار يومي طوال السنة", "تحليل واضح بعد كل محاولة"].map((item) => (
@@ -150,6 +162,42 @@ const benefits = [
     title: "اعرف مستواك",
     text: "بعد كل محاولة تعرف نقاط قوتك وما تحتاج تراجعه بوضوح.",
   },
+  {
+    icon: UsersRound,
+    title: "متابعة ولي الأمر",
+    text: "إمكانية ربط رقم ولي الأمر عبر الواتساب لمشاركة ملخص مستوى الطالب وتقدمه.",
+  },
+];
+
+const studyTracks = [
+  {
+    icon: Target,
+    label: "القدرات",
+    title: "اختبار القدرات العامة",
+    text: "تأسيس لفظي وكمي، تدريب متدرج، ومحاكاة للمحوسب تساعدك تعرف خطوتك التالية.",
+    accent: "bg-[#E8F7F2] text-[#287966]",
+  },
+  {
+    icon: GraduationCap,
+    label: "التحصيلي",
+    title: "تدريب التحصيلي",
+    text: "مراجعة مرتبة واختبارات تدريبية تساعدك تستعد للمواد وتتابع تقدمك بثقة.",
+    accent: "bg-[#FFF0E9] text-[#B65D36]",
+  },
+  {
+    icon: Languages,
+    label: "IELTS",
+    title: "الاستعداد للـ IELTS",
+    text: "مسار واضح لتطوير مهارات اللغة الإنجليزية والتدرب على نمط الاختبار.",
+    accent: "bg-[#EEF0FF] text-[#5C61A9]",
+  },
+  {
+    icon: Calculator,
+    label: "GAT",
+    title: "التدريب على GAT",
+    text: "تدريب مركّز على المهارات الأساسية مع طريقة سهلة لمراجعة نقاط القوة والاحتياج.",
+    accent: "bg-[#FFF7D9] text-[#8A6A15]",
+  },
 ];
 
 const steps = [
@@ -157,6 +205,89 @@ const steps = [
   ["٢", "حل اختبارك اليومي", "تدرّب على القدرات أو التحصيلي بالطريقة التي تناسبك."],
   ["٣", "راجع نتيجتك", "شاهد تقدمك واعرف الخطوة التالية بسهولة."],
 ];
+
+function StudyTracks({ onSignup }: { onSignup: () => void }) {
+  return (
+    <section id="tracks" className="border-y border-slate-200 bg-[#FFFCF7]">
+      <div className="mx-auto max-w-6xl px-5 py-16 sm:px-8 lg:py-20">
+        <div className="max-w-2xl">
+          <p className="text-sm font-black text-[#398B79]">أين تريد أن تصل؟</p>
+          <h2 className="mt-3 text-3xl font-black leading-tight sm:text-4xl" style={{ color: NAVY }}>
+            مساراتك كلها في مكان واحد.
+          </h2>
+          <p className="mt-3 text-sm leading-7 text-slate-500">
+            اختر المجال الذي تستعد له، وابدأ من التأسيس أو انتقل مباشرة إلى التدريب والمحاكاة.
+          </p>
+        </div>
+
+        <div className="mt-10 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          {studyTracks.map(({ icon: Icon, label, title, text, accent }) => (
+            <article key={label} className="flex flex-col rounded-2xl border border-slate-200 bg-white p-5 shadow-[0_8px_24px_rgba(23,35,55,.04)]">
+              <div className={`grid h-11 w-11 place-items-center rounded-xl ${accent}`}>
+                <Icon className="h-5 w-5" />
+              </div>
+              <p className="mt-5 text-xs font-black text-[#398B79]">{label}</p>
+              <h3 className="mt-2 text-lg font-black" style={{ color: NAVY }}>{title}</h3>
+              <p className="mt-2 flex-1 text-sm leading-7 text-slate-500">{text}</p>
+              <button type="button" onClick={onSignup} className="mt-5 text-right text-xs font-black text-[#398B79] hover:text-[#24202D]">
+                ابدأ تجربتك المجانية ←
+              </button>
+            </article>
+          ))}
+        </div>
+
+        <div className="mt-6 flex flex-col items-start justify-between gap-5 rounded-2xl bg-[#0D1B2A] px-6 py-5 text-white sm:flex-row sm:items-center">
+          <div>
+            <p className="text-sm font-black text-[#91D7C5]">مسار القدرات</p>
+            <p className="mt-1 text-sm leading-6 text-slate-300">ابدأ من التأسيس، أو انتقل إلى المحوسب عندما تكون جاهزًا.</p>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            <Link href="/learn" className="rounded-lg bg-[#91D7C5] px-4 py-2.5 text-xs font-black text-[#0D1B2A]">
+              ابدأ التأسيس
+            </Link>
+            <Link href="/qiyas-hub" className="rounded-lg border border-white/20 px-4 py-2.5 text-xs font-black text-white hover:bg-white/10">
+              تدرب على المحوسب
+            </Link>
+          </div>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function ParentFollowUp({ onSignup }: { onSignup: () => void }) {
+  return (
+    <section id="parent-follow-up" className="mx-auto max-w-6xl px-5 py-16 sm:px-8 lg:py-20">
+      <div className="relative overflow-hidden rounded-[28px] border border-[#B9E2D6] bg-[#EAF8F3] p-6 sm:p-10">
+        <div className="pointer-events-none absolute -left-16 -top-20 h-52 w-52 rounded-full bg-[#91D7C5]/30 blur-3xl" />
+        <div className="relative grid gap-8 lg:grid-cols-[1fr_auto] lg:items-center">
+          <div className="flex items-start gap-4">
+            <div className="grid h-12 w-12 shrink-0 place-items-center rounded-2xl bg-[#0D1B2A] text-[#91D7C5]">
+              <MessageCircle className="h-6 w-6" />
+            </div>
+            <div>
+              <p className="text-sm font-black text-[#287966]">ميزة تهم الطالب والأسرة</p>
+              <h2 className="mt-2 text-2xl font-black leading-tight sm:text-3xl" style={{ color: NAVY }}>
+                ولي أمرك يعرف تقدمك، وأنت تركز على هدفك.
+              </h2>
+              <p className="mt-3 max-w-2xl text-sm leading-7 text-[#5E7180]">
+                أضف رقم ولي الأمر عبر الواتساب لطلب مشاركة ملخص المستوى والتقدم، والتنبيه عند الحاجة إلى مراجعة المسار.
+              </p>
+            </div>
+          </div>
+          <div className="flex flex-wrap gap-2 lg:justify-end">
+            <button type="button" onClick={onSignup} className="rounded-xl bg-[#FF8A70] px-5 py-3 text-sm font-black text-[#171723]">
+              ابدأ كطالب
+            </button>
+            <a href="mailto:support@qodrat.ai?subject=طلب ربط ولي الأمر عبر الواتساب" className="rounded-xl border border-[#17354A]/20 bg-white/60 px-5 py-3 text-sm font-black text-[#17354A]">
+              اطلب ربط ولي الأمر
+            </a>
+          </div>
+        </div>
+      </div>
+    </section>
+  );
+}
 
 function PlanCard({
   title,
@@ -232,12 +363,12 @@ export default function LandingPage({ initialModal }: { initialModal?: "signup" 
               منصة التدريب الأولى في المملكة
             </p>
             <h1 className="mt-6 text-[2.7rem] font-black leading-[1.12] tracking-tight sm:text-6xl" style={{ color: NAVY }}>
-              تفوّق في اختبارات
+              خطتك أوضح لـ
               <br />
-              <span style={{ color: SIGNAL }}>القدرات والتحصيلي.</span>
+              <span style={{ color: SIGNAL }}>القدرات والتحصيلي وIELTS وGAT.</span>
             </h1>
             <p className="mt-6 max-w-xl text-base leading-8 text-[#6B625B] sm:text-lg">
-              تدريب واضح، اختبار يومي، ونتيجة تعرفك خطوتك التالية. كل ما تحتاجه للاستعداد في مكان واحد.
+              تأسيس ومحوسب، تدريب يومي، ونتيجة تعرفك خطوتك التالية في كل مسار تحتاجه.
             </p>
             <div className="mt-8 flex flex-wrap gap-3">
               <button
@@ -257,7 +388,7 @@ export default function LandingPage({ initialModal }: { initialModal?: "signup" 
               </a>
             </div>
             <div className="mt-9 flex flex-wrap gap-x-6 gap-y-3 border-t border-[#24202D]/[.1] pt-5 text-xs font-bold text-[#6B625B]">
-              {["قدرات وتحصيلي", "اختبار يومي", "رحلة سهلة"].map((item) => (
+              {["قدرات وتحصيلي", "IELTS وGAT", "تأسيس ومحوسب", "رحلة سهلة"].map((item) => (
                 <span key={item} className="flex items-center gap-1.5">
                   <Check className="h-3.5 w-3.5 text-[#398B79]" />
                   {item}
@@ -280,7 +411,7 @@ export default function LandingPage({ initialModal }: { initialModal?: "signup" 
               قدراتك تختصر لك الطريق من أول سؤال إلى نتيجة تفهمها.
             </p>
           </div>
-          <div className="mt-10 grid gap-4 md:grid-cols-3">
+          <div className="mt-10 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
             {benefits.map(({ icon: Icon, title, text }) => (
               <article key={title} className="rounded-2xl border border-slate-200 bg-[#F7F4EE] p-6">
                 <div className="grid h-11 w-11 place-items-center rounded-xl bg-[#0D1B2A] text-[#91D7C5]">
@@ -293,6 +424,8 @@ export default function LandingPage({ initialModal }: { initialModal?: "signup" 
           </div>
         </div>
       </section>
+
+      <StudyTracks onSignup={openSignup} />
 
       <section className="mx-auto max-w-6xl px-5 py-16 sm:px-8 lg:py-20">
         <div className="max-w-2xl">
@@ -340,6 +473,8 @@ export default function LandingPage({ initialModal }: { initialModal?: "signup" 
         </div>
       </section>
 
+      <ParentFollowUp onSignup={openSignup} />
+
       <section className="mx-auto max-w-6xl px-5 py-16 sm:px-8 lg:py-20">
         <div className="relative overflow-hidden rounded-[28px] bg-[#0D1B2A] px-6 py-12 text-center sm:px-12">
           <div className="pointer-events-none absolute -left-20 -top-24 h-64 w-64 rounded-full bg-[#91D7C5]/10 blur-3xl" />
@@ -363,12 +498,7 @@ export default function LandingPage({ initialModal }: { initialModal?: "signup" 
         </div>
       </section>
 
-      <footer className="border-t border-slate-200 px-5 py-7 sm:px-8">
-        <div className="mx-auto flex max-w-6xl items-center justify-between gap-3 text-xs font-bold text-slate-400">
-          <span>قدراتك · qodratak.sa</span>
-          <span>QIROX STUDIO</span>
-        </div>
-      </footer>
+      <Footer />
     </main>
   );
 }
