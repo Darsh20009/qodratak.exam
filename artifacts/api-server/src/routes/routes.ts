@@ -31,6 +31,32 @@ import {
   registerDevice,
 } from '../services/deviceSecurity';
 
+const deviceLimitAlertCooldowns = new Map<string, number>();
+const DEVICE_LIMIT_ALERT_COOLDOWN_MS = 10 * 60 * 1000;
+
+function notifyDeviceLimitReached(user: any): void {
+  const phone = normalizeSaudiPhone(user?.phone || user?.phoneNumber || '');
+  const userKey = String(user?._id || user?.id || phone || '');
+  if (!phone || !userKey) return;
+
+  const now = Date.now();
+  const lastAlertAt = deviceLimitAlertCooldowns.get(userKey) || 0;
+  if (now - lastAlertAt < DEVICE_LIMIT_ALERT_COOLDOWN_MS) return;
+  deviceLimitAlertCooldowns.set(userKey, now);
+
+  const message = [
+    'تنبيه أمني من قدراتك',
+    '',
+    'تم رفض محاولة تسجيل دخول من جهاز جديد لأن حسابك مستخدم على جهازين بالفعل.',
+    'إذا كانت المحاولة منك، احذف جهازاً قديماً من صفحة الحساب ثم حاول مجدداً.',
+    'إذا لم تكن منك، غيّر كلمة المرور فوراً.',
+  ].join('\n');
+
+  void sendWhatsAppText(phone, message).catch((error) => {
+    console.error('Failed to send device-limit WhatsApp alert:', error);
+  });
+}
+
 // RBAC System - Sprint 0
 import { 
   requireAuth, 
@@ -1722,6 +1748,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
             const deviceAccess = registerDevice(mongoUser.devices, req, req.body?.deviceId);
             if (!deviceAccess.allowed) {
+              notifyDeviceLimitReached(mongoUser);
               return res.status(409).json({
                 message: "وصلت إلى الحد الأقصى لجهازين. احذف جهازاً قديماً من إدارة الأجهزة ثم حاول مجدداً.",
                 code: "DEVICE_LIMIT_REACHED",
@@ -1814,6 +1841,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       const deviceAccess = registerDevice(user.devices, req, req.body?.deviceId);
       if (!deviceAccess.allowed) {
+        notifyDeviceLimitReached(user);
         return res.status(409).json({
           message: "وصلت إلى الحد الأقصى لجهازين. احذف جهازاً قديماً من إدارة الأجهزة ثم حاول مجدداً.",
           code: "DEVICE_LIMIT_REACHED",
@@ -2022,6 +2050,7 @@ const phoneOtpStore = new Map<string, { otp: string; expiry: Date; chatId?: numb
         if (mongoUser) {
           const deviceAccess = registerDevice(mongoUser.devices, req, req.body?.deviceId);
           if (!deviceAccess.allowed) {
+            notifyDeviceLimitReached(mongoUser);
             return res.status(409).json({
               error: 'وصلت إلى الحد الأقصى لجهازين. احذف جهازاً قديماً من إدارة الأجهزة ثم حاول مجدداً.',
               code: 'DEVICE_LIMIT_REACHED',
@@ -2048,6 +2077,7 @@ const phoneOtpStore = new Map<string, { otp: string; expiry: Date; chatId?: numb
       if (localUser) {
         const deviceAccess = registerDevice(localUser.devices, req, req.body?.deviceId);
         if (!deviceAccess.allowed) {
+          notifyDeviceLimitReached(localUser);
           return res.status(409).json({
             error: 'وصلت إلى الحد الأقصى لجهازين. احذف جهازاً قديماً من إدارة الأجهزة ثم حاول مجدداً.',
             code: 'DEVICE_LIMIT_REACHED',
@@ -7175,6 +7205,7 @@ app.post("/api/auth/register", async (req: Request, res: Response) => {
       const { token, password } = req.body;
       if (!token || !password) return res.status(400).json({ error: 'البيانات ناقصة' });
       if (password.length < 6) return res.status(400).json({ error: 'كلمة المرور يجب أن تكون 6 أحرف على الأقل' });
+      const passwordHash = await bcrypt.hash(password, 12);
 
       // Check user.json first
       try {
@@ -7185,7 +7216,7 @@ app.post("/api/auth/register", async (req: Request, res: Response) => {
           if (!expiry || new Date(expiry) < new Date()) {
             return res.status(400).json({ error: 'انتهت صلاحية الرابط، اطلب رابطاً جديداً' });
           }
-          users[userIdx].password = password;
+          users[userIdx].password = passwordHash;
           delete users[userIdx].resetPasswordToken;
           delete users[userIdx].resetPasswordTokenExpiry;
           fs.writeFileSync("attached_assets/user.json", JSON.stringify(users, null, 2));
@@ -7202,7 +7233,7 @@ app.post("/api/auth/register", async (req: Request, res: Response) => {
           return res.status(400).json({ error: 'انتهت صلاحية الرابط، اطلب رابطاً جديداً' });
         }
         await User.findOneAndUpdate({ resetPasswordToken: token }, {
-          password,
+          password: passwordHash,
           $unset: { resetPasswordToken: 1, resetPasswordTokenExpiry: 1 }
         });
         return res.json({ success: true, message: 'تم تغيير كلمة المرور بنجاح' });

@@ -258,7 +258,6 @@ const ProfilePage: React.FC = () => {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [user, setUser] = useState<UserData | null>(null);
   const [isLoading, setIsLoading] = useState(false);
-  const [activeRecoveryTab, setActiveRecoveryTab] = useState<"email" | "password">("email");
   const [showCaptcha, setShowCaptcha] = useState(false);
   const [pendingLoginData, setPendingLoginData] = useState<LoginFormValues | null>(null);
 
@@ -906,102 +905,26 @@ const ProfilePage: React.FC = () => {
               <CardHeader className="pt-6 px-6 sm:px-8 text-center">
                 <CardTitle className="text-3xl font-bold bg-gradient-to-r from-sky-400 via-cyan-400 to-teal-400 bg-clip-text text-transparent">استرداد الحساب</CardTitle>
                 <CardDescription className="text-base text-slate-400 mt-1">
-                  لا تقلق، سنساعدك في استعادة حسابك.
-                  <br/>
-                  <span className="text-xs text-amber-400">(ملاحظة: هذا الجزء تجريبي ويستخدم ملف محلي. في تطبيق حقيقي، ستكون العملية مختلفة وآمنة.)</span>
+                  سنرسل رابطًا آمنًا إلى البريد المسجل لتعيين كلمة مرور جديدة.
                 </CardDescription>
               </CardHeader>
               <CardContent className="px-6 sm:px-8 pb-8 pt-4">
-                <Tabs defaultValue={activeRecoveryTab} onValueChange={(value) => setActiveRecoveryTab(value as "email" | "password")} className="w-full">
-                  <TabsList className="grid w-full grid-cols-2 mb-6 p-1 bg-slate-700/60 rounded-lg">
-                    <TabsTrigger value="email" className="flex-1 data-[state=active]:bg-primary/70 data-[state=active]:text-primary-foreground data-[state=active]:shadow-md rounded-md py-2 transition-all text-slate-300 hover:bg-primary/20">
-                      <Mail className="w-4 h-4 mr-2" /> البريد الإلكتروني
-                    </TabsTrigger>
-                    <TabsTrigger value="password" className="flex-1 data-[state=active]:bg-primary/70 data-[state=active]:text-primary-foreground data-[state=active]:shadow-md rounded-md py-2 transition-all text-slate-300 hover:bg-primary/20">
-                      <KeyRound className="w-4 h-4 mr-2" /> كلمة المرور
-                    </TabsTrigger>
-                  </TabsList>
-
-                  <TabsContent value="email">
-                    <div className="space-y-5">
-                      <div className="space-y-2">
-                        <label htmlFor="recover-email" className="text-sm font-medium text-slate-300">
-                          البريد الإلكتروني المسجل
-                        </label>
-                        <Input id="recover-email" name="email" type="email" placeholder="أدخل بريدك الإلكتروني" className="text-right bg-slate-700/50 border-slate-600 placeholder:text-slate-500 text-slate-100 focus:border-primary focus:ring-2 focus:ring-primary/50 transition-all" required />
-                      </div>
-                      <Button className="w-full bg-gradient-to-r from-teal-500 to-cyan-500 hover:from-teal-500/90 hover:to-cyan-500/90 text-white text-base py-3 shadow-lg hover:shadow-teal-500/40 transition-all duration-300 transform hover:scale-[1.02]"
-                        onClick={async () => {
-                            const emailInput = document.getElementById('recover-email') as HTMLInputElement;
-                            const email = emailInput?.value;
-                            if (!email) {
-                              toast({ title: "خطأ", description: "يرجى إدخال البريد الإلكتروني", variant: "destructive" });
-                              return;
-                            }
-                            setIsLoading(true);
-                            try {
-                              const response = await fetch('/user.json');
-                              if (!response.ok) throw new Error('فشل تحميل بيانات المستخدمين (ملف تجريبي).');
-                              const users = await response.json();
-                              const userFound = users.find((u: any) => u.email && u.email.toLowerCase() === email.toLowerCase());
-
-                              if (!userFound) {
-                                toast({ title: "لم يتم العثور على حساب", description: "تأكد من البريد أو تواصل معنا.", variant: "default", duration: 4000, className: "bg-amber-50 border-amber-200 dark:bg-amber-900/30 dark:border-amber-700" });
-                                return;
-                              }
-                              toast({
-                                title: "معلومات الحساب (تجريبي)",
-                                description: `الاسم: ${userFound.name}\nالبريد: ${userFound.email}\nالمرور: ${userFound.password}\n(لا تعرض كلمة المرور هكذا في تطبيق حقيقي!)`,
-                                duration: 20000, className: "whitespace-pre-line text-right bg-green-50 border-green-200 dark:bg-green-900/30 dark:border-green-700",
-                              });
-                            } catch (error) {
-                              toast({ title: "خطأ", description: (error instanceof Error ? error.message : "يرجى التواصل معنا للمساعدة."), variant: "destructive" });
-                            } finally { setIsLoading(false); }
-                        }} disabled={isLoading}
-                      >
-                        {isLoading ? <><Loader2 className="mr-2 h-5 w-5 animate-spin" /> جاري البحث...</> : "البحث بالبريد"}
-                      </Button>
-                    </div>
-                  </TabsContent>
-                  <TabsContent value="password">
-                    <div className="space-y-5">
-                      <div className="space-y-2">
-                        <label htmlFor="recover-password" className="text-sm font-medium text-slate-300">
-                          كلمة المرور الحالية
-                        </label>
-                        <Input id="recover-password" name="password" type="password" placeholder="أدخل كلمة المرور" className="text-right bg-slate-700/50 border-slate-600 placeholder:text-slate-500 text-slate-100 focus:border-primary focus:ring-2 focus:ring-primary/50 transition-all" required />
-                      </div>
-                      <Button className="w-full bg-gradient-to-r from-teal-500 to-cyan-500 hover:from-teal-500/90 hover:to-cyan-500/90 text-white text-base py-3 shadow-lg hover:shadow-teal-500/40 transition-all duration-300 transform hover:scale-[1.02]"
-                        onClick={async () => {
-                            const passwordInput = document.getElementById('recover-password') as HTMLInputElement;
-                            const password = passwordInput?.value;
-                            if (!password) {
-                              toast({ title: "خطأ", description: "يرجى إدخال كلمة المرور", variant: "destructive" });
-                              return;
-                            }
-                            setIsLoading(true);
-                            try {
-                              const users = await fetch('/user.json').then(res => { if (!res.ok) throw new Error('فشل تحميل بيانات المستخدمين (ملف تجريبي).'); return res.json(); });
-                              const userFound = users.find((u: any) => u.password === password);
-                              if (!userFound) {
-                                toast({ title: "لم يتم العثور على حساب", description: "تأكد من كلمة المرور أو تواصل معنا.", variant: "default", duration: 4000, className: "bg-amber-50 border-amber-200 dark:bg-amber-900/30 dark:border-amber-700" });
-                                return;
-                              }
-                              toast({
-                                title: "معلومات الحساب (تجريبي)",
-                                description: `الاسم: ${userFound.name}\nالبريد: ${userFound.email}\nالمرور: ${userFound.password}\n(لا تعرض كلمة المرور هكذا في تطبيق حقيقي!)`,
-                                duration: 20000, className: "whitespace-pre-line text-right bg-green-50 border-green-200 dark:bg-green-900/30 dark:border-green-700",
-                              });
-                            } catch (error) {
-                              toast({ title: "خطأ", description: (error instanceof Error ? error.message : "يرجى التواصل معنا للمساعدة."), variant: "destructive" });
-                            } finally { setIsLoading(false); }
-                        }} disabled={isLoading}
-                      >
-                         {isLoading ? <><Loader2 className="mr-2 h-5 w-5 animate-spin" /> جاري البحث...</> : "البحث بكلمة المرور"}
-                      </Button>
-                    </div>
-                  </TabsContent>
-                </Tabs>
+                <div className="space-y-4 text-center">
+                  <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-cyan-500/10 text-cyan-400">
+                    <Mail className="h-7 w-7" />
+                  </div>
+                  <p className="text-sm leading-7 text-slate-300">
+                    لحماية حسابك، لا نعرض كلمة المرور الحالية ولا نبحث عنها. استخدم صفحة الاسترداد لإرسال رابط صالح لمدة ساعة واحدة.
+                  </p>
+                  <Button
+                    type="button"
+                    onClick={() => setLocation("/forgot-password")}
+                    className="w-full bg-gradient-to-r from-teal-500 to-cyan-500 py-3 text-base font-bold text-white hover:from-teal-500/90 hover:to-cyan-500/90"
+                  >
+                    <KeyRound className="ml-2 h-5 w-5" />
+                    إرسال رابط استعادة آمن
+                  </Button>
+                </div>
               </CardContent>
             </Card>
           </TabsContent>
