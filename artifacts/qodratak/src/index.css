@@ -115,12 +115,35 @@
     font-family: 'Tajawal', 'Inter', system-ui, -apple-system, sans-serif;
     direction: rtl;
     min-height: 100vh;
-    background-color: var(--brand-surface);
+    background-color: hsl(var(--background));
   }
   
   html {
     scroll-behavior: smooth;
   }
+}
+
+/* One surface contract for the rebuilt student pages. Legacy screens can keep
+   their internal layout while inheriting the same day/night canvas. */
+.qodratak-page-surface > * {
+  background-color: hsl(var(--background)) !important;
+  color: hsl(var(--foreground));
+}
+
+.qodratak-page-surface .bg-white,
+.qodratak-page-surface .bg-gray-50,
+.qodratak-page-surface .bg-gray-100,
+.qodratak-page-surface .bg-slate-50 {
+  background-color: hsl(var(--card)) !important;
+}
+
+.qodratak-page-surface .bg-gradient-to-br,
+.qodratak-page-surface .bg-gradient-to-r {
+  background-image: none !important;
+}
+
+.dark body {
+  background-color: hsl(var(--background)) !important;
 }
 
 /* New brand primitives used by the rebuilt surfaces. */

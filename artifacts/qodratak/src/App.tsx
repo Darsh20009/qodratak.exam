@@ -121,14 +121,11 @@ import TahsilikComprehensiveTest from "@/pages/TahsilikComprehensiveTest";
 import TahsilikSubjectTest from "@/pages/TahsilikSubjectTest";
 import TahsilikSubjectTestRunner from "@/pages/TahsilikSubjectTestRunner";
 import TahsilikTestsHub from "@/pages/TahsilikTestsHub";
-import LeaderboardPage from "@/pages/LeaderboardPage";
 import InstallPrompt from "@/components/InstallPrompt";
 import { FloatingInstallButton } from "@/components/PermanentInstallButton";
 import LandingPage from "@/pages/LandingPage";
 import { SplashScreen } from "@/components/SplashScreen";
 import { RouteSEO } from "@/components/RouteSEO";
-import MultiplayerPage from "@/pages/MultiplayerPage";
-import MultiplayerRoom from "@/pages/MultiplayerRoom";
 import NotificationBell from "@/components/NotificationBell";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import PaperModelsManagementPage from "@/pages/PaperModelsManagementPage";
@@ -377,9 +374,7 @@ function MainLayout({ children }: { children: React.ReactNode }) {
     { name: "نماذج الورقي",     href: "/paper-models",         icon: FileText },
     { name: "بطاقات المراجعة",  href: "/flashcards",           icon: Layers },
     { name: "تحدي الأخطاء",     href: "/mistake-challenge",    icon: GamepadIcon },
-    { name: "الاختبار الجماعي", href: "/multiplayer",          icon: GamepadIcon },
     { name: "احجز اختبارك",    href: "/book-exam",             icon: CalendarCheck },
-    { name: "المتصدرون",        href: "/leaderboard",           icon: Trophy },
     { name: "الدعم والمساعدة",  href: "/faq",                   icon: HelpCircle },
   ];
 

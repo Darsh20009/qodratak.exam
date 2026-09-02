@@ -55,13 +55,13 @@ const PROGRAMS: Record<ProgramKey, ProgramConfig> = {
     english: "IELTS",
     description: "مسار اللغة الإنجليزية للاستعداد لاختبار IELTS.",
     foundation: [
-      { title: "تأسيس اللغة", description: "محتوى تأسيسي للقراءة والاستماع والكتابة.", href: "/courses", icon: BookOpen },
+      { title: "تأسيس اللغة", description: "محتوى تأسيسي للقراءة والاستماع والكتابة.", href: "/courses?program=ielts", icon: BookOpen },
       { title: "الكتب والملفات", description: "مواد اللغة المتاحة في المكتبة.", href: "/library", icon: FileText },
-      { title: "خطة الدراسة", description: "نظرة منظمة على خطوات الاستعداد.", href: "/courses", icon: Target },
+      { title: "خطة الدراسة", description: "نظرة منظمة على خطوات الاستعداد.", href: "/courses?program=ielts", icon: Target },
     ],
     computer: [
-      { title: "اختبارات محاكية", description: "تدريب على شكل أقسام اختبار IELTS.", href: "/courses", icon: GraduationCap },
-      { title: "تدريب المهارات", description: "تدريب منفصل على مهارات الاختبار.", href: "/courses", icon: PlayCircle },
+      { title: "اختبارات محاكية", description: "تدريب على شكل أقسام اختبار IELTS.", href: "/courses?program=ielts", icon: GraduationCap },
+      { title: "تدريب المهارات", description: "تدريب منفصل على مهارات الاختبار.", href: "/courses?program=ielts", icon: PlayCircle },
       { title: "المكتبة", description: "الوصول إلى ملفات وكتب القسم.", href: "/library", icon: Library },
     ],
   },
@@ -70,13 +70,13 @@ const PROGRAMS: Record<ProgramKey, ProgramConfig> = {
     english: "GAT",
     description: "مسار GAT باللغة الإنجليزية بواجهة واضحة ومباشرة.",
     foundation: [
-      { title: "التأسيس", description: "محتوى تأسيسي لفهم نمط الاختبار.", href: "/courses", icon: BookOpen },
+      { title: "التأسيس", description: "محتوى تأسيسي لفهم نمط الاختبار.", href: "/courses?program=gat", icon: BookOpen },
       { title: "الكتب والملفات", description: "مواد المراجعة المتاحة.", href: "/library", icon: FileText },
-      { title: "خطة الدراسة", description: "ترتيب خطوات الاستعداد للاختبار.", href: "/courses", icon: Target },
+      { title: "خطة الدراسة", description: "ترتيب خطوات الاستعداد للاختبار.", href: "/courses?program=gat", icon: Target },
     ],
     computer: [
-      { title: "اختبارات محاكية", description: "تدريب على شكل اختبار GAT.", href: "/courses", icon: GraduationCap },
-      { title: "تدريب الأقسام", description: "اختبارات تدريبية حسب القسم.", href: "/courses", icon: PlayCircle },
+      { title: "اختبارات محاكية", description: "تدريب على شكل اختبار GAT.", href: "/courses?program=gat", icon: GraduationCap },
+      { title: "تدريب الأقسام", description: "اختبارات تدريبية حسب القسم.", href: "/courses?program=gat", icon: PlayCircle },
       { title: "المكتبة", description: "الوصول إلى ملفات وكتب القسم.", href: "/library", icon: Library },
     ],
   },
@@ -109,7 +109,7 @@ export default function StudentProgramPage() {
   const showComputer = !section || section === "computer";
 
   return (
-    <div className="min-h-full bg-[#F7F4EE]" dir="rtl">
+    <div className="min-h-full bg-background" dir="rtl">
       <div className="mx-auto max-w-6xl space-y-6 px-4 py-6 pb-24 lg:px-8">
         <div className="flex items-center gap-3 text-sm text-[#64748B]">
           <Link href="/" className="hover:text-[#0D1B2A]">الرئيسية</Link>

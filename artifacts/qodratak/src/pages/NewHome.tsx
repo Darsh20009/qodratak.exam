@@ -75,7 +75,6 @@ const quickLinks = [
   { title: "اختبارات اللفظي", href: "/verbal-tests", icon: BookOpenIcon, color: "text-blue-500", bg: "bg-blue-50 dark:bg-blue-950/30 hover:bg-blue-100 dark:hover:bg-blue-900/40" },
   { title: "اختبارات الكمي", href: "/quantitative-tests", icon: Brain, color: "text-green-700", bg: "bg-green-100 dark:bg-green-100/30 hover:bg-green-100 dark:hover:bg-green-100/40" },
   { title: "الدورات", href: "/courses", icon: GraduationCapIcon, color: "text-emerald-500", bg: "bg-emerald-50 dark:bg-emerald-950/30 hover:bg-emerald-100 dark:hover:bg-emerald-900/40" },
-  { title: "المتصدرين", href: "/leaderboard", icon: Trophy, color: "text-amber-500", bg: "bg-amber-50 dark:bg-amber-950/30 hover:bg-amber-100 dark:hover:bg-amber-900/40" },
   { title: "التحليل", href: "/profile", icon: BarChart2, color: "text-cyan-500", bg: "bg-cyan-50 dark:bg-cyan-950/30 hover:bg-cyan-100 dark:hover:bg-cyan-900/40" },
   { title: "الاختبار المجدول", href: "/book-exam", icon: Clock, color: "text-rose-500", bg: "bg-rose-50 dark:bg-rose-950/30 hover:bg-rose-100 dark:hover:bg-rose-900/40" },
 ];
@@ -143,15 +142,6 @@ const smartTools = [
     color: "from-yellow-500 to-orange-500",
     badge: "مميز",
     badgeColor: "bg-yellow-100 text-yellow-700 dark:bg-yellow-900/40 dark:text-yellow-300",
-  },
-  {
-    title: "الاختبار الجماعي",
-    desc: "تنافس مع أصدقائك مباشرة",
-    href: "/multiplayer",
-    icon: Zap,
-    color: "from-teal-600 to-emerald-500",
-    badge: "مباشر",
-    badgeColor: "bg-teal-100 text-teal-700 dark:bg-teal-100/40 dark:text-teal-700",
   },
 ];
 
@@ -278,7 +268,7 @@ function LoggedInDashboard({ user }: { user: any }) {
     ? "text-amber-600" : "text-red-500";
 
   return (
-    <div className="min-h-full bg-[#F7F4EE]" dir="rtl">
+    <div className="min-h-full bg-background" dir="rtl">
       <div className="mx-auto max-w-6xl space-y-5 px-4 py-6 pb-24 lg:px-8">
         <header className="flex items-center justify-between gap-4">
           <div>
@@ -358,8 +348,7 @@ function LoggedInDashboard({ user }: { user: any }) {
         <section className="grid grid-cols-2 gap-3 lg:grid-cols-4">
           {[
             { label: "متوسط الأداء", value: prediction ? `${Math.round(prediction.averageScore)}%` : "—", icon: Target, href: "/ai-hub/score-prediction" },
-            { label: "المرتبة", value: rankData?.currentRank ? `#${rankData.currentRank}` : "—", icon: Trophy, href: "/leaderboard" },
-            { label: "النقاط", value: rankData?.totalPoints ? `${Math.round(rankData.totalPoints / 1000)}k` : "—", icon: Zap, href: "/leaderboard" },
+            { label: "النقاط", value: rankData?.totalPoints ? `${Math.round(rankData.totalPoints / 1000)}k` : "—", icon: Zap, href: "/profile" },
             { label: "الاختبارات", value: prediction?.totalTests ?? "—", icon: BarChart2, href: "/profile" },
           ].map((stat, index) => (
             <Link key={stat.label} href={stat.href}>
