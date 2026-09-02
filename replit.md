@@ -1,16 +1,18 @@
-# Replit run notes
+# منصة قدراتك — Replit run notes
 
 ## Start the app
 
-The project uses the existing Node.js/Express + Vite stack:
+The project uses the existing pnpm workspace with a Vite frontend and Express API:
 
 ```bash
-npm ci
-npm run dev
+pnpm install --frozen-lockfile
+pnpm --filter @workspace/api-server run dev
+PORT=5000 BASE_PATH=/ pnpm --filter @workspace/qodratak run dev
 ```
 
-The `Start application` workflow runs `npm run dev` and serves the web preview
-on port `5000`.
+The `Start application` workflow serves the web preview on port `5000`. The
+`API Server` workflow runs the backend on port `8080`; Vite proxies `/api`
+requests and WebSocket upgrades to it during development.
 
 ## Current environment
 
@@ -26,14 +28,14 @@ notifications require their corresponding environment variables described in
 Do not place credentials in the repository. Use Replit Secrets for all
 environment values.
 
-# [Project name]
-
-_Replace the heading above with the project's name, and this line with one sentence describing what this app does for users._
-
-
 ## Architecture decisions
 
-_Populate as you build — non-obvious choices a reader couldn't infer from the code (3-5 bullets)._
+- The imported React/Vite frontend remains the root preview, while the imported
+  Express API runs as a separate local service.
+- Development API traffic is proxied from Vite to the API service so the
+  existing `/api/*` client routes and session cookies continue to work.
+- The API intentionally keeps its local in-memory fallback for previews when
+  MongoDB/PostgreSQL credentials are not configured.
 
 
 ## Product
@@ -43,12 +45,13 @@ _Describe the high-level user-facing capabilities of this app once they exist._
 
 ## Run & Operate
 
-- `pnpm --filter @workspace/api-server run dev` — run the API server (port 5000)
+- `pnpm --filter @workspace/api-server run dev` — run the API server (port 8080)
 - `pnpm run typecheck` — full typecheck across all packages
 - `pnpm run build` — typecheck + build all packages
 - `pnpm --filter @workspace/api-spec run codegen` — regenerate API hooks and Zod schemas from the OpenAPI spec
 - `pnpm --filter @workspace/db run push` — push DB schema changes (dev only)
-- Required env: `DATABASE_URL` — Postgres connection string
+- Required preview env: `SESSION_SECRET`
+- Optional durable env: `MONGODB_URI` and/or `DATABASE_URL`
 
 
 ## User preferences
