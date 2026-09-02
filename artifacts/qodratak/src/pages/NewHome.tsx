@@ -131,7 +131,7 @@ const smartTools = [
     href: "/pre-exam-day",
     icon: Flame,
     color: "from-amber-500 to-red-600",
-    badge: "🔥 حار",
+    badge: "مهم",
     badgeColor: "bg-amber-100 text-amber-700 dark:bg-amber-100/40 dark:text-amber-700",
   },
   {
@@ -153,14 +153,6 @@ const whyUs = [
   { icon: Medal, title: "شارات إنجاز", desc: "حوّل دراستك إلى تحدٍّ ممتع وتنافس مع الآخرين", color: "from-rose-400 to-amber-600", bg: "bg-rose-50 dark:bg-rose-950/20" },
   { icon: Zap, title: "تحديث فوري", desc: "أسئلة وشروحات جديدة تُضاف باستمرار 24/7", color: "from-orange-400 to-amber-500", bg: "bg-orange-50 dark:bg-orange-950/20" },
 ];
-
-const FloatingOrb = memo(({ className, size, delay }: { className: string; size: number; delay: number }) => (
-  <div
-    className={`orb absolute pointer-events-none ${className}`}
-    style={{ width: size, height: size, animationDelay: `${delay}s` }}
-  />
-));
-FloatingOrb.displayName = "FloatingOrb";
 
 const AnimatedNumber = memo(({ target, suffix = "" }: { target: number; suffix?: string }) => {
   const [count, setCount] = useState(0);
