@@ -20,6 +20,7 @@ interface Prefs {
   whatsappPhone: string | null;
   notifExamReminder: boolean;
   notifWeeklyReport: boolean;
+  notifWhatsApp: boolean;
 }
 
 function Toggle({ checked, onChange, disabled }: { checked: boolean; onChange: (v: boolean) => void; disabled?: boolean }) {
@@ -86,7 +87,7 @@ export default function NotificationSettingsPage() {
     onError: () => toast({ description: "فشل تحديث الإعداد", variant: "destructive" }),
   });
 
-  const handleToggle = (key: "notifExamReminder" | "notifWeeklyReport", value: boolean) => {
+  const handleToggle = (key: "notifExamReminder" | "notifWeeklyReport" | "notifWhatsApp", value: boolean) => {
     updateMutation.mutate({ [key]: value });
   };
 
@@ -372,7 +373,7 @@ export default function NotificationSettingsPage() {
                 <h2 className="font-bold text-gray-900">واتساب</h2>
                 <p className="text-xs text-gray-500">احفظ رقمك لاستخدامه مستقبلاً</p>
               </div>
-              <span className="text-[10px] text-amber-700 bg-amber-50 px-2 py-1 rounded-full font-medium border border-amber-200">قريباً</span>
+              <span className="text-[10px] text-green-700 bg-green-50 px-2 py-1 rounded-full font-medium border border-green-200">متاح</span>
             </div>
 
             <div className="flex gap-2">
@@ -407,6 +408,26 @@ export default function NotificationSettingsPage() {
                   اختبر الرقم عبر واتساب
                 </a>
               </div>
+            )}
+
+            <div className="mt-4 flex items-center justify-between border-t border-gray-100 pt-4">
+              <div className="flex items-center gap-3">
+                <div className="w-8 h-8 bg-green-50 rounded-lg flex items-center justify-center">
+                  <MessageCircle className="w-4 h-4 text-green-600" />
+                </div>
+                <div>
+                  <p className="text-sm font-semibold text-gray-800">متابعة قدراتك عبر واتساب</p>
+                  <p className="text-xs text-gray-400">خطة يومية وتذكيرات مهمة ورسائل اهتمام</p>
+                </div>
+              </div>
+              <Toggle
+                checked={prefs?.notifWhatsApp ?? true}
+                onChange={v => handleToggle("notifWhatsApp", v)}
+                disabled={!prefs?.whatsappPhone}
+              />
+            </div>
+            {!prefs?.whatsappPhone && (
+              <p className="mt-2 text-xs text-amber-600">أضف رقم واتساب أولاً لتفعيل المتابعة اليومية.</p>
             )}
           </div>
         </div>

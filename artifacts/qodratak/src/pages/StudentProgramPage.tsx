@@ -1,5 +1,5 @@
 import { BookOpen, Brain, ChevronLeft, FileText, GraduationCap, Library, PlayCircle, Target } from "lucide-react";
-import { Link, useRoute } from "wouter";
+import { Link, useLocation, useRoute } from "wouter";
 
 type ProgramKey = "qudrat" | "tahsili" | "ielts" | "gat";
 
@@ -101,8 +101,12 @@ function ContentCard({ item }: { item: ProgramItem }) {
 
 export default function StudentProgramPage() {
   const [, params] = useRoute("/student-program/:program");
+  const [location] = useLocation();
   const programKey = params?.program as ProgramKey;
   const program = PROGRAMS[programKey] || PROGRAMS.qudrat;
+  const section = new URLSearchParams(location.split("?")[1] || "").get("section");
+  const showFoundation = !section || section === "foundation";
+  const showComputer = !section || section === "computer";
 
   return (
     <div className="min-h-full bg-[#F7F4EE]" dir="rtl">
@@ -117,9 +121,14 @@ export default function StudentProgramPage() {
           <p className="text-sm font-bold text-[#F7F775]">{program.english}</p>
           <h1 className="mt-2 text-3xl font-black">{program.arabic}</h1>
           <p className="mt-3 max-w-2xl text-sm leading-6 text-[#CBD5E1]">{program.description}</p>
+          <div className="mt-6 grid gap-2 text-xs font-bold text-[#CBD5E1] sm:grid-cols-3">
+            <div className="rounded-xl border border-white/10 bg-white/5 px-3 py-3"><span className="text-[#F7F775]">1</span> اختر مستواك</div>
+            <div className="rounded-xl border border-white/10 bg-white/5 px-3 py-3"><span className="text-[#F7F775]">2</span> ادرس وتدرّب</div>
+            <div className="rounded-xl border border-white/10 bg-white/5 px-3 py-3"><span className="text-[#F7F775]">3</span> اختبر جاهزيتك</div>
+          </div>
         </header>
 
-        <section>
+        {showFoundation && <section id="foundation">
           <div className="mb-3">
             <h2 className="text-xl font-black text-[#0D1B2A]">التأسيس</h2>
             <p className="mt-1 text-sm text-[#64748B]">ابدأ من المستوى المناسب لك ثم انتقل للمرحلة التالية.</p>
@@ -127,9 +136,9 @@ export default function StudentProgramPage() {
           <div className="grid gap-3 md:grid-cols-3">
             {program.foundation.map((item) => <ContentCard key={item.title} item={item} />)}
           </div>
-        </section>
+        </section>}
 
-        <section>
+        {showComputer && <section id="computer">
           <div className="mb-3">
             <h2 className="text-xl font-black text-[#0D1B2A]">المحوسب</h2>
             <p className="mt-1 text-sm text-[#64748B]">اختبارات وتدريب عملي يحاكي تجربة الاختبار.</p>
@@ -137,7 +146,7 @@ export default function StudentProgramPage() {
           <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-4">
             {program.computer.map((item) => <ContentCard key={item.title} item={item} />)}
           </div>
-        </section>
+        </section>}
 
         <div className="flex flex-wrap gap-3 border-t border-[#E5E7EB] pt-5">
           <Link href="/library" className="rounded-xl border border-[#0D1B2A]/15 bg-white px-4 py-3 text-sm font-bold text-[#0D1B2A] transition hover:border-[#0D1B2A]/40">

@@ -40,6 +40,37 @@ const deviceLimitAlertCooldowns = new Map<string, number>();
 const DEVICE_LIMIT_ALERT_COOLDOWN_MS = 10 * 60 * 1000;
 const DEVICE_MANAGEMENT_TOKEN_TTL_MS = 15 * 60 * 1000;
 
+const DEFAULT_PRIMARY_SUBSCRIPTION_PLAN = {
+  key: 'pro',
+  type: 'Pro',
+  name: 'خطة قدراتك',
+  durationDays: 90,
+  priceSar: 39,
+  description: 'اشتراك كامل لمدة 3 أشهر يشمل مسارات قدراتك التعليمية.',
+  features: [
+    'وصول كامل للمحتوى والاختبارات',
+    'حفظ التقدم والإحصائيات',
+    'خطة يومية ومتابعة مستمرة',
+    'دعم فني عبر واتساب',
+  ],
+};
+
+async function getPrimarySubscriptionPlan() {
+  const { PlatformSetting } = await import('../mongodb/models');
+  const setting = await PlatformSetting.findOne({ key: 'subscription_primary_plan' }).lean();
+  const value = (setting?.value || {}) as Record<string, unknown>;
+  const durationDays = Number(value.durationDays);
+  const priceSar = Number(value.priceSar);
+  return {
+    ...DEFAULT_PRIMARY_SUBSCRIPTION_PLAN,
+    ...value,
+    durationDays: Number.isInteger(durationDays) && durationDays > 0 ? durationDays : DEFAULT_PRIMARY_SUBSCRIPTION_PLAN.durationDays,
+    priceSar: Number.isFinite(priceSar) && priceSar >= 0 ? priceSar : DEFAULT_PRIMARY_SUBSCRIPTION_PLAN.priceSar,
+    type: 'Pro',
+    key: 'pro',
+  };
+}
+
 function notifyDeviceLimitReached(user: any): void {
   let phone = '';
   try {
@@ -367,6 +398,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ error: 'خطأ في التحقق من الصلاحيات' });
     }
   };
+
+  app.get('/api/subscription/plan', async (_req: Request, res: Response) => {
+    try {
+      const plan = await getPrimarySubscriptionPlan();
+      res.json({ plan });
+    } catch (error) {
+      console.error('Get public subscription plan error:', error);
+      res.status(500).json({ error: 'فشل في جلب خطة الاشتراك' });
+    }
+  });
 
   // Add CORS headers for API routes (strict same origin only)
   app.use('/api', (req, res, next) => {
@@ -2939,13 +2980,14 @@ app.get('/api/notifications/preferences', requireAuth, async (req: Request, res:
     } else {
       user = await User.findOne({ $or: [{ email: sessionEmail }, { pgId: Number(sessionUserId) || 0 }] });
     }
-    if (!user) return res.json({ telegramLinked: false, notifExamReminder: true, notifWeeklyReport: true });
+    if (!user) return res.json({ telegramLinked: false, notifExamReminder: true, notifWeeklyReport: true, notifWhatsApp: true });
     res.json({
       telegramLinked: !!(user.telegramChatId || user.telegramId),
       telegramId: user.telegramId || null,
-      whatsappPhone: user.whatsappPhone || null,
+      whatsappPhone: user.whatsappPhone || user.phone || null,
       notifExamReminder: user.notifExamReminder !== false,
       notifWeeklyReport: user.notifWeeklyReport !== false,
+      notifWhatsApp: user.notifWhatsApp !== false,
     });
   } catch (err) {
     res.status(500).json({ error: 'فشل جلب الإعدادات' });
@@ -2958,10 +3000,11 @@ app.patch('/api/notifications/preferences', requireAuth, async (req: Request, re
     const mongoose = await import('mongoose');
     const sessionUserId = String((req as any).session?.userId || '');
     const sessionEmail = (req as any).session?.email || '';
-    const { notifExamReminder, notifWeeklyReport, whatsappPhone } = req.body;
+    const { notifExamReminder, notifWeeklyReport, notifWhatsApp, whatsappPhone } = req.body;
     const update: any = {};
     if (typeof notifExamReminder === 'boolean') update.notifExamReminder = notifExamReminder;
     if (typeof notifWeeklyReport === 'boolean') update.notifWeeklyReport = notifWeeklyReport;
+    if (typeof notifWhatsApp === 'boolean') update.notifWhatsApp = notifWhatsApp;
     if (typeof whatsappPhone === 'string') update.whatsappPhone = whatsappPhone;
     if (mongoose.Types.ObjectId.isValid(sessionUserId) && sessionUserId.length === 24) {
       await User.updateOne({ _id: sessionUserId }, update);
@@ -4345,36 +4388,23 @@ app.post("/api/auth/register", async (req: Request, res: Response) => {
   app.post("/api/subscription/create", async (req: Request, res: Response) => {
     try {
       const { userId, type, duration, paymentMethod, transactionId, price } = req.body;
+      const primaryPlan = await getPrimarySubscriptionPlan();
 
       const startDate = new Date();
-      const endDate = new Date();
-
-      // Set end date based on subscription type
-      switch (type) {
-        case 'Pro':
-          endDate.setDate(startDate.getDate() + 30); // 1 month
-          break;
-        case 'Pro Life':
-          endDate.setDate(startDate.getDate() + 90); // 3 months
-          break;
-        case 'Pro Life Plus':
-          endDate.setDate(startDate.getDate() + 180); // 6 months
-          break;
-        default:
-          endDate.setDate(startDate.getDate() + 30);
-      }
+      const endDate = new Date(startDate);
+      endDate.setDate(endDate.getDate() + primaryPlan.durationDays);
 
       const subscription = {
         id: Date.now(),
         userId,
-        type,
+        type: primaryPlan.type,
         status: 'active',
         startDate: startDate.toISOString(),
         endDate: endDate.toISOString(),
         autoRenew: false,
         paymentMethod,
         transactionId,
-        price,
+        price: primaryPlan.priceSar,
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString()
       };
@@ -5049,31 +5079,17 @@ app.post("/api/auth/register", async (req: Request, res: Response) => {
       }
 
       const now = new Date();
-      let endDate = new Date();
-      let price = 0;
-
-      // Set duration and price based on plan
-      switch (planType) {
-        case 'pro':
-          endDate = new Date(now.getTime() + (30 * 24 * 60 * 60 * 1000)); // 30 days
-          price = 29;
-          break;
-        case 'proLife':
-          endDate = new Date(now.getTime() + (90 * 24 * 60 * 60 * 1000)); // 90 days
-          price = 74;
-          break;
-        case 'proLifePlus':
-          endDate = new Date(now.getTime() + (180 * 24 * 60 * 60 * 1000)); // 180 days
-          price = 134;
-          break;
-        default:
-          return res.status(400).json({ message: "Invalid plan type" });
+      if (!['pro', 'proLife', 'proLifePlus'].includes(planType)) {
+        return res.status(400).json({ message: "Invalid plan type" });
       }
+      const primaryPlan = await getPrimarySubscriptionPlan();
+      const endDate = new Date(now.getTime() + primaryPlan.durationDays * 24 * 60 * 60 * 1000);
+      const price = primaryPlan.priceSar;
 
       const newSubscription = {
         id: subscriptions.length + 1,
         userId,
-        type: planType === 'pro' ? 'Pro' : planType === 'proLife' ? 'Pro Life' : 'Pro Life Plus',
+        type: primaryPlan.type,
         status: 'pending',
         startDate: now.toISOString(),
         endDate: endDate.toISOString(),
@@ -6585,16 +6601,13 @@ app.post("/api/auth/register", async (req: Request, res: Response) => {
         return res.status(400).json({ message: "يرجى إدخال جميع البيانات المطلوبة" });
       }
 
-      const planTypes: Record<string, string> = {
-        'pro': 'Pro',
-        'proLife': 'Pro Life',
-        'proLifePlus': 'Pro Life Plus',
-        
-      };
-      const planType = planTypes[planKey] || 'Pro';
-
-      const prices: Record<string, number> = { 'Pro': 29, 'Pro Life': 74, 'Pro Life Plus': 134 };
-      const durations: Record<string, number> = { 'Pro': 30, 'Pro Life': 90, 'Pro Life Plus': 180 };
+      if (!['pro', 'proLife', 'proLifePlus'].includes(planKey)) {
+        return res.status(400).json({ message: "الخطة المطلوبة غير متاحة" });
+      }
+      const primaryPlan = await getPrimarySubscriptionPlan();
+      const planType = primaryPlan.type;
+      const planPrice = primaryPlan.priceSar;
+      const planDuration = primaryPlan.durationDays;
 
       // Create or find user
       let users: any[] = [];
@@ -6657,7 +6670,7 @@ app.post("/api/auth/register", async (req: Request, res: Response) => {
       // Create pending subscription in MongoDB
       const now = new Date();
       const endDate = new Date(now);
-      endDate.setDate(endDate.getDate() + (durations[planType] || 30));
+      endDate.setDate(endDate.getDate() + planDuration);
 
       let receiptUrl = null;
       let receiptFilename = null;
@@ -6676,12 +6689,12 @@ app.post("/api/auth/register", async (req: Request, res: Response) => {
         paymentMethod: paymentMethod || 'bank',
         transferReceiptUrl: receiptUrl || undefined,
         transferReceiptFilename: receiptFilename || undefined,
-        price: prices[planType] || 29,
+        price: planPrice,
       });
       void notifyAdminSubscription({
         studentName: name,
         plan: planType,
-        price: prices[planType] || 29,
+        price: planPrice,
         paymentMethod: paymentMethod || 'bank',
         status: 'pending',
       }).catch((error) =>
@@ -6717,20 +6730,12 @@ app.post("/api/auth/register", async (req: Request, res: Response) => {
         return res.status(400).json({ message: "نوع الخطة مطلوب" });
       }
 
-      const planTypes: Record<string, string> = {
-        'pro': 'Pro',
-        'proLife': 'Pro Life',
-        'proLifePlus': 'Pro Life Plus',
-        
-      };
-      const planType = planTypes[planKey];
-      if (!planType) {
+      if (!['pro', 'proLife', 'proLifePlus'].includes(planKey)) {
         return res.status(400).json({ message: "نوع خطة غير صالح" });
       }
-
-      const prices: Record<string, number> = { 'Pro': 29, 'Pro Life': 74, 'Pro Life Plus': 134 };
-      const durations: Record<string, number> = { 'Pro': 30, 'Pro Life': 90, 'Pro Life Plus': 180 };
-      const price = prices[planType];
+      const primaryPlan = await getPrimarySubscriptionPlan();
+      const planType = primaryPlan.type;
+      const price = primaryPlan.priceSar;
 
       // Get wallet balance
       const wallet = await mongoStorage.getWallet(String(sessionUserId));
@@ -6754,7 +6759,7 @@ app.post("/api/auth/register", async (req: Request, res: Response) => {
       // Create active subscription immediately (no admin approval needed)
       const now = new Date();
       const endDate = new Date(now);
-      endDate.setDate(endDate.getDate() + (durations[planType] || 30));
+      endDate.setDate(endDate.getDate() + primaryPlan.durationDays);
 
       const subscription = await mongoStorage.createSubscription({
         userId: sessionUserId,
@@ -6810,21 +6815,14 @@ app.post("/api/auth/register", async (req: Request, res: Response) => {
         return res.status(400).json({ error: 'بيانات غير مكتملة' });
       }
 
-      const prices: Record<string, number> = {
-        'Pro': 99,
-        'Pro Life': 299,
-        'Pro Life Plus': 499
-      };
-
-      const durations: Record<string, number> = {
-        'Pro': 30,
-        'Pro Life': 365,
-        'Pro Life Plus': 999
-      };
+      if (!['Pro', 'Pro Life', 'Pro Life Plus'].includes(planType)) {
+        return res.status(400).json({ error: 'نوع الخطة غير صالح' });
+      }
+      const primaryPlan = await getPrimarySubscriptionPlan();
 
       const now = new Date();
       const endDate = new Date(now);
-      endDate.setDate(endDate.getDate() + (durations[planType] || 30));
+      endDate.setDate(endDate.getDate() + primaryPlan.durationDays);
 
       let receiptUrl = null;
       let receiptFilename = null;
@@ -6836,7 +6834,7 @@ app.post("/api/auth/register", async (req: Request, res: Response) => {
 
       const subscription = await mongoStorage.createSubscription({
         userId,
-        type: planType,
+        type: primaryPlan.type,
         status: 'pending',
         startDate: now,
         endDate: endDate,
@@ -6845,12 +6843,12 @@ app.post("/api/auth/register", async (req: Request, res: Response) => {
         transactionId: transactionId || undefined,
         transferReceiptUrl: receiptUrl || undefined,
         transferReceiptFilename: receiptFilename || undefined,
-        price: prices[planType] || 99,
+        price: primaryPlan.priceSar,
       });
       void notifyAdminSubscription({
         studentName: String((req.session as any)?.userEmail || userId),
-        plan: planType,
-        price: prices[planType] || 99,
+        plan: primaryPlan.type,
+        price: primaryPlan.priceSar,
         paymentMethod: paymentMethod || 'manual',
         status: 'pending',
       }).catch((error) =>

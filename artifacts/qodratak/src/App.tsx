@@ -238,6 +238,11 @@ function MainLayout({ children }: { children: React.ReactNode }) {
   const [sidebarMoreOpen, setSidebarMoreOpen] = useState(false);
 
   useEffect(() => {
+    setShowMoreMenu(false);
+    setSidebarMoreOpen(false);
+  }, [location]);
+
+  useEffect(() => {
     const onDismiss = () => setAiBadgeInHeader(true);
     const onShow = () => setAiBadgeInHeader(false);
     window.addEventListener('aiButtonDismissed', onDismiss);
@@ -378,6 +383,39 @@ function MainLayout({ children }: { children: React.ReactNode }) {
     { name: "الدعم والمساعدة",  href: "/faq",                   icon: HelpCircle },
   ];
 
+  const activeProgram = React.useMemo(() => {
+    const path = location.split("?")[0];
+    const match = path.match(/^\/student-program\/(qudrat|tahsili|ielts|gat)$/);
+    if (match?.[1]) return match[1] as "qudrat" | "tahsili" | "ielts" | "gat";
+    if (path === "/folders") {
+      const folderProgram = new URLSearchParams(location.split("?")[1] || "").get("program");
+      if (folderProgram && ["qudrat", "tahsili", "ielts", "gat"].includes(folderProgram)) {
+        return folderProgram as "qudrat" | "tahsili" | "ielts" | "gat";
+      }
+    }
+    return undefined;
+  }, [location]);
+
+  const activeProgramLabel = {
+    qudrat: "القدرات | Qudrat",
+    tahsili: "التحصيلي | Tahsili",
+    ielts: "IELTS",
+    gat: "GAT",
+  }[activeProgram || "qudrat"];
+
+  const programSubNavItems = activeProgram ? [
+    { name: "التأسيس", href: `/student-program/${activeProgram}?section=foundation`, icon: BookOpenIcon },
+    { name: "المحوسب", href: `/student-program/${activeProgram}?section=computer`, icon: Brain },
+    { name: "مجلداتي", href: `/folders?program=${activeProgram}`, icon: FolderIcon },
+  ] : [];
+
+  const isProgramSubNavActive = (item: { name: string; href: string }) => {
+    if (!activeProgram) return false;
+    if (item.name === "مجلداتي") return location.startsWith("/folders");
+    if (location === `/student-program/${activeProgram}`) return item.name === "التأسيس";
+    return location === item.href;
+  };
+
   // التحقق من كون المستخدم في اختبار
   const [qiyasExamActive, setQiyasExamActive] = React.useState(false);
   const [abilitiesExamActive, setAbilitiesExamActive] = React.useState(false);
@@ -465,8 +503,49 @@ function MainLayout({ children }: { children: React.ReactNode }) {
           </div>
 
           {/* Core Nav */}
-          <nav className="flex-1 px-3 py-3 space-y-0.5 overflow-y-auto">
-            {coreNavItems.map((item) => {
+           <nav className="flex-1 px-3 py-3 space-y-0.5 overflow-y-auto">
+             {activeProgram ? (
+               <>
+                 <Link href="/">
+                   <div className="mb-3 flex items-center gap-2 rounded-xl px-3 py-2 text-xs font-bold text-gray-500 transition hover:bg-gray-50 hover:text-gray-900 dark:hover:bg-gray-800 dark:hover:text-white">
+                     <ChevronLeft className="h-4 w-4" />
+                     <span>العودة للمسارات</span>
+                   </div>
+                 </Link>
+                 <div className="mb-2 rounded-2xl bg-gray-50 px-3 py-3 dark:bg-gray-800/70">
+                   <p className="text-[10px] font-bold text-gray-400">المسار الحالي</p>
+                   <p className="mt-1 text-sm font-black text-gray-900 dark:text-white">{activeProgramLabel}</p>
+                 </div>
+                 <p className="px-3 pb-1 pt-2 text-[10px] font-semibold uppercase tracking-wider text-gray-400">خطة المسار</p>
+                 {programSubNavItems.map((item) => {
+                   const isActive = isProgramSubNavActive(item);
+                   return (
+                     <Link key={item.href} href={item.href}>
+                       <div className={cn(
+                         "flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-colors",
+                         isActive
+                           ? "border border-green-100 bg-green-50 text-green-700 dark:border-green-900 dark:bg-green-950/30 dark:text-green-400"
+                           : "text-gray-600 hover:bg-gray-50 dark:text-gray-400 dark:hover:bg-gray-800"
+                       )}>
+                         <item.icon className="h-4 w-4 flex-shrink-0" />
+                         <span>{item.name}</span>
+                         {isActive && <div className="mr-auto h-1.5 w-1.5 rounded-full bg-green-500" />}
+                       </div>
+                     </Link>
+                   );
+                 })}
+                 <div className="my-3 border-t border-gray-100 dark:border-gray-800" />
+                 <Link href="/library">
+                   <div className={cn(
+                     "flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-colors",
+                     location.startsWith("/library") ? "bg-green-50 text-green-700 dark:bg-green-950/30 dark:text-green-400" : "text-gray-600 hover:bg-gray-50 dark:text-gray-400 dark:hover:bg-gray-800"
+                   )}>
+                     <Library className="h-4 w-4 flex-shrink-0" />
+                     <span>المكتبة المشتركة</span>
+                   </div>
+                 </Link>
+               </>
+             ) : coreNavItems.map((item) => {
               const isActive = item.href === "/" ? location === "/" : location.startsWith(item.href);
               return (
                 <Link key={item.href} href={item.href}>
@@ -482,38 +561,42 @@ function MainLayout({ children }: { children: React.ReactNode }) {
                   </div>
                 </Link>
               );
-            })}
+             })}
 
-            {/* Divider */}
-            <div className="pt-2 pb-1">
-              <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider px-3">المزيد</p>
-            </div>
+             {!activeProgram && (
+               <>
+                 {/* Divider */}
+                 <div className="pt-2 pb-1">
+                   <p className="px-3 text-[10px] font-semibold uppercase tracking-wider text-gray-400">المزيد</p>
+                 </div>
 
-            {/* More nav items */}
-            {moreNavItems.slice(0, sidebarMoreOpen ? undefined : 4).map((item) => {
-              const isActive = location.startsWith(item.href);
-              return (
-                <Link key={item.href} href={item.href}>
-                  <div className={cn(
-                    "flex items-center gap-3 px-3 py-2 rounded-xl text-sm font-medium transition-colors cursor-pointer",
-                    isActive
-                      ? "bg-green-50 dark:bg-green-950/30 text-green-700 dark:text-green-400"
-                      : "text-gray-500 dark:text-gray-500 hover:bg-gray-50 dark:hover:bg-gray-800 hover:text-gray-700 dark:hover:text-gray-300"
-                  )}>
-                    <item.icon className="h-4 w-4 flex-shrink-0 text-gray-400" />
-                    <span>{item.name}</span>
-                  </div>
-                </Link>
-              );
-            })}
+                 {/* More nav items */}
+                 {moreNavItems.slice(0, sidebarMoreOpen ? undefined : 4).map((item) => {
+                   const isActive = location.startsWith(item.href);
+                   return (
+                     <Link key={item.href} href={item.href}>
+                       <div className={cn(
+                         "flex cursor-pointer items-center gap-3 rounded-xl px-3 py-2 text-sm font-medium transition-colors",
+                         isActive
+                           ? "bg-green-50 text-green-700 dark:bg-green-950/30 dark:text-green-400"
+                           : "text-gray-500 hover:bg-gray-50 hover:text-gray-700 dark:text-gray-500 dark:hover:bg-gray-800 dark:hover:text-gray-300"
+                       )}>
+                         <item.icon className="h-4 w-4 flex-shrink-0 text-gray-400" />
+                         <span>{item.name}</span>
+                       </div>
+                     </Link>
+                   );
+                 })}
 
-            <button
-              onClick={() => setSidebarMoreOpen(v => !v)}
-              className="w-full flex items-center gap-3 px-3 py-2 rounded-xl text-sm font-medium text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
-            >
-              <ChevronLeft className={cn("h-4 w-4 transition-transform", sidebarMoreOpen ? "rotate-90" : "-rotate-90")} />
-              <span>{sidebarMoreOpen ? "إخفاء" : "عرض المزيد"}</span>
-            </button>
+                 <button
+                   onClick={() => setSidebarMoreOpen(v => !v)}
+                   className="flex w-full items-center gap-3 rounded-xl px-3 py-2 text-sm font-medium text-gray-400 transition-colors hover:bg-gray-50 dark:hover:bg-gray-800"
+                 >
+                   <ChevronLeft className={cn("h-4 w-4 transition-transform", sidebarMoreOpen ? "rotate-90" : "-rotate-90")} />
+                   <span>{sidebarMoreOpen ? "إخفاء" : "عرض المزيد"}</span>
+                 </button>
+               </>
+             )}
           </nav>
 
           {/* Bottom: theme + user */}
@@ -688,7 +771,7 @@ function MainLayout({ children }: { children: React.ReactNode }) {
         )}
 
         {/* Content */}
-        <main className="flex-1 overflow-y-auto">
+        <main className="flex-1 overflow-y-auto pb-16 md:pb-0">
           <div key={location} className="page-enter min-h-full">
             <ErrorBoundary>
               {children}
@@ -704,18 +787,27 @@ function MainLayout({ children }: { children: React.ReactNode }) {
         {/* Bottom nav — ثابت في أسفل الصفحة ضمن تدفق الـ layout */}
         {!isInTestMode && (
           <div
-            className="md:hidden flex-shrink-0 bg-white/95 dark:bg-gray-900/95 backdrop-blur-xl border-t border-gray-200/80 dark:border-gray-700/80 shadow-[0_-4px_24px_rgba(0,0,0,0.08)]"
+            className="fixed bottom-0 left-0 right-0 z-40 md:hidden bg-white/95 dark:bg-gray-900/95 backdrop-blur-xl border-t border-gray-200/80 dark:border-gray-700/80 shadow-[0_-4px_24px_rgba(0,0,0,0.08)]"
             style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}
           >
             <nav className="flex items-center h-16 max-w-screen-sm mx-auto px-1 w-full">
-              {[
+              {(activeProgram ? [
+                { href: `/student-program/${activeProgram}?section=foundation`, icon: BookOpenIcon, label: "التأسيس", exact: false },
+                { href: `/student-program/${activeProgram}?section=computer`, icon: Brain, label: "المحوسب", exact: false },
+                { href: "/folders", icon: FolderIcon, label: "مجلداتي", exact: false },
+                { href: "/", icon: HomeIcon, label: "المسارات", exact: true },
+              ] : [
                 { href: "/", icon: HomeIcon, label: "الرئيسية", exact: true },
-                { href: "/qiyas", icon: Brain, label: "قياس", exact: false },
-                { href: "/question-bank", icon: BookOpenIcon, label: "بنك", exact: false },
-                { href: "/analytics", icon: BarChart2, label: "إحصائياتي", exact: true },
-                { href: "/profile", icon: UserIcon, label: "حسابي", exact: true },
-              ].map((item) => {
-                const active = item.exact ? location === item.href : location.startsWith(item.href);
+                { href: "/student-program/qudrat", icon: Brain, label: "القدرات", exact: false },
+                { href: "/student-program/tahsili", icon: GraduationCapIcon, label: "التحصيلي", exact: false },
+                { href: "/student-program/ielts", icon: BookOpenIcon, label: "IELTS", exact: false },
+                { href: "/student-program/gat", icon: BookOpenIcon, label: "GAT", exact: false },
+              ]).map((item) => {
+                const active = activeProgram && item.href.includes("?section=")
+                  ? isProgramSubNavActive({ name: item.label === "التأسيس" ? "التأسيس" : "المحوسب", href: item.href })
+                  : item.exact
+                    ? location === item.href
+                    : location === item.href || location.startsWith(item.href.split("?")[0]);
                 return (
                   <Link
                     key={item.href}
@@ -732,17 +824,6 @@ function MainLayout({ children }: { children: React.ReactNode }) {
                 );
               })}
 
-              {/* More button */}
-              <button
-                onClick={() => setShowMoreMenu(v => !v)}
-                className={cn(
-                  "relative flex flex-col items-center justify-center gap-0.5 py-1 flex-1 rounded-xl transition-all duration-200",
-                  showMoreMenu ? "text-primary" : "text-gray-400 dark:text-gray-500"
-                )}
-              >
-                <Menu className="h-5 w-5" />
-                <span className="text-[9px] font-medium leading-none">المزيد</span>
-              </button>
             </nav>
           </div>
         )}

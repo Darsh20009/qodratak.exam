@@ -3,6 +3,8 @@ import webpush from 'web-push';
 import { InAppNotification, PushSubscription } from './mongodb/models';
 import { chatWebSocketServer } from './websocket';
 import { requireAdmin, requireAuth } from './middleware/rbac';
+import { sendStudentWhatsAppNotification } from './services/studentWhatsAppNotifications';
+import { sendWhatsAppCampaign } from './services/adminWhatsAppNotifications';
 
 const router = Router();
 
@@ -102,6 +104,49 @@ router.get('/in-app/:userId', requireAuth, async (req: Request, res: Response) =
   }
 });
 
+// ── ADMIN: SEND PERSONAL IN-APP NOTIFICATION ─────────────────────────────────
+router.post('/in-app/:userId', requireAdmin, async (req: Request, res: Response) => {
+  try {
+    const { title, body, type, link, sendWhatsApp } = req.body || {};
+    if (
+      !OBJECT_ID_RE.test(req.params.userId) ||
+      !validText(title, 200) ||
+      !validText(body, 2000) ||
+      (type !== undefined && (typeof type !== 'string' || !NOTIFICATION_TYPES.has(type))) ||
+      (link !== undefined && (typeof link !== 'string' || link.length > 2048)) ||
+      (sendWhatsApp !== undefined && typeof sendWhatsApp !== 'boolean')
+    ) {
+      return res.status(400).json({ error: 'Invalid notification data' });
+    }
+
+    const notification = await InAppNotification.create({
+      userId: req.params.userId,
+      title,
+      body,
+      type: type || 'info',
+      link,
+      isGlobal: false,
+      sentBy: 'admin',
+      isRead: false,
+    });
+    chatWebSocketServer.broadcastToUser(req.params.userId, { type: 'new_notification', notification });
+
+    if (sendWhatsApp) {
+      await sendStudentWhatsAppNotification(req.params.userId, {
+        title,
+        body,
+        link,
+        type: type || 'info',
+        createInApp: false,
+      });
+    }
+    res.json({ success: true, notification });
+  } catch (error) {
+    console.error('Personal in-app notification error:', error);
+    res.status(500).json({ error: 'Failed to send notification' });
+  }
+});
+
 // ── MARK NOTIFICATION AS READ ─────────────────────────────────────────────────
 router.patch('/in-app/:id/read', requireAuth, async (req: Request, res: Response) => {
   try {
@@ -170,11 +215,12 @@ router.get('/in-app/:userId/unread-count', requireAuth, async (req: Request, res
 // ── ADMIN: SEND NOTIFICATION ──────────────────────────────────────────────────
 router.post('/admin/send', requireAdmin, async (req: Request, res: Response) => {
   try {
-    const { title, body, type, link, targetUserId, isGlobal } = req.body;
+    const { title, body, type, link, targetUserId, isGlobal, sendWhatsApp } = req.body;
     if (!validText(title, 200) || !validText(body, 2000) ||
       (type !== undefined && (typeof type !== 'string' || !NOTIFICATION_TYPES.has(type))) ||
       (link !== undefined && (typeof link !== 'string' || link.length > 2048)) ||
       typeof isGlobal !== 'boolean' ||
+      (sendWhatsApp !== undefined && typeof sendWhatsApp !== 'boolean') ||
       (!isGlobal && (typeof targetUserId !== 'string' || !OBJECT_ID_RE.test(targetUserId)))) {
       return res.status(400).json({ error: 'Invalid notification data' });
     }
@@ -221,6 +267,24 @@ router.post('/admin/send', requireAdmin, async (req: Request, res: Response) => 
       }
     }
 
+    if (sendWhatsApp) {
+      if (isGlobal) {
+        await sendWhatsAppCampaign({
+          title,
+          body,
+          target: 'all',
+        });
+      } else if (targetUserId) {
+        await sendStudentWhatsAppNotification(targetUserId, {
+          title,
+          body,
+          link,
+          type: type || 'info',
+          createInApp: false,
+        });
+      }
+    }
+
     res.json({ success: true, notification });
   } catch (error) {
     console.error('Send notification error:', error);
@@ -254,11 +318,12 @@ router.get('/push/stats', requireAdmin, async (req: Request, res: Response) => {
 // ── ADMIN: BROADCAST IN-APP NOTIFICATION ──────────────────────────────────────
 router.post('/in-app/broadcast', requireAdmin, async (req: Request, res: Response) => {
   try {
-    const { title, body, type, target, link } = req.body;
+    const { title, body, type, target, link, sendWhatsApp } = req.body;
     if (!validText(title, 200) || !validText(body, 2000) ||
       (type !== undefined && (typeof type !== 'string' || !NOTIFICATION_TYPES.has(type))) ||
-      (target !== undefined && target !== 'global') ||
-      (link !== undefined && (typeof link !== 'string' || link.length > 2048))) {
+      (target !== undefined && !['global', 'premium'].includes(target)) ||
+      (link !== undefined && (typeof link !== 'string' || link.length > 2048)) ||
+      (sendWhatsApp !== undefined && typeof sendWhatsApp !== 'boolean')) {
       return res.status(400).json({ error: 'Invalid notification data' });
     }
 
@@ -276,7 +341,16 @@ router.post('/in-app/broadcast', requireAdmin, async (req: Request, res: Respons
     const wsPayload = { type: 'new_notification', notification };
     chatWebSocketServer.broadcastToAll(wsPayload);
 
-    res.json({ success: true, notification });
+    let whatsappResult = null;
+    if (sendWhatsApp) {
+      whatsappResult = await sendWhatsAppCampaign({
+        title,
+        body,
+        target: target === 'premium' ? 'subscribed' : 'all',
+      });
+    }
+
+    res.json({ success: true, notification, whatsapp: whatsappResult });
   } catch (error) {
     console.error('Broadcast in-app error:', error);
     res.status(500).json({ error: 'Failed to broadcast notification' });
@@ -357,6 +431,14 @@ export async function sendExamReminder(userId: string, examTitle: string, minute
     chatWebSocketServer.broadcastToUser(userId, {
       type: 'new_notification',
       notification: { title, body, type: 'exam' }
+    });
+
+    await sendStudentWhatsAppNotification(userId, {
+      title,
+      body,
+      link: '/book-exam',
+      type: 'exam',
+      createInApp: false,
     });
 
     if (VAPID_PUBLIC && VAPID_PRIVATE) {

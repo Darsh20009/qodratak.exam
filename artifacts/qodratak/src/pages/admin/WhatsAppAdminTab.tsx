@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { BarChart3, CheckCircle2, Link2, Loader2, MessageCircle, Power, RefreshCw, Send, ShieldAlert } from "lucide-react";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 
 type Status = {
@@ -29,6 +30,12 @@ export default function WhatsAppAdminTab() {
   const queryClient = useQueryClient();
   const { toast } = useToast();
   const [testPhone, setTestPhone] = useState("");
+  const [campaignForm, setCampaignForm] = useState({
+    preset: "custom",
+    title: "",
+    body: "",
+    target: "all" as "all" | "subscribed" | "free",
+  });
   const { data: status, isLoading } = useQuery<Status>({
     queryKey: ["/api/admin/whatsapp/status"],
     queryFn: async () => {
@@ -66,6 +73,31 @@ export default function WhatsAppAdminTab() {
     onSuccess: () => toast({ title: "تم إرسال التنبيهات", description: "تم إرسال تنبيهي التسجيل والاشتراك إلى رقم الإدارة." }),
     onError: (error: Error) => toast({ title: "تعذر إرسال التنبيهات", description: error.message, variant: "destructive" }),
   });
+
+  const sendCampaign = useMutation({
+    mutationFn: () => request("/api/admin/whatsapp/campaign", {
+      title: campaignForm.title.trim(),
+      body: campaignForm.body.trim(),
+      target: campaignForm.target,
+    }),
+    onSuccess: (result) => toast({
+      title: "تم تنفيذ حملة واتساب",
+      description: `تم الإرسال إلى ${result.sent || 0} مستخدم، وتعذر ${result.failed || 0}.`,
+    }),
+    onError: (error: Error) => toast({ title: "تعذر تنفيذ الحملة", description: error.message, variant: "destructive" }),
+  });
+
+  const campaignPresets: Record<string, { title: string; body: string }> = {
+    nationalDay: {
+      title: "عرض اليوم الوطني 🇸🇦",
+      body: "احتفالاً باليوم الوطني، نرافقك في رحلتك التعليمية بعرض خاص لفترة محدودة. افتح قدراتك الآن واستفد من العرض.",
+    },
+    offer: {
+      title: "عرض خاص من قدراتك 🎁",
+      body: "لا تفوّت عرضنا الحالي على الاشتراك. ابدأ خطتك التعليمية اليوم وخلّ تقدمك يتكلم عنك.",
+    },
+    custom: { title: "", body: "" },
+  };
 
   const connected = status?.state === "connected";
   return (
@@ -155,6 +187,76 @@ export default function WhatsAppAdminTab() {
         >
           {sendNotificationTest.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
           اختبار تنبيهات التسجيل والاشتراك
+        </button>
+      </div>
+
+      <div className="rounded-2xl border border-[#2E8B70]/20 bg-[#F2FBF7] p-5">
+        <div className="flex items-start gap-3">
+          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#2E8B70]/10 text-[#2E8B70]">
+            <MessageCircle className="h-5 w-5" />
+          </div>
+          <div>
+            <h3 className="font-bold text-[#24202D]">حملات واتساب للطلاب</h3>
+            <p className="mt-1 text-xs leading-5 text-[#625D69]">
+              أرسل رسالة مناسبة للمناسبة أو عرضًا إلى الطلاب الذين يسمحون بإشعارات واتساب. الإرسال يتم من رقم الخدمة المرتبط.
+            </p>
+          </div>
+        </div>
+        <div className="mt-4 grid gap-3 md:grid-cols-2">
+          <label className="text-sm font-bold text-[#24202D]">
+            القالب
+            <select
+              value={campaignForm.preset}
+              onChange={(event) => {
+                const preset = campaignPresets[event.target.value];
+                setCampaignForm((current) => ({ ...current, preset: event.target.value, title: preset.title, body: preset.body }));
+              }}
+              className="mt-1 h-11 w-full rounded-xl border border-[#24202D]/10 bg-white px-3 text-sm font-normal"
+            >
+              <option value="custom">رسالة مخصصة</option>
+              <option value="nationalDay">اليوم الوطني</option>
+              <option value="offer">عرض اشتراك</option>
+            </select>
+          </label>
+          <label className="text-sm font-bold text-[#24202D]">
+            المستهدفون
+            <select
+              value={campaignForm.target}
+              onChange={(event) => setCampaignForm((current) => ({ ...current, target: event.target.value as "all" | "subscribed" | "free" }))}
+              className="mt-1 h-11 w-full rounded-xl border border-[#24202D]/10 bg-white px-3 text-sm font-normal"
+            >
+              <option value="all">كل الطلاب وأولياء الأمور</option>
+              <option value="subscribed">المشتركون النشطون</option>
+              <option value="free">الحسابات المجانية</option>
+            </select>
+          </label>
+          <label className="text-sm font-bold text-[#24202D] md:col-span-2">
+            عنوان الرسالة
+            <Input
+              value={campaignForm.title}
+              onChange={(event) => setCampaignForm((current) => ({ ...current, preset: "custom", title: event.target.value }))}
+              placeholder="مثال: عرض اليوم الوطني"
+              className="mt-1 h-11 bg-white"
+            />
+          </label>
+          <label className="text-sm font-bold text-[#24202D] md:col-span-2">
+            نص الرسالة
+            <Textarea
+              value={campaignForm.body}
+              onChange={(event) => setCampaignForm((current) => ({ ...current, preset: "custom", body: event.target.value }))}
+              placeholder="اكتب الرسالة التي ستصل عبر واتساب..."
+              className="mt-1 min-h-28 resize-y bg-white"
+            />
+          </label>
+        </div>
+        <button
+          type="button"
+          onClick={() => sendCampaign.mutate()}
+          disabled={!connected || !campaignForm.title.trim() || !campaignForm.body.trim() || sendCampaign.isPending}
+          className="mt-4 flex items-center gap-2 rounded-xl bg-[#2E8B70] px-4 py-2.5 text-sm font-bold text-white disabled:opacity-40"
+        >
+          {sendCampaign.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
+          إرسال الحملة الآن
         </button>
       </div>
 

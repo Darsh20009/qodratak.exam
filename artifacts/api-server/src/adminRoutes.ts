@@ -11,7 +11,9 @@ import { sendSubscriptionApprovalEmail } from './services/emailService';
 import {
   notifyAdminNewStudent,
   notifyAdminSubscription,
+  notifyStudentSubscriptionActivated,
   sendAdminFinancialReport,
+  sendWhatsAppCampaign,
 } from './services/adminWhatsAppNotifications';
 import { createAdminAccessToken, verifyAdminAccessToken } from './adminSessionToken';
 import { getPrivateQuestionImageOriginal, processQuestionImage } from './services/questionImageProcessor';
@@ -492,6 +494,14 @@ router.post('/subscriptions/:id/approve', requireAdminAuth, async (req: Request,
       status: 'active',
     }).catch((error) =>
       console.error('Admin approved-subscription WhatsApp notification failed:', error),
+    );
+    void notifyStudentSubscriptionActivated({
+      userId: String(sub.userId),
+      plan: sub.type,
+      price: sub.price,
+      endDate: sub.endDate,
+    }).catch((error) =>
+      console.error('Student approved-subscription WhatsApp notification failed:', error),
     );
 
     res.json({ success: true, subscription: sub });
@@ -987,8 +997,15 @@ router.post('/subscriptions/create-manual', requireAdminAuth, async (req: Reques
   try {
     const { userId, type, durationDays, price, notes } = req.body;
     const subscriptionTypes = new Set(['free', 'Pro', 'Pro Life', 'Pro Life Plus']);
-    const parsedDurationDays = Number(durationDays);
-    const parsedPrice = Number(price ?? 0);
+    const { User, Subscription, PlatformSetting } = await import('./mongodb/models');
+    const planSetting = await PlatformSetting.findOne({ key: 'subscription_primary_plan' }).lean();
+    const primaryPlan = (planSetting?.value || {}) as Record<string, unknown>;
+    const parsedDurationDays = type === 'Pro'
+      ? Number(primaryPlan.durationDays || 90)
+      : Number(durationDays);
+    const parsedPrice = type === 'Pro'
+      ? Number(primaryPlan.priceSar ?? 39)
+      : Number(price ?? 0);
     if (
       typeof userId !== 'string' ||
       typeof type !== 'string' ||
@@ -1001,7 +1018,6 @@ router.post('/subscriptions/create-manual', requireAdminAuth, async (req: Reques
     ) {
       return res.status(400).json({ error: 'userId ونوع الاشتراك والمدة مطلوبة' });
     }
-    const { User, Subscription } = await import('./mongodb/models');
     const user = await User.findById(userId);
     if (!user) return res.status(404).json({ error: 'المستخدم غير موجود' });
 
@@ -1038,6 +1054,14 @@ router.post('/subscriptions/create-manual', requireAdminAuth, async (req: Reques
       status: 'active',
     }).catch((error) =>
       console.error('Admin manual-subscription WhatsApp notification failed:', error),
+    );
+    void notifyStudentSubscriptionActivated({
+      userId: String(user._id),
+      plan: type,
+      price: parsedPrice,
+      endDate,
+    }).catch((error) =>
+      console.error('Student manual-subscription WhatsApp notification failed:', error),
     );
 
     res.status(201).json({ success: true, subscription: sub });
@@ -1365,6 +1389,78 @@ router.put('/settings/:key', requireAdminAuth, async (req: Request, res: Respons
   }
 });
 
+const DEFAULT_PRIMARY_SUBSCRIPTION_PLAN = {
+  key: 'pro',
+  type: 'Pro',
+  name: 'خطة قدراتك',
+  durationDays: 90,
+  priceSar: 39,
+  description: 'اشتراك كامل لمدة 3 أشهر يشمل مسارات قدراتك التعليمية.',
+  features: [
+    'وصول كامل للمحتوى والاختبارات',
+    'حفظ التقدم والإحصائيات',
+    'خطة يومية ومتابعة مستمرة',
+    'دعم فني عبر واتساب',
+  ],
+};
+
+router.get('/subscription-plan', requireAdminAuth, async (_req: Request, res: Response) => {
+  try {
+    const { PlatformSetting } = await import('./mongodb/models');
+    const setting = await PlatformSetting.findOne({ key: 'subscription_primary_plan' }).lean();
+    res.json({ plan: setting?.value || DEFAULT_PRIMARY_SUBSCRIPTION_PLAN });
+  } catch (error) {
+    console.error('Get subscription plan error:', error);
+    res.status(500).json({ error: 'فشل في جلب خطة الاشتراك' });
+  }
+});
+
+router.put('/subscription-plan', requireAdminAuth, async (req: Request, res: Response) => {
+  try {
+    const { PlatformSetting } = await import('./mongodb/models');
+    const { name, durationDays, priceSar, description, features } = req.body || {};
+    const parsedDuration = Number(durationDays);
+    const parsedPrice = Number(priceSar);
+    if (
+      typeof name !== 'string' || name.trim().length < 2 || name.length > 120 ||
+      !Number.isInteger(parsedDuration) || parsedDuration < 1 || parsedDuration > 3650 ||
+      !Number.isFinite(parsedPrice) || parsedPrice < 0 || parsedPrice > 100000 ||
+      (description !== undefined && (typeof description !== 'string' || description.length > 500)) ||
+      (features !== undefined && (!Array.isArray(features) || features.some((item: unknown) => typeof item !== 'string' || item.length > 160)))
+    ) {
+      return res.status(400).json({ error: 'بيانات الخطة غير صالحة' });
+    }
+
+    const adminSession = (req.session as any).admin;
+    const plan = {
+      ...DEFAULT_PRIMARY_SUBSCRIPTION_PLAN,
+      name: name.trim(),
+      durationDays: parsedDuration,
+      priceSar: parsedPrice,
+      description: typeof description === 'string' ? description.trim() : DEFAULT_PRIMARY_SUBSCRIPTION_PLAN.description,
+      features: Array.isArray(features) && features.length > 0 ? features.map((item: string) => item.trim()).filter(Boolean) : DEFAULT_PRIMARY_SUBSCRIPTION_PLAN.features,
+      updatedAt: new Date().toISOString(),
+    };
+    const setting = await PlatformSetting.findOneAndUpdate(
+      { key: 'subscription_primary_plan' },
+      {
+        value: plan,
+        label: 'الخطة الأساسية للاشتراك',
+        type: 'json',
+        category: 'pricing',
+        description: 'السعر والمدة المعروضان للطلاب ويستخدمهما الخادم في طلبات الاشتراك',
+        updatedBy: adminSession?.username || 'admin',
+        updatedAt: new Date(),
+      },
+      { new: true, upsert: true, setDefaultsOnInsert: true },
+    );
+    res.json({ success: true, plan: setting.value });
+  } catch (error) {
+    console.error('Update subscription plan error:', error);
+    res.status(500).json({ error: 'فشل في تحديث خطة الاشتراك' });
+  }
+});
+
 // =========== WHATSAPP CONNECTION ============
 router.get('/whatsapp/status', requireAdminAuth, (_req: Request, res: Response) => {
   res.json(getWhatsAppStatus());
@@ -1454,6 +1550,32 @@ router.post('/whatsapp/notification-test', requireAdminAuth, async (_req: Reques
       error?.message === 'WHATSAPP_NOT_CONNECTED'
         ? 'اربط واتساب أولاً'
         : 'تعذر إرسال تنبيهات الاختبار حاليًا';
+    res.status(400).json({ error: message });
+  }
+});
+
+router.post('/whatsapp/campaign', requireAdminAuth, async (req: Request, res: Response) => {
+  try {
+    const { title, body, target } = req.body || {};
+    if (
+      typeof title !== 'string' || title.trim().length < 2 || title.length > 160 ||
+      typeof body !== 'string' || body.trim().length < 2 || body.length > 2000 ||
+      !['all', 'subscribed', 'free'].includes(target)
+    ) {
+      return res.status(400).json({ error: 'عنوان الرسالة والمحتوى والفئة مطلوبة' });
+    }
+
+    const result = await sendWhatsAppCampaign({
+      title: title.trim(),
+      body: body.trim(),
+      target,
+    });
+    res.json({ success: true, ...result, message: 'تم تنفيذ حملة واتساب' });
+  } catch (error: any) {
+    console.error('[WhatsApp] Campaign failed:', error?.message || error);
+    const message = error?.message === 'WHATSAPP_NOT_CONNECTED'
+      ? 'اربط واتساب أولاً'
+      : 'تعذر تنفيذ حملة واتساب حاليًا';
     res.status(400).json({ error: message });
   }
 });

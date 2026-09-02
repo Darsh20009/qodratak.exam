@@ -6,6 +6,7 @@ import {
   User,
 } from "../mongodb/models";
 import { sendWhatsAppText } from "./whatsappService";
+import { sendStudentWhatsAppNotification } from "./studentWhatsAppNotifications";
 
 const adminPhone = (
   process.env.ADMIN_WHATSAPP_PHONE || "966555053567"
@@ -93,6 +94,99 @@ export async function notifyAdminSubscription(subscription: {
       `الحالة: ${subscription.status === "active" ? "مفعّل" : "بانتظار المراجعة"}`,
     ].join("\n"),
   );
+}
+
+function normalizeCampaignPhone(value: unknown) {
+  let digits = String(value || "").replace(/\D/g, "");
+  if (digits.startsWith("00")) digits = digits.slice(2);
+  if (digits.startsWith("05") && digits.length === 10) digits = `966${digits.slice(1)}`;
+  if (digits.startsWith("5") && digits.length === 9) digits = `966${digits}`;
+  return digits.length >= 8 && digits.length <= 15 ? digits : "";
+}
+
+export type WhatsAppCampaignTarget = "all" | "subscribed" | "free";
+
+export async function sendWhatsAppCampaign(input: {
+  title: string;
+  body: string;
+  target: WhatsAppCampaignTarget;
+}) {
+  const targetFilter: any =
+    input.target === "subscribed"
+      ? {
+          $or: [
+            { "subscription.status": "active" },
+            { subscriptionStatus: "active" },
+            { isSubscribed: true, subscriptionEndDate: { $gte: new Date() } },
+          ],
+        }
+      : input.target === "free"
+        ? {
+            $and: [
+              { $or: [{ "subscription.status": { $ne: "active" } }, { subscriptionStatus: { $ne: "active" } }] },
+              { isSubscribed: { $ne: true } },
+            ],
+          }
+        : {};
+
+  const users = await User.find({
+    $and: [
+      {
+        role: { $in: ["student", "parent"] },
+        isActive: { $ne: false },
+        notifWhatsApp: { $ne: false },
+        $or: [{ phone: { $exists: true, $ne: "" } }, { whatsappPhone: { $exists: true, $ne: "" } }],
+      },
+      targetFilter,
+    ],
+  })
+    .select("_id fullName username phone whatsappPhone")
+    .limit(2000);
+
+  let sent = 0;
+  let failed = 0;
+  for (const user of users) {
+    const phone = normalizeCampaignPhone(user.whatsappPhone || user.phone);
+    if (!phone) {
+      failed++;
+      continue;
+    }
+    try {
+      await sendWhatsAppText(phone, `${input.title}\n\n${input.body}`);
+      sent++;
+    } catch (error) {
+      failed++;
+      console.error(`WhatsApp campaign failed for ${user._id}:`, error);
+    }
+  }
+
+  return { sent, failed, total: users.length };
+}
+
+export async function notifyStudentSubscriptionActivated(input: {
+  userId: string;
+  plan: string;
+  price?: number;
+  endDate?: Date | string;
+}) {
+  const endDate = input.endDate ? new Date(input.endDate) : null;
+  const endDateLabel = endDate && !Number.isNaN(endDate.getTime())
+    ? endDate.toLocaleDateString("ar-SA", { timeZone: "Asia/Riyadh" })
+    : "غير محدد";
+
+  return sendStudentWhatsAppNotification(input.userId, {
+    title: "تم تفعيل اشتراكك ✅",
+    body: [
+      "أهلاً بك في رحلتك التعليمية مع قدراتك.",
+      `الخطة: ${input.plan}`,
+      `المبلغ: ${Number(input.price || 0).toLocaleString("ar-SA")} ر.س`,
+      `ينتهي الاشتراك في: ${endDateLabel}`,
+      "",
+      "افتح المنصة وابدأ خطتك اليوم. نحن نتابع تقدمك معك خطوة بخطوة.",
+    ].join("\n"),
+    link: "/",
+    type: "success",
+  });
 }
 
 export async function sendAdminFinancialReport(period: ReportPeriod) {

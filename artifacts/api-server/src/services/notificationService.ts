@@ -1,4 +1,5 @@
 import { User, ExamBooking, TestResult } from '../mongodb/models';
+import { sendStudentWhatsAppNotification, sendDailyStudentFollowUps } from './studentWhatsAppNotifications';
 
 const BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN || '';
 
@@ -38,7 +39,6 @@ export async function checkTelegramExamReminders(): Promise<void> {
         if (user.notifExamReminder === false) continue;
 
         const chatId = user.telegramChatId || (user.telegramId ? Number(user.telegramId) : null);
-        if (!chatId) continue;
 
         const examDate = new Date(booking.scheduledAt);
         const timeStr = examDate.toLocaleTimeString('ar-SA', { hour: '2-digit', minute: '2-digit', hour12: true, timeZone: 'Asia/Riyadh' });
@@ -55,10 +55,19 @@ export async function checkTelegramExamReminders(): Promise<void> {
           `بالتوفيق! 🌟\n` +
           `<i>منصة قدراتك</i>`;
 
-        const sent = await sendTelegramMessage(chatId, msg);
-        if (sent) {
+        const sent = chatId ? await sendTelegramMessage(chatId, msg) : false;
+        const whatsappResult = await sendStudentWhatsAppNotification(String(user._id), {
+          title: 'تذكير بالاختبار',
+          body: msg.replace(/<[^>]+>/g, ''),
+          link: '/book-exam',
+          type: 'exam',
+        }).catch((error) => {
+          console.error('WhatsApp exam reminder failed:', error);
+          return { sent: false };
+        });
+        if (sent || whatsappResult.sent) {
           await ExamBooking.updateOne({ _id: booking._id }, { telegramReminderSent: true });
-          console.log(`📱 Telegram reminder sent to user ${user._id} for exam at ${timeStr}`);
+          console.log(`📱 Exam reminder sent to user ${user._id} for exam at ${timeStr}`);
         }
       } catch (err) {
         console.error(`Telegram reminder error for booking ${booking._id}:`, err);
@@ -80,18 +89,21 @@ export async function sendWeeklyReports(): Promise<void> {
         { weeklyReportLastSent: { $lt: sevenDaysAgo } },
         { weeklyReportLastSent: { $exists: false } },
       ],
-      $expr: {
-        $or: [
-          { $gt: ['$telegramChatId', 0] },
-          { $and: [{ $gt: [{ $strLenCP: { $ifNull: ['$telegramId', ''] } }, 0] }] },
-        ],
-      },
+      $and: [
+        {
+          $or: [
+            { telegramChatId: { $gt: 0 } },
+            { telegramId: { $exists: true, $ne: '' } },
+            { phone: { $exists: true, $ne: '' } },
+            { whatsappPhone: { $exists: true, $ne: '' } },
+          ],
+        },
+      ],
     }).limit(500);
 
     for (const user of users) {
       try {
         const chatId = user.telegramChatId || (user.telegramId ? Number(user.telegramId) : null);
-        if (!chatId) continue;
 
         // Aggregate last 7 days of test results
         const results = await TestResult.find({
@@ -100,15 +112,16 @@ export async function sendWeeklyReports(): Promise<void> {
         });
 
         const totalTests = results.length;
+        let msg = '';
         if (totalTests === 0) {
           // Still send a gentle nudge
-          const msg =
+          msg =
             `📊 <b>تقريرك الأسبوعي</b>\n\n` +
             `مرحباً ${user.fullName || user.username}،\n\n` +
             `لم تُجرِ أي اختبارات هذا الأسبوع.\n\n` +
             `💡 ابدأ بـ <b>10 أسئلة</b> يومياً وستلاحظ الفرق!\n\n` +
             `<i>منصة قدراتك</i>`;
-          await sendTelegramMessage(chatId, msg);
+          if (chatId) await sendTelegramMessage(chatId, msg);
         } else {
           const scores = results.map(r => (r as any).score || (r as any).totalScore || 0);
           const avg = Math.round(scores.reduce((a, b) => a + b, 0) / scores.length);
@@ -120,7 +133,7 @@ export async function sendWeeklyReports(): Promise<void> {
           const trend = avg >= 70 ? '📈 ممتاز' : avg >= 50 ? '📊 جيد' : '📉 تحتاج مراجعة';
           const emoji = avg >= 80 ? '🏆' : avg >= 60 ? '⭐' : '💪';
 
-          const msg =
+          msg =
             `📊 <b>تقريرك الأسبوعي</b>\n\n` +
             `مرحباً ${user.fullName || user.username}! ${emoji}\n\n` +
             `<b>إحصائيات الأسبوع:</b>\n` +
@@ -131,11 +144,23 @@ export async function sendWeeklyReports(): Promise<void> {
             `${trend}\n\n` +
             `${avg >= 70 ? 'استمر بهذا الأداء الرائع! 🔥' : 'لا تستسلم، التحسن يتطلب مثابرة 💪'}\n\n` +
             `<i>منصة قدراتك</i>`;
-          await sendTelegramMessage(chatId, msg);
+          if (chatId) await sendTelegramMessage(chatId, msg);
         }
 
-        await User.updateOne({ _id: user._id }, { weeklyReportLastSent: new Date() });
-        console.log(`📊 Weekly report sent to user ${user._id}`);
+        const whatsappResult = await sendStudentWhatsAppNotification(String(user._id), {
+          title: 'تقريرك الأسبوعي',
+          body: msg.replace(/<[^>]+>/g, ''),
+          link: '/reports',
+          type: 'info',
+          createInApp: false,
+        }).catch((error) => {
+          console.error(`Weekly WhatsApp report error for user ${user._id}:`, error);
+          return { sent: false };
+        });
+        if (chatId || whatsappResult.sent) {
+          await User.updateOne({ _id: user._id }, { weeklyReportLastSent: new Date() });
+          console.log(`📊 Weekly report sent to user ${user._id}`);
+        }
       } catch (err) {
         console.error(`Weekly report error for user ${user._id}:`, err);
       }
@@ -156,6 +181,19 @@ export function startNotificationScheduler(): void {
   setInterval(checkTelegramExamReminders, 5 * 60 * 1000);
   // Run once immediately on boot
   setTimeout(checkTelegramExamReminders, 30 * 1000);
+
+  // Daily WhatsApp care message at 08:00 KSA. The user timestamp prevents duplicates
+  // when the API process checks more than once during that hour.
+  const runDailyWhatsAppFollowUps = () => {
+    const riyadhNow = new Date(Date.now() + 3 * 60 * 60 * 1000);
+    if (riyadhNow.getUTCHours() === 8) {
+      void sendDailyStudentFollowUps().catch((error) =>
+        console.error('Daily WhatsApp follow-up scheduler error:', error),
+      );
+    }
+  };
+  setTimeout(runDailyWhatsAppFollowUps, 45 * 1000);
+  setInterval(runDailyWhatsAppFollowUps, 15 * 60 * 1000);
 
   // Weekly reports: check every hour, send on Sunday 20:00 KSA (17:00 UTC)
   setInterval(async () => {

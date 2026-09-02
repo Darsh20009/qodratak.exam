@@ -49,6 +49,8 @@ export interface IUser extends Document {
   childIds?: string[];
   notifExamReminder?: boolean;
   notifWeeklyReport?: boolean;
+  notifWhatsApp?: boolean;
+  whatsappDailyFollowUpLastSent?: Date;
   weeklyReportLastSent?: Date;
   subscription?: {
     type: string;
@@ -203,6 +205,8 @@ const userSchema = new Schema<IUser>({
   childIds: { type: [String], default: [] },
   notifExamReminder: { type: Boolean, default: true },
   notifWeeklyReport: { type: Boolean, default: true },
+  notifWhatsApp: { type: Boolean, default: true },
+  whatsappDailyFollowUpLastSent: { type: Date },
   weeklyReportLastSent: { type: Date },
   subscription: { type: Schema.Types.Mixed },
   city: { type: String },

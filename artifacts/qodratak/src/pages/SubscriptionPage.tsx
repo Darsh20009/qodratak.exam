@@ -35,31 +35,15 @@ const BANK_ACCOUNTS = {
 };
 const PAYPAL_LINKS = {
   pro: "https://www.paypal.com/ncp/payment/XZWPA8WLMNDGS",
-  proLife: "https://www.paypal.com/ncp/payment/SWGPHGE2JM9NN",
-  proLifePlus: "https://www.paypal.com/ncp/payment/WY6E8L94ZCTY2",
 };
 const SUBSCRIPTION_PLANS = {
   pro: {
-    name: "Pro", duration: "شهر واحد", price: "29 ريال", priceEGP: "348 جنيه", originalPrice: "49 ريال", originalPriceEGP: "588 جنيه", discount: "41%",
-    description: "الاشتراك الشهري الاحترافي",
+    name: "خطة قدراتك", duration: "3 أشهر", price: "39 ريال", priceEGP: "468 جنيه",
+    description: "اشتراك كامل لمدة 3 أشهر يشمل مسارات قدراتك التعليمية.",
     color: "bg-gradient-to-br from-blue-50 to-cyan-50 dark:from-blue-900/20 dark:to-cyan-900/20",
-    textColor: "text-blue-900 dark:text-blue-100", icon: TargetIcon, badge: "الأكثر شعبية",
+    textColor: "text-blue-900 dark:text-blue-100", icon: TargetIcon, badge: "الخطة الأساسية",
     badgeColor: "bg-gradient-to-r from-amber-400 to-orange-500",
-    features: ["🎯 وصول كامل لجميع الأسئلة", "📊 حفظ التقدم والإحصائيات", "🎨 اختبارات مخصصة", "📈 تحليل الأداء المتقدم", "💬 دعم فني محدود", "📱 تطبيق الهاتف المحمول", "🔥 خصم 41% على السعر الأصلي"]
-  },
-  proLife: {
-    name: "Pro Life", duration: "3 أشهر", price: "74 ريال", priceEGP: "888 جنيه", originalPrice: "149 ريال", originalPriceEGP: "1788 جنيه", discount: "50%",
-    description: "الاشتراك الثلاثي المتوسط", icon: CrownIcon, badge: "توفير 50%",
-    color: "bg-gradient-to-br from-green-600 via-teal-600 to-amber-600 dark:from-green-600/20 dark:via-teal-600/20 dark:to-amber-600/20",
-    textColor: "text-green-700 dark:text-green-700", badgeColor: "bg-gradient-to-r from-green-400 to-emerald-500",
-    features: ["✨ جميع مميزات Pro", "🔥 جلسات مباشرة مع الخبراء", "📊 تقارير مفصلة ومتقدمة", "🏆 أولوية في الدعم الفني", "🎁 محتوى حصري ومتقدم", "🔥 خصم 50% على السعر الأصلي"]
-  },
-  proLifePlus: {
-    name: "Pro Life Plus", duration: "6 أشهر", price: "134 ريال", priceEGP: "1608 جنيه", originalPrice: "297 ريال", originalPriceEGP: "3564 جنيه", discount: "55%",
-    description: "الاشتراك السداسي المميز", icon: DiamondIcon, badge: "الأفضل قيمة",
-    color: "bg-gradient-to-br from-emerald-50 via-teal-50 to-cyan-50 dark:from-emerald-900/20 dark:via-teal-900/20 dark:to-cyan-900/20",
-    textColor: "text-emerald-900 dark:text-emerald-100", badgeColor: "bg-gradient-to-r from-green-500 to-emerald-600",
-    features: ["💎 جميع مميزات Pro Life", "🚀 وصول مبكر للمميزات الجديدة", "🏅 شهادات إنجاز معتمدة", "🎓 دورات تدريبية حصرية", "💼 استشارات أكاديمية شخصية", "🔥 خصم 55% - أفضل قيمة مقابل المال"]
+    features: ["🎯 وصول كامل للمحتوى والاختبارات", "📊 حفظ التقدم والإحصائيات", "🗓️ خطة يومية ومتابعة مستمرة", "💬 دعم فني عبر واتساب"]
   },
 };
 const countryCodes = [
@@ -69,7 +53,7 @@ const countryCodes = [
 ];
 
 // --- TYPE DEFINITIONS ---
-type PlanKey = 'pro' | 'proLife' | 'proLifePlus';
+type PlanKey = 'pro';
 type PaymentMethod = 'bank' | 'card' | 'wallet' | 'qodratak_pay';
 type UserData = { name?: string, email?: string, password?: string, phoneNumber?: string };
 type ValidationErrors = { [key in keyof UserData]?: string } & { terms?: string };
@@ -90,6 +74,36 @@ export default function NewSubscriptionPage() {
 
   // Currency State
   const [showEgyptianPrice, setShowEgyptianPrice] = useState(false);
+  const [remotePlan, setRemotePlan] = useState<{
+    name?: string;
+    durationDays?: number;
+    priceSar?: number;
+    description?: string;
+    features?: string[];
+  } | null>(null);
+
+  useEffect(() => {
+    fetch("/api/subscription/plan", { credentials: "include", cache: "no-store" })
+      .then((response) => response.ok ? response.json() : null)
+      .then((data) => setRemotePlan(data?.plan || null))
+      .catch(() => setRemotePlan(null));
+  }, []);
+
+  const planCatalog = React.useMemo(() => {
+    const price = Number.isFinite(Number(remotePlan?.priceSar)) ? Number(remotePlan?.priceSar) : 39;
+    const durationDays = Number.isInteger(Number(remotePlan?.durationDays)) ? Number(remotePlan?.durationDays) : 90;
+    return {
+      pro: {
+        ...SUBSCRIPTION_PLANS.pro,
+        name: remotePlan?.name || SUBSCRIPTION_PLANS.pro.name,
+        duration: durationDays === 90 ? "3 أشهر" : `${durationDays} يوم`,
+        price: `${price} ريال`,
+        priceEGP: `${price * 12} جنيه`,
+        description: remotePlan?.description || SUBSCRIPTION_PLANS.pro.description,
+        features: remotePlan?.features?.length ? remotePlan.features : SUBSCRIPTION_PLANS.pro.features,
+      },
+    };
+  }, [remotePlan]);
 
   // Handlers
   const handleSubscribe = (plan: PlanKey) => {
@@ -229,7 +243,7 @@ export default function NewSubscriptionPage() {
 
           {/* Subscription Plans Grid */}
           <div className="grid lg:grid-cols-3 md:grid-cols-2 gap-8 max-w-7xl mx-auto">
-            {Object.entries(SUBSCRIPTION_PLANS).map(([key, plan]) => {
+            {Object.entries(planCatalog).map(([key, plan]) => {
               const IconComponent = plan.icon;
               return (
                 <Card key={key} className={`relative overflow-hidden border-2 transition-all duration-500 hover:shadow-2xl hover:scale-105 transform group ${plan.color} ${key === 'pro' ? 'lg:scale-105 border-amber-300 shadow-xl' : 'border-transparent'}`}>
@@ -294,7 +308,7 @@ export default function NewSubscriptionPage() {
       <PaymentDialog
         isOpen={isPaymentDialogOpen}
         onClose={handleDialogClose}
-        plan={selectedPlan ? SUBSCRIPTION_PLANS[selectedPlan] : null}
+        plan={selectedPlan ? planCatalog[selectedPlan] : null}
         planKey={selectedPlan}
         showEgyptianPrice={showEgyptianPrice}
         onSuccess={triggerConfetti}

@@ -125,7 +125,7 @@ export default function AdminDashboard({ initialTab = 'overview' }: { initialTab
   const [examFilter, setExamFilter] = useState('all');
   const [examsPage, setExamsPage] = useState(1);
   const [showManualSubDialog, setShowManualSubDialog] = useState(false);
-  const [manualSubForm, setManualSubForm] = useState({ userId: '', type: 'pro', durationDays: '30', price: '', notes: '' });
+  const [manualSubForm, setManualSubForm] = useState({ userId: '', type: 'Pro', durationDays: '90', price: '39', notes: '' });
   const [manualSubSearch, setManualSubSearch] = useState('');
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
   const [showAddEmployee, setShowAddEmployee] = useState(false);
@@ -158,6 +158,13 @@ export default function AdminDashboard({ initialTab = 'overview' }: { initialTab
   // Settings state
   const [settingsEdits, setSettingsEdits] = useState<Record<string, any>>({});
   const [savingSettings, setSavingSettings] = useState<Record<string, boolean>>({});
+  const [subscriptionPlanForm, setSubscriptionPlanForm] = useState({
+    name: 'خطة قدراتك',
+    durationDays: '90',
+    priceSar: '39',
+    description: 'اشتراك كامل لمدة 3 أشهر يشمل مسارات قدراتك التعليمية.',
+    features: 'وصول كامل للمحتوى والاختبارات\nحفظ التقدم والإحصائيات\nخطة يومية ومتابعة مستمرة\nدعم فني عبر واتساب',
+  });
 
   // Support tickets state
   const [ticketFilter, setTicketFilter] = useState('all');
@@ -165,7 +172,7 @@ export default function AdminDashboard({ initialTab = 'overview' }: { initialTab
   const [ticketNotes, setTicketNotes] = useState('');
 
   // Notifications state
-  const [notifForm, setNotifForm] = useState({ title: '', body: '', target: 'global', targetUserId: '', type: 'info', link: '' });
+  const [notifForm, setNotifForm] = useState({ title: '', body: '', target: 'global', targetUserId: '', type: 'info', link: '', sendWhatsApp: true });
   const [sendingNotif, setSendingNotif] = useState(false);
 
   // Roles/Admins state
@@ -203,6 +210,11 @@ export default function AdminDashboard({ initialTab = 'overview' }: { initialTab
   const { data: testTemplatesData, isLoading: templatesLoading } = useQuery({ queryKey: ['/api/admin/test-templates'], queryFn: () => fetch('/api/admin/test-templates', { credentials: 'include' }).then(r => r.json()), enabled: !!(session as any)?.authenticated && activeTab === 'test-builder' });
   const { data: announcementsData, isLoading: announcementsLoading } = useQuery({ queryKey: ['/api/admin/announcements'], queryFn: () => fetch('/api/admin/announcements', { credentials: 'include' }).then(r => r.json()), enabled: !!(session as any)?.authenticated && activeTab === 'announcements' });
   const { data: settingsData, isLoading: settingsLoading } = useQuery({ queryKey: ['/api/admin/settings'], queryFn: () => fetch('/api/admin/settings', { credentials: 'include' }).then(r => r.json()), enabled: !!(session as any)?.authenticated && activeTab === 'settings' });
+  const { data: subscriptionPlanData } = useQuery({
+    queryKey: ['/api/admin/subscription-plan'],
+    queryFn: () => fetch('/api/admin/subscription-plan', { credentials: 'include' }).then(r => r.json()),
+    enabled: !!(session as any)?.authenticated && activeTab === 'subscriptions',
+  });
   const { data: ticketsData, isLoading: ticketsLoading } = useQuery({ queryKey: ['/api/admin/support-tickets', ticketFilter], queryFn: () => fetch(`/api/admin/support-tickets?status=${ticketFilter}`, { credentials: 'include' }).then(r => r.json()), enabled: !!(session as any)?.authenticated && activeTab === 'support' });
   const { data: adminsData, isLoading: adminsLoading } = useQuery({ queryKey: ['/api/admin/admins'], queryFn: () => fetch('/api/admin/admins', { credentials: 'include' }).then(r => r.json()), enabled: !!(session as any)?.authenticated && activeTab === 'roles' });
   const { data: notificationsData, isLoading: notificationsLoading, refetch: refetchNotifications } = useQuery({ queryKey: ['/api/notifications/in-app/global'], queryFn: () => fetch('/api/notifications/in-app/global?limit=50', { credentials: 'include' }).then(r => r.json()), enabled: !!(session as any)?.authenticated && activeTab === 'notifications' });
@@ -258,6 +270,47 @@ export default function AdminDashboard({ initialTab = 'overview' }: { initialTab
     } catch { toast({ title: 'فشل في حفظ الإعداد', variant: 'destructive' }); }
     setSavingSettings(s => ({ ...s, [key]: false }));
   };
+
+  useEffect(() => {
+    const plan = (subscriptionPlanData as any)?.plan;
+    if (!plan) return;
+    setSubscriptionPlanForm({
+      name: plan.name || 'خطة قدراتك',
+      durationDays: String(plan.durationDays || 90),
+      priceSar: String(plan.priceSar ?? 39),
+      description: plan.description || '',
+      features: Array.isArray(plan.features) ? plan.features.join('\n') : '',
+    });
+    setManualSubForm(current => current.type === 'Pro'
+      ? { ...current, durationDays: String(plan.durationDays || 90), price: String(plan.priceSar ?? 39) }
+      : current);
+  }, [subscriptionPlanData]);
+
+  const saveSubscriptionPlan = useMutation({
+    mutationFn: async () => {
+      const response = await fetch('/api/admin/subscription-plan', {
+        method: 'PUT',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: subscriptionPlanForm.name,
+          durationDays: Number(subscriptionPlanForm.durationDays),
+          priceSar: Number(subscriptionPlanForm.priceSar),
+          description: subscriptionPlanForm.description,
+          features: subscriptionPlanForm.features.split('\n').map(item => item.trim()).filter(Boolean),
+        }),
+      });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error || 'فشل في حفظ الخطة');
+      return data;
+    },
+    onSuccess: () => {
+      toast({ title: '✅ تم تحديث خطة الاشتراك', description: 'سيظهر السعر والمدة الجديدان في صفحة الاشتراك ومسارات الدفع.' });
+      queryClient.invalidateQueries({ queryKey: ['/api/admin/subscription-plan'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/subscription/plan'] });
+    },
+    onError: (error: Error) => toast({ title: 'تعذر تحديث خطة الاشتراك', description: error.message, variant: 'destructive' }),
+  });
 
   // Support ticket mutation
   const updateTicket = useMutation({
@@ -360,7 +413,7 @@ export default function AdminDashboard({ initialTab = 'overview' }: { initialTab
         toast({ title: '✅ تم إنشاء الاشتراك بنجاح' });
         queryClient.invalidateQueries({ queryKey: ['/api/admin/subscriptions'] });
         setShowManualSubDialog(false);
-        setManualSubForm({ userId: '', type: 'pro', durationDays: '30', price: '', notes: '' });
+        setManualSubForm({ userId: '', type: 'Pro', durationDays: '90', price: '39', notes: '' });
         setManualSubSearch('');
       } else {
         toast({ title: d.error || 'خطأ', variant: 'destructive' });
@@ -680,6 +733,50 @@ export default function AdminDashboard({ initialTab = 'overview' }: { initialTab
                   <p className="text-yellow-300 text-sm font-medium">{pendingSubCount} اشتراك بانتظار المراجعة والموافقة</p>
                 </div>
               )}
+              <div className="rounded-2xl border border-orange-500/20 bg-orange-500/5 p-5">
+                <div className="flex flex-wrap items-start justify-between gap-3">
+                  <div>
+                    <h3 className="flex items-center gap-2 text-white font-bold">
+                      <CreditCard className="w-5 h-5 text-orange-300" />
+                      الخطة التي يراها الطالب
+                    </h3>
+                    <p className="mt-1 text-xs leading-5 text-slate-400">
+                      عدّل السعر والمدة من هنا. صفحة الاشتراك وطلبات الدفع تستخدمان نفس القيم تلقائيًا، والاشتراكات القديمة لا تتغير.
+                    </p>
+                  </div>
+                  <span className="rounded-full bg-emerald-500/10 px-3 py-1 text-xs font-bold text-emerald-300">خطة واحدة — 3 أشهر</span>
+                </div>
+                <div className="mt-4 grid gap-3 md:grid-cols-3">
+                  <label className="text-xs font-bold text-slate-300">
+                    اسم الخطة
+                    <Input value={subscriptionPlanForm.name} onChange={e => setSubscriptionPlanForm(f => ({ ...f, name: e.target.value }))} className="mt-1 h-10 border-slate-700 bg-slate-800 text-white" />
+                  </label>
+                  <label className="text-xs font-bold text-slate-300">
+                    المدة بالأيام
+                    <Input type="number" min="1" value={subscriptionPlanForm.durationDays} onChange={e => setSubscriptionPlanForm(f => ({ ...f, durationDays: e.target.value }))} className="mt-1 h-10 border-slate-700 bg-slate-800 text-white" />
+                  </label>
+                  <label className="text-xs font-bold text-slate-300">
+                    السعر بالريال
+                    <Input type="number" min="0" step="0.01" value={subscriptionPlanForm.priceSar} onChange={e => setSubscriptionPlanForm(f => ({ ...f, priceSar: e.target.value }))} className="mt-1 h-10 border-slate-700 bg-slate-800 text-white" />
+                  </label>
+                  <label className="text-xs font-bold text-slate-300 md:col-span-3">
+                    وصف الخطة
+                    <Input value={subscriptionPlanForm.description} onChange={e => setSubscriptionPlanForm(f => ({ ...f, description: e.target.value }))} className="mt-1 h-10 border-slate-700 bg-slate-800 text-white" />
+                  </label>
+                  <label className="text-xs font-bold text-slate-300 md:col-span-3">
+                    المميزات — ميزة في كل سطر
+                    <Textarea value={subscriptionPlanForm.features} onChange={e => setSubscriptionPlanForm(f => ({ ...f, features: e.target.value }))} className="mt-1 min-h-24 border-slate-700 bg-slate-800 text-white" />
+                  </label>
+                </div>
+                <Button
+                  onClick={() => saveSubscriptionPlan.mutate()}
+                  disabled={saveSubscriptionPlan.isPending || !subscriptionPlanForm.name.trim() || !subscriptionPlanForm.durationDays || !subscriptionPlanForm.priceSar}
+                  className="mt-4 gap-2 bg-orange-600 text-white hover:bg-orange-700"
+                >
+                  <Save className="w-4 h-4" />
+                  {saveSubscriptionPlan.isPending ? 'جارٍ الحفظ...' : 'حفظ الخطة والسعر'}
+                </Button>
+              </div>
               <div className="flex gap-3 flex-wrap items-center">
                 <Button
                   onClick={() => setShowManualSubDialog(true)}
@@ -1592,6 +1689,16 @@ export default function AdminDashboard({ initialTab = 'overview' }: { initialTab
                     />
                   </div>
 
+                  <label className="flex cursor-pointer items-center gap-2 text-sm text-slate-300">
+                    <input
+                      type="checkbox"
+                      checked={notifForm.sendWhatsApp}
+                      onChange={e => setNotifForm(f => ({ ...f, sendWhatsApp: e.target.checked }))}
+                      className="h-4 w-4 accent-emerald-500"
+                    />
+                    إرسال نفس الإشعار عبر واتساب للمستخدمين الذين فعّلوا التنبيهات
+                  </label>
+
                   {/* Send buttons */}
                   <div className="flex gap-3 pt-1">
                     <Button
@@ -1613,6 +1720,7 @@ export default function AdminDashboard({ initialTab = 'overview' }: { initialTab
                               type: notifForm.type,
                               target: notifForm.target,
                               link: notifForm.link || undefined,
+                              sendWhatsApp: notifForm.sendWhatsApp,
                             }),
                           });
                           if (res.ok) {
@@ -2477,13 +2585,8 @@ export default function AdminDashboard({ initialTab = 'overview' }: { initialTab
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent className="bg-slate-800 border-slate-700">
-                    <SelectItem value="trial">تجريبي (3 أيام)</SelectItem>
-                    <SelectItem value="monthly">شهري</SelectItem>
-                    <SelectItem value="quarterly">ربع سنوي</SelectItem>
-                    <SelectItem value="semi-annual">نصف سنوي</SelectItem>
-                    <SelectItem value="annual">سنوي</SelectItem>
-                    <SelectItem value="pro">Pro</SelectItem>
-                    <SelectItem value="pro_life">Pro Life</SelectItem>
+                    <SelectItem value="Pro">خطة قدراتك الأساسية</SelectItem>
+                    <SelectItem value="free">منح مجاني</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
