@@ -49,7 +49,7 @@ export default function WhatsAppAdminTab() {
   });
 
   const sendTest = useMutation({
-    mutationFn: () => request("/api/admin/whatsapp/test-message", { phone: testPhone }),
+    mutationFn: () => request("/api/admin/whatsapp/test-message", { phone: testPhone.trim() }),
     onSuccess: () => toast({ title: "تم الإرسال", description: "وصلت رسالة الاختبار إلى الرقم المحدد." }),
     onError: (error: Error) => toast({ title: "تعذر إرسال الرسالة", description: error.message, variant: "destructive" }),
   });
@@ -79,6 +79,7 @@ export default function WhatsAppAdminTab() {
           <div className="flex flex-wrap gap-2">
             {!connected && (
               <button
+                type="button"
                 onClick={() => action.mutate({ path: "/api/admin/whatsapp/connect" })}
                 disabled={action.isPending || status?.state === "connecting"}
                 className="flex items-center gap-2 rounded-xl bg-[#24202D] px-4 py-2.5 text-sm font-bold text-white disabled:opacity-50"
@@ -87,6 +88,7 @@ export default function WhatsAppAdminTab() {
               </button>
             )}
             <button
+              type="button"
               onClick={() => action.mutate({ path: "/api/admin/whatsapp/disconnect", body: { clearSession: connected || status?.hasSavedSession } })}
               disabled={action.isPending}
               className="flex items-center gap-2 rounded-xl border border-red-200 px-4 py-2.5 text-sm font-bold text-red-700 disabled:opacity-50"
@@ -123,6 +125,7 @@ export default function WhatsAppAdminTab() {
         <div className="mt-4 flex max-w-lg gap-2" dir="ltr">
           <Input value={testPhone} onChange={(event) => setTestPhone(event.target.value)} placeholder="+9665XXXXXXXX" className="h-11" />
           <button
+            type="button"
             onClick={() => sendTest.mutate()}
             disabled={!connected || !testPhone.trim() || sendTest.isPending}
             className="flex shrink-0 items-center gap-2 rounded-xl bg-[#2E8B70] px-4 text-sm font-bold text-white disabled:opacity-40"

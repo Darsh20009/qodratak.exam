@@ -1369,14 +1369,24 @@ router.post('/whatsapp/disconnect', requireAdminAuth, async (req: Request, res: 
 
 router.post('/whatsapp/test-message', requireAdminAuth, async (req: Request, res: Response) => {
   try {
-    const { phone } = req.body;
-    if (!phone) return res.status(400).json({ error: 'رقم الاختبار مطلوب' });
-    await sendWhatsAppText(phone, 'تم ربط منصة قدراتك بواتساب بنجاح ✅');
-    res.json({ success: true });
+    let digits = String(req.body?.phone || '').replace(/\D/g, '');
+    if (digits.startsWith('00')) digits = digits.slice(2);
+    if (digits.startsWith('05')) digits = `966${digits.slice(1)}`;
+    if (digits.startsWith('5') && digits.length === 9) digits = `966${digits}`;
+    if (digits.length < 8 || digits.length > 15) {
+      return res.status(400).json({ error: 'أدخل رقم واتساب صحيحًا مع رمز الدولة' });
+    }
+    await sendWhatsAppText(digits, 'تم ربط منصة قدراتك بواتساب بنجاح ✅');
+    console.info('[WhatsApp] Test message sent successfully');
+    res.json({ success: true, message: 'تم إرسال رسالة الاختبار' });
   } catch (error: any) {
-    const message = error?.message === 'WHATSAPP_NOT_CONNECTED'
-      ? 'اربط واتساب أولاً'
-      : 'تعذر إرسال رسالة الاختبار';
+    console.error('[WhatsApp] Test message failed:', error?.message || error);
+    const message =
+      error?.message === 'WHATSAPP_NOT_CONNECTED'
+        ? 'اربط واتساب أولاً'
+        : error?.message === 'INVALID_PHONE'
+          ? 'أدخل رقم واتساب صحيحًا مع رمز الدولة'
+          : 'تعذر إرسال رسالة الاختبار. تحقق من الرقم وحالة الاتصال.';
     res.status(400).json({ error: message });
   }
 });
