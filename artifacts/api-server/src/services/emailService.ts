@@ -1,33 +1,67 @@
+import nodemailer from 'nodemailer';
+
 const SMTP2GO_API_KEY = process.env.SMTP2GO_API_KEY;
-const FROM_EMAIL = process.env.FROM_EMAIL || 'noreply@qodratak.sa';
+const SMTP_HOST = process.env.SMTP_HOST || 'qirox.online';
+const SMTP_PORT = Number(process.env.SMTP_PORT || 465);
+const SMTP_SECURE = process.env.SMTP_SECURE !== 'false';
+const SMTP_USER = process.env.SMTP_USER || 'qodratak@qirox.online';
+const SMTP_PASS = process.env.SMTP_PASS;
+const FROM_EMAIL = process.env.FROM_EMAIL || SMTP_USER || 'noreply@qodratak.sa';
 const FROM_NAME = process.env.FROM_NAME || 'منصة قدراتك';
+let smtpTransporter: ReturnType<typeof nodemailer.createTransport> | null = null;
+
+function getSmtpTransporter() {
+  if (!SMTP_PASS) return null;
+  if (!smtpTransporter) {
+    smtpTransporter = nodemailer.createTransport({
+      host: SMTP_HOST,
+      port: SMTP_PORT,
+      secure: SMTP_SECURE,
+      auth: { user: SMTP_USER, pass: SMTP_PASS },
+      tls: { minVersion: 'TLSv1.2' },
+    });
+  }
+  return smtpTransporter;
+}
 
 async function sendEmail(to: string | string[], subject: string, htmlBody: string, textBody: string): Promise<boolean> {
   try {
-    if (!SMTP2GO_API_KEY) {
-      console.error('❌ SMTP2GO_API_KEY is not configured');
+    const toList = Array.isArray(to) ? to : [to];
+    if (SMTP2GO_API_KEY) {
+      const res = await fetch('https://api.smtp2go.com/v3/email/send', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          api_key: SMTP2GO_API_KEY,
+          sender: `${FROM_NAME} <${FROM_EMAIL}>`,
+          to: toList,
+          subject,
+          html_body: htmlBody,
+          text_body: textBody,
+        }),
+      });
+      const data: any = await res.json();
+      if (data?.data?.succeeded > 0) {
+        console.log(`✅ Email sent via SMTP2Go to ${toList.join(', ')} | id: ${data?.data?.email_id}`);
+        return true;
+      }
+      console.error('❌ SMTP2Go send failed:', JSON.stringify(data));
+    }
+
+    const transporter = getSmtpTransporter();
+    if (!transporter) {
+      console.error('❌ Email is not configured: set SMTP2GO_API_KEY or SMTP_PASS in Replit Secrets');
       return false;
     }
-    const toList = Array.isArray(to) ? to : [to];
-    const res = await fetch('https://api.smtp2go.com/v3/email/send', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        api_key: SMTP2GO_API_KEY,
-        sender: `${FROM_NAME} <${FROM_EMAIL}>`,
-        to: toList,
-        subject,
-        html_body: htmlBody,
-        text_body: textBody,
-      }),
+    const info = await transporter.sendMail({
+      from: `${FROM_NAME} <${FROM_EMAIL}>`,
+      to: toList,
+      subject,
+      html: htmlBody,
+      text: textBody,
     });
-    const data: any = await res.json();
-    if (data?.data?.succeeded > 0) {
-      console.log(`✅ Email sent to ${toList.join(', ')} | id: ${data?.data?.email_id}`);
-      return true;
-    }
-    console.error('❌ SMTP2Go send failed:', JSON.stringify(data));
-    return false;
+    console.log(`✅ Email sent via secure SMTP to ${toList.join(', ')} | id: ${info.messageId}`);
+    return true;
   } catch (error) {
     console.error('❌ Error sending email:', error);
     return false;
@@ -457,6 +491,16 @@ export async function sendTestEmail(to: string): Promise<boolean> {
 
 export async function testEmailConnection(): Promise<boolean> {
   try {
+    const transporter = getSmtpTransporter();
+    if (!SMTP2GO_API_KEY && transporter) {
+      await transporter.verify();
+      console.log(`✅ Secure SMTP connection verified (${SMTP_HOST}:${SMTP_PORT})`);
+      return true;
+    }
+    if (!SMTP2GO_API_KEY) {
+      console.error('❌ No email provider configured');
+      return false;
+    }
     const res = await fetch('https://api.smtp2go.com/v3/email/send', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },

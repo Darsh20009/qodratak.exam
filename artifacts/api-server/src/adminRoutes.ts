@@ -1307,7 +1307,7 @@ const DEFAULT_SETTINGS = [
   { key: 'bank_iban', label: 'رقم الآيبان', value: 'SA0000000000000000000000', type: 'text', category: 'payment', description: 'رقم الآيبان للتحويل البنكي' },
   { key: 'bank_name', label: 'اسم البنك', value: 'بنك الراجحي', type: 'text', category: 'payment', description: 'اسم البنك' },
   { key: 'support_email', label: 'بريد الدعم الفني', value: 'support@qodratak.com', type: 'text', category: 'contact', description: 'البريد الإلكتروني للدعم الفني' },
-  { key: 'support_whatsapp', label: 'واتساب الدعم', value: '+966500000000', type: 'text', category: 'contact', description: 'رقم واتساب للدعم' },
+  { key: 'support_whatsapp', label: 'واتساب الدعم', value: '+966511500913', type: 'text', category: 'contact', description: 'رقم واتساب للدعم' },
 ];
 
 router.get('/settings', requireAdminAuth, async (req: Request, res: Response) => {
