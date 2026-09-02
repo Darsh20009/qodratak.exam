@@ -28,6 +28,7 @@ import {
   verifyPhoneVerificationToken,
 } from '../services/phoneOtpService';
 import { sendWhatsAppText } from '../services/whatsappService';
+import { sendStudentExamResult } from '../services/whatsappBot';
 import {
   getDeviceKey,
   MAX_REGISTERED_DEVICES,
@@ -37,9 +38,15 @@ import {
 
 const deviceLimitAlertCooldowns = new Map<string, number>();
 const DEVICE_LIMIT_ALERT_COOLDOWN_MS = 10 * 60 * 1000;
+const DEVICE_MANAGEMENT_TOKEN_TTL_MS = 15 * 60 * 1000;
 
 function notifyDeviceLimitReached(user: any): void {
-  const phone = normalizeSaudiPhone(user?.phone || user?.phoneNumber || '');
+  let phone = '';
+  try {
+    phone = normalizeSaudiPhone(user?.phone || user?.phoneNumber || '');
+  } catch {
+    return;
+  }
   const userKey = String(user?._id || user?.id || phone || '');
   if (!phone || !userKey) return;
 
@@ -59,6 +66,55 @@ function notifyDeviceLimitReached(user: any): void {
   void sendWhatsAppText(phone, message).catch((error) => {
     console.error('Failed to send device-limit WhatsApp alert:', error);
   });
+}
+
+function sendDeviceLimitResponse(req: Request, res: Response, user: any, devices: unknown) {
+  const managementToken = crypto.randomBytes(24).toString('hex');
+  (req.session as any).deviceManagement = {
+    userId: String(user?._id || user?.id || ''),
+    token: managementToken,
+    expiresAt: Date.now() + DEVICE_MANAGEMENT_TOKEN_TTL_MS,
+  };
+
+  notifyDeviceLimitReached(user);
+  return new Promise<void>((resolve) => {
+    req.session.save((error) => {
+      if (error) {
+        console.error('Device management session save error:', error);
+        res.status(500).json({ error: 'تعذر فتح إدارة الأجهزة. حاول مرة أخرى.' });
+      } else {
+        res.status(409).json({
+          message: 'وصلت إلى الحد الأقصى لجهازين. اختر جهازًا من القائمة لحذفه ثم حاول تسجيل الدخول مجددًا.',
+          code: 'DEVICE_LIMIT_REACHED',
+          devices: publicDevices(devices),
+          limit: MAX_REGISTERED_DEVICES,
+          managementToken,
+        });
+      }
+      resolve();
+    });
+  });
+}
+
+function deviceManagementAccess(req: Request) {
+  const session = req.session as any;
+  if (session.userId) {
+    return { userId: String(session.userId), challenge: false };
+  }
+
+  const challenge = session.deviceManagement;
+  const token = String(req.headers['x-device-management-token'] || '');
+  if (
+    challenge?.userId &&
+    challenge.token &&
+    token &&
+    challenge.token === token &&
+    Number(challenge.expiresAt) > Date.now()
+  ) {
+    return { userId: String(challenge.userId), challenge: true };
+  }
+
+  return null;
 }
 
 // RBAC System - Sprint 0
@@ -211,6 +267,10 @@ async function scheduleAiReviewAndEmail(bookingId: string, userId: string): Prom
     const dbUser = await User.findOne({ _id: userId }).lean() as any;
     const userEmail = dbUser?.email;
     const userFullName = dbUser?.fullName || dbUser?.name || dbUser?.username || 'الطالب';
+
+    void sendStudentExamResult(dbUser?.whatsappPhone || dbUser?.phone, fresh).catch((error) =>
+      console.error('[WhatsApp Exam Result] student notification failed:', error),
+    );
 
     await notifyLinkedParentsOfResult(userId, {
       testType: fresh.examType || 'standard',
@@ -1848,12 +1908,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
             const deviceAccess = registerDevice(mongoUser.devices, req, req.body?.deviceId);
             if (!deviceAccess.allowed) {
-              notifyDeviceLimitReached(mongoUser);
-              return res.status(409).json({
-                message: "وصلت إلى الحد الأقصى لجهازين. احذف جهازاً قديماً من إدارة الأجهزة ثم حاول مجدداً.",
-                code: "DEVICE_LIMIT_REACHED",
-                devices: publicDevices(deviceAccess.devices),
-              });
+              return sendDeviceLimitResponse(req, res, mongoUser, deviceAccess.devices);
             }
             mongoUser.devices = deviceAccess.devices as any;
             await mongoUser.save();
@@ -1941,12 +1996,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       const deviceAccess = registerDevice(user.devices, req, req.body?.deviceId);
       if (!deviceAccess.allowed) {
-        notifyDeviceLimitReached(user);
-        return res.status(409).json({
-          message: "وصلت إلى الحد الأقصى لجهازين. احذف جهازاً قديماً من إدارة الأجهزة ثم حاول مجدداً.",
-          code: "DEVICE_LIMIT_REACHED",
-          devices: publicDevices(deviceAccess.devices),
-        });
+        return sendDeviceLimitResponse(req, res, user, deviceAccess.devices);
       }
       user.devices = deviceAccess.devices;
 
@@ -2183,12 +2233,7 @@ const phoneOtpStore = new Map<string, { otp: string; expiry: Date; chatId?: numb
         if (mongoUser) {
           const deviceAccess = registerDevice(mongoUser.devices, req, req.body?.deviceId);
           if (!deviceAccess.allowed) {
-            notifyDeviceLimitReached(mongoUser);
-            return res.status(409).json({
-              error: 'وصلت إلى الحد الأقصى لجهازين. احذف جهازاً قديماً من إدارة الأجهزة ثم حاول مجدداً.',
-              code: 'DEVICE_LIMIT_REACHED',
-              devices: publicDevices(deviceAccess.devices),
-            });
+            return sendDeviceLimitResponse(req, res, mongoUser, deviceAccess.devices);
           }
           mongoUser.devices = deviceAccess.devices as any;
           await mongoUser.save();
@@ -2210,12 +2255,7 @@ const phoneOtpStore = new Map<string, { otp: string; expiry: Date; chatId?: numb
       if (localUser && !loginUser) {
         const deviceAccess = registerDevice(localUser.devices, req, req.body?.deviceId);
         if (!deviceAccess.allowed) {
-          notifyDeviceLimitReached(localUser);
-          return res.status(409).json({
-            error: 'وصلت إلى الحد الأقصى لجهازين. احذف جهازاً قديماً من إدارة الأجهزة ثم حاول مجدداً.',
-            code: 'DEVICE_LIMIT_REACHED',
-            devices: publicDevices(deviceAccess.devices),
-          });
+          return sendDeviceLimitResponse(req, res, localUser, deviceAccess.devices);
         }
         localUser.devices = deviceAccess.devices;
         fs.writeFileSync('attached_assets/user.json', JSON.stringify(users, null, 2));
@@ -2573,9 +2613,11 @@ const phoneOtpStore = new Map<string, { otp: string; expiry: Date; chatId?: numb
     }
   });
 
-  app.get('/api/user/devices', requireAuth, async (req: Request, res: Response) => {
+  app.get('/api/user/devices', async (req: Request, res: Response) => {
     try {
-      const userId = String((req.session as any).userId);
+      const access = deviceManagementAccess(req);
+      if (!access) return res.status(401).json({ error: 'يجب تسجيل الدخول أو إكمال التحقق أولاً' });
+      const userId = access.userId;
       const currentDeviceKey = getDeviceKey(req, req.headers['x-device-id']);
       if (mongoose.connection.readyState === 1) {
         const { User: MongoUser } = await import('./mongodb/models');
@@ -2598,13 +2640,15 @@ const phoneOtpStore = new Map<string, { otp: string; expiry: Date; chatId?: numb
     }
   });
 
-  app.delete('/api/user/devices/:deviceId', requireAuth, async (req: Request, res: Response) => {
+  app.delete('/api/user/devices/:deviceId', async (req: Request, res: Response) => {
     try {
       const deviceId = String(req.params.deviceId || '');
       if (!/^[a-f0-9]{32}$/.test(deviceId)) {
         return res.status(400).json({ error: 'معرّف الجهاز غير صالح' });
       }
-      const userId = String((req.session as any).userId);
+      const access = deviceManagementAccess(req);
+      if (!access) return res.status(401).json({ error: 'يجب تسجيل الدخول أو إكمال التحقق أولاً' });
+      const userId = access.userId;
       if (mongoose.connection.readyState === 1) {
         const { User: MongoUser } = await import('./mongodb/models');
         await MongoUser.findByIdAndUpdate(userId, { $pull: { devices: { deviceKey: deviceId } } });
@@ -2615,10 +2659,94 @@ const phoneOtpStore = new Map<string, { otp: string; expiry: Date; chatId?: numb
         user.devices = (user.devices || []).filter((device: any) => device.deviceKey !== deviceId);
         fs.writeFileSync('attached_assets/user.json', JSON.stringify(users, null, 2));
       }
+      if (access.challenge) {
+        const challenge = (req.session as any).deviceManagement;
+        challenge.deviceRemoved = true;
+        challenge.updatedAt = Date.now();
+        await new Promise<void>((resolve, reject) => {
+          req.session.save((error) => error ? reject(error) : resolve());
+        });
+      }
       return res.json({ success: true });
     } catch (error) {
       console.error('Delete device error:', error);
       return res.status(500).json({ error: 'تعذر حذف الجهاز' });
+    }
+  });
+
+  app.post('/api/auth/device-management/complete', async (req: Request, res: Response) => {
+    try {
+      const access = deviceManagementAccess(req);
+      const challenge = (req.session as any).deviceManagement;
+      if (!access?.challenge || !challenge?.deviceRemoved) {
+        return res.status(400).json({ error: 'احذف جهازًا أولًا قبل إكمال تسجيل الدخول' });
+      }
+
+      let loginUser: any = null;
+      if (mongoose.connection.readyState === 1) {
+        const { User: MongoUser } = await import('./mongodb/models');
+        const mongoUser = await MongoUser.findById(access.userId) as any;
+        if (mongoUser) {
+          const deviceAccess = registerDevice(mongoUser.devices, req, req.body?.deviceId);
+          if (!deviceAccess.allowed) {
+            return res.status(409).json({
+              error: 'ما زال الحساب ممتلئًا بالأجهزة. احذف جهازًا آخر ثم حاول مجددًا.',
+              code: 'DEVICE_LIMIT_REACHED',
+              devices: publicDevices(deviceAccess.devices),
+              limit: MAX_REGISTERED_DEVICES,
+              managementToken: challenge.token,
+            });
+          }
+          mongoUser.devices = deviceAccess.devices as any;
+          await mongoUser.save();
+          loginUser = {
+            id: String(mongoUser._id),
+            name: mongoUser.fullName || mongoUser.username,
+            fullName: mongoUser.fullName || mongoUser.username,
+            username: mongoUser.username,
+            email: mongoUser.email,
+            phone: mongoUser.phone,
+            role: mongoUser.role || 'student',
+            points: mongoUser.points || 0,
+            level: mongoUser.level || 1,
+            subscription: mongoUser.subscription || { type: 'free', status: 'active' },
+            devices: mongoUser.devices,
+          };
+        }
+      } else {
+        const users = JSON.parse(fs.readFileSync('attached_assets/user.json', 'utf-8'));
+        const user = users.find((candidate: any) => String(candidate.id) === access.userId);
+        if (user) {
+          const deviceAccess = registerDevice(user.devices, req, req.body?.deviceId);
+          if (!deviceAccess.allowed) {
+            return res.status(409).json({
+              error: 'ما زال الحساب ممتلئًا بالأجهزة. احذف جهازًا آخر ثم حاول مجددًا.',
+              code: 'DEVICE_LIMIT_REACHED',
+              devices: publicDevices(deviceAccess.devices),
+              limit: MAX_REGISTERED_DEVICES,
+              managementToken: challenge.token,
+            });
+          }
+          user.devices = deviceAccess.devices;
+          fs.writeFileSync('attached_assets/user.json', JSON.stringify(users, null, 2));
+          loginUser = { ...user };
+        }
+      }
+
+      if (!loginUser) return res.status(404).json({ error: 'المستخدم غير موجود' });
+      (req.session as any).userId = loginUser.id;
+      (req.session as any).userEmail = loginUser.email;
+      (req.session as any).userRole = loginUser.role || 'student';
+      delete (req.session as any).deviceManagement;
+
+      return req.session.save((sessionError) => {
+        if (sessionError) return res.status(500).json({ error: 'تعذر حفظ جلسة الدخول' });
+        const { password: _password, ...safeUser } = loginUser;
+        return res.json(safeUser);
+      });
+    } catch (error) {
+      console.error('Complete device-management login error:', error);
+      return res.status(500).json({ error: 'تعذر إكمال تسجيل الدخول' });
     }
   });
 

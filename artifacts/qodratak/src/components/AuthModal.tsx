@@ -1,6 +1,7 @@
 import { useMemo, useState } from "react";
 import { useLocation } from "wouter";
-import { CheckCircle2, ChevronDown, Eye, EyeOff, KeyRound, Loader2, Lock, Mail, MessageCircle, Phone, User, UsersRound, X } from "lucide-react";
+import { useQueryClient } from "@tanstack/react-query";
+import { CheckCircle2, ChevronDown, Eye, EyeOff, KeyRound, Laptop, Loader2, Lock, Mail, MessageCircle, Phone, Smartphone, Trash2, User, UsersRound, X } from "lucide-react";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
 import { getDeviceId } from "@/lib/device";
@@ -9,6 +10,12 @@ import { setAdminAccessToken } from "@/lib/adminSession";
 type AuthMode = "login" | "signup";
 type LoginMethod = "phone" | "email";
 type AccountType = "student" | "parent" | null;
+type DeviceLimitDevice = {
+  id: string;
+  label: string;
+  firstSeenAt?: string;
+  lastSeenAt?: string;
+};
 
 const countries = [
   ["السعودية", "966", "🇸🇦"], ["الإمارات", "971", "🇦🇪"], ["الكويت", "965", "🇰🇼"], ["البحرين", "973", "🇧🇭"],
@@ -77,6 +84,7 @@ function EmailField({ value, onChange, required = true }: { value: string; onCha
 
 export function AuthModal({ open, mode, onClose, onModeChange }: { open: boolean; mode: AuthMode; onClose: () => void; onModeChange: (mode: AuthMode) => void }) {
   const [, setLocation] = useLocation();
+  const queryClient = useQueryClient();
   const { toast } = useToast();
   const [method, setMethod] = useState<LoginMethod>("phone");
   const [accountType, setAccountType] = useState<AccountType>(null);
@@ -94,6 +102,8 @@ export function AuthModal({ open, mode, onClose, onModeChange }: { open: boolean
   const [confirmPassword, setConfirmPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [deviceLimit, setDeviceLimit] = useState<{ devices: DeviceLimitDevice[]; managementToken: string } | null>(null);
+  const [removingDeviceId, setRemovingDeviceId] = useState<string | null>(null);
 
   // Parent specific state
   const [parentName, setParentName] = useState("");
@@ -124,14 +134,65 @@ export function AuthModal({ open, mode, onClose, onModeChange }: { open: boolean
       window.location.replace("/admin/dashboard");
       return;
     }
+    const requestedReturn = new URLSearchParams(window.location.search).get("return");
+    const returnPath = requestedReturn && requestedReturn.startsWith("/") && !requestedReturn.startsWith("//")
+      ? requestedReturn
+      : null;
     localStorage.setItem("user", JSON.stringify(user));
     localStorage.setItem("isLoggedIn", "true");
+    queryClient.setQueryData(["/api/user"], user);
     window.dispatchEvent(new CustomEvent("userLoggedIn", { detail: user }));
     onClose();
     if (user.role === "parent") {
-      setLocation("/parent-dashboard");
+      setLocation(returnPath || "/parent-dashboard");
     } else {
-      setLocation(user.role === "institution_admin" ? "/institution" : "/");
+      setLocation(returnPath || (user.role === "institution_admin" ? "/institution" : "/"));
+    }
+  };
+
+  const showDeviceLimit = (result: any) => {
+    if (result?.code !== "DEVICE_LIMIT_REACHED") return false;
+    setDeviceLimit({
+      devices: Array.isArray(result.devices) ? result.devices : [],
+      managementToken: String(result.managementToken || ""),
+    });
+    return true;
+  };
+
+  const removeBlockedDevice = async (device: DeviceLimitDevice) => {
+    if (!deviceLimit?.managementToken) {
+      toast({ title: "تعذر حذف الجهاز", description: "انتهت صلاحية إدارة الأجهزة. أعد محاولة الدخول للحصول على قائمة جديدة.", variant: "destructive" });
+      return;
+    }
+    setRemovingDeviceId(device.id);
+    try {
+      const response = await fetch(`/api/user/devices/${device.id}`, {
+        method: "DELETE",
+        credentials: "include",
+        headers: { "x-device-management-token": deviceLimit.managementToken },
+      });
+      const result = await response.json();
+      if (!response.ok) throw new Error(result.error || "تعذر حذف الجهاز");
+      setDeviceLimit((current) => current
+        ? { ...current, devices: current.devices.filter((item) => item.id !== device.id) }
+        : current);
+      const loginResponse = await fetch("/api/auth/device-management/complete", {
+        method: "POST",
+        credentials: "include",
+        headers: { "Content-Type": "application/json", "x-device-management-token": deviceLimit.managementToken },
+        body: JSON.stringify({ deviceId: getDeviceId() }),
+      });
+      const loginResult = await loginResponse.json();
+      if (loginResponse.ok) {
+        setDeviceLimit(null);
+        await finishLogin(loginResult);
+        return;
+      }
+      toast({ title: "تم حذف الجهاز", description: loginResult.error || "يمكنك الآن العودة لمحاولة تسجيل الدخول." });
+    } catch (error: any) {
+      toast({ title: "تعذر حذف الجهاز", description: error.message, variant: "destructive" });
+    } finally {
+      setRemovingDeviceId(null);
     }
   };
 
@@ -144,7 +205,10 @@ export function AuthModal({ open, mode, onClose, onModeChange }: { open: boolean
       body: JSON.stringify({ phone: number, otp, purpose, deviceId: getDeviceId() }),
     });
     const result = await response.json();
-    if (!response.ok) throw new Error(result.error || result.message || "تعذر التحقق من رقم الجوال");
+    if (!response.ok) {
+      if (showDeviceLimit(result)) return;
+      throw new Error(result.error || result.message || "تعذر التحقق من رقم الجوال");
+    }
     if (!otpSent) {
       setOtpSent(true);
       toast({ title: "تم إرسال الرمز", description: "أدخل الرمز الذي وصلك عبر واتساب." });
@@ -216,7 +280,10 @@ export function AuthModal({ open, mode, onClose, onModeChange }: { open: boolean
           body: JSON.stringify({ identifier: email, password, deviceId: getDeviceId() }),
         });
         const result = await response.json();
-        if (!response.ok) throw new Error(result.message || "بيانات الدخول غير صحيحة");
+        if (!response.ok) {
+          if (showDeviceLimit(result)) return;
+          throw new Error(result.message || "بيانات الدخول غير صحيحة");
+        }
         if (result.require2FA) { onClose(); setLocation("/login"); return; }
         await finishLogin(result);
         return;
@@ -239,7 +306,10 @@ export function AuthModal({ open, mode, onClose, onModeChange }: { open: boolean
           body: JSON.stringify({ fullName: fullName.trim(), username: username.trim(), email: email ? email.toLowerCase() : undefined, phone: number, whatsapp: number, password, role: "student", phoneVerificationToken: phoneToken }),
         });
         const result = await response.json();
-        if (!response.ok) throw new Error(result.message || "تعذر إنشاء الحساب");
+        if (!response.ok) {
+          if (showDeviceLimit(result)) return;
+          throw new Error(result.message || "تعذر إنشاء الحساب");
+        }
         await finishLogin(result);
       }
       // signup - parent flow
@@ -295,6 +365,7 @@ export function AuthModal({ open, mode, onClose, onModeChange }: { open: boolean
   };
 
   return (
+    <>
     <Dialog open={open} onOpenChange={(value) => !value && onClose()}>
       <DialogContent className="max-h-[calc(100vh-20px)] overflow-hidden border-0 bg-[#FFFCF7] p-0 shadow-[0_25px_90px_rgba(23,23,35,.22)]" style={{ maxWidth: 460, borderRadius: 24, direction: "rtl" }}>
         <div className="flex max-h-[calc(100vh-20px)] flex-col">
@@ -469,5 +540,68 @@ export function AuthModal({ open, mode, onClose, onModeChange }: { open: boolean
         </div>
       </DialogContent>
     </Dialog>
+    <Dialog open={Boolean(deviceLimit)} onOpenChange={(value) => !value && setDeviceLimit(null)}>
+      <DialogContent className="border-0 bg-[#FFFCF7] p-0 shadow-[0_25px_90px_rgba(23,23,35,.22)]" style={{ maxWidth: 460, borderRadius: 24, direction: "rtl" }}>
+        <div className="p-6 sm:p-8">
+          <div className="flex items-start gap-3">
+            <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-[#FFF1E9] text-[#B85A36]">
+              <Laptop className="h-5 w-5" />
+            </div>
+            <div>
+              <h2 className="text-lg font-black text-[#171723]">الأجهزة المسجلة</h2>
+              <p className="mt-1 text-xs leading-5 text-[#6B625B]">
+                حسابك مسجل على جهازين. احذف جهازًا لم تعد تستخدمه، ثم ارجع وحاول تسجيل الدخول من جديد.
+              </p>
+            </div>
+          </div>
+
+          <div className="mt-5 space-y-2.5">
+            {deviceLimit?.devices.map((device, index) => {
+              const mobile = /iPhone|iPad|Android/i.test(device.label);
+              const Icon = mobile ? Smartphone : Laptop;
+              return (
+                <div key={device.id} className="flex items-center justify-between gap-3 rounded-xl border border-[#24202D]/10 bg-[#F8F6F1] p-3.5">
+                  <div className="flex min-w-0 items-center gap-2.5">
+                    <Icon className="h-5 w-5 shrink-0 text-[#6B625B]" />
+                    <div className="min-w-0">
+                      <p className="text-sm font-black text-[#171723]">{index + 1}. {device.label}</p>
+                      {device.lastSeenAt && (
+                        <p className="mt-1 text-[11px] text-[#8B8278]">
+                          آخر استخدام: {new Date(device.lastSeenAt).toLocaleString("ar-SA", { dateStyle: "medium", timeStyle: "short" })}
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => removeBlockedDevice(device)}
+                    disabled={removingDeviceId === device.id}
+                    className="flex shrink-0 items-center gap-1.5 rounded-lg px-2.5 py-2 text-xs font-black text-red-600 transition hover:bg-red-50 disabled:opacity-50"
+                  >
+                    {removingDeviceId === device.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />}
+                    حذف
+                  </button>
+                </div>
+              );
+            })}
+          </div>
+
+          {deviceLimit?.devices.length === 0 && (
+            <div className="mt-5 rounded-xl border border-[#398B79]/20 bg-[#EFF8F4] p-3 text-center text-xs font-bold text-[#398B79]">
+              تم حذف الأجهزة. حاول تسجيل الدخول الآن.
+            </div>
+          )}
+
+          <button
+            type="button"
+            onClick={() => setDeviceLimit(null)}
+            className="mt-5 flex h-11 w-full items-center justify-center rounded-xl bg-[#171723] text-sm font-black text-white"
+          >
+            العودة لمحاولة الدخول
+          </button>
+        </div>
+      </DialogContent>
+    </Dialog>
+    </>
   );
 }

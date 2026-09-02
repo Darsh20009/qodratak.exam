@@ -168,7 +168,7 @@ const PricingCard: React.FC<{ plan: typeof plans[0]; index: number }> = ({ plan,
         className={`w-full py-3 font-bold text-lg bg-gradient-to-r ${plan.color} hover:opacity-90 text-white transition-all duration-200`}
         onClick={() => {
           if (plan.name === 'مجاني') {
-            window.location.href = '/profile';
+            window.location.href = '/signup?return=%2Fprofile';
           } else {
             window.location.href = '/subscription';
           }

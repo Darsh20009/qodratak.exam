@@ -211,46 +211,6 @@ export const FAQPage: React.FC = () => {
         </div>
       </section>
 
-      {/* فيديو شرح المنصة */}
-      <Card className="mb-12 overflow-hidden">
-        <CardHeader className="bg-gradient-to-r from-blue-600 to-emerald-600 text-white">
-          <CardTitle className="flex items-center gap-3 text-xl">
-            <div className="w-8 h-8 bg-white/20 rounded-full flex items-center justify-center">
-              <BookOpenIcon className="w-5 h-5" />
-            </div>
-            🎥 فيديو شرح المنصة
-            <div className="mr-auto">
-              <StarIcon className="w-5 h-5 animate-pulse" />
-            </div>
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="p-6">
-          <div className="text-center mb-6">
-            <h3 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">
-              شاهد كيفية استخدام منصة قدراتك
-            </h3>
-            <p className="text-gray-600 dark:text-gray-300">
-              فيديو شامل يوضح جميع ميزات المنصة وطريقة الاستفادة منها بأفضل شكل
-            </p>
-          </div>
-          
-          <div className="max-w-4xl mx-auto">
-            <div className="relative bg-gray-100 dark:bg-gray-800 rounded-2xl p-4 shadow-inner">
-              <div className="relative w-full" style={{ paddingBottom: '56.25%' }}>
-                <iframe 
-                  src="https://www.youtube.com/embed/uojLGnnUbk8?rel=0&modestbranding=1&showinfo=0"
-                  title="فيديو تعريف منصة قدراتك"
-                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                  allowFullScreen
-                  className="absolute top-0 left-0 w-full h-full rounded-xl shadow-lg"
-                  style={{ border: 'none' }}
-                ></iframe>
-              </div>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-
       {/* FAQ Categories */}
       <div className="space-y-8">
         {faqs.map((category, categoryIndex) => {

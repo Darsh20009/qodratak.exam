@@ -99,6 +99,22 @@ export interface IWhatsAppMessage extends Document {
   createdAt: Date;
 }
 
+export interface IWhatsAppQuizSession extends Document {
+  phone: string;
+  userId: string;
+  questionIds: string[];
+  currentIndex: number;
+  answers: {
+    questionId: string;
+    selectedIndex: number;
+    correctIndex: number;
+    isCorrect: boolean;
+  }[];
+  status: 'active' | 'completed' | 'cancelled';
+  startedAt: Date;
+  completedAt?: Date;
+}
+
 const webAuthnCredentialSchema = new Schema<IWebAuthnCredential>({
   credentialID: { type: String, required: true },
   credentialPublicKey: { type: String, required: true },
@@ -124,6 +140,22 @@ const whatsAppMessageSchema = new Schema<IWhatsAppMessage>({
   direction: { type: String, enum: ['inbound', 'outbound'], required: true },
   createdAt: { type: Date, default: Date.now, index: true },
 });
+
+const whatsAppQuizSessionSchema = new Schema<IWhatsAppQuizSession>({
+  phone: { type: String, required: true, unique: true, index: true },
+  userId: { type: String, required: true, index: true },
+  questionIds: { type: [String], required: true },
+  currentIndex: { type: Number, default: 0 },
+  answers: [{
+    questionId: { type: String, required: true },
+    selectedIndex: { type: Number, required: true },
+    correctIndex: { type: Number, required: true },
+    isCorrect: { type: Boolean, required: true },
+  }],
+  status: { type: String, enum: ['active', 'completed', 'cancelled'], default: 'active', index: true },
+  startedAt: { type: Date, default: Date.now },
+  completedAt: { type: Date },
+}, { timestamps: true });
 
 const userSchema = new Schema<IUser>({
   username: { type: String, required: true, unique: true },
@@ -1342,3 +1374,7 @@ export const CardPayment = mongoose.models['CardPayment']
 export const WhatsAppMessage = mongoose.models['WhatsAppMessage']
   ? mongoose.model<IWhatsAppMessage>('WhatsAppMessage')
   : mongoose.model<IWhatsAppMessage>('WhatsAppMessage', whatsAppMessageSchema);
+
+export const WhatsAppQuizSession = mongoose.models['WhatsAppQuizSession']
+  ? mongoose.model<IWhatsAppQuizSession>('WhatsAppQuizSession')
+  : mongoose.model<IWhatsAppQuizSession>('WhatsAppQuizSession', whatsAppQuizSessionSchema);

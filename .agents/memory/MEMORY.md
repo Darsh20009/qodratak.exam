@@ -2,3 +2,6 @@
 - [Deployment assets and Git LFS](deployment-assets-lfs.md) — Render must not depend on quota-limited LFS objects for files required during repository checkout.
 - [SPA metadata ownership](spa-metadata-ownership.md) — keep canonical and robots under one route-level owner when React Helmet coexists with static fallback metadata.
 - [MongoDB data preservation](mongodb-data-preservation.md) — treat the connected MongoDB as an existing dataset; future migrations must be additive and non-destructive.
+- [QIROX WhatsApp direction](qirox-whatsapp-direction.md) — the configured QIROX API is outbound-only; inbound student conversations still depend on the linked Baileys session.
+- [Server session authority](server-session-authority.md) — route access and the home screen must trust the server session, never stale localStorage data.
+- [Device-limit recovery](device-limit-recovery.md) — a verified login may delete one registered device through a short-lived challenge, then continue login safely.

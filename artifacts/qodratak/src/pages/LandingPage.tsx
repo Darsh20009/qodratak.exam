@@ -251,12 +251,12 @@ function StudyTracks({ onSignup }: { onSignup: () => void }) {
             <p className="mt-1 text-sm leading-6 text-slate-300">ابدأ من التأسيس، أو انتقل إلى المحوسب عندما تكون جاهزًا.</p>
           </div>
           <div className="flex flex-wrap gap-2">
-            <Link href="/learn" className="rounded-lg bg-[#91D7C5] px-4 py-2.5 text-xs font-black text-[#0D1B2A]">
+            <button type="button" onClick={onSignup} className="rounded-lg bg-[#91D7C5] px-4 py-2.5 text-xs font-black text-[#0D1B2A]">
               ابدأ التأسيس
-            </Link>
-            <Link href="/qiyas-hub" className="rounded-lg border border-white/20 px-4 py-2.5 text-xs font-black text-white hover:bg-white/10">
+            </button>
+            <button type="button" onClick={onSignup} className="rounded-lg border border-white/20 px-4 py-2.5 text-xs font-black text-white hover:bg-white/10">
               تدرب على المحوسب
-            </Link>
+            </button>
           </div>
         </div>
       </div>

@@ -162,6 +162,7 @@ import InstitutionPortalPage from "@/pages/InstitutionPortalPage";
 import ParentDashboardPage from "@/pages/ParentDashboardPage";
 import FooterDocumentsPage from "@/pages/FooterDocumentsPage";
 import FooterGuidePage from "@/pages/FooterGuidePage";
+import { useUser } from "@/hooks/use-user";
 
 installAdminFetchBridge();
 
@@ -179,6 +180,49 @@ function RouteLoadingFallback() {
       <p className="text-sm font-bold text-[#6B625B]">جارٍ فتح الصفحة...</p>
     </div>
   );
+}
+
+const PUBLIC_PATHS = new Set([
+  "/",
+  "/signup",
+  "/login",
+  "/forgot-password",
+  "/reset-password",
+  "/guest-signup",
+  "/free-signup",
+  "/account-type",
+  "/faq",
+  "/pricing",
+  "/terms",
+  "/privacy",
+  "/refund-policy",
+  "/support",
+  "/guide",
+  "/usage-guide",
+  "/platform-guide",
+]);
+
+function isPublicPath(pathname: string) {
+  const cleanPath = pathname.split("?")[0].replace(/\/+$/, "") || "/";
+  return PUBLIC_PATHS.has(cleanPath) || cleanPath.startsWith("/invite/") || cleanPath.startsWith("/admin");
+}
+
+function AuthenticatedRouteBoundary({ children }: { children: React.ReactNode }) {
+  const [location, navigate] = useLocation();
+  const { user, isLoading } = useUser();
+  const needsAuthentication = !isPublicPath(location);
+
+  useEffect(() => {
+    if (needsAuthentication && !isLoading && !user) {
+      navigate(`/login?return=${encodeURIComponent(location)}`);
+    }
+  }, [location, navigate, needsAuthentication, isLoading, user]);
+
+  if (needsAuthentication && (isLoading || !user)) {
+    return <RouteLoadingFallback />;
+  }
+
+  return <>{children}</>;
 }
 
 function MainLayout({ children }: { children: React.ReactNode }) {
@@ -704,44 +748,13 @@ function MainLayout({ children }: { children: React.ReactNode }) {
 }
 
 function Router({ splashDone }: { splashDone: boolean }) {
-  const [user, setUser] = React.useState(() => {
-    const storedUser = localStorage.getItem("user");
-    if (storedUser) {
-      try {
-        return JSON.parse(storedUser);
-      } catch (error) {
-        console.error("Error parsing user:", error);
-        return null;
-      }
-    }
-    return null;
-  });
-
-  React.useEffect(() => {
-    // Listen for user changes
-    const handleUserChange = (event: any) => {
-      setUser(event.detail);
-    };
-
-    window.addEventListener('userLoggedIn', handleUserChange);
-    return () => window.removeEventListener('userLoggedIn', handleUserChange);
-  }, []);
-
-  const isPremium = user && (
-    user.subscription?.type === 'Pro' || 
-    user.subscription?.type === 'Pro Life' || 
-    user.subscription?.type === 'Pro Life Plus' ||
-    user.subscription?.type === 'Pro Live'
-  );
-
-  // النظام الجديد: فقط الحسابات الحقيقية من الخادم
-  const hasServerAccess = isPremium;
-
+  const { user: serverUser, isLoading: isUserLoading } = useUser();
 
   return (
     <>
       {splashDone && <RotateDevicePrompt />}
       <RouteSEO />
+      <AuthenticatedRouteBoundary>
       <Switch>
       <Route path="/parent-dashboard">
         <ProtectedRoute>
@@ -759,10 +772,9 @@ function Router({ splashDone }: { splashDone: boolean }) {
       {/* Main pages */}
       <Route path="/">
         {() => {
-          const _u = (() => { try { return JSON.parse(localStorage.getItem('user') || '{}'); } catch { return {}; } })();
-          const _loggedIn = !!(_u?.id || _u?._id);
-          if (_loggedIn && _u?.role === 'parent') return <ParentDashboardPage />;
-          return _loggedIn ? <MainLayout><Home /></MainLayout> : <LandingPage />;
+          if (isUserLoading) return <LandingPage />;
+          if (serverUser?.role === 'parent') return <ParentDashboardPage />;
+          return serverUser ? <MainLayout><Home /></MainLayout> : <LandingPage />;
         }}
       </Route>
 
@@ -1103,7 +1115,8 @@ function Router({ splashDone }: { splashDone: boolean }) {
       <Route>
         {() => <MainLayout><NotFound /></MainLayout>}
       </Route>
-    </Switch>
+      </Switch>
+      </AuthenticatedRouteBoundary>
     </>
   );
 }
