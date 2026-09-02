@@ -6,3 +6,4 @@
 - [Server session authority](server-session-authority.md) — route access and the home screen must trust the server session, never stale localStorage data.
 - [Device-limit recovery](device-limit-recovery.md) — a verified login may delete one registered device through a short-lived challenge, then continue login safely.
 - [Unified plans and WhatsApp care](unified-plans-whatsapp-care.md) — current purchase values come from one plan setting, while daily KSA follow-ups use an atomic per-day claim.
+- [Dark-mode page contrast](dark-mode-page-contrast.md) — legacy pages use fixed light colors; keep contrast overrides scoped to the shared app surface.
