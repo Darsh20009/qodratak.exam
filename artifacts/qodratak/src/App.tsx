@@ -842,14 +842,6 @@ function Router({ splashDone }: { splashDone: boolean }) {
           <ParentDashboardPage />
         </ProtectedRoute>
       </Route>
-      {/* Multiplayer routes - no sidebar needed */}
-      <Route path="/multiplayer">
-        {() => <MainLayout><MultiplayerPage /></MainLayout>}
-      </Route>
-      <Route path="/multiplayer/room/:code">
-        {() => <MultiplayerRoom />}
-      </Route>
-
       {/* Main pages */}
       <Route path="/">
         {() => {
@@ -1171,11 +1163,6 @@ function Router({ splashDone }: { splashDone: boolean }) {
       </Route>
       <Route path="/admin/chat">
         {() => <ChatPage />}
-      </Route>
-
-      {/* Leaderboard Route */}
-      <Route path="/leaderboard">
-        {() => <MainLayout><LeaderboardPage /></MainLayout>}
       </Route>
 
       <Route path="/faq">
