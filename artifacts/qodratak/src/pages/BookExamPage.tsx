@@ -354,7 +354,7 @@ export default function BookExamPage() {
 
   return (
     <>
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-teal-600/20 to-emerald-600/20 dark:from-gray-950 dark:via-teal-600/10 dark:to-gray-950 pb-24" dir="rtl">
+    <div className="min-h-screen bg-background pb-24" dir="rtl">
       {/* ── Hero Header ── */}
       <div className="relative overflow-hidden bg-gradient-to-l from-teal-600 via-green-600 to-emerald-500 dark:from-teal-600 dark:via-green-600 dark:to-emerald-500">
         <div className="absolute inset-0 opacity-10">

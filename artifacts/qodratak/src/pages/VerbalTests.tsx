@@ -297,7 +297,7 @@ export function VerbalTests() {
   // Show login prompt for non-authenticated users
   if (!user) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-gray-50 via-blue-50 to-teal-500 dark:from-gray-900 dark:via-blue-900 dark:to-teal-500 relative overflow-hidden flex items-center justify-center">
+      <div className="min-h-screen bg-background relative overflow-hidden flex items-center justify-center">
         <motion.div
           initial={{ opacity: 0, y: 50 }}
           animate={{ opacity: 1, y: 0 }}
@@ -324,7 +324,7 @@ export function VerbalTests() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 via-blue-50 to-teal-500 dark:from-gray-900 dark:via-blue-900 dark:to-teal-500 relative overflow-hidden">
+    <div className="min-h-screen bg-background relative overflow-hidden">
       {/* خلفية متحركة */}
       <div className="absolute inset-0 overflow-hidden">
         {[...Array(15)].map((_, i) => (

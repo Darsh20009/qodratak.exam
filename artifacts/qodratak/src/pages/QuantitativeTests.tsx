@@ -326,7 +326,7 @@ export function QuantitativeTests() {
   // Show login prompt for non-authenticated users
   if (!user) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-gray-50 via-blue-50 to-teal-500 dark:from-gray-900 dark:via-blue-900 dark:to-teal-500 relative overflow-hidden flex items-center justify-center">
+      <div className="min-h-screen bg-background relative overflow-hidden flex items-center justify-center">
         <motion.div
           initial={{ opacity: 0, y: 50 }}
           animate={{ opacity: 1, y: 0 }}
@@ -353,7 +353,7 @@ export function QuantitativeTests() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-teal-500 dark:from-gray-900 dark:via-blue-900/20 dark:to-teal-500/20">
+    <div className="min-h-screen bg-background">
       <div className="container mx-auto px-4 py-8 space-y-8">
         {/* العنوان الرئيسي */}
         <motion.div

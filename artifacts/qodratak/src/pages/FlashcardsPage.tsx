@@ -314,7 +314,7 @@ export default function FlashcardsPage() {
   const subcategories = Array.from(new Set((rawQuestions || []).map(q => q.subcategory))).filter(Boolean);
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-950 pb-24" dir="rtl">
+    <div className="min-h-screen bg-background pb-24" dir="rtl">
       {/* Top bar */}
       <div className="sticky top-0 z-20 bg-white dark:bg-gray-900 border-b border-gray-100 dark:border-gray-800 px-4 py-3 flex items-center gap-3">
         <Link href="/">

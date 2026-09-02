@@ -263,7 +263,7 @@ export const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
             {/* Points and Rank Display - Premium Only */}
             {user?.subscription?.type && user?.subscription?.type !== 'free' && user?.subscription?.type !== 'تجريبي' ? (
               <div 
-                onClick={() => window.location.href = "/leaderboard"}
+                onClick={() => window.location.href = "/profile"}
                 className="rounded-md bg-gradient-to-r from-yellow-500/10 to-orange-500/10 dark:from-yellow-500/20 dark:to-orange-500/20 border border-yellow-500/30 p-3 cursor-pointer hover:scale-[1.02] transition-transform duration-200"
               >
                 <div className="flex flex-col gap-2">

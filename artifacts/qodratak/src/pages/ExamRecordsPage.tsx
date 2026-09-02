@@ -649,7 +649,7 @@ export default function EnhancedExamRecordsPage() {
       </DialogContent>
     </Dialog>
 
-    <div className="min-h-screen bg-gray-50 dark:from-slate-950 dark:via-slate-900 dark:to-slate-800 pb-24">
+    <div className="min-h-screen bg-background pb-24">
       <div className="container mx-auto py-6 sm:py-12 px-4 max-w-7xl">
         {/* ===== قسم الاختبارات الرسمية - النمط الرسمي لقياس ===== */}
         {qiyasRecords.length > 0 && (

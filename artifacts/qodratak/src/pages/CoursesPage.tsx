@@ -439,7 +439,7 @@ export default function CoursesPage() {
   // Show loading while checking subscription
   if (subscriptionLoading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-teal-500 dark:from-gray-900 dark:via-blue-900 dark:to-emerald-600 flex items-center justify-center">
+      <div className="min-h-screen bg-background flex items-center justify-center">
         <motion.div
           initial={{ opacity: 0, scale: 0.9 }}
           animate={{ opacity: 1, scale: 1 }}
@@ -459,7 +459,7 @@ export default function CoursesPage() {
   // Check subscription access - now we know subscription has loaded
   if (!isSubscribed) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-teal-500 dark:from-gray-900 dark:via-blue-900 dark:to-emerald-600 flex items-center justify-center">
+      <div className="min-h-screen bg-background flex items-center justify-center">
         <motion.div
           initial={{ opacity: 0, scale: 0.9 }}
           animate={{ opacity: 1, scale: 1 }}
@@ -607,7 +607,7 @@ export default function CoursesPage() {
 
   // Main courses interface for subscribed users
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-teal-500 dark:from-gray-900 dark:via-blue-900 dark:to-emerald-600">
+    <div className="min-h-screen bg-background">
       <div className="container mx-auto px-4 py-8">
         {/* Hero Section - Luxury & Professional */}
         <motion.div

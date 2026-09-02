@@ -660,10 +660,8 @@ function MainLayout({ children }: { children: React.ReactNode }) {
                   {[
                     { href: "/wallet", icon: Wallet, label: "محفظتي", color: "text-green-500 dark:text-green-400", bg: "bg-green-500/10 dark:bg-green-500/20" },
                     { href: "/book-exam", icon: CalendarCheck, label: "احجز اختبار", color: "text-emerald-500 dark:text-emerald-400", bg: "bg-emerald-500/10 dark:bg-emerald-500/20" },
-                    { href: "/leaderboard", icon: Trophy, label: "المتصدرون", color: "text-yellow-500 dark:text-yellow-400", bg: "bg-yellow-500/10 dark:bg-yellow-500/20" },
                     { href: "/notifications", icon: Bell, label: "الإشعارات", color: "text-blue-500 dark:text-blue-400", bg: "bg-blue-500/10 dark:bg-blue-500/20" },
                     { href: "/tahsilik", icon: GraduationCapIcon, label: "تحصيلك", color: "text-amber-500 dark:text-amber-400", bg: "bg-amber-500/10 dark:bg-amber-500/20" },
-                    { href: "/multiplayer", icon: GamepadIcon, label: "جماعي", color: "text-rose-500 dark:text-rose-400", bg: "bg-rose-500/10 dark:bg-rose-500/20" },
                     { href: "/records", icon: ClipboardIcon, label: "السجل", color: "text-amber-500 dark:text-amber-400", bg: "bg-amber-500/10 dark:bg-amber-500/20" },
                     { href: "/learn", icon: BookOpenIcon, label: "تعلم", color: "text-emerald-500 dark:text-emerald-400", bg: "bg-emerald-500/10 dark:bg-emerald-500/20" },
                     { href: "/folders", icon: FolderIcon, label: "مجلداتي", color: "text-orange-500 dark:text-orange-400", bg: "bg-orange-500/10 dark:bg-orange-500/20" },
@@ -725,7 +723,7 @@ function MainLayout({ children }: { children: React.ReactNode }) {
               {/* النقاط - للمشتركين فقط — أيقونة فقط على الشاشات الصغيرة */}
               {userSubscription && userSubscription !== 'free' && userSubscription !== 'تجريبي' && (
                 <div 
-                  onClick={() => window.location.href = "/leaderboard"}
+                  onClick={() => window.location.href = "/profile"}
                   className="flex items-center gap-1 bg-gradient-to-r from-yellow-500/10 to-orange-500/10 dark:from-yellow-500/20 dark:to-orange-500/20 border border-yellow-500/30 rounded-full px-2 py-1 cursor-pointer hover:scale-105 transition-transform duration-200"
                 >
                   <Trophy className="h-3.5 w-3.5 text-yellow-500 flex-shrink-0" />
