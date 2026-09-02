@@ -170,7 +170,7 @@ export const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
   const navItems = getNavItems(user?.subscription?.type);
 
   return (
-    <div className="flex min-h-screen bg-gray-100 dark:bg-gray-900">
+    <div className="qodratak-app-shell flex min-h-screen bg-background text-foreground">
       {/* Sidebar */}
       <div className="hidden md:flex w-64 flex-col bg-white dark:bg-gray-800 border-r dark:border-gray-700">
         <div className="p-4">
@@ -418,7 +418,7 @@ export const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
 
         {/* Content — scrollable, with bottom padding on mobile so fixed nav doesn't cover content */}
         <main className="flex-1 overflow-y-auto">
-          <div className="pb-24 md:pb-6">
+          <div className="qodratak-page-surface pb-24 md:pb-6">
             {children}
           </div>
         </main>
