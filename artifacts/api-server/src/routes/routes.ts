@@ -183,7 +183,12 @@ async function recoverPendingAiReviews(): Promise<void> {
 }
 
 export async function registerRoutes(app: Express): Promise<Server> {
-  console.log('✅ SMTP2Go email service ready - noreply@qodratak.sa');
+  const emailProvider = process.env.SMTP2GO_API_KEY
+    ? 'SMTP2Go'
+    : process.env.SMTP_PASS
+      ? `secure SMTP (${process.env.SMTP_HOST || 'qirox.online'}:${process.env.SMTP_PORT || '465'})`
+      : 'not configured';
+  console.log(`✅ Email service: ${emailProvider} - ${process.env.FROM_EMAIL || process.env.SMTP_USER || 'default sender'}`);
 
   // Admin middleware - Revalidates admin on each request
   const requireAdmin = async (req: Request, res: Response, next: Function) => {
@@ -4281,7 +4286,7 @@ app.post("/api/auth/register", async (req: Request, res: Response) => {
     }
   });
 
-  // API endpoint for sending email OTP (SMTP2Go)
+  // API endpoint for sending email OTP
   app.post("/api/send-email-otp", async (req: Request, res: Response) => {
     try {
       const { email, otp } = req.body;
@@ -6950,28 +6955,8 @@ app.post("/api/auth/register", async (req: Request, res: Response) => {
       const code = String(Math.floor(100000 + Math.random() * 900000));
       const expiry = new Date(Date.now() + 10 * 60 * 1000);
       await User.findByIdAndUpdate(pending.userId, { $set: { otpCode: code, otpExpiry: expiry } });
-      // Send email using SMTP2GO if configured
-      try {
-        const nodemailer = await import('nodemailer');
-        const transporter = nodemailer.default.createTransport({
-          host: process.env.SMTP_HOST || 'mail.smtp2go.com',
-          port: Number(process.env.SMTP_PORT || 587),
-          auth: { user: process.env.SMTP_USER || '', pass: process.env.SMTP_PASS || '' },
-        });
-        await transporter.sendMail({
-          from: `"قدراتك" <${process.env.SMTP_FROM || process.env.SMTP_USER || 'noreply@qodratak.sa'}>`,
-          to: user.email,
-          subject: 'رمز التحقق الثنائي - قدراتك',
-          html: `<div dir="rtl" style="font-family:Arial;max-width:400px;margin:auto;padding:20px;border:1px solid #eee;border-radius:8px">
-            <h2 style="color:#2563eb">رمز التحقق الثنائي</h2>
-            <p>رمزك الخاص لمدة 10 دقائق:</p>
-            <div style="font-size:32px;font-weight:bold;color:#1d4ed8;letter-spacing:8px;text-align:center;padding:20px;background:#eff6ff;border-radius:8px">${code}</div>
-            <p style="color:#666;font-size:12px;margin-top:16px">إذا لم تطلب هذا الرمز، تجاهل هذه الرسالة.</p>
-          </div>`
-        });
-      } catch (mailErr) {
-        console.warn('Email OTP send failed (SMTP not configured?):', mailErr);
-      }
+      const sent = await sendOTPEmail(user.email, user.fullName || user.name || '', code);
+      if (!sent) return res.status(500).json({ error: 'فشل إرسال الرمز' });
       res.json({ success: true, message: `تم إرسال الرمز إلى ${user.email.replace(/(.{2}).+(@.+)/, '$1***$2')}` });
     } catch (e) {
       console.error('send-email-otp error:', e);

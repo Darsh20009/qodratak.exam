@@ -470,14 +470,15 @@ export async function sendPasswordResetEmail(email: string, fullName: string, re
 // ─── Test Email ───────────────────────────────────────────────────────────────
 
 export async function sendTestEmail(to: string): Promise<boolean> {
+  const providerName = SMTP2GO_API_KEY ? 'SMTP2Go' : 'SMTP آمن SSL/TLS';
   const body = `
     <h2 style="margin:0 0 8px;font-size:22px;color:#1a1a2e;font-weight:800;">نظام البريد يعمل بنجاح</h2>
     <p style="margin:0 0 16px;color:#888;font-size:14px;line-height:1.8;">
-      تم استلام هذا البريد التجريبي من منصة قدراتك. نظام البريد الإلكتروني متصل عبر SMTP2Go.
+      تم استلام هذا البريد التجريبي من منصة قدراتك. نظام البريد الإلكتروني متصل عبر ${providerName}.
     </p>
     ${infoTable(
       infoRow('المُرسِل', 'noreply@qodratak.sa') +
-      infoRow('الخدمة', 'SMTP2Go')
+      infoRow('الخدمة', providerName)
     )}
   `;
 
