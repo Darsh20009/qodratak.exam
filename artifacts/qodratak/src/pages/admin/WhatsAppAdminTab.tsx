@@ -61,6 +61,12 @@ export default function WhatsAppAdminTab() {
     onError: (error: Error) => toast({ title: "تعذر إرسال التقرير", description: error.message, variant: "destructive" }),
   });
 
+  const sendNotificationTest = useMutation({
+    mutationFn: () => request("/api/admin/whatsapp/notification-test"),
+    onSuccess: () => toast({ title: "تم إرسال التنبيهات", description: "تم إرسال تنبيهي التسجيل والاشتراك إلى رقم الإدارة." }),
+    onError: (error: Error) => toast({ title: "تعذر إرسال التنبيهات", description: error.message, variant: "destructive" }),
+  });
+
   const connected = status?.state === "connected";
   return (
     <div className="space-y-5" dir="rtl">
@@ -141,6 +147,15 @@ export default function WhatsAppAdminTab() {
             إرسال
           </button>
         </div>
+        <button
+          type="button"
+          onClick={() => sendNotificationTest.mutate()}
+          disabled={!connected || sendNotificationTest.isPending}
+          className="mt-3 flex items-center gap-2 rounded-xl border border-[#24202D]/15 px-4 py-2.5 text-sm font-bold text-[#24202D] disabled:opacity-40"
+        >
+          {sendNotificationTest.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
+          اختبار تنبيهات التسجيل والاشتراك
+        </button>
       </div>
 
       <div className="rounded-2xl border border-[#24202D]/10 bg-[#FFFCF7] p-5">

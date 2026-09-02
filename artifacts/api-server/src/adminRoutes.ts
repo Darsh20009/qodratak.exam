@@ -9,6 +9,7 @@ import { storage } from './storage';
 import { Question, ChatMessage, Admin, WhatsAppMessage } from './mongodb/models';
 import { sendSubscriptionApprovalEmail } from './services/emailService';
 import {
+  notifyAdminNewStudent,
   notifyAdminSubscription,
   sendAdminFinancialReport,
 } from './services/adminWhatsAppNotifications';
@@ -1427,6 +1428,32 @@ router.post('/whatsapp/financial-report', requireAdminAuth, async (req: Request,
       error?.message === 'WHATSAPP_NOT_CONNECTED'
         ? 'اربط واتساب أولاً'
         : 'تعذر إرسال التقرير المالي حاليًا';
+    res.status(400).json({ error: message });
+  }
+});
+
+router.post('/whatsapp/notification-test', requireAdminAuth, async (_req: Request, res: Response) => {
+  try {
+    await notifyAdminNewStudent({
+      fullName: 'اختبار تنبيه الإدارة',
+      username: 'whatsapp-test-student',
+      phone: '966500000000',
+      role: 'student',
+    });
+    await notifyAdminSubscription({
+      studentName: 'اختبار تنبيه الإدارة',
+      plan: 'اختبار التفعيل',
+      price: 0,
+      paymentMethod: 'اختبار داخلي',
+      status: 'active',
+    });
+    res.json({ success: true, message: 'تم إرسال تنبيهي التسجيل والاشتراك إلى رقم الإدارة' });
+  } catch (error: any) {
+    console.error('[WhatsApp] Notification test failed:', error?.message || error);
+    const message =
+      error?.message === 'WHATSAPP_NOT_CONNECTED'
+        ? 'اربط واتساب أولاً'
+        : 'تعذر إرسال تنبيهات الاختبار حاليًا';
     res.status(400).json({ error: message });
   }
 });
