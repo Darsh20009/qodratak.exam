@@ -48,7 +48,8 @@ import {
   Wallet,
   Menu,
   BarChart2,
-  MessageCircle
+  MessageCircle,
+  Library
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useState, useEffect } from "react";
@@ -148,6 +149,7 @@ import StudyRoomsPage from "@/pages/StudyRoomsPage";
 import StudyRoomLobbyPage from "@/pages/StudyRoomLobbyPage";
 import NotificationSettingsPage from "@/pages/NotificationSettingsPage";
 import PreExamDayPage from "@/pages/PreExamDayPage";
+import StudentProgramPage from "@/pages/StudentProgramPage";
 import StrategyLibraryPage from "@/pages/StrategyLibraryPage";
 import AiTutorPage from "@/pages/AiTutorPage";
 import AiHub from "@/pages/AiHub";
@@ -347,18 +349,23 @@ function MainLayout({ children }: { children: React.ReactNode }) {
     };
   }, [userId]);
 
-  // قدراتك - الأقسام الأساسية
+  // مسارات الطالب الأساسية بالترتيب المتفق عليه
   // ─── Core nav items (always visible) ─────────────────────
   const coreNavItems = [
     { name: "الرئيسية",       href: "/",                icon: HomeIcon },
-    { name: "اختبار قياس",    href: "/qiyas",            icon: Brain },
-    { name: "بنك الأسئلة",    href: "/question-bank",    icon: BookOpenIcon },
-    { name: "سجل الاختبارات", href: "/records",          icon: ClipboardIcon },
-    { name: "حسابي",          href: "/profile",           icon: UserIcon },
+    { name: "القدرات | Qudrat", href: "/student-program/qudrat", icon: Brain },
+    { name: "التحصيلي | Tahsili", href: "/student-program/tahsili", icon: GraduationCapIcon },
+    { name: "IELTS",          href: "/student-program/ielts",  icon: BookOpenIcon },
+    { name: "GAT",            href: "/student-program/gat",    icon: BookOpenIcon },
+    { name: "المكتبة",        href: "/library",           icon: Library },
+    { name: "مجلداتي",        href: "/folders",           icon: FolderIcon },
   ];
 
   // ─── More items (collapsible) ─────────────────────────────
   const moreNavItems = [
+    { name: "اختبار قياس",      href: "/qiyas",              icon: Brain },
+    { name: "بنك الأسئلة",      href: "/question-bank",      icon: BookOpenIcon },
+    { name: "سجل الاختبارات",   href: "/records",            icon: ClipboardIcon },
     { name: "محفظتي",           href: "/wallet",               icon: Wallet },
     { name: "اختبارات اللفظي",  href: "/verbal-tests",       icon: BookOpenIcon },
     { name: "اختبارات الكمي",   href: "/quantitative-tests",  icon: Calculator },
@@ -366,8 +373,6 @@ function MainLayout({ children }: { children: React.ReactNode }) {
     { name: "بطاقات المراجعة",  href: "/flashcards",           icon: Layers },
     { name: "تحدي الأخطاء",     href: "/mistake-challenge",    icon: GamepadIcon },
     { name: "الاختبار الجماعي", href: "/multiplayer",          icon: GamepadIcon },
-    { name: "تحصيلك",           href: "/tahsilik",              icon: GraduationCapIcon },
-    { name: "المكتبة",          href: "/library",               icon: BookOpenIcon },
     { name: "احجز اختبارك",    href: "/book-exam",             icon: CalendarCheck },
     { name: "المتصدرون",        href: "/leaderboard",           icon: Trophy },
     { name: "الدعم والمساعدة",  href: "/faq",                   icon: HelpCircle },
@@ -776,6 +781,10 @@ function Router({ splashDone }: { splashDone: boolean }) {
           if (serverUser?.role === 'parent') return <ParentDashboardPage />;
           return serverUser ? <MainLayout><Home /></MainLayout> : <LandingPage />;
         }}
+      </Route>
+
+      <Route path="/student-program/:program">
+        {() => <MainLayout><ProtectedRoute><StudentProgramPage /></ProtectedRoute></MainLayout>}
       </Route>
 
       <Route path="/tahsili">

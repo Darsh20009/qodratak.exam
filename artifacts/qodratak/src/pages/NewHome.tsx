@@ -222,12 +222,17 @@ const PRIMARY_ACTIONS = [
 // ─── Secondary tools ───────────────────────────────────────────────────────────
 
 const SECONDARY_TOOLS = [
-  { title: "بطاقات المراجعة", href: "/flashcards", icon: Layers, badge: "سريع" },
-  { title: "اختبار تكيفي", href: "/adaptive-test", icon: Brain, badge: "ذكي" },
-  { title: "نماذج الورقي", href: "/paper-models", icon: FileText, badge: "PDF" },
-  { title: "غرف الدراسة", href: "/study-rooms", icon: BookMarked, badge: "جماعي" },
-  { title: "تحليل الأخطاء", href: "/error-analysis", icon: BarChart3, badge: "تحليل" },
-  { title: "مكتبة الاستراتيجيات", href: "/strategy-library", icon: Star, badge: "مميز" },
+  { title: "المكتبة المشتركة", href: "/library", icon: BookOpen, badge: "كل المواد" },
+  { title: "مجلداتي", href: "/folders", icon: FileText, badge: "محفوظاتك" },
+  { title: "سجل الاختبارات", href: "/records", icon: BarChart2, badge: "نتائجك" },
+  { title: "احجز اختبارك", href: "/book-exam", icon: CalendarDays, badge: "مواعيد" },
+];
+
+const STUDENT_PROGRAMS = [
+  { title: "القدرات", english: "Qudrat", description: "تأسيس ومحوسب ومسار واضح للتقدم.", href: "/student-program/qudrat", icon: Brain },
+  { title: "التحصيلي", english: "Tahsili", description: "دراسة واختبارات حسب المواد.", href: "/student-program/tahsili", icon: GraduationCapIcon },
+  { title: "IELTS", english: "IELTS", description: "تأسيس وتدريب للمهارات باللغة الإنجليزية.", href: "/student-program/ielts", icon: BookOpenIcon },
+  { title: "غات", english: "GAT", description: "مسار GAT ومحتواه باللغة الإنجليزية.", href: "/student-program/gat", icon: BookOpenIcon },
 ];
 
 // ─── Logged-in student dashboard ──────────────────────────────────────────────
@@ -288,65 +293,55 @@ function LoggedInDashboard({ user }: { user: any }) {
           </Link>
         </header>
 
-        <section className="grid gap-5 lg:grid-cols-[1.45fr_1fr]">
-          <div className="rounded-[26px] bg-[#0D1B2A] p-6 text-white sm:p-8">
-            <div className="flex h-full flex-col justify-between gap-8">
-              <div>
-                <p className="text-sm font-bold text-[#F7F775]">رحلتك التعليمية</p>
-                <h2 className="mt-3 max-w-xl text-3xl font-black leading-tight sm:text-4xl">
-                  تدرب بوضوح، وتقدم بثقة.
-                </h2>
-                <p className="mt-3 max-w-lg text-sm leading-6 text-[#CBD5E1]">
-                  اختبارات قياس، بنك أسئلة، ونتائجك في مكان واحد بدون تعقيد.
-                </p>
-              </div>
-              <div className="flex flex-col gap-3 sm:flex-row">
-                <Link href="/qiyas">
-                  <button
-                    className="flex w-full items-center justify-center gap-2 rounded-xl bg-[#F7F775] px-5 py-3 text-sm font-black text-[#0D1B2A] transition hover:bg-[#ffffa0] sm:w-auto"
-                    data-testid="button-start-qiyas-main"
-                  >
-                    <GraduationCapIcon className="h-4 w-4" />
-                    ابدأ اختبار قياس
-                    <ChevronLeft className="h-4 w-4" />
-                  </button>
-                </Link>
-                <Link href="/question-bank">
-                  <button className="flex w-full items-center justify-center gap-2 rounded-xl border border-white/20 px-5 py-3 text-sm font-bold text-white transition hover:bg-white/10 sm:w-auto">
-                    <BookOpenIcon className="h-4 w-4" />
-                    بنك الأسئلة
-                  </button>
-                </Link>
-              </div>
-            </div>
+        <section>
+          <div className="mb-3">
+            <h2 className="text-xl font-black text-[#0D1B2A]">مساراتك التعليمية</h2>
+            <p className="mt-1 text-sm text-[#64748B]">اختر القسم، ثم انتقل إلى التأسيس أو المحوسب.</p>
           </div>
+          <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+            {STUDENT_PROGRAMS.map((program) => (
+              <Link key={program.href} href={program.href}>
+                <div className="group h-full rounded-2xl border border-[#E5E7EB] bg-white p-4 transition hover:-translate-y-0.5 hover:border-[#0D1B2A]/35 hover:shadow-sm">
+                  <div className="flex items-center justify-between gap-2">
+                    <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#E5E7EB] text-[#0D1B2A]">
+                      <program.icon className="h-5 w-5" />
+                    </div>
+                    <ChevronLeft className="h-4 w-4 text-[#94A3B8] transition group-hover:text-[#0D1B2A]" />
+                  </div>
+                  <p className="mt-4 text-base font-black text-[#0D1B2A]">{program.title}</p>
+                  <p className="mt-0.5 text-xs font-bold text-[#94A3B8]">{program.english}</p>
+                  <p className="mt-2 text-xs leading-5 text-[#64748B]">{program.description}</p>
+                </div>
+              </Link>
+            ))}
+          </div>
+        </section>
 
-          <div className="rounded-[26px] border border-[#E5E7EB] bg-white p-6">
-            <div className="flex items-start justify-between gap-3">
-              <div>
-                <p className="text-sm font-bold text-[#64748B]">هدف اليوم</p>
-                <p className="mt-2 text-3xl font-black text-[#0D1B2A]">
-                  {dailyDone} <span className="text-base font-bold text-[#94A3B8]">/ {dailyTarget} سؤال</span>
-                </p>
-              </div>
-              <div className="rounded-xl bg-[#E5E7EB] p-2.5 text-[#0D1B2A]">
-                <Target className="h-5 w-5" />
-              </div>
+        <section className="rounded-2xl border border-[#E5E7EB] bg-white p-5">
+          <div className="flex items-start justify-between gap-3">
+            <div>
+              <p className="text-sm font-bold text-[#64748B]">هدف اليوم</p>
+              <p className="mt-2 text-3xl font-black text-[#0D1B2A]">
+                {dailyDone} <span className="text-base font-bold text-[#94A3B8]">/ {dailyTarget} سؤال</span>
+              </p>
             </div>
-            <div className="mt-7 h-2 rounded-full bg-[#E5E7EB]">
-              <div className="h-full rounded-full bg-[#0D1B2A] transition-all duration-700" style={{ width: `${dailyPct}%` }} />
+            <div className="rounded-xl bg-[#E5E7EB] p-2.5 text-[#0D1B2A]">
+              <Target className="h-5 w-5" />
             </div>
-            <div className="mt-3 flex items-center justify-between gap-3 text-xs">
-              <span className="font-bold text-[#64748B]">{dailyPct}% مكتمل</span>
-              <span className="text-[#94A3B8]">{dailyPct >= 100 ? "اكتمل هدفك اليوم" : "واصل التدريب"}</span>
-            </div>
-            {prediction && (
-              <div className="mt-5 flex items-center justify-between border-t border-[#E5E7EB] pt-4">
-                <span className="text-xs font-bold text-[#64748B]">متوسطك المتوقع</span>
-                <span className={`text-lg font-black ${scoreColor}`}>{prediction.predictedScore}%</span>
-              </div>
-            )}
           </div>
+          <div className="mt-6 h-2 rounded-full bg-[#E5E7EB]">
+            <div className="h-full rounded-full bg-[#0D1B2A] transition-all duration-700" style={{ width: `${dailyPct}%` }} />
+          </div>
+          <div className="mt-3 flex items-center justify-between gap-3 text-xs">
+            <span className="font-bold text-[#64748B]">{dailyPct}% مكتمل</span>
+            <span className="text-[#94A3B8]">{dailyPct >= 100 ? "اكتمل هدفك اليوم" : "واصل التدريب"}</span>
+          </div>
+          {prediction && (
+            <div className="mt-5 flex items-center justify-between border-t border-[#E5E7EB] pt-4">
+              <span className="text-xs font-bold text-[#64748B]">متوسطك المتوقع</span>
+              <span className={`text-lg font-black ${scoreColor}`}>{prediction.predictedScore}%</span>
+            </div>
+          )}
         </section>
 
         <section className="grid grid-cols-2 gap-3 lg:grid-cols-4">
