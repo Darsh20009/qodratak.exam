@@ -1,5 +1,6 @@
 import fs from "fs";
 import path from "path";
+import crypto from "crypto";
 import makeWASocket, {
   DisconnectReason,
   useMultiFileAuthState,
@@ -51,6 +52,9 @@ const outboundMessageDelayMs = Math.max(
   2_000,
   Number(process.env.WHATSAPP_MESSAGE_DELAY_MS || 4_000),
 );
+const qiroxApiBaseUrl = (process.env.QIROX_API_BASE_URL || "").replace(/\/+$/, "");
+const qiroxProjectId = (process.env.QIROX_PROJECT_ID || "").trim();
+const qiroxProjectApiKey = (process.env.QIROX_PROJECT_API_KEY || "").trim();
 
 let currentStatus: WhatsAppStatus = {
   state: "disconnected",
@@ -108,6 +112,56 @@ function recordMessage(message: WhatsAppMessageEvent) {
   recentMessages.push(message);
   if (recentMessages.length > 2000) recentMessages.splice(0, recentMessages.length - 2000);
   messageEvents.emit("message", message);
+}
+
+function hasQiroxFallback() {
+  return Boolean(qiroxApiBaseUrl && qiroxProjectId && qiroxProjectApiKey);
+}
+
+function qiroxRecipientPhone(digits: string) {
+  if (digits.startsWith("00")) return `+${digits.slice(2)}`;
+  if (digits.startsWith("05") && digits.length === 10) return `+966${digits.slice(1)}`;
+  if (digits.startsWith("5") && digits.length === 9) return `+966${digits}`;
+  return `+${digits}`;
+}
+
+async function sendViaQirox(phone: string, text: string) {
+  if (!hasQiroxFallback()) throw new Error("WHATSAPP_NOT_CONNECTED");
+
+  const response = await fetch(
+    `${qiroxApiBaseUrl}/projects/${encodeURIComponent(qiroxProjectId)}/whatsapp`,
+    {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${qiroxProjectApiKey}`,
+        "Content-Type": "application/json",
+        "Idempotency-Key": `qodratak-${crypto.randomUUID()}`,
+      },
+      body: JSON.stringify({
+        recipient: { phone: qiroxRecipientPhone(phone) },
+        message: text,
+      }),
+      signal: AbortSignal.timeout(20_000),
+    },
+  );
+
+  if (!response.ok) {
+    throw new Error(`QIROX_WHATSAPP_SEND_FAILED_${response.status}`);
+  }
+
+  let responseBody: any = null;
+  try {
+    responseBody = await response.json();
+  } catch {
+    // A successful provider response may have no JSON body.
+  }
+
+  return String(
+    responseBody?.id ||
+      responseBody?.messageId ||
+      responseBody?.data?.id ||
+      `qirox-${crypto.randomUUID()}`,
+  );
 }
 
 export async function connectWhatsApp(): Promise<WhatsAppStatus> {
@@ -262,7 +316,22 @@ async function processOutboundQueue() {
     const job = outboundQueue.shift()!;
     try {
       if (!socket || currentStatus.state !== "connected") {
-        throw new Error("WHATSAPP_NOT_CONNECTED");
+        const remainingDelay =
+          outboundMessageDelayMs - (Date.now() - lastOutboundSentAt);
+        if (remainingDelay > 0) await wait(remainingDelay);
+
+        const qiroxMessageId = await sendViaQirox(job.phone, job.text);
+        lastOutboundSentAt = Date.now();
+        recordMessage({
+          messageId: qiroxMessageId,
+          phone: job.phone.replace(/\D/g, ""),
+          senderName: "منصة قدراتك (QIROX)",
+          content: job.text,
+          direction: "outbound",
+          createdAt: new Date().toISOString(),
+        });
+        job.resolve();
+        continue;
       }
 
       const remainingDelay =

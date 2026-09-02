@@ -29,7 +29,7 @@ const documents: Record<DocumentKey, {
           "الاسم النظامي: مؤسسة قدراتإيهآي (QodratAI Establishment).",
           "رقم السجل التجاري (الرقم الموحد للمنشأة): 7025545463.",
           "الرقم الضريبي لضريبة القيمة المضافة: 310068627100003.",
-          "خدمة العملاء: 0511500913 عبر الاتصال أو واتساب."
+          "خدمة العملاء: 0510510140 عبر الاتصال أو واتساب."
         ]
       },
       {
@@ -120,7 +120,7 @@ const documents: Record<DocumentKey, {
         title: "ملفات تعريف الارتباط والتواصل",
         paragraphs: [
           "تستخدم المنصة ملفات تعريف ارتباط مؤقتة لتأمين جلسات تسجيل الدخول وتذكر تفضيلات الواجهة. قد يؤثر تعطيلها على القدرة على تسجيل الدخول.",
-          "لممارسة حقوقك أو تقديم طلب تصحيح أو حذف، تواصل مع فريق قدرات عبر الرقم 0511500913 بالاتصال أو واتساب."
+          "لممارسة حقوقك أو تقديم طلب تصحيح أو حذف، تواصل مع فريق قدرات عبر الرقم 0510510140 بالاتصال أو واتساب."
         ]
       }
     ]
@@ -174,7 +174,7 @@ const documents: Record<DocumentKey, {
         title: "تقديم الطلب والتواصل",
         paragraphs: [
           "قدّم الاسم المسجل ورقم الجوال وتاريخ ووقت الدفع والرقم المرجعي للإيصال وسبب الطلب، وأرفق صوراً عند وجود خلل تقني.",
-          "لرفع طلب استرجاع أو متابعة شكوى، تواصل معنا عبر مركز الدعم أو الرقم 0511500913 اتصالاً أو واتساب."
+          "لرفع طلب استرجاع أو متابعة شكوى، تواصل معنا عبر مركز الدعم أو الرقم 0510510140 اتصالاً أو واتساب."
         ]
       }
     ]
@@ -231,9 +231,9 @@ export default function FooterDocumentsPage({ documentKey }: { documentKey: Docu
             <p className="font-black text-[#17354A]">هل تحتاج إلى مساعدة؟</p>
             <p className="mt-1 text-sm text-[#5E7180]">فريق قدرات جاهز لخدمتك عبر الرقم الموحد.</p>
           </div>
-          <a href="https://wa.me/966511500913" target="_blank" rel="noopener noreferrer" className="inline-flex items-center justify-center gap-2 rounded-xl bg-[#398B79] px-5 py-3 text-sm font-black text-white hover:bg-[#287966]">
+          <a href="https://wa.me/966510510140" target="_blank" rel="noopener noreferrer" className="inline-flex items-center justify-center gap-2 rounded-xl bg-[#398B79] px-5 py-3 text-sm font-black text-white hover:bg-[#287966]">
             <MessageCircle className="h-4 w-4" />
-            واتساب 0511500913
+            واتساب 0510510140
           </a>
         </div>
       </main>

@@ -146,7 +146,7 @@ async function notifyLinkedParentsOfResult(
       `الاختبار: ${testName}`,
       `النتيجة: ${score} من ${total} (${percentage}%)`,
       'يمكنك مشاهدة جميع الإحصائيات من لوحة ولي الأمر في منصة قدراتك.',
-      'للدعم: 0511500913',
+      'للدعم: 0510510140',
     ].join('\n');
     const deliveries = await Promise.allSettled(
       [...parentPhones].map(phone => sendWhatsAppText(phone, message)),
@@ -2270,7 +2270,7 @@ const phoneOtpStore = new Map<string, { otp: string; expiry: Date; chatId?: numb
       return res.json({ success: true, message: 'تم إرسال رمز التحقق عبر واتساب', retryAfter: result.retryAfter });
     } catch (error: any) {
       if (error?.message === 'WHATSAPP_NOT_CONNECTED') {
-        return res.status(503).json({ error: 'خدمة واتساب غير مرتبطة بعد. تواصل مع المنصة على 0511500913.' });
+        return res.status(503).json({ error: 'خدمة واتساب غير مرتبطة بعد. تواصل مع المنصة على 0510510140.' });
       }
       if (error?.message === 'INVALID_PHONE') return res.status(400).json({ error: 'أدخل رقم جوال صحيحًا' });
       console.error('Parent OTP request error:', error);
