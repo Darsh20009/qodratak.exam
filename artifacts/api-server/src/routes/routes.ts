@@ -51,7 +51,18 @@ async function notifyLinkedParentsOfResult(studentId: string | number, result: a
   try {
     const id = String(studentId);
     const percentage = Math.round(Number(result.percentage ?? (result.totalQuestions ? result.score / result.totalQuestions * 100 : 0)));
-    const testName = String(result.testName || result.testType || 'الاختبار');
+    const rawTestName = String(result.testName || result.testType || 'الاختبار');
+    const testNames: Record<string, string> = {
+      verbal: 'القدرات اللفظية',
+      quantitative: 'القدرات الكمية',
+      qiyas: 'اختبار قياس',
+      standard: 'اختبار القدرات',
+      paper_model: 'النموذج الورقي',
+      qudrat_scientific: 'القدرات العامة - المسار العلمي',
+      qudrat_literary: 'القدرات العامة - المسار الأدبي',
+      tahsili: 'الاختبار التحصيلي',
+    };
+    const testName = testNames[rawTestName] || rawTestName;
     const score = Number(result.score || 0);
     const total = Number(result.totalQuestions || 0);
     let studentName = 'الطالب';
@@ -85,7 +96,15 @@ async function notifyLinkedParentsOfResult(studentId: string | number, result: a
       'يمكنك مشاهدة جميع الإحصائيات من لوحة ولي الأمر في منصة قدراتك.',
       'للدعم: 0511500913',
     ].join('\n');
-    await Promise.allSettled([...parentPhones].map(phone => sendWhatsAppText(phone, message)));
+    const deliveries = await Promise.allSettled(
+      [...parentPhones].map(phone => sendWhatsAppText(phone, message)),
+    );
+    const failedDeliveries = deliveries.filter(delivery => delivery.status === 'rejected').length;
+    if (failedDeliveries > 0) {
+      console.warn(
+        `[Parent Results] ${failedDeliveries}/${deliveries.length} WhatsApp notifications failed for student ${id}`,
+      );
+    }
   } catch (error) {
     console.error('Parent result notification error:', error);
   }
@@ -127,7 +146,14 @@ async function scheduleAiReviewAndEmail(bookingId: string, userId: string): Prom
 
     const dbUser = await User.findOne({ _id: userId }).lean() as any;
     const userEmail = dbUser?.email;
-    const userFullName = dbUser?.name || dbUser?.username || 'الطالب';
+    const userFullName = dbUser?.fullName || dbUser?.name || dbUser?.username || 'الطالب';
+
+    await notifyLinkedParentsOfResult(userId, {
+      testType: fresh.examType || 'standard',
+      score: result.correctedCorrectAnswers,
+      totalQuestions: fresh.totalQuestions || 100,
+      percentage: result.correctedTotalScoreOutOf100,
+    });
 
     if (userEmail) {
       const scheduledAtStr = new Date(fresh.scheduledAt).toLocaleDateString('ar-SA', {
@@ -2179,9 +2205,30 @@ const phoneOtpStore = new Map<string, { otp: string; expiry: Date; chatId?: numb
         if (child) {
           results = await storage.getTestResultsByUser(Number(child.id));
         } else if (mongoose.connection.readyState === 1 && mongoose.Types.ObjectId.isValid(childId)) {
-          const { User, TestResult } = await import('./mongodb/models');
+          const { User, TestResult, ExamBooking } = await import('./mongodb/models');
           child = await User.findById(childId).lean();
-          results = await TestResult.find({ userId: childId }).sort({ completedAt: -1 }).limit(100).lean();
+          const [testResults, bookedExamResults] = await Promise.all([
+            TestResult.find({ userId: childId }).sort({ completedAt: -1 }).limit(100).lean(),
+            ExamBooking.find({
+              userId: childId,
+              status: 'completed',
+              aiReviewDone: true,
+              resultVisibleAt: { $lte: new Date() },
+            }).sort({ completedAt: -1 }).limit(50).lean(),
+          ]);
+          results = [
+            ...testResults,
+            ...bookedExamResults.map((exam: any) => ({
+              _id: exam._id,
+              testType: exam.examType || 'standard',
+              testName: exam.examType || 'اختبار القدرات',
+              score: exam.correctAnswers || 0,
+              totalQuestions: exam.totalQuestions || 100,
+              percentage: exam.totalScoreOutOf100 || 0,
+              completedAt: exam.completedAt,
+              pointsEarned: 0,
+            })),
+          ];
         }
         if (!child) continue;
         const normalized = results.map((result: any) => ({
