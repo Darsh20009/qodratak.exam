@@ -123,23 +123,13 @@
   }
 }
 
-/* One surface contract for the rebuilt student pages. Legacy screens can keep
-   their internal layout while inheriting the same day/night canvas. */
-.qodratak-page-surface > * {
-  background-color: hsl(var(--background)) !important;
+/* Keep the app canvas consistent without overriding page-owned surfaces.
+   Individual cards, dark banners, gradients, and text colors must remain
+   under the control of the page that renders them. */
+.qodratak-page-surface {
+  min-height: 100%;
+  background-color: hsl(var(--background));
   color: hsl(var(--foreground));
-}
-
-.qodratak-page-surface .bg-white,
-.qodratak-page-surface .bg-gray-50,
-.qodratak-page-surface .bg-gray-100,
-.qodratak-page-surface .bg-slate-50 {
-  background-color: hsl(var(--card)) !important;
-}
-
-.qodratak-page-surface .bg-gradient-to-br,
-.qodratak-page-surface .bg-gradient-to-r {
-  background-image: none !important;
 }
 
 .dark body {

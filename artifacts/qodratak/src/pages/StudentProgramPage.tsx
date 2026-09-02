@@ -107,6 +107,12 @@ export default function StudentProgramPage() {
   const section = new URLSearchParams(location.split("?")[1] || "").get("section");
   const showFoundation = !section || section === "foundation";
   const showComputer = !section || section === "computer";
+  const practiceSectionTitle = programKey === "ielts" || programKey === "gat"
+    ? "المهارات والتدريب"
+    : "المحوسب";
+  const practiceSectionDescription = programKey === "ielts" || programKey === "gat"
+    ? "تدريب عملي على مهارات الاختبار ومحاكاة تجربة الأداء."
+    : "اختبارات وتدريب عملي يحاكي تجربة الاختبار.";
 
   return (
     <div className="min-h-full bg-background" dir="rtl">
@@ -140,8 +146,8 @@ export default function StudentProgramPage() {
 
         {showComputer && <section id="computer">
           <div className="mb-3">
-            <h2 className="text-xl font-black text-[#0D1B2A]">المحوسب</h2>
-            <p className="mt-1 text-sm text-[#64748B]">اختبارات وتدريب عملي يحاكي تجربة الاختبار.</p>
+            <h2 className="text-xl font-black text-[#0D1B2A]">{practiceSectionTitle}</h2>
+            <p className="mt-1 text-sm text-[#64748B]">{practiceSectionDescription}</p>
           </div>
           <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-4">
             {program.computer.map((item) => <ContentCard key={item.title} item={item} />)}
