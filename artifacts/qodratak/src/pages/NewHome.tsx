@@ -270,156 +270,145 @@ function LoggedInDashboard({ user }: { user: any }) {
     ? "text-amber-600" : "text-red-500";
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-950" dir="rtl">
-      <div className="max-w-lg mx-auto px-4 pt-5 pb-24 space-y-4">
-
-        {/* ── Header ── */}
-        <div className="slide-up-smooth stagger-1 flex items-center justify-between">
+    <div className="min-h-full bg-[#F7F4EE]" dir="rtl">
+      <div className="mx-auto max-w-6xl space-y-5 px-4 py-6 pb-24 lg:px-8">
+        <header className="flex items-center justify-between gap-4">
           <div>
-            <p className="text-xs text-gray-500 dark:text-gray-400">{greeting}،</p>
-            <h1 className="text-xl font-black text-gray-900 dark:text-white leading-tight">{firstName}</h1>
+            <p className="text-sm font-medium text-[#94A3B8]">{greeting}،</p>
+            <h1 className="mt-1 text-2xl font-black tracking-tight text-[#0D1B2A]">{firstName}</h1>
+            <p className="mt-1 text-sm text-[#64748B]">من هنا تبدأ خطوتك التالية في التدريب.</p>
           </div>
           <Link href="/profile">
             <div
-              className="w-10 h-10 rounded-xl flex items-center justify-center text-white font-bold text-base shadow cursor-pointer hover:opacity-90 transition-opacity"
-              style={{ background: GREEN }}
+              className="flex h-11 w-11 cursor-pointer items-center justify-center rounded-full bg-[#0D1B2A] text-base font-black text-white transition hover:bg-[#1E2938]"
               data-testid="link-profile-avatar"
             >
               {firstName.charAt(0)}
             </div>
           </Link>
-        </div>
+        </header>
 
-        {/* ── Daily Progress Card ── */}
-        <div className="card-rise stagger-2 bg-white dark:bg-gray-900 rounded-2xl border border-gray-100 dark:border-gray-800 p-4 card-hover">
-          <div className="flex items-center justify-between mb-3">
-            <div>
-              <p className="text-xs text-gray-500 dark:text-gray-400">هدف اليوم</p>
-              <p className="text-lg font-black text-gray-900 dark:text-white">
-                {dailyDone} <span className="text-sm font-medium text-gray-400">/ {dailyTarget} سؤال</span>
-              </p>
-            </div>
-            <div className="text-left">
-              <p className="text-xs text-gray-500 dark:text-gray-400">درجتك المتوقعة</p>
-              <p className={`text-2xl font-black ${scoreColor}`}>
-                {prediction ? `${prediction.predictedScore}%` : "—"}
-              </p>
-            </div>
-          </div>
-          <div className="h-2 bg-gray-100 dark:bg-gray-800 rounded-full overflow-hidden">
-            <div
-              className="h-full rounded-full transition-all duration-700"
-              style={{ width: `${dailyPct}%`, background: GREEN }}
-            />
-          </div>
-          <p className="text-[11px] text-gray-400 mt-1.5">
-            {dailyPct >= 100 ? "🎉 أتممت هدف اليوم!" : `${dailyPct}% مكتمل — واصل التدريب`}
-          </p>
-        </div>
-
-        {/* ── BIG CTA: اختبار قياس ── */}
-        <div className="card-rise stagger-3">
-          <Link href="/qiyas">
-            <button
-              className="w-full py-4 rounded-2xl text-white font-black text-base flex items-center justify-center gap-3 shadow-md hover:shadow-lg hover:opacity-95 active:scale-[0.98] transition-all duration-200 btn-press"
-              style={{ background: GREEN }}
-              data-testid="button-start-qiyas-main"
-            >
-              <GraduationCapIcon className="w-5 h-5" />
-              ابدأ اختبار قياس الآن
-              <ChevronLeft className="w-4 h-4" />
-            </button>
-          </Link>
-        </div>
-
-        {/* ── 3 Secondary Cards ── */}
-        <div className="grid grid-cols-3 gap-2.5">
-          {[
-            { title: "بنك الأسئلة", desc: "4,500+ سؤال", href: "/question-bank", icon: BookOpen, bg: "#f0fdf4", color: GREEN },
-            { title: "نتائجي", desc: `${prediction?.totalTests ?? 0} اختبار`, href: "/profile", icon: BarChart2, bg: "#eff6ff", color: "#1d4ed8" },
-            { title: "البطاقات", desc: "مراجعة سريعة", href: "/flashcards", icon: Layers, bg: "#fef3c7", color: "#b45309" },
-          ].map((card, i) => (
-            <Link key={i} href={card.href}>
-              <div
-                className={`card-rise stagger-${i + 4} rounded-xl border border-gray-100 dark:border-gray-800 bg-white dark:bg-gray-900 p-3 text-center hover:shadow-md transition-all duration-200 cursor-pointer card-hover btn-press`}
-                data-testid={`card-secondary-${i}`}
-              >
-                <div className="w-9 h-9 rounded-lg flex items-center justify-center mx-auto mb-2" style={{ background: card.bg }}>
-                  <card.icon className="w-4 h-4" style={{ color: card.color }} />
-                </div>
-                <p className="text-xs font-bold text-gray-800 dark:text-gray-200 leading-tight">{card.title}</p>
-                <p className="text-[10px] text-gray-400 mt-0.5">{card.desc}</p>
+        <section className="grid gap-5 lg:grid-cols-[1.45fr_1fr]">
+          <div className="rounded-[26px] bg-[#0D1B2A] p-6 text-white sm:p-8">
+            <div className="flex h-full flex-col justify-between gap-8">
+              <div>
+                <p className="text-sm font-bold text-[#F7F775]">رحلتك التعليمية</p>
+                <h2 className="mt-3 max-w-xl text-3xl font-black leading-tight sm:text-4xl">
+                  تدرب بوضوح، وتقدم بثقة.
+                </h2>
+                <p className="mt-3 max-w-lg text-sm leading-6 text-[#CBD5E1]">
+                  اختبارات قياس، بنك أسئلة، ونتائجك في مكان واحد بدون تعقيد.
+                </p>
               </div>
-            </Link>
-          ))}
-        </div>
+              <div className="flex flex-col gap-3 sm:flex-row">
+                <Link href="/qiyas">
+                  <button
+                    className="flex w-full items-center justify-center gap-2 rounded-xl bg-[#F7F775] px-5 py-3 text-sm font-black text-[#0D1B2A] transition hover:bg-[#ffffa0] sm:w-auto"
+                    data-testid="button-start-qiyas-main"
+                  >
+                    <GraduationCapIcon className="h-4 w-4" />
+                    ابدأ اختبار قياس
+                    <ChevronLeft className="h-4 w-4" />
+                  </button>
+                </Link>
+                <Link href="/question-bank">
+                  <button className="flex w-full items-center justify-center gap-2 rounded-xl border border-white/20 px-5 py-3 text-sm font-bold text-white transition hover:bg-white/10 sm:w-auto">
+                    <BookOpenIcon className="h-4 w-4" />
+                    بنك الأسئلة
+                  </button>
+                </Link>
+              </div>
+            </div>
+          </div>
 
-        {/* ── Stats Row ── */}
-        <div className="grid grid-cols-3 gap-2.5">
+          <div className="rounded-[26px] border border-[#E5E7EB] bg-white p-6">
+            <div className="flex items-start justify-between gap-3">
+              <div>
+                <p className="text-sm font-bold text-[#64748B]">هدف اليوم</p>
+                <p className="mt-2 text-3xl font-black text-[#0D1B2A]">
+                  {dailyDone} <span className="text-base font-bold text-[#94A3B8]">/ {dailyTarget} سؤال</span>
+                </p>
+              </div>
+              <div className="rounded-xl bg-[#E5E7EB] p-2.5 text-[#0D1B2A]">
+                <Target className="h-5 w-5" />
+              </div>
+            </div>
+            <div className="mt-7 h-2 rounded-full bg-[#E5E7EB]">
+              <div className="h-full rounded-full bg-[#0D1B2A] transition-all duration-700" style={{ width: `${dailyPct}%` }} />
+            </div>
+            <div className="mt-3 flex items-center justify-between gap-3 text-xs">
+              <span className="font-bold text-[#64748B]">{dailyPct}% مكتمل</span>
+              <span className="text-[#94A3B8]">{dailyPct >= 100 ? "اكتمل هدفك اليوم" : "واصل التدريب"}</span>
+            </div>
+            {prediction && (
+              <div className="mt-5 flex items-center justify-between border-t border-[#E5E7EB] pt-4">
+                <span className="text-xs font-bold text-[#64748B]">متوسطك المتوقع</span>
+                <span className={`text-lg font-black ${scoreColor}`}>{prediction.predictedScore}%</span>
+              </div>
+            )}
+          </div>
+        </section>
+
+        <section className="grid grid-cols-2 gap-3 lg:grid-cols-4">
           {[
             { label: "متوسط الأداء", value: prediction ? `${Math.round(prediction.averageScore)}%` : "—", icon: Target, href: "/ai-hub/score-prediction" },
             { label: "المرتبة", value: rankData?.currentRank ? `#${rankData.currentRank}` : "—", icon: Trophy, href: "/leaderboard" },
             { label: "النقاط", value: rankData?.totalPoints ? `${Math.round(rankData.totalPoints / 1000)}k` : "—", icon: Zap, href: "/leaderboard" },
-          ].map((stat, i) => (
-            <Link key={i} href={stat.href}>
-              <div className={`card-rise stagger-${i + 1} bg-white dark:bg-gray-900 rounded-xl border border-gray-100 dark:border-gray-800 p-3 text-center hover:shadow-md transition-all duration-200 cursor-pointer card-hover`} data-testid={`stat-${i}`}>
-                <stat.icon className="w-4 h-4 mx-auto mb-1" style={{ color: GREEN }} />
-                <p className="text-base font-black text-gray-900 dark:text-white">{stat.value}</p>
-                <p className="text-[10px] text-gray-400 leading-tight">{stat.label}</p>
+            { label: "الاختبارات", value: prediction?.totalTests ?? "—", icon: BarChart2, href: "/profile" },
+          ].map((stat, index) => (
+            <Link key={stat.label} href={stat.href}>
+              <div className="flex items-center gap-3 rounded-2xl border border-[#E5E7EB] bg-white p-4 transition hover:border-[#0D1B2A]/30 hover:shadow-sm" data-testid={`stat-${index}`}>
+                <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-[#E5E7EB] text-[#0D1B2A]">
+                  <stat.icon className="h-4 w-4" />
+                </div>
+                <div className="min-w-0">
+                  <p className="truncate text-lg font-black text-[#0D1B2A]">{stat.value}</p>
+                  <p className="truncate text-[11px] font-bold text-[#94A3B8]">{stat.label}</p>
+                </div>
               </div>
             </Link>
           ))}
-        </div>
+        </section>
 
-        {/* ── Section: الأدوات ── */}
-        <div className="slide-up-smooth">
-          <p className="text-xs font-bold text-gray-400 mb-2 px-0.5 uppercase tracking-wider">أدوات التدريب</p>
-          <div className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-100 dark:border-gray-800 divide-y divide-gray-100 dark:divide-gray-800 overflow-hidden">
-            {[
-              { title: "اختبارات لفظي", desc: "استيعاب · تناظر · إكمال", href: "/verbal-tests", icon: BookOpenIcon },
-              { title: "اختبارات كمي", desc: "جبر · هندسة · مقارنة", href: "/quantitative-tests", icon: Brain },
-              { title: "نماذج ورقية", desc: "36 نموذج من قياس الحقيقي", href: "/paper-models", icon: FileText },
-              { title: "تحدي الأخطاء", desc: "راجع أخطاءك السابقة", href: "/mistake-challenge", icon: Target },
-              { title: "الاختبار الجماعي", desc: "تنافس مع أصدقائك الآن", href: "/multiplayer", icon: Users },
-              { title: "تحليل الأداء", desc: "اكتشف نقاط قوتك وضعفك", href: "/ai-hub/score-prediction", icon: TrendingUp },
-            ].map((tool, i) => (
-              <Link key={i} href={tool.href}>
-                <div
-                  className="flex items-center gap-3 px-4 py-3.5 hover:bg-gray-50 dark:hover:bg-gray-800/70 active:bg-gray-100 dark:active:bg-gray-800 transition-colors cursor-pointer"
-                  data-testid={`tool-row-${i}`}
-                >
-                  <div className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0" style={{ background: GREEN_LIGHT }}>
-                    <tool.icon className="w-4 h-4" style={{ color: GREEN }} />
+        <section>
+          <div className="mb-3 flex items-center justify-between">
+            <h2 className="text-lg font-black text-[#0D1B2A]">الوصول السريع</h2>
+            <Link href="/question-bank" className="text-xs font-bold text-[#64748B] hover:text-[#0D1B2A]">عرض الكل</Link>
+          </div>
+          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+            {SECONDARY_TOOLS.slice(0, 4).map((tool) => (
+              <Link key={tool.href} href={tool.href}>
+                <div className="flex items-center gap-3 rounded-2xl border border-[#E5E7EB] bg-white p-4 transition hover:-translate-y-0.5 hover:border-[#0D1B2A]/30 hover:shadow-sm">
+                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#E5E7EB] text-[#0D1B2A]">
+                    <tool.icon className="h-5 w-5" />
                   </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-semibold text-gray-900 dark:text-white leading-tight">{tool.title}</p>
-                    <p className="text-[11px] text-gray-400 mt-0.5">{tool.desc}</p>
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate text-sm font-black text-[#0D1B2A]">{tool.title}</p>
+                    <p className="mt-0.5 text-[11px] font-bold text-[#94A3B8]">{tool.badge}</p>
                   </div>
-                  <ChevronLeft className="w-4 h-4 text-gray-300 shrink-0" />
+                  <ChevronLeft className="h-4 w-4 shrink-0 text-[#94A3B8]" />
                 </div>
               </Link>
             ))}
           </div>
-        </div>
+        </section>
 
-        {/* ── Upgrade CTA if free ── */}
         {!isPremium && (
           <Link href="/subscription">
-            <div className="card-rise flex items-center justify-between p-4 rounded-2xl border border-amber-200 dark:border-amber-800 bg-amber-50 dark:bg-amber-950/20 cursor-pointer hover:bg-amber-100 dark:hover:bg-amber-950/30 hover:shadow-md transition-all duration-200 card-hover" data-testid="card-upgrade-cta">
+            <div className="flex items-center justify-between gap-4 rounded-2xl border border-[#F7F775] bg-[#FFFFE4] p-4 transition hover:border-[#0D1B2A]/30">
               <div className="flex items-center gap-3">
-                <div className="w-9 h-9 rounded-xl bg-amber-100 dark:bg-amber-900/30 flex items-center justify-center">
-                  <CrownIcon className="w-5 h-5 text-amber-500" />
+                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#F7F775] text-[#0D1B2A]">
+                  <CrownIcon className="h-5 w-5" />
                 </div>
                 <div>
-                  <p className="text-sm font-bold text-gray-900 dark:text-white">ترقية للمميز</p>
-                  <p className="text-xs text-gray-500 dark:text-gray-400">وصول كامل · اختبارات غير محدودة</p>
+                  <p className="text-sm font-black text-[#0D1B2A]">اكتشف خطط قدراتك</p>
+                  <p className="mt-0.5 text-xs font-medium text-[#64748B]">اختر الخطة المناسبة لرحلتك التعليمية</p>
                 </div>
               </div>
-              <ChevronLeft className="w-4 h-4 text-amber-500" />
+              <ChevronLeft className="h-5 w-5 text-[#0D1B2A]" />
             </div>
           </Link>
         )}
-
       </div>
     </div>
   );

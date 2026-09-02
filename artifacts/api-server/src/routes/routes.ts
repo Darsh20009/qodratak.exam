@@ -4601,28 +4601,41 @@ app.post("/api/auth/register", async (req: Request, res: Response) => {
 
       const userId = sessionUserId;
 
-      // Read users from JSON file
-      const users = JSON.parse(fs.readFileSync("attached_assets/user.json", "utf8"));
-      let user = users.find((u: any) => u.id === userId || String(u.id) === String(userId));
+      // MongoDB is the primary source for current sessions. The legacy JSON
+      // file is optional and is only used for accounts created by the old flow.
+      let user: any = null;
+      try {
+        const { User } = await import('./mongodb/models');
+        const mongoUser = await User.findById(userId) || (sessionEmail ? await User.findOne({ email: sessionEmail }) : null);
+        if (mongoUser) {
+          user = {
+            id: mongoUser._id.toString(),
+            name: mongoUser.fullName || mongoUser.username,
+            fullName: mongoUser.fullName || mongoUser.username,
+            username: mongoUser.username,
+            email: mongoUser.email,
+            phone: mongoUser.phone,
+            role: mongoUser.role || 'student',
+            subscription: (mongoUser as any).subscription || { type: 'trial', status: 'active' },
+            points: (mongoUser as any).points || 0,
+            level: (mongoUser as any).level || 1,
+            devices: (mongoUser as any).devices || [],
+          };
+        }
+      } catch (mongoError) {
+        console.warn('MongoDB current-user lookup unavailable:', mongoError);
+      }
 
-      // If not in user.json, check MongoDB (for Telegram/MongoDB-registered users)
-      if (!user && sessionEmail) {
+      if (!user) {
         try {
-          const { User } = await import('./mongodb/models');
-          const mongoUser = await User.findOne({ email: sessionEmail });
-          if (mongoUser) {
-            user = {
-              id: mongoUser._id.toString(),
-              name: mongoUser.fullName || mongoUser.username,
-              fullName: mongoUser.fullName || mongoUser.username,
-              email: mongoUser.email,
-              role: mongoUser.role || 'student',
-              subscription: (mongoUser as any).subscription || { type: 'trial', status: 'active' },
-              points: (mongoUser as any).points || 0,
-              level: (mongoUser as any).level || 1,
-            };
+          const userFilePath = 'attached_assets/user.json';
+          if (fs.existsSync(userFilePath)) {
+            const users = JSON.parse(fs.readFileSync(userFilePath, "utf8"));
+            user = users.find((u: any) => u.id === userId || String(u.id) === String(userId));
           }
-        } catch {}
+        } catch (fileError) {
+          console.warn('Legacy user file lookup unavailable:', fileError);
+        }
       }
 
       if (!user) {
