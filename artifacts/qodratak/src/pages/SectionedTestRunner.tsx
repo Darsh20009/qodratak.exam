@@ -44,7 +44,7 @@ import { SectionReviewModal } from "@/components/SectionReviewModal";
 import AiReviewingScreen, { WrongQuestion, QuestionExplanation } from '@/components/AiReviewingScreen';
 
 import { QiyasExamLayout } from '@/components/QiyasExamLayout';
-import { useQuery } from '@tanstack/react-query';
+import { useUser } from '@/hooks/use-user';
 
 interface Question {
   id: number;
@@ -97,7 +97,7 @@ export default function SectionedTestRunner() {
   const timeLeftRef = useRef(50 * 60);
   const [loading, setLoading] = useState(true);
   const [isPausedByAntiCheat, setIsPausedByAntiCheat] = useState(false);
-  const { data: user } = useQuery<any>({ queryKey: ['/api/user'] });
+  const { user } = useUser();
 
   const { violations, lastViolationType, isWarningVisible, dismissWarning } = useAntiCheat({
     enabled: isStarted && !isCompleted,
@@ -134,7 +134,7 @@ export default function SectionedTestRunner() {
   useEffect(() => {
     const loadQuestions = async () => {
       try {
-        const response = await fetch('/api/questions');
+        const response = await fetch('/api/questions', { credentials: 'include' });
         const allQuestions = await response.json();
 
         const filteredQuestions = allQuestions.filter((q: Question) => 
@@ -351,10 +351,8 @@ export default function SectionedTestRunner() {
     localStorage.setItem('questionBankResults', JSON.stringify(testResults));
 
     // إرسال النتيجة للسيرفر لحفظ النقاط
-    const userStr = localStorage.getItem('user');
-    if (userStr) {
+    if (user?.id) {
       try {
-        const user = JSON.parse(userStr);
         const totalQuestions = answers.length;
         const answeredCount = answers.filter(a => a.selectedAnswer >= 0).length;
         const skippedQuestions = totalQuestions - answeredCount;
@@ -362,8 +360,8 @@ export default function SectionedTestRunner() {
         const response = await fetch('/api/test-results', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
+          credentials: 'include',
           body: JSON.stringify({
-            userId: user.id,
             testType: testType,
             difficulty: 'intermediate',
             score: correctAnswers,
@@ -408,7 +406,7 @@ export default function SectionedTestRunner() {
       }));
     setWrongQuestionsForAI(wrongQs);
     setShowAiReview(true);
-  }, [sections, testType, testNumber, isCompleted]);
+  }, [sections, testType, testNumber, isCompleted, user?.id]);
 
   const getOverallProgress = () => {
     const totalQuestions = sections.reduce((sum, section) => sum + section.questions.length, 0);
@@ -1097,8 +1095,6 @@ export default function SectionedTestRunner() {
 
   // AI Review Screen (shown before results)
   if (showAiReview) {
-    const userStr = localStorage.getItem('user');
-    const userEmail = userStr ? JSON.parse(userStr)?.email : undefined;
     const totalQ = testAnswers.length;
     const scoreVal = testAnswers.filter(a => a.correct).length;
     return (
@@ -1106,7 +1102,7 @@ export default function SectionedTestRunner() {
         wrongQuestions={wrongQuestionsForAI}
         totalQuestions={totalQ}
         score={scoreVal}
-        userEmail={userEmail}
+        userEmail={user?.email}
         onShowResults={(explanations) => {
           if (explanations) setAiExplanations(explanations);
           setShowAiReview(false);
@@ -1114,13 +1110,12 @@ export default function SectionedTestRunner() {
         }}
         onSendEmail={async () => {
           try {
-            const userObj = userStr ? JSON.parse(userStr) : null;
-            if (!userObj?.id) return;
+            if (!user?.id) return;
             await fetch('/api/ai/send-results-email', {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
+              credentials: 'include',
               body: JSON.stringify({
-                userId: userObj.id,
                 testType: testType === 'verbal' ? 'اختبار لفظي' : 'اختبار كمي',
                 score: scoreVal,
                 totalQuestions: totalQ,

@@ -17,7 +17,7 @@ const DOMAIN = 'https://qodratak.sa';
 const DEFAULT_IMAGE = `${DOMAIN}/qodratak-app-icon.png`;
 export const PLATFORM_NAME = 'منصة قدراتك';
 export const PLATFORM_DESCRIPTION =
-  'منصة قدراتك التعليمية للاستعداد لاختبارات القدرات والتحصيلي وIELTS وGAT عبر تدريب منظم، محاكاة، بنك أسئلة وتحليل واضح للتقدم.';
+  'منصة قدراتك التعليمية للاستعداد لاختبارات القدرات والتحصيلي عبر تدريب منظم، محاكاة، بنك أسئلة وتحليل واضح للتقدم.';
 const DEFAULT_TITLE = 'منصة قدراتك | تدريب القدرات والتحصيلي بخطة واضحة';
 
 export function SEO({

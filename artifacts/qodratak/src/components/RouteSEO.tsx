@@ -9,15 +9,15 @@ type RouteMetadata = {
 
 const PUBLIC_ROUTE_METADATA: Record<string, RouteMetadata> = {
   "/": {
-    title: "منصة قدراتك | القدرات والتحصيلي وIELTS وGAT",
+    title: "منصة قدراتك | القدرات والتحصيلي",
     description:
-      "منصة قدرات تعليمية لطلاب السعودية: تأسيس ومحوسب للقدرات، تدريب التحصيلي، IELTS وGAT، اختبارات يومية وتحليل واضح للتقدم.",
+      "منصة قدرات تعليمية لطلاب السعودية: تأسيس ومحوسب للقدرات، تدريب التحصيلي، اختبارات يومية وتحليل واضح للتقدم.",
     structuredData: {
       "@context": "https://schema.org",
       "@type": "EducationalOrganization",
       name: "منصة قدرات التعليمية - قدراتك",
       alternateName: ["Qodratak", "منصة قدراتك"],
-      description: "منصة تعليمية وتدريبية متكاملة لطلاب الثانوية في السعودية للاستعداد للقدرات والتحصيلي وIELTS وGAT.",
+      description: "منصة تعليمية وتدريبية متكاملة لطلاب الثانوية في السعودية للاستعداد للقدرات والتحصيلي.",
       url: "https://qodratak.sa/",
       areaServed: { "@type": "Country", name: "Saudi Arabia" },
       hasOfferCatalog: {
@@ -26,8 +26,6 @@ const PUBLIC_ROUTE_METADATA: Record<string, RouteMetadata> = {
         itemListElement: [
           { "@type": "Course", name: "تدريب اختبار القدرات العامة" },
           { "@type": "Course", name: "تدريب اختبار التحصيلي" },
-          { "@type": "Course", name: "الاستعداد لاختبار IELTS" },
-          { "@type": "Course", name: "التدريب على GAT" },
         ],
       },
     },

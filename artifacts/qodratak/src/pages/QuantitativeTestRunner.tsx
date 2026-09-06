@@ -28,6 +28,7 @@ import {
 } from 'lucide-react';
 import { apiRequest } from '@/lib/queryClient';
 import { useToast } from '@/hooks/use-toast';
+import { useUser } from '@/hooks/use-user';
 
 interface Question {
   id: number;
@@ -103,7 +104,7 @@ export function QuantitativeTestRunner() {
     }
   }, []);
 
-  const { data: user } = useQuery<any>({ queryKey: ['/api/user'] });
+  const { user } = useUser();
 
   // جلب الأسئلة الكمية غير المرئية سابقاً لمنع التكرار
   const { data: allQuestions, isLoading } = useQuery({
@@ -258,14 +259,11 @@ export function QuantitativeTestRunner() {
 
     // إرسال النتيجة للسيرفر لحفظ النقاط
     try {
-      const userStr = localStorage.getItem('user');
-      if (userStr) {
-        const user = JSON.parse(userStr);
+      if (user?.id) {
         const skippedQuestions = totalQuestions - answeredQuestions;
         
         const questionIds = (questions as any[]).map((q: any) => q._id || q.id || q.questionId).filter(Boolean);
         const response = await apiRequest('POST', '/api/test-results', {
-          userId: user.id,
           testType: 'quantitative',
           difficulty: testData?.difficulty || 'intermediate',
           score: correctAnswers,
@@ -328,14 +326,12 @@ export function QuantitativeTestRunner() {
   };
 
   if (showAiReview) {
-    const userStr = localStorage.getItem('user');
-    const userEmail = userStr ? JSON.parse(userStr)?.email : undefined;
     return (
       <AiReviewingScreen
         wrongQuestions={wrongQuestionsForAI}
         totalQuestions={pendingTotal}
         score={pendingScore}
-        userEmail={userEmail}
+        userEmail={user?.email}
         onShowResults={() => setLocation('/test-results')}
       />
     );

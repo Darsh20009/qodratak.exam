@@ -44,7 +44,7 @@ export default function InstitutionPortalPage() {
         </section>
 
         <div className="mt-7 flex flex-wrap gap-3">
-          <Link href="/profile" className="inline-flex items-center gap-2 bg-[#171723] px-5 py-3 text-sm font-black text-white transition hover:bg-[#2A2636]">إدارة الحساب <ArrowLeft className="h-4 w-4" /></Link>
+          <Link href="/account" className="inline-flex items-center gap-2 bg-[#171723] px-5 py-3 text-sm font-black text-white transition hover:bg-[#2A2636]">إدارة الحساب <ArrowLeft className="h-4 w-4" /></Link>
           <button onClick={() => setLocation("/")} className="border border-[#24202D]/15 px-5 py-3 text-sm font-black text-[#171723] transition hover:bg-[#24202D]/5">العودة للرئيسية</button>
         </div>
       </div>

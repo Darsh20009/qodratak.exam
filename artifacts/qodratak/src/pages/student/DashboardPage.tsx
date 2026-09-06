@@ -76,6 +76,9 @@ export default function DashboardPage() {
     ? Math.max(0, Math.ceil((new Date(dashboard.upcomingExam.date).getTime() - Date.now()) / 86400000))
     : null;
   const examProgress = daysToExam === null ? 0 : Math.max(5, Math.min(100, 100 - (daysToExam / 90) * 100));
+  const recommendedHref = ["/foundation", "/computerized", "/book-exam"].includes(dashboard.recommendedPlan.nextAction.href)
+    ? dashboard.recommendedPlan.nextAction.href
+    : "/foundation";
 
   return (
     <div className="mx-auto max-w-5xl p-5 md:p-8 space-y-8 animate-fade-in">
@@ -150,7 +153,7 @@ export default function DashboardPage() {
               <div className="relative z-10">
                 <p className="text-sm font-bold text-[#F7F775] mb-2">{dashboard.recommendedPlan.title}</p>
                 <h3 className="text-xl font-black mb-3">{dashboard.recommendedPlan.description}</h3>
-                <Link href={dashboard.recommendedPlan.nextAction.href}>
+                <Link href={recommendedHref}>
                   <Button className="mt-4 bg-[#F7F775] text-[#0D1B2A] hover:bg-[#F7F775]/90 font-black rounded-xl">
                     <PlayCircle className="ml-2 h-4 w-4" />
                     {dashboard.recommendedPlan.nextAction.label}

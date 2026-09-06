@@ -4,9 +4,10 @@ import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { BookOpen, Calculator, Download, Play, CheckCircle, Lock, Target, Users, Clock, Brain, Trophy, Zap, Layers, BookMarked, Shapes, PenTool, FileText, AlertCircle, Sparkles, Shuffle } from "lucide-react";
+import { BookOpen, Calculator, Download, Play, CheckCircle, Target, Users, Clock, Brain, Trophy, Zap, Layers, BookMarked, Shapes, PenTool, FileText, AlertCircle, Sparkles, Shuffle } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { VERBAL_SUBCATEGORIES, QUANTITATIVE_SUBCATEGORIES } from "@shared/examUtils";
+import { useUser } from "@/hooks/use-user";
 
 interface TestProgress {
   testNumber: number;
@@ -34,7 +35,6 @@ export default function QuestionBankPage() {
   const [quantitativeQuestionCount, setQuantitativeQuestionCount] = useState(0);
   const [totalQuestionCount, setTotalQuestionCount] = useState(0);
   const [loading, setLoading] = useState(true);
-  const [accessCodeInput, setAccessCodeInput] = useState('');
   
   // Subcategory state
   const [allQuestions, setAllQuestions] = useState<any[]>([]);
@@ -43,100 +43,50 @@ export default function QuestionBankPage() {
   const [selectedVerbalSubcategory, setSelectedVerbalSubcategory] = useState<string | null>(null);
   const [selectedQuantitativeSubcategory, setSelectedQuantitativeSubcategory] = useState<string | null>(null);
   
-  // Premium and daily limit state
-  const [user, setUser] = useState<any>(null);
+  // Identity and subscription access come from the authenticated server session.
+  const { user, isLoading: isUserLoading } = useUser();
+  const progressStorageKey = user?.id ? `questionBankProgress_${user.id}` : null;
+  const resultsStorageKey = user?.id ? `questionBankResults_${user.id}` : null;
   const [dailyTestsTaken, setDailyTestsTaken] = useState(0);
   const MAX_DAILY_FREE_TESTS = 1;
 
-  // Generate access code for a test
-  const generateAccessCode = (type: string, testNumber: number) => {
-    const base = `${type.toUpperCase()}${testNumber}${new Date().getFullYear()}`;
-    const hash = btoa(base).replace(/[^A-Z0-9]/g, '').substring(0, 6);
-    return hash;
-  };
-
-  // Check access code and unlock tests
-  const checkAccessCode = (inputCode: string) => {
-    if (!inputCode || inputCode.length < 4) return false;
-
-    const accessCodes = JSON.parse(localStorage.getItem('testAccessCodes') || '{}');
-
-    // Check if code matches any test
-    for (const [testKey, code] of Object.entries(accessCodes)) {
-      if (code === inputCode.toUpperCase()) {
-        // Unlock all tests up to this point
-        const [category, testNum] = testKey.split('_');
-        const testNumber = parseInt(testNum);
-
-        setQuestionBankState(prev => {
-          const updated = { ...prev };
-          const categoryKey = category as keyof typeof updated;
-          updated[categoryKey] = updated[categoryKey].map((test: TestProgress) => 
-            test.testNumber <= testNumber 
-              ? { ...test, completed: true, score: test.score || 75 }
-              : test
-          );
-
-          // Save to localStorage
-          localStorage.setItem('questionBankProgress', JSON.stringify(updated));
-
-          return updated;
-        });
-
-        const categoryName = category === 'verbal' ? 'اللفظي' : category === 'quantitative' ? 'الكمي' : 'القياسي';
-        alert(`✅ تم فتح الاختبارات بنجاح!\nتم فتح جميع اختبارات ${categoryName} حتى الاختبار رقم ${testNumber}`);
-        setAccessCodeInput('');
-        return true;
-      }
-    }
-
-    alert('❌ كود الوصول غير صحيح. يرجى المحاولة مرة أخرى.');
-    return false;
-  };
-
-  // Load user data and daily limits
+  // Daily attempts are non-authoritative UI history, scoped to the server user.
   useEffect(() => {
-    const storedUser = localStorage.getItem('user');
-    if (storedUser) {
-      try {
-        setUser(JSON.parse(storedUser));
-      } catch (error) {
-        console.error("Error parsing user:", error);
-      }
+    if (!user) {
+      setDailyTestsTaken(0);
+      return;
     }
 
-    // Load daily test count
     const today = new Date().toDateString();
-    const testsToday = JSON.parse(localStorage.getItem(`dailyQuestionBankTests_${today}`) || '0');
+    const testsToday = JSON.parse(localStorage.getItem(`dailyQuestionBankTests_${user.id}_${today}`) || '0');
     setDailyTestsTaken(testsToday);
-  }, []);
+  }, [user?.id]);
 
   // Check premium status
-  const isPremiumUser = user && (
-    (user as any).subscription?.type === 'Pro' || 
-    (user as any).subscription?.type === 'Pro Life' || 
-    (user as any).subscription?.type === 'Pro Life Plus' ||
-    (user as any).subscription?.type === 'Pro Live' ||
-    (user as any).subscription === 'pro' ||
-    (user as any).subscription === 'pro_life' ||
-    (user as any).subscription === 'pro_life_plus'
-  );
+  const subscription = user?.subscription;
+  const subscriptionType = subscription?.type;
+  const isPremiumUser = ['Pro', 'Pro Life', 'Pro Life Plus', 'Pro Live', 'pro', 'pro_life', 'pro_life_plus']
+    .includes(subscriptionType || '') &&
+    subscription?.status !== 'expired' &&
+    (!subscription?.endDate || new Date(subscription.endDate) > new Date());
 
-  const canTakeTest = isPremiumUser || dailyTestsTaken < MAX_DAILY_FREE_TESTS;
+  const canTakeTest = Boolean(user) && !isUserLoading &&
+    (isPremiumUser || dailyTestsTaken < MAX_DAILY_FREE_TESTS);
 
   // Record test taken for free users
   const recordTestTaken = () => {
-    if (!isPremiumUser) {
+    if (user && !isPremiumUser) {
       const today = new Date().toDateString();
       const newCount = dailyTestsTaken + 1;
-      localStorage.setItem(`dailyQuestionBankTests_${today}`, JSON.stringify(newCount));
+      localStorage.setItem(`dailyQuestionBankTests_${user.id}_${today}`, JSON.stringify(newCount));
       setDailyTestsTaken(newCount);
     }
   };
 
   // Function to reload progress from localStorage
   const reloadProgress = () => {
-    const savedState = localStorage.getItem('questionBankProgress');
+    if (!progressStorageKey) return;
+    const savedState = localStorage.getItem(progressStorageKey);
     if (savedState) {
       try {
         const parsedState = JSON.parse(savedState);
@@ -189,10 +139,10 @@ export default function QuestionBankPage() {
         const standardTestCount = Math.ceil(totalCount / 120); // Each standard test has 120 questions
 
         // Load results from localStorage
-        const savedResults = localStorage.getItem('questionBankResults');
+        const savedResults = resultsStorageKey ? localStorage.getItem(resultsStorageKey) : null;
         const results = savedResults ? JSON.parse(savedResults) : {};
 
-        const savedState = localStorage.getItem('questionBankProgress');
+        const savedState = progressStorageKey ? localStorage.getItem(progressStorageKey) : null;
         let newState: QuestionBankState;
 
         if (savedState) {
@@ -403,7 +353,7 @@ export default function QuestionBankPage() {
     };
 
     loadQuestionCounts();
-  }, []);
+  }, [progressStorageKey, resultsStorageKey]);
 
   // Auto-reload progress when returning to page or localStorage changes
   useEffect(() => {
@@ -417,7 +367,7 @@ export default function QuestionBankPage() {
 
     // Reload when localStorage changes (from another tab)
     const handleStorage = (e: StorageEvent) => {
-      if (e.key === 'questionBankProgress' || e.key === 'questionBankResults') {
+      if (e.key === progressStorageKey || e.key === resultsStorageKey) {
         console.log('💾 localStorage updated - reloading progress...');
         reloadProgress();
         // Force re-render
@@ -453,12 +403,14 @@ export default function QuestionBankPage() {
       window.removeEventListener('questionBankProgressUpdated', handleProgressUpdate);
       clearInterval(intervalId);
     };
-  }, []);
+  }, [progressStorageKey, resultsStorageKey]);
 
   // Save progress to localStorage whenever state changes
   useEffect(() => {
-    localStorage.setItem('questionBankProgress', JSON.stringify(questionBankState));
-  }, [questionBankState]);
+    if (progressStorageKey) {
+      localStorage.setItem(progressStorageKey, JSON.stringify(questionBankState));
+    }
+  }, [questionBankState, progressStorageKey]);
 
   const TestCard = ({ 
     type, 
@@ -1127,7 +1079,7 @@ export default function QuestionBankPage() {
     });
   };
 
-  if (loading) {
+  if (loading || isUserLoading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">

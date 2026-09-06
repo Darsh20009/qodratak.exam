@@ -283,7 +283,7 @@ function LoggedInDashboard({ user }: { user: any }) {
             <h1 className="mt-1 text-2xl font-black tracking-tight text-foreground">{firstName}</h1>
             <p className="mt-1 text-sm text-muted-foreground">من هنا تبدأ خطوتك التالية في التدريب.</p>
           </div>
-          <Link href="/profile">
+          <Link href="/account">
             <div
               className="flex h-11 w-11 cursor-pointer items-center justify-center rounded-full bg-primary text-base font-black text-primary-foreground transition hover:bg-primary/90"
               data-testid="link-profile-avatar"

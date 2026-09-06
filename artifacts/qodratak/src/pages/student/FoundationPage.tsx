@@ -81,7 +81,7 @@ export default function FoundationPage() {
                     </Button>
                   </a>
                   {item.linkedQuizRoute && (
-                    <Link href={item.linkedQuizRoute} className="flex-1">
+                    <Link href="/computerized" className="flex-1">
                       <Button variant="outline" className="w-full rounded-xl font-bold border-border text-foreground hover:bg-muted">
                         <CheckCircle2 className="ml-2 h-4 w-4" /> اختبر فهمك
                       </Button>

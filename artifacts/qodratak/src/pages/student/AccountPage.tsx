@@ -2,12 +2,11 @@ import React, { useState } from "react";
 import { useUser } from "@/hooks/use-user";
 import { useUpdateGuardian, useChangePassword } from "@/hooks/use-student";
 import { useStudentDashboard } from "@/hooks/use-student";
-import { Link } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Switch } from "@/components/ui/switch";
-import { Shield, KeyRound, Phone, Crown, CheckCircle2, User, LogOut } from "lucide-react";
+import { Shield, KeyRound, Phone, Crown, CheckCircle2, User, LogOut, Camera, Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Label } from "@/components/ui/label";
 import SubscriptionRenewalDialog from "@/components/SubscriptionRenewalDialog";
@@ -28,6 +27,40 @@ export default function AccountPage() {
   const [confirmPassword, setConfirmPassword] = useState("");
   const [isPasswordDialogOpen, setIsPasswordDialogOpen] = useState(false);
   const [subscriptionDialogOpen, setSubscriptionDialogOpen] = useState(false);
+  const [avatarUploading, setAvatarUploading] = useState(false);
+  const [avatarUrl, setAvatarUrl] = useState((user as any)?.profilePicture || (user as any)?.avatarUrl || "");
+
+  const handleAvatarUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+    if (!file.type.startsWith("image/")) {
+      toast({ title: "ملف غير صالح", description: "اختر صورة فقط.", variant: "destructive" });
+      return;
+    }
+    setAvatarUploading(true);
+    try {
+      const formData = new FormData();
+      formData.append("avatar", file);
+      const response = await fetch("/api/user/upload-avatar", {
+        method: "POST",
+        credentials: "include",
+        body: formData,
+      });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data?.error || "تعذر رفع الصورة");
+      setAvatarUrl(data.avatarUrl);
+      toast({ title: "تم تحديث صورتك" });
+    } catch (error) {
+      toast({
+        title: "تعذر رفع الصورة",
+        description: error instanceof Error ? error.message : "حاول مرة أخرى.",
+        variant: "destructive",
+      });
+    } finally {
+      setAvatarUploading(false);
+      event.target.value = "";
+    }
+  };
 
   const handleGuardianSubmit = () => {
     updateGuardian.mutate(
@@ -68,17 +101,25 @@ export default function AccountPage() {
 
       {/* Profile Info */}
       <section className="rounded-2xl border border-border bg-white dark:bg-card p-6 flex flex-col md:flex-row items-center gap-6 shadow-sm">
-        <div className="h-24 w-24 overflow-hidden rounded-full bg-muted border-4 border-white dark:border-card shadow-md flex items-center justify-center font-black text-3xl text-[#0D1B2A] dark:text-white">
-          {(user as any).profilePicture || (user as any).avatarUrl
-            ? <img src={(user as any).profilePicture || (user as any).avatarUrl} alt="الصورة الشخصية" className="h-full w-full object-cover" />
-            : user.name?.charAt(0) || "ط"}
+        <div className="relative">
+          <div className="h-24 w-24 overflow-hidden rounded-full bg-muted border-4 border-white dark:border-card shadow-md flex items-center justify-center font-black text-3xl text-[#0D1B2A] dark:text-white">
+            {avatarUrl
+              ? <img src={avatarUrl} alt="الصورة الشخصية" className="h-full w-full object-cover" />
+              : user.name?.charAt(0) || "ط"}
+          </div>
+          <label htmlFor="account-avatar-upload" className="absolute -bottom-1 -left-1 flex h-9 w-9 cursor-pointer items-center justify-center rounded-full bg-[#0D1B2A] text-white shadow-md" aria-label="تغيير الصورة">
+            {avatarUploading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Camera className="h-4 w-4" />}
+          </label>
+          <input id="account-avatar-upload" type="file" accept="image/*" className="hidden" disabled={avatarUploading} onChange={handleAvatarUpload} />
         </div>
         <div className="text-center md:text-right flex-1">
           <h2 className="text-2xl font-black text-foreground">{user.name || "طالب"}</h2>
           <p className="text-sm font-bold text-muted-foreground mt-1">{user.email}</p>
         </div>
         <div className="flex w-full flex-col gap-2 md:w-auto">
-          <Link href="/profile"><Button variant="outline" className="w-full rounded-xl">تعديل الصورة والبيانات</Button></Link>
+          <label htmlFor="account-avatar-upload" className="inline-flex h-10 cursor-pointer items-center justify-center rounded-xl border border-input bg-background px-4 py-2 text-sm font-medium hover:bg-accent">
+            تغيير الصورة
+          </label>
           <Button variant="outline" className="w-full rounded-xl text-red-500 hover:text-red-600 hover:bg-red-50 border-red-200" onClick={() => logout()}>
             <LogOut className="ml-2 h-4 w-4" /> تسجيل الخروج
           </Button>

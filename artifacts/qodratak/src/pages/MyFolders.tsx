@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
-import { getQueryFn, apiRequest, queryClient } from "@/lib/queryClient";
+import { getQueryFn, queryClient } from "@/lib/queryClient";
+import { useUser } from "@/hooks/use-user";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -29,13 +30,10 @@ export default function MyFolders() {
   const [selectedColor, setSelectedColor] = useState("#4f46e5");
   const [selectedIcon, setSelectedIcon] = useState("folder");
 
-  const { data: user } = useQuery<any>({
-    queryKey: ['/api/user'],
-    queryFn: getQueryFn({ on401: "returnNull" }),
-  });
+  const { user, isLoading: isUserLoading } = useUser();
 
-  const { data: folders = [], isLoading } = useQuery<any[]>({
-    queryKey: ['/api/folders/user', user?.id],
+  const { data: folders = [], isLoading: areFoldersLoading } = useQuery<any[]>({
+    queryKey: ['/api/folders/user'],
     queryFn: getQueryFn({ on401: "returnNull" }),
     enabled: !!user?.id,
   });
@@ -59,7 +57,7 @@ export default function MyFolders() {
       return response.json();
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/folders/user', user?.id] });
+      queryClient.invalidateQueries({ queryKey: ['/api/folders/user'] });
       setIsCreateDialogOpen(false);
       setNewFolderName("");
       setNewFolderDesc("");
@@ -95,7 +93,7 @@ export default function MyFolders() {
       return response.json();
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/folders/user', user?.id] });
+      queryClient.invalidateQueries({ queryKey: ['/api/folders/user'] });
       queryClient.invalidateQueries({ queryKey: ['/api/folders'] });
       toast({
         title: "🗑️ تم حذف المجلد",
@@ -131,7 +129,6 @@ export default function MyFolders() {
     }
 
     createFolderMutation.mutate({
-      userId: user.id,
       name: newFolderName.trim(),
       description: newFolderDesc.trim() || "",
       color: selectedColor,
@@ -162,7 +159,7 @@ export default function MyFolders() {
     { name: "تخرج", value: "graduation" },
   ];
 
-  if (isLoading) {
+  if (isUserLoading || areFoldersLoading) {
     return (
       <div className="container mx-auto p-4 md:p-6">
         <div className="text-center py-12">

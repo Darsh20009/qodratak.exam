@@ -3,7 +3,6 @@ import { useAntiCheat } from '@/hooks/useAntiCheat';
 import { AntiCheatWarning } from '@/components/AntiCheatWarning';
 import AiReviewingScreen, { WrongQuestion } from '@/components/AiReviewingScreen';
 import { useParams, useLocation } from 'wouter';
-import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
@@ -35,6 +34,7 @@ import {
 } from "lucide-react";
 import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
+import { useUser } from '@/hooks/use-user';
 
 interface Question {
   id: number;
@@ -80,7 +80,7 @@ export default function QuestionBankTestRunner() {
   const [testAnswers, setTestAnswers] = useState<TestAnswer[]>([]);
   const [questionStartTime, setQuestionStartTime] = useState(Date.now());
   const [loading, setLoading] = useState(true);
-  const { data: user } = useQuery<any>({ queryKey: ['/api/user'] });
+  const { user } = useUser();
 
   const { violations, lastViolationType, isWarningVisible, dismissWarning } = useAntiCheat({
     enabled: isStarted && !isCompleted,
@@ -93,7 +93,7 @@ export default function QuestionBankTestRunner() {
   useEffect(() => {
     const loadQuestions = async () => {
       try {
-        const response = await fetch('/api/questions');
+        const response = await fetch('/api/questions', { credentials: 'include' });
         const allQuestions = await response.json();
         
         // Filter questions by type
@@ -221,7 +221,9 @@ export default function QuestionBankTestRunner() {
                   Math.round((correctAnswers.length / questions.length) * 100);
     
     // Get previous results if exist
-    const questionBankResults = JSON.parse(localStorage.getItem('questionBankResults') || '{}');
+    const resultsStorageKey = user?.id ? `questionBankResults_${user.id}` : null;
+    const progressStorageKey = user?.id ? `questionBankProgress_${user.id}` : null;
+    const questionBankResults = JSON.parse(resultsStorageKey ? localStorage.getItem(resultsStorageKey) || '{}' : '{}');
     const testKey = `${testType}_${testNumber}`;
     const previousResult = questionBankResults[testKey];
     const previousScore = previousResult?.score;
@@ -245,10 +247,12 @@ export default function QuestionBankTestRunner() {
       answeredCount: answeredQuestions.length,
       improvement: previousScore !== undefined ? score - previousScore : 0
     };
-    localStorage.setItem('questionBankResults', JSON.stringify(questionBankResults));
+    if (resultsStorageKey) {
+      localStorage.setItem(resultsStorageKey, JSON.stringify(questionBankResults));
+    }
     
     // Update progress with enhanced tracking
-    const progressState = JSON.parse(localStorage.getItem('questionBankProgress') || '{}');
+    const progressState = JSON.parse(progressStorageKey ? localStorage.getItem(progressStorageKey) || '{}' : '{}');
     if (!progressState[testType]) {
       progressState[testType] = [];
     }
@@ -287,7 +291,9 @@ export default function QuestionBankTestRunner() {
       });
     }
     
-    localStorage.setItem('questionBankProgress', JSON.stringify(progressState));
+    if (progressStorageKey) {
+      localStorage.setItem(progressStorageKey, JSON.stringify(progressState));
+    }
     
     // Dispatch custom event to notify QuestionBankPage to reload
     window.dispatchEvent(new CustomEvent('questionBankProgressUpdated', { 
@@ -311,16 +317,14 @@ export default function QuestionBankTestRunner() {
       isPerfect 
     });
 
-    // Save to server (if user is logged in)
-    const userStr = localStorage.getItem('user');
-    if (userStr) {
+    // The server derives result ownership from the authenticated session.
+    if (user?.id) {
       try {
-        const user = JSON.parse(userStr);
         fetch('/api/test-results', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
+          credentials: 'include',
           body: JSON.stringify({
-            userId: user.id,
             testType: testType,
             difficulty: 'intermediate',
             score: correctAnswers.length,
@@ -334,61 +338,8 @@ export default function QuestionBankTestRunner() {
           }
         }).catch(err => console.error('Error saving to server:', err));
       } catch (error) {
-        console.error('Error parsing user:', error);
+        console.error('Error saving result:', error);
       }
-    }
-
-    // Generate access code for next test if this one passed
-    if (passed) {
-      const nextTestNumber = testNumber + 1;
-      const generateAccessCode = (type: string, testNum: number) => {
-        const base = `${type.toUpperCase()}${testNum}${new Date().getFullYear()}`;
-        const hash = btoa(base).replace(/[^A-Z0-9]/g, '').substring(0, 6);
-        return hash;
-      };
-      
-      const accessCode = generateAccessCode(testType, nextTestNumber);
-      
-      // Store access codes
-      const accessCodes = JSON.parse(localStorage.getItem('testAccessCodes') || '{}');
-      accessCodes[`${testType}_${nextTestNumber}`] = accessCode;
-      localStorage.setItem('testAccessCodes', JSON.stringify(accessCodes));
-      
-      // Show enhanced success message
-      setTimeout(() => {
-        let message = '';
-        const improvement = previousScore !== undefined ? score - previousScore : null;
-        
-        if (isPerfect) {
-          message = `🏆 مثالي! درجة كاملة 100%!\n`;
-        } else if (score >= 90) {
-          message = `🌟 ممتاز! أداء استثنائي!\n`;
-        } else if (score >= 70) {
-          message = `🎯 أداء جيد جداً!\n`;
-        } else {
-          message = `✅ تهانينا! لقد نجحت!\n`;
-        }
-        
-        message += `\nالدرجة الحالية: ${score}%`;
-        
-        if (previousScore !== undefined) {
-          message += `\nالدرجة السابقة: ${previousScore}%`;
-          if (improvement !== null) {
-            if (improvement > 0) {
-              message += `\n📈 تحسن: +${improvement}%`;
-            } else if (improvement < 0) {
-              message += `\n📉 انخفاض: ${improvement}%`;
-            } else {
-              message += `\n➡️ نفس الدرجة`;
-            }
-          }
-        }
-        
-        message += `\n\n🔑 كود الوصول للاختبار التالي: ${accessCode}`;
-        message += `\n\n📝 احتفظ بهذا الكود للوصول من أي جهاز.`;
-        
-        alert(message);
-      }, 2000);
     }
 
     // Build wrong questions for AI review
@@ -404,7 +355,7 @@ export default function QuestionBankTestRunner() {
       }));
     setWrongQuestionsForAI(wrongs);
     setShowAiReview(true);
-  }, [isCompleted, questions, selectedAnswers, testType, testNumber, timeLeft]);
+  }, [isCompleted, questions, selectedAnswers, testType, testNumber, timeLeft, user?.id]);
 
   const downloadResults = () => {
     const mistakes = testAnswers.filter(answer => !answer.correct);
@@ -650,15 +601,13 @@ export default function QuestionBankTestRunner() {
   }
 
   if (showAiReview) {
-    const userStr = localStorage.getItem('user');
-    const userEmail = userStr ? JSON.parse(userStr)?.email : undefined;
     const correctCount = testAnswers.filter(a => a.correct).length || (questions.length - wrongQuestionsForAI.length);
     return (
       <AiReviewingScreen
         wrongQuestions={wrongQuestionsForAI}
         totalQuestions={questions.length}
         score={correctCount}
-        userEmail={userEmail}
+        userEmail={user?.email}
         onShowResults={() => {
           setShowAiReview(false);
           setShowResults(true);

@@ -55,7 +55,6 @@ import { cn } from "@/lib/utils";
 import { useState, useEffect } from "react";
 import { Footer } from "@/components/Footer";
 import { PushNotificationBanner } from "@/components/PushNotificationBanner";
-import ProfilePage from "@/pages/NewWorkingProfile";
 import LoginPage from "@/pages/LoginPage";
 import ForgotPasswordPage from "@/pages/ForgotPasswordPage";
 import ResetPasswordPage from "@/pages/ResetPasswordPage";
@@ -606,7 +605,7 @@ function MainLayout({ children }: { children: React.ReactNode }) {
               <NotificationBell userId={userId ? String(userId) : null} />
             </div>
 
-            <Link href="/profile">
+            <Link href="/account">
               <div className="flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors cursor-pointer">
                 <div className="h-8 w-8 rounded-xl overflow-hidden flex-shrink-0 bg-gray-100 dark:bg-gray-700">
                   {userName ? (
@@ -736,7 +735,7 @@ function MainLayout({ children }: { children: React.ReactNode }) {
               )}
 
               <Link 
-                href="/profile"
+                href="/account"
                 className="p-2"
               >
                 {userName ? (
@@ -1102,7 +1101,7 @@ function Router({ splashDone }: { splashDone: boolean }) {
         {() => <StudentShell><StandardSectionTestRunner /></StudentShell>}
       </Route>
       <Route path="/profile">
-        {() => <StudentShell><ProfilePage /></StudentShell>}
+        {() => <Redirect to="/account" />}
       </Route>
       <Route path="/security-settings">
         {() => <SecuritySettingsPage />}

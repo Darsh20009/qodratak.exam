@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import { useLocation } from 'wouter';
-import { useQuery } from '@tanstack/react-query';
 import AiReviewingScreen, { WrongQuestion, QuestionExplanation } from '@/components/AiReviewingScreen';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -25,6 +24,7 @@ import {
   Globe
 } from 'lucide-react';
 import { QiyasExamLayout } from '@/components/QiyasExamLayout';
+import { useUser } from '@/hooks/use-user';
 
 interface Question {
   id: number;
@@ -54,7 +54,7 @@ interface SubjectTestConfig {
 const TahsilikSubjectTestRunner: React.FC = () => {
   const [, setLocation] = useLocation();
   const { toast } = useToast();
-  const { data: user } = useQuery<any>({ queryKey: ['/api/user'] });
+  const { user } = useUser();
   
   const [testConfig, setTestConfig] = useState<SubjectTestConfig | null>(null);
   const [questions, setQuestions] = useState<Question[]>([]);
@@ -361,14 +361,12 @@ const TahsilikSubjectTestRunner: React.FC = () => {
 
   // AI Review Screen
   if (showAiReview) {
-    const userStr = localStorage.getItem('user');
-    const userEmail = userStr ? JSON.parse(userStr)?.email : undefined;
     return (
       <AiReviewingScreen
         wrongQuestions={wrongQuestionsForAI}
         totalQuestions={questions.length}
         score={results?.correctAnswers ?? 0}
-        userEmail={userEmail}
+        userEmail={user?.email}
         onShowResults={(explanations) => {
           setAiExplanations(explanations || []);
           setShowAiReview(false);

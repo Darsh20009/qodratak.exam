@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { useQuery } from '@tanstack/react-query';
+import { useUser } from '@/hooks/use-user';
 import {
   Clock,
   CheckCircle,
@@ -100,11 +101,12 @@ export function StandardSectionTestRunner() {
     });
   };
 
-  const { data: user } = useQuery<any>({ queryKey: ['/api/user'] });
+  const { user } = useUser();
 
   // Fetch all questions
   const { data: allQuestions = [], isLoading } = useQuery<TestQuestion[]>({
     queryKey: ['/api/questions'],
+    queryFn: () => fetch('/api/questions', { credentials: 'include' }).then(response => response.json()),
   });
 
   // Initialize test sections
@@ -520,8 +522,6 @@ export function StandardSectionTestRunner() {
 
   // Show AI review screen
   if (showAiReview) {
-    const userStr = localStorage.getItem('user');
-    const userEmail = userStr ? JSON.parse(userStr)?.email : undefined;
     const totalQ = testSections.reduce((s, sec) => s + sec.questionCount, 0);
     const correctQ = testResults?.totalScore || 0;
     return (
@@ -529,7 +529,7 @@ export function StandardSectionTestRunner() {
         wrongQuestions={wrongQuestionsForAI}
         totalQuestions={totalQ}
         score={correctQ}
-        userEmail={userEmail}
+        userEmail={user?.email}
         onShowResults={(explanations) => {
           if (explanations) setAiExplanations(explanations);
           setShowAiReview(false);

@@ -22,7 +22,7 @@ import {
   TrendingUp,
   PlayCircle
 } from "lucide-react";
-import { useQuery } from "@tanstack/react-query";
+import { useUser } from "@/hooks/use-user";
 
 interface VerbalTest {
   id: string;
@@ -57,31 +57,31 @@ export function VerbalTests() {
   const [selectedTest, setSelectedTest] = useState<VerbalTest | null>(null);
   const [userHistory, setUserHistory] = useState<UserTestHistory[]>([]);
 
-  // Get user info to check subscription status
-  const { data: user } = useQuery({
-    queryKey: ['/api/user'],
-  });
+  // The session hook is the sole source of identity and subscription state.
+  const { user, isLoading: isUserLoading } = useUser();
 
   // نظام التحكم الفعال للحد اليومي مثل قياس
   const [dailyTestsTaken, setDailyTestsTaken] = useState(0);
   const MAX_DAILY_FREE_TESTS = 1; // اختبار واحد فقط يومياً
 
   useEffect(() => {
+    if (!user) {
+      setDailyTestsTaken(0);
+      return;
+    }
+
     // حساب عدد الاختبارات المأخوذة اليوم للمستخدمين المجانيين
     const today = new Date().toDateString();
-    const testsToday = JSON.parse(localStorage.getItem(`dailyVerbalTests_${today}`) || '0');
+    const testsToday = JSON.parse(localStorage.getItem(`dailyVerbalTests_${user.id}_${today}`) || '0');
     setDailyTestsTaken(testsToday);
-  }, []);
+  }, [user?.id]);
 
-  const isPremiumUser = user && (
-    (user as any)?.subscription?.type === 'Pro' || 
-    (user as any)?.subscription?.type === 'Pro Life' || 
-    (user as any)?.subscription?.type === 'Pro Life Plus' ||
-    (user as any)?.subscription?.type === 'Pro Live' ||
-    (user as any)?.subscription === 'pro' ||
-    (user as any)?.subscription === 'pro_life' ||
-    (user as any)?.subscription === 'pro_life_plus'
-  );
+  const subscription = user?.subscription;
+  const subscriptionType = subscription?.type;
+  const isPremiumUser = ['Pro', 'Pro Life', 'Pro Life Plus', 'Pro Live', 'pro', 'pro_life', 'pro_life_plus']
+    .includes(subscriptionType || '') &&
+    subscription?.status !== 'expired' &&
+    (!subscription?.endDate || new Date(subscription.endDate) > new Date());
 
 
 
@@ -89,10 +89,10 @@ export function VerbalTests() {
 
   // تسجيل اختبار جديد للحسابات المجانية
   const recordTestTaken = () => {
-    if (!isPremiumUser) {
+    if (user && !isPremiumUser) {
       const today = new Date().toDateString();
       const newCount = dailyTestsTaken + 1;
-      localStorage.setItem(`dailyVerbalTests_${today}`, JSON.stringify(newCount));
+      localStorage.setItem(`dailyVerbalTests_${user.id}_${today}`, JSON.stringify(newCount));
       setDailyTestsTaken(newCount);
     }
   };
@@ -247,6 +247,8 @@ export function VerbalTests() {
   };
 
   const startTest = (test: VerbalTest) => {
+    if (isUserLoading) return;
+
     // Must be logged in first
     if (!user) {
       alert('يجب عليك تسجيل الدخول أولاً للوصول إلى اختبارات اللفظي');
@@ -293,6 +295,10 @@ export function VerbalTests() {
     // Use the same robust system as Qiyas page
     return dailyTestsTaken;
   };
+
+  if (isUserLoading) {
+    return <div className="min-h-screen bg-background flex items-center justify-center">جارٍ التحقق من تسجيل الدخول...</div>;
+  }
 
   // Show login prompt for non-authenticated users
   if (!user) {
@@ -435,7 +441,10 @@ export function VerbalTests() {
                   </div>
                 </div>
                 <Button 
-                  onClick={() => window.location.href = '/advanced-verbal-test'}
+                  onClick={() => {
+                    const advancedTest = verbalTests.find(test => test.id === 'advanced-verbal-test');
+                    if (advancedTest) startTest(advancedTest);
+                  }}
                   className="bg-white text-green-700 hover:bg-white/90 px-8 py-3 rounded-xl font-bold text-lg shadow-lg hover:shadow-xl transition-all duration-300 whitespace-nowrap"
                 >
                   ابدأ الاختبار المتقدم

@@ -1006,7 +1006,7 @@ const Home: React.FC = () => {
                     </Link>
                   </Button>
                   <Button asChild size="lg" variant="outline" className="min-w-[250px] hover:scale-105 transition-transform border-2 border-primary-foreground text-primary-foreground hover:bg-primary-foreground hover:text-primary text-lg py-4 font-bold">
-                    <Link href="/profile">
+                    <Link href="/account">
                       <CrownIcon className="ml-3 h-6 w-6" />
                       ترقية إلى Pro 👑
                     </Link>
@@ -1026,7 +1026,7 @@ const Home: React.FC = () => {
                 </p>
 
                 <Button asChild size="lg" variant="secondary" className="min-w-[250px] hover:scale-105 transition-transform text-lg py-4 font-bold shadow-2xl">
-                  <Link href="/profile">
+                  <Link href="/account">
                     <HeartIcon className="ml-3 h-6 w-6 animate-pulse" />
                     سجل الآن مجاناً
                   </Link>

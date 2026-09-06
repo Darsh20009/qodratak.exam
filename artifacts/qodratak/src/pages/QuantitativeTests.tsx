@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from 'react';
-import { useQuery } from '@tanstack/react-query';
 import { Link, useLocation } from 'wouter';
 import { motion } from 'framer-motion';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
@@ -24,6 +23,7 @@ import {
   Star,
   BookOpen as BookOpenIcon
 } from 'lucide-react';
+import { useUser } from '@/hooks/use-user';
 
 interface QuantitativeTest {
   id: string;
@@ -57,38 +57,36 @@ export function QuantitativeTests() {
   const [, setLocation] = useLocation();
   const [dailyTestsTaken, setDailyTestsTaken] = useState(0);
   const MAX_DAILY_FREE_TESTS = 1;
-
-  // جلب بيانات المستخدم
-  const { data: user } = useQuery({
-    queryKey: ['/api/user'],
-  });
+  const { user, isLoading: isUserLoading } = useUser();
 
   // تحديد المستخدم المميز
-  const isPremiumUser = user && (
-    (user as any)?.subscription?.type === 'Pro' || 
-    (user as any)?.subscription?.type === 'Pro Life' || 
-    (user as any)?.subscription?.type === 'Pro Life Plus' ||
-    (user as any)?.subscription?.type === 'Pro Live' ||
-    (user as any)?.subscription === 'pro' ||
-    (user as any)?.subscription === 'pro_life' ||
-    (user as any)?.subscription === 'pro_life_plus'
-  );
+  const subscription = user?.subscription;
+  const subscriptionType = subscription?.type;
+  const isPremiumUser = ['Pro', 'Pro Life', 'Pro Life Plus', 'Pro Live', 'pro', 'pro_life', 'pro_life_plus']
+    .includes(subscriptionType || '') &&
+    subscription?.status !== 'expired' &&
+    (!subscription?.endDate || new Date(subscription.endDate) > new Date());
 
   // تحميل الحد اليومي للاختبارات
   useEffect(() => {
+    if (!user) {
+      setDailyTestsTaken(0);
+      return;
+    }
+
     const today = new Date().toDateString();
-    const testsToday = JSON.parse(localStorage.getItem(`dailyQuantitativeTests_${today}`) || '0');
+    const testsToday = JSON.parse(localStorage.getItem(`dailyQuantitativeTests_${user.id}_${today}`) || '0');
     setDailyTestsTaken(testsToday);
-  }, []);
+  }, [user?.id]);
 
   const canTakeTest = !!isPremiumUser || dailyTestsTaken < MAX_DAILY_FREE_TESTS;
 
   // تسجيل اختبار جديد للحسابات المجانية
   const recordTestTaken = () => {
-    if (!isPremiumUser) {
+    if (user && !isPremiumUser) {
       const today = new Date().toDateString();
       const newCount = dailyTestsTaken + 1;
-      localStorage.setItem(`dailyQuantitativeTests_${today}`, JSON.stringify(newCount));
+      localStorage.setItem(`dailyQuantitativeTests_${user.id}_${today}`, JSON.stringify(newCount));
       setDailyTestsTaken(newCount);
     }
   };
@@ -257,6 +255,8 @@ export function QuantitativeTests() {
   const canTakeThisTest = canTakeTest;
 
   const startTest = (test: QuantitativeTest) => {
+    if (isUserLoading) return;
+
     // Must be logged in first
     if (!user) {
       alert('يجب عليك تسجيل الدخول أولاً للوصول إلى اختبارات الكمي');
@@ -322,6 +322,10 @@ export function QuantitativeTests() {
       icon: Clock
     }
   ];
+
+  if (isUserLoading) {
+    return <div className="min-h-screen bg-background flex items-center justify-center">جارٍ التحقق من تسجيل الدخول...</div>;
+  }
 
   // Show login prompt for non-authenticated users
   if (!user) {
@@ -438,7 +442,10 @@ export function QuantitativeTests() {
                   </div>
                 </div>
                 <Button 
-                  onClick={() => window.location.href = '/advanced-quantitative-test'}
+                  onClick={() => {
+                    const advancedTest = quantitativeTests.find(test => test.id === 'advanced-quantitative-test');
+                    if (advancedTest) startTest(advancedTest);
+                  }}
                    className="whitespace-nowrap rounded-xl bg-primary px-8 py-3 text-lg font-bold text-primary-foreground transition-colors hover:bg-primary/90"
                 >
                   ابدأ الاختبار المتقدم

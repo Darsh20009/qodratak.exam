@@ -38,6 +38,7 @@ import {
 } from "lucide-react";
 import { QiyasExamLayout } from '@/components/QiyasExamLayout';
 import NewProtectedRoute from "@/components/NewProtectedRoute";
+import { useUser } from "@/hooks/use-user";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -140,7 +141,7 @@ const TahsiliExamPage: React.FC = () => {
   // حالات الصفحة الرئيسية
   const [currentView, setCurrentView] = useState<'selection' | 'exam' | 'results'>('selection');
   const [selectedExam, setSelectedExam] = useState<TahsiliExam | null>(null);
-  const [user, setUser] = useState<any>(null);
+  const { user } = useUser();
 
   // حالات الاختبار
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
@@ -159,18 +160,6 @@ const TahsiliExamPage: React.FC = () => {
   const [isDownloadingMistakes, setIsDownloadingMistakes] = useState(false);
 
   const { toast } = useToast();
-
-  // جلب معلومات المستخدم
-  useEffect(() => {
-    const storedUser = localStorage.getItem("user");
-    if (storedUser) {
-      try {
-        setUser(JSON.parse(storedUser));
-      } catch (e) {
-        console.error("Error parsing stored user:", e);
-      }
-    }
-  }, []);
 
   // إخفاء شريط التنقل عند بدء الاختبار
   useEffect(() => {
@@ -303,26 +292,13 @@ const TahsiliExamPage: React.FC = () => {
 
       const deviceId = generateDeviceFingerprint();
       
-      // Get user ID from localStorage
-      let userId = null;
-      try {
-        const storedUser = localStorage.getItem('user');
-        if (storedUser) {
-          const user = JSON.parse(storedUser);
-          userId = user.id;
-        }
-      } catch (error) {
-        console.error('Error parsing user from localStorage:', error);
-      }
-
-      // Build URL with required parameters
+      // The server derives the user from the authenticated cookie session.
       const params = new URLSearchParams();
       params.append('deviceId', deviceId);
-      if (userId) {
-        params.append('userId', userId.toString());
-      }
 
-      const response = await fetch(`/api/tahsili/exams/${apiExamId}?${params.toString()}`);
+      const response = await fetch(`/api/tahsili/exams/${apiExamId}?${params.toString()}`, {
+        credentials: 'include',
+      });
       
       if (response.status === 403) {
         toast({
@@ -926,8 +902,6 @@ const TahsiliExamPage: React.FC = () => {
 
   // AI Review Screen
   if (showAiReview) {
-    const userStr = localStorage.getItem('user');
-    const userEmail = userStr ? JSON.parse(userStr)?.email : undefined;
     const totalQ = selectedExam?.questions.length ?? 0;
     const correctCount = examResults?.correctAnswers ?? (totalQ - wrongQuestionsForAI.length);
     return (
@@ -935,7 +909,7 @@ const TahsiliExamPage: React.FC = () => {
         wrongQuestions={wrongQuestionsForAI}
         totalQuestions={totalQ}
         score={correctCount}
-        userEmail={userEmail}
+        userEmail={user?.email}
         onShowResults={() => {
           setShowAiReview(false);
           setCurrentView('results');

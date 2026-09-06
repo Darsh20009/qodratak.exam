@@ -23,7 +23,7 @@ export function useUser() {
         return await response.json();
       } catch (error) {
         console.error("Error fetching user:", error);
-        return null;
+        throw error;
       }
     },
     retry: false,

@@ -87,6 +87,7 @@ import { PointsAndRankingCard } from "@/components/test-results/PointsAndRanking
 import { EnhancedSaveToFolderDialog } from "@/components/EnhancedSaveToFolderDialog";
 import { useQuery } from "@tanstack/react-query";
 import { getQueryFn } from "@/lib/queryClient";
+import { useUser } from "@/hooks/use-user";
 
 // Types for Qiyas exams
 interface QiyasSection {
@@ -315,46 +316,8 @@ const QiyasExamPage: React.FC = () => {
   const [, setLocation] = useLocation();
   const { toast } = useToast();
   const isMobile = useIsMobile();
-  const [user, setUser] = useState<any>(null); // Replace 'any' with your User type
-  const [dailyTestsTaken, setDailyTestsTaken] = useState(0);
-  const MAX_DAILY_FREE_TESTS = 5;
+  const { user } = useUser();
   const finishExamRef = useRef<(() => void) | null>(null);
-
-  useEffect(() => {
-    const storedUser = localStorage.getItem('user');
-    if (storedUser) {
-      try {
-        setUser(JSON.parse(storedUser));
-      } catch (error) {
-        console.error("Failed to parse user from localStorage", error);
-        localStorage.removeItem('user'); // Clear corrupted user data
-      }
-    }
-
-    // حساب عدد الاختبارات المأخوذة اليوم
-    const today = new Date().toDateString();
-    const testsToday = JSON.parse(localStorage.getItem(`dailyTests_${today}`) || '0');
-    setDailyTestsTaken(testsToday);
-  }, []);
-
-  const isPremiumUser = user && (
-    user.subscription?.type === 'Pro' ||
-    user.subscription?.type === 'Pro Life' ||
-    user.subscription?.type === 'Pro Life Plus' ||
-    user.subscription?.type === 'Pro Live'
-  );
-
-  const canTakeTest = isPremiumUser || dailyTestsTaken < MAX_DAILY_FREE_TESTS;
-
-  // تسجيل اختبار جديد للحسابات المجانية
-  const recordTestTaken = () => {
-    if (!isPremiumUser) {
-      const today = new Date().toDateString();
-      const newCount = dailyTestsTaken + 1;
-      localStorage.setItem(`dailyTests_${today}`, JSON.stringify(newCount));
-      setDailyTestsTaken(newCount);
-    }
-  };
 
   const [selectedExam, setSelectedExam] = useState<QiyasExam | null>(null);
   const [currentView, setCurrentView] = useState<"selection" | "instructions" | "section-intro" | "inProgress" | "results">("selection");
@@ -452,17 +415,11 @@ const QiyasExamPage: React.FC = () => {
   const [saveQuestionType, setSaveQuestionType] = useState<"all" | "wrong" | "unanswered">("wrong");
   const [questionsToSave, setQuestionsToSave] = useState<number[]>([]);
 
-  // Query للمستخدم
-  const { data: queryUser } = useQuery<{ id: number; username: string }>({
-    queryKey: ['/api/user'],
-    queryFn: getQueryFn({ on401: "returnNull" }),
-  });
-
   // Query للمجلدات
   const { data: folders = [] } = useQuery<any[]>({
-    queryKey: ["/api/folders/user", queryUser?.id],
+    queryKey: ["/api/folders/user", user?.id],
     queryFn: getQueryFn({ on401: "returnNull" }),
-    enabled: !!queryUser?.id,
+    enabled: !!user?.id,
   });
 
 
@@ -772,7 +729,7 @@ const QiyasExamPage: React.FC = () => {
 
   const fetchRawQuestionsForSectionConfig = async (section: QiyasSection, usedQuestionIds: Set<number>): Promise<ExamQuestion[]> => {
     try {
-      const response = await fetch('/api/questions');
+      const response = await fetch('/api/questions', { credentials: 'include' });
       if (!response.ok) {
         throw new Error(`فشل في جلب الأسئلة من الخادم: ${response.status}`);
       }
@@ -864,12 +821,6 @@ const QiyasExamPage: React.FC = () => {
 
   const startExam = async () => {
     if (!selectedExam) return;
-
-    // Record the attempt for exam 1 for non-subscribed users
-    const isUserSubscribed = user?.subscription?.type === 'Pro Live' || user?.subscription?.type === 'Pro Life Plus' || user?.subscription?.type === 'Pro Life' || user?.subscription?.type === 'Pro';
-    if (selectedExam.id === 1 && !isUserSubscribed) {
-        localStorage.setItem('examAttempt_1', Date.now().toString());
-    }
 
     setCurrentSectionIdx(0);
     setCurrentQuestionIdx(0);
@@ -1211,7 +1162,6 @@ const QiyasExamPage: React.FC = () => {
         const skippedQuestions = scoredQuestions.filter(q => answers[q.id] === undefined).length;
         
         const response = await apiRequest('POST', '/api/test-results', {
-          userId: user.id,
           testType: 'qiyas',
           difficulty: 'advanced', // اختبارات قياس متقدمة
           score: finalStats.totalCorrect,
@@ -1310,24 +1260,9 @@ const QiyasExamPage: React.FC = () => {
       return;
     }
 
-    // التحقق من قيود الحسابات المجانية
-    if (!isPremiumUser && !canTakeTest) {
-      toast({
-        title: "وصلت للحد الأقصى",
-        description: `يمكن للحسابات المجانية أخذ ${MAX_DAILY_FREE_TESTS} اختبارات يومياً فقط. قم بالترقية للوصول غير المحدود!`,
-        variant: "destructive",
-        duration: 7000
-      });
-
-      setTimeout(() => {
-        setLocation("/subscription");
-      }, 2000);
-      return;
-    }
-
     // التحقق من توفر الأسئلة قبل بدء الاختبار (باستخدام stats بدلاً من جلب كل الأسئلة)
     try {
-      const response = await fetch('/api/questions/stats');
+      const response = await fetch('/api/questions/stats', { credentials: 'include' });
       if (!response.ok) {
         toast({
           title: "خطأ في الاتصال",
@@ -1369,43 +1304,10 @@ const QiyasExamPage: React.FC = () => {
 
     const isUserSubscribed = user?.subscription?.type === 'Pro Live' || user?.subscription?.type === 'Pro Life Plus' || user?.subscription?.type === 'Pro Life' || user?.subscription?.type === 'Pro';
 
-    // Special handling for exam with id: 1 for NON-SUBSCRIBED users
-    if (exam.id === 1 && !isUserSubscribed) {
-        const lastAttemptTimestamp = localStorage.getItem('examAttempt_1');
-        if (lastAttemptTimestamp) {
-            const hoursPassed = (Date.now() - parseInt(lastAttemptTimestamp)) / (1000 * 60 * 60);
-            if (hoursPassed < 48) {
-                const hoursRemaining = 48 - hoursPassed;
-                const days = Math.floor(hoursRemaining / 24);
-                const hours = Math.round(hoursRemaining % 24);
-
-                let description = `يمكنك المحاولة مرة أخرى خلال `;
-                if (days > 0) {
-                    description += `${days} يوم و ${hours} ساعة.`;
-                } else {
-                    description += `${hours} ساعة.`;
-                }
-
-                toast({
-                    title: "الاختبار متاح كل يومين",
-                    description: description,
-                    variant: "default",
-                    duration: 5000
-                });
-                return; // Stop and show toast
-            }
-        }
-        // If cooldown passed or first time, load the exam (bypassing the subscription check)
-        recordTestTaken(); // تسجيل الاختبار
-        loadExam(exam);
-        return;
-    }
-
     // Default behavior for all other exams
     if (exam.requiresSubscription && !isUserSubscribed) {
         setLocation("/subscription");
     } else {
-        recordTestTaken(); // تسجيل الاختبار
         loadExam(exam);
     }
   };
@@ -1421,7 +1323,7 @@ const QiyasExamPage: React.FC = () => {
     const examNamer   = qiyasExams.find(e => e.id === 7)!; // نمر كامل
     const examNamer1  = qiyasExams.find(e => e.id === 8)!; // قسم نمر واحد
 
-    const canStart = !!user && (isPremiumUser || canTakeTest);
+    const canStart = !!user;
 
     const ExamTile = ({
       exam, label, sublabel, icon: Icon, accent, locked
@@ -1480,27 +1382,6 @@ const QiyasExamPage: React.FC = () => {
             </h1>
             <p className="text-sm sm:text-base text-gray-500 dark:text-gray-400">اختر نظامك وابدأ اختبارك الآن</p>
           </div>
-
-          {/* ── Daily limit banner (free users) ── */}
-          {user && !isPremiumUser && (
-            <div className="mb-6 rounded-2xl border border-green-200 dark:border-green-800 bg-green-50 dark:bg-green-900/20 px-5 py-3 flex items-center justify-between gap-4">
-              <div className="flex items-center gap-2">
-                <Timer className="w-4 h-4" style={{ color: "#1a7c3e" }} />
-                <span className="text-sm font-medium" style={{ color: "#1a7c3e" }}>اختباراتك اليوم</span>
-              </div>
-              <div className="text-left">
-                <span className="text-xl font-bold" style={{ color: "#1a7c3e" }}>{dailyTestsTaken}/{MAX_DAILY_FREE_TESTS}</span>
-                <span className="text-xs text-green-600 dark:text-green-400 mr-2">
-                  {canTakeTest ? `(متبقي ${MAX_DAILY_FREE_TESTS - dailyTestsTaken})` : '— انتهت اليوم'}
-                </span>
-              </div>
-              {!canTakeTest && (
-                <Button size="sm" onClick={() => setLocation("/subscription")} className="text-white text-xs shrink-0" style={{ background: "#1a7c3e" }}>
-                  ترقية
-                </Button>
-              )}
-            </div>
-          )}
 
           {/* ══════════════════════════════════════
               البطاقة الرئيسية: قدراتك التأهيلي
@@ -1611,10 +1492,6 @@ const QiyasExamPage: React.FC = () => {
                   <LockIcon className="inline w-3.5 h-3.5 mb-0.5 mr-1" />
                   يجب <button className="text-primary font-semibold underline" onClick={() => setLocation("/auth")}>تسجيل الدخول</button> لبدء الاختبار
                 </p>
-              ) : !canTakeTest && !isPremiumUser ? (
-                <p className="text-center text-sm text-amber-600 dark:text-amber-400">
-                  انتهت اختباراتك المجانية اليوم. <button className="underline font-semibold" onClick={() => setLocation("/subscription")}>ترقية الحساب</button>
-                </p>
               ) : null}
             </div>
           </div>
@@ -1629,7 +1506,7 @@ const QiyasExamPage: React.FC = () => {
     return (
       <ExamInstructionsScreen
         exam={selectedExam}
-        userId={queryUser?.id}
+        userId={user?.id}
         onStart={startExam}
         onBack={() => setCurrentView("selection")}
       />
@@ -1844,8 +1721,8 @@ const QiyasExamPage: React.FC = () => {
           isLastQuestion={currentQuestionIdx === questions.length - 1}
           isBookmarked={bookmarkedQuestions.has(currentQuestionData.id)}
           onToggleBookmark={toggleBookmark}
-          userName={queryUser?.username || user?.username || user?.name}
-          userId={queryUser?.id?.toString() || user?.id?.toString()}
+          userName={user?.username || user?.name}
+          userId={user?.id?.toString()}
           topRightSlot={
             <div className="flex items-center gap-2">
               <EndTestButton
@@ -3350,8 +3227,6 @@ const generateChallengeFile = ({ isTimed, questions: incorrectOrUnansweredQuesti
 
 
   if (showAiReview) {
-    const userStr = localStorage.getItem('user');
-    const userEmail = userStr ? JSON.parse(userStr)?.email : undefined;
     const allQs = Object.values(allProcessedQuestionsBySection).flat().filter(q => !q._isNonScored);
     const correctCount = allQs.filter(q => answers[q.id] !== undefined && answers[q.id] === q.correctOptionIndex).length;
     return (
@@ -3359,7 +3234,7 @@ const generateChallengeFile = ({ isTimed, questions: incorrectOrUnansweredQuesti
         wrongQuestions={wrongQuestionsForAI}
         totalQuestions={allQs.length}
         score={correctCount}
-        userEmail={userEmail}
+        userEmail={user?.email}
         onShowResults={() => {
           setShowAiReview(false);
           setCurrentView("results");

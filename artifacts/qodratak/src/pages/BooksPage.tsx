@@ -91,6 +91,7 @@ import { Progress } from "@/components/ui/progress";
 import { Slider } from "@/components/ui/slider";
 import { Switch } from "@/components/ui/switch";
 import { useToast } from "@/hooks/use-toast";
+import { useUser } from "@/hooks/use-user";
 
 // واجهة الكتاب المحدثة
 interface Book {
@@ -792,7 +793,7 @@ const BookCard: React.FC<BookCardProps> = ({
 const BooksPage: React.FC = () => {
   const [, setLocation] = useLocation();
   const { toast } = useToast();
-  const [user, setUser] = useState<any>(null);
+  const { user } = useUser();
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedCategory, setSelectedCategory] = useState<string>("all");
   const [selectedDifficulty, setSelectedDifficulty] = useState<string>("all");
@@ -807,17 +808,20 @@ const BooksPage: React.FC = () => {
   const [showOnlyTrending, setShowOnlyTrending] = useState(false);
 
   useEffect(() => {
-    const storedUser = localStorage.getItem("user");
-    if (storedUser) {
-      try { setUser(JSON.parse(storedUser)); } catch (e) { console.error("Error parsing stored user:", e); }
-    }
     const storedFavorites = localStorage.getItem("favoriteBooks");
     if (storedFavorites) {
       try { setFavoriteBooks(JSON.parse(storedFavorites)); } catch (e) { console.error("Error parsing favorite books:", e); }
     }
   }, []);
 
-  const isSubscribed = user?.subscription?.type === 'Pro' || user?.subscription?.type === 'Pro Life' || user?.subscription?.type === 'Pro Life Plus' || user?.subscription?.type === 'Pro Live';
+  const isSubscribed = Boolean(
+    user?.subscription?.isActive ||
+    user?.subscription?.status === "active" ||
+    user?.subscription?.type === "Pro" ||
+    user?.subscription?.type === "Pro Life" ||
+    user?.subscription?.type === "Pro Life Plus" ||
+    user?.subscription?.type === "Pro Live"
+  );
 
   // فلترة وترتيب الكتب
   const displayedBooks = useMemo(() => {
@@ -860,7 +864,7 @@ const BooksPage: React.FC = () => {
   const handleDownload = (book: Book) => {
     if (!user) {
       toast({ title: "يجب تسجيل الدخول", description: "سجل دخولك أولاً للوصول للكتب", variant: "destructive" });
-      setLocation("/profile");
+      setLocation("/login");
       return;
     }
     if (!isSubscribed) {
@@ -900,7 +904,7 @@ const BooksPage: React.FC = () => {
           <p className="text-lg text-muted-foreground mb-6">
             سجل دخولك للوصول إلى مكتبتنا الحصرية من الكتب التعليمية
           </p>
-          <Button onClick={() => setLocation("/profile")} size="lg">تسجيل الدخول</Button>
+          <Button onClick={() => setLocation("/login")} size="lg">تسجيل الدخول</Button>
         </div>
       </div>
     );

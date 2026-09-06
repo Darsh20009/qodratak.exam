@@ -26,6 +26,7 @@ import { EndTestButton } from '@/components/ui/EndTestButton';
 import { QiyasExamLayout } from '@/components/QiyasExamLayout';
 import { apiRequest } from '@/lib/queryClient';
 import { useToast } from '@/hooks/use-toast';
+import { useUser } from '@/hooks/use-user';
 
 interface Question {
   id: number;
@@ -88,7 +89,7 @@ export function VerbalTestRunner() {
     });
   };
 
-  const { data: user } = useQuery<any>({ queryKey: ['/api/user'] });
+  const { user } = useUser();
 
   // Fetch unseen verbal questions to avoid repetition
   const { data: allQuestions = [], isLoading } = useQuery<Question[]>({
@@ -266,14 +267,11 @@ export function VerbalTestRunner() {
 
     // إرسال النتيجة للسيرفر لحفظ النقاط
     try {
-      const userStr = localStorage.getItem('user');
-      if (userStr) {
-        const user = JSON.parse(userStr);
+      if (user?.id) {
         const skippedQuestions = totalQuestions - answeredQuestions;
         
         const questionIds = questions.map((q: any) => q._id || q.id || q.questionId).filter(Boolean);
         const response = await apiRequest('POST', '/api/test-results', {
-          userId: user.id,
           testType: 'verbal',
           difficulty: testConfig.difficulty || 'intermediate',
           score: correctCount,
@@ -342,8 +340,6 @@ export function VerbalTestRunner() {
   };
 
   if (showAiReview) {
-    const userStr = localStorage.getItem('user');
-    const userEmail = userStr ? JSON.parse(userStr)?.email : undefined;
     const totalQ = pendingResultData?.totalQuestions || 0;
     const correctQ = pendingResultData?.correctAnswers || 0;
     return (
@@ -351,7 +347,7 @@ export function VerbalTestRunner() {
         wrongQuestions={wrongQuestionsForAI}
         totalQuestions={totalQ}
         score={correctQ}
-        userEmail={userEmail}
+        userEmail={user?.email}
         onShowResults={() => setLocation('/test-results')}
       />
     );

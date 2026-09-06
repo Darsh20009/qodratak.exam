@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import { cn } from "@/lib/utils";
+import { useUser } from "@/hooks/use-user";
 import { useLocation } from "wouter";
 import {
   Bell, CheckCheck, Trash2, Info, Trophy, Calendar,
@@ -134,15 +135,10 @@ export default function NotificationsPage() {
   const [filter, setFilter] = useState<'all' | 'unread'>('all');
   const [typeFilter, setTypeFilter] = useState<string>('all');
   const qc = useQueryClient();
+  const { user, isLoading: isUserLoading } = useUser();
+  const userId = user?.id;
 
-  const userId = (() => {
-    try {
-      const u = localStorage.getItem('user') || sessionStorage.getItem('user');
-      return u ? JSON.parse(u)?.id || JSON.parse(u)?._id : null;
-    } catch { return null; }
-  })();
-
-  const { data: rawNotifs = [], isLoading } = useQuery<Notification[]>({
+  const { data: rawNotifs = [], isLoading: areNotificationsLoading } = useQuery<Notification[]>({
     queryKey: ['/api/notifications/in-app', userId],
     queryFn: async () => {
       if (!userId) return [];
@@ -153,6 +149,7 @@ export default function NotificationsPage() {
     enabled: !!userId,
     refetchInterval: 30000,
   });
+  const isLoading = isUserLoading || areNotificationsLoading;
 
   const markRead = useMutation({
     mutationFn: (id: string) => apiRequest('PATCH', `/api/notifications/in-app/${id}/read`, {}),
