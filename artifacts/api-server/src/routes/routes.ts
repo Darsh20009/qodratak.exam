@@ -35,6 +35,7 @@ import {
   publicDevices,
   registerDevice,
 } from '../services/deviceSecurity';
+import { createPushSubscriptionRouter } from '../pushSubscriptionRoutes';
 
 const deviceLimitAlertCooldowns = new Map<string, number>();
 const DEVICE_LIMIT_ALERT_COOLDOWN_MS = 10 * 60 * 1000;
@@ -3064,49 +3065,13 @@ app.post('/api/notifications/test', requireAuth, async (req: Request, res: Respo
 
 // ── Web Push Notification Routes ─────────────────────────────────────────────
 
+app.use('/api/push', createPushSubscriptionRouter());
+
 // Return the VAPID public key (needed by the client to subscribe)
 app.get('/api/push/vapid-key', (_req: Request, res: Response) => {
   const key = process.env.VAPID_PUBLIC_KEY || '';
   if (!key) return res.status(503).json({ error: 'Push not configured' });
   res.json({ publicKey: key });
-});
-
-// Save a push subscription for the logged-in user
-app.post('/api/push/subscribe', async (req: Request, res: Response) => {
-  try {
-    const { PushSubscription } = await import('./mongodb/models');
-    const userId = String((req as any).session?.userId || 'anonymous');
-    const { endpoint, keys } = req.body;
-    if (!endpoint || !keys?.p256dh || !keys?.auth) {
-      return res.status(400).json({ error: 'بيانات الاشتراك غير مكتملة' });
-    }
-    await PushSubscription.findOneAndUpdate(
-      { endpoint },
-      { userId, endpoint, keys },
-      { upsert: true, new: true }
-    );
-    res.json({ success: true });
-  } catch (err) {
-    console.error('push subscribe error:', err);
-    res.status(500).json({ error: 'فشل حفظ الاشتراك' });
-  }
-});
-
-// Remove a push subscription (user unsubscribed)
-app.delete('/api/push/unsubscribe', async (req: Request, res: Response) => {
-  try {
-    const { PushSubscription } = await import('./mongodb/models');
-    const userId = String((req as any).session?.userId || '');
-    const { endpoint } = req.body;
-    if (endpoint) {
-      await PushSubscription.deleteOne({ endpoint });
-    } else if (userId) {
-      await PushSubscription.deleteMany({ userId });
-    }
-    res.json({ success: true });
-  } catch (err) {
-    res.status(500).json({ error: 'فشل إلغاء الاشتراك' });
-  }
 });
 
 // Send a test push notification

@@ -5,22 +5,26 @@ import { chatWebSocketServer } from './websocket';
 import { requireAdmin, requireAuth } from './middleware/rbac';
 import { sendStudentWhatsAppNotification } from './services/studentWhatsAppNotifications';
 import { sendWhatsAppCampaign } from './services/adminWhatsAppNotifications';
+import {
+  parseBoundedText,
+  parseObjectIdString,
+  parsePushSubscription,
+} from './notificationValidation';
 
 const router = Router();
 
 const VAPID_PUBLIC = process.env.VAPID_PUBLIC_KEY || '';
 const VAPID_PRIVATE = process.env.VAPID_PRIVATE_KEY || '';
 const VAPID_EMAIL = process.env.VAPID_EMAIL || 'mailto:admin@qodratak.sa';
-const OBJECT_ID_RE = /^[a-fA-F0-9]{24}$/;
 const NOTIFICATION_TYPES = new Set(['info', 'success', 'warning', 'exam', 'achievement', 'event', 'promo']);
 
 function sessionUserId(req: Request): string | null {
   const userId = (req.session as any)?.userId;
-  return typeof userId === 'string' && OBJECT_ID_RE.test(userId) ? userId : null;
+  return parseObjectIdString(userId);
 }
 
 function validText(value: unknown, maxLength: number): value is string {
-  return typeof value === 'string' && value.trim().length > 0 && value.length <= maxLength;
+  return parseBoundedText(value, maxLength) !== null;
 }
 
 if (VAPID_PUBLIC && VAPID_PRIVATE) {
@@ -36,12 +40,8 @@ router.get('/vapid-public-key', (req: Request, res: Response) => {
 router.post('/subscribe', requireAuth, async (req: Request, res: Response) => {
   try {
     const userId = sessionUserId(req);
-    const { subscription } = req.body;
-    if (!userId || !subscription || typeof subscription !== 'object' ||
-      !validText(subscription.endpoint, 2048) ||
-      !subscription.keys || typeof subscription.keys !== 'object' ||
-      !validText(subscription.keys.p256dh, 512) ||
-      !validText(subscription.keys.auth, 512)) {
+    const subscription = parsePushSubscription(req.body?.subscription);
+    if (!userId || !subscription) {
       return res.status(400).json({ error: 'Invalid push subscription' });
     }
 
@@ -61,9 +61,9 @@ router.post('/subscribe', requireAuth, async (req: Request, res: Response) => {
 // ── UNSUBSCRIBE FROM PUSH NOTIFICATIONS ──────────────────────────────────────
 router.delete('/subscribe', requireAuth, async (req: Request, res: Response) => {
   try {
-    const { endpoint } = req.body;
+    const endpoint = parseBoundedText(req.body?.endpoint, 2048);
     const userId = sessionUserId(req);
-    if (!userId || !validText(endpoint, 2048)) {
+    if (!userId || !endpoint) {
       return res.status(400).json({ error: 'Invalid push subscription' });
     }
     await PushSubscription.deleteOne({ endpoint, userId });
@@ -108,8 +108,9 @@ router.get('/in-app/:userId', requireAuth, async (req: Request, res: Response) =
 router.post('/in-app/:userId', requireAdmin, async (req: Request, res: Response) => {
   try {
     const { title, body, type, link, sendWhatsApp } = req.body || {};
+    const targetUserId = parseObjectIdString(req.params.userId);
     if (
-      !OBJECT_ID_RE.test(req.params.userId) ||
+      !targetUserId ||
       !validText(title, 200) ||
       !validText(body, 2000) ||
       (type !== undefined && (typeof type !== 'string' || !NOTIFICATION_TYPES.has(type))) ||
@@ -120,7 +121,7 @@ router.post('/in-app/:userId', requireAdmin, async (req: Request, res: Response)
     }
 
     const notification = await InAppNotification.create({
-      userId: req.params.userId,
+      userId: targetUserId,
       title,
       body,
       type: type || 'info',
@@ -129,10 +130,10 @@ router.post('/in-app/:userId', requireAdmin, async (req: Request, res: Response)
       sentBy: 'admin',
       isRead: false,
     });
-    chatWebSocketServer.broadcastToUser(req.params.userId, { type: 'new_notification', notification });
+    chatWebSocketServer.broadcastToUser(targetUserId, { type: 'new_notification', notification });
 
     if (sendWhatsApp) {
-      await sendStudentWhatsAppNotification(req.params.userId, {
+      await sendStudentWhatsAppNotification(targetUserId, {
         title,
         body,
         link,
@@ -151,11 +152,12 @@ router.post('/in-app/:userId', requireAdmin, async (req: Request, res: Response)
 router.patch('/in-app/:id/read', requireAuth, async (req: Request, res: Response) => {
   try {
     const userId = sessionUserId(req);
-    if (!userId || !OBJECT_ID_RE.test(req.params.id)) {
+    const notificationId = parseObjectIdString(req.params.id);
+    if (!userId || !notificationId) {
       return res.status(400).json({ error: 'Invalid notification id' });
     }
     await InAppNotification.findOneAndUpdate(
-      { _id: req.params.id, $or: [{ userId }, { isGlobal: true }] },
+      { _id: notificationId, $or: [{ userId }, { isGlobal: true }] },
       { isRead: true }
     );
     res.json({ success: true });
@@ -168,10 +170,11 @@ router.patch('/in-app/:id/read', requireAuth, async (req: Request, res: Response
 router.delete('/in-app/:id', requireAuth, async (req: Request, res: Response) => {
   try {
     const userId = sessionUserId(req);
-    if (!userId || !OBJECT_ID_RE.test(req.params.id)) {
+    const notificationId = parseObjectIdString(req.params.id);
+    if (!userId || !notificationId) {
       return res.status(400).json({ error: 'Invalid notification id' });
     }
-    await InAppNotification.findOneAndDelete({ _id: req.params.id, userId });
+    await InAppNotification.findOneAndDelete({ _id: notificationId, userId });
     res.json({ success: true });
   } catch (error) {
     res.status(500).json({ error: 'Failed to delete notification' });
@@ -215,13 +218,16 @@ router.get('/in-app/:userId/unread-count', requireAuth, async (req: Request, res
 // ── ADMIN: SEND NOTIFICATION ──────────────────────────────────────────────────
 router.post('/admin/send', requireAdmin, async (req: Request, res: Response) => {
   try {
-    const { title, body, type, link, targetUserId, isGlobal, sendWhatsApp } = req.body;
+    const { title, body, type, link, isGlobal, sendWhatsApp } = req.body;
+    const targetUserId = isGlobal === false
+      ? parseObjectIdString(req.body?.targetUserId) || undefined
+      : undefined;
     if (!validText(title, 200) || !validText(body, 2000) ||
       (type !== undefined && (typeof type !== 'string' || !NOTIFICATION_TYPES.has(type))) ||
       (link !== undefined && (typeof link !== 'string' || link.length > 2048)) ||
       typeof isGlobal !== 'boolean' ||
       (sendWhatsApp !== undefined && typeof sendWhatsApp !== 'boolean') ||
-      (!isGlobal && (typeof targetUserId !== 'string' || !OBJECT_ID_RE.test(targetUserId)))) {
+      (!isGlobal && !targetUserId)) {
       return res.status(400).json({ error: 'Invalid notification data' });
     }
 
@@ -400,10 +406,11 @@ router.post('/push/broadcast', requireAdmin, async (req: Request, res: Response)
 // ── ADMIN: DELETE NOTIFICATION ────────────────────────────────────────────────
 router.delete('/admin/:id', requireAdmin, async (req: Request, res: Response) => {
   try {
-    if (!OBJECT_ID_RE.test(req.params.id)) {
+    const notificationId = parseObjectIdString(req.params.id);
+    if (!notificationId) {
       return res.status(400).json({ error: 'Invalid notification id' });
     }
-    await InAppNotification.findByIdAndDelete(req.params.id);
+    await InAppNotification.findByIdAndDelete(notificationId);
     res.json({ success: true });
   } catch (error) {
     res.status(500).json({ error: 'Failed to delete notification' });
