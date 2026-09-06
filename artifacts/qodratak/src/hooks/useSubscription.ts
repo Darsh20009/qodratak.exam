@@ -73,7 +73,7 @@ export const useSubscription = () => {
         const storedUser = localStorage.getItem('user');
         if (storedUser) {
           const user = JSON.parse(storedUser);
-          userId = user.id;
+          userId = user.id || user._id;
         }
       } catch (error) {
         console.error('Error parsing user from localStorage:', error);
@@ -82,6 +82,7 @@ export const useSubscription = () => {
       const response = await fetch('/api/subscription/status', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
         body: JSON.stringify({ deviceId, userId })
       });
       
@@ -91,7 +92,9 @@ export const useSubscription = () => {
       
       return response.json();
     },
-    refetchInterval: 60000, // Refetch every minute
+    refetchInterval: 10000,
+    refetchOnWindowFocus: true,
+    refetchOnMount: 'always',
   });
 
   // Start trial mutation
@@ -196,12 +199,11 @@ export const useSubscription = () => {
   const checkPremiumAccess = (showToast = true): boolean => {
     const subscription = subscriptionQuery.data;
     
-    // Check both subscription status and if it's a premium type
-    const premiumTypes = ['Pro', 'Pro Life', 'Pro Life Plus', 'Pro Live'];
-    const isPremium = subscription && (
-      subscription.hasActiveSubscription || 
-      subscription.canAccessPremiumFeatures ||
-      premiumTypes.includes(subscription.subscriptionType)
+    const isPremium = Boolean(
+      subscription &&
+      !subscription.isExpired &&
+      subscription.hasActiveSubscription &&
+      subscription.canAccessPremiumFeatures,
     );
     
     if (!isPremium) {

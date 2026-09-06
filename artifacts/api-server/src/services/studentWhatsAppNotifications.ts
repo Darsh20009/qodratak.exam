@@ -1,5 +1,5 @@
 import { InAppNotification, TestResult, User } from "../mongodb/models";
-import { sendWhatsAppText } from "./whatsappService";
+import { sendWhatsAppText, type WhatsAppOutboundKind } from "./whatsappService";
 
 const RIYADH_OFFSET_MS = 3 * 60 * 60 * 1000;
 const DAILY_BATCH_LIMIT = 2000;
@@ -42,6 +42,7 @@ export async function sendStudentWhatsAppNotification(
     link?: string;
     type?: string;
     createInApp?: boolean;
+    whatsappKind?: Extract<WhatsAppOutboundKind, "customer_purchase">;
   },
 ) {
   let user: any = null;
@@ -76,8 +77,15 @@ export async function sendStudentWhatsAppNotification(
 
   const phone = userPhone(user);
   if (!phone) return { sent: false, reason: "missing_phone" };
+  if (!notification.whatsappKind) {
+    return { sent: false, reason: "whatsapp_transaction_only" };
+  }
 
-  await sendWhatsAppText(phone, `${notification.title}\n\n${notification.body}`);
+  await sendWhatsAppText(
+    phone,
+    `${notification.title}\n\n${notification.body}`,
+    notification.whatsappKind,
+  );
   return { sent: true };
 }
 
@@ -161,7 +169,6 @@ export async function sendDailyStudentFollowUps() {
         continue;
       }
 
-      await sendWhatsAppText(phone, `${message.title}\n\n${message.body}`);
       await InAppNotification.create({
         userId: String(user._id),
         title: message.title,

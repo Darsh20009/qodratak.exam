@@ -65,6 +65,8 @@ export interface IUser extends Document {
   gradeLevel?: string;
   studyGoal?: string;
   targetScore?: number;
+  guardianPhone?: string;
+  targetExamDate?: Date;
   securitySetupDone?: boolean;
   guestInvite?: {
     email: string;
@@ -214,6 +216,9 @@ const userSchema = new Schema<IUser>({
   gradeLevel: { type: String },
   studyGoal: { type: String },
   targetScore: { type: Number },
+  // Student-product fields. Kept separate from legacy parent account links.
+  guardianPhone: { type: String },
+  targetExamDate: { type: Date },
   securitySetupDone: { type: Boolean, default: false },
   guestInvite: {
     type: {
@@ -1382,3 +1387,45 @@ export const WhatsAppMessage = mongoose.models['WhatsAppMessage']
 export const WhatsAppQuizSession = mongoose.models['WhatsAppQuizSession']
   ? mongoose.model<IWhatsAppQuizSession>('WhatsAppQuizSession')
   : mongoose.model<IWhatsAppQuizSession>('WhatsAppQuizSession', whatsAppQuizSessionSchema);
+
+// ─── Student product content and reviews (additive collections) ─────────────
+export type StudentProgram = 'qudrat' | 'tahsili';
+export interface IFoundationContent extends Document {
+  program: StudentProgram; title: string; description: string; videoUrl: string;
+  thumbnailUrl?: string; order: number; published: boolean; linkedQuizRoute?: string;
+  durationMinutes?: number; createdAt: Date; updatedAt: Date;
+}
+const foundationContentSchema = new Schema<IFoundationContent>({
+  program: { type: String, enum: ['qudrat', 'tahsili'], required: true, index: true },
+  title: { type: String, required: true, trim: true },
+  description: { type: String, required: true, trim: true },
+  videoUrl: { type: String, required: true, trim: true },
+  thumbnailUrl: { type: String, trim: true },
+  order: { type: Number, required: true, min: 0, index: true },
+  published: { type: Boolean, default: false, index: true },
+  linkedQuizRoute: { type: String, trim: true },
+  durationMinutes: { type: Number, min: 0 },
+}, { timestamps: true });
+foundationContentSchema.index({ program: 1, published: 1, order: 1 });
+
+export interface IPlatformReview extends Document {
+  userId: mongoose.Types.ObjectId; rating: number; text: string;
+  status: 'pending' | 'approved' | 'rejected'; featured: boolean;
+  adminReply?: string; createdAt: Date; updatedAt: Date;
+}
+const platformReviewSchema = new Schema<IPlatformReview>({
+  userId: { type: Schema.Types.ObjectId, ref: 'User', required: true, index: true },
+  rating: { type: Number, required: true, min: 1, max: 5 },
+  text: { type: String, required: true, trim: true, maxlength: 2000 },
+  status: { type: String, enum: ['pending', 'approved', 'rejected'], default: 'pending', index: true },
+  featured: { type: Boolean, default: false, index: true },
+  adminReply: { type: String, trim: true, maxlength: 2000 },
+}, { timestamps: true });
+platformReviewSchema.index({ status: 1, featured: -1, createdAt: -1 });
+
+export const FoundationContent = mongoose.models['FoundationContent']
+  ? mongoose.model<IFoundationContent>('FoundationContent')
+  : mongoose.model<IFoundationContent>('FoundationContent', foundationContentSchema);
+export const PlatformReview = mongoose.models['PlatformReview']
+  ? mongoose.model<IPlatformReview>('PlatformReview')
+  : mongoose.model<IPlatformReview>('PlatformReview', platformReviewSchema);

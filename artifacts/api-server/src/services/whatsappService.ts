@@ -32,6 +32,21 @@ export interface WhatsAppMessageEvent {
   createdAt: string;
 }
 
+export type WhatsAppOutboundKind =
+  | "otp"
+  | "customer_purchase"
+  | "admin_new_student"
+  | "admin_subscription"
+  | "admin_daily_report";
+
+const outboundPriorities: Record<WhatsAppOutboundKind, number> = {
+  otp: 0,
+  customer_purchase: 1,
+  admin_new_student: 2,
+  admin_subscription: 2,
+  admin_daily_report: 3,
+};
+
 const authDir = path.resolve(process.cwd(), ".whatsapp-auth");
 let socket: WASocket | null = null;
 let connectPromise: Promise<WhatsAppStatus> | null = null;
@@ -43,14 +58,17 @@ const recentMessages: WhatsAppMessageEvent[] = [];
 const outboundQueue: Array<{
   phone: string;
   text: string;
+  kind: WhatsAppOutboundKind;
+  sequence: number;
   resolve: () => void;
   reject: (error: Error) => void;
 }> = [];
 let processingOutboundQueue = false;
 let lastOutboundSentAt = 0;
+let outboundSequence = 0;
 const outboundMessageDelayMs = Math.max(
-  2_000,
-  Number(process.env.WHATSAPP_MESSAGE_DELAY_MS || 4_000),
+  3_000,
+  Number(process.env.WHATSAPP_MESSAGE_DELAY_MS || 3_000),
 );
 const qiroxApiBaseUrl = (process.env.QIROX_API_BASE_URL || "").replace(/\/+$/, "");
 const qiroxProjectId = (process.env.QIROX_PROJECT_ID || "").trim();
@@ -313,6 +331,11 @@ async function processOutboundQueue() {
   processingOutboundQueue = true;
 
   while (outboundQueue.length > 0) {
+    outboundQueue.sort((left, right) => {
+      const priorityDifference =
+        outboundPriorities[left.kind] - outboundPriorities[right.kind];
+      return priorityDifference || left.sequence - right.sequence;
+    });
     const job = outboundQueue.shift()!;
     try {
       if (!socket || currentStatus.state !== "connected") {
@@ -361,14 +384,28 @@ async function processOutboundQueue() {
   processingOutboundQueue = false;
 }
 
-export function sendWhatsAppText(phone: string, text: string) {
+export function sendWhatsAppText(
+  phone: string,
+  text: string,
+  kind?: WhatsAppOutboundKind,
+) {
   const digits = phone.replace(/\D/g, "");
   if (!digits) throw new Error("INVALID_PHONE");
   if (!text.trim()) throw new Error("EMPTY_MESSAGE");
+  if (!kind || !(kind in outboundPriorities)) {
+    throw new Error("WHATSAPP_MESSAGE_TYPE_DISABLED");
+  }
   if (outboundQueue.length >= 1_000) throw new Error("WHATSAPP_QUEUE_FULL");
 
   return new Promise<void>((resolve, reject) => {
-    outboundQueue.push({ phone: digits, text: text.trim(), resolve, reject });
+    outboundQueue.push({
+      phone: digits,
+      text: text.trim(),
+      kind,
+      sequence: outboundSequence++,
+      resolve,
+      reject,
+    });
     void processOutboundQueue();
   });
 }

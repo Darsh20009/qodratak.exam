@@ -318,7 +318,7 @@ export class MongoStorage {
 
     const newEndDate = new Date(newStartDate.getTime() + requestedDurationMs);
 
-    return Subscription.findByIdAndUpdate(id, {
+    const approved = await Subscription.findByIdAndUpdate(id, {
       status: 'active',
       startDate: newStartDate,
       endDate: newEndDate,
@@ -326,6 +326,46 @@ export class MongoStorage {
       approvedAt: new Date(),
       updatedAt: new Date(),
     }, { new: true });
+    if (approved) {
+      await this.syncUserSubscription(
+        approved.userId,
+        approved.type,
+        approved.startDate,
+        approved.endDate,
+      );
+    }
+    return approved;
+  }
+
+  async syncUserSubscription(
+    userId: mongoose.Types.ObjectId | string | number,
+    type: ISubscription['type'],
+    startDate: Date,
+    endDate: Date,
+  ): Promise<void> {
+    const rawId = String(userId);
+    const identityFilters: any[] = [
+      { email: rawId.toLowerCase() },
+      { username: rawId },
+      { legacyId: rawId },
+    ];
+    if (mongoose.Types.ObjectId.isValid(rawId)) {
+      identityFilters.unshift({ _id: new mongoose.Types.ObjectId(rawId) });
+    }
+
+    await User.findOneAndUpdate(
+      { $or: identityFilters },
+      {
+        $set: {
+          subscription: {
+            type,
+            status: 'active',
+            startDate: startDate.toISOString(),
+            endDate: endDate.toISOString(),
+          },
+        },
+      },
+    );
   }
 
   async rejectSubscription(id: string, reason: string): Promise<ISubscription | null> {

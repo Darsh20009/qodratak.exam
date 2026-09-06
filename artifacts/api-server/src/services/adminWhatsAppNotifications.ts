@@ -71,6 +71,7 @@ export async function notifyAdminNewStudent(student: {
       `الجوال: ${student.phone || "غير محدد"}`,
       `الوقت: ${new Date().toLocaleString("ar-SA", { timeZone: "Asia/Riyadh" })}`,
     ].join("\n"),
+    "admin_new_student",
   );
 }
 
@@ -93,6 +94,7 @@ export async function notifyAdminSubscription(subscription: {
       `طريقة الدفع: ${subscription.paymentMethod || "غير محددة"}`,
       `الحالة: ${subscription.status === "active" ? "مفعّل" : "بانتظار المراجعة"}`,
     ].join("\n"),
+    "admin_subscription",
   );
 }
 
@@ -111,56 +113,8 @@ export async function sendWhatsAppCampaign(input: {
   body: string;
   target: WhatsAppCampaignTarget;
 }) {
-  const targetFilter: any =
-    input.target === "subscribed"
-      ? {
-          $or: [
-            { "subscription.status": "active" },
-            { subscriptionStatus: "active" },
-            { isSubscribed: true, subscriptionEndDate: { $gte: new Date() } },
-          ],
-        }
-      : input.target === "free"
-        ? {
-            $and: [
-              { $or: [{ "subscription.status": { $ne: "active" } }, { subscriptionStatus: { $ne: "active" } }] },
-              { isSubscribed: { $ne: true } },
-            ],
-          }
-        : {};
-
-  const users = await User.find({
-    $and: [
-      {
-        role: { $in: ["student", "parent"] },
-        isActive: { $ne: false },
-        notifWhatsApp: { $ne: false },
-        $or: [{ phone: { $exists: true, $ne: "" } }, { whatsappPhone: { $exists: true, $ne: "" } }],
-      },
-      targetFilter,
-    ],
-  })
-    .select("_id fullName username phone whatsappPhone")
-    .limit(2000);
-
-  let sent = 0;
-  let failed = 0;
-  for (const user of users) {
-    const phone = normalizeCampaignPhone(user.whatsappPhone || user.phone);
-    if (!phone) {
-      failed++;
-      continue;
-    }
-    try {
-      await sendWhatsAppText(phone, `${input.title}\n\n${input.body}`);
-      sent++;
-    } catch (error) {
-      failed++;
-      console.error(`WhatsApp campaign failed for ${user._id}:`, error);
-    }
-  }
-
-  return { sent, failed, total: users.length };
+  void input;
+  throw new Error("WHATSAPP_CAMPAIGNS_DISABLED");
 }
 
 export async function notifyStudentSubscriptionActivated(input: {
@@ -186,6 +140,7 @@ export async function notifyStudentSubscriptionActivated(input: {
     ].join("\n"),
     link: "/",
     type: "success",
+    whatsappKind: "customer_purchase",
   });
 }
 
@@ -235,6 +190,7 @@ export async function sendAdminFinancialReport(period: ReportPeriod) {
       `المصروفات: ${expenseTotal.toLocaleString("ar-SA")} ر.س`,
       `الصافي: ${(revenue - expenseTotal).toLocaleString("ar-SA")} ر.س`,
     ].join("\n"),
+    "admin_daily_report",
   );
 }
 
@@ -259,8 +215,6 @@ async function checkScheduledAdminReports() {
   if (hour < 21) return;
 
   await sendOnce("daily");
-  if (now.getUTCDay() === 0) await sendOnce("weekly");
-  if (now.getUTCDate() === 1) await sendOnce("monthly");
 }
 
 export function startAdminWhatsAppReportScheduler() {

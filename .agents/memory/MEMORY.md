@@ -5,5 +5,6 @@
 - [QIROX WhatsApp direction](qirox-whatsapp-direction.md) — the configured QIROX API is outbound-only; inbound student conversations still depend on the linked Baileys session.
 - [Server session authority](server-session-authority.md) — route access and the home screen must trust the server session, never stale localStorage data.
 - [Device-limit recovery](device-limit-recovery.md) — a verified login may delete one registered device through a short-lived challenge, then continue login safely.
-- [Unified plans and WhatsApp care](unified-plans-whatsapp-care.md) — current purchase values come from one plan setting, while daily KSA follow-ups use an atomic per-day claim.
+- [Unified plans and WhatsApp care](unified-plans-whatsapp-care.md) — purchase values use one plan setting; WhatsApp is restricted to queued OTP and essential transactional alerts.
 - [Dark-mode page contrast](dark-mode-page-contrast.md) — legacy pages use fixed light colors; keep contrast overrides scoped to the shared app surface.
+- [Subscription entitlement consistency](subscription-entitlement-consistency.md) — derive access from active Mongo records; make wallet activation atomic and invoices transaction-truthful.

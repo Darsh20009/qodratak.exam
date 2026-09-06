@@ -9,8 +9,8 @@ All customer-facing purchase and activation paths must read the current primary 
 
 **How to apply:** Use the primary plan for the public subscription page, wallet/receipt/manual activation, and future payment adapters. Treat old subscription documents as immutable history.
 
-Daily student WhatsApp follow-ups must claim the Riyadh calendar day atomically before sending, and release the claim if delivery fails.
+WhatsApp outbound delivery is restricted to OTP, customer purchase confirmations, admin new-student/subscription alerts, and one end-of-day admin report. Everything must use one prioritized FIFO queue with at least three seconds between sends.
 
-**Why:** The scheduler can overlap during restarts or multiple checks, and a simple read-then-write allows duplicate messages.
+**Why:** Bulk campaigns, automated study follow-ups, bot replies, and parallel schedulers created excessive daily volume and put the linked WhatsApp account at risk of suspension.
 
-**How to apply:** Keep the KSA day boundary explicit and honor the student's WhatsApp opt-out before sending.
+**How to apply:** Add no direct or bulk WhatsApp send path outside the central allowlist. Keep OTP highest priority, transactional customer messages next, admin event alerts after them, and the daily report last.

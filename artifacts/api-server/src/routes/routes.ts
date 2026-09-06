@@ -71,6 +71,34 @@ async function getPrimarySubscriptionPlan() {
   };
 }
 
+function subscriptionIdentityCandidates(userId: unknown, email?: unknown) {
+  const values: Array<string | mongoose.Types.ObjectId | number> = [];
+  const rawId = String(userId || '').trim();
+  if (rawId) {
+    values.push(rawId);
+    if (/^\d+$/.test(rawId)) values.push(Number(rawId));
+    if (mongoose.Types.ObjectId.isValid(rawId)) {
+      values.push(new mongoose.Types.ObjectId(rawId));
+    }
+  }
+  const normalizedEmail = String(email || '').trim().toLowerCase();
+  if (normalizedEmail) values.push(normalizedEmail);
+  return values;
+}
+
+async function findActiveMongoSubscription(userId: unknown, email?: unknown) {
+  const { Subscription } = await import('../mongodb/models');
+  const candidates = subscriptionIdentityCandidates(userId, email);
+  if (!candidates.length) return null;
+  const now = new Date();
+  return Subscription.findOne({
+    userId: { $in: candidates },
+    status: 'active',
+    startDate: { $lte: now },
+    endDate: { $gt: now },
+  }).sort({ endDate: -1 });
+}
+
 function notifyDeviceLimitReached(user: any): void {
   let phone = '';
   try {
@@ -4608,10 +4636,19 @@ app.post("/api/auth/register", async (req: Request, res: Response) => {
       const userId = (req.session as any)?.userId;
       if (!userId) return res.status(401).json([]);
       const { Subscription } = await import('./mongodb/models');
-      const subs = await Subscription.find({ userId: String(userId) })
+      const candidates = subscriptionIdentityCandidates(
+        userId,
+        (req.session as any)?.userEmail,
+      );
+      const subs = await Subscription.find({ userId: { $in: candidates } })
         .sort({ createdAt: -1 })
-        .limit(20);
-      res.json(subs);
+        .limit(20)
+        .lean();
+      res.json(subs.map((subscription: any) => ({
+        ...subscription,
+        invoiceNumber: `QDR-${new Date(subscription.createdAt).getFullYear()}-${String(subscription._id).slice(-8).toUpperCase()}`,
+        currency: 'SAR',
+      })));
     } catch (e) {
       console.error('my-subscriptions error:', e);
       res.status(500).json([]);
@@ -4638,6 +4675,10 @@ app.post("/api/auth/register", async (req: Request, res: Response) => {
         const { User } = await import('./mongodb/models');
         const mongoUser = await User.findById(userId) || (sessionEmail ? await User.findOne({ email: sessionEmail }) : null);
         if (mongoUser) {
+          const activeSubscription = await findActiveMongoSubscription(
+            mongoUser._id,
+            mongoUser.email,
+          );
           user = {
             id: mongoUser._id.toString(),
             name: mongoUser.fullName || mongoUser.username,
@@ -4646,7 +4687,15 @@ app.post("/api/auth/register", async (req: Request, res: Response) => {
             email: mongoUser.email,
             phone: mongoUser.phone,
             role: mongoUser.role || 'student',
-            subscription: (mongoUser as any).subscription || { type: 'trial', status: 'active' },
+            subscription: activeSubscription ? {
+              id: activeSubscription._id.toString(),
+              type: activeSubscription.type,
+              status: activeSubscription.status,
+              startDate: activeSubscription.startDate.toISOString(),
+              endDate: activeSubscription.endDate.toISOString(),
+              price: activeSubscription.price,
+              paymentMethod: activeSubscription.paymentMethod,
+            } : ((mongoUser as any).subscription || { type: 'free', status: 'active' }),
             points: (mongoUser as any).points || 0,
             level: (mongoUser as any).level || 1,
             devices: (mongoUser as any).devices || [],
@@ -4880,7 +4929,10 @@ app.post("/api/auth/register", async (req: Request, res: Response) => {
   // Subscription and device trial routes
   app.post("/api/subscription/status", async (req: Request, res: Response) => {
     try {
-      const { deviceId, userId } = req.body;
+      const { deviceId } = req.body;
+      const sessionUserId = (req.session as any)?.userId;
+      const sessionEmail = (req.session as any)?.userEmail;
+      const userId = sessionUserId || null;
 
       if (!deviceId) {
         return res.status(400).json({ message: "Device ID is required" });
@@ -4894,8 +4946,20 @@ app.post("/api/auth/register", async (req: Request, res: Response) => {
       // Check user subscription first (if userId is provided)
       if (userId) {
         try {
+          const mongoSubscription = await findActiveMongoSubscription(userId, sessionEmail);
+          if (mongoSubscription) {
+            hasActiveSubscription = true;
+            subscriptionType = mongoSubscription.type;
+            subscriptionEndDate = mongoSubscription.endDate;
+            isUserSubscribed = true;
+          }
+        } catch (error) {
+          console.error("Error reading MongoDB subscription:", error);
+        }
+
+        if (!isUserSubscribed) try {
           const users = JSON.parse(fs.readFileSync("attached_assets/user.json", "utf-8"));
-          const user = users.find((u: any) => u.id === userId);
+          const user = users.find((u: any) => String(u.id) === String(userId));
 
           if (user && user.subscription) {
             const now = new Date();
@@ -6622,7 +6686,24 @@ app.post("/api/auth/register", async (req: Request, res: Response) => {
 
       // If logged in, find user by session ID first (avoids duplicates)
       if (sessionUserId) {
-        user = users.find((u: any) => String(u.id) === String(sessionUserId));
+        try {
+          const { User } = await import('../mongodb/models');
+          const mongoUser = await User.findById(sessionUserId) ||
+            await User.findOne({ email: String((req.session as any).userEmail || '').toLowerCase() });
+          if (mongoUser) {
+            user = {
+              id: mongoUser._id.toString(),
+              name: mongoUser.fullName || mongoUser.username,
+              email: mongoUser.email,
+              phone: mongoUser.phone,
+            };
+          }
+        } catch (error) {
+          console.error('MongoDB subscription account lookup failed:', error);
+        }
+        if (!user) {
+          user = users.find((u: any) => String(u.id) === String(sessionUserId));
+        }
       }
 
       // Fallback to email lookup for guest users
@@ -6743,44 +6824,86 @@ app.post("/api/auth/register", async (req: Request, res: Response) => {
       const planType = primaryPlan.type;
       const price = primaryPlan.priceSar;
 
-      // Get wallet balance
-      const wallet = await mongoStorage.getWallet(String(sessionUserId));
-      const balance = wallet?.balance ?? 0;
+      const now = new Date();
+      const mongoSession = await mongoose.startSession();
+      let subscription: any;
+      let endDate = new Date(now);
+      try {
+        await mongoSession.withTransaction(async () => {
+          const { Subscription, Wallet, WalletTransaction } = await import('../mongodb/models');
+          const debitedWallet = await Wallet.findOneAndUpdate(
+            {
+              userId: String(sessionUserId),
+              balance: { $gte: price },
+            },
+            {
+              $inc: { balance: -price },
+              $set: { updatedAt: now },
+            },
+            { new: true, session: mongoSession },
+          );
 
-      if (balance < price) {
-        return res.status(400).json({
-          message: `رصيد المحفظة غير كافٍ. الرصيد الحالي: ${balance} ريال، مطلوب: ${price} ريال`,
-          balance,
-          required: price
+          if (!debitedWallet) {
+            const currentWallet = await Wallet.findOne({ userId: String(sessionUserId) })
+              .session(mongoSession)
+              .lean();
+            const error: any = new Error('INSUFFICIENT_WALLET_BALANCE');
+            error.balance = currentWallet?.balance ?? 0;
+            throw error;
+          }
+
+          const activeSubscription = await Subscription.findOne({
+            userId: { $in: subscriptionIdentityCandidates(sessionUserId, (req.session as any).userEmail) },
+            status: 'active',
+            startDate: { $lte: now },
+            endDate: { $gt: now },
+          }).sort({ endDate: -1 }).session(mongoSession);
+          const baseDate = activeSubscription?.endDate && activeSubscription.endDate > now
+            ? new Date(activeSubscription.endDate)
+            : now;
+          endDate = new Date(baseDate);
+          endDate.setDate(endDate.getDate() + primaryPlan.durationDays);
+
+          const canonicalUserId = mongoose.Types.ObjectId.isValid(String(sessionUserId))
+            ? new mongoose.Types.ObjectId(String(sessionUserId))
+            : String(sessionUserId);
+          [subscription] = await Subscription.create([{
+            userId: canonicalUserId,
+            type: planType,
+            status: 'active',
+            startDate: baseDate,
+            endDate,
+            autoRenew: false,
+            paymentMethod: 'wallet',
+            price,
+          }], { session: mongoSession });
+
+          await WalletTransaction.create([{
+            userId: String(sessionUserId),
+            type: 'debit',
+            amount: price,
+            description: `اشتراك ${planType} عبر المحفظة`,
+          }], { session: mongoSession });
         });
+      } catch (error: any) {
+        if (error?.message === 'INSUFFICIENT_WALLET_BALANCE') {
+          return res.status(400).json({
+            message: `رصيد المحفظة غير كافٍ. الرصيد الحالي: ${error.balance} ريال، مطلوب: ${price} ريال`,
+            balance: error.balance,
+            required: price,
+          });
+        }
+        throw error;
+      } finally {
+        await mongoSession.endSession();
       }
 
-      // Deduct from wallet
-      await mongoStorage.deductFromWallet(
-        String(sessionUserId),
-        price,
-        `اشتراك ${planType} عبر المحفظة`
+      await mongoStorage.syncUserSubscription(
+        sessionUserId,
+        planType as 'free' | 'Pro' | 'Pro Life' | 'Pro Life Plus',
+        now,
+        endDate,
       );
-
-      // Create active subscription immediately (no admin approval needed)
-      const now = new Date();
-      const activeSubscription = await mongoStorage.getActiveSubscription(String(sessionUserId));
-      const baseDate = activeSubscription?.endDate && activeSubscription.endDate > now
-        ? new Date(activeSubscription.endDate)
-        : now;
-      const endDate = new Date(baseDate);
-      endDate.setDate(endDate.getDate() + primaryPlan.durationDays);
-
-      const subscription = await mongoStorage.createSubscription({
-        userId: sessionUserId,
-        type: planType as 'free' | 'Pro' | 'Pro Life' | 'Pro Life Plus',
-        status: 'active',
-        startDate: now,
-        endDate: endDate,
-        autoRenew: false,
-        paymentMethod: 'wallet',
-        price,
-      });
       void notifyAdminSubscription({
         studentName: String((req.session as any).userEmail || sessionUserId),
         plan: planType,
@@ -6819,7 +6942,8 @@ app.post("/api/auth/register", async (req: Request, res: Response) => {
   // Create subscription with receipt upload - Protected by RBAC
   app.post("/api/subscriptions/create", requireAuth, uploadReceipt.single('receipt'), async (req: Request, res: Response) => {
     try {
-      const { userId, planType, paymentMethod, transactionId } = req.body;
+      const userId = (req.session as any).userId;
+      const { planType, paymentMethod, transactionId } = req.body;
 
       if (!userId || !planType) {
         return res.status(400).json({ error: 'بيانات غير مكتملة' });
@@ -10174,6 +10298,197 @@ app.post("/api/auth/register", async (req: Request, res: Response) => {
       res.json({ reply });
     } catch (e) {
       res.status(500).json({ error: 'فشل في الرد' });
+    }
+  });
+
+  // ── Redesigned student product ───────────────────────────────────────────
+  // These endpoints always derive the subject from the authenticated session.
+  const studentOnly = (req: Request, res: Response): string | null => {
+    const user = (req as any).rbacUser;
+    if (!user || user.role !== 'student') {
+      res.status(403).json({ error: 'هذه الخدمة متاحة للطلاب فقط', code: 'FORBIDDEN' });
+      return null;
+    }
+    return String(user.id);
+  };
+  const supportedPrograms = new Set(['qudrat', 'tahsili']);
+
+  app.get('/api/foundation-content', requireAuth, async (req: Request, res: Response) => {
+    if (!studentOnly(req, res)) return;
+    const program = String(req.query.program || '');
+    if (!supportedPrograms.has(program)) {
+      return res.status(400).json({ error: 'البرنامج المدعوم هو qudrat أو tahsili فقط' });
+    }
+    try {
+      const { FoundationContent } = await import('../mongodb/models');
+      const content = await FoundationContent.find({ program, published: true })
+        .sort({ order: 1, createdAt: 1 })
+        .select('program title description videoUrl thumbnailUrl order linkedQuizRoute durationMinutes createdAt updatedAt')
+        .lean();
+      return res.json({ content });
+    } catch (error) {
+      console.error('Foundation content list error:', error);
+      return res.status(500).json({ error: 'فشل في جلب المحتوى التأسيسي' });
+    }
+  });
+
+  app.get('/api/platform-reviews/approved', async (_req: Request, res: Response) => {
+    try {
+      const { PlatformReview } = await import('../mongodb/models');
+      const reviews = await PlatformReview.find({ status: 'approved' })
+        .populate('userId', 'fullName username')
+        .sort({ featured: -1, createdAt: -1 })
+        .lean() as any[];
+      return res.json({
+        reviews: reviews.map(({ userId, ...review }) => ({
+          ...review,
+          authorName: userId?.fullName || userId?.username || 'طالب قدراتك',
+        })),
+      });
+    } catch (error) {
+      console.error('Approved reviews list error:', error);
+      return res.status(500).json({ error: 'فشل في جلب التقييمات' });
+    }
+  });
+
+  app.post('/api/platform-reviews', requireAuth, async (req: Request, res: Response) => {
+    const userId = studentOnly(req, res);
+    if (!userId) return;
+    const rating = Number(req.body?.rating);
+    const text = typeof req.body?.text === 'string' ? req.body.text.trim() : '';
+    if (!Number.isInteger(rating) || rating < 1 || rating > 5 || !text || text.length > 2000) {
+      return res.status(400).json({ error: 'التقييم من 1 إلى 5 والنص مطلوب (حتى 2000 حرف)' });
+    }
+    try {
+      const { PlatformReview } = await import('../mongodb/models');
+      const review = await PlatformReview.create({ userId, rating, text });
+      return res.status(201).json({
+        review: { id: String(review._id), rating: review.rating, text: review.text, status: review.status, createdAt: review.createdAt },
+      });
+    } catch (error) {
+      console.error('Create platform review error:', error);
+      return res.status(500).json({ error: 'فشل في إرسال التقييم' });
+    }
+  });
+
+  app.get('/api/student/exam-date', requireAuth, async (req: Request, res: Response) => {
+    const userId = studentOnly(req, res);
+    if (!userId) return;
+    try {
+      const { User } = await import('../mongodb/models');
+      const user = await User.findById(userId).select('targetExamDate').lean();
+      if (!user) return res.status(404).json({ error: 'المستخدم غير موجود' });
+      return res.json({ targetExamDate: user.targetExamDate || null });
+    } catch {
+      return res.status(400).json({ error: 'تعذر جلب تاريخ الاختبار' });
+    }
+  });
+
+  app.patch('/api/student/exam-date', requireAuth, async (req: Request, res: Response) => {
+    const userId = studentOnly(req, res);
+    if (!userId) return;
+    const input = req.body?.targetExamDate;
+    const date = input === null || input === '' ? null : new Date(input);
+    if (date !== null && (Number.isNaN(date.getTime()) || date < new Date(new Date().setHours(0, 0, 0, 0)))) {
+      return res.status(400).json({ error: 'تاريخ الاختبار يجب أن يكون اليوم أو تاريخاً مستقبلياً' });
+    }
+    try {
+      const { User } = await import('../mongodb/models');
+      const user = await User.findByIdAndUpdate(userId, { $set: { targetExamDate: date } }, { new: true })
+        .select('targetExamDate').lean();
+      if (!user) return res.status(404).json({ error: 'المستخدم غير موجود' });
+      return res.json({ targetExamDate: user.targetExamDate || null });
+    } catch {
+      return res.status(400).json({ error: 'تعذر تحديث تاريخ الاختبار' });
+    }
+  });
+
+  app.get('/api/user/guardian', requireAuth, async (req: Request, res: Response) => {
+    const userId = studentOnly(req, res);
+    if (!userId) return;
+    const { User } = await import('../mongodb/models');
+    const user = await User.findById(userId).select('guardianPhone').lean();
+    if (!user) return res.status(404).json({ error: 'المستخدم غير موجود' });
+    return res.json({ guardianPhone: user.guardianPhone || null });
+  });
+
+  app.patch('/api/user/guardian', requireAuth, async (req: Request, res: Response) => {
+    const userId = studentOnly(req, res);
+    if (!userId) return;
+    let guardianPhone: string;
+    try {
+      guardianPhone = normalizeSaudiPhone(req.body?.guardianPhone);
+      if (!/^9665\d{8}$/.test(guardianPhone)) throw new Error('INVALID_PHONE');
+    } catch {
+      return res.status(400).json({ error: 'رقم ولي الأمر يجب أن يكون رقم جوال سعودي صالحاً' });
+    }
+    const { User } = await import('../mongodb/models');
+    const user = await User.findByIdAndUpdate(userId, { $set: { guardianPhone } }, { new: true }).select('guardianPhone').lean();
+    if (!user) return res.status(404).json({ error: 'المستخدم غير موجود' });
+    return res.json({ guardianPhone: user.guardianPhone });
+  });
+
+  app.post('/api/user/change-password', requireAuth, async (req: Request, res: Response) => {
+    const userId = studentOnly(req, res);
+    if (!userId) return;
+    const currentPassword = String(req.body?.currentPassword || '');
+    const newPassword = String(req.body?.newPassword || '');
+    if (!currentPassword || newPassword.length < 8 || newPassword.length > 128) {
+      return res.status(400).json({ error: 'كلمة المرور الجديدة يجب أن تكون بين 8 و128 حرفاً' });
+    }
+    try {
+      const { User } = await import('../mongodb/models');
+      const user = await User.findById(userId);
+      if (!user) return res.status(404).json({ error: 'المستخدم غير موجود' });
+      if (!(await bcrypt.compare(currentPassword, user.password))) {
+        return res.status(403).json({ error: 'كلمة المرور الحالية غير صحيحة' });
+      }
+      user.password = await bcrypt.hash(newPassword, 12);
+      await user.save();
+      return res.status(204).send();
+    } catch (error) {
+      console.error('Change password error:', error);
+      return res.status(500).json({ error: 'فشل في تغيير كلمة المرور' });
+    }
+  });
+
+  app.get('/api/student/dashboard', requireAuth, async (req: Request, res: Response) => {
+    const userId = studentOnly(req, res);
+    if (!userId) return;
+    try {
+      const { User, TestResult, ErrorLog, ExamBooking, Subscription, Folder, FolderQuestion } = await import('../mongodb/models');
+      const now = new Date();
+      const [user, testAggregate, recentTests, weakAreas, upcomingBooking, activeSubscription, folderCount, savedQuestionCount] = await Promise.all([
+        User.findById(userId).select('level targetExamDate trialUsed trialStartDate trialEndDate subscription').lean(),
+        TestResult.aggregate([{ $match: { userId } }, { $group: { _id: null, total: { $sum: 1 }, averagePercentage: { $avg: '$percentage' }, correct: { $sum: '$correctAnswers' }, wrong: { $sum: '$wrongAnswers' }, skipped: { $sum: '$skippedQuestions' }, questions: { $sum: '$totalQuestions' } } }]),
+        TestResult.find({ userId }).sort({ completedAt: -1 }).limit(5).select('testName testType percentage score totalQuestions completedAt weakAreas').lean(),
+        ErrorLog.aggregate([{ $match: { userId } }, { $group: { _id: '$subcategory', count: { $sum: 1 } } }, { $sort: { count: -1, _id: 1 } }, { $limit: 5 }]),
+        ExamBooking.findOne({ userId, scheduledAt: { $gte: now }, status: { $in: ['pending', 'active'] } }).sort({ scheduledAt: 1 }).select('scheduledAt status examType').lean(),
+        Subscription.findOne({ userId: { $in: subscriptionIdentityCandidates(userId) }, status: 'active', startDate: { $lte: now }, endDate: { $gt: now } }).sort({ endDate: -1 }).lean(),
+        Folder.countDocuments({ userId }),
+        FolderQuestion.countDocuments({ folderId: { $in: (await Folder.find({ userId }).select('_id').lean()).map(folder => String(folder._id)) } }),
+      ]);
+      if (!user) return res.status(404).json({ error: 'المستخدم غير موجود' });
+      const totals = testAggregate[0] || { total: 0, averagePercentage: 0, correct: 0, wrong: 0, skipped: 0, questions: 0 };
+      const level = Math.max(1, Number(user.level || 1));
+      const recommendedPlan = level <= 2
+        ? { level: 'foundation', sessionsPerWeek: 4, focus: 'إتقان الأساسيات وحل اختبارات قصيرة' }
+        : level <= 5
+          ? { level: 'practice', sessionsPerWeek: 5, focus: 'التدريب المركز على نقاط الضعف' }
+          : { level: 'mastery', sessionsPerWeek: 6, focus: 'محاكاة الاختبارات ومراجعة الأخطاء' };
+      const trialActive = Boolean(user.trialEndDate && new Date(user.trialEndDate) > now);
+      return res.json({
+        totals: { tests: totals.total, questions: totals.questions, correct: totals.correct, wrong: totals.wrong, skipped: totals.skipped, averagePercentage: Number((totals.averagePercentage || 0).toFixed(2)) },
+        recentTests,
+        weaknesses: weakAreas.filter((area: any) => area._id).map((area: any) => ({ name: area._id, errorCount: area.count })),
+        upcomingExam: upcomingBooking || (user.targetExamDate && new Date(user.targetExamDate) >= now ? { targetExamDate: user.targetExamDate } : null),
+        recommendedPlan,
+        subscription: activeSubscription ? { state: 'active', type: activeSubscription.type, endDate: activeSubscription.endDate } : { state: trialActive ? 'trial' : 'none', trialUsed: Boolean(user.trialUsed), endDate: user.trialEndDate || null },
+        library: { folders: folderCount, savedQuestions: savedQuestionCount, books: 0 },
+      });
+    } catch (error) {
+      console.error('Student dashboard error:', error);
+      return res.status(500).json({ error: 'فشل في جلب لوحة الطالب' });
     }
   });
 

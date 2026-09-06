@@ -10,10 +10,13 @@ interface OtpRecord {
   sentAt: number;
 }
 
-const OTP_TTL_MS = 10 * 60 * 1000;
+const OTP_TTL_MS = 30 * 60 * 1000;
 const RESEND_WINDOW_MS = 60 * 1000;
 const MAX_ATTEMPTS = 5;
+const MAX_REQUESTS_PER_WINDOW = 5;
+const REQUEST_LIMIT_WINDOW_MS = 30 * 60 * 1000;
 const otpStore = new Map<string, OtpRecord>();
+const otpRequestHistory = new Map<string, number[]>();
 
 function secret() {
   return process.env.SESSION_SECRET || "qudratak-development-session";
@@ -43,6 +46,15 @@ export async function requestPhoneOtp(phoneInput: unknown, purpose: OtpPurpose) 
   const key = recordKey(phone, purpose);
   const existing = otpStore.get(key);
   const now = Date.now();
+  const recentRequests = (otpRequestHistory.get(phone) || []).filter(
+    (requestedAt) => now - requestedAt < REQUEST_LIMIT_WINDOW_MS,
+  );
+  if (recentRequests.length >= MAX_REQUESTS_PER_WINDOW) {
+    const retryAfter = Math.ceil(
+      (REQUEST_LIMIT_WINDOW_MS - (now - recentRequests[0])) / 1000,
+    );
+    return { phone, retryAfter, sent: false as const };
+  }
   if (existing && now - existing.sentAt < RESEND_WINDOW_MS) {
     const retryAfter = Math.ceil((RESEND_WINDOW_MS - (now - existing.sentAt)) / 1000);
     return { phone, retryAfter, sent: false as const };
@@ -51,8 +63,10 @@ export async function requestPhoneOtp(phoneInput: unknown, purpose: OtpPurpose) 
   const otp = crypto.randomInt(100000, 1_000_000).toString();
   await sendWhatsAppText(
     phone,
-    `رمز التحقق في منصة قدراتك هو: ${otp}\nصالح لمدة 10 دقائق. لا تشارك هذا الرمز مع أي شخص.`,
+    `رمز التحقق في منصة قدراتك هو: ${otp}\nصالح لمدة 30 دقيقة. لا تشارك هذا الرمز مع أي شخص. لن يطلب منك فريق قدراتك إرسال الرمز لهم.`,
+    "otp",
   );
+  otpRequestHistory.set(phone, [...recentRequests, now]);
   otpStore.set(key, {
     digest: digest(`${key}:${otp}`),
     expiresAt: now + OTP_TTL_MS,

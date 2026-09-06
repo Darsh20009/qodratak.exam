@@ -10,7 +10,6 @@ import { startNotificationScheduler } from "./services/notificationService";
 import { startPushScheduler } from "./services/pushService";
 import { startAdminWhatsAppReportScheduler } from "./services/adminWhatsAppNotifications";
 import { onWhatsAppMessage, restoreWhatsAppSession } from "./services/whatsappService";
-import { registerWhatsAppBot } from "./services/whatsappBot";
 import { storage } from "./storage";
 import { chatWebSocketServer } from "./websocket";
 import { logger } from "./lib/logger";
@@ -109,7 +108,6 @@ onWhatsAppMessage(async (message) => {
     logger.error({ error }, "Could not persist incoming WhatsApp message");
   }
 });
-registerWhatsAppBot();
 void restoreWhatsAppSession();
 startNotificationScheduler();
 startPushScheduler();

@@ -162,6 +162,12 @@ import ParentDashboardPage from "@/pages/ParentDashboardPage";
 import FooterDocumentsPage from "@/pages/FooterDocumentsPage";
 import FooterGuidePage from "@/pages/FooterGuidePage";
 import { useUser } from "@/hooks/use-user";
+import DashboardPage from "@/pages/student/DashboardPage";
+import FoundationPage from "@/pages/student/FoundationPage";
+import ComputerizedPage from "@/pages/student/ComputerizedPage";
+import AccountPage from "@/pages/student/AccountPage";
+import { StudentShell } from "@/components/student/StudentShell";
+
 
 installAdminFetchBridge();
 
@@ -357,8 +363,6 @@ function MainLayout({ children }: { children: React.ReactNode }) {
     { name: "الرئيسية",       href: "/",                icon: HomeIcon },
     { name: "القدرات | Qudrat", href: "/student-program/qudrat", icon: Brain },
     { name: "التحصيلي | Tahsili", href: "/student-program/tahsili", icon: GraduationCapIcon },
-    { name: "IELTS",          href: "/student-program/ielts",  icon: BookOpenIcon },
-    { name: "GAT",            href: "/student-program/gat",    icon: BookOpenIcon },
     { name: "المكتبة",        href: "/library",           icon: Library },
     { name: "مجلداتي",        href: "/folders",           icon: FolderIcon },
   ];
@@ -380,12 +384,12 @@ function MainLayout({ children }: { children: React.ReactNode }) {
 
   const activeProgram = React.useMemo(() => {
     const path = location.split("?")[0];
-    const match = path.match(/^\/student-program\/(qudrat|tahsili|ielts|gat)$/);
-    if (match?.[1]) return match[1] as "qudrat" | "tahsili" | "ielts" | "gat";
+    const match = path.match(/^\/student-program\/(qudrat|tahsili)$/);
+    if (match?.[1]) return match[1] as "qudrat" | "tahsili";
     if (path === "/folders") {
       const folderProgram = new URLSearchParams(location.split("?")[1] || "").get("program");
-      if (folderProgram && ["qudrat", "tahsili", "ielts", "gat"].includes(folderProgram)) {
-        return folderProgram as "qudrat" | "tahsili" | "ielts" | "gat";
+      if (folderProgram && ["qudrat", "tahsili"].includes(folderProgram)) {
+        return folderProgram as "qudrat" | "tahsili";
       }
     }
     return undefined;
@@ -394,12 +398,8 @@ function MainLayout({ children }: { children: React.ReactNode }) {
   const activeProgramLabel = {
     qudrat: "القدرات | Qudrat",
     tahsili: "التحصيلي | Tahsili",
-    ielts: "IELTS",
-    gat: "GAT",
   }[activeProgram || "qudrat"];
-  const activePracticeLabel = activeProgram === "ielts" || activeProgram === "gat"
-    ? "المهارات والتدريب"
-    : "المحوسب";
+  const activePracticeLabel = "المحوسب";
 
   const programSubNavItems = activeProgram ? [
     { name: "التأسيس", href: `/student-program/${activeProgram}?section=foundation`, icon: BookOpenIcon },
@@ -783,10 +783,10 @@ function MainLayout({ children }: { children: React.ReactNode }) {
         {/* Bottom nav — ثابت في أسفل الصفحة ضمن تدفق الـ layout */}
         {!isInTestMode && (
           <div
-            className="fixed bottom-0 left-0 right-0 z-40 md:hidden bg-white/95 dark:bg-gray-900/95 backdrop-blur-xl border-t border-gray-200/80 dark:border-gray-700/80 shadow-[0_-4px_24px_rgba(0,0,0,0.08)]"
+            className="fixed bottom-0 left-0 right-0 z-40 border-t border-border bg-background/98 md:hidden"
             style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}
           >
-            <nav className="flex items-center h-16 max-w-screen-sm mx-auto px-1 w-full">
+            <nav className="mx-auto flex h-16 w-full max-w-screen-sm items-center gap-1 px-2">
               {(activeProgram ? [
                 { href: `/student-program/${activeProgram}?section=foundation`, icon: BookOpenIcon, label: "التأسيس", exact: false },
                 { href: `/student-program/${activeProgram}?section=computer`, icon: Brain, label: "المحوسب", exact: false },
@@ -796,8 +796,6 @@ function MainLayout({ children }: { children: React.ReactNode }) {
                 { href: "/", icon: HomeIcon, label: "الرئيسية", exact: true },
                 { href: "/student-program/qudrat", icon: Brain, label: "القدرات", exact: false },
                 { href: "/student-program/tahsili", icon: GraduationCapIcon, label: "التحصيلي", exact: false },
-                { href: "/student-program/ielts", icon: BookOpenIcon, label: "IELTS", exact: false },
-                { href: "/student-program/gat", icon: BookOpenIcon, label: "GAT", exact: false },
               ]).map((item) => {
                 const active = activeProgram && item.href.includes("?section=")
                   ? isProgramSubNavActive({ name: item.label === "التأسيس" ? "التأسيس" : "المحوسب", href: item.href })
@@ -808,14 +806,15 @@ function MainLayout({ children }: { children: React.ReactNode }) {
                   <Link
                     key={item.href}
                     href={item.href}
+                    aria-current={active ? "page" : undefined}
                     className={cn(
-                      "relative flex flex-col items-center justify-center gap-0.5 py-1 flex-1 rounded-xl transition-all duration-200",
-                      active ? "text-primary" : "text-gray-400 dark:text-gray-500"
+                      "relative flex flex-1 flex-col items-center justify-center gap-1 rounded-lg py-1.5 text-muted-foreground transition-colors duration-150 hover:bg-muted/60 hover:text-foreground",
+                      active && "bg-primary/10 font-semibold text-primary"
                     )}
                   >
                     {active && <div className="absolute top-0 left-1/2 -translate-x-1/2 w-5 h-0.5 bg-primary rounded-full" />}
-                    <item.icon className={cn("h-5 w-5 transition-transform duration-200", active && "scale-110")} />
-                    <span className={cn("text-[9px] font-medium leading-none text-center", active && "font-bold")}>{item.label}</span>
+                    <item.icon className="h-5 w-5" />
+                    <span className="text-[9px] font-medium leading-none text-center">{item.label}</span>
                   </Link>
                 );
               })}
@@ -848,174 +847,192 @@ function Router({ splashDone }: { splashDone: boolean }) {
         {() => {
           if (isUserLoading) return <LandingPage />;
           if (serverUser?.role === 'parent') return <ParentDashboardPage />;
-          return serverUser ? <MainLayout><Home /></MainLayout> : <LandingPage />;
+          return serverUser ? <StudentShell><DashboardPage /></StudentShell> : <LandingPage />;
         }}
       </Route>
 
+      <Route path="/foundation">
+        {() => <StudentShell><ProtectedRoute><FoundationPage /></ProtectedRoute></StudentShell>}
+      </Route>
+
+      <Route path="/computerized">
+        {() => <StudentShell><ProtectedRoute><ComputerizedPage /></ProtectedRoute></StudentShell>}
+      </Route>
+
+      <Route path="/account">
+        {() => <StudentShell><ProtectedRoute><AccountPage /></ProtectedRoute></StudentShell>}
+      </Route>
+
       <Route path="/student-program/:program">
-        {() => <MainLayout><ProtectedRoute><StudentProgramPage /></ProtectedRoute></MainLayout>}
+        {() => <StudentShell><ProtectedRoute><StudentProgramPage /></ProtectedRoute></StudentShell>}
       </Route>
 
       <Route path="/tahsili">
-        {() => <MainLayout><ProtectedRoute requiresPremium={true}><TahsiliPage /></ProtectedRoute></MainLayout>}
+        {() => <StudentShell><ProtectedRoute requiresPremium={true}><TahsiliPage /></ProtectedRoute></StudentShell>}
       </Route>
       <Route path="/tahsili-dashboard">
-        {() => <MainLayout><ProtectedRoute requiresPremium={true}><TahsiliDashboard /></ProtectedRoute></MainLayout>}
+        {() => <StudentShell><ProtectedRoute requiresPremium={true}><TahsiliDashboard /></ProtectedRoute></StudentShell>}
       </Route>
       <Route path="/tahsili/exams">
-        {() => <MainLayout><ProtectedRoute requiresPremium={true}><TahsiliExamPage /></ProtectedRoute></MainLayout>}
+        {() => <StudentShell><ProtectedRoute requiresPremium={true}><TahsiliExamPage /></ProtectedRoute></StudentShell>}
       </Route>
 
       {/* منصة تحصيلك المتكاملة */}
       <Route path="/tahsilik">
-        {() => <MainLayout><ProtectedRoute requiresPremium={true}><TahsilikPlatform /></ProtectedRoute></MainLayout>}
+        {() => <StudentShell><ProtectedRoute requiresPremium={true}><TahsilikPlatform /></ProtectedRoute></StudentShell>}
       </Route>
       <Route path="/tahsilik/mobile-dashboard">
-        {() => <MainLayout><ProtectedRoute requiresPremium={true}><TahsilikMobileDashboard /></ProtectedRoute></MainLayout>}
+        {() => <StudentShell><ProtectedRoute requiresPremium={true}><TahsilikMobileDashboard /></ProtectedRoute></StudentShell>}
       </Route>
       <Route path="/tahsilik/study">
-        {() => <MainLayout><ProtectedRoute requiresPremium={true}><TahsilikStudyCenter /></ProtectedRoute></MainLayout>}
+        {() => <StudentShell><ProtectedRoute requiresPremium={true}><TahsilikStudyCenter /></ProtectedRoute></StudentShell>}
       </Route>
       <Route path="/tahsilik/tests">
-        {() => <MainLayout><ProtectedRoute requiresPremium={true}><TahsilikTestCenter /></ProtectedRoute></MainLayout>}
+        {() => <StudentShell><ProtectedRoute requiresPremium={true}><TahsilikTestCenter /></ProtectedRoute></StudentShell>}
       </Route>
       <Route path="/tahsilik/qualification">
-        {() => <MainLayout><ProtectedRoute requiresPremium={true}><TahsilikQualificationTest /></ProtectedRoute></MainLayout>}
+        {() => <StudentShell><ProtectedRoute requiresPremium={true}><TahsilikQualificationTest /></ProtectedRoute></StudentShell>}
       </Route>
       <Route path="/tahsilik/question-bank">
-        {() => <MainLayout><ProtectedRoute requiresPremium={true}><TahsiliQuestionBank /></ProtectedRoute></MainLayout>}
+        {() => <StudentShell><ProtectedRoute requiresPremium={true}><TahsiliQuestionBank /></ProtectedRoute></StudentShell>}
       </Route>
       <Route path="/tahsilik/custom-test">
-        {() => <MainLayout><ProtectedRoute requiresPremium={true}><TahsilikCustomTest /></ProtectedRoute></MainLayout>}
+        {() => <StudentShell><ProtectedRoute requiresPremium={true}><TahsilikCustomTest /></ProtectedRoute></StudentShell>}
       </Route>
       <Route path="/tahsilik/comprehensive-test">
-        {() => <MainLayout><ProtectedRoute requiresPremium={true}><TahsilikComprehensiveTest /></ProtectedRoute></MainLayout>}
+        {() => <StudentShell><ProtectedRoute requiresPremium={true}><TahsilikComprehensiveTest /></ProtectedRoute></StudentShell>}
       </Route>
       <Route path="/tahsilik/tests/subject">
-        {() => <MainLayout><ProtectedRoute requiresPremium={true}><TahsilikSubjectTest /></ProtectedRoute></MainLayout>}
+        {() => <StudentShell><ProtectedRoute requiresPremium={true}><TahsilikSubjectTest /></ProtectedRoute></StudentShell>}
       </Route>
       <Route path="/tahsilik/tests-hub">
-        {() => <MainLayout><ProtectedRoute requiresPremium={true}><TahsilikTestsHub /></ProtectedRoute></MainLayout>}
+        {() => <StudentShell><ProtectedRoute requiresPremium={true}><TahsilikTestsHub /></ProtectedRoute></StudentShell>}
       </Route>
 
       {/* صفحات متاحة للحسابات المجانية */}
       <Route path="/learn">
-        {() => <MainLayout><LearningHubPage /></MainLayout>}
+        {() => <StudentShell><LearningHubPage /></StudentShell>}
       </Route>
 
       <Route path="/teacher">
-        {() => <MainLayout><TeacherSystemPage /></MainLayout>}
+        {() => <StudentShell><TeacherSystemPage /></StudentShell>}
       </Route>
 
       <Route path="/qiyas-hub">
-        {() => <MainLayout><QiyasHubPage /></MainLayout>}
+        {() => <StudentShell><QiyasHubPage /></StudentShell>}
       </Route>
 
       <Route path="/qiyas">
-        {() => <MainLayout><QiyasExamPage /></MainLayout>}
+        {() => <StudentShell><QiyasExamPage /></StudentShell>}
       </Route>
 
       <Route path="/time-management">
-        {() => <MainLayout><NewTimeManagementPage /></MainLayout>}
+        {() => <StudentShell><NewTimeManagementPage /></StudentShell>}
       </Route>
       <Route path="/install">
-        {() => <MainLayout><InstallPage /></MainLayout>}
+        {() => <StudentShell><InstallPage /></StudentShell>}
       </Route>
       <Route path="/usage-guide">
-        {() => <MainLayout><UsageGuidePage /></MainLayout>}
+        {() => <StudentShell><UsageGuidePage /></StudentShell>}
       </Route>
       <Route path="/guide">
-        {() => <MainLayout><FooterGuidePage /></MainLayout>}
+        {() => <StudentShell><FooterGuidePage /></StudentShell>}
       </Route>
       <Route path="/courses">
-        {() => <MainLayout><ProtectedRoute requiresPremium={true}><CoursesPage /></ProtectedRoute></MainLayout>}
+        {() => <StudentShell><ProtectedRoute requiresPremium={true}><CoursesPage /></ProtectedRoute></StudentShell>}
       </Route>
 
       <Route path="/paper-exam">
-        {() => <MainLayout><ProtectedRoute requiresPremium={true}><PaperExamPage /></ProtectedRoute></MainLayout>}
+        {() => <StudentShell><ProtectedRoute requiresPremium={true}><PaperExamPage /></ProtectedRoute></StudentShell>}
       </Route>
 
       <Route path="/paper-exam-results">
-        {() => <MainLayout><ProtectedRoute requiresPremium={true}><PaperExamResultsPage /></ProtectedRoute></MainLayout>}
+        {() => <StudentShell><ProtectedRoute requiresPremium={true}><PaperExamResultsPage /></ProtectedRoute></StudentShell>}
       </Route>
 
       <Route path="/paper-models">
-        {() => <MainLayout><ProtectedRoute requiresPremium={true}><PaperModelsPage /></ProtectedRoute></MainLayout>}
+        {() => <StudentShell><ProtectedRoute requiresPremium={true}><PaperModelsPage /></ProtectedRoute></StudentShell>}
       </Route>
 
       <Route path="/paper-models-management">
-        {() => <MainLayout><ProtectedRoute requiresPremium={true}><PaperModelsManagementPage /></ProtectedRoute></MainLayout>}
+        {() => <StudentShell><ProtectedRoute requiresPremium={true}><PaperModelsManagementPage /></ProtectedRoute></StudentShell>}
       </Route>
 
       <Route path="/bubble-sheet-scan">
-        {() => <MainLayout><ProtectedRoute requiresPremium={true}><BubbleSheetScanPage /></ProtectedRoute></MainLayout>}
+        {() => <StudentShell><ProtectedRoute requiresPremium={true}><BubbleSheetScanPage /></ProtectedRoute></StudentShell>}
       </Route>
 
       {/* الاختبارات المجانية - متاحة للحسابات المسجلة */}
       <Route path="/free-verbal-test">
-        {() => <MainLayout><FreeVerbalTestRunner /></MainLayout>}
+        {() => <StudentShell><FreeVerbalTestRunner /></StudentShell>}
       </Route>
       <Route path="/free-quantitative-test">
-        {() => <MainLayout><FreeQuantitativeTestRunner /></MainLayout>}
+        {() => <StudentShell><FreeQuantitativeTestRunner /></StudentShell>}
       </Route>
 
       {/* صفحة تتبع التقدم */}
       <Route path="/skill-progress">
-        {() => <MainLayout><SkillProgressPage /></MainLayout>}
+        {() => <StudentShell><SkillProgressPage /></StudentShell>}
       </Route>
 
       {/* صفحات اختبارات اللفظي والكمي - تتطلب تسجيل الدخول (تحتوي على اختبارات مجانية ومميزة) */}
       <Route path="/verbal-tests">
-        {() => <MainLayout><VerbalTests /></MainLayout>}
+        {() => <StudentShell><VerbalTests /></StudentShell>}
       </Route>
       <Route path="/verbal-test-runner">
-        {() => <MainLayout><ProtectedRoute requiresPremium={true}><VerbalTestRunner /></ProtectedRoute></MainLayout>}
+        {() => <StudentShell><ProtectedRoute requiresPremium={true}><VerbalTestRunner /></ProtectedRoute></StudentShell>}
       </Route>
       <Route path="/quantitative-tests">
-        {() => <MainLayout><QuantitativeTests /></MainLayout>}
+        {() => <StudentShell><QuantitativeTests /></StudentShell>}
       </Route>
       <Route path="/quantitative-test-runner">
-        {() => <MainLayout><ProtectedRoute requiresPremium={true}><QuantitativeTestRunner /></ProtectedRoute></MainLayout>}
+        {() => <StudentShell><ProtectedRoute requiresPremium={true}><QuantitativeTestRunner /></ProtectedRoute></StudentShell>}
       </Route>
       <Route path="/advanced-verbal-test">
-        {() => <MainLayout><ProtectedRoute requiresPremium={true}><AdvancedVerbalTest /></ProtectedRoute></MainLayout>}
+        {() => <StudentShell><ProtectedRoute requiresPremium={true}><AdvancedVerbalTest /></ProtectedRoute></StudentShell>}
       </Route>
       <Route path="/advanced-quantitative-test">
-        {() => <MainLayout><ProtectedRoute requiresPremium={true}><AdvancedQuantitativeTest /></ProtectedRoute></MainLayout>}
+        {() => <StudentShell><ProtectedRoute requiresPremium={true}><AdvancedQuantitativeTest /></ProtectedRoute></StudentShell>}
       </Route>
 
       <Route path="/custom-exam">
-        {() => <MainLayout><ProtectedRoute requiresPremium={true}><CustomExamPage /></ProtectedRoute></MainLayout>}
+        {() => <StudentShell><ProtectedRoute requiresPremium={true}><CustomExamPage /></ProtectedRoute></StudentShell>}
       </Route>
       <Route path="/abilities">
-        {() => <MainLayout><ProtectedRoute requiresPremium={true}><AbilitiesTestPage /></ProtectedRoute></MainLayout>}
+        {() => <StudentShell><ProtectedRoute requiresPremium={true}><AbilitiesTestPage /></ProtectedRoute></StudentShell>}
       </Route>
       <Route path="/library">
-        {() => <MainLayout><ProtectedRoute requiresPremium={true}><LibraryPage /></ProtectedRoute></MainLayout>}
+        {() => <StudentShell><ProtectedRoute requiresPremium={true}><LibraryPage /></ProtectedRoute></StudentShell>}
       </Route>
       <Route path="/books">
-        {() => <MainLayout><ProtectedRoute requiresPremium={true}><BooksPage /></ProtectedRoute></MainLayout>}
-      </Route>
-      <Route path="/challenges">
-        {() => <MainLayout><ProtectedRoute requiresPremium={true}><ChallengePage /></ProtectedRoute></MainLayout>}
+        {() => <StudentShell><ProtectedRoute requiresPremium={true}><BooksPage /></ProtectedRoute></StudentShell>}
       </Route>
       <Route path="/folders">
-        {() => <MainLayout><ProtectedRoute requiresPremium={true}><MyFolders /></ProtectedRoute></MainLayout>}
+        {() => <StudentShell><ProtectedRoute requiresPremium={true}><MyFolders /></ProtectedRoute></StudentShell>}
+      </Route>
+      <Route path="/support">
+        {() => <StudentShell><FAQPage /></StudentShell>}
+      </Route>
+      <Route path="/challenges">
+        {() => <StudentShell><ProtectedRoute requiresPremium={true}><ChallengePage /></ProtectedRoute></StudentShell>}
+      </Route>
+      <Route path="/folders">
+        {() => <StudentShell><ProtectedRoute requiresPremium={true}><MyFolders /></ProtectedRoute></StudentShell>}
       </Route>
       <Route path="/folders/:id">
-        {() => <MainLayout><ProtectedRoute requiresPremium={true}><FolderView /></ProtectedRoute></MainLayout>}
+        {() => <StudentShell><ProtectedRoute requiresPremium={true}><FolderView /></ProtectedRoute></StudentShell>}
       </Route>
       <Route path="/test-me">
-        {() => <MainLayout><ProtectedRoute requiresPremium={true}><TestMe /></ProtectedRoute></MainLayout>}
+        {() => <StudentShell><ProtectedRoute requiresPremium={true}><TestMe /></ProtectedRoute></StudentShell>}
       </Route>
       <Route path="/folder-test">
-        {() => <MainLayout><ProtectedRoute requiresPremium={true}><FolderTest /></ProtectedRoute></MainLayout>}
+        {() => <StudentShell><ProtectedRoute requiresPremium={true}><FolderTest /></ProtectedRoute></StudentShell>}
       </Route>
       <Route path="/records">
-        {() => <MainLayout><ProtectedRoute requiresPremium={true}><ExamRecordsPage /></ProtectedRoute></MainLayout>}
+        {() => <StudentShell><ProtectedRoute requiresPremium={true}><ExamRecordsPage /></ProtectedRoute></StudentShell>}
       </Route>
       <Route path="/mock-exams">
-        {() => <MainLayout><ProtectedRoute requiresPremium={true}><MockExamPage /></ProtectedRoute></MainLayout>}
+        {() => <StudentShell><ProtectedRoute requiresPremium={true}><MockExamPage /></ProtectedRoute></StudentShell>}
       </Route>
       <Route path="/flashcards">
         {() => <FlashcardsPage />}
@@ -1033,13 +1050,13 @@ function Router({ splashDone }: { splashDone: boolean }) {
         {() => <StudyRoomLobbyPage />}
       </Route>
       <Route path="/study-rooms">
-        {() => <MainLayout><StudyRoomsPage /></MainLayout>}
+        {() => <StudentShell><StudyRoomsPage /></StudentShell>}
       </Route>
       <Route path="/notification-settings">
-        {() => <MainLayout><NotificationSettingsPage /></MainLayout>}
+        {() => <StudentShell><NotificationSettingsPage /></StudentShell>}
       </Route>
       <Route path="/notifications">
-        {() => <MainLayout><NotificationsPage /></MainLayout>}
+        {() => <StudentShell><NotificationsPage /></StudentShell>}
       </Route>
       <Route path="/pre-exam-day">
         {() => <PreExamDayPage />}
@@ -1048,63 +1065,63 @@ function Router({ splashDone }: { splashDone: boolean }) {
         {() => <AiTutorPage />}
       </Route>
       <Route path="/ai-hub">
-        {() => <MainLayout><ProtectedRoute><AiHub /></ProtectedRoute></MainLayout>}
+        {() => <StudentShell><ProtectedRoute><AiHub /></ProtectedRoute></StudentShell>}
       </Route>
       <Route path="/ai-hub/score-prediction">
-        {() => <MainLayout><ProtectedRoute><AiScorePrediction /></ProtectedRoute></MainLayout>}
+        {() => <StudentShell><ProtectedRoute><AiScorePrediction /></ProtectedRoute></StudentShell>}
       </Route>
       <Route path="/ai-hub/pattern-analysis">
-        {() => <MainLayout><ProtectedRoute><AiPatternAnalysis /></ProtectedRoute></MainLayout>}
+        {() => <StudentShell><ProtectedRoute><AiPatternAnalysis /></ProtectedRoute></StudentShell>}
       </Route>
       <Route path="/ai-hub/daily-plan">
-        {() => <MainLayout><ProtectedRoute><AiDailyPlan /></ProtectedRoute></MainLayout>}
+        {() => <StudentShell><ProtectedRoute><AiDailyPlan /></ProtectedRoute></StudentShell>}
       </Route>
       <Route path="/strategy-library">
-        {() => <MainLayout><StrategyLibraryPage /></MainLayout>}
+        {() => <StudentShell><StrategyLibraryPage /></StudentShell>}
       </Route>
       <Route path="/mistake-challenge">
-        {() => <MainLayout><EnhancedMistakeChallenge /></MainLayout>}
+        {() => <StudentShell><EnhancedMistakeChallenge /></StudentShell>}
       </Route>
       <Route path="/support">
-        {() => <MainLayout><FAQPage /></MainLayout>}
+        {() => <StudentShell><FAQPage /></StudentShell>}
       </Route>
       <Route path="/enhanced-mistake-challenge">
-        {() => <MainLayout><EnhancedMistakeChallenge /></MainLayout>}
+        {() => <StudentShell><EnhancedMistakeChallenge /></StudentShell>}
       </Route>
 
       {/* Question Bank Routes */}
       <Route path="/question-bank">
-        {() => <MainLayout><QuestionBankPage /></MainLayout>}
+        {() => <StudentShell><QuestionBankPage /></StudentShell>}
       </Route>
       <Route path="/question-bank/standard/:testNumber">
-        {() => <MainLayout><StandardSectionTestRunner /></MainLayout>}
+        {() => <StudentShell><StandardSectionTestRunner /></StudentShell>}
       </Route>
       <Route path="/question-bank/:type/:testNumber">
-        {() => <MainLayout><SectionedTestRunner /></MainLayout>}
+        {() => <StudentShell><SectionedTestRunner /></StudentShell>}
       </Route>
       <Route path="/standard-test">
-        {() => <MainLayout><StandardSectionTestRunner /></MainLayout>}
+        {() => <StudentShell><StandardSectionTestRunner /></StudentShell>}
       </Route>
       <Route path="/profile">
-        {() => <MainLayout><ProfilePage /></MainLayout>}
+        {() => <StudentShell><ProfilePage /></StudentShell>}
       </Route>
       <Route path="/security-settings">
         {() => <SecuritySettingsPage />}
       </Route>
       <Route path="/book-exam">
-        {() => <MainLayout><BookExamPage /></MainLayout>}
+        {() => <StudentShell><BookExamPage /></StudentShell>}
       </Route>
       <Route path="/scheduled-exam/:id">
         {() => <ScheduledExamRunner />}
       </Route>
       <Route path="/analytics">
-        {() => <MainLayout><StudentAnalyticsPage /></MainLayout>}
+        {() => <StudentShell><StudentAnalyticsPage /></StudentShell>}
       </Route>
       <Route path="/account-type">
         {() => <AccountTypeSelection />}
       </Route>
       <Route path="/institution">
-        {() => <MainLayout><InstitutionPortalPage /></MainLayout>}
+        {() => <StudentShell><InstitutionPortalPage /></StudentShell>}
       </Route>
       <Route path="/signup">
         {() => <LandingPage initialModal="signup" />}
@@ -1113,34 +1130,34 @@ function Router({ splashDone }: { splashDone: boolean }) {
         {() => <LandingPage initialModal="login" />}
       </Route>
       <Route path="/forgot-password">
-        {() => <MainLayout><ForgotPasswordPage /></MainLayout>}
+        {() => <StudentShell><ForgotPasswordPage /></StudentShell>}
       </Route>
       <Route path="/reset-password">
-        {() => <MainLayout><ResetPasswordPage /></MainLayout>}
+        {() => <StudentShell><ResetPasswordPage /></StudentShell>}
       </Route>
       <Route path="/guest-signup">
-        {() => <MainLayout><GuestSignupPage /></MainLayout>}
+        {() => <StudentShell><GuestSignupPage /></StudentShell>}
       </Route>
       <Route path="/free-signup">
-        {() => <MainLayout><FreeAccountSignup /></MainLayout>}
+        {() => <StudentShell><FreeAccountSignup /></StudentShell>}
       </Route>
       <Route path="/wallet">
-        {() => <MainLayout><WalletPage /></MainLayout>}
+        {() => <StudentShell><WalletPage /></StudentShell>}
       </Route>
       <Route path="/invite/:token">
         {(params) => <InvitePage />}
       </Route>
       <Route path="/seasonal-exams">
-        {() => <MainLayout><SeasonalExamsPage /></MainLayout>}
+        {() => <StudentShell><SeasonalExamsPage /></StudentShell>}
       </Route>
       <Route path="/subscription">
         {() => <Redirect to="/" />}
       </Route>
       <Route path="/enhanced-subscription">
-        {() => <MainLayout><EnhancedSubscriptionPlans /></MainLayout>}
+        {() => <StudentShell><EnhancedSubscriptionPlans /></StudentShell>}
       </Route>
       <Route path="/test-results">
-        {() => <MainLayout><TestResultsPage /></MainLayout>}
+        {() => <StudentShell><TestResultsPage /></StudentShell>}
       </Route>
       <Route path="/exam-review">
         {() => <ExamReviewPage />}
@@ -1167,26 +1184,26 @@ function Router({ splashDone }: { splashDone: boolean }) {
       </Route>
 
       <Route path="/faq">
-        {() => <MainLayout><FAQPage /></MainLayout>}
+        {() => <StudentShell><FAQPage /></StudentShell>}
       </Route>
       <Route path="/pricing">
-        {() => <MainLayout><PricingPage /></MainLayout>}
+        {() => <StudentShell><PricingPage /></StudentShell>}
       </Route>
       <Route path="/terms">
-        {() => <MainLayout><FooterDocumentsPage documentKey="terms" /></MainLayout>}
+        {() => <StudentShell><FooterDocumentsPage documentKey="terms" /></StudentShell>}
       </Route>
       <Route path="/privacy">
-        {() => <MainLayout><FooterDocumentsPage documentKey="privacy" /></MainLayout>}
+        {() => <StudentShell><FooterDocumentsPage documentKey="privacy" /></StudentShell>}
       </Route>
       <Route path="/refund-policy">
-        {() => <MainLayout><FooterDocumentsPage documentKey="refund" /></MainLayout>}
+        {() => <StudentShell><FooterDocumentsPage documentKey="refund" /></StudentShell>}
       </Route>
       <Route path="/platform-guide">
-        {() => <MainLayout><PlatformGuidePage /></MainLayout>}
+        {() => <StudentShell><PlatformGuidePage /></StudentShell>}
       </Route>
       {/* Fallback to 404 */}
       <Route>
-        {() => <MainLayout><NotFound /></MainLayout>}
+        {() => <StudentShell><NotFound /></StudentShell>}
       </Route>
       </Switch>
       </AuthenticatedRouteBoundary>

@@ -3,6 +3,7 @@ import { useLocation } from "wouter";
 import { useQuery } from "@tanstack/react-query";
 import { getQueryFn } from "@/lib/queryClient";
 import { Loader2 } from "lucide-react";
+import useSubscription from "@/hooks/useSubscription";
 
 interface ProtectedRouteProps {
   children: React.ReactNode;
@@ -22,6 +23,7 @@ export default function NewProtectedRoute({
     retry: false,
     staleTime: 0,
   });
+  const { subscription, isLoading: subscriptionLoading } = useSubscription();
 
   useEffect(() => {
     if (!isLoading && !serverUser) {
@@ -30,7 +32,7 @@ export default function NewProtectedRoute({
     }
   }, [isLoading, serverUser, location, navigate]);
 
-  if (isLoading) {
+  if (isLoading || subscriptionLoading) {
     return (
       <div className="min-h-[60vh] flex flex-col items-center justify-center gap-4" dir="rtl">
         <div className="relative">
@@ -53,7 +55,11 @@ export default function NewProtectedRoute({
   }
 
   const subscriptionType = (serverUser as any)?.subscription?.type || 'free';
-  const isPremium = ['Pro', 'Pro Life', 'Pro Life Plus', 'Pro Live', 'free_trial'].includes(subscriptionType);
+  const isPremium = Boolean(
+    subscription?.hasActiveSubscription &&
+    subscription?.canAccessPremiumFeatures &&
+    !subscription?.isExpired,
+  );
 
   if (requiresPremium && !isPremium) {
     return (

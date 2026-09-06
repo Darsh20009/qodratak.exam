@@ -51,3 +51,6 @@ Thumbs.db
 # Runtime user data
 attached_assets/user.json
 artifacts/api-server/attached_assets/user.json
+
+# Local WhatsApp device sessions (credentials and encryption keys)
+/.whatsapp-auth/

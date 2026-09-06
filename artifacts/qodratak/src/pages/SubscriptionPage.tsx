@@ -19,6 +19,10 @@ import {
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import useSubscription from "@/hooks/useSubscription";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { Invoice } from "@/components/Invoice";
+import { format } from "date-fns";
+import { arSA } from "date-fns/locale";
 import { QodratakPayDialog } from "@/pages/WalletPage";
 import { useUser } from "@/hooks/use-user";
 import { AnimatePresence, motion } from "framer-motion";
@@ -63,11 +67,18 @@ type ValidationErrors = { [key in keyof UserData]?: string } & { terms?: string 
 export default function NewSubscriptionPage() {
   const { toast } = useToast();
   const { subscription } = useSubscription();
+  const { user } = useUser();
+
+  const { data: mySubscriptions } = useQuery<any[]>({
+    queryKey: ['/api/user/my-subscriptions'],
+    enabled: !!user,
+  });
 
   // Dialog and Plan State
   const [isPaymentDialogOpen, setIsPaymentDialogOpen] = useState(false);
   const [selectedPlan, setSelectedPlan] = useState<PlanKey | null>(null);
   const [showPaymentConfirmDialog, setShowPaymentConfirmDialog] = useState(false);
+  const [viewingInvoice, setViewingInvoice] = useState<any>(null);
 
   // Confetti State
   const [showConfetti, setShowConfetti] = useState(false);
@@ -118,9 +129,14 @@ export default function NewSubscriptionPage() {
     setIsPaymentDialogOpen(open);
   };
 
+  const queryClient = useQueryClient();
+
   const triggerConfetti = () => {
     setShowConfetti(true);
     setTimeout(() => setShowConfetti(false), 5000); // Confetti lasts for 5 seconds
+    queryClient.invalidateQueries({ queryKey: ['/api/user/my-subscriptions'] });
+    queryClient.invalidateQueries({ queryKey: ['/api/subscription/status'] });
+    queryClient.invalidateQueries({ queryKey: ['/api/user'] });
   };
 
   return (
@@ -301,8 +317,105 @@ export default function NewSubscriptionPage() {
               );
             })}
           </div>
+
+          {/* Subscription History / Invoices */}
+          {user && mySubscriptions && mySubscriptions.length > 0 && (
+            <div className="mt-20 max-w-5xl mx-auto">
+              <div className="flex items-center gap-3 mb-6">
+                <div className="bg-blue-100 dark:bg-blue-900/30 p-2 rounded-lg">
+                  <BanknoteIcon className="w-6 h-6 text-blue-600 dark:text-blue-400" />
+                </div>
+                <h2 className="text-3xl font-black text-gray-900 dark:text-white">سجل الاشتراكات والفواتير</h2>
+              </div>
+
+              <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg border border-gray-100 dark:border-gray-700 overflow-hidden">
+                <div className="overflow-x-auto">
+                  <table className="w-full text-right">
+                    <thead className="bg-gray-50 dark:bg-gray-900/50 border-b border-gray-100 dark:border-gray-700">
+                      <tr>
+                        <th className="p-4 text-sm font-bold text-gray-500 dark:text-gray-400">رقم الفاتورة</th>
+                        <th className="p-4 text-sm font-bold text-gray-500 dark:text-gray-400">الخطة</th>
+                        <th className="p-4 text-sm font-bold text-gray-500 dark:text-gray-400">المبلغ</th>
+                        <th className="p-4 text-sm font-bold text-gray-500 dark:text-gray-400">تاريخ الطلب</th>
+                        <th className="p-4 text-sm font-bold text-gray-500 dark:text-gray-400">الحالة</th>
+                        <th className="p-4 text-sm font-bold text-gray-500 dark:text-gray-400">إجراء</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-gray-100 dark:divide-gray-700">
+                      {mySubscriptions.map((sub: any) => (
+                        <tr key={sub._id || sub.id} className="hover:bg-gray-50/50 dark:hover:bg-gray-700/30 transition-colors">
+                          <td className="p-4 text-sm font-medium text-gray-900 dark:text-gray-200">
+                            {sub.invoiceNumber || `INV-${sub._id?.slice(-6) || '---'}`}
+                          </td>
+                          <td className="p-4 text-sm text-gray-600 dark:text-gray-300">
+                            {sub.type === 'Pro' ? 'قدراتك (3 أشهر)' : sub.type}
+                          </td>
+                          <td className="p-4 text-sm font-bold text-gray-900 dark:text-gray-200">
+                            {sub.price} {sub.currency || 'SAR'}
+                          </td>
+                          <td className="p-4 text-sm text-gray-600 dark:text-gray-300">
+                            {sub.createdAt ? format(new Date(sub.createdAt), 'dd MMMM yyyy', { locale: arSA }) : '-'}
+                          </td>
+                          <td className="p-4">
+                            {sub.status === 'active' ? (
+                              <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400">
+                                <CheckCircleIcon className="w-3.5 h-3.5" /> مدفوع
+                              </span>
+                            ) : sub.status === 'pending' ? (
+                              <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400">
+                                <ClockIcon className="w-3.5 h-3.5" /> قيد المراجعة
+                              </span>
+                            ) : (
+                              <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-bold bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300">
+                                {sub.status}
+                              </span>
+                            )}
+                          </td>
+                          <td className="p-4">
+                            <Button
+                              onClick={() => setViewingInvoice(sub)}
+                              variant="outline"
+                              size="sm"
+                              className="text-blue-600 border-blue-200 hover:bg-blue-50 dark:text-blue-400 dark:border-blue-900/50 dark:hover:bg-blue-900/20"
+                            >
+                              عرض المستند
+                            </Button>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
       </div>
+
+      <Dialog open={!!viewingInvoice} onOpenChange={(open) => !open && setViewingInvoice(null)}>
+        <DialogContent className="max-w-3xl p-0 bg-transparent border-none shadow-none">
+          <div className="bg-white rounded-xl overflow-hidden max-h-[90vh] overflow-y-auto">
+            {viewingInvoice && (
+              <Invoice
+                invoiceNumber={viewingInvoice.invoiceNumber || `QDR-${new Date(viewingInvoice.createdAt).getFullYear()}-${viewingInvoice._id?.slice(-8).toUpperCase() || '---'}`}
+                customerName={(user as any)?.name || (user as any)?.username || 'عميل قدراتك'}
+                customerEmail={(user as any)?.email}
+                customerPhone={(user as any)?.phone}
+                planName={viewingInvoice.type === 'Pro' ? 'خطة قدراتك' : viewingInvoice.type}
+                amount={viewingInvoice.price ?? 39}
+                currency={viewingInvoice.currency || 'SAR'}
+                paymentMethod={viewingInvoice.paymentMethod}
+                receiptUrl={viewingInvoice.transferReceiptUrl}
+                issueDate={viewingInvoice.createdAt || new Date()}
+                startDate={viewingInvoice.startDate}
+                endDate={viewingInvoice.endDate}
+                status={viewingInvoice.status}
+                onClose={() => setViewingInvoice(null)}
+              />
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
 
       {/* Payment Dialog with multi-step logic */}
       <PaymentDialog

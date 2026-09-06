@@ -3,6 +3,7 @@ import { useLocation } from 'wouter';
 import QuestionsManagementPage from './QuestionsManagementPage';
 import AdminWalletsTab from './AdminWalletsTab';
 import AdminSeasonalExamsTab from './AdminSeasonalExamsTab';
+import AdminFoundationManagementTab from './AdminFoundationManagementTab';
 import WhatsAppAdminTab from './WhatsAppAdminTab';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Button } from '@/components/ui/button';
@@ -26,8 +27,10 @@ import {
   Globe, HeadphonesIcon, UserCog, KeyRound, Save,
   BellRing, Users2, CheckCheck, Clock3,
   AlertTriangle, Flag, BarChart2, MessageCircle,
-  Wallet, ArrowDownLeft, ArrowUpRight, ArrowLeftRight, Gift, Sparkles
+  Wallet, ArrowDownLeft, ArrowUpRight, ArrowLeftRight, Gift, Sparkles, Video
 } from 'lucide-react';
+
+import { Invoice } from '@/components/Invoice';
 
 interface DashboardStats {
   users: { totalUsers: number; activeToday: number; activeThisWeek: number; newUsersToday: number; newUsersThisWeek: number };
@@ -60,6 +63,7 @@ const NAV_ITEMS = [
   { key: 'question-reports', icon: AlertTriangle, label: 'بلاغات الأسئلة', color: 'text-[#B65D36]' },
   { key: 'wallets', icon: Wallet, label: 'المحافظ والمكافآت', color: 'text-[#7964C1]' },
   { key: 'seasonal-exams', icon: Sparkles, label: 'الاختبارات الموسمية', color: 'text-[#B65D36]' },
+  { key: 'foundation-management', icon: Video, label: 'محتوى التأسيس والمراجعات', color: 'text-[#2E8B70]' },
 ];
 
 function formatDate(d: string | null | undefined) {
@@ -119,6 +123,7 @@ export default function AdminDashboard({ initialTab = 'overview' }: { initialTab
   const [subFilter, setSubFilter] = useState('all');
   const [rejectionReason, setRejectionReason] = useState('');
   const [showReceiptFull, setShowReceiptFull] = useState(false);
+  const [showOfficialInvoice, setShowOfficialInvoice] = useState(false);
   const [emailSubject, setEmailSubject] = useState('');
   const [emailBody, setEmailBody] = useState('');
   const [emailTarget, setEmailTarget] = useState('all');
@@ -1955,6 +1960,8 @@ export default function AdminDashboard({ initialTab = 'overview' }: { initialTab
             />
           )}
 
+          {activeTab === 'foundation-management' && <AdminFoundationManagementTab />}
+
         </div>
       </main>
 
@@ -2391,6 +2398,15 @@ export default function AdminDashboard({ initialTab = 'overview' }: { initialTab
                 ))}
               </div>
 
+              <Button
+                onClick={() => setShowOfficialInvoice(true)}
+                variant="outline"
+                className="w-full bg-slate-800 text-white border-slate-700 hover:bg-slate-700 hover:text-white flex items-center justify-center gap-2"
+              >
+                <FileText className="w-4 h-4" />
+                عرض مستند الاشتراك
+              </Button>
+
               {/* ─── Receipt Image ─── */}
               {selectedSubscription.transferReceiptUrl ? (
                 <div className="border border-slate-700 rounded-xl overflow-hidden">
@@ -2532,6 +2548,32 @@ export default function AdminDashboard({ initialTab = 'overview' }: { initialTab
               )}
             </div>
           )}
+        </DialogContent>
+      </Dialog>
+
+      {/* ─── Official Invoice Modal ─── */}
+      <Dialog open={showOfficialInvoice} onOpenChange={setShowOfficialInvoice}>
+        <DialogContent className="max-w-3xl p-0 bg-transparent border-none shadow-none" dir="rtl">
+          <div className="bg-white rounded-xl overflow-hidden max-h-[90vh] overflow-y-auto">
+            {selectedSubscription && (
+              <Invoice
+                invoiceNumber={`QDR-${new Date(selectedSubscription.createdAt).getFullYear()}-${selectedSubscription._id.slice(-8).toUpperCase()}`}
+                customerName={selectedSubscription.userId?.fullName || selectedSubscription.userId?.username || 'عميل قدراتك'}
+                customerEmail={selectedSubscription.userId?.email}
+                customerPhone={selectedSubscription.userId?.phone}
+                planName={selectedSubscription.type === 'Pro' ? 'خطة قدراتك' : selectedSubscription.type}
+                amount={selectedSubscription.price ?? 39}
+                currency="SAR"
+                paymentMethod={selectedSubscription.paymentMethod}
+                receiptUrl={selectedSubscription.transferReceiptUrl}
+                issueDate={selectedSubscription.createdAt || new Date()}
+                startDate={selectedSubscription.startDate}
+                endDate={selectedSubscription.endDate}
+                status={selectedSubscription.status}
+                onClose={() => setShowOfficialInvoice(false)}
+              />
+            )}
+          </div>
         </DialogContent>
       </Dialog>
 

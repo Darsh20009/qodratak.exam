@@ -6,7 +6,7 @@ import fs from 'fs';
 import mongoose from 'mongoose';
 import { mongoStorage } from './mongodb/mongoStorage';
 import { storage } from './storage';
-import { Question, ChatMessage, Admin, WhatsAppMessage } from './mongodb/models';
+import { Question, ChatMessage, Admin, WhatsAppMessage, FoundationContent, PlatformReview } from './mongodb/models';
 import { sendSubscriptionApprovalEmail } from './services/emailService';
 import {
   notifyAdminNewStudent,
@@ -314,6 +314,121 @@ router.get('/session', requireAdminAuth, (req: Request, res: Response) => {
     authenticated: true,
     admin: (req.session as any).admin,
   });
+});
+
+// ── STUDENT PRODUCT: FOUNDATION CONTENT & REVIEW MODERATION ───────────────
+const studentPrograms = new Set(['qudrat', 'tahsili']);
+const foundationFields = ['program', 'title', 'description', 'videoUrl', 'thumbnailUrl', 'order', 'published', 'linkedQuizRoute', 'durationMinutes'];
+
+function contentPayload(body: Record<string, unknown>, creating = false) {
+  const payload: Record<string, unknown> = {};
+  for (const field of foundationFields) {
+    if (body[field] !== undefined) payload[field] = body[field];
+  }
+  if (creating && (!payload.program || !payload.title || !payload.description || !payload.videoUrl || payload.order === undefined)) {
+    return { error: 'البرنامج والعنوان والوصف ورابط الفيديو والترتيب مطلوبة' };
+  }
+  if (payload.program !== undefined && !studentPrograms.has(String(payload.program))) {
+    return { error: 'البرنامج المدعوم هو qudrat أو tahsili فقط' };
+  }
+  if (payload.order !== undefined && (!Number.isInteger(Number(payload.order)) || Number(payload.order) < 0)) {
+    return { error: 'الترتيب يجب أن يكون رقماً صحيحاً موجباً أو صفراً' };
+  }
+  if (payload.durationMinutes !== undefined && (!Number.isFinite(Number(payload.durationMinutes)) || Number(payload.durationMinutes) < 0)) {
+    return { error: 'مدة المحتوى غير صالحة' };
+  }
+  if (payload.published !== undefined && typeof payload.published !== 'boolean') {
+    return { error: 'حالة النشر غير صالحة' };
+  }
+  return { payload };
+}
+
+router.get('/foundation-content', requireAdminAuth, async (_req: Request, res: Response) => {
+  try {
+    res.json({ content: await FoundationContent.find().sort({ program: 1, order: 1, createdAt: 1 }).lean() });
+  } catch (error) {
+    console.error('Admin foundation content list error:', error);
+    res.status(500).json({ error: 'فشل في جلب المحتوى التأسيسي' });
+  }
+});
+
+router.post('/foundation-content', requireAdminAuth, async (req: Request, res: Response) => {
+  const result = contentPayload(req.body || {}, true);
+  if ('error' in result) return res.status(400).json({ error: result.error });
+  try {
+    const content = await FoundationContent.create(result.payload);
+    res.status(201).json({ content });
+  } catch (error) {
+    console.error('Admin foundation content create error:', error);
+    res.status(500).json({ error: 'فشل في إنشاء المحتوى التأسيسي' });
+  }
+});
+
+router.put('/foundation-content/:id', requireAdminAuth, async (req: Request, res: Response) => {
+  const result = contentPayload(req.body || {});
+  if ('error' in result) return res.status(400).json({ error: result.error });
+  if (!Object.keys(result.payload).length) return res.status(400).json({ error: 'لا توجد بيانات للتحديث' });
+  try {
+    const content = await FoundationContent.findByIdAndUpdate(req.params.id, { $set: result.payload }, { new: true, runValidators: true });
+    if (!content) return res.status(404).json({ error: 'المحتوى غير موجود' });
+    res.json({ content });
+  } catch (error) {
+    res.status(400).json({ error: 'معرف المحتوى أو بياناته غير صالحة' });
+  }
+});
+
+router.delete('/foundation-content/:id', requireAdminAuth, async (req: Request, res: Response) => {
+  try {
+    const content = await FoundationContent.findByIdAndDelete(req.params.id);
+    if (!content) return res.status(404).json({ error: 'المحتوى غير موجود' });
+    res.status(204).send();
+  } catch {
+    res.status(400).json({ error: 'معرف المحتوى غير صالح' });
+  }
+});
+
+router.get('/platform-reviews', requireAdminAuth, async (_req: Request, res: Response) => {
+  try {
+    const reviews = await PlatformReview.find().populate('userId', 'fullName username').sort({ createdAt: -1 }).lean();
+    res.json({ reviews });
+  } catch (error) {
+    console.error('Admin reviews list error:', error);
+    res.status(500).json({ error: 'فشل في جلب التقييمات' });
+  }
+});
+
+router.patch('/platform-reviews/:id', requireAdminAuth, async (req: Request, res: Response) => {
+  const updates: Record<string, unknown> = {};
+  if (req.body?.status !== undefined) {
+    if (!['pending', 'approved', 'rejected'].includes(req.body.status)) return res.status(400).json({ error: 'حالة التقييم غير صالحة' });
+    updates.status = req.body.status;
+  }
+  if (req.body?.featured !== undefined) {
+    if (typeof req.body.featured !== 'boolean') return res.status(400).json({ error: 'قيمة featured غير صالحة' });
+    updates.featured = req.body.featured;
+  }
+  if (req.body?.adminReply !== undefined) {
+    if (typeof req.body.adminReply !== 'string' || req.body.adminReply.length > 2000) return res.status(400).json({ error: 'رد الإدارة غير صالح' });
+    updates.adminReply = req.body.adminReply.trim();
+  }
+  if (!Object.keys(updates).length) return res.status(400).json({ error: 'لا توجد بيانات للتحديث' });
+  try {
+    const review = await PlatformReview.findByIdAndUpdate(req.params.id, { $set: updates }, { new: true, runValidators: true });
+    if (!review) return res.status(404).json({ error: 'التقييم غير موجود' });
+    res.json({ review });
+  } catch {
+    res.status(400).json({ error: 'معرف التقييم غير صالح' });
+  }
+});
+
+router.delete('/platform-reviews/:id', requireAdminAuth, async (req: Request, res: Response) => {
+  try {
+    const review = await PlatformReview.findByIdAndDelete(req.params.id);
+    if (!review) return res.status(404).json({ error: 'التقييم غير موجود' });
+    res.status(204).send();
+  } catch {
+    res.status(400).json({ error: 'معرف التقييم غير صالح' });
+  }
 });
 
 // ── DASHBOARD ────────────────────────────────────────────────
@@ -1487,34 +1602,15 @@ router.post('/whatsapp/disconnect', requireAdminAuth, async (req: Request, res: 
 });
 
 router.post('/whatsapp/test-message', requireAdminAuth, async (req: Request, res: Response) => {
-  try {
-    let digits = String(req.body?.phone || '').replace(/\D/g, '');
-    if (digits.startsWith('00')) digits = digits.slice(2);
-    if (digits.startsWith('05')) digits = `966${digits.slice(1)}`;
-    if (digits.startsWith('5') && digits.length === 9) digits = `966${digits}`;
-    if (digits.length < 8 || digits.length > 15) {
-      return res.status(400).json({ error: 'أدخل رقم واتساب صحيحًا مع رمز الدولة' });
-    }
-    await sendWhatsAppText(digits, 'تم ربط منصة قدراتك بواتساب بنجاح ✅');
-    console.info('[WhatsApp] Test message sent successfully');
-    res.json({ success: true, message: 'تم إرسال رسالة الاختبار' });
-  } catch (error: any) {
-    console.error('[WhatsApp] Test message failed:', error?.message || error);
-    const message =
-      error?.message === 'WHATSAPP_NOT_CONNECTED'
-        ? 'اربط واتساب أولاً'
-        : error?.message === 'INVALID_PHONE'
-          ? 'أدخل رقم واتساب صحيحًا مع رمز الدولة'
-          : 'تعذر إرسال رسالة الاختبار. تحقق من الرقم وحالة الاتصال.';
-    res.status(400).json({ error: message });
-  }
+  void req;
+  res.status(403).json({ error: 'رسائل الاختبار معطلة لحماية رقم واتساب' });
 });
 
 router.post('/whatsapp/financial-report', requireAdminAuth, async (req: Request, res: Response) => {
   try {
     const period = String(req.body?.period || '');
-    if (!['daily', 'weekly', 'monthly'].includes(period)) {
-      return res.status(400).json({ error: 'نوع التقرير غير صالح' });
+    if (period !== 'daily') {
+      return res.status(400).json({ error: 'المتاح هو تقرير نهاية اليوم فقط' });
     }
     await sendAdminFinancialReport(period as 'daily' | 'weekly' | 'monthly');
     res.json({ success: true, message: 'تم إرسال التقرير المالي إلى رقم الإدارة' });
@@ -1529,55 +1625,12 @@ router.post('/whatsapp/financial-report', requireAdminAuth, async (req: Request,
 });
 
 router.post('/whatsapp/notification-test', requireAdminAuth, async (_req: Request, res: Response) => {
-  try {
-    await notifyAdminNewStudent({
-      fullName: 'اختبار تنبيه الإدارة',
-      username: 'whatsapp-test-student',
-      phone: '966500000000',
-      role: 'student',
-    });
-    await notifyAdminSubscription({
-      studentName: 'اختبار تنبيه الإدارة',
-      plan: 'اختبار التفعيل',
-      price: 0,
-      paymentMethod: 'اختبار داخلي',
-      status: 'active',
-    });
-    res.json({ success: true, message: 'تم إرسال تنبيهي التسجيل والاشتراك إلى رقم الإدارة' });
-  } catch (error: any) {
-    console.error('[WhatsApp] Notification test failed:', error?.message || error);
-    const message =
-      error?.message === 'WHATSAPP_NOT_CONNECTED'
-        ? 'اربط واتساب أولاً'
-        : 'تعذر إرسال تنبيهات الاختبار حاليًا';
-    res.status(400).json({ error: message });
-  }
+  res.status(403).json({ error: 'تنبيهات الاختبار معطلة لحماية رقم واتساب' });
 });
 
 router.post('/whatsapp/campaign', requireAdminAuth, async (req: Request, res: Response) => {
-  try {
-    const { title, body, target } = req.body || {};
-    if (
-      typeof title !== 'string' || title.trim().length < 2 || title.length > 160 ||
-      typeof body !== 'string' || body.trim().length < 2 || body.length > 2000 ||
-      !['all', 'subscribed', 'free'].includes(target)
-    ) {
-      return res.status(400).json({ error: 'عنوان الرسالة والمحتوى والفئة مطلوبة' });
-    }
-
-    const result = await sendWhatsAppCampaign({
-      title: title.trim(),
-      body: body.trim(),
-      target,
-    });
-    res.json({ success: true, ...result, message: 'تم تنفيذ حملة واتساب' });
-  } catch (error: any) {
-    console.error('[WhatsApp] Campaign failed:', error?.message || error);
-    const message = error?.message === 'WHATSAPP_NOT_CONNECTED'
-      ? 'اربط واتساب أولاً'
-      : 'تعذر تنفيذ حملة واتساب حاليًا';
-    res.status(400).json({ error: message });
-  }
+  void req;
+  res.status(403).json({ error: 'حملات واتساب معطلة لحماية الرقم من الحظر' });
 });
 
 router.get('/whatsapp/conversations', requireAdminAuth, async (_req: Request, res: Response) => {
@@ -1643,19 +1696,8 @@ router.get('/whatsapp/messages/:phone', requireAdminAuth, async (req: Request, r
 });
 
 router.post('/whatsapp/messages/:phone', requireAdminAuth, async (req: Request, res: Response) => {
-  try {
-    const phone = String(req.params.phone || '').replace(/\D/g, '');
-    const content = String(req.body?.content || '').trim();
-    if (!phone || !content) return res.status(400).json({ error: 'الرقم ونص الرسالة مطلوبان' });
-    if (content.length > 4000) return res.status(400).json({ error: 'الرسالة طويلة جداً' });
-    await sendWhatsAppText(phone, content);
-    return res.status(201).json({ success: true });
-  } catch (error: any) {
-    const message = error?.message === 'WHATSAPP_NOT_CONNECTED'
-      ? 'واتساب غير متصل. اربط الرقم أولاً.'
-      : 'تعذر إرسال الرسالة';
-    return res.status(400).json({ error: message });
-  }
+  void req;
+  return res.status(403).json({ error: 'الإرسال اليدوي معطل؛ واتساب مخصص للرموز والمعاملات فقط' });
 });
 
 // =========== SUPPORT TICKETS ============

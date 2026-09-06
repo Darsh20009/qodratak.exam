@@ -13,6 +13,11 @@ import {
 import { DailyGoalWidget } from "@/components/DailyGoalWidget";
 import SubscriptionRenewalDialog from "@/components/SubscriptionRenewalDialog";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Dialog, DialogContent } from "@/components/ui/dialog";
+import { Invoice } from "@/components/Invoice";
+import useSubscription from "@/hooks/useSubscription";
+import { useUser } from "@/hooks/use-user";
 
 // ─── Landing page data ────────────────────────────────────────────────────────
 
@@ -215,8 +220,6 @@ const SECONDARY_TOOLS = [
 const STUDENT_PROGRAMS = [
   { title: "القدرات", english: "Qudrat", description: "تأسيس ومحوسب ومسار واضح للتقدم.", href: "/student-program/qudrat", icon: Brain },
   { title: "التحصيلي", english: "Tahsili", description: "دراسة واختبارات حسب المواد.", href: "/student-program/tahsili", icon: GraduationCapIcon },
-  { title: "IELTS", english: "IELTS", description: "تأسيس وتدريب للمهارات باللغة الإنجليزية.", href: "/student-program/ielts", icon: BookOpenIcon },
-  { title: "غات", english: "GAT", description: "مسار GAT ومحتواه باللغة الإنجليزية.", href: "/student-program/gat", icon: BookOpenIcon },
 ];
 
 // ─── Logged-in student dashboard ──────────────────────────────────────────────
@@ -226,9 +229,21 @@ const GREEN_LIGHT = "#E5E7EB";
 
 function LoggedInDashboard({ user }: { user: any }) {
   const [subscriptionDialogOpen, setSubscriptionDialogOpen] = useState(false);
+  const [invoiceDialogOpen, setInvoiceDialogOpen] = useState(false);
   const name = user?.name || user?.username || "طالب";
   const firstName = name.split(" ")[0];
-  const isPremium = ['Pro', 'Pro Life', 'Pro Life Plus', 'Pro Live', 'free_trial'].includes(user?.subscription?.type);
+  const { subscription, countdown } = useSubscription();
+  const isPremium = Boolean(
+    subscription?.hasActiveSubscription &&
+    subscription?.canAccessPremiumFeatures &&
+    !subscription?.isExpired,
+  );
+
+  const { data: mySubscriptions } = useQuery<any[]>({
+    queryKey: ['/api/user/my-subscriptions'],
+    enabled: !!user,
+  });
+  const currentSubData = mySubscriptions?.find((s: any) => s.status === 'active') || mySubscriptions?.[0];
 
   const { data: rankData } = useQuery<{ currentRank: number; totalPoints: number }>({
     queryKey: [`/api/users/${user?.id || user?._id}/rank`],
@@ -380,8 +395,84 @@ function LoggedInDashboard({ user }: { user: any }) {
           </div>
         </section>
 
-        {!isPremium && (
-            <button type="button" onClick={() => setSubscriptionDialogOpen(true)} className="w-full text-right">
+        {isPremium ? (
+          <section className="rounded-2xl border border-primary/25 bg-card p-5">
+            <div className="flex flex-col items-start justify-between gap-4 sm:flex-row sm:items-center">
+              <div className="flex items-center gap-4">
+                <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-primary text-primary-foreground">
+                  <CrownIcon className="h-6 w-6" />
+                </div>
+                <div>
+                  <h3 className="flex items-center gap-2 text-lg font-black text-foreground">
+                    {subscription?.subscriptionType === 'Pro' ? 'خطة قدراتك' : subscription?.subscriptionType}
+                    <Badge className="border-emerald-200 bg-emerald-50 py-0 text-xs font-bold text-emerald-700 hover:bg-emerald-50 dark:border-emerald-900 dark:bg-emerald-950/40 dark:text-emerald-300">نشط</Badge>
+                  </h3>
+                  <p className="mt-0.5 text-sm font-medium text-muted-foreground">
+                    باقي {countdown.days} يوم {countdown.hours > 0 ? `و ${countdown.hours} ساعة` : ''} على الانتهاء
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-2 w-full sm:w-auto">
+                {currentSubData && !subscription?.isTrialActive && (
+                  <Button
+                    onClick={() => setInvoiceDialogOpen(true)}
+                    variant="outline"
+                    className="flex-1 border-border bg-background text-foreground sm:flex-none"
+                  >
+                    <FileText className="ml-2 h-4 w-4" />
+                    عرض الفاتورة
+                  </Button>
+                )}
+                <Button
+                  onClick={() => setSubscriptionDialogOpen(true)}
+                  className="flex-1 sm:flex-none"
+                >
+                  <CrownIcon className="ml-2 h-4 w-4" />
+                  تمديد
+                </Button>
+              </div>
+            </div>
+
+            <div className="mt-5 border-t border-border pt-5">
+              <p className="mb-3 text-xs font-bold text-muted-foreground">المزايا المفعلة حاليًا</p>
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                {[
+                  { label: "وصول كامل للمحتوى", icon: BookOpenIcon },
+                  { label: "اختبارات غير محدودة", icon: Target },
+                  { label: "تحليلات متقدمة", icon: BarChart2 },
+                  { label: "حفظ التقدم", icon: CheckCircle2 },
+                  { label: "النماذج الورقية", icon: FileText },
+                  { label: "الدعم الفني", icon: MessageSquare },
+                ].map((feature, i) => (
+                  <div key={i} className="flex items-center gap-2 text-sm font-semibold text-foreground">
+                    <CheckCircle2 className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
+                    {feature.label}
+                  </div>
+                ))}
+              </div>
+            </div>
+          </section>
+        ) : currentSubData?.status === 'pending' ? (
+          <section className="rounded-2xl border border-amber-200 bg-amber-50 p-5 dark:border-amber-900 dark:bg-amber-950/30">
+            <div className="flex flex-col items-start justify-between gap-4 sm:flex-row sm:items-center">
+              <div>
+                <Badge className="mb-2 border-amber-200 bg-amber-100 text-amber-800 hover:bg-amber-100 dark:border-amber-800 dark:bg-amber-900/50 dark:text-amber-200">
+                  قيد المراجعة
+                </Badge>
+                <h3 className="text-lg font-black text-foreground">تم استلام طلب اشتراكك</h3>
+                <p className="mt-1 text-sm text-muted-foreground">
+                  سنفعّل المزايا بعد مراجعة وسيلة الدفع. يمكنك عرض مستند الطلب وسند التحويل الآن.
+                </p>
+              </div>
+              <Button onClick={() => setInvoiceDialogOpen(true)} variant="outline">
+                <FileText className="ml-2 h-4 w-4" />
+                عرض مستند الطلب
+              </Button>
+            </div>
+          </section>
+        ) : (
+          <button type="button" onClick={() => setSubscriptionDialogOpen(true)} className="w-full text-right">
             <div className="flex items-center justify-between gap-4 rounded-2xl border border-[#F7F775] bg-[#FFFFE4] p-4 transition hover:border-[#0D1B2A]/30 dark:border-primary/40 dark:bg-primary/10">
               <div className="flex items-center gap-3">
                 <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#F7F775] text-[#0D1B2A] dark:bg-primary dark:text-primary-foreground">
@@ -398,6 +489,33 @@ function LoggedInDashboard({ user }: { user: any }) {
         )}
       </div>
       <SubscriptionRenewalDialog open={subscriptionDialogOpen} onOpenChange={setSubscriptionDialogOpen} user={user} />
+
+      <Dialog open={invoiceDialogOpen} onOpenChange={setInvoiceDialogOpen}>
+        <DialogContent className="max-w-3xl p-0 bg-transparent border-none shadow-none">
+          <div className="bg-white rounded-xl overflow-hidden max-h-[90vh] overflow-y-auto">
+            {currentSubData ? (
+              <Invoice
+                invoiceNumber={currentSubData.invoiceNumber}
+                customerName={user?.name || user?.username || 'عميل قدراتك'}
+                customerEmail={user?.email}
+                customerPhone={user?.phone}
+                planName={currentSubData.type === 'Pro' ? 'خطة قدراتك' : currentSubData.type}
+                amount={currentSubData.price ?? 39}
+                currency={currentSubData.currency || 'SAR'}
+                paymentMethod={currentSubData.paymentMethod}
+                receiptUrl={currentSubData.transferReceiptUrl}
+                issueDate={currentSubData.createdAt}
+                startDate={currentSubData.startDate}
+                endDate={currentSubData.endDate}
+                status={currentSubData.status}
+                onClose={() => setInvoiceDialogOpen(false)}
+              />
+            ) : (
+              <div className="p-12 text-center text-gray-500 font-medium">جاري تحميل الفاتورة...</div>
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
@@ -405,21 +523,12 @@ function LoggedInDashboard({ user }: { user: any }) {
 // ─── Main export ──────────────────────────────────────────────────────────────
 
 export default function NewHome() {
-  const [user, setUser] = useState<any>(null);
+  const { user } = useUser();
 
   const { data: questionsStats } = useQuery<{
     verbal: number; quantitative: number; total: number; roundedTotal: number;
   }>({ queryKey: ['/api/questions/stats'], staleTime: 60000, gcTime: 300000 });
 
-  useEffect(() => {
-    const storedUser = localStorage.getItem('user');
-    if (storedUser) {
-      try { setUser(JSON.parse(storedUser)); }
-      catch (e) { console.error("Error parsing user:", e); }
-    }
-  }, []);
-
-  const isPremiumUser = user && ['Pro', 'Pro Life', 'Pro Life Plus', 'Pro Live', 'free_trial'].includes(user.subscription?.type);
   const totalQuestions = questionsStats?.roundedTotal || 4500;
 
   // ─── Logged-in: show premium dashboard ──────────────────

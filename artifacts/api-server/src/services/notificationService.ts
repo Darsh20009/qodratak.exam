@@ -1,5 +1,5 @@
 import { User, ExamBooking, TestResult } from '../mongodb/models';
-import { sendStudentWhatsAppNotification, sendDailyStudentFollowUps } from './studentWhatsAppNotifications';
+import { sendStudentWhatsAppNotification } from './studentWhatsAppNotifications';
 
 const BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN || '';
 
@@ -182,28 +182,5 @@ export function startNotificationScheduler(): void {
   // Run once immediately on boot
   setTimeout(checkTelegramExamReminders, 30 * 1000);
 
-  // Daily WhatsApp care message at 08:00 KSA. The user timestamp prevents duplicates
-  // when the API process checks more than once during that hour.
-  const runDailyWhatsAppFollowUps = () => {
-    const riyadhNow = new Date(Date.now() + 3 * 60 * 60 * 1000);
-    if (riyadhNow.getUTCHours() === 8) {
-      void sendDailyStudentFollowUps().catch((error) =>
-        console.error('Daily WhatsApp follow-up scheduler error:', error),
-      );
-    }
-  };
-  setTimeout(runDailyWhatsAppFollowUps, 45 * 1000);
-  setInterval(runDailyWhatsAppFollowUps, 15 * 60 * 1000);
-
-  // Weekly reports: check every hour, send on Sunday 20:00 KSA (17:00 UTC)
-  setInterval(async () => {
-    const now = new Date();
-    const utcDay = now.getUTCDay();  // 0=Sun
-    const utcHour = now.getUTCHours();
-    if (utcDay === 0 && utcHour === 17) {
-      await sendWeeklyReports();
-    }
-  }, 60 * 60 * 1000);
-
-  console.log('📱 Notification scheduler started (Telegram exam reminders + weekly reports)');
+  console.log('Notification scheduler started (Telegram reminders only; bulk WhatsApp disabled)');
 }

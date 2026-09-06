@@ -132,7 +132,7 @@ function OfferPreview({ onSignup }: { onSignup: () => void }) {
           <span className="text-[#FF8A70]">لمدة ٣ أيام</span>
         </h2>
         <p className="mt-3 text-sm leading-7 text-slate-300">
-          جرّب كل الصلاحيات، واكتشف الطريقة الأسهل للاستعداد للقدرات والتحصيلي وIELTS وGAT.
+          جرّب كل الصلاحيات، واكتشف الطريقة الأسهل للاستعداد للقدرات والتحصيلي.
         </p>
         <div className="mt-7 space-y-3 border-y border-white/10 py-5">
           {["كل الصلاحيات مفتوحة", "اختبار يومي طوال السنة", "تحليل واضح بعد كل محاولة"].map((item) => (
@@ -192,20 +192,6 @@ const studyTracks = [
     title: "تدريب التحصيلي",
     text: "مراجعة مرتبة واختبارات تدريبية تساعدك تستعد للمواد وتتابع تقدمك بثقة.",
     accent: "bg-[#FFF0E9] text-[#B65D36]",
-  },
-  {
-    icon: Languages,
-    label: "IELTS",
-    title: "الاستعداد للـ IELTS",
-    text: "مسار واضح لتطوير مهارات اللغة الإنجليزية والتدرب على نمط الاختبار.",
-    accent: "bg-[#EEF0FF] text-[#5C61A9]",
-  },
-  {
-    icon: Calculator,
-    label: "GAT",
-    title: "التدريب على GAT",
-    text: "تدريب مركّز على المهارات الأساسية مع طريقة سهلة لمراجعة نقاط القوة والاحتياج.",
-    accent: "bg-[#FFF7D9] text-[#8A6A15]",
   },
 ];
 
@@ -374,7 +360,7 @@ export default function LandingPage({ initialModal }: { initialModal?: "signup" 
             <h1 className="mt-6 text-[2.7rem] font-black leading-[1.12] tracking-tight text-[#171723] dark:text-white sm:text-6xl">
               خطتك أوضح لـ
               <br />
-              <span style={{ color: SIGNAL }}>القدرات والتحصيلي وIELTS وGAT.</span>
+              <span style={{ color: SIGNAL }}>القدرات والتحصيلي.</span>
             </h1>
             <p className="mt-6 max-w-xl text-base leading-8 text-[#6B625B] dark:text-slate-300 sm:text-lg">
               تأسيس ومحوسب، تدريب يومي، ونتيجة تعرفك خطوتك التالية في كل مسار تحتاجه.
@@ -396,7 +382,7 @@ export default function LandingPage({ initialModal }: { initialModal?: "signup" 
               </a>
             </div>
             <div className="mt-9 flex flex-wrap gap-x-6 gap-y-3 border-t border-[#24202D]/[.1] pt-5 text-xs font-bold text-[#6B625B] dark:border-white/10 dark:text-slate-300">
-              {["قدرات وتحصيلي", "IELTS وGAT", "تأسيس ومحوسب", "رحلة سهلة"].map((item) => (
+              {["قدرات وتحصيلي", "تأسيس ومحوسب", "خطة شخصية", "رحلة سهلة"].map((item) => (
                 <span key={item} className="flex items-center gap-1.5">
                   <Check className="h-3.5 w-3.5 text-[#398B79]" />
                   {item}

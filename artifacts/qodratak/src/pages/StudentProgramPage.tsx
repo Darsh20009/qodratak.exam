@@ -1,7 +1,7 @@
-import { BookOpen, Brain, ChevronLeft, FileText, GraduationCap, Library, PlayCircle, Target } from "lucide-react";
+import { BookOpen, Brain, ChevronLeft, FileText, GraduationCap, Library, Target } from "lucide-react";
 import { Link, useLocation, useRoute } from "wouter";
 
-type ProgramKey = "qudrat" | "tahsili" | "ielts" | "gat";
+type ProgramKey = "qudrat" | "tahsili";
 
 type ProgramItem = {
   title: string;
@@ -50,36 +50,6 @@ const PROGRAMS: Record<ProgramKey, ProgramConfig> = {
       { title: "اختبار شامل", description: "اختبار شامل لقياس جاهزيتك.", href: "/tahsilik/comprehensive-test", icon: Target },
     ],
   },
-  ielts: {
-    arabic: "IELTS",
-    english: "IELTS",
-    description: "مسار اللغة الإنجليزية للاستعداد لاختبار IELTS.",
-    foundation: [
-      { title: "تأسيس اللغة", description: "محتوى تأسيسي للقراءة والاستماع والكتابة.", href: "/courses?program=ielts", icon: BookOpen },
-      { title: "الكتب والملفات", description: "مواد اللغة المتاحة في المكتبة.", href: "/library", icon: FileText },
-      { title: "خطة الدراسة", description: "نظرة منظمة على خطوات الاستعداد.", href: "/courses?program=ielts", icon: Target },
-    ],
-    computer: [
-      { title: "اختبارات محاكية", description: "تدريب على شكل أقسام اختبار IELTS.", href: "/courses?program=ielts", icon: GraduationCap },
-      { title: "تدريب المهارات", description: "تدريب منفصل على مهارات الاختبار.", href: "/courses?program=ielts", icon: PlayCircle },
-      { title: "المكتبة", description: "الوصول إلى ملفات وكتب القسم.", href: "/library", icon: Library },
-    ],
-  },
-  gat: {
-    arabic: "غات",
-    english: "GAT",
-    description: "مسار GAT باللغة الإنجليزية بواجهة واضحة ومباشرة.",
-    foundation: [
-      { title: "التأسيس", description: "محتوى تأسيسي لفهم نمط الاختبار.", href: "/courses?program=gat", icon: BookOpen },
-      { title: "الكتب والملفات", description: "مواد المراجعة المتاحة.", href: "/library", icon: FileText },
-      { title: "خطة الدراسة", description: "ترتيب خطوات الاستعداد للاختبار.", href: "/courses?program=gat", icon: Target },
-    ],
-    computer: [
-      { title: "اختبارات محاكية", description: "تدريب على شكل اختبار GAT.", href: "/courses?program=gat", icon: GraduationCap },
-      { title: "تدريب الأقسام", description: "اختبارات تدريبية حسب القسم.", href: "/courses?program=gat", icon: PlayCircle },
-      { title: "المكتبة", description: "الوصول إلى ملفات وكتب القسم.", href: "/library", icon: Library },
-    ],
-  },
 };
 
 function ContentCard({ item }: { item: ProgramItem }) {
@@ -107,12 +77,8 @@ export default function StudentProgramPage() {
   const section = new URLSearchParams(location.split("?")[1] || "").get("section");
   const showFoundation = !section || section === "foundation";
   const showComputer = !section || section === "computer";
-  const practiceSectionTitle = programKey === "ielts" || programKey === "gat"
-    ? "المهارات والتدريب"
-    : "المحوسب";
-  const practiceSectionDescription = programKey === "ielts" || programKey === "gat"
-    ? "تدريب عملي على مهارات الاختبار ومحاكاة تجربة الأداء."
-    : "اختبارات وتدريب عملي يحاكي تجربة الاختبار.";
+  const practiceSectionTitle = "المحوسب";
+  const practiceSectionDescription = "اختبارات وتدريب عملي يحاكي تجربة الاختبار.";
 
   return (
     <div className="min-h-full bg-background" dir="rtl">
