@@ -297,7 +297,7 @@ function LoggedInDashboard({ user }: { user: any }) {
              className="hidden rounded-xl bg-[#F7F775] px-4 font-black hover:bg-[#F7F775]/85 dark:bg-primary dark:hover:bg-primary/90 sm:flex text-[color:var(--brand-navy)]"
           >
             <CrownIcon className="ml-2 h-4 w-4" />
-            تمديد الاشتراك
+            اشتراكي
           </Button>
         </header>
 
@@ -429,7 +429,7 @@ function LoggedInDashboard({ user }: { user: any }) {
                   className="flex-1 sm:flex-none"
                 >
                   <CrownIcon className="ml-2 h-4 w-4" />
-                  تمديد
+                  اشتراكي
                 </Button>
               </div>
             </div>
@@ -479,8 +479,8 @@ function LoggedInDashboard({ user }: { user: any }) {
                   <CrownIcon className="h-5 w-5" />
                 </div>
                 <div>
-                  <p className="text-sm font-black text-foreground">اكتشف خطط قدراتك</p>
-                  <p className="mt-0.5 text-xs font-medium text-muted-foreground">اختر الخطة المناسبة لرحلتك التعليمية</p>
+                  <p className="text-sm font-black text-foreground">اشترك في قدراتك</p>
+                  <p className="mt-0.5 text-xs font-medium text-muted-foreground">39 ريال لمدة 3 أشهر</p>
                 </div>
               </div>
               <ChevronLeft className="h-5 w-5 text-foreground" />

@@ -22,6 +22,7 @@ import {
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import SubscriptionRenewalDialog from "@/components/SubscriptionRenewalDialog";
 
 export default function DashboardPage() {
   const { user } = useUser();
@@ -33,6 +34,7 @@ export default function DashboardPage() {
   const [isExamDialogOpen, setIsExamDialogOpen] = useState(false);
   const [rating, setRating] = useState(5);
   const [reviewText, setReviewText] = useState("");
+  const [subscriptionDialogOpen, setSubscriptionDialogOpen] = useState(false);
 
   const userName = user?.name || user?.username || "طالب";
   const firstName = userName.split(" ")[0];
@@ -94,9 +96,9 @@ export default function DashboardPage() {
               <p className="text-xs font-bold text-[#398B79]">متبقي {dashboard.subscription.daysLeft} يوم</p>
             </div>
           </div>
-          <Link href="/account" className="text-xs font-bold text-[#17354A] dark:text-emerald-200 hover:underline">
-            إدارة الاشتراك
-          </Link>
+          <button type="button" onClick={() => setSubscriptionDialogOpen(true)} className="text-xs font-bold text-[#17354A] dark:text-emerald-200 hover:underline">
+            عرض اشتراكي
+          </button>
         </div>
       )}
       {dashboard.subscription.status === "trial" && (
@@ -105,7 +107,7 @@ export default function DashboardPage() {
             <p className="text-sm font-black text-[#171723] dark:text-amber-100">تجربتك المجانية مفتوحة بالكامل</p>
             <p className="text-xs font-bold text-[#7A6410] mt-1">متبقي {dashboard.trial?.daysLeft || 0} يوم — استخدم التأسيس والمحوسب والمحاكاة بلا قيود.</p>
           </div>
-          <Link href="/enhanced-subscription" className="text-xs font-black text-[#0D1B2A] dark:text-amber-100 underline">اختر خطتك مبكرًا</Link>
+          <button type="button" onClick={() => setSubscriptionDialogOpen(true)} className="text-xs font-black text-[#0D1B2A] dark:text-amber-100 underline">عرض اشتراكي</button>
         </div>
       )}
       {dashboard.subscription.status === "none" && (
@@ -114,7 +116,7 @@ export default function DashboardPage() {
             <p className="text-sm font-black text-[#171723] dark:text-rose-100">حسابك المجاني: اختبار واحد كل يوم</p>
             <p className="text-xs font-bold text-[#9A4D38] mt-1">اشترك لفتح التأسيس والبنوك والمحاكاة دون حد يومي.</p>
           </div>
-          <Link href="/enhanced-subscription"><Button className="rounded-xl bg-[#0D1B2A] text-white font-black">عرض الاشتراكات</Button></Link>
+          <Button onClick={() => setSubscriptionDialogOpen(true)} className="rounded-xl bg-[#0D1B2A] text-white font-black">اشترك بـ 39 ريال</Button>
         </div>
       )}
 
@@ -383,6 +385,7 @@ export default function DashboardPage() {
           </Link>
         </section>
       </div>
+      <SubscriptionRenewalDialog open={subscriptionDialogOpen} onOpenChange={setSubscriptionDialogOpen} user={user} />
     </div>
   );
 }

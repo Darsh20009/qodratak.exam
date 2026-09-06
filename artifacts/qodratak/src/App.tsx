@@ -85,7 +85,6 @@ import { QuantitativeTests } from "@/pages/QuantitativeTests";
 import { QuantitativeTestRunner } from "@/pages/QuantitativeTestRunner";
 import { AdvancedVerbalTest } from "@/pages/AdvancedVerbalTest";
 import { AdvancedQuantitativeTest } from "@/pages/AdvancedQuantitativeTest";
-import EnhancedSubscriptionPlans from "@/components/EnhancedSubscriptionPlans";
 import MistakeChallengePage from '@/pages/MistakeChallengePage';
 import FlashcardsPage from '@/pages/FlashcardsPage';
 import AdaptiveTestPage from '@/pages/AdaptiveTestPage';
@@ -1154,7 +1153,7 @@ function Router({ splashDone }: { splashDone: boolean }) {
         {() => <Redirect to="/" />}
       </Route>
       <Route path="/enhanced-subscription">
-        {() => <StudentShell><EnhancedSubscriptionPlans /></StudentShell>}
+        {() => <Redirect to="/" />}
       </Route>
       <Route path="/test-results">
         {() => <StudentShell><TestResultsPage /></StudentShell>}

@@ -1,7 +1,6 @@
 import { useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
-  Apple,
   Check,
   ChevronLeft,
   CreditCard,
@@ -23,7 +22,7 @@ import {
 
 const CHECKOUT_URL = "https://www.paypal.com/ncp/payment/XZWPA8WLMNDGS";
 
-type PaymentMethod = "wallet" | "card" | "applepay";
+type PaymentMethod = "wallet" | "card";
 
 interface SubscriptionRenewalDialogProps {
   open: boolean;
@@ -191,9 +190,9 @@ export default function SubscriptionRenewalDialog({
               <Crown className="h-5 w-5" />
             </div>
             <div>
-              <DialogTitle className="text-xl font-black text-white">تمديد اشتراكك</DialogTitle>
+              <DialogTitle className="text-xl font-black text-white">اشتراكي</DialogTitle>
               <DialogDescription className="mt-1 text-xs font-medium text-white/65">
-                خطة واحدة واضحة، ودفع سريع من مكانك
+                اشتراكك الحالي وباقة واحدة واضحة
               </DialogDescription>
             </div>
           </div>
@@ -206,26 +205,37 @@ export default function SubscriptionRenewalDialog({
         ) : (
           <div className="max-h-[72vh] space-y-4 overflow-y-auto p-5">
             <div className="rounded-2xl border border-[#E5E7EB] bg-white p-4">
-              <div className="mb-3 flex items-start justify-between gap-3">
+              <p className="text-xs font-bold text-[#94A3B8]">اشتراكك الحالي</p>
+              <div className="mt-2 flex items-center justify-between gap-3">
+                <p className="font-black">
+                  {currentEndDate ? (activeSubscription?.type || user?.subscription?.type || "خطة قدراتك") : "الحساب المجاني"}
+                </p>
+                <span className={`rounded-full px-2.5 py-1 text-[11px] font-black ${currentEndDate ? "bg-emerald-50 text-emerald-700" : "bg-slate-100 text-slate-600"}`}>
+                  {currentEndDate ? "نشط" : "غير مشترك"}
+                </span>
+              </div>
+              <p className="mt-2 text-xs font-bold text-[#64748B]">
+                {currentEndDate ? `ينتهي في ${formatDate(currentEndDate)}` : "يمكنك استخدام الحساب المجاني باختبار واحد يوميًا"}
+              </p>
+            </div>
+
+            <div className="rounded-2xl border-2 border-[#0D1B2A] bg-white p-4">
+              <div className="flex items-center justify-between gap-4">
                 <div>
-                  <p className="text-xs font-bold text-[#94A3B8]">الخطة الحالية</p>
-                  <h3 className="mt-1 text-lg font-black">{plan?.name || "خطة قدراتك"}</h3>
+                  <p className="text-xs font-bold text-[#398B79]">الباقة المتاحة</p>
+                  <h3 className="mt-1 text-lg font-black">باقة قدراتك</h3>
+                  <p className="mt-1 text-xs font-bold text-[#64748B]">وصول كامل لمدة 3 أشهر</p>
                 </div>
                 <div className="text-left">
-                  <p className="text-2xl font-black">{price} <span className="text-xs font-bold">ر.س</span></p>
-                  <p className="text-[11px] font-bold text-[#94A3B8]">{durationDays} يومًا</p>
+                  <p className="text-3xl font-black">{price}</p>
+                  <p className="text-xs font-bold text-[#64748B]">ريال / 3 أشهر</p>
                 </div>
               </div>
-              <div className="grid grid-cols-2 gap-2 text-xs">
-                <div className="rounded-xl bg-[#F7F4EE] p-3">
-                  <p className="font-bold text-[#94A3B8]">ينتهي اشتراكك الحالي</p>
-                  <p className="mt-1 font-black">{formatDate(currentEndDate)}</p>
-                </div>
-                <div className="rounded-xl bg-[#F7F775]/35 p-3">
-                  <p className="font-bold text-[#64748B]">بعد التمديد</p>
-                  <p className="mt-1 font-black">{formatDate(nextEndDate)}</p>
-                </div>
-              </div>
+              {currentEndDate && (
+                <p className="mt-3 rounded-xl bg-[#F7F775]/35 p-3 text-xs font-bold">
+                  بعد الشراء يصبح تاريخ الانتهاء: {formatDate(nextEndDate)}
+                </p>
+              )}
             </div>
 
             {hasPending && (
@@ -236,11 +246,10 @@ export default function SubscriptionRenewalDialog({
 
             <div>
               <p className="mb-2 text-sm font-black">اختر طريقة الدفع</p>
-              <div className="grid grid-cols-3 gap-2">
+              <div className="grid grid-cols-2 gap-2">
                 {([
                   { id: "wallet", label: "المحفظة", icon: WalletCards },
                   { id: "card", label: "بطاقة", icon: CreditCard },
-                  { id: "applepay", label: "Apple Pay", icon: Apple },
                 ] as const).map((item) => {
                   const Icon = item.icon;
                   const selected = method === item.id;
@@ -287,17 +296,15 @@ export default function SubscriptionRenewalDialog({
             ) : (
               <div className="rounded-2xl border border-[#E5E7EB] bg-white p-4">
                 <p className="text-sm font-bold leading-6">
-                  {method === "applepay"
-                    ? "سيتم فتح صفحة الدفع الآمنة. إذا كان جهازك يدعم Apple Pay سيظهر الخيار تلقائيًا."
-                    : "ادفع بالبطاقة البنكية من صفحة الدفع الآمنة دون إدخال بيانات البطاقة داخل قدراتك."}
+                  ادفع بالبطاقة البنكية من صفحة الدفع الآمنة دون إدخال بيانات البطاقة داخل قدراتك.
                 </p>
                 <Button
                   type="button"
                   onClick={startExternalCheckout}
                   className="mt-4 h-11 w-full rounded-xl bg-[#0D1B2A] font-black text-white hover:bg-[#1E2938]"
                 >
-                  {method === "applepay" ? <Apple className="ml-2 h-4 w-4" /> : <CreditCard className="ml-2 h-4 w-4" />}
-                  {checkoutStarted ? "فتح صفحة الدفع مرة أخرى" : `الدفع عبر ${method === "applepay" ? "Apple Pay" : "البطاقة"}`}
+                  <CreditCard className="ml-2 h-4 w-4" />
+                  {checkoutStarted ? "فتح صفحة الدفع مرة أخرى" : "الدفع بالبطاقة"}
                   <ChevronLeft className="mr-auto h-4 w-4" />
                 </Button>
                 {checkoutStarted && (

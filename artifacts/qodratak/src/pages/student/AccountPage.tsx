@@ -10,6 +10,7 @@ import { Switch } from "@/components/ui/switch";
 import { Shield, KeyRound, Phone, Crown, CheckCircle2, User, LogOut } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Label } from "@/components/ui/label";
+import SubscriptionRenewalDialog from "@/components/SubscriptionRenewalDialog";
 
 export default function AccountPage() {
   const { user, logout } = useUser();
@@ -26,6 +27,7 @@ export default function AccountPage() {
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [isPasswordDialogOpen, setIsPasswordDialogOpen] = useState(false);
+  const [subscriptionDialogOpen, setSubscriptionDialogOpen] = useState(false);
 
   const handleGuardianSubmit = () => {
     updateGuardian.mutate(
@@ -101,9 +103,9 @@ export default function AccountPage() {
                <p className="text-xl font-black text-foreground">{dashboard?.subscription.type || user.subscription?.type || "الحساب المجاني"}</p>
                {dashboard?.subscription.daysLeft ? <p className="mt-2 text-xs font-bold text-muted-foreground">متبقي {dashboard.subscription.daysLeft} يوم</p> : null}
             </div>
-            <Link href="/enhanced-subscription"><Button className="w-full mt-4 rounded-xl font-black bg-[#0D1B2A] text-white hover:bg-[#0D1B2A]/90">
-              ترقية أو تمديد الاشتراك
-            </Button></Link>
+            <Button onClick={() => setSubscriptionDialogOpen(true)} className="w-full mt-4 rounded-xl font-black bg-[#0D1B2A] text-white hover:bg-[#0D1B2A]/90">
+              عرض اشتراكي والاشتراك بـ 39 ريال
+            </Button>
           </section>
 
           <section className="rounded-2xl border border-border bg-white dark:bg-card p-6 shadow-sm">
@@ -234,6 +236,7 @@ export default function AccountPage() {
           </section>
         </div>
       </div>
+      <SubscriptionRenewalDialog open={subscriptionDialogOpen} onOpenChange={setSubscriptionDialogOpen} user={user} />
     </div>
   );
 }
