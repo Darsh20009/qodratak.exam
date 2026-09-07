@@ -101,36 +101,6 @@ export default function NotificationBell({ userId }: Props) {
     return () => document.removeEventListener('mousedown', handler);
   }, [open]);
 
-  // Push notification setup
-  useEffect(() => {
-    if (!userId) return;
-    const setup = async () => {
-      try {
-        if (!('serviceWorker' in navigator) || !('PushManager' in window)) return;
-        const perm = await Notification.requestPermission();
-        if (perm !== 'granted') return;
-
-        const reg = await navigator.serviceWorker.ready;
-        const existing = await reg.pushManager.getSubscription();
-        if (existing) return;
-
-        const keyRes = await fetch('/api/notifications/vapid-public-key');
-        const { publicKey } = await keyRes.json();
-        if (!publicKey) return;
-
-        const sub = await reg.pushManager.subscribe({
-          userVisibleOnly: true,
-          applicationServerKey: urlBase64ToUint8Array(publicKey),
-        });
-
-        await apiRequest('POST', '/api/notifications/subscribe', { subscription: sub.toJSON(), userId });
-      } catch (e) {
-        console.warn('Push setup failed:', e);
-      }
-    };
-    setup();
-  }, [userId]);
-
   if (!userId) return null;
 
   return (

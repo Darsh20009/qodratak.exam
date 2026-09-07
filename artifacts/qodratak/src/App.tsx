@@ -54,7 +54,6 @@ import {
 import { cn } from "@/lib/utils";
 import { useState, useEffect } from "react";
 import { Footer } from "@/components/Footer";
-import { PushNotificationBanner } from "@/components/PushNotificationBanner";
 import LoginPage from "@/pages/LoginPage";
 import ForgotPasswordPage from "@/pages/ForgotPasswordPage";
 import ResetPasswordPage from "@/pages/ResetPasswordPage";
@@ -119,8 +118,6 @@ import TahsilikComprehensiveTest from "@/pages/TahsilikComprehensiveTest";
 import TahsilikSubjectTest from "@/pages/TahsilikSubjectTest";
 import TahsilikSubjectTestRunner from "@/pages/TahsilikSubjectTestRunner";
 import TahsilikTestsHub from "@/pages/TahsilikTestsHub";
-import InstallPrompt from "@/components/InstallPrompt";
-import { FloatingInstallButton } from "@/components/PermanentInstallButton";
 import LandingPage from "@/pages/LandingPage";
 import { SplashScreen } from "@/components/SplashScreen";
 import { RouteSEO } from "@/components/RouteSEO";
@@ -772,9 +769,6 @@ function MainLayout({ children }: { children: React.ReactNode }) {
           </div>
         </main>
 
-        {/* Push notification permission banner */}
-        {!isInTestMode && <PushNotificationBanner />}
-
         {/* Bottom nav — ثابت في أسفل الصفحة ضمن تدفق الـ layout */}
         {!isInTestMode && (
           <div
@@ -1268,11 +1262,6 @@ function App() {
               <Router splashDone={splashDone} />
             </WouterRouter>
           </React.Suspense>
-
-          {/* PWA Install Prompt - يظهر على جميع المتصفحات */}
-          {splashDone && <InstallPrompt />}
-          {splashDone && <FloatingInstallButton />}
-
 
           {/* بوابة الأمان الإلزامية — تُظهر للمستخدمين الجدد الذين لم يُعدّوا وسيلة أمان */}
           {splashDone && <SecuritySetupModal />}
