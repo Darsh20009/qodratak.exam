@@ -248,8 +248,8 @@ export function LoginModal({ open, onClose, onSwitchToSignup }: LoginModalProps)
                     required
                     autoComplete="one-time-code"
                     value={otp}
-                    onChange={(event) => setOtp(event.target.value.replace(/\D/g, "").slice(0, 6))}
-                    placeholder="000000"
+                     onChange={(event) => setOtp(event.target.value.replace(/\D/g, "").slice(0, 4))}
+                     placeholder="0000"
                     dir="ltr"
                     className="w-full rounded-xl border border-[#24202D]/15 bg-[#F8F6F1] py-3.5 pl-4 pr-11 text-center text-sm tracking-[.35em] text-[#171723] outline-none transition focus:border-[#171723] focus:bg-white focus:ring-4 focus:ring-[#171723]/10"
                   />

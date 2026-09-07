@@ -87,6 +87,7 @@ export function AuthModal({ open, mode, onClose, onModeChange }: { open: boolean
   const queryClient = useQueryClient();
   const { toast } = useToast();
   const [method, setMethod] = useState<LoginMethod>("phone");
+  const [phoneLoginMode, setPhoneLoginMode] = useState<"otp" | "password">("otp");
   const [accountType, setAccountType] = useState<AccountType>(null);
 
   // Student & General Login state
@@ -100,6 +101,9 @@ export function AuthModal({ open, mode, onClose, onModeChange }: { open: boolean
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
+  const [passwordSetupRequired, setPasswordSetupRequired] = useState(false);
+  const [passwordSetup, setPasswordSetup] = useState("");
+  const [passwordSetupConfirm, setPasswordSetupConfirm] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [deviceLimit, setDeviceLimit] = useState<{ devices: DeviceLimitDevice[]; managementToken: string } | null>(null);
@@ -121,7 +125,7 @@ export function AuthModal({ open, mode, onClose, onModeChange }: { open: boolean
   const [verifiedChildren, setVerifiedChildren] = useState<{phone: string, verificationToken: string}[]>([]);
 
   const resetFlow = (nextMode?: AuthMode) => {
-    setOtp(""); setOtpSent(false); setPhoneToken(""); setFullName(""); setUsername(""); setEmail(""); setPassword(""); setConfirmPassword(""); setLoading(false);
+    setOtp(""); setOtpSent(false); setPhoneToken(""); setFullName(""); setUsername(""); setEmail(""); setPassword(""); setConfirmPassword(""); setPasswordSetup(""); setPasswordSetupConfirm(""); setPasswordSetupRequired(false); setPhoneLoginMode("otp"); setLoading(false);
     setAccountType(null);
     setParentName(""); setParentPhone(""); setParentOtp(""); setParentOtpSent(false); setParentToken("");
     setChildPhone(""); setChildOtp(""); setChildOtpSent(false); setVerifiedChildren([]);
@@ -215,11 +219,34 @@ export function AuthModal({ open, mode, onClose, onModeChange }: { open: boolean
       return;
     }
     if (mode === "login") {
+      if (result.requiresPasswordSetup || result.passwordSetupRequired) {
+        setPasswordSetupRequired(true);
+        setPasswordSetup("");
+        setPasswordSetupConfirm("");
+        setOtp("");
+        setOtpSent(false);
+        toast({ title: "أكمل إعداد حسابك", description: "هذا الحساب لا يملك كلمة مرور. عيّن كلمة مرور من 8 أرقام للمتابعة." });
+        return;
+      }
       await finishLogin(result);
     } else {
       setPhoneToken(result.verificationToken);
       toast({ title: "تم تأكيد الرقم", description: "أكمل البيانات ثم أنشئ حسابك." });
     }
+  };
+
+  const completePasswordSetup = async () => {
+    if (!/^\d{8}$/.test(passwordSetup)) throw new Error("كلمة المرور الجديدة يجب أن تكون 8 أرقام بالضبط");
+    if (passwordSetup !== passwordSetupConfirm) throw new Error("كلمتا المرور غير متطابقتين");
+    const response = await fetch("/api/auth/complete-password-setup", {
+      method: "POST",
+      credentials: "include",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ password: passwordSetup, confirmPassword: passwordSetupConfirm }),
+    });
+    const result = await response.json();
+    if (!response.ok) throw new Error(result.error || result.message || "تعذر حفظ كلمة المرور");
+    await finishLogin(result);
   };
 
   const requestChildPhone = async () => {
@@ -270,9 +297,31 @@ export function AuthModal({ open, mode, onClose, onModeChange }: { open: boolean
     if (loading) return;
     setLoading(true);
     try {
+      if (passwordSetupRequired) {
+        await completePasswordSetup();
+        return;
+      }
+
       if (mode === "login") {
         if (method === "phone") {
-          await requestOrVerifyPhone();
+          if (phoneLoginMode === "password") {
+            const number = fullPhone(countryCode, phone);
+            if (phone.replace(/\D/g, "").length < 6) throw new Error("أدخل رقم جوال صحيحاً");
+            if (!password) throw new Error("أدخل كلمة المرور");
+            const response = await fetch("/api/auth/login", {
+              method: "POST", credentials: "include", headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ identifier: number, password, deviceId: getDeviceId() }),
+            });
+            const result = await response.json();
+            if (!response.ok) {
+              if (showDeviceLimit(result)) return;
+              throw new Error(result.message || result.error || "بيانات الدخول غير صحيحة");
+            }
+            if (result.require2FA) { onClose(); setLocation("/login"); return; }
+            await finishLogin(result);
+          } else {
+            await requestOrVerifyPhone();
+          }
           return;
         }
         const response = await fetch("/api/auth/login", {
@@ -410,7 +459,22 @@ export function AuthModal({ open, mode, onClose, onModeChange }: { open: boolean
               </div>
             )}
 
-            {mode === "login" && method === "email" ? (
+            {passwordSetupRequired ? (
+              <div className="mt-5 space-y-3">
+                <div className="rounded-xl border border-[#398B79]/20 bg-[#EFF8F4] px-4 py-3 text-xs font-bold leading-5 text-[#286B5C]">
+                  هذا حساب قديم لا يملك كلمة مرور. عيّن كلمة مرور جديدة من 8 أرقام لمتابعة الدخول.
+                </div>
+                <div className="relative">
+                  <Lock className="pointer-events-none absolute right-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-[#8B8278]" />
+                  <input required inputMode="numeric" pattern="\d{8}" maxLength={8} type={showPassword ? "text" : "password"} value={passwordSetup} onChange={(event) => setPasswordSetup(event.target.value.replace(/\D/g, "").slice(0, 8))} placeholder="كلمة مرور من 8 أرقام" dir="ltr" className="h-12 w-full rounded-xl border border-[#24202D]/15 bg-[#F8F6F1] px-11 text-center text-sm tracking-[.2em] outline-none focus:border-[#171723]" />
+                </div>
+                <div className="relative">
+                  <Lock className="pointer-events-none absolute right-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-[#8B8278]" />
+                  <input required inputMode="numeric" pattern="\d{8}" maxLength={8} type={showPassword ? "text" : "password"} value={passwordSetupConfirm} onChange={(event) => setPasswordSetupConfirm(event.target.value.replace(/\D/g, "").slice(0, 8))} placeholder="تأكيد كلمة المرور" dir="ltr" className="h-12 w-full rounded-xl border border-[#24202D]/15 bg-[#F8F6F1] px-11 text-center text-sm tracking-[.2em] outline-none focus:border-[#171723]" />
+                </div>
+                <button type="button" onClick={() => setShowPassword((value) => !value)} className="text-right text-[11px] font-bold text-[#6B625B]">{showPassword ? "إخفاء كلمة المرور" : "إظهار كلمة المرور"}</button>
+              </div>
+            ) : mode === "login" && method === "email" ? (
               <div className="mt-5 space-y-3">
                 <EmailField value={email} onChange={setEmail} />
                 <div className="relative">
@@ -423,7 +487,7 @@ export function AuthModal({ open, mode, onClose, onModeChange }: { open: boolean
               <div className="mt-5 space-y-3">
                 {/* Student Signup Fields */}
                 {mode === "signup" && accountType === "student" && !otpSent && !phoneToken && <label className="block"><span className="mb-1.5 flex items-center gap-1.5 text-xs font-black text-[#4F4A58]"><Phone className="h-3.5 w-3.5" /> رقم الجوال</span><PhoneField code={countryCode} number={phone} onCode={setCountryCode} onNumber={setPhone} /></label>}
-                {mode === "signup" && accountType === "student" && otpSent && !phoneToken && <div className="relative"><KeyRound className="pointer-events-none absolute right-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-[#8B8278]" /><input required inputMode="numeric" autoComplete="one-time-code" value={otp} onChange={(event) => setOtp(event.target.value.replace(/\D/g, "").slice(0, 6))} placeholder="رمز واتساب المكون من 6 أرقام" dir="ltr" className="h-12 w-full rounded-xl border border-[#24202D]/15 bg-[#F8F6F1] px-11 text-center text-sm tracking-[.2em] outline-none focus:border-[#171723]" /></div>}
+                {mode === "signup" && accountType === "student" && otpSent && !phoneToken && <div className="relative"><KeyRound className="pointer-events-none absolute right-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-[#8B8278]" /><input required inputMode="numeric" autoComplete="one-time-code" value={otp} onChange={(event) => setOtp(event.target.value.replace(/\D/g, "").slice(0, 4))} placeholder="رمز واتساب المكون من 4 أرقام" dir="ltr" className="h-12 w-full rounded-xl border border-[#24202D]/15 bg-[#F8F6F1] px-11 text-center text-sm tracking-[.2em] outline-none focus:border-[#171723]" /></div>}
                 {mode === "signup" && accountType === "student" && phoneToken && <>
                   <div className="flex items-center gap-2 rounded-xl bg-[#EFF8F4] px-3 py-2 text-xs font-bold text-[#398B79]"><CheckCircle2 className="h-4 w-4" /> تم تأكيد رقم الجوال، أكمل بياناتك</div>
                   <div className="relative"><User className="pointer-events-none absolute right-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-[#8B8278]" /><input required value={fullName} onChange={(event) => setFullName(event.target.value)} placeholder="الاسم الثنائي" autoComplete="name" className="h-12 w-full rounded-xl border border-[#24202D]/15 bg-[#F8F6F1] px-11 text-sm outline-none focus:border-[#171723]" /></div>
@@ -455,7 +519,7 @@ export function AuthModal({ open, mode, onClose, onModeChange }: { open: boolean
                         {parentOtpSent && (
                           <div className="relative animate-fade-in-up">
                             <KeyRound className="pointer-events-none absolute right-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-[#8B8278]" />
-                            <input required inputMode="numeric" autoComplete="one-time-code" value={parentOtp} onChange={(event) => setParentOtp(event.target.value.replace(/\D/g, "").slice(0, 6))} placeholder="رمز واتساب لولي الأمر" dir="ltr" className="h-12 w-full rounded-xl border border-[#24202D]/15 bg-[#F8F6F1] px-11 text-center text-sm tracking-[.2em] outline-none focus:border-[#171723]" />
+                            <input required inputMode="numeric" autoComplete="one-time-code" value={parentOtp} onChange={(event) => setParentOtp(event.target.value.replace(/\D/g, "").slice(0, 4))} placeholder="رمز واتساب لولي الأمر (4 أرقام)" dir="ltr" className="h-12 w-full rounded-xl border border-[#24202D]/15 bg-[#F8F6F1] px-11 text-center text-sm tracking-[.2em] outline-none focus:border-[#171723]" />
                           </div>
                         )}
                       </>
@@ -487,12 +551,12 @@ export function AuthModal({ open, mode, onClose, onModeChange }: { open: boolean
                           {childOtpSent && (
                             <div className="relative animate-fade-in-up">
                               <KeyRound className="pointer-events-none absolute right-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-[#8B8278]" />
-                              <input inputMode="numeric" autoComplete="off" value={childOtp} onChange={(event) => setChildOtp(event.target.value.replace(/\D/g, "").slice(0, 6))} placeholder="رمز واتساب المرسل للطالب" dir="ltr" className="h-11 w-full rounded-xl border border-[#24202D]/15 bg-white px-11 text-center text-sm tracking-[.2em] outline-none focus:border-[#171723]" />
+                              <input inputMode="numeric" autoComplete="off" value={childOtp} onChange={(event) => setChildOtp(event.target.value.replace(/\D/g, "").slice(0, 4))} placeholder="رمز واتساب المرسل للطالب (4 أرقام)" dir="ltr" className="h-11 w-full rounded-xl border border-[#24202D]/15 bg-white px-11 text-center text-sm tracking-[.2em] outline-none focus:border-[#171723]" />
                             </div>
                           )}
                           <button
                             type="button"
-                            disabled={loading || childPhone.length < 6 || (childOtpSent && childOtp.length < 6)}
+                            disabled={loading || childPhone.length < 6 || (childOtpSent && childOtp.length < 4)}
                             onClick={childOtpSent ? verifyChildPhone : requestChildPhone}
                             className="w-full flex justify-center items-center h-10 rounded-lg bg-[#24202D] text-white text-xs font-black disabled:opacity-50"
                           >
@@ -511,18 +575,21 @@ export function AuthModal({ open, mode, onClose, onModeChange }: { open: boolean
 
                 {/* Login Fields */}
                 {mode === "login" && <label className="block"><span className="mb-1.5 flex items-center gap-1.5 text-xs font-black text-[#4F4A58]"><Phone className="h-3.5 w-3.5" /> رقم الجوال</span><PhoneField code={countryCode} number={phone} onCode={setCountryCode} onNumber={setPhone} /></label>}
-                {mode === "login" && otpSent && <div className="relative"><KeyRound className="pointer-events-none absolute right-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-[#8B8278]" /><input required inputMode="numeric" autoComplete="one-time-code" value={otp} onChange={(event) => setOtp(event.target.value.replace(/\D/g, "").slice(0, 6))} placeholder="رمز التحقق المكون من 6 أرقام" dir="ltr" className="h-12 w-full rounded-xl border border-[#24202D]/15 bg-[#F8F6F1] px-11 text-center text-sm text-[#171723] placeholder:text-[#8B8278] tracking-[.2em] outline-none focus:border-[#171723]" /></div>}
+                {mode === "login" && phoneLoginMode === "password" && <div className="relative"><Lock className="pointer-events-none absolute right-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-[#8B8278]" /><input required type={showPassword ? "text" : "password"} autoComplete="current-password" value={password} onChange={(event) => setPassword(event.target.value)} placeholder="كلمة المرور" className="h-12 w-full rounded-xl border border-[#24202D]/15 bg-[#F8F6F1] px-11 text-sm outline-none focus:border-[#171723]" /></div>}
+                {mode === "login" && phoneLoginMode === "otp" && otpSent && <div className="relative"><KeyRound className="pointer-events-none absolute right-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-[#8B8278]" /><input required inputMode="numeric" autoComplete="one-time-code" value={otp} onChange={(event) => setOtp(event.target.value.replace(/\D/g, "").slice(0, 4))} placeholder="رمز التحقق المكون من 4 أرقام" dir="ltr" className="h-12 w-full rounded-xl border border-[#24202D]/15 bg-[#F8F6F1] px-11 text-center text-sm text-[#171723] placeholder:text-[#8B8278] tracking-[.2em] outline-none focus:border-[#171723]" /></div>}
+                {mode === "login" && phoneLoginMode === "password" && <button type="button" onClick={() => { setPhoneLoginMode("otp"); setPassword(""); setOtp(""); setOtpSent(false); }} className="text-right text-[11px] font-bold text-[#6B625B]">العودة للدخول برمز واتساب</button>}
+                {mode === "login" && phoneLoginMode === "otp" && <button type="button" onClick={() => { setPhoneLoginMode("password"); setPassword(""); setOtp(""); setOtpSent(false); }} className="text-right text-[11px] font-bold text-[#6B625B]">لم يصلك الرمز؟ الدخول بكلمة المرور</button>}
               </div>
             ) : null}
 
             {(mode === "login" || (mode === "signup" && accountType)) && (
               <button
                 type="submit"
-                disabled={loading || (mode === "signup" && accountType === "parent" && parentToken && verifiedChildren.length === 0)}
+                disabled={loading || (passwordSetupRequired && (passwordSetup.length !== 8 || passwordSetupConfirm.length !== 8)) || (mode === "signup" && accountType === "parent" && parentToken && verifiedChildren.length === 0)}
                 className="mt-4 flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-[#171723] text-sm font-black text-white disabled:opacity-50"
               >
-                {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : mode === "login" && method === "email" ? <Mail className="h-4 w-4" /> : <MessageCircle className="h-4 w-4" />}
-                {mode === "login"
+                {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : passwordSetupRequired ? <Lock className="h-4 w-4" /> : mode === "login" && method === "email" ? <Mail className="h-4 w-4" /> : <MessageCircle className="h-4 w-4" />}
+                {passwordSetupRequired ? "حفظ كلمة المرور والدخول" : mode === "login"
                   ? (method === "email" ? "الدخول بالبريد" : otpSent ? "تأكيد الرمز والدخول" : "إرسال رمز واتساب")
                   : (accountType === "student"
                       ? (!phoneToken ? (otpSent ? "تأكيد رمز واتساب" : "إرسال رمز واتساب") : "إنشاء الحساب")

@@ -434,16 +434,16 @@ export function QodratakPayDialog({ open, onOpenChange, amount, description, onS
             <div>
               <label className="text-sm font-medium text-foreground mb-1.5 block flex items-center gap-1.5">
                 <KeyRound className="w-3.5 h-3.5 text-green-600" />
-                رمز التأكيد (6 أرقام)
+                 رمز التأكيد (4 أرقام)
               </label>
               <Input
                 data-testid="input-pay-otp"
                 type="text"
                 inputMode="numeric"
-                maxLength={6}
-                placeholder="• • • • • •"
+                 maxLength={4}
+                 placeholder="• • • •"
                 value={otp}
-                onChange={e => setOtp(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                 onChange={e => setOtp(e.target.value.replace(/\D/g, '').slice(0, 4))}
                 className="rounded-xl text-center text-2xl font-mono tracking-widest h-12"
                 dir="ltr"
                 autoFocus
@@ -460,7 +460,7 @@ export function QodratakPayDialog({ open, onOpenChange, amount, description, onS
               <Button
                 data-testid="button-confirm-pay"
                 onClick={() => confirmMutation.mutate({ cardNumber, otp })}
-                disabled={otp.length !== 6 || confirmMutation.isPending}
+                 disabled={otp.length !== 4 || confirmMutation.isPending}
                 className="flex-1 rounded-xl bg-gradient-to-l from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 font-bold gap-2"
               >
                 <ShieldCheck className="w-4 h-4" />
@@ -743,7 +743,7 @@ export default function WalletPage() {
               <div>
                 <label className="text-sm font-medium text-foreground mb-1 flex items-center gap-1.5">
                   <KeyRound className="w-3.5 h-3.5 text-green-600" />
-                  رمز التحقق (6 أرقام)
+                   رمز التحقق (4 أرقام)
                 </label>
                 <p className="text-xs text-muted-foreground mb-2">
                   أُرسل رمز إلى بريدك الإلكتروني <span className="font-medium text-foreground" dir="ltr">{maskedEmail}</span>
@@ -752,10 +752,10 @@ export default function WalletPage() {
                   data-testid="input-transfer-otp"
                   type="text"
                   inputMode="numeric"
-                  maxLength={6}
-                  placeholder="• • • • • •"
+                   maxLength={4}
+                   placeholder="• • • •"
                   value={otp}
-                  onChange={e => setOtp(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                   onChange={e => setOtp(e.target.value.replace(/\D/g, '').slice(0, 4))}
                   className="rounded-xl text-center text-2xl font-mono tracking-widest h-12"
                   dir="ltr"
                   autoFocus
@@ -773,7 +773,7 @@ export default function WalletPage() {
                 <Button
                   data-testid="button-confirm-transfer"
                   onClick={() => transferMutation.mutate({ otp })}
-                  disabled={otp.length !== 6 || transferMutation.isPending}
+                   disabled={otp.length !== 4 || transferMutation.isPending}
                   className="flex-1 rounded-xl bg-gradient-to-l from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 font-bold gap-2"
                 >
                   <ShieldCheck className="w-4 h-4" />

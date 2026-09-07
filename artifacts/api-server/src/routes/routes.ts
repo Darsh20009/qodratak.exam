@@ -1960,6 +1960,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
             ]
           });
           if (mongoUser) {
+            if (!hasUsableUserPassword(mongoUser.password)) {
+              return res.status(409).json({
+                code: 'PASSWORD_NOT_SET',
+                message: 'هذا الحساب لا يملك كلمة مرور بعد. سجّل الدخول برقم الجوال ثم عيّن كلمة مرور جديدة.',
+              });
+            }
+
             const isValid = mongoUser.password && mongoUser.password.startsWith('$2')
               ? await bcrypt.compare(password, mongoUser.password)
               : mongoUser.password === password;
@@ -2021,6 +2028,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
           console.error('MongoDB login fallback error:', mongoFallbackErr);
         }
         return res.status(401).json({ message: "بيانات تسجيل الدخول غير صحيحة. تحقق من البريد أو اسم المستخدم أو رقم الجوال" });
+      }
+
+      if (!user) {
+        return res.status(401).json({ message: "بيانات تسجيل الدخول غير صحيحة. تحقق من البريد أو اسم المستخدم أو رقم الجوال" });
+      }
+
+      if (!hasUsableUserPassword(user.password)) {
+        return res.status(409).json({
+          code: 'PASSWORD_NOT_SET',
+          message: 'هذا الحساب لا يملك كلمة مرور بعد. سجّل الدخول برقم الجوال ثم عيّن كلمة مرور جديدة.',
+        });
       }
 
       // التحقق من كلمة المرور (دعم bcrypt للمستخدمين الجدد والنص العادي للقدامى)
@@ -2209,6 +2227,11 @@ function generateFourDigitOtp() {
   return crypto.randomInt(1000, 10_000).toString();
 }
 
+function hasUsableUserPassword(password: unknown) {
+  const value = String(password || '').trim();
+  return Boolean(value) && value !== 'external-auth';
+}
+
   app.post('/api/auth/phone-otp/request', async (req: Request, res: Response) => {
     try {
       const purpose = req.body?.purpose === 'login' ? 'login' : 'signup';
@@ -2319,6 +2342,7 @@ function generateFourDigitOtp() {
           mongoUser.devices = deviceAccess.devices as any;
           await mongoUser.save();
           loginUser = {
+            password: mongoUser.password,
             id: String(mongoUser._id),
             name: mongoUser.fullName || mongoUser.username,
             fullName: mongoUser.fullName || mongoUser.username,
@@ -2340,8 +2364,33 @@ function generateFourDigitOtp() {
         }
         localUser.devices = deviceAccess.devices;
         fs.writeFileSync('attached_assets/user.json', JSON.stringify(users, null, 2));
+        loginUser = {
+          ...localUser,
+          id: String(localUser.id),
+          name: localUser.name || localUser.fullName || localUser.username,
+          fullName: localUser.fullName || localUser.name || localUser.username,
+          role: localUser.role || 'student',
+        };
       }
       if (!loginUser) return res.status(404).json({ error: 'الحساب غير موجود' });
+
+      if (!hasUsableUserPassword(loginUser.password)) {
+        (req.session as any).pendingPasswordSetup = {
+          userId: loginUser.id,
+          email: loginUser.email || null,
+          phone: verification.phone,
+          expiresAt: Date.now() + 15 * 60 * 1000,
+        };
+        return req.session.save((sessionError) => {
+          if (sessionError) return res.status(500).json({ error: 'تعذر حفظ جلسة إعداد كلمة المرور' });
+          return res.json({
+            requiresPasswordSetup: true,
+            passwordSetupRequired: true,
+            name: loginUser.fullName || loginUser.name || loginUser.username,
+            phone: verification.phone,
+          });
+        });
+      }
 
       (req.session as any).userId = loginUser.id;
       (req.session as any).userEmail = loginUser.email;
@@ -2360,6 +2409,104 @@ function generateFourDigitOtp() {
       };
       const message = messages[error?.message];
       return res.status(message ? 400 : 500).json({ error: message || 'تعذر التحقق من الرمز' });
+    }
+  });
+
+  app.post('/api/auth/complete-password-setup', async (req: Request, res: Response) => {
+    try {
+      const pending = (req.session as any).pendingPasswordSetup;
+      const password = String(req.body?.password || '');
+      const confirmPassword = String(req.body?.confirmPassword || password);
+
+      if (!pending || Number(pending.expiresAt || 0) < Date.now()) {
+        delete (req.session as any).pendingPasswordSetup;
+        return res.status(401).json({ error: 'انتهت جلسة إعداد كلمة المرور. سجّل الدخول برقم الجوال من جديد.' });
+      }
+      if (!/^\d{8}$/.test(password)) {
+        return res.status(400).json({ error: 'كلمة المرور الجديدة يجب أن تكون 8 أرقام بالضبط' });
+      }
+      if (password !== confirmPassword) {
+        return res.status(400).json({ error: 'كلمتا المرور غير متطابقتين' });
+      }
+
+      const passwordHash = await bcrypt.hash(password, 12);
+      let savedUser: any = null;
+
+      if (mongoose.connection.readyState === 1) {
+        const { User: MongoUser } = await import('./mongodb/models');
+        const mongoQuery: any[] = [];
+        if (pending.userId && mongoose.Types.ObjectId.isValid(String(pending.userId))) {
+          mongoQuery.push({ _id: pending.userId });
+        }
+        if (pending.email) mongoQuery.push({ email: String(pending.email).trim().toLowerCase() });
+        if (pending.phone) mongoQuery.push({ phone: String(pending.phone) });
+
+        if (mongoQuery.length > 0) {
+          const mongoUser = await MongoUser.findOneAndUpdate(
+            { $or: mongoQuery },
+            { $set: { password: passwordHash } },
+            { new: true },
+          );
+          if (mongoUser) {
+            savedUser = {
+              id: String(mongoUser._id),
+              name: mongoUser.fullName || mongoUser.username,
+              fullName: mongoUser.fullName || mongoUser.username,
+              username: mongoUser.username,
+              email: mongoUser.email,
+              phone: mongoUser.phone,
+              role: mongoUser.role || 'student',
+              points: mongoUser.points || 0,
+              level: mongoUser.level || 1,
+              subscription: mongoUser.subscription || { type: 'free', status: 'active' },
+              devices: mongoUser.devices,
+            };
+          }
+        }
+      }
+
+      let users: any[] = [];
+      try {
+        users = JSON.parse(fs.readFileSync('attached_assets/user.json', 'utf-8'));
+      } catch {}
+      const localIndex = users.findIndex((user: any) => {
+        if (pending.userId && String(user.id) === String(pending.userId)) return true;
+        if (pending.email && String(user.email || '').trim().toLowerCase() === String(pending.email).trim().toLowerCase()) return true;
+        if (pending.phone) {
+          try { return normalizeSaudiPhone(user.phone || user.whatsapp) === String(pending.phone); } catch { return false; }
+        }
+        return false;
+      });
+      if (localIndex !== -1) {
+        users[localIndex].password = passwordHash;
+        fs.writeFileSync('attached_assets/user.json', JSON.stringify(users, null, 2));
+        if (!savedUser) {
+          savedUser = {
+            ...users[localIndex],
+            id: String(users[localIndex].id),
+            name: users[localIndex].name || users[localIndex].fullName || users[localIndex].username,
+            fullName: users[localIndex].fullName || users[localIndex].name || users[localIndex].username,
+            role: users[localIndex].role || 'student',
+          };
+        }
+      }
+
+      if (!savedUser) {
+        return res.status(404).json({ error: 'لم نعثر على الحساب لإكمال إعداد كلمة المرور' });
+      }
+
+      (req.session as any).userId = savedUser.id;
+      (req.session as any).userEmail = savedUser.email;
+      (req.session as any).userRole = savedUser.role || 'student';
+      delete (req.session as any).pendingPasswordSetup;
+      return req.session.save((sessionError) => {
+        if (sessionError) return res.status(500).json({ error: 'تعذر حفظ جلسة الدخول' });
+        const { password: _password, ...safeUser } = savedUser;
+        return res.json(safeUser);
+      });
+    } catch (error) {
+      console.error('Complete password setup error:', error);
+      return res.status(500).json({ error: 'تعذر حفظ كلمة المرور الجديدة' });
     }
   });
 

@@ -1139,7 +1139,7 @@ export default function SignupPage() {
                       تحقق من بريدك الإلكتروني
                     </div>
                     <p className="text-xs text-gray-500">
-                      سنرسل رمز تحقق مكون من 6 أرقام إلى: <span className="font-bold text-gray-700" dir="ltr">{email}</span>
+                       سنرسل رمز تحقق مكون من 4 أرقام إلى: <span className="font-bold text-gray-700" dir="ltr">{email}</span>
                     </p>
                     {emailVerified ? (
                       <div className="flex items-center gap-2 text-emerald-700 text-sm bg-emerald-100 rounded-xl px-3 py-2">
@@ -1164,10 +1164,10 @@ export default function SignupPage() {
                           <div className="flex gap-2">
                             <Input
                               type="text"
-                              placeholder="أدخل الرمز (6 أرقام)"
+                               placeholder="أدخل الرمز (4 أرقام)"
                               value={emailOtp}
                               onChange={e => setEmailOtp(e.target.value)}
-                              maxLength={6}
+                               maxLength={4}
                               data-testid="input-email-otp"
                               className="flex-1 h-10 rounded-xl border-emerald-200 bg-white text-gray-900 text-center tracking-widest focus:ring-2 focus:ring-emerald-500/20"
                               dir="ltr"

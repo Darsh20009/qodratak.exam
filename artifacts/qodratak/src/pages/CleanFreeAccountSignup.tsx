@@ -32,7 +32,7 @@ export default function CleanFreeAccountSignup() {
   const [step, setStep] = useState<Step>("form");
   const [isLoading, setIsLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
-  const [otpDigits, setOtpDigits] = useState(["", "", "", "", "", ""]);
+  const [otpDigits, setOtpDigits] = useState(["", "", "", ""]);
   const otpRefs = useRef<(HTMLInputElement | null)[]>([]);
   const [resendTimer, setResendTimer] = useState(0);
 
@@ -97,7 +97,7 @@ export default function CleanFreeAccountSignup() {
 
   const handleVerifyOTP = async () => {
     const otp = otpDigits.join("");
-    if (otp.length < 6) { toast({ title: "أدخل الرمز كاملاً (6 أرقام)", variant: "destructive" }); return; }
+    if (otp.length < 4) { toast({ title: "أدخل الرمز كاملاً (4 أرقام)", variant: "destructive" }); return; }
     setIsLoading(true);
     try {
       const verifyRes = await fetch('/api/auth/signup/verify-otp', {
@@ -131,7 +131,7 @@ export default function CleanFreeAccountSignup() {
     const digits = [...otpDigits];
     digits[i] = val.slice(-1);
     setOtpDigits(digits);
-    if (val && i < 5) otpRefs.current[i + 1]?.focus();
+    if (val && i < 3) otpRefs.current[i + 1]?.focus();
   };
 
   const handleOTPKeyDown = (i: number, e: React.KeyboardEvent) => {
@@ -140,11 +140,11 @@ export default function CleanFreeAccountSignup() {
 
   const handleOTPPaste = (e: React.ClipboardEvent) => {
     e.preventDefault();
-    const text = e.clipboardData.getData('text').replace(/\D/g, '').slice(0, 6);
+    const text = e.clipboardData.getData('text').replace(/\D/g, '').slice(0, 4);
     const digits = [...otpDigits];
     text.split('').forEach((c, i) => { digits[i] = c; });
     setOtpDigits(digits);
-    otpRefs.current[Math.min(text.length, 5)]?.focus();
+    otpRefs.current[Math.min(text.length, 3)]?.focus();
   };
 
   const handleResend = async () => {
@@ -157,7 +157,7 @@ export default function CleanFreeAccountSignup() {
         body: JSON.stringify({ email: form.email, fullName: form.fullName, phone: form.phone }),
       });
       const d = await r.json();
-      if (r.ok) { toast({ title: "✅ تم إعادة إرسال الرمز" }); startResendTimer(); setOtpDigits(["", "", "", "", "", ""]); }
+      if (r.ok) { toast({ title: "✅ تم إعادة إرسال الرمز" }); startResendTimer(); setOtpDigits(["", "", "", ""]); }
       else toast({ title: d.error || "فشل الإرسال", variant: "destructive" });
     } catch {
       toast({ title: "خطأ في الاتصال", variant: "destructive" });
@@ -341,7 +341,7 @@ export default function CleanFreeAccountSignup() {
                   <ShieldCheck className="w-8 h-8 text-teal-700" />
                 </div>
                 <h2 className="text-white font-bold text-2xl mb-2">تحقق من بريدك</h2>
-                <p className="text-slate-400 text-sm">أرسلنا رمز تحقق مكون من 6 أرقام إلى</p>
+                <p className="text-slate-400 text-sm">أرسلنا رمز تحقق مكون من 4 أرقام إلى</p>
                 <p className="text-teal-700 font-medium mt-1" dir="ltr">{form.email}</p>
               </div>
 
@@ -367,7 +367,7 @@ export default function CleanFreeAccountSignup() {
               <Button
                 data-testid="button-verify-otp"
                 onClick={handleVerifyOTP}
-                disabled={isLoading || otpDigits.join("").length < 6}
+                disabled={isLoading || otpDigits.join("").length < 4}
                 className="w-full h-12 bg-gradient-to-l from-emerald-600 to-green-600 hover:from-emerald-500 hover:to-green-500 text-white font-semibold rounded-xl gap-2"
               >
                 {isLoading ? <><Loader2 className="w-5 h-5 animate-spin" />جارٍ التحقق...</> : <><CheckCircle className="w-5 h-5" />تأكيد وإنشاء الحساب</>}

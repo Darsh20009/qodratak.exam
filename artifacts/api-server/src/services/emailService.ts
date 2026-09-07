@@ -1,4 +1,5 @@
 import nodemailer from 'nodemailer';
+import crypto from 'crypto';
 
 const SMTP2GO_API_KEY = process.env.SMTP2GO_API_KEY;
 const SMTP_HOST = process.env.SMTP_HOST || 'qirox.online';
@@ -9,6 +10,9 @@ const SMTP_PASS = process.env.SMTP_PASS;
 const SYSTEM_EMAIL = 'Qodratak.Platform@gmail.com';
 const FROM_EMAIL = process.env.FROM_EMAIL || SYSTEM_EMAIL;
 const FROM_NAME = process.env.FROM_NAME || 'مؤسسة قدراتك العالية';
+const QIROX_API_BASE_URL = (process.env.QIROX_API_BASE_URL || '').replace(/\/+$/, '');
+const QIROX_PROJECT_ID = (process.env.QIROX_PROJECT_ID || '').trim();
+const QIROX_PROJECT_API_KEY = (process.env.QIROX_PROJECT_API_KEY || '').trim();
 let smtpTransporter: ReturnType<typeof nodemailer.createTransport> | null = null;
 
 function getSmtpTransporter() {
@@ -28,6 +32,33 @@ function getSmtpTransporter() {
 async function sendEmail(to: string | string[], subject: string, htmlBody: string, textBody: string): Promise<boolean> {
   try {
     const toList = Array.isArray(to) ? to : [to];
+    if (QIROX_API_BASE_URL && QIROX_PROJECT_ID && QIROX_PROJECT_API_KEY) {
+      const qiroxResponse = await fetch(
+        `${QIROX_API_BASE_URL}/projects/${encodeURIComponent(QIROX_PROJECT_ID)}/email`,
+        {
+          method: 'POST',
+          headers: {
+            Authorization: `Bearer ${QIROX_PROJECT_API_KEY}`,
+            'Content-Type': 'application/json',
+            'Idempotency-Key': `qodratak-email-${crypto.randomUUID()}`,
+          },
+          body: JSON.stringify({
+            recipient: { email: toList[0], name: FROM_NAME },
+            subject: subject.slice(0, 200),
+            message: textBody || htmlBody.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim(),
+          }),
+          signal: AbortSignal.timeout(20_000),
+        },
+      );
+
+      if (qiroxResponse.ok) {
+        console.log(`✅ Email sent via QIROX to ${toList.join(', ')}`);
+        return true;
+      }
+
+      console.error(`❌ QIROX email send failed with status ${qiroxResponse.status}`);
+    }
+
     if (SMTP2GO_API_KEY) {
       const res = await fetch('https://api.smtp2go.com/v3/email/send', {
         method: 'POST',

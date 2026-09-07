@@ -143,8 +143,8 @@ export default function ParentDashboardPage() {
   };
 
   const verifyAndAddChild = async () => {
-    if (addChildOtp.length < 6) {
-      setAddChildNotice({ type: "error", text: "أدخل رمز التحقق المكوّن من 6 أرقام." });
+    if (addChildOtp.length < 4) {
+      setAddChildNotice({ type: "error", text: "أدخل رمز التحقق المكوّن من 4 أرقام." });
       return;
     }
 
@@ -341,7 +341,7 @@ export default function ParentDashboardPage() {
                         inputMode="numeric"
                         autoComplete="one-time-code"
                         value={addChildOtp}
-                        onChange={(event) => setAddChildOtp(event.target.value.replace(/\D/g, "").slice(0, 6))}
+                        onChange={(event) => setAddChildOtp(event.target.value.replace(/\D/g, "").slice(0, 4))}
                         placeholder="رمز التحقق من واتساب"
                         dir="ltr"
                         className="h-11 min-w-0 flex-1 rounded-xl border border-[#24202D]/15 bg-white px-3 text-center text-sm tracking-[.2em] outline-none focus:border-[#171723]"
