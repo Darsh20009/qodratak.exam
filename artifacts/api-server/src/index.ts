@@ -61,9 +61,42 @@ async function seedMongoQuestionsIfEmpty() {
   }
 }
 
+async function ensureCubeVolumeQuestion() {
+  const text = "مكعب طول حرفه ٢ سم، وُضع فيه مكعب طول حرفه ١ سم. ما الحجم المتبقي من المكعب الأول؟";
+  const exists = await Question.exists({ text });
+  if (exists) return;
+
+  const lastQuestion = await Question.findOne().sort({ questionId: -1 }).select({ questionId: 1 }).lean();
+  await Question.create({
+    questionId: Math.max(Number(lastQuestion?.questionId || 0) + 1, 2153),
+    category: "quantitative",
+    subcategory: "الهندسة",
+    text,
+    options: ["١", "٥", "٦", "٧"],
+    correctOptionIndex: 3,
+    difficulty: "beginner",
+    topic: "المجسمات والحجوم",
+    dialect: "standard",
+    keywords: ["الهندسة", "المجسمات", "الحجوم", "حجم المكعب"],
+    section: 2,
+    explanation: "حجم المكعب الأول = ٢³ = ٨ سم³، وحجم المكعب الصغير = ١³ = ١ سم³. الحجم المتبقي = ٨ - ١ = ٧ سم³.",
+    imageUrl: "/api/uploads/question-images/q-img-cube-volume-no-bg.png",
+    imageProcessing: {
+      status: "processed",
+      backgroundRemoved: true,
+      watermarkCleanupApplied: true,
+      note: "تمت إزالة الخلفية الفاتحة من نسخة السؤال المرفقة مع الاحتفاظ بنسخة نصية قابلة للبحث.",
+    },
+    createdAt: new Date(),
+    createdBy: "system",
+  });
+  console.log("✅ Added cube volume question to MongoDB");
+}
+
 try {
   if (await connectToMongoDB()) {
     await mongoStorage.initialize();
+    await ensureCubeVolumeQuestion();
     void seedMongoQuestionsIfEmpty().catch((error) =>
       logger.warn({ error }, "Question seed failed"),
     );

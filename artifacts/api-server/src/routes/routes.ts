@@ -773,7 +773,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
         );
         if (mongoQuestions && mongoQuestions.length > 0) {
           const mongoIds = new Set(mongoQuestions.map((q: any) => q.questionId));
-          const pgOnly = pgQuestions.filter((q: any) => !mongoIds.has(q.id ?? q.questionId));
+          const mongoTexts = new Set(mongoQuestions.map((q: any) => q.text).filter(Boolean));
+          const pgOnly = pgQuestions.filter(
+            (q: any) =>
+              !mongoIds.has(q.id ?? q.questionId) &&
+              !mongoTexts.has(q.text),
+          );
           const merged = [
             ...mongoQuestions.map((q: any) => ({
               id: q.questionId,
