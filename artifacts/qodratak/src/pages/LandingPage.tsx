@@ -30,13 +30,19 @@ function Header({ onSignup, onLogin }: { onSignup: () => void; onLogin: () => vo
       <div className="mx-auto flex max-w-6xl items-center justify-between px-5 py-4 sm:px-8">
         <Link href="/" className="qodratak-focus-ring flex items-center gap-2.5 rounded-lg">
           <img
-            src="/qodratak-logo-transparent.png"
-            alt="شعار منصة قدراتك"
-            width="40"
-            height="40"
-            className="h-10 w-10 object-contain"
+            src="/qodratak-icon-light.png"
+            alt="قدراتك"
+            width="42"
+            height="42"
+            className="h-10 w-10 object-contain dark:hidden"
           />
-          <span className="text-base font-black text-[#171723] dark:text-white">قدراتك</span>
+          <img
+            src="/qodratak-icon-dark.png"
+            alt="قدراتك"
+            width="42"
+            height="42"
+            className="hidden h-10 w-10 object-contain dark:block"
+          />
         </Link>
 
         <nav className="hidden items-center gap-6 sm:flex">
