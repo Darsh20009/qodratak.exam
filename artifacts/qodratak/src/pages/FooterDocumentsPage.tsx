@@ -1,6 +1,6 @@
 import { Link } from "wouter";
 import { ArrowRight, CheckCircle2, FileText, MessageCircle, Phone } from "lucide-react";
-import { LEGAL_ENTITY_NAME, SUPPORT_PHONE, UNIFIED_NATIONAL_NUMBER } from "@/constants/legalIdentity";
+import { LEGAL_ENTITY_NAME, SUPPORT_EMAIL, SUPPORT_PHONE, UNIFIED_NATIONAL_NUMBER } from "@/constants/legalIdentity";
 
 type DocumentKey = "terms" | "privacy" | "refund";
 
@@ -29,7 +29,7 @@ const documents: Record<DocumentKey, {
         bullets: [
           `الاسم النظامي: ${LEGAL_ENTITY_NAME}.`,
           `الرقم الوطني الموحد: ${UNIFIED_NATIONAL_NUMBER}.`,
-          `خدمة العملاء: ${SUPPORT_PHONE} عبر الاتصال أو واتساب.`
+          `خدمة العملاء: ${SUPPORT_PHONE} عبر الاتصال أو واتساب، والبريد: ${SUPPORT_EMAIL}.`
         ]
       },
       {
@@ -120,7 +120,7 @@ const documents: Record<DocumentKey, {
         title: "ملفات تعريف الارتباط والتواصل",
         paragraphs: [
           "تستخدم المنصة ملفات تعريف ارتباط مؤقتة لتأمين جلسات تسجيل الدخول وتذكر تفضيلات الواجهة. قد يؤثر تعطيلها على القدرة على تسجيل الدخول.",
-          `لممارسة حقوقك أو تقديم طلب تصحيح أو حذف، تواصل مع ${LEGAL_ENTITY_NAME} عبر الرقم ${SUPPORT_PHONE} بالاتصال أو واتساب.`
+          `لممارسة حقوقك أو تقديم طلب تصحيح أو حذف، تواصل مع ${LEGAL_ENTITY_NAME} عبر الرقم ${SUPPORT_PHONE} بالاتصال أو واتساب أو البريد ${SUPPORT_EMAIL}.`
         ]
       }
     ]
@@ -174,7 +174,7 @@ const documents: Record<DocumentKey, {
         title: "تقديم الطلب والتواصل",
         paragraphs: [
           `قدّم الاسم المسجل ورقم الجوال وتاريخ ووقت الدفع والرقم المرجعي للإيصال وسبب الطلب، وأرفق صوراً عند وجود خلل تقني. يُقدّم الطلب إلى ${LEGAL_ENTITY_NAME}.`,
-          `لرفع طلب استرجاع أو متابعة شكوى، تواصل معنا عبر مركز الدعم أو الرقم ${SUPPORT_PHONE} اتصالاً أو واتساب.`
+          `لرفع طلب استرجاع أو متابعة شكوى، تواصل معنا عبر مركز الدعم أو الرقم ${SUPPORT_PHONE} اتصالاً أو واتساب أو البريد ${SUPPORT_EMAIL}.`
         ]
       }
     ]

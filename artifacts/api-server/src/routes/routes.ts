@@ -6562,7 +6562,7 @@ app.post("/api/auth/register", async (req: Request, res: Response) => {
       }
 
       const SMTP2GO_API_KEY = process.env.SMTP2GO_API_KEY;
-      const FROM_EMAIL = process.env.FROM_EMAIL || 'noreply@qodratak.sa';
+      const FROM_EMAIL = process.env.FROM_EMAIL || 'Qodratak.Platform@gmail.com';
       if (!SMTP2GO_API_KEY) {
         return res.status(503).json({ error: 'خدمة البريد غير مهيأة' });
       }

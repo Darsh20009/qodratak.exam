@@ -4,6 +4,7 @@ import { MessageCircleIcon, XIcon, SendIcon, HeadphonesIcon, ClockIcon, MailIcon
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { cn } from '@/lib/utils';
+import { SUPPORT_EMAIL } from '@/constants/legalIdentity';
 
 const getSupportHours = () => {
   const now = new Date();
@@ -59,7 +60,7 @@ ${message}
 التاريخ: ${new Date().toLocaleString('ar-SA')}
       `);
       
-      const mailtoUrl = `mailto:qoudratak@gmail.com?subject=${subject}&body=${body}`;
+      const mailtoUrl = `mailto:${SUPPORT_EMAIL}?subject=${subject}&body=${body}`;
       window.location.href = mailtoUrl;
       setMessage('');
       setIsExpanded(false);

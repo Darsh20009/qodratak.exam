@@ -6,7 +6,8 @@ const SMTP_PORT = Number(process.env.SMTP_PORT || 465);
 const SMTP_SECURE = process.env.SMTP_SECURE !== 'false';
 const SMTP_USER = process.env.SMTP_USER || 'qodratak@qirox.online';
 const SMTP_PASS = process.env.SMTP_PASS;
-const FROM_EMAIL = process.env.FROM_EMAIL || SMTP_USER || 'noreply@qodratak.sa';
+const SYSTEM_EMAIL = 'Qodratak.Platform@gmail.com';
+const FROM_EMAIL = process.env.FROM_EMAIL || SYSTEM_EMAIL;
 const FROM_NAME = process.env.FROM_NAME || 'منصة قدراتك';
 let smtpTransporter: ReturnType<typeof nodemailer.createTransport> | null = null;
 
@@ -477,7 +478,7 @@ export async function sendTestEmail(to: string): Promise<boolean> {
       تم استلام هذا البريد التجريبي من منصة قدراتك. نظام البريد الإلكتروني متصل عبر ${providerName}.
     </p>
     ${infoTable(
-      infoRow('المُرسِل', 'noreply@qodratak.sa') +
+      infoRow('المُرسِل', FROM_EMAIL) +
       infoRow('الخدمة', providerName)
     )}
   `;

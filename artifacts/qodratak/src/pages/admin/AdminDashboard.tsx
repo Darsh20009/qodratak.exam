@@ -985,7 +985,7 @@ export default function AdminDashboard({ initialTab = 'overview' }: { initialTab
               <div className="bg-emerald-900/20 rounded-2xl p-5 border border-emerald-900/40">
                 <h3 className="text-white font-semibold mb-3 flex items-center gap-2"><MessageSquare className="w-4 h-4 text-cyan-400" />تلميحات</h3>
                 <ul className="space-y-2 text-slate-400 text-sm">
-                  <li>• الرسائل ترسل من noreply@qodratak.sa</li>
+                  <li>• الرسائل ترسل من Qodratak.Platform@gmail.com</li>
                   <li>• اختر الفئة المستهدفة بعناية قبل الإرسال</li>
                   <li>• يمكنك استخدام سطر جديد لتنسيق النص</li>
                   <li>• الرسائل ترسل بتصميم احترافي تلقائياً</li>

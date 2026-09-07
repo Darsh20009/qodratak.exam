@@ -1509,7 +1509,7 @@ const DEFAULT_SETTINGS = [
   { key: 'bank_account_name', label: 'اسم صاحب الحساب البنكي', value: 'شركة قدراتك التعليمية', type: 'text', category: 'payment', description: 'اسم الحساب البنكي لتحويل الاشتراكات' },
   { key: 'bank_iban', label: 'رقم الآيبان', value: 'SA0000000000000000000000', type: 'text', category: 'payment', description: 'رقم الآيبان للتحويل البنكي' },
   { key: 'bank_name', label: 'اسم البنك', value: 'بنك الراجحي', type: 'text', category: 'payment', description: 'اسم البنك' },
-  { key: 'support_email', label: 'بريد الدعم الفني', value: 'support@qodratak.com', type: 'text', category: 'contact', description: 'البريد الإلكتروني للدعم الفني' },
+  { key: 'support_email', label: 'بريد الدعم الفني', value: 'Qodratak.Platform@gmail.com', type: 'text', category: 'contact', description: 'البريد الإلكتروني للدعم الفني والنظام' },
   { key: 'support_whatsapp', label: 'واتساب الدعم', value: '+966510510140', type: 'text', category: 'contact', description: 'رقم واتساب للدعم' },
 ];
 

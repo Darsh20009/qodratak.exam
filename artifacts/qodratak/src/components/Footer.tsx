@@ -1,5 +1,5 @@
 import { Clock3, ExternalLink, MapPin, MessageCircle, Phone, ShieldCheck } from "lucide-react";
-import { BRAND_NAME, LEGAL_ENTITY_NAME, SUPPORT_PHONE, UNIFIED_NATIONAL_NUMBER } from "@/constants/legalIdentity";
+import { BRAND_NAME, LEGAL_ENTITY_NAME, SUPPORT_EMAIL, SUPPORT_PHONE, UNIFIED_NATIONAL_NUMBER } from "@/constants/legalIdentity";
 
 const learningLinks = [
   { label: "تدريب اختبار القدرات", href: "/qiyas-hub" },
@@ -104,6 +104,9 @@ export function Footer() {
               <a href={`https://wa.me/966${SUPPORT_PHONE.replace(/^0/, "")}`} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 font-bold text-primary transition hover:text-foreground">
                 <Phone className="h-4 w-4" />
                 <span dir="ltr">{SUPPORT_PHONE}</span>
+              </a>
+              <a href={`mailto:${SUPPORT_EMAIL}`} className="break-all font-bold transition hover:text-foreground">
+                {SUPPORT_EMAIL}
               </a>
               <p className="flex items-start gap-2 font-bold">
                 <Clock3 className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
