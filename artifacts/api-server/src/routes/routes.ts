@@ -1931,7 +1931,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         users = JSON.parse(usersData);
       } catch (error) {
         console.error("Error reading users file:", error);
-        return res.status(500).json({ message: "خطأ في قراءة ملف المستخدمين" });
+        // MongoDB-backed accounts can still authenticate when the legacy
+        // local user export is unavailable.
+        users = [];
       }
 
       // البحث عن المستخدم بالبريد أو اسم المستخدم أو رقم الجوال

@@ -921,6 +921,11 @@ function Router({ splashDone }: { splashDone: boolean }) {
       <Route path="/qiyas">
         {() => <StudentShell><QiyasExamPage /></StudentShell>}
       </Route>
+      {/* Legacy mock-exam links use these explicit exam paths. Keep them as
+          aliases so starting a mock from the hub never lands on 404. */}
+      <Route path="/qiyas-exam">
+        {() => <StudentShell><QiyasExamPage /></StudentShell>}
+      </Route>
 
       <Route path="/time-management">
         {() => <StudentShell><NewTimeManagementPage /></StudentShell>}
@@ -995,6 +1000,9 @@ function Router({ splashDone }: { splashDone: boolean }) {
         {() => <StudentShell><ProtectedRoute requiresPremium={true}><CustomExamPage /></ProtectedRoute></StudentShell>}
       </Route>
       <Route path="/abilities">
+        {() => <StudentShell><ProtectedRoute requiresPremium={true}><AbilitiesTestPage /></ProtectedRoute></StudentShell>}
+      </Route>
+      <Route path="/abilities-test/:type">
         {() => <StudentShell><ProtectedRoute requiresPremium={true}><AbilitiesTestPage /></ProtectedRoute></StudentShell>}
       </Route>
       <Route path="/library">
