@@ -8,7 +8,7 @@ const SMTP_USER = process.env.SMTP_USER || 'qodratak@qirox.online';
 const SMTP_PASS = process.env.SMTP_PASS;
 const SYSTEM_EMAIL = 'Qodratak.Platform@gmail.com';
 const FROM_EMAIL = process.env.FROM_EMAIL || SYSTEM_EMAIL;
-const FROM_NAME = process.env.FROM_NAME || 'منصة قدراتك';
+const FROM_NAME = process.env.FROM_NAME || 'مؤسسة قدراتك العالية';
 let smtpTransporter: ReturnType<typeof nodemailer.createTransport> | null = null;
 
 function getSmtpTransporter() {
@@ -359,7 +359,7 @@ export async function sendExamResults(
 
 // ─── Admin notification helpers ───────────────────────────────────────────────
 
-const ADMIN_EMAIL = 'qoudratak@gmail.com';
+const ADMIN_EMAIL = SYSTEM_EMAIL;
 
 export async function sendAdminNotificationEmail(subject: string, htmlBody: string, textBody: string): Promise<boolean> {
   return sendEmail(ADMIN_EMAIL, subject, htmlBody, textBody);

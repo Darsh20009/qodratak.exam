@@ -1523,6 +1523,21 @@ router.get('/settings', requireAdminAuth, async (req: Request, res: Response) =>
       await PlatformSetting.insertMany(docs);
       settings = await PlatformSetting.find().lean();
     }
+    const legacySupportEmail = settings.find(setting =>
+      setting.key === 'support_email' &&
+      ['support@qodratak.com', 'qoudratak@gmail.com'].includes(String(setting.value)),
+    );
+    if (legacySupportEmail) {
+      await PlatformSetting.updateOne(
+        { _id: legacySupportEmail._id },
+        { $set: { value: 'Qodratak.Platform@gmail.com', updatedAt: new Date() } },
+      );
+      settings = settings.map(setting =>
+        setting._id.equals(legacySupportEmail._id)
+          ? { ...setting, value: 'Qodratak.Platform@gmail.com' }
+          : setting,
+      );
+    }
     res.json({ settings });
   } catch (error) {
     res.status(500).json({ error: 'فشل في جلب الإعدادات' });

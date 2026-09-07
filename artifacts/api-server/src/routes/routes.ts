@@ -6590,7 +6590,7 @@ app.post("/api/auth/register", async (req: Request, res: Response) => {
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
               api_key: SMTP2GO_API_KEY,
-              sender: `منصة قدراتك <${FROM_EMAIL}>`,
+              sender: `مؤسسة قدراتك العالية <${FROM_EMAIL}>`,
               to: batch,
               subject,
               html_body: htmlBody,
