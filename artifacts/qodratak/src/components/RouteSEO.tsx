@@ -1,5 +1,6 @@
 import { useLocation } from "wouter";
 import { SEO, PLATFORM_DESCRIPTION, PLATFORM_NAME } from "@/components/SEO";
+import { LEGAL_ENTITY_NAME } from "@/constants/legalIdentity";
 
 type RouteMetadata = {
   title: string;
@@ -15,7 +16,8 @@ const PUBLIC_ROUTE_METADATA: Record<string, RouteMetadata> = {
     structuredData: {
       "@context": "https://schema.org",
       "@type": "EducationalOrganization",
-      name: "منصة قدرات التعليمية - قدراتك",
+       name: "قدراتك",
+       legalName: LEGAL_ENTITY_NAME,
       alternateName: ["Qodratak", "منصة قدراتك"],
       description: "منصة تعليمية وتدريبية متكاملة لطلاب الثانوية في السعودية للاستعداد للقدرات والتحصيلي.",
       url: "https://qodratak.sa/",

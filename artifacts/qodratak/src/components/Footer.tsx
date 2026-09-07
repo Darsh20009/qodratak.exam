@@ -1,4 +1,5 @@
 import { Clock3, ExternalLink, MapPin, MessageCircle, Phone, ShieldCheck } from "lucide-react";
+import { BRAND_NAME, LEGAL_ENTITY_NAME, SUPPORT_PHONE, UNIFIED_NATIONAL_NUMBER } from "@/constants/legalIdentity";
 
 const learningLinks = [
   { label: "تدريب اختبار القدرات", href: "/qiyas-hub" },
@@ -25,14 +26,14 @@ export function Footer() {
             <div className="flex items-center gap-3">
               <img
                 src="/qodratak-logo-transparent.png"
-                alt="شعار منصة قدرات التعليمية"
+                alt={`شعار ${BRAND_NAME}`}
                 width="48"
                 height="48"
                 className="h-12 w-12 object-contain"
               />
               <div>
-                <h2 className="text-lg font-black">منصة قدرات التعليمية</h2>
-                <p className="mt-0.5 text-xs font-bold text-muted-foreground">قدراتك · Qodratak</p>
+                <h2 className="text-lg font-black">{LEGAL_ENTITY_NAME}</h2>
+                <p className="mt-0.5 text-xs font-bold text-muted-foreground">{BRAND_NAME} · Qodratak</p>
               </div>
             </div>
             <p className="mt-5 max-w-sm text-sm leading-7 text-muted-foreground">
@@ -100,9 +101,9 @@ export function Footer() {
                 <MessageCircle className="h-4 w-4 text-primary" />
                 مركز الدعم والتواصل
               </a>
-              <a href="https://wa.me/966510510140" target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 font-bold text-primary transition hover:text-foreground">
+              <a href={`https://wa.me/966${SUPPORT_PHONE.replace(/^0/, "")}`} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 font-bold text-primary transition hover:text-foreground">
                 <Phone className="h-4 w-4" />
-                <span dir="ltr">0510510140</span>
+                <span dir="ltr">{SUPPORT_PHONE}</span>
               </a>
               <p className="flex items-start gap-2 font-bold">
                 <Clock3 className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
@@ -118,7 +119,10 @@ export function Footer() {
 
         <div className="mt-12 border-t border-border pt-6">
           <div className="flex flex-col gap-4 text-xs font-bold text-muted-foreground sm:flex-row sm:items-center sm:justify-between">
-            <p>© 2026 منصة قدرات التعليمية. جميع الحقوق محفوظة.</p>
+            <div>
+              <p>© 2026 {LEGAL_ENTITY_NAME}. جميع الحقوق محفوظة.</p>
+              <p className="mt-1">الرقم الوطني الموحد: <span dir="ltr">{UNIFIED_NATIONAL_NUMBER}</span></p>
+            </div>
             <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
               <a href="/terms" className="hover:text-foreground">الشروط والأحكام</a>
               <span aria-hidden="true">•</span>
