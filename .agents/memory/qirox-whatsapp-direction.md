@@ -7,4 +7,4 @@ The current QIROX integration is an outbound fallback only. Interactive student 
 
 **Why:** The supplied QIROX API contract documents POST send endpoints for WhatsApp, email, and a generic API channel, but no inbound webhook or event subscription.
 
-**How to apply:** Do not promise fully interactive WhatsApp quizzes during a Baileys outage unless QIROX supplies an authenticated inbound webhook. If that becomes available, route it into the existing inbound bot handler with signature verification and message deduplication.
+**How to apply:** Use the existing QIROX project configuration for outbound WhatsApp and email, keeping SMTP as an email fallback. Do not promise fully interactive WhatsApp quizzes during a Baileys outage unless QIROX supplies an authenticated inbound webhook; if it does, route it into the existing inbound bot handler with signature verification and message deduplication.
