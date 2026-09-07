@@ -80,6 +80,44 @@
         50% { transform: scale(1.05); box-shadow: 0 12px 35px rgba(0, 91, 179, 0.4); }
         100% { transform: scale(1); box-shadow: 0 8px 25px rgba(0, 91, 179, 0.3); }
       }
+
+      /* Saudi Business verification seal: keep the official mark, match Qodratak's shell. */
+      .sbc-verify-seal {
+        position: fixed !important;
+        left: 16px !important;
+        right: auto !important;
+        bottom: 16px !important;
+        z-index: 60 !important;
+        display: flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+        min-height: 54px !important;
+        max-width: calc(100vw - 32px) !important;
+        padding: 6px 10px !important;
+        overflow: hidden !important;
+        border: 1px solid rgba(244, 170, 133, 0.42) !important;
+        border-radius: 18px !important;
+        background: linear-gradient(135deg, #0d1b2a, #173b4d) !important;
+        box-shadow: 0 10px 28px rgba(13, 27, 42, 0.24) !important;
+        color: #fff !important;
+      }
+
+      .sbc-verify-seal > *,
+      .sbc-verify-seal iframe {
+        max-width: 100% !important;
+        border-radius: 12px !important;
+        background: transparent !important;
+      }
+
+      @media (max-width: 640px) {
+        .sbc-verify-seal {
+          left: 10px !important;
+          bottom: max(10px, env(safe-area-inset-bottom)) !important;
+          border-radius: 15px !important;
+          transform: scale(0.9);
+          transform-origin: bottom left;
+        }
+      }
     </style>
     
     <!-- Structured Data (Schema.org) for Google -->
@@ -128,8 +166,6 @@
   </head>
   <body>
     <div id="root"></div>
-    <div class="sbc-verify-seal" data-token="QVllTDdEcm91V0cxa25lTW1iRUJzQT09" data-position="bottom-left"></div>
-    <script src="https://eauthenticate.saudibusiness.gov.sa/EAuthSealApi/seal.js" async></script>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>

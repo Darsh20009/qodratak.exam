@@ -147,6 +147,71 @@ const uploadQuestionImage = multer({
   }
 });
 
+const DEFAULT_ADMIN_PERMISSIONS = [
+  'view_dashboard',
+  'view_students',
+  'manage_students',
+  'view_subscriptions',
+  'manage_subscriptions',
+  'manage_questions',
+  'manage_tests',
+  'manage_announcements',
+  'manage_support',
+  'manage_settings',
+  'manage_exams',
+  'manage_institutions',
+  'manage_notifications',
+  'manage_content',
+  'manage_wallets',
+  'manage_employees',
+  'manage_accounting',
+  'manage_question_reports',
+];
+const DEFAULT_SUPPORT_PERMISSIONS = ['view_dashboard', 'view_students', 'manage_support', 'view_question_reports'];
+
+function requiredAdminPermission(req: Request) {
+  const pathName = req.path;
+  const readOnly = req.method === 'GET';
+  if (pathName === '/session' || pathName === '/logout') return null;
+  if (pathName.startsWith('/dashboard')) return 'view_dashboard';
+  if (pathName.startsWith('/users')) return readOnly ? 'view_students' : 'manage_students';
+  if (pathName.startsWith('/subscriptions')) return readOnly ? 'view_subscriptions' : 'manage_subscriptions';
+  if (pathName.startsWith('/questions')) return readOnly ? 'view_questions' : 'manage_questions';
+  if (pathName.startsWith('/test-templates')) return 'manage_tests';
+  if (pathName.startsWith('/announcements') || pathName === '/broadcast-email') return 'manage_announcements';
+  if (pathName.startsWith('/support-tickets') || pathName.startsWith('/whatsapp')) return 'manage_support';
+  if (pathName.startsWith('/settings') || pathName.startsWith('/subscription-plan')) return 'manage_settings';
+  if (pathName.startsWith('/scheduled-exams')) return 'manage_exams';
+  if (pathName.startsWith('/institution-requests')) return 'manage_institutions';
+  if (pathName.startsWith('/notifications')) return 'manage_notifications';
+  if (pathName.startsWith('/seasonal-exams') || pathName.startsWith('/foundation-content') || pathName.startsWith('/platform-reviews')) return 'manage_content';
+  if (pathName.startsWith('/wallets') || pathName.startsWith('/leaderboard')) return 'manage_wallets';
+  if (pathName.startsWith('/employees')) return 'manage_employees';
+  if (pathName.startsWith('/accounting')) return 'manage_accounting';
+  if (pathName.startsWith('/question-reports')) return 'manage_question_reports';
+  if (pathName.startsWith('/admins')) return 'manage_admins';
+  return null;
+}
+
+function adminCan(permission: string | null, admin: any) {
+  if (!permission) return true;
+  if (admin?.role === 'super_admin' || admin?.role === 'system_admin') return true;
+  const permissions = Array.isArray(admin?.permissions) ? admin.permissions : [];
+  if (permissions.includes('all') || permissions.includes(permission)) return true;
+  // Older standard admins were seeded with only these two view permissions.
+  // Treat that legacy shape as the standard admin role instead of breaking access.
+  if (admin?.role === 'admin' && permissions.length === 2 && permissions.includes('view_students') && permissions.includes('view_subscriptions')) {
+    return DEFAULT_ADMIN_PERMISSIONS.includes(permission);
+  }
+  return false;
+}
+
+function effectiveAdminPermissions(admin: any) {
+  if (admin?.role === 'super_admin' || admin?.role === 'system_admin') return ['all'];
+  if (Array.isArray(admin?.permissions) && admin.permissions.length > 0) return admin.permissions;
+  return admin?.role === 'support' ? DEFAULT_SUPPORT_PERMISSIONS : DEFAULT_ADMIN_PERMISSIONS;
+}
+
 const requireAdminAuth = async (req: Request, res: Response, next: NextFunction) => {
   const adminSession = (req.session as any)?.admin;
   const isAdminByFlag = (req.session as any)?.isAdmin && (req.session as any)?.adminId;
@@ -167,7 +232,7 @@ const requireAdminAuth = async (req: Request, res: Response, next: NextFunction)
             username: admin.username,
             fullName: admin.fullName,
             role: admin.role,
-            permissions: admin.permissions || ['all'],
+            permissions: effectiveAdminPermissions(admin),
           };
           return next();
         }
@@ -189,7 +254,7 @@ const requireAdminAuth = async (req: Request, res: Response, next: NextFunction)
           username: admin.username,
           fullName: admin.fullName,
           role: admin.role,
-          permissions: (admin as any).permissions || ['all'],
+          permissions: effectiveAdminPermissions(admin),
         };
       } else {
         return res.status(401).json({ error: 'يجب تسجيل الدخول كمدير' });
@@ -197,6 +262,11 @@ const requireAdminAuth = async (req: Request, res: Response, next: NextFunction)
     } catch {
       return res.status(401).json({ error: 'يجب تسجيل الدخول كمدير' });
     }
+  }
+  const admin = (req.session as any).admin;
+  const permission = requiredAdminPermission(req);
+  if (!adminCan(permission, admin)) {
+    return res.status(403).json({ error: 'ليس لديك صلاحية للوصول إلى هذا القسم' });
   }
   next();
 };
@@ -277,7 +347,7 @@ router.post('/login', async (req: Request, res: Response) => {
       username: admin.username,
       fullName: admin.fullName,
       role: admin.role,
-      permissions: admin.permissions || ['all'],
+      permissions: effectiveAdminPermissions(admin),
     };
     (req.session as any).admin = adminIdentity;
     (req.session as any).isAdmin = true;

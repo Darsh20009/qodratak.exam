@@ -20,7 +20,6 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Toaster } from "@/components/ui/toaster";
 import { SmartNotifications } from "@/components/SmartNotifications";
 import { useQuery } from "@tanstack/react-query";
-import { PermanentInstallButton } from "@/components/PermanentInstallButton";
 
 export interface MainLayoutProps {
   children: React.ReactNode;
@@ -242,12 +241,6 @@ export const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
             <span className="text-blue-700 dark:text-blue-300">الدعم الفني المباشر</span>
           </a>
         </div>
-        
-        {/* Install App Button */}
-        <div className="px-4 py-2">
-          <PermanentInstallButton />
-        </div>
-        <Separator />
         
         {isLoggedIn ? (
           <div className="p-4 space-y-3">

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Link } from "wouter";
 import {
   ArrowLeft,
@@ -21,6 +21,28 @@ import { ThemeToggle } from "@/components/ThemeToggle";
 const NAVY = "#171723";
 const SIGNAL = "#FF8A70";
 const MINT = "#91D7C5";
+
+function SaudiBusinessSeal() {
+  useEffect(() => {
+    const seal = document.createElement("div");
+    seal.className = "sbc-verify-seal";
+    seal.dataset.token = "QVllTDdEcm91V0cxa25lTW1iRUJzQT09";
+    seal.dataset.position = "bottom-left";
+    document.body.appendChild(seal);
+
+    const script = document.createElement("script");
+    script.src = "https://eauthenticate.saudibusiness.gov.sa/EAuthSealApi/seal.js";
+    script.async = true;
+    document.body.appendChild(script);
+
+    return () => {
+      script.remove();
+      seal.remove();
+    };
+  }, []);
+
+  return null;
+}
 
 function Header({ onSignup, onLogin }: { onSignup: () => void; onLogin: () => void }) {
   const [menuOpen, setMenuOpen] = useState(false);
@@ -350,6 +372,7 @@ export default function LandingPage({ initialModal }: { initialModal?: "signup" 
 
   return (
     <main className="min-h-screen overflow-hidden bg-[#F7F4EE] text-slate-900 dark:bg-[#0B1220] dark:text-slate-100" dir="rtl">
+      <SaudiBusinessSeal />
       <AuthModal
         open={authMode !== null}
         mode={authMode || "login"}
