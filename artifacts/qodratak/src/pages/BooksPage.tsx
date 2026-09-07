@@ -382,54 +382,54 @@ const CategoryIcon = ({ category, className }: { category: string, className?: s
 // الأنماط اللونية المحدثة
 const categoryStyles = {
   math: { 
-    bg: 'bg-gradient-to-br from-blue-500 to-blue-600', 
-    text: 'text-blue-600', 
-    darkText: 'dark:text-blue-400', 
-    gradientFrom: 'from-blue-500/20 via-blue-400/10 to-transparent',
-    iconColor: 'text-blue-500',
-    badgeBg: 'bg-blue-100 dark:bg-blue-900/30',
-    badgeText: 'text-blue-700 dark:text-blue-300',
-    glowColor: 'shadow-blue-500/30'
+    bg: 'bg-primary',
+    text: 'text-primary',
+    darkText: 'dark:text-primary',
+    gradientFrom: 'from-primary/10 to-transparent',
+    iconColor: 'text-primary',
+    badgeBg: 'bg-primary/10 dark:bg-primary/20',
+    badgeText: 'text-primary',
+    glowColor: 'shadow-none'
   },
   verbal: { 
-    bg: 'bg-gradient-to-br from-emerald-500 to-emerald-600', 
-    text: 'text-emerald-600', 
-    darkText: 'dark:text-emerald-400', 
-    gradientFrom: 'from-emerald-500/20 via-emerald-400/10 to-transparent',
-    iconColor: 'text-emerald-500',
-    badgeBg: 'bg-emerald-100 dark:bg-emerald-900/30',
-    badgeText: 'text-emerald-700 dark:text-emerald-300',
-    glowColor: 'shadow-emerald-500/30'
+    bg: 'bg-primary',
+    text: 'text-primary',
+    darkText: 'dark:text-primary',
+    gradientFrom: 'from-primary/10 to-transparent',
+    iconColor: 'text-primary',
+    badgeBg: 'bg-primary/10 dark:bg-primary/20',
+    badgeText: 'text-primary',
+    glowColor: 'shadow-none'
   },
   mixed: { 
-    bg: 'bg-gradient-to-br from-amber-500 to-amber-600', 
-    text: 'text-amber-600', 
-    darkText: 'dark:text-amber-400', 
-    gradientFrom: 'from-amber-500/20 via-amber-400/10 to-transparent',
-    iconColor: 'text-amber-500',
-    badgeBg: 'bg-amber-100 dark:bg-amber-900/30',
-    badgeText: 'text-amber-700 dark:text-amber-300',
-    glowColor: 'shadow-amber-500/30'
+    bg: 'bg-primary',
+    text: 'text-primary',
+    darkText: 'dark:text-primary',
+    gradientFrom: 'from-primary/10 to-transparent',
+    iconColor: 'text-primary',
+    badgeBg: 'bg-primary/10 dark:bg-primary/20',
+    badgeText: 'text-primary',
+    glowColor: 'shadow-none'
   },
   reference: { 
-    bg: 'bg-gradient-to-br from-green-600 to-emerald-600', 
-    text: 'text-green-700', 
-    darkText: 'dark:text-green-700', 
-    gradientFrom: 'from-green-600/20 via-green-600/10 to-transparent',
-    iconColor: 'text-green-700',
-    badgeBg: 'bg-green-100 dark:bg-green-100/30',
-    badgeText: 'text-green-700 dark:text-green-700',
-    glowColor: 'shadow-green-500/30'
+    bg: 'bg-primary',
+    text: 'text-primary',
+    darkText: 'dark:text-primary',
+    gradientFrom: 'from-primary/10 to-transparent',
+    iconColor: 'text-primary',
+    badgeBg: 'bg-primary/10 dark:bg-primary/20',
+    badgeText: 'text-primary',
+    glowColor: 'shadow-none'
   },
   default: { 
-    bg: 'bg-gradient-to-br from-gray-500 to-gray-600', 
-    text: 'text-gray-600', 
-    darkText: 'dark:text-gray-400', 
-    gradientFrom: 'from-gray-500/20 via-gray-400/10 to-transparent',
-    iconColor: 'text-gray-500',
-    badgeBg: 'bg-gray-100 dark:bg-gray-900/30',
-    badgeText: 'text-gray-700 dark:text-gray-300',
-    glowColor: 'shadow-gray-500/30'
+    bg: 'bg-muted-foreground',
+    text: 'text-muted-foreground',
+    darkText: 'dark:text-muted-foreground',
+    gradientFrom: 'from-muted/60 to-transparent',
+    iconColor: 'text-muted-foreground',
+    badgeBg: 'bg-muted',
+    badgeText: 'text-muted-foreground',
+    glowColor: 'shadow-none'
   }
 };
 
@@ -488,15 +488,15 @@ const BookCard: React.FC<BookCardProps> = ({
 
   if (viewMode === 'list') {
     return (
-      <Card className="group flex items-center p-4 overflow-hidden rounded-xl border dark:border-slate-800 bg-card shadow-md hover:shadow-xl transition-all duration-300 hover:scale-[1.02]">
-        <div className={`flex-shrink-0 w-16 h-16 rounded-lg ${currentStyle.bg} flex items-center justify-center mr-4 ${currentStyle.glowColor} shadow-lg`}>
+      <Card className="flex items-center p-4 overflow-hidden rounded-xl border dark:border-slate-800 bg-card shadow-sm">
+        <div className={`flex-shrink-0 w-16 h-16 rounded-lg ${currentStyle.bg} flex items-center justify-center mr-4 ${currentStyle.glowColor}`}>
           <CategoryIcon category={book.category} className="h-8 w-8 text-white" />
         </div>
         
         <div className="flex-grow min-w-0">
           <div className="flex items-start justify-between">
             <div className="min-w-0 flex-1">
-              <h3 className="font-semibold text-lg text-slate-900 dark:text-slate-100 truncate group-hover:text-primary transition-colors">
+               <h3 className="font-semibold text-lg text-slate-900 dark:text-slate-100 truncate">
                 {book.title}
               </h3>
               <p className="text-sm text-slate-600 dark:text-slate-400 mb-2">{book.author}</p>
@@ -505,18 +505,18 @@ const BookCard: React.FC<BookCardProps> = ({
                   {getCategoryLabel(book.category)}
                 </Badge>
                 {book.isNew && (
-                  <Badge className="bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300 text-xs">
+                  <Badge className="bg-muted text-muted-foreground text-xs">
                     جديد
                   </Badge>
                 )}
                 {book.isTrending && (
-                  <Badge className="bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300 text-xs">
+                  <Badge className="bg-muted text-muted-foreground text-xs">
                     <TrendingUpIcon className="h-3 w-3 mr-1" />
                     رائج
                   </Badge>
                 )}
                 {book.audioAvailable && (
-                  <Badge className="bg-green-100 text-green-700 dark:bg-green-100/30 dark:text-green-700 text-xs">
+                  <Badge className="bg-muted text-muted-foreground text-xs">
                     <Volume2Icon className="h-3 w-3 mr-1" />
                     صوتي
                   </Badge>
@@ -551,7 +551,7 @@ const BookCard: React.FC<BookCardProps> = ({
                   onClick={(e) => { e.stopPropagation(); onToggleFavorite(book.id); }}
                   className="h-9 w-9"
                 >
-                  <HeartIcon className={`h-4 w-4 ${isFavorite ? 'fill-red-500 text-red-500' : 'text-slate-400'}`} />
+                  <HeartIcon className={`h-4 w-4 ${isFavorite ? 'fill-primary text-primary' : 'text-slate-400'}`} />
                 </Button>
               </TooltipTrigger>
               <TooltipContent>
@@ -593,24 +593,24 @@ const BookCard: React.FC<BookCardProps> = ({
   }
 
   return (
-    <Card className="group flex flex-col overflow-hidden rounded-2xl border dark:border-slate-800 bg-card shadow-lg hover:shadow-2xl transition-all duration-300 ease-in-out hover:-translate-y-2 hover:scale-[1.02]">
-      <CardHeader className={`relative p-0 ${currentStyle.gradientFrom} bg-gradient-to-br border-b dark:border-slate-800`}>
+    <Card className="flex flex-col overflow-hidden rounded-2xl border dark:border-slate-800 bg-card shadow-sm">
+      <CardHeader className={`relative p-0 bg-gradient-to-br ${currentStyle.gradientFrom} border-b dark:border-slate-800`}>
         <div className="p-6 flex flex-col items-center text-center relative">
           {/* شارات الحالة */}
           <div className="absolute top-3 left-3 flex flex-col gap-1">
             {book.isFeatured && (
-              <Badge className="bg-gradient-to-r from-yellow-400 to-orange-500 text-white text-xs px-2 py-1 rounded-full shadow-lg">
+              <Badge className="bg-primary text-primary-foreground text-xs px-2 py-1 rounded-full">
                 <SparklesIcon className="h-3 w-3 mr-1" />
                 مميز
               </Badge>
             )}
             {book.isNew && (
-              <Badge className="bg-gradient-to-r from-green-400 to-emerald-500 text-white text-xs px-2 py-1 rounded-full shadow-lg">
+              <Badge className="bg-primary text-primary-foreground text-xs px-2 py-1 rounded-full">
                 جديد
               </Badge>
             )}
             {book.isTrending && (
-              <Badge className="bg-gradient-to-r from-red-400 to-amber-600 text-white text-xs px-2 py-1 rounded-full shadow-lg">
+              <Badge className="bg-muted text-foreground text-xs px-2 py-1 rounded-full">
                 <FlameIcon className="h-3 w-3 mr-1" />
                 رائج
               </Badge>
@@ -626,9 +626,9 @@ const BookCard: React.FC<BookCardProps> = ({
                     variant="ghost"
                     size="icon"
                     onClick={(e) => { e.stopPropagation(); onToggleFavorite(book.id); }}
-                    className="h-8 w-8 rounded-full bg-white/80 dark:bg-slate-800/80 hover:bg-white dark:hover:bg-slate-700 backdrop-blur-sm"
+                     className="h-8 w-8 rounded-full bg-muted hover:bg-muted/80"
                   >
-                    <HeartIcon className={`h-4 w-4 transition-all ${isFavorite ? 'fill-red-500 text-red-500 scale-110' : 'text-slate-500 dark:text-slate-400'}`} />
+                     <HeartIcon className={`h-4 w-4 ${isFavorite ? 'fill-primary text-primary' : 'text-slate-500 dark:text-slate-400'}`} />
                   </Button>
                 </TooltipTrigger>
                 <TooltipContent>
@@ -639,11 +639,11 @@ const BookCard: React.FC<BookCardProps> = ({
           </div>
 
           {/* أيقونة الكتاب */}
-          <div className={`mb-4 rounded-full p-4 bg-white dark:bg-slate-800/60 shadow-xl ${currentStyle.glowColor}`}>
+           <div className={`mb-4 rounded-full p-4 bg-muted ${currentStyle.glowColor}`}>
             <CategoryIcon category={book.category} className={`h-12 w-12 ${currentStyle.iconColor} opacity-90`} />
           </div>
 
-          <CardTitle className="text-xl font-bold text-slate-800 dark:text-slate-100 leading-tight mb-2 group-hover:text-primary transition-colors">
+           <CardTitle className="text-xl font-bold text-slate-800 dark:text-slate-100 leading-tight mb-2">
             {book.title}
           </CardTitle>
 
@@ -658,13 +658,13 @@ const BookCard: React.FC<BookCardProps> = ({
               {getDifficultyLabel(book.difficulty)}
             </Badge>
             {book.audioAvailable && (
-              <Badge className="bg-green-100 text-green-700 dark:bg-green-100/30 dark:text-green-700 text-xs px-3 py-1 rounded-full">
+              <Badge className="bg-muted text-muted-foreground text-xs px-3 py-1 rounded-full">
                 <Volume2Icon className="h-3 w-3 mr-1" />
                 صوتي
               </Badge>
             )}
             {book.interactiveContent && (
-              <Badge className="bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300 text-xs px-3 py-1 rounded-full">
+              <Badge className="bg-muted text-muted-foreground text-xs px-3 py-1 rounded-full">
                 <ZapIcon className="h-3 w-3 mr-1" />
                 تفاعلي
               </Badge>
@@ -749,7 +749,7 @@ const BookCard: React.FC<BookCardProps> = ({
               )}
             </div>
             {(!isSubscribed && book.originalPrice > book.memberPrice && book.memberPrice > 0) && (
-              <Badge className="bg-gradient-to-r from-green-500 to-emerald-500 text-white text-xs px-3 py-1 rounded-full font-semibold shadow-lg">
+              <Badge className="bg-primary text-primary-foreground text-xs px-3 py-1 rounded-full font-semibold">
                 وفر {book.originalPrice - book.memberPrice} ر.س!
               </Badge>
             )}
@@ -762,17 +762,17 @@ const BookCard: React.FC<BookCardProps> = ({
               variant="outline"
               className="flex-1 group/btn"
             >
-              <EyeIcon className="h-4 w-4 mr-2 group-hover/btn:scale-110 transition-transform" />
+               <EyeIcon className="h-4 w-4 mr-2" />
               تفاصيل
             </Button>
             <Button 
               onClick={(e) => { e.stopPropagation(); onDownload(book); }} 
-              className={`flex-2 group/btn font-semibold ${isSubscribed ? currentStyle.bg : 'bg-primary hover:bg-primary/90'} text-white shadow-lg hover:shadow-xl transition-all`}
+               className={`flex-2 font-semibold ${isSubscribed ? currentStyle.bg : 'bg-primary hover:bg-primary/90'} text-white`}
               disabled={!isSubscribed}
             >
               {isSubscribed ? (
                 <>
-                  <DownloadIcon className="h-4 w-4 mr-2 group-hover/btn:translate-y-0.5 transition-transform duration-200" />
+                   <DownloadIcon className="h-4 w-4 mr-2" />
                   تحميل
                 </>
               ) : (
@@ -914,27 +914,25 @@ const BooksPage: React.FC = () => {
     <TooltipProvider>
       <Dialog open={!!selectedBook} onOpenChange={(open) => !open && setSelectedBook(null)}>
         <div className="container py-8 space-y-8">
-          {/* الهيدر المحدث */}
-          <div className="text-center relative">
-            <div className="absolute inset-0 bg-gradient-to-r from-blue-100 via-green-600 to-amber-600 dark:from-blue-950/20 dark:via-green-600/20 dark:to-amber-600/20 rounded-3xl blur-3xl -z-10"></div>
+          {/* هيدر هادئ بتدرج العلامة فقط */}
+          <div className="text-center">
             <div className="relative">
               <div className="flex justify-center mb-6">
-                <div className="relative p-4 bg-gradient-to-br from-blue-500 to-emerald-600 rounded-3xl shadow-2xl shadow-blue-500/30">
-                  <BookOpenIcon className="h-16 w-16 text-white" />
+                <div className="relative p-4 bg-gradient-to-br from-primary to-primary/70 rounded-3xl shadow-sm">
+                  <BookOpenIcon className="h-14 w-14 text-primary-foreground" />
                   {isSubscribed && (
-                    <div className="absolute -top-2 -right-2 p-2 bg-gradient-to-r from-amber-400 to-yellow-500 rounded-full shadow-lg">
+                    <div className="absolute -top-2 -right-2 p-2 bg-primary rounded-full shadow-sm">
                       {user?.subscription?.type === 'Pro Life' || user?.subscription?.type === 'Pro Life Plus' || user?.subscription?.type === 'Pro Live' ? (
-                        <DiamondIcon className="h-6 w-6 text-white" />
+                        <DiamondIcon className="h-5 w-5 text-primary-foreground" />
                       ) : (
-                        <CrownIcon className="h-6 w-6 text-white" />
+                        <CrownIcon className="h-5 w-5 text-primary-foreground" />
                       )}
                     </div>
                   )}
-                  <div className="absolute inset-0 bg-gradient-to-br from-white/20 to-transparent rounded-3xl"></div>
                 </div>
               </div>
               
-              <h1 className="text-5xl font-black mb-4 bg-gradient-to-r from-blue-600 via-green-600 to-amber-600 bg-clip-text text-transparent">
+              <h1 className="text-3xl md:text-4xl font-black mb-4 text-foreground">
                 📚 مكتبة الكتب الذكية
               </h1>
               
@@ -943,10 +941,10 @@ const BooksPage: React.FC = () => {
               </p>
               
               {isSubscribed && (
-                <div className="inline-flex items-center gap-3 bg-gradient-to-r from-green-100 to-emerald-100 dark:from-green-900/20 dark:to-emerald-900/20 px-6 py-3 rounded-full border border-green-200 dark:border-green-700 shadow-lg">
-                  <UnlockIcon className="h-5 w-5 text-green-600" />
-                  <span className="text-sm font-semibold text-green-700 dark:text-green-300">
-                    🎉 لديك وصول كامل لجميع الكتب مجاناً!
+                <div className="inline-flex items-center gap-3 bg-primary/10 px-5 py-3 rounded-full border border-primary/20">
+                  <UnlockIcon className="h-5 w-5 text-primary" />
+                  <span className="text-sm font-semibold text-foreground">
+                    لديك وصول كامل لجميع الكتب مجاناً
                   </span>
                 </div>
               )}
@@ -955,14 +953,14 @@ const BooksPage: React.FC = () => {
 
           {/* إحصائيات سريعة */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            {[
-              { icon: BookOpenIcon, label: "كتاب متاح", value: booksData.length, color: "text-blue-600" },
-              { icon: TrophyIcon, label: "كتاب مميز", value: booksData.filter(b => b.isFeatured).length, color: "text-yellow-600" },
-              { icon: FlameIcon, label: "كتاب رائج", value: booksData.filter(b => b.isTrending).length, color: "text-red-600" },
-              { icon: HeartIcon, label: "في المفضلة", value: favoriteBooks.length, color: "text-amber-700" }
+                {[
+                  { icon: BookOpenIcon, label: "كتاب متاح", value: booksData.length },
+                  { icon: TrophyIcon, label: "كتاب مميز", value: booksData.filter(b => b.isFeatured).length },
+                  { icon: FlameIcon, label: "كتاب رائج", value: booksData.filter(b => b.isTrending).length },
+                  { icon: HeartIcon, label: "في المفضلة", value: favoriteBooks.length }
             ].map((stat, index) => (
-              <Card key={index} className="text-center p-4 hover:shadow-lg transition-shadow">
-                <stat.icon className={`h-8 w-8 mx-auto mb-2 ${stat.color}`} />
+              <Card key={index} className="text-center p-4 shadow-sm">
+                <stat.icon className="h-8 w-8 mx-auto mb-2 text-primary" />
                 <div className="text-2xl font-bold text-slate-900 dark:text-slate-100">{stat.value}</div>
                 <div className="text-xs text-muted-foreground">{stat.label}</div>
               </Card>
@@ -971,19 +969,18 @@ const BooksPage: React.FC = () => {
 
           {/* رسالة الاشتراك المحدثة */}
           {!isSubscribed && (
-            <Card className="relative overflow-hidden bg-gradient-to-r from-amber-50 via-orange-50 to-red-50 dark:from-amber-950/20 dark:via-orange-950/20 dark:to-red-950/20 border-amber-200 dark:border-amber-700">
-              <div className="absolute inset-0 bg-gradient-to-r from-amber-500/10 to-orange-500/10"></div>
+            <Card className="relative overflow-hidden bg-gradient-to-br from-primary/10 to-background border-primary/20">
               <CardHeader className="text-center relative">
                 <div className="flex justify-center mb-4">
-                  <div className="p-4 bg-gradient-to-r from-amber-500 to-orange-500 rounded-full shadow-xl">
-                    <GiftIcon className="h-12 w-12 text-white" />
+                  <div className="p-4 bg-primary rounded-full shadow-sm">
+                    <GiftIcon className="h-11 w-11 text-primary-foreground" />
                   </div>
                 </div>
-                <CardTitle className="text-3xl font-bold text-amber-800 dark:text-amber-200 mb-2">
-                  🎁 انضم لعالم الكتب المجانية!
+                <CardTitle className="text-2xl font-bold text-foreground mb-2">
+                  انضم إلى مكتبة الكتب
                 </CardTitle>
-                <CardDescription className="text-lg text-amber-700 dark:text-amber-300">
-                  اشترك الآن واحصل على وصول مجاني لجميع الكتب التعليمية مع ميزات حصرية
+                <CardDescription className="text-base text-muted-foreground">
+                  اشترك الآن واحصل على وصول كامل للكتب التعليمية
                 </CardDescription>
               </CardHeader>
               <CardContent className="text-center space-y-4 relative">
@@ -993,17 +990,17 @@ const BooksPage: React.FC = () => {
                     { icon: ZapIcon, title: "محتوى تفاعلي", desc: "تجربة تعلم متطورة" },
                     { icon: Volume2Icon, title: "كتب صوتية", desc: "استمع أثناء التنقل" }
                   ].map((feature, index) => (
-                    <div key={index} className="flex flex-col items-center p-4 bg-white/50 dark:bg-slate-800/50 rounded-xl">
-                      <feature.icon className="h-8 w-8 text-amber-600 mb-2" />
-                      <h4 className="font-semibold text-amber-800 dark:text-amber-200">{feature.title}</h4>
-                      <p className="text-sm text-amber-600 dark:text-amber-400 text-center">{feature.desc}</p>
+                    <div key={index} className="flex flex-col items-center p-4 bg-background/80 border border-border rounded-xl">
+                      <feature.icon className="h-8 w-8 text-primary mb-2" />
+                      <h4 className="font-semibold text-foreground">{feature.title}</h4>
+                      <p className="text-sm text-muted-foreground text-center">{feature.desc}</p>
                     </div>
                   ))}
                 </div>
                 <Button 
                   onClick={() => setLocation("/subscription")} 
                   size="lg" 
-                  className="bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white shadow-xl hover:shadow-2xl transition-all transform hover:scale-105"
+                  className="bg-primary text-primary-foreground hover:bg-primary/90"
                 >
                   <CrownIcon className="h-5 w-5 mr-2" />
                   ابدأ اشتراكك الآن
@@ -1238,47 +1235,47 @@ const BooksPage: React.FC = () => {
 
           {/* الإحصائيات التفاعلية */}
           {isSubscribed && displayedBooks.length > 0 && (
-            <Card className="bg-gradient-to-r from-blue-50 via-green-600 to-amber-600 dark:from-blue-950/20 dark:via-green-600/20 dark:to-amber-600/20 border-blue-200 dark:border-blue-700">
+            <Card className="bg-gradient-to-br from-primary/10 to-background border-primary/20">
               <CardHeader className="text-center">
-                <CardTitle className="text-3xl font-bold text-blue-800 dark:text-blue-200 mb-2">
-                  📊 إحصائيات مكتبتك الذكية
+                <CardTitle className="text-2xl font-bold text-foreground mb-2">
+                  إحصائيات مكتبتك
                 </CardTitle>
-                <CardDescription className="text-lg text-blue-700 dark:text-blue-300">
-                  تحليل شامل لنشاطك في المكتبة
+                <CardDescription className="text-base text-muted-foreground">
+                  ملخص سريع لاستخدامك للمكتبة
                 </CardDescription>
               </CardHeader>
               <CardContent>
                 <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-                  <div className="text-center space-y-2 p-4 bg-white/70 dark:bg-slate-800/70 rounded-xl shadow-lg">
-                    <div className="text-4xl font-black text-blue-600">
+                  <div className="text-center space-y-2 p-4 bg-background/80 border border-border rounded-xl">
+                    <div className="text-4xl font-black text-primary">
                       {booksData.length}
                     </div>
-                    <div className="text-sm font-semibold text-blue-800 dark:text-blue-200">كتاب متاح</div>
-                    <div className="text-xs text-blue-600 dark:text-blue-400">في جميع التصنيفات</div>
+                    <div className="text-sm font-semibold text-foreground">كتاب متاح</div>
+                    <div className="text-xs text-muted-foreground">في جميع التصنيفات</div>
                   </div>
                   
-                  <div className="text-center space-y-2 p-4 bg-white/70 dark:bg-slate-800/70 rounded-xl shadow-lg">
-                    <div className="text-4xl font-black text-green-600">
+                  <div className="text-center space-y-2 p-4 bg-background/80 border border-border rounded-xl">
+                    <div className="text-4xl font-black text-primary">
                       {favoriteBooks.length}
                     </div>
-                    <div className="text-sm font-semibold text-green-800 dark:text-green-200">كتاب مفضل</div>
-                    <div className="text-xs text-green-600 dark:text-green-400">في مجموعتك</div>
+                    <div className="text-sm font-semibold text-foreground">كتاب مفضل</div>
+                    <div className="text-xs text-muted-foreground">في مجموعتك</div>
                   </div>
                   
-                  <div className="text-center space-y-2 p-4 bg-white/70 dark:bg-slate-800/70 rounded-xl shadow-lg">
-                    <div className="text-4xl font-black text-green-700">
+                  <div className="text-center space-y-2 p-4 bg-background/80 border border-border rounded-xl">
+                    <div className="text-4xl font-black text-primary">
                       {booksData.reduce((total, book) => total + (book.readingTime || 0), 0)}
                     </div>
-                    <div className="text-sm font-semibold text-green-700 dark:text-green-700">دقيقة قراءة</div>
-                    <div className="text-xs text-green-700 dark:text-green-700">وقت إجمالي</div>
+                    <div className="text-sm font-semibold text-foreground">دقيقة قراءة</div>
+                    <div className="text-xs text-muted-foreground">وقت إجمالي</div>
                   </div>
                   
-                  <div className="text-center space-y-2 p-4 bg-white/70 dark:bg-slate-800/70 rounded-xl shadow-lg">
-                    <div className="text-4xl font-black text-amber-600">
+                  <div className="text-center space-y-2 p-4 bg-background/80 border border-border rounded-xl">
+                    <div className="text-4xl font-black text-primary">
                       {booksData.reduce((total, book) => total + book.originalPrice, 0)}
                     </div>
-                    <div className="text-sm font-semibold text-amber-800 dark:text-amber-200">ريال موفر</div>
-                    <div className="text-xs text-amber-600 dark:text-amber-400">بالاشتراك</div>
+                    <div className="text-sm font-semibold text-foreground">ريال موفر</div>
+                    <div className="text-xs text-muted-foreground">بالاشتراك</div>
                   </div>
                 </div>
               </CardContent>
@@ -1290,7 +1287,7 @@ const BooksPage: React.FC = () => {
             const currentStyle = categoryStyles[selectedBook.category as keyof typeof categoryStyles] || categoryStyles.default;
             return (
               <DialogContent className="sm:max-w-[700px] max-h-[90vh] overflow-y-auto p-0 border dark:border-slate-800">
-                <DialogHeader className={`relative p-6 ${currentStyle.gradientFrom} bg-gradient-to-br border-b dark:border-slate-800`}>
+                 <DialogHeader className={`relative p-6 bg-gradient-to-br ${currentStyle.gradientFrom} border-b dark:border-slate-800`}>
                   <div className="flex items-start gap-4">
                     <div className={`flex-shrink-0 p-4 bg-white dark:bg-slate-800/60 rounded-2xl shadow-xl ${currentStyle.glowColor}`}>
                       <CategoryIcon category={selectedBook.category} className={`h-12 w-12 ${currentStyle.iconColor}`} />
@@ -1311,12 +1308,12 @@ const BooksPage: React.FC = () => {
                           {getDifficultyLabel(selectedBook.difficulty)}
                         </Badge>
                         {selectedBook.isNew && (
-                          <Badge className="bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300">
+                          <Badge className="bg-muted text-muted-foreground">
                             جديد
                           </Badge>
                         )}
                         {selectedBook.isTrending && (
-                          <Badge className="bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300">
+                          <Badge className="bg-muted text-muted-foreground">
                             <TrendingUpIcon className="h-3 w-3 mr-1" />
                             رائج
                           </Badge>
@@ -1430,14 +1427,14 @@ const BooksPage: React.FC = () => {
                             desc: "من الكتب المختارة بعناية" 
                           }
                         ].map((item, index) => (
-                          <div key={index} className={`p-4 rounded-lg border-2 ${item.feature ? 'border-green-200 bg-green-50 dark:border-green-800 dark:bg-green-900/20' : 'border-slate-200 bg-slate-50 dark:border-slate-700 dark:bg-slate-800/50'}`}>
+                          <div key={index} className={`p-4 rounded-lg border ${item.feature ? 'border-primary/30 bg-primary/5' : 'border-border bg-muted/40'}`}>
                             <div className="flex items-center gap-3">
-                              <item.icon className={`h-6 w-6 ${item.feature ? 'text-green-600 dark:text-green-400' : 'text-slate-400 dark:text-slate-500'}`} />
+                              <item.icon className={`h-6 w-6 ${item.feature ? 'text-primary' : 'text-muted-foreground'}`} />
                               <div>
-                                <h5 className={`font-semibold ${item.feature ? 'text-green-800 dark:text-green-200' : 'text-slate-600 dark:text-slate-400'}`}>
+                                <h5 className={`font-semibold ${item.feature ? 'text-foreground' : 'text-muted-foreground'}`}>
                                   {item.title}
                                 </h5>
-                                <p className={`text-sm ${item.feature ? 'text-green-600 dark:text-green-300' : 'text-slate-500 dark:text-slate-400'}`}>
+                                <p className="text-sm text-muted-foreground">
                                   {item.desc}
                                 </p>
                               </div>
@@ -1457,7 +1454,7 @@ const BooksPage: React.FC = () => {
                         onClick={() => toggleFavorite(selectedBook.id)}
                         className="group"
                       >
-                        <HeartIcon className={`h-4 w-4 mr-2 group-hover:scale-110 transition-transform ${favoriteBooks.includes(selectedBook.id) ? 'fill-red-500 text-red-500' : ''}`} />
+                          <HeartIcon className={`h-4 w-4 mr-2 ${favoriteBooks.includes(selectedBook.id) ? 'fill-primary text-primary' : ''}`} />
                         {favoriteBooks.includes(selectedBook.id) ? 'إزالة من المفضلة' : 'إضافة للمفضلة'}
                       </Button>
                       
@@ -1469,13 +1466,13 @@ const BooksPage: React.FC = () => {
                     
                     <Button 
                       onClick={() => handleDownload(selectedBook)} 
-                      className={`group/btn font-semibold px-8 ${isSubscribed ? currentStyle.bg : 'bg-primary hover:bg-primary/90'} text-white shadow-lg hover:shadow-xl transition-all`}
+                       className={`font-semibold px-8 ${isSubscribed ? currentStyle.bg : 'bg-primary hover:bg-primary/90'} text-white`}
                       disabled={!isSubscribed}
                       size="lg"
                     >
                       {isSubscribed ? (
                         <>
-                          <DownloadIcon className="h-5 w-5 mr-2 group-hover/btn:scale-110 transition-transform duration-200" />
+                           <DownloadIcon className="h-5 w-5 mr-2" />
                           تحميل الكتاب الآن
                         </>
                       ) : (

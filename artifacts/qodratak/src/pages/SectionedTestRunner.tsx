@@ -443,7 +443,7 @@ export default function SectionedTestRunner() {
 
   if (!isStarted) {
     return (
-      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center p-4">
+      <div className="min-h-[100dvh] overflow-x-hidden bg-gray-50 dark:bg-gray-900 flex items-center justify-center p-3 sm:p-4">
         <Card className="w-full max-w-2xl bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700">
           <CardHeader className="text-center pb-6">
             <div className={cn(
@@ -468,7 +468,7 @@ export default function SectionedTestRunner() {
 
           <CardContent className="space-y-6">
             {/* Test Structure */}
-            <div className="grid grid-cols-5 gap-4">
+            <div className="grid grid-cols-2 sm:grid-cols-5 gap-3 sm:gap-4">
               {Array.from({ length: 5 }, (_, i) => (
                 <div key={i} className="text-center">
                   <div className={cn(

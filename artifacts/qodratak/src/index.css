@@ -245,6 +245,107 @@
   }
 }
 
+@keyframes qodratak-logo-arrive {
+  0% {
+    opacity: 0;
+    transform: scale(0.82) translateY(8px);
+  }
+  65% {
+    opacity: 1;
+    transform: scale(1.04) translateY(0);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+@keyframes qodratak-ring-draw {
+  from {
+    transform: rotate(-35deg) scale(0.72);
+    opacity: 0.35;
+  }
+  to {
+    transform: rotate(325deg) scale(1);
+    opacity: 1;
+  }
+}
+
+@keyframes qodratak-transition-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.qodratak-brand-loading,
+.qodratak-page-transition {
+  background:
+    radial-gradient(circle at 50% 46%, hsl(var(--primary) / 0.08), transparent 30%),
+    hsl(var(--background));
+}
+
+.qodratak-brand-loading-mark,
+.qodratak-page-transition-mark {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 7rem;
+  height: 7rem;
+}
+
+.qodratak-brand-loading-logo,
+.qodratak-page-transition-logo {
+  position: relative;
+  z-index: 1;
+  width: 4.25rem;
+  height: 4.25rem;
+  object-fit: contain;
+  animation: qodratak-logo-arrive 420ms cubic-bezier(.22, .8, .32, 1) both;
+}
+
+.qodratak-brand-loading-ring,
+.qodratak-page-transition-ring {
+  position: absolute;
+  inset: 0.5rem;
+  border: 1px solid hsl(var(--primary) / 0.2);
+  border-top-color: hsl(var(--primary) / 0.85);
+  border-right-color: hsl(var(--primary) / 0.5);
+  border-radius: 999px;
+  animation: qodratak-ring-draw 900ms cubic-bezier(.22, .8, .32, 1) both;
+}
+
+.qodratak-page-transition {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  display: grid;
+  place-items: center;
+  gap: 0.65rem;
+  align-content: center;
+  pointer-events: none;
+  animation: qodratak-transition-in 140ms ease-out both;
+}
+
+.qodratak-page-transition-mark {
+  width: 6rem;
+  height: 6rem;
+}
+
+.qodratak-page-transition-logo {
+  width: 3.7rem;
+  height: 3.7rem;
+}
+
+.qodratak-page-transition-ring {
+  inset: 0.35rem;
+}
+
+.qodratak-page-transition-label {
+  color: hsl(var(--foreground) / 0.65);
+  font-size: 0.78rem;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+}
+
 @keyframes card-rise {
   from {
     opacity: 0;

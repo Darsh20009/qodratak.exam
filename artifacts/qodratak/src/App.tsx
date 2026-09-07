@@ -165,6 +165,7 @@ import FoundationPage from "@/pages/student/FoundationPage";
 import ComputerizedPage from "@/pages/student/ComputerizedPage";
 import AccountPage from "@/pages/student/AccountPage";
 import { StudentShell } from "@/components/student/StudentShell";
+import { BrandLoadingScreen, PageTransition } from "@/components/PageTransition";
 
 
 installAdminFetchBridge();
@@ -178,11 +179,7 @@ const PaperExamPage = React.lazy(() => import("@/pages/PaperExamPage"));
 const PaperModelsPage = React.lazy(() => import("@/pages/PaperModelsPage"));
 
 function RouteLoadingFallback() {
-  return (
-    <div className="grid min-h-screen place-items-center bg-[#F7F4EE] px-5 text-center" dir="rtl">
-      <p className="text-sm font-bold text-[#6B625B]">جارٍ فتح الصفحة...</p>
-    </div>
-  );
+  return <BrandLoadingScreen />;
 }
 
 const PUBLIC_PATHS = new Set([
@@ -834,6 +831,7 @@ function Router({ splashDone }: { splashDone: boolean }) {
       {splashDone && <RotateDevicePrompt />}
       <RouteSEO />
       <AuthenticatedRouteBoundary>
+      <PageTransition>
       <Switch>
       <Route path="/parent-dashboard">
         <ProtectedRoute>
@@ -1204,6 +1202,7 @@ function Router({ splashDone }: { splashDone: boolean }) {
         {() => <StudentShell><NotFound /></StudentShell>}
       </Route>
       </Switch>
+      </PageTransition>
       </AuthenticatedRouteBoundary>
     </>
   );

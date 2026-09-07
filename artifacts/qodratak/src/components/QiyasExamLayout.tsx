@@ -187,7 +187,7 @@ export function QiyasExamLayout({
   );
 
   return (
-    <div className="min-h-screen bg-gray-100 flex flex-col md:flex-row" dir="rtl">
+    <div className="min-h-[100dvh] overflow-x-hidden bg-gray-100 flex flex-col md:flex-row" dir="rtl">
 
       {/* ════════════════════════════════════════
           MOBILE TOP BAR (hidden on md+)
@@ -218,7 +218,7 @@ export function QiyasExamLayout({
       {/* ════════════════════════════════════════
           MAIN CONTENT AREA
       ════════════════════════════════════════ */}
-      <div className="flex-1 flex flex-col min-w-0 pb-20 md:pb-0">
+      <div className="flex-1 flex min-h-0 min-w-0 flex-col pb-[calc(4.5rem+env(safe-area-inset-bottom))] md:pb-0">
 
         {/* Desktop Top Bar (hidden on mobile) */}
         <div className="hidden md:flex bg-white border-b border-gray-200 px-5 py-3 items-center justify-between shadow-sm">
@@ -271,8 +271,8 @@ export function QiyasExamLayout({
         </div>
 
         {/* Question content */}
-        <div className="flex-1 bg-white md:m-3 md:rounded-lg md:border md:border-gray-200 flex flex-col overflow-hidden md:shadow-sm">
-          <div className="flex-1 overflow-y-auto p-4 md:p-6">
+        <div className="flex min-h-0 flex-1 flex-col overflow-hidden bg-white md:m-3 md:rounded-lg md:border md:border-gray-200 md:shadow-sm">
+          <div className="min-h-0 flex-1 overflow-y-auto p-3 sm:p-4 md:p-6">
 
             {/* Mobile font controls */}
             <div className="md:hidden flex items-center gap-1 mb-3">
@@ -332,7 +332,7 @@ export function QiyasExamLayout({
                 <button
                   key={idx}
                   onClick={() => onSelectAnswer(idx)}
-                  className={`flex items-center gap-0 text-right transition-all ${
+                  className={`flex min-w-0 items-center gap-0 text-right transition-colors ${
                     selectedAnswer === idx
                       ? 'bg-blue-50'
                       : 'bg-white hover:bg-gray-50 active:bg-gray-100'
@@ -345,7 +345,7 @@ export function QiyasExamLayout({
                   }`}>
                     {OPTION_LABELS[idx]}
                   </span>
-                  <span className={`flex-1 px-3 md:px-4 py-3 ${fontClass} ${selectedAnswer === idx ? 'text-blue-700 font-medium' : 'text-gray-700'}`}>
+                  <span className={`min-w-0 flex-1 break-words px-3 py-3 md:px-4 ${fontClass} ${selectedAnswer === idx ? 'text-blue-700 font-medium' : 'text-gray-700'}`}>
                     {option}
                   </span>
                   {selectedAnswer === idx && (
@@ -423,8 +423,8 @@ export function QiyasExamLayout({
       {/* ════════════════════════════════════════
           MOBILE BOTTOM NAVIGATION BAR (fixed)
       ════════════════════════════════════════ */}
-      <div className="md:hidden fixed bottom-0 inset-x-0 z-30 bg-white border-t border-gray-200 shadow-lg" dir="rtl">
-        <div className="flex items-center h-14 px-2 gap-1">
+      <div className="md:hidden fixed bottom-0 inset-x-0 z-30 bg-white border-t border-gray-200 shadow-lg pb-[env(safe-area-inset-bottom)]" dir="rtl">
+        <div className="flex h-14 items-center gap-1 px-2">
           {/* Previous */}
           <button
             onClick={onPrev}
