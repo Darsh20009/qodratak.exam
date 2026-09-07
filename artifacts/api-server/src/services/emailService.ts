@@ -195,7 +195,7 @@ export async function sendOTPEmail(email: string, fullName: string, otp: string)
       مرحباً <strong>${fullName || 'عزيزنا الطالب'}</strong>،
     </p>
     <p style="margin:0;color:#888;font-size:14px;line-height:1.8;">
-      استخدم الرمز أدناه لإتمام تسجيلك في منصة قدراتك.
+      رمز التحقق في منصة قدراتك هو:
     </p>
     ${otpBox(otp)}
     ${alertBox('لا تشارك هذا الرمز مع أي شخص. فريق قدراتك لن يطلبه منك أبداً.', '#92400e', '#fffbeb')}
@@ -204,9 +204,9 @@ export async function sendOTPEmail(email: string, fullName: string, otp: string)
 
   return sendEmail(
     email,
-    `${otp} — رمز التحقق من منصة قدراتك`,
+    `رمز التحقق في منصة قدراتك: ${otp}`,
     emailBase('#4f46e5', body),
-    `رمز التحقق الخاص بك: ${otp}\nصالح لمدة 10 دقائق فقط.`
+    `رمز التحقق في منصة قدراتك هو: ${otp}\nصالح لمدة 10 دقائق`
   );
 }
 

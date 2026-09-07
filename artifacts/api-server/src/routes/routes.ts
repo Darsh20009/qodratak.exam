@@ -2205,6 +2205,10 @@ const telegramLoginSessions = new Map<string, { telegramId: string; telegramUser
 // In-memory store for phone OTPs (sent via Telegram bot)
 const phoneOtpStore = new Map<string, { otp: string; expiry: Date; chatId?: number }>();
 
+function generateFourDigitOtp() {
+  return crypto.randomInt(1000, 10_000).toString();
+}
+
   app.post('/api/auth/phone-otp/request', async (req: Request, res: Response) => {
     try {
       const purpose = req.body?.purpose === 'login' ? 'login' : 'signup';
@@ -2839,7 +2843,7 @@ app.post('/api/auth/signup/send-otp', async (req: Request, res: Response) => {
       return res.status(400).json({ error: 'البريد الإلكتروني مستخدم مسبقاً' });
     }
 
-    const otp = Math.floor(100000 + Math.random() * 900000).toString();
+    const otp = generateFourDigitOtp();
     await saveSignupOTP(email, otp, fullName, phone);
 
     const { sendOTPEmail } = await import('./services/emailService');
@@ -2903,7 +2907,7 @@ app.post('/api/auth/signup/request-phone-otp', async (req: Request, res: Respons
     if (!phone) return res.status(400).json({ error: 'رقم الجوال مطلوب' });
 
     const cleanPhone = phone.toString().replace(/\D/g, '');
-    const otp = Math.floor(100000 + Math.random() * 900000).toString();
+    const otp = generateFourDigitOtp();
     const expiry = new Date(Date.now() + 10 * 60 * 1000);
     phoneOtpStore.set(cleanPhone, { otp, expiry });
 
@@ -2949,7 +2953,7 @@ app.post('/api/telegram/webhook', async (req: Request, res: Response) => {
         return;
       }
       phoneOtpStore.set(phone, { ...record, chatId });
-      await sendMsg(`🔐 <b>رمز التحقق من منصة قدراتك:</b>\n\n<code>${record.otp}</code>\n\nأدخل هذا الرمز في الموقع. صالح 10 دقائق فقط.\n\n— منصة قدراتك`);
+      await sendMsg(`رمز التحقق في منصة قدراتك هو: <code>${record.otp}</code>\nصالح لمدة 10 دقائق`);
     } else if (text.startsWith('/start login_')) {
       // Telegram Bot-based login flow (no domain whitelisting needed)
       const sessionId = text.replace('/start login_', '').trim();
@@ -7050,7 +7054,7 @@ app.post("/api/auth/register", async (req: Request, res: Response) => {
         return res.status(400).json({ error: 'البريد الإلكتروني مطلوب' });
       }
 
-      const otp = Math.floor(100000 + Math.random() * 900000).toString();
+      const otp = generateFourDigitOtp();
       const otpExpiry = new Date(Date.now() + 10 * 60 * 1000);
 
       await mongoStorage.setUserOTP(email, otp, otpExpiry);
@@ -7674,7 +7678,7 @@ app.post("/api/auth/register", async (req: Request, res: Response) => {
       const { User } = await import('./mongodb/models');
       const user = await User.findById(pending.userId);
       if (!user?.email) return res.status(404).json({ error: 'لا يوجد بريد إلكتروني مسجل' });
-      const code = String(Math.floor(100000 + Math.random() * 900000));
+      const code = generateFourDigitOtp();
       const expiry = new Date(Date.now() + 10 * 60 * 1000);
       await User.findByIdAndUpdate(pending.userId, { $set: { otpCode: code, otpExpiry: expiry } });
       const sent = await sendOTPEmail(user.email, user.fullName || user.name || '', code);
@@ -9482,9 +9486,9 @@ app.post("/api/auth/register", async (req: Request, res: Response) => {
         return res.status(400).json({ error: 'رصيدك غير كافٍ لإتمام التحويل' });
       }
 
-      // Generate 6-digit OTP
-      const otp = Math.floor(100000 + Math.random() * 900000).toString();
-      const expiry = new Date(Date.now() + 5 * 60 * 1000); // 5 minutes
+      // Generate 4-digit OTP
+      const otp = generateFourDigitOtp();
+      const expiry = new Date(Date.now() + 10 * 60 * 1000);
 
       // Store OTP
       walletTransferOTPStore.set(String(fromUserId), { otp, expiry, toEmail, amount: Number(amount), note });
@@ -9715,7 +9719,7 @@ app.post("/api/auth/register", async (req: Request, res: Response) => {
         return res.status(400).json({ error: 'لا يمكن التحقق من بيانات صاحب البطاقة' });
       }
       const ownerEmail = (owner as any).email as string;
-      const otp = Math.floor(100000 + Math.random() * 900000).toString();
+      const otp = generateFourDigitOtp();
       const expiry = new Date(Date.now() + 10 * 60 * 1000);
       await CardPayment.deleteMany({ cardNumber: normalizedCard });
       await CardPayment.create({

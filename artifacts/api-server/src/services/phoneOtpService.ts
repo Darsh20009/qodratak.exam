@@ -10,7 +10,7 @@ interface OtpRecord {
   sentAt: number;
 }
 
-const OTP_TTL_MS = 30 * 60 * 1000;
+const OTP_TTL_MS = 10 * 60 * 1000;
 const RESEND_WINDOW_MS = 60 * 1000;
 const MAX_ATTEMPTS = 5;
 const MAX_REQUESTS_PER_WINDOW = 5;
@@ -60,10 +60,10 @@ export async function requestPhoneOtp(phoneInput: unknown, purpose: OtpPurpose) 
     return { phone, retryAfter, sent: false as const };
   }
 
-  const otp = crypto.randomInt(100000, 1_000_000).toString();
+  const otp = crypto.randomInt(1000, 10_000).toString();
   await sendWhatsAppText(
     phone,
-    `رمز التحقق في منصة قدراتك هو: ${otp}\nصالح لمدة 30 دقيقة. لا تشارك هذا الرمز مع أي شخص. لن يطلب منك فريق قدراتك إرسال الرمز لهم.`,
+    `رمز التحقق في منصة قدراتك هو: ${otp}\nصالح لمدة 10 دقائق`,
     "otp",
   );
   otpRequestHistory.set(phone, [...recentRequests, now]);
