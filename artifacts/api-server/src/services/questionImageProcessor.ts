@@ -36,19 +36,36 @@ function cleanLightBackground(data: Buffer, channels: number) {
     const max = Math.max(red, green, blue);
     const spread = max - min;
 
+    // Replace light page backgrounds and pale watermark artwork with white.
+    // Dark question text, diagrams, and answer labels remain untouched.
+    const lightness = (red + green + blue) / 3;
+    if (lightness >= 218 || (lightness >= 198 && spread <= 65)) {
+      data[offset] = 255;
+      data[offset + 1] = 255;
+      data[offset + 2] = 255;
+      data[alphaOffset] = 255;
+      backgroundPixels++;
+      continue;
+    }
+
     // Remove a plain near-white page background while retaining dark text,
     // diagrams, and coloured answer choices.
     if (min >= 242 && spread <= 18) {
-      data[alphaOffset] = 0;
+      data[offset] = 255;
+      data[offset + 1] = 255;
+      data[offset + 2] = 255;
+      data[alphaOffset] = 255;
       backgroundPixels++;
       continue;
     }
 
     // Very faint, neutral overlays are typical of semi-transparent corner
-    // watermarks. Fade instead of deleting outright to avoid damaging content.
+    // watermarks. Replace them with white instead of leaving a grey veil.
     if (min >= 224 && spread <= 10) {
-      const opacity = Math.max(0, Math.min(255, (242 - min) * 14));
-      data[alphaOffset] = Math.min(data[alphaOffset], opacity);
+      data[offset] = 255;
+      data[offset + 1] = 255;
+      data[offset + 2] = 255;
+      data[alphaOffset] = 255;
       watermarkPixels++;
     }
   }

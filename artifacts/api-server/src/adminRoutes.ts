@@ -17,6 +17,7 @@ import {
 } from './services/adminWhatsAppNotifications';
 import { createAdminAccessToken, verifyAdminAccessToken } from './adminSessionToken';
 import { getPrivateQuestionImageOriginal, processQuestionImage } from './services/questionImageProcessor';
+import { extractQuestionFromImages } from './services/aiService';
 import {
   connectWhatsApp,
   disconnectWhatsApp,
@@ -704,7 +705,7 @@ router.get('/questions/:id', requireAdminAuth, async (req: Request, res: Respons
 router.post('/questions', requireAdminAuth, async (req: Request, res: Response) => {
   try {
     const adminSession = (req.session as any).admin;
-    const { text, category, subcategory, options, correctOptionIndex, difficulty, explanation, imageUrl, imageOriginalUrl, imageProcessing } = req.body;
+    const { text, category, subcategory, options, correctOptionIndex, difficulty, explanation, imageUrl, imageUrls, imageOriginalUrl, imageOriginalUrls, imageProcessing, imageProcessings } = req.body;
 
     if (!text || !category || !options || correctOptionIndex === undefined) {
       return res.status(400).json({ error: 'البيانات الأساسية مطلوبة' });
@@ -723,8 +724,11 @@ router.post('/questions', requireAdminAuth, async (req: Request, res: Response) 
       difficulty: difficulty || 'intermediate',
       explanation: explanation || '',
       imageUrl: imageUrl || '',
+      imageUrls: Array.isArray(imageUrls) ? imageUrls : imageUrl ? [imageUrl] : [],
       imageOriginalUrl: imageOriginalUrl || undefined,
+      imageOriginalUrls: Array.isArray(imageOriginalUrls) ? imageOriginalUrls : imageOriginalUrl ? [imageOriginalUrl] : [],
       imageProcessing: imageProcessing || undefined,
+      imageProcessings: Array.isArray(imageProcessings) ? imageProcessings : imageProcessing ? [imageProcessing] : [],
       createdBy: adminSession.username,
       createdAt: new Date(),
     });
@@ -738,7 +742,7 @@ router.post('/questions', requireAdminAuth, async (req: Request, res: Response) 
 
 router.put('/questions/:id', requireAdminAuth, async (req: Request, res: Response) => {
   try {
-    const { text, category, subcategory, options, correctOptionIndex, difficulty, explanation, imageUrl, imageOriginalUrl, imageProcessing } = req.body;
+    const { text, category, subcategory, options, correctOptionIndex, difficulty, explanation, imageUrl, imageUrls, imageOriginalUrl, imageOriginalUrls, imageProcessing, imageProcessings } = req.body;
 
     const updated = await Question.findByIdAndUpdate(
       req.params.id,
@@ -751,8 +755,11 @@ router.put('/questions/:id', requireAdminAuth, async (req: Request, res: Respons
         ...(difficulty && { difficulty }),
         ...(explanation !== undefined && { explanation }),
         ...(imageUrl !== undefined && { imageUrl }),
+        ...(imageUrls !== undefined && { imageUrls: Array.isArray(imageUrls) ? imageUrls : [] }),
         ...(imageOriginalUrl !== undefined && { imageOriginalUrl }),
+        ...(imageOriginalUrls !== undefined && { imageOriginalUrls: Array.isArray(imageOriginalUrls) ? imageOriginalUrls : [] }),
         ...(imageProcessing !== undefined && { imageProcessing }),
+        ...(imageProcessings !== undefined && { imageProcessings: Array.isArray(imageProcessings) ? imageProcessings : [] }),
         updatedAt: new Date(),
       },
       { new: true }
@@ -793,8 +800,11 @@ router.post('/questions/:id/image', requireAdminAuth, uploadQuestionImage.single
       req.params.id,
       {
         imageUrl: processed.imageUrl,
+        imageUrls: [processed.imageUrl],
         imageOriginalUrl: processed.originalUrl,
+        imageOriginalUrls: [processed.originalUrl],
         imageProcessing: processed.processing,
+        imageProcessings: [processed.processing],
         updatedAt: new Date(),
       },
       { new: true }
@@ -819,6 +829,37 @@ router.post('/questions/upload-image-standalone', requireAdminAuth, uploadQuesti
     res.json({ success: true, ...(await processQuestionImage(req.file.buffer)) });
   } catch (error) {
     res.status(500).json({ error: 'فشل في رفع الصورة' });
+  }
+});
+
+router.post('/questions/analyze-images', requireAdminAuth, uploadQuestionImage.array('images', 12), async (req: Request, res: Response) => {
+  try {
+    const files = (req.files as Express.Multer.File[] | undefined) || [];
+    if (files.length === 0) {
+      return res.status(400).json({ error: 'أرفق صورة واحدة على الأقل' });
+    }
+
+    const processedImages = await Promise.all(files.map(async file => ({
+      ...(await processQuestionImage(file.buffer)),
+      filename: file.originalname,
+    })));
+
+    let extraction: Awaited<ReturnType<typeof extractQuestionFromImages>> = null;
+    try {
+      extraction = await extractQuestionFromImages(files.map(file => file.buffer));
+    } catch (error) {
+      console.error('Question image extraction error:', error);
+    }
+
+    res.json({
+      success: true,
+      images: processedImages,
+      extraction,
+      extractionAvailable: Boolean(extraction),
+    });
+  } catch (error) {
+    console.error('Analyze question images error:', error);
+    res.status(500).json({ error: 'تعذرت معالجة صور السؤال' });
   }
 });
 

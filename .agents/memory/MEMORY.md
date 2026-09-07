@@ -8,3 +8,4 @@
 - [Unified plans and WhatsApp care](unified-plans-whatsapp-care.md) — purchase values use one plan setting; WhatsApp is restricted to queued OTP and essential transactional alerts.
 - [Dark-mode page contrast](dark-mode-page-contrast.md) — legacy pages use fixed light colors; keep contrast overrides scoped to the shared app surface.
 - [Subscription entitlement consistency](subscription-entitlement-consistency.md) — derive access from active Mongo records; make wallet activation atomic and invoices transaction-truthful.
+- [Question image import compatibility](question-image-import.md) — keep the first-image fields for legacy consumers while treating multi-image extraction as optional and reviewable.

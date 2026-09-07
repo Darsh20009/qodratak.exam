@@ -10,7 +10,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '
 import { apiRequest } from '@/lib/queryClient';
 import {
   Search, Plus, Edit2, Trash2, Image, Upload, X, ChevronLeft, ChevronRight,
-  BookOpen, Filter, RefreshCw, AlertCircle, CheckCircle
+  BookOpen, Filter, RefreshCw, AlertCircle, CheckCircle, Sparkles, Loader2
 } from 'lucide-react';
 
 interface Question {
@@ -24,13 +24,16 @@ interface Question {
   difficulty: 'beginner' | 'intermediate' | 'advanced';
   explanation?: string;
   imageUrl?: string;
+  imageUrls?: string[];
   imageOriginalUrl?: string;
+  imageOriginalUrls?: string[];
   imageProcessing?: {
     status: 'processed' | 'original_only';
     backgroundRemoved: boolean;
     watermarkCleanupApplied: boolean;
     note?: string;
   };
+  imageProcessings?: NonNullable<Question['imageProcessing']>[];
 }
 
 const categoryLabels: Record<string, string> = {
@@ -62,8 +65,11 @@ const emptyQuestion = {
   difficulty: 'intermediate' as string,
   explanation: '',
   imageUrl: '',
+  imageUrls: [] as string[],
   imageOriginalUrl: '',
+  imageOriginalUrls: [] as string[],
   imageProcessing: undefined as Question['imageProcessing'],
+  imageProcessings: [] as Question['imageProcessings'],
 };
 
 export default function QuestionsManagementPage() {
@@ -170,8 +176,11 @@ export default function QuestionsManagementPage() {
       difficulty: q.difficulty,
       explanation: q.explanation || '',
       imageUrl: q.imageUrl || '',
+      imageUrls: q.imageUrls?.length ? [...q.imageUrls] : q.imageUrl ? [q.imageUrl] : [],
       imageOriginalUrl: q.imageOriginalUrl || '',
+      imageOriginalUrls: q.imageOriginalUrls?.length ? [...q.imageOriginalUrls] : q.imageOriginalUrl ? [q.imageOriginalUrl] : [],
       imageProcessing: q.imageProcessing,
+      imageProcessings: q.imageProcessings || (q.imageProcessing ? [q.imageProcessing] : []),
     });
     setShowDialog(true);
   };
@@ -189,8 +198,11 @@ export default function QuestionsManagementPage() {
       difficulty: form.difficulty,
       explanation: form.explanation,
       imageUrl: form.imageUrl,
+      imageUrls: form.imageUrls,
       imageOriginalUrl: form.imageOriginalUrl,
+      imageOriginalUrls: form.imageOriginalUrls,
       imageProcessing: form.imageProcessing,
+      imageProcessings: form.imageProcessings,
     };
 
     if (editingQuestion) {
@@ -200,17 +212,14 @@ export default function QuestionsManagementPage() {
     }
   };
 
-  const handleImageUpload = async (file: File, questionId?: string) => {
+  const handleImageUpload = async (files: File[]) => {
+    if (files.length === 0) return;
     setUploadingImage(true);
     const formData = new FormData();
-    formData.append('image', file);
+    files.slice(0, 12).forEach(file => formData.append('images', file));
 
     try {
-      const endpoint = questionId
-        ? `/api/admin/questions/${questionId}/image`
-        : '/api/admin/questions/upload-image-standalone';
-
-      const res = await fetch(endpoint, {
+      const res = await fetch('/api/admin/questions/analyze-images', {
         method: 'POST',
         body: formData,
         credentials: 'include',
@@ -220,28 +229,72 @@ export default function QuestionsManagementPage() {
         toast({ title: 'خطأ', description: data.error || 'فشل في رفع الصورة', variant: 'destructive' });
         return;
       }
-      if (data.imageUrl) {
+      if (Array.isArray(data.images) && data.images.length > 0) {
+        const incomingImages = data.images as Array<{
+          imageUrl: string;
+          originalUrl?: string;
+          processing?: Question['imageProcessing'];
+        }>;
         setForm(f => ({
           ...f,
-          imageUrl: data.imageUrl,
-          imageOriginalUrl: data.originalUrl || f.imageOriginalUrl,
-          imageProcessing: data.processing,
+          imageUrl: f.imageUrl || incomingImages[0].imageUrl,
+          imageUrls: [...(f.imageUrls || []), ...incomingImages.map(image => image.imageUrl)],
+          imageOriginalUrl: f.imageOriginalUrl || incomingImages[0].originalUrl || '',
+          imageOriginalUrls: [...(f.imageOriginalUrls || []), ...incomingImages.map(image => image.originalUrl || '')],
+          imageProcessing: f.imageProcessing || incomingImages[0].processing,
+          imageProcessings: [
+            ...(f.imageProcessings || []),
+            ...incomingImages.map(image => image.processing).filter(Boolean) as NonNullable<Question['imageProcessing']>[],
+          ],
         }));
-        if (questionId) {
-          queryClient.invalidateQueries({ queryKey: ['/api/admin/questions'] });
+        if (data.extraction) {
+          const extraction = data.extraction;
+          setForm(f => ({
+            ...f,
+            text: extraction.text || f.text,
+            options: Array.isArray(extraction.options) && extraction.options.length === 4 ? extraction.options : f.options,
+            correctOptionIndex: Number.isInteger(extraction.correctOptionIndex) ? extraction.correctOptionIndex : f.correctOptionIndex,
+            category: extraction.category || f.category,
+            subcategory: extraction.subcategory || f.subcategory,
+            difficulty: extraction.difficulty || f.difficulty,
+            explanation: extraction.explanation || f.explanation,
+          }));
+          toast({
+            title: 'تم استخراج السؤال تلقائيًا',
+            description: 'راجع النص والخيارات والإجابة قبل الحفظ.',
+          });
+        } else {
+          toast({
+            title: 'تم تنظيف الصور وإضافتها',
+            description: 'لم يتوفر محلل النص الآن؛ راجع الحقول وأدخل السؤال والخيارات يدويًا.',
+          });
         }
-        toast({
-          title: 'تمت معالجة صورة السؤال',
-          description: data.processing?.status === 'original_only'
-            ? data.processing.note
-            : 'حُفظ الأصل، وتم إعداد نسخة بخلفية شفافة وتنظيف العلامات الخفيفة.',
-        });
       }
     } catch {
       toast({ title: 'خطأ', description: 'فشل في رفع الصورة', variant: 'destructive' });
     } finally {
       setUploadingImage(false);
     }
+  };
+
+  const handleRemoveImage = (index: number) => {
+    setForm(f => {
+      const imageUrls = [...(f.imageUrls || [])];
+      const imageOriginalUrls = [...(f.imageOriginalUrls || [])];
+      const imageProcessings = [...(f.imageProcessings || [])];
+      imageUrls.splice(index, 1);
+      imageOriginalUrls.splice(index, 1);
+      imageProcessings.splice(index, 1);
+      return {
+        ...f,
+        imageUrls,
+        imageUrl: imageUrls[0] || '',
+        imageOriginalUrls,
+        imageOriginalUrl: imageOriginalUrls[0] || '',
+        imageProcessings,
+        imageProcessing: imageProcessings[0],
+      };
+    });
   };
 
   const questions: Question[] = data?.questions || [];
@@ -497,43 +550,60 @@ export default function QuestionsManagementPage() {
 
             {/* Image Upload */}
             <div>
-              <label className="text-sm font-medium text-gray-700 dark:text-gray-300 block mb-1.5">صورة للسؤال (اختياري)</label>
-              {form.imageUrl ? (
-                <div className="relative inline-block">
-                  <img src={form.imageUrl} alt="صورة السؤال" className="w-full max-w-sm rounded-xl border object-contain max-h-40" />
-                   {form.imageProcessing && (
-                     <p className="mt-2 max-w-sm text-xs text-gray-500">
-                       {form.imageProcessing.status === 'processed'
-                         ? `تمت المعالجة: ${form.imageProcessing.backgroundRemoved ? 'أزيلت الخلفية' : 'لا توجد خلفية بسيطة للإزالة'}${form.imageProcessing.watermarkCleanupApplied ? '، ونُظّفت العلامات الفاتحة.' : '.'}`
-                         : form.imageProcessing.note}
-                     </p>
-                   )}
-                  <Button
-                    variant="destructive"
-                    size="icon"
-                    className="absolute top-2 left-2 h-7 w-7"
-                    onClick={() => setForm(f => ({ ...f, imageUrl: '', imageOriginalUrl: '', imageProcessing: undefined }))}
-                  >
-                    <X className="w-3.5 h-3.5" />
-                  </Button>
+              <div className="mb-2 flex items-center justify-between gap-2">
+                <label className="text-sm font-medium text-gray-700 dark:text-gray-300">صور السؤال (اختياري)</label>
+                <span className="text-xs text-gray-400">يمكنك إضافة حتى 12 صورة</span>
+              </div>
+              {(form.imageUrls?.length || form.imageUrl) ? (
+                <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+                  {(form.imageUrls?.length ? form.imageUrls : [form.imageUrl]).filter(Boolean).map((url, index) => (
+                    <div key={`${url}-${index}`} className="group relative overflow-hidden rounded-xl border bg-white">
+                      <img src={url} alt={`صورة السؤال ${index + 1}`} className="h-32 w-full object-contain" />
+                      <Button
+                        variant="destructive"
+                        size="icon"
+                        className="absolute left-2 top-2 h-7 w-7 opacity-90"
+                        onClick={() => handleRemoveImage(index)}
+                        aria-label={`حذف الصورة ${index + 1}`}
+                      >
+                        <X className="w-3.5 h-3.5" />
+                      </Button>
+                      <span className="absolute bottom-1 right-1 rounded bg-black/60 px-1.5 py-0.5 text-[10px] text-white">
+                        صورة {index + 1}
+                      </span>
+                    </div>
+                  ))}
                 </div>
-              ) : (
-                <div
-                  className="border-2 border-dashed border-gray-200 dark:border-gray-600 rounded-xl p-6 text-center cursor-pointer hover:border-teal-400 hover:bg-teal-50/50 dark:hover:bg-teal-900/20 transition-colors"
-                  onClick={() => standaloneImageRef.current?.click()}
-                >
-                  <Image className="w-8 h-8 text-gray-300 mx-auto mb-2" />
-                  <p className="text-sm text-gray-500">{uploadingImage ? 'جارٍ الرفع...' : 'اضغط لرفع صورة'}</p>
-                  <p className="text-xs text-gray-400">PNG, JPG, WebP حتى 5MB</p>
-                </div>
-              )}
+              ) : null}
+              <div
+                className="mt-3 cursor-pointer rounded-xl border-2 border-dashed border-gray-200 p-5 text-center transition-colors hover:border-teal-400 hover:bg-teal-50/50 dark:border-gray-600 dark:hover:bg-teal-900/20"
+                onClick={() => standaloneImageRef.current?.click()}
+              >
+                {uploadingImage ? <Loader2 className="mx-auto mb-2 h-8 w-8 animate-spin text-teal-500" /> : <Sparkles className="mx-auto mb-2 h-8 w-8 text-teal-500" />}
+                <p className="text-sm font-medium text-gray-600 dark:text-gray-300">
+                  {uploadingImage ? 'جارٍ تنظيف الصور وتحليل السؤال...' : 'ارفع صفحة السؤال أو أضف صورًا متعددة'}
+                </p>
+                <p className="mt-1 text-xs text-gray-400">PNG, JPG, WebP حتى 5MB للصورة — يفضل رفع الصفحة كاملة</p>
+              </div>
               <input
                 ref={standaloneImageRef}
                 type="file"
                 accept="image/*"
+                multiple
                 className="hidden"
-                onChange={e => e.target.files?.[0] && handleImageUpload(e.target.files[0], editingQuestion?._id)}
+                onChange={e => {
+                  const files = e.target.files ? Array.from(e.target.files) : [];
+                  handleImageUpload(files);
+                  e.currentTarget.value = '';
+                }}
               />
+              {form.imageProcessing && (
+                <p className="mt-2 text-xs text-gray-500">
+                  {form.imageProcessing.status === 'processed'
+                    ? 'تم تنظيف الخلفية الفاتحة وتحويلها إلى خلفية بيضاء.'
+                    : form.imageProcessing.note}
+                </p>
+              )}
             </div>
 
             {/* Category & Difficulty */}

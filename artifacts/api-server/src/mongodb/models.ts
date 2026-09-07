@@ -396,13 +396,21 @@ export interface IQuestion extends Document {
   section?: number;
   explanation?: string;
   imageUrl?: string;
+  imageUrls?: string[];
   imageOriginalUrl?: string;
+  imageOriginalUrls?: string[];
   imageProcessing?: {
     status: 'processed' | 'original_only';
     backgroundRemoved: boolean;
     watermarkCleanupApplied: boolean;
     note?: string;
   };
+  imageProcessings?: Array<{
+    status: 'processed' | 'original_only';
+    backgroundRemoved: boolean;
+    watermarkCleanupApplied: boolean;
+    note?: string;
+  }>;
   createdAt: Date;
   updatedAt?: Date;
   createdBy?: string;
@@ -422,12 +430,23 @@ const questionSchema = new Schema<IQuestion>({
   section: { type: Number, default: 1 },
   explanation: { type: String },
   imageUrl: { type: String },
+  imageUrls: { type: [String], default: [] },
   imageOriginalUrl: { type: String },
+  imageOriginalUrls: { type: [String], default: [] },
   imageProcessing: {
     status: { type: String, enum: ['processed', 'original_only'] },
     backgroundRemoved: { type: Boolean },
     watermarkCleanupApplied: { type: Boolean },
     note: { type: String },
+  },
+  imageProcessings: {
+    type: [{
+      status: { type: String, enum: ['processed', 'original_only'] },
+      backgroundRemoved: { type: Boolean },
+      watermarkCleanupApplied: { type: Boolean },
+      note: { type: String },
+    }],
+    default: [],
   },
   createdAt: { type: Date, default: Date.now },
   updatedAt: { type: Date },

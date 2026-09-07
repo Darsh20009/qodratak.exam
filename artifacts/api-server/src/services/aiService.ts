@@ -81,6 +81,96 @@ function imageUrlToBase64(imageUrl: string): string | null {
   }
 }
 
+export async function extractQuestionFromImages(buffers: Buffer[]): Promise<{
+  text: string;
+  options: string[];
+  correctOptionIndex: number;
+  explanation: string;
+  category: 'verbal' | 'quantitative' | 'general';
+  subcategory: string;
+  difficulty: 'beginner' | 'intermediate' | 'advanced';
+} | null> {
+  const apiKey = process.env.OPENAI_API_KEY;
+  if (!apiKey || buffers.length === 0) return null;
+
+  const content: any[] = [{
+    type: 'text',
+    text: `استخرج من صور أسئلة قياس المرفقة سؤالاً واحداً منظماً بصيغة JSON فقط، دون markdown.
+
+القواعد:
+- اقرأ السؤال العربي كما هو، ونظّف العلامات المائية والأرقام الزائدة التي ليست جزءاً من السؤال.
+- استخرج نص السؤال فقط في text.
+- استخرج أربعة خيارات مرتبة من أ إلى د في options، بدون حروف الترتيب داخل النص.
+- correctOptionIndex رقم من 0 إلى 3. إذا ظهرت عبارة مثل "الإجابة الصحيحة: د" فاجعلها 3.
+- إذا لم تظهر الإجابة الصحيحة بوضوح، استخدم null بدلاً من التخمين.
+- صنف السؤال في category كواحد من verbal أو quantitative أو general.
+- اكتب subcategory بالعربية، وحدد difficulty كواحد من beginner أو intermediate أو advanced.
+- اكتب شرحاً قصيراً للحل في explanation.
+
+الشكل المطلوب:
+{"text":"...","options":["...","...","...","..."],"correctOptionIndex":3,"explanation":"...","category":"quantitative","subcategory":"الهندسة","difficulty":"beginner"}`,
+  }];
+
+  for (const buffer of buffers) {
+    content.push({
+      type: 'image_url',
+      image_url: { url: `data:image/png;base64,${buffer.toString('base64')}` },
+    });
+  }
+
+  try {
+    const response = await fetch(`${OPENROUTER_BASE_URL}/chat/completions`, {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${apiKey}`,
+        'Content-Type': 'application/json',
+        'HTTP-Referer': 'https://qodratak.sa',
+        'X-Title': 'Qodratak Question Importer',
+      },
+      body: JSON.stringify({
+        model: ANALYSIS_MODEL,
+        messages: [
+          { role: 'system', content: 'أنت محلل صور دقيق لأسئلة اختبار القدرات. أعد JSON صالحاً فقط.' },
+          { role: 'user', content },
+        ],
+        temperature: 0,
+        max_tokens: 1200,
+        response_format: { type: 'json_object' },
+      }),
+    });
+
+    if (!response.ok) throw new Error(`AI API error: ${response.status}`);
+    const data = await response.json() as any;
+    const raw = String(data?.choices?.[0]?.message?.content || '').trim()
+      .replace(/^```(?:json)?\s*/i, '')
+      .replace(/\s*```$/i, '');
+    const parsed = JSON.parse(raw);
+    const options = Array.isArray(parsed.options)
+      ? parsed.options.map((option: unknown) => String(option).trim()).filter(Boolean).slice(0, 4)
+      : [];
+    const correctOptionIndex = Number.isInteger(parsed.correctOptionIndex)
+      ? parsed.correctOptionIndex
+      : -1;
+
+    if (!String(parsed.text || '').trim() || options.length !== 4 || correctOptionIndex < 0 || correctOptionIndex > 3) {
+      return null;
+    }
+
+    return {
+      text: String(parsed.text).trim(),
+      options,
+      correctOptionIndex,
+      explanation: String(parsed.explanation || '').trim(),
+      category: ['verbal', 'quantitative', 'general'].includes(parsed.category) ? parsed.category : 'general',
+      subcategory: String(parsed.subcategory || 'عام').trim(),
+      difficulty: ['beginner', 'intermediate', 'advanced'].includes(parsed.difficulty) ? parsed.difficulty : 'intermediate',
+    };
+  } catch (error) {
+    console.error('[AI Service] question image extraction error:', error);
+    return null;
+  }
+}
+
 export async function explainQuestion(params: {
   questionText: string;
   options: string[];
