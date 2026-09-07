@@ -43,6 +43,12 @@ function Header({ onSignup, onLogin }: { onSignup: () => void; onLogin: () => vo
             height="42"
             className="hidden h-10 w-10 object-contain dark:block"
           />
+          <span className="flex flex-col justify-center leading-none">
+            <span className="text-base font-black tracking-tight text-[#171723] dark:text-white">قدراتك</span>
+            <span dir="ltr" className="mt-1 text-[10px] font-semibold tracking-[0.16em] text-[#7D746D] dark:text-slate-400">
+              Qodratak
+            </span>
+          </span>
         </Link>
 
         <nav className="hidden items-center gap-6 sm:flex">
