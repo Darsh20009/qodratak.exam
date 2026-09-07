@@ -265,8 +265,9 @@ export default function QuestionsManagementPage() {
           });
         } else {
           toast({
-            title: 'تم تنظيف الصور وإضافتها',
-            description: 'لم يتوفر محلل النص الآن؛ راجع الحقول وأدخل السؤال والخيارات يدويًا.',
+            title: 'تم حفظ الصور دون استخراج النص',
+            description: data.extractionError || 'راجع الحقول وأدخل السؤال والخيارات يدويًا.',
+            variant: data.extractionStatus === 'unavailable' ? 'default' : 'destructive',
           });
         }
       }

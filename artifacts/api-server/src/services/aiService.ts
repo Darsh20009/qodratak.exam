@@ -5,11 +5,59 @@ const OPENROUTER_BASE_URL = 'https://openrouter.ai/api/v1';
 const CHAT_MODEL = 'openai/gpt-4o-mini';
 const ANALYSIS_MODEL = 'openai/gpt-4o-mini';
 
+type VisionProvider = {
+  apiKey: string;
+  baseUrl: string;
+  model: string;
+  source: 'replit' | 'openrouter';
+};
+
+export type QuestionExtraction = {
+  text: string;
+  options: string[];
+  correctOptionIndex: number | null;
+  explanation: string;
+  category: 'verbal' | 'quantitative' | 'general';
+  subcategory: string;
+  difficulty: 'beginner' | 'intermediate' | 'advanced';
+};
+
+export type QuestionExtractionResult = {
+  extraction: QuestionExtraction | null;
+  status: 'ready' | 'unavailable' | 'failed' | 'invalid';
+  message?: string;
+};
+
+function getVisionProvider(): VisionProvider | null {
+  const managedApiKey = process.env.AI_INTEGRATIONS_OPENAI_API_KEY?.trim();
+  const managedBaseUrl = process.env.AI_INTEGRATIONS_OPENAI_BASE_URL?.trim().replace(/\/+$/, '');
+  if (managedApiKey && managedBaseUrl) {
+    return {
+      apiKey: managedApiKey,
+      baseUrl: managedBaseUrl,
+      model: process.env.AI_INTEGRATIONS_OPENAI_MODEL?.trim() || ANALYSIS_MODEL,
+      source: 'replit',
+    };
+  }
+
+  const openRouterApiKey = process.env.OPENAI_API_KEY?.trim();
+  if (openRouterApiKey) {
+    return {
+      apiKey: openRouterApiKey,
+      baseUrl: OPENROUTER_BASE_URL,
+      model: ANALYSIS_MODEL,
+      source: 'openrouter',
+    };
+  }
+
+  return null;
+}
+
 // Check API key on startup
-if (!process.env.OPENAI_API_KEY) {
-  console.warn('⚠️  [AI Service] OPENAI_API_KEY غير مضبوط — خدمات الذكاء الاصطناعي معطّلة');
+if (!getVisionProvider()) {
+  console.warn('⚠️  [AI Service] مزود الذكاء الاصطناعي غير مضبوط — خدمات الذكاء الاصطناعي معطّلة');
 } else {
-  console.log('✅ [AI Service] OPENAI_API_KEY مضبوط — الذكاء الاصطناعي جاهز (OpenRouter)');
+  console.log('✅ [AI Service] مزود الذكاء الاصطناعي مضبوط — الذكاء الاصطناعي جاهز');
 }
 
 const SYSTEM_PROMPT = `أنت "مساعد قدراتك" — مساعد ذكي متخصص في اختبار القدرات العامة (قياس) السعودي.
@@ -81,17 +129,23 @@ function imageUrlToBase64(imageUrl: string): string | null {
   }
 }
 
-export async function extractQuestionFromImages(buffers: Buffer[]): Promise<{
-  text: string;
-  options: string[];
-  correctOptionIndex: number;
-  explanation: string;
-  category: 'verbal' | 'quantitative' | 'general';
-  subcategory: string;
-  difficulty: 'beginner' | 'intermediate' | 'advanced';
-} | null> {
-  const apiKey = process.env.OPENAI_API_KEY;
-  if (!apiKey || buffers.length === 0) return null;
+export async function extractQuestionFromImages(buffers: Buffer[]): Promise<QuestionExtractionResult> {
+  if (buffers.length === 0) {
+    return {
+      extraction: null,
+      status: 'invalid',
+      message: 'لم يتم إرفاق صورة لتحليلها.',
+    };
+  }
+
+  const provider = getVisionProvider();
+  if (!provider) {
+    return {
+      extraction: null,
+      status: 'unavailable',
+      message: 'تم حفظ الصور، لكن مزود تحليل الصور غير مفعّل على الخادم. يمكنك تعبئة الحقول يدويًا.',
+    };
+  }
 
   const content: any[] = [{
     type: 'text',
@@ -119,16 +173,20 @@ export async function extractQuestionFromImages(buffers: Buffer[]): Promise<{
   }
 
   try {
-    const response = await fetch(`${OPENROUTER_BASE_URL}/chat/completions`, {
+    const response = await fetch(`${provider.baseUrl}/chat/completions`, {
       method: 'POST',
       headers: {
-        Authorization: `Bearer ${apiKey}`,
+        Authorization: `Bearer ${provider.apiKey}`,
         'Content-Type': 'application/json',
-        'HTTP-Referer': 'https://qodratak.sa',
-        'X-Title': 'Qodratak Question Importer',
+        ...(provider.source === 'openrouter'
+          ? {
+              'HTTP-Referer': 'https://qodratak.sa',
+              'X-Title': 'Qodratak Question Importer',
+            }
+          : {}),
       },
       body: JSON.stringify({
-        model: ANALYSIS_MODEL,
+        model: provider.model,
         messages: [
           { role: 'system', content: 'أنت محلل صور دقيق لأسئلة اختبار القدرات. أعد JSON صالحاً فقط.' },
           { role: 'user', content },
@@ -139,7 +197,9 @@ export async function extractQuestionFromImages(buffers: Buffer[]): Promise<{
       }),
     });
 
-    if (!response.ok) throw new Error(`AI API error: ${response.status}`);
+    if (!response.ok) {
+      throw new Error(`AI API error: ${response.status}`);
+    }
     const data = await response.json() as any;
     const raw = String(data?.choices?.[0]?.message?.content || '').trim()
       .replace(/^```(?:json)?\s*/i, '')
@@ -150,24 +210,39 @@ export async function extractQuestionFromImages(buffers: Buffer[]): Promise<{
       : [];
     const correctOptionIndex = Number.isInteger(parsed.correctOptionIndex)
       ? parsed.correctOptionIndex
-      : -1;
+      : null;
 
-    if (!String(parsed.text || '').trim() || options.length !== 4 || correctOptionIndex < 0 || correctOptionIndex > 3) {
-      return null;
+    if (
+      !String(parsed.text || '').trim() ||
+      options.length !== 4 ||
+      (correctOptionIndex !== null && (correctOptionIndex < 0 || correctOptionIndex > 3))
+    ) {
+      return {
+        extraction: null,
+        status: 'invalid',
+        message: 'تعذر فهم نتيجة تحليل الصورة. تم حفظ الصور ويمكنك إدخال البيانات يدويًا.',
+      };
     }
 
     return {
-      text: String(parsed.text).trim(),
-      options,
-      correctOptionIndex,
-      explanation: String(parsed.explanation || '').trim(),
-      category: ['verbal', 'quantitative', 'general'].includes(parsed.category) ? parsed.category : 'general',
-      subcategory: String(parsed.subcategory || 'عام').trim(),
-      difficulty: ['beginner', 'intermediate', 'advanced'].includes(parsed.difficulty) ? parsed.difficulty : 'intermediate',
+      extraction: {
+        text: String(parsed.text).trim(),
+        options,
+        correctOptionIndex,
+        explanation: String(parsed.explanation || '').trim(),
+        category: ['verbal', 'quantitative', 'general'].includes(parsed.category) ? parsed.category : 'general',
+        subcategory: String(parsed.subcategory || 'عام').trim(),
+        difficulty: ['beginner', 'intermediate', 'advanced'].includes(parsed.difficulty) ? parsed.difficulty : 'intermediate',
+      },
+      status: 'ready',
     };
   } catch (error) {
     console.error('[AI Service] question image extraction error:', error);
-    return null;
+    return {
+      extraction: null,
+      status: 'failed',
+      message: 'تعذر تحليل الصورة حاليًا. تم حفظ الصور ويمكنك مراجعة الحقول وتعبئتها يدويًا.',
+    };
   }
 }
 

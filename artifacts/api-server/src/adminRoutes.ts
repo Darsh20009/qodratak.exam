@@ -844,9 +844,13 @@ router.post('/questions/analyze-images', requireAdminAuth, uploadQuestionImage.a
       filename: file.originalname,
     })));
 
-    let extraction: Awaited<ReturnType<typeof extractQuestionFromImages>> = null;
+    let extractionResult: Awaited<ReturnType<typeof extractQuestionFromImages>> = {
+      extraction: null,
+      status: 'unavailable',
+      message: 'تعذر تشغيل تحليل الصور.',
+    };
     try {
-      extraction = await extractQuestionFromImages(files.map(file => file.buffer));
+      extractionResult = await extractQuestionFromImages(files.map(file => file.buffer));
     } catch (error) {
       console.error('Question image extraction error:', error);
     }
@@ -854,8 +858,10 @@ router.post('/questions/analyze-images', requireAdminAuth, uploadQuestionImage.a
     res.json({
       success: true,
       images: processedImages,
-      extraction,
-      extractionAvailable: Boolean(extraction),
+      extraction: extractionResult.extraction,
+      extractionStatus: extractionResult.status,
+      extractionError: extractionResult.message,
+      extractionAvailable: extractionResult.status === 'ready' && Boolean(extractionResult.extraction),
     });
   } catch (error) {
     console.error('Analyze question images error:', error);
