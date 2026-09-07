@@ -33,6 +33,7 @@ interface Question {
   explanation: string;
   difficulty: string;
   imageUrl?: string;
+  imageUrls?: string[];
 }
 
 interface TestResult {
@@ -568,6 +569,7 @@ export function FreeQuantitativeTestRunner() {
       isTimeUrgent={timeRemaining < 180}
       questionText={currentQuestion?.text || ''}
       questionImageUrl={currentQuestion?.imageUrl}
+      questionImageUrls={currentQuestion?.imageUrls}
       options={currentQuestion?.options || []}
       selectedAnswer={answers[currentQuestionIndex] !== undefined ? answers[currentQuestionIndex] : null}
       onSelectAnswer={selectAnswer}

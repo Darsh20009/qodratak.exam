@@ -73,6 +73,8 @@ interface TahsiliQuestion {
   answerOptions: TahsiliOption[];
   hint?: string;
   explanation?: string;
+  imageUrl?: string;
+  imageUrls?: string[];
 }
 
 interface TahsiliOption {
@@ -824,6 +826,8 @@ const TahsiliExamPage: React.FC = () => {
         timeLeft={timeLeft}
         isTimeUrgent={timeLeft < 300}
         questionText={currentQuestion.question}
+        questionImageUrl={currentQuestion.imageUrl}
+        questionImageUrls={currentQuestion.imageUrls}
         options={currentQuestion.answerOptions.map(opt => opt.text)}
         selectedAnswer={selectedAnswer}
         onSelectAnswer={setSelectedAnswer}

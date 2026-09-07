@@ -40,6 +40,7 @@ interface Question {
   difficulty: string;
   explanation?: string;
   imageUrl?: string;
+  imageUrls?: string[];
 }
 
 interface TestData {
@@ -493,6 +494,7 @@ export function QuantitativeTestRunner() {
         isTimeUrgent={timeRemaining < 180}
         questionText={currentQuestion?.text || ''}
         questionImageUrl={currentQuestion?.imageUrl}
+        questionImageUrls={currentQuestion?.imageUrls}
         options={currentQuestion?.options || []}
         selectedAnswer={selectedAnswers[currentQuestionIndex] !== undefined ? selectedAnswers[currentQuestionIndex] : null}
         onSelectAnswer={(i) => selectAnswer(currentQuestionIndex, i)}

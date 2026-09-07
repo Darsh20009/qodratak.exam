@@ -56,6 +56,7 @@ interface Question {
   subcategory?: string;
   difficulty?: string;
   imageUrl?: string;
+  imageUrls?: string[];
 }
 
 interface TestAnswer {
@@ -616,6 +617,7 @@ export default function SectionedTestRunner() {
         isBookmarked: bookmarkedQuestions.has(`${currentSection}-${idx}`),
         category: q.subcategory || q.category,
         imageUrl: q.imageUrl,
+        imageUrls: q.imageUrls,
       };
     });
 
@@ -1557,6 +1559,7 @@ export default function SectionedTestRunner() {
       isTimeUrgent={timeLeft < 300}
       questionText={currentQuestion.text}
       questionImageUrl={currentQuestion.imageUrl}
+      questionImageUrls={currentQuestion.imageUrls}
       options={currentQuestion.options}
       selectedAnswer={selectedAnswer ?? null}
       onSelectAnswer={selectAnswer}

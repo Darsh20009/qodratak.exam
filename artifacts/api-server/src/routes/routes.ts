@@ -37,6 +37,15 @@ import {
 } from '../services/deviceSecurity';
 import { createPushSubscriptionRouter } from '../pushSubscriptionRoutes';
 
+function getQuestionImageUrls(question: { imageUrl?: unknown; imageUrls?: unknown }): string[] {
+  const urls = [
+    ...(Array.isArray(question.imageUrls) ? question.imageUrls : []),
+    question.imageUrl,
+  ].filter((url): url is string => typeof url === 'string' && url.trim().length > 0);
+
+  return Array.from(new Set(urls));
+}
+
 const deviceLimitAlertCooldowns = new Map<string, number>();
 const DEVICE_LIMIT_ALERT_COOLDOWN_MS = 10 * 60 * 1000;
 const DEVICE_MANAGEMENT_TOKEN_TTL_MS = 15 * 60 * 1000;
@@ -753,7 +762,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
             subcategory: q.subcategory,
             difficulty: q.difficulty,
             explanation: q.explanation,
-            imageUrl: q.imageUrl,
+            imageUrl: getQuestionImageUrls(q)[0],
+            imageUrls: getQuestionImageUrls(q),
           })));
         } catch {}
       }
@@ -791,7 +801,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
               subcategory: q.subcategory,
               difficulty: q.difficulty,
               explanation: q.explanation,
-              imageUrl: q.imageUrl,
+              imageUrl: getQuestionImageUrls(q)[0],
+              imageUrls: getQuestionImageUrls(q),
             })),
             ...pgOnly,
           ];
@@ -923,6 +934,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         category: q.category,
         difficulty: q.difficulty,
         explanation: q.explanation,
+        imageUrl: getQuestionImageUrls(q)[0],
+        imageUrls: getQuestionImageUrls(q),
       }));
       return res.json({ questions, total: questions.length });
     } catch (error) {
@@ -978,6 +991,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
           options: question.options || question.choices || [],
           category: question.category || category,
           difficulty: question.difficulty || 'mixed',
+          imageUrl: getQuestionImageUrls(question)[0],
+          imageUrls: getQuestionImageUrls(question),
         };
       });
       (req.session as any).mobileExamAttempts = attempts;
@@ -9120,7 +9135,8 @@ app.post("/api/auth/register", async (req: Request, res: Response) => {
         category: q.category,
         subcategory: q.subcategory || 'عام',
         difficulty: q.difficulty || 'intermediate',
-        imageUrl: q.imageUrl || null,
+        imageUrl: getQuestionImageUrls(q)[0] || null,
+        imageUrls: getQuestionImageUrls(q),
       });
 
       const questions = interleaved.slice(0, 100).map(formatQ);

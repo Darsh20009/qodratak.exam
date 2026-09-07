@@ -33,6 +33,7 @@ interface Question {
   subcategory?: string;
   explanation?: string;
   imageUrl?: string;
+  imageUrls?: string[];
 }
 
 interface TestSection {
@@ -590,6 +591,7 @@ export default function FolderTest() {
       isTimeUrgent={sectionTimeRemaining < 60}
       questionText={currentQuestion?.text || ""}
       questionImageUrl={currentQuestion?.imageUrl}
+      questionImageUrls={currentQuestion?.imageUrls}
       options={currentQuestion?.options || []}
       selectedAnswer={currentQuestion ? (selectedAnswers[currentQuestion.id] ?? null) : null}
       onSelectAnswer={handleAnswerSelect}

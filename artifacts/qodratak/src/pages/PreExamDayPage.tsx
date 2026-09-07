@@ -23,6 +23,7 @@ interface Question {
   subcategory: string;
   difficulty: string;
   imageUrl?: string | null;
+  imageUrls?: string[];
 }
 
 interface SessionMeta {
@@ -489,6 +490,7 @@ export default function PreExamDayPage() {
       isTimeUrgent={isUrgent}
       questionText={q.text}
       questionImageUrl={q.imageUrl || undefined}
+      questionImageUrls={q.imageUrls}
       options={q.options}
       selectedAnswer={answers[currentQ]}
       onSelectAnswer={handleSelectAnswer}

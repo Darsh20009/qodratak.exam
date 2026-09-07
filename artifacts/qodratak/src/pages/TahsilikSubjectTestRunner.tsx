@@ -34,6 +34,8 @@ interface Question {
   category: string;
   explanation?: string;
   hint?: string;
+  imageUrl?: string;
+  imageUrls?: string[];
 }
 
 interface SubjectTestConfig {
@@ -460,6 +462,8 @@ const TahsilikSubjectTestRunner: React.FC = () => {
       timeLeft={timeLeft}
       isTimeUrgent={timeLeft < 300}
       questionText={currentQuestion?.question || ""}
+      questionImageUrl={currentQuestion?.imageUrl}
+      questionImageUrls={currentQuestion?.imageUrls}
       options={currentQuestion?.options || []}
       selectedAnswer={answers[currentQuestionIndex] ?? selectedAnswer ?? null}
       onSelectAnswer={handleAnswerSelect}

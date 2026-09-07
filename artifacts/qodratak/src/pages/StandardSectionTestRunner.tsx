@@ -39,6 +39,7 @@ interface TestQuestion {
   subcategory: string;
   explanation?: string;
   imageUrl?: string;
+  imageUrls?: string[];
 }
 
 interface TestSection {
@@ -453,6 +454,7 @@ export function StandardSectionTestRunner() {
         isBookmarked: bookmarkedQuestions.has(key),
         category: q.category,
         imageUrl: q.imageUrl,
+        imageUrls: q.imageUrls,
       };
     });
     return (
@@ -749,6 +751,7 @@ export function StandardSectionTestRunner() {
       isTimeUrgent={sectionTimeRemaining < 300}
       questionText={currentQuestion.text}
       questionImageUrl={currentQuestion.imageUrl}
+      questionImageUrls={currentQuestion.imageUrls}
       options={currentQuestion.options}
       selectedAnswer={selectedAnswer}
       onSelectAnswer={selectAnswer}

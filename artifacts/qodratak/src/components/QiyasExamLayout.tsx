@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import formulasImg from "@assets/Screenshot_2026-03-08_071500_1772943315708.png";
 import { X, BookmarkCheck, Bookmark, Flag, AlertTriangle, CheckCircle2, LayoutGrid, ChevronRight, ChevronLeft } from "lucide-react";
 import ImageZoom from "@/components/ImageZoom";
+import { getQuestionImageUrls } from "@/lib/questionImages";
 
 const OPTION_LABELS = ['أ', 'ب', 'ج', 'د'];
 
@@ -25,6 +26,7 @@ export interface QiyasExamLayoutProps {
   questionText: string;
   questionTypeLabel?: string;
   questionImageUrl?: string;
+  questionImageUrls?: string[];
   options: string[];
   selectedAnswer: number | null;
   onSelectAnswer: (index: number) => void;
@@ -74,6 +76,7 @@ export function QiyasExamLayout({
   questionText,
   questionTypeLabel,
   questionImageUrl,
+  questionImageUrls,
   options,
   selectedAnswer,
   onSelectAnswer,
@@ -110,6 +113,10 @@ export function QiyasExamLayout({
   const [reportDesc, setReportDesc] = useState('');
   const [reportSent, setReportSent] = useState(false);
   const [reportLoading, setReportLoading] = useState(false);
+  const questionImages = getQuestionImageUrls({
+    imageUrl: questionImageUrl,
+    imageUrls: questionImageUrls,
+  });
 
   const handleSubmitReport = async () => {
     if (!reportType) return;
@@ -300,15 +307,21 @@ export function QiyasExamLayout({
               </div>
             )}
 
-            {questionImageUrl && (
+            {questionImages.length > 0 ? (
               <div className="mb-4 flex justify-center">
-                <ImageZoom
-                  src={questionImageUrl}
-                  imgClassName="rounded-xl object-contain border border-gray-200 shadow-sm max-w-full"
-                  imgStyle={{ maxHeight: '280px', maxWidth: '100%', width: 'auto' }}
-                />
+                <div className="w-full space-y-3">
+                  {questionImages.map((imageUrl, index) => (
+                    <div key={`${imageUrl}-${index}`} className="flex justify-center">
+                      <ImageZoom
+                        src={imageUrl}
+                        imgClassName="rounded-xl object-contain border border-gray-200 shadow-sm max-w-full"
+                        imgStyle={{ maxHeight: '280px', maxWidth: '100%', width: 'auto' }}
+                      />
+                    </div>
+                  ))}
+                </div>
               </div>
-            )}
+            ) : null}
 
             <p className={`text-gray-800 leading-relaxed mb-5 ${fontClass}`}>
               {questionText}

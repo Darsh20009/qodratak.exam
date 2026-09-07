@@ -24,6 +24,7 @@ interface Question {
   category: string;
   subcategory: string;
   imageUrl?: string;
+  imageUrls?: string[];
 }
 
 interface SectionConfig {
@@ -663,6 +664,7 @@ export default function ScheduledExamRunner() {
       isBookmarked: bookmarks[currentSection][qi],
       category: q.category,
       imageUrl: q.imageUrl,
+      imageUrls: q.imageUrls,
     }));
     const isLastSection = currentSection + 1 >= SECTIONS;
     return (
@@ -845,6 +847,7 @@ export default function ScheduledExamRunner() {
         isTimeUrgent={timeUrgent}
         questionText={currentQuestion.text}
         questionImageUrl={currentQuestion.imageUrl}
+        questionImageUrls={currentQuestion.imageUrls}
         options={currentQuestion.options}
         selectedAnswer={answers[currentSection][currentQ]}
         onSelectAnswer={selectAnswer}

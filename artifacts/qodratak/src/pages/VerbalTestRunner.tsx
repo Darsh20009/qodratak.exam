@@ -41,6 +41,7 @@ interface Question {
   subcategory?: string;
   difficulty?: string;
   imageUrl?: string;
+  imageUrls?: string[];
 }
 
 interface TestConfig {
@@ -509,6 +510,7 @@ export function VerbalTestRunner() {
         isTimeUrgent={timeRemaining < 180}
         questionText={currentQuestion?.text || currentQuestion?.question || ''}
         questionImageUrl={currentQuestion?.imageUrl}
+        questionImageUrls={currentQuestion?.imageUrls}
         options={currentQuestion?.options || currentQuestion?.choices || []}
         selectedAnswer={selectedAnswers[currentQuestionIndex] !== undefined ? selectedAnswers[currentQuestionIndex] : null}
         onSelectAnswer={(i) => selectAnswer(currentQuestionIndex, i)}

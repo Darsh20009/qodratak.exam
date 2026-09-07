@@ -5,6 +5,7 @@ import { useAntiCheat } from '@/hooks/useAntiCheat';
 import { AntiCheatWarning } from '@/components/AntiCheatWarning';
 import AiReviewingScreen, { WrongQuestion } from '@/components/AiReviewingScreen';
 import ImageZoom from '@/components/ImageZoom';
+import { getQuestionImageUrls } from '@/lib/questionImages';
 import ResultsTeacherAnalysis from '@/components/exam-results/ResultsTeacherAnalysis';
 import QuestionReportModal from '@/components/exam-results/QuestionReportModal';
 import { apiRequest } from "@/lib/queryClient";
@@ -131,6 +132,7 @@ interface ExamQuestion {
   section: number;
   explanation?: string;
   imageUrl?: string;
+  imageUrls?: string[];
 }
 
 interface ProcessedExamQuestion extends ExamQuestion {
@@ -1704,6 +1706,7 @@ const QiyasExamPage: React.FC = () => {
           isTimeUrgent={timeLeft <= 60}
           questionText={currentQuestionData.text}
           questionImageUrl={currentQuestionData.imageUrl}
+        questionImageUrls={currentQuestionData.imageUrls}
           options={currentQuestionData.options}
           selectedAnswer={selectedAnswer}
           onSelectAnswer={selectAnswer}
@@ -3148,11 +3151,19 @@ const generateChallengeFile = ({ isTimed, questions: incorrectOrUnansweredQuesti
                             <h4 className="font-semibold text-sm sm:text-base text-gray-700 dark:text-gray-100 mb-1">{sectionName} - سؤال {questionDisplayIndex}</h4>
                             {question._isNonScored && <Badge variant="outline" className="mb-2 text-xs border-blue-500 text-blue-600 bg-blue-100 dark:bg-blue-900/30 dark:text-blue-300 dark:border-blue-600">سؤال تجريبي</Badge>}
                             <p className="text-gray-800 dark:text-gray-200 mb-4 leading-relaxed text-sm sm:text-base" dir="auto">{question.text}</p>
-                            {question.imageUrl && (
+                            {getQuestionImageUrls(question).length > 0 ? (
                               <div className="mb-4 flex justify-center">
-                                <ImageZoom src={question.imageUrl} imgClassName="max-w-full rounded-xl border border-gray-200 dark:border-gray-600 max-h-72 object-contain" />
+                                <div className="w-full space-y-3">
+                                  {getQuestionImageUrls(question).map((imageUrl, imageIndex) => (
+                                    <ImageZoom
+                                      key={`${imageUrl}-${imageIndex}`}
+                                      src={imageUrl}
+                                      imgClassName="max-w-full rounded-xl border border-gray-200 dark:border-gray-600 max-h-72 object-contain"
+                                    />
+                                  ))}
+                                </div>
                               </div>
-                            )}
+                            ) : null}
                             <div className="space-y-2">
                                 {question.options.map((option, optIndex) => (
                                 <div key={`${question.id}-optrev-${optIndex}-${filterType}-${reviewIndex}`} className={cn(

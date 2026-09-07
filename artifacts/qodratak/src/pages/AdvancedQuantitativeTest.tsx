@@ -51,6 +51,8 @@ interface TestQuestion {
   category: string;
   subcategory: string;
   explanation?: string;
+  imageUrl?: string;
+  imageUrls?: string[];
 }
 
 interface TestSection {
@@ -1798,6 +1800,8 @@ export function AdvancedQuantitativeTest() {
       timeLeft={sectionTimeRemaining}
       isTimeUrgent={sectionTimeRemaining < 60}
       questionText={currentQuestion?.text || ""}
+      questionImageUrl={currentQuestion?.imageUrl}
+      questionImageUrls={currentQuestion?.imageUrls}
       options={currentQuestion?.options || []}
       selectedAnswer={selectedAnswer !== undefined ? selectedAnswer : null}
       onSelectAnswer={selectAnswer}

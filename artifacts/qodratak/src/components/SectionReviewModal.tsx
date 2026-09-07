@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { CheckCircle2, XCircle, MinusCircle, BookmarkCheck, X } from "lucide-react";
 import ImageZoom from "@/components/ImageZoom";
+import { getQuestionImageUrls } from "@/lib/questionImages";
 
 interface QuestionReview {
   index: number;
@@ -14,6 +15,7 @@ interface QuestionReview {
   isBookmarked: boolean;
   category?: string;
   imageUrl?: string;
+  imageUrls?: string[];
 }
 
 interface SectionReviewModalProps {
@@ -152,9 +154,17 @@ export function SectionReviewModal({ sectionIndex, questions, onClose, breakDura
 
               {expandedQ === q.index && (
                 <div className="mt-3 space-y-1.5 border-t border-gray-200 dark:border-gray-700 pt-3">
-                  {q.imageUrl && (
+                  {getQuestionImageUrls(q).length > 0 && (
                     <div className="mb-3 flex justify-center">
-                      <ImageZoom src={q.imageUrl} imgClassName="max-w-full rounded-lg border border-gray-200 dark:border-gray-600 max-h-48 object-contain" />
+                      <div className="w-full space-y-2">
+                        {getQuestionImageUrls(q).map((imageUrl, imageIndex) => (
+                          <ImageZoom
+                            key={`${imageUrl}-${imageIndex}`}
+                            src={imageUrl}
+                            imgClassName="max-w-full rounded-lg border border-gray-200 dark:border-gray-600 max-h-48 object-contain"
+                          />
+                        ))}
+                      </div>
                     </div>
                   )}
                   {q.options.map((opt, i) => {
