@@ -69,7 +69,7 @@ function SaudiBusinessSeal() {
                 src="/saudi-center-logo.png"
                 alt="المركز السعودي للتنافسية والأعمال"
               />
-              <h3>موثق لدى المركز السعودي للتنافسية والأعمال</h3>
+              <h3>موثّق لدى المركز السعودي للتنافسية والأعمال</h3>
               <p className="sbc-certificate-location">
                 الموقع: <a href="https://qodratak.sa" target="_blank" rel="noreferrer">https://qodratak.sa</a>
               </p>
