@@ -81,68 +81,112 @@
         100% { transform: scale(1); box-shadow: 0 8px 25px rgba(0, 91, 179, 0.3); }
       }
 
-      /* Saudi Business verification seal: keep the official mark, without
-         introducing a second white card over the page. */
+      /* Saudi Business verification seal. The official provider element is
+         kept hidden after its token is loaded; the visible mark below is
+         rendered by LandingPage so the provider's white canvas can never
+         leak into the page. */
       .sbc-verify-seal {
-        position: fixed !important;
-        left: 16px !important;
-        right: auto !important;
-        bottom: 16px !important;
-        z-index: 60 !important;
-        display: flex !important;
-        align-items: center !important;
-        justify-content: center !important;
-        min-height: 0 !important;
-        max-width: calc(100vw - 32px) !important;
-        padding: 0 !important;
+        position: absolute !important;
+        width: 1px !important;
+        height: 1px !important;
         overflow: hidden !important;
-        border: 0 !important;
-        border-radius: 9999px !important;
-        background: transparent !important;
-        box-shadow: none !important;
+        opacity: 0 !important;
+        pointer-events: none !important;
+        clip: rect(0 0 0 0) !important;
+        clip-path: inset(50%) !important;
       }
 
-      .sbc-verify-seal > *,
-      .sbc-verify-seal iframe {
-        max-width: 100% !important;
-        border-radius: 12px !important;
-        background: transparent !important;
-        border: 0 !important;
-        box-shadow: none !important;
-        /* The provider's visual has a small white canvas around the pill.
-           Crop that canvas while leaving the official mark intact. */
-        clip-path: inset(5px round 9999px) !important;
-        -webkit-clip-path: inset(5px round 9999px) !important;
+      .sbc-verify-seal > * {
+        display: none !important;
       }
 
-      /* The provider may return its mark as a white-backed image. Blend only
-         that generated layer with the branded host so the white canvas vanishes. */
-      .sbc-verify-seal img,
-      .sbc-verify-seal picture,
-      .sbc-verify-seal svg {
-        max-width: 100% !important;
-        mix-blend-mode: multiply !important;
-        border: 0 !important;
-        outline: 0 !important;
-        box-shadow: none !important;
+      .sbc-custom-seal {
+        position: fixed;
+        left: 16px;
+        bottom: 16px;
+        z-index: 60;
+        display: inline-flex;
+        align-items: center;
+        gap: 9px;
+        min-height: 56px;
+        max-width: calc(100vw - 32px);
+        padding: 8px 12px 8px 10px;
+        color: #fff;
+        direction: rtl;
+        border: 1px solid rgba(145, 215, 197, 0.5);
+        border-radius: 18px;
+        background: linear-gradient(135deg, #21153f 0%, #3a2466 100%);
+        box-shadow: 0 12px 26px rgba(8, 13, 28, 0.28);
+        font-family: inherit;
+        isolation: isolate;
       }
 
-      .sbc-verify-seal table,
-      .sbc-verify-seal tbody,
-      .sbc-verify-seal tr,
-      .sbc-verify-seal td,
-      .sbc-verify-seal span,
-      .sbc-verify-seal a {
-        background: transparent !important;
-        border: 0 !important;
-        box-shadow: none !important;
+      .sbc-custom-seal__mark {
+        display: grid;
+        width: 38px;
+        height: 38px;
+        flex: 0 0 auto;
+        place-items: center;
+        color: #1e3851;
+        border-radius: 12px;
+        background: #f6fbfa;
+      }
+
+      .sbc-custom-seal__mark svg {
+        width: 28px;
+        height: 28px;
+      }
+
+      .sbc-custom-seal__copy {
+        display: grid;
+        gap: 1px;
+        text-align: right;
+        white-space: nowrap;
+      }
+
+      .sbc-custom-seal__copy strong {
+        font-size: 15px;
+        line-height: 1.2;
+        font-weight: 900;
+      }
+
+      .sbc-custom-seal__copy small {
+        color: rgba(255, 255, 255, 0.72);
+        font-size: 9px;
+        line-height: 1.2;
+        font-weight: 700;
+      }
+
+      .sbc-custom-seal__check {
+        display: grid;
+        width: 21px;
+        height: 21px;
+        flex: 0 0 auto;
+        place-items: center;
+        color: #172338;
+        border-radius: 999px;
+        background: #91d7c5;
+        font-size: 14px;
+        font-weight: 950;
       }
 
       @media (max-width: 640px) {
-        .sbc-verify-seal {
+        .sbc-custom-seal {
           left: 10px !important;
           bottom: max(10px, env(safe-area-inset-bottom)) !important;
-          border-radius: 9999px !important;
+          min-height: 52px;
+          padding: 7px 10px 7px 8px;
+          border-radius: 16px;
+        }
+
+        .sbc-custom-seal__mark {
+          width: 34px;
+          height: 34px;
+          border-radius: 10px;
+        }
+
+        .sbc-custom-seal__copy strong {
+          font-size: 14px;
         }
       }
     </style>

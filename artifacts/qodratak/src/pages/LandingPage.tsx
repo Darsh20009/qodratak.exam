@@ -41,7 +41,21 @@ function SaudiBusinessSeal() {
     };
   }, []);
 
-  return null;
+  return (
+    <div className="sbc-custom-seal" role="img" aria-label="متجر موثق من منصة الأعمال السعودية">
+      <span className="sbc-custom-seal__mark" aria-hidden="true">
+        <svg viewBox="0 0 32 32" fill="none">
+          <path d="M16 4.5v17.25M16 10.5c-2.4-3.1-5.2-4.2-7.8-4.2 1.1 3.7 3.5 5.6 7.8 6.1M16 14.2c2.35-3.1 5.15-4.2 7.8-4.2-1.1 3.7-3.5 5.6-7.8 6.1M16 18.1c-2.35-2.35-4.85-3.15-7.3-2.9 1.25 3.05 3.6 4.45 7.3 4.35M16 19.7c2.35-2.35 4.85-3.15 7.3-2.9-1.25 3.05-3.6 4.45-7.3 4.35" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+          <path d="M7 26h18M10 23.5l-2.5 2.5M22 23.5l2.5 2.5" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
+        </svg>
+      </span>
+      <span className="sbc-custom-seal__copy">
+        <strong>متجر موثق</strong>
+        <small>منصة الأعمال السعودية</small>
+      </span>
+      <span className="sbc-custom-seal__check" aria-hidden="true">✓</span>
+    </div>
+  );
 }
 
 function Header({ onSignup, onLogin }: { onSignup: () => void; onLogin: () => void }) {
