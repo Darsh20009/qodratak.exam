@@ -130,13 +130,13 @@
 
       .sbc-certificate-dialog {
         position: relative;
-        width: min(190px, calc(100vw - 20px));
-        max-height: 68vh;
+        width: min(252px, calc(100vw - 20px));
+        max-height: 78vh;
         overflow: auto;
-        padding: 5px;
+        padding: 7px;
         border: 1px solid rgba(145, 215, 197, 0.42);
-        border-radius: 17px;
-        background: #272047;
+        border-radius: 20px;
+        background: linear-gradient(160deg, #211944, #2d225a);
         box-shadow: 0 16px 38px rgba(0, 0, 0, 0.36);
       }
 
@@ -146,8 +146,8 @@
         right: 7px;
         z-index: 2;
         display: grid;
-        width: 25px;
-        height: 25px;
+        width: 27px;
+        height: 27px;
         place-items: center;
         color: #fff;
         border: 1px solid rgba(255, 255, 255, 0.28);
@@ -156,36 +156,126 @@
         cursor: pointer;
       }
 
-      .sbc-certificate-visual {
+      .sbc-certificate-card {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 6px;
+        padding: 8px 8px 9px;
+        color: #fff;
+        direction: rtl;
+        text-align: center;
+      }
+
+      .sbc-center-logo {
+        display: block;
+        width: 100%;
+        max-height: 76px;
+        height: auto;
+        object-fit: contain;
+        border-radius: 14px;
+      }
+
+      .sbc-certificate-card h3 {
+        margin: 0;
+        color: #fff;
+        font-size: 14px;
+        line-height: 1.45;
+        font-weight: 950;
+      }
+
+      .sbc-certificate-location,
+      .sbc-certificate-brand,
+      .sbc-certificate-date {
+        margin: 0;
+        color: rgba(255, 255, 255, 0.85);
+        font-size: 10px;
+        line-height: 1.5;
+        font-weight: 700;
+      }
+
+      .sbc-certificate-location a {
+        color: #fff;
+        text-decoration: underline;
+        text-underline-offset: 2px;
+      }
+
+      .sbc-certificate-brand {
+        color: rgba(255, 255, 255, 0.66);
+        font-size: 12px;
+        font-weight: 800;
+      }
+
+      .sbc-qr-frame {
         position: relative;
+        width: 166px;
+        padding: 5px;
         overflow: hidden;
-        border-radius: 13px;
+        border-radius: 23px;
+        isolation: isolate;
+        background: transparent;
+      }
+
+      .sbc-qr-frame::before {
+        position: absolute;
+        inset: -60%;
+        z-index: 0;
+        content: "";
+        background: conic-gradient(from 0deg, #7053d5, #b69aff, #5e43bc, #91d7c5, #7053d5);
+        animation: sbc-qr-border-spin 4s linear infinite;
+      }
+
+      @keyframes sbc-qr-border-spin {
+        to { transform: rotate(360deg); }
+      }
+
+      .sbc-qr-frame__inner {
+        position: relative;
+        z-index: 1;
+        overflow: hidden;
+        padding: 4px;
+        border-radius: 18px;
+        background: #fff;
         line-height: 0;
       }
 
-      .sbc-certificate-visual img {
+      .sbc-qr-frame__inner img {
         display: block;
         width: 100%;
         height: auto;
+        border-radius: 13px;
       }
 
-      .sbc-certificate-link-overlay {
-        position: absolute;
-        left: 26%;
-        bottom: 2.5%;
-        width: 48%;
-        height: 9%;
+      .sbc-certificate-status {
+        display: flex;
+        align-items: center;
+        gap: 5px;
+        color: rgba(255, 255, 255, 0.88);
+        font-size: 11px;
+        font-weight: 700;
+      }
+
+      .sbc-certificate-status strong {
+        padding: 2px 9px;
+        color: #fff;
         border-radius: 999px;
+        background: #6d58ca;
+        font-size: 11px;
       }
 
       .sbc-certificate-link {
-        display: block;
-        margin: 5px 3px 1px;
-        padding: 7px 8px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 6px;
+        width: 100%;
+        margin-top: 1px;
+        padding: 9px 12px;
         color: #fff;
-        border-radius: 9px;
+        border: 0;
+        border-radius: 12px;
         background: #7053d5;
-        font-size: 10px;
+        font-size: 12px;
         font-weight: 900;
         text-align: center;
         text-decoration: none;
@@ -209,8 +299,8 @@
         }
 
         .sbc-certificate-dialog {
-          width: min(178px, calc(100vw - 14px));
-          max-height: 62vh;
+          width: min(235px, calc(100vw - 14px));
+          max-height: 76vh;
           padding: 4px;
           border-radius: 15px;
         }
@@ -218,6 +308,14 @@
         .sbc-certificate-close {
           top: 6px;
           right: 6px;
+        }
+
+        .sbc-certificate-card {
+          padding: 7px 6px 8px;
+        }
+
+        .sbc-qr-frame {
+          width: 150px;
         }
       }
     </style>

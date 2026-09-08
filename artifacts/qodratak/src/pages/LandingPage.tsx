@@ -21,21 +21,34 @@ import { ThemeToggle } from "@/components/ThemeToggle";
 const NAVY = "#171723";
 const SIGNAL = "#FF8A70";
 const MINT = "#91D7C5";
+const SAUDI_CERTIFICATE_URL = "https://eauthenticate.saudibusiness.gov.sa/certificate-details/0000321867?vt=1.WGT.1788911379.hlwg8kpZR93H.SYkJa9I1EF-CZ2Mj1zFLtk60KmeDzcc83I8opT_-mFo";
+
+function currentVerificationDate() {
+  const date = new Date();
+  return [
+    String(date.getDate()).padStart(2, "0"),
+    String(date.getMonth() + 1).padStart(2, "0"),
+    String(date.getFullYear()),
+  ].join("-");
+}
 
 function SaudiBusinessSeal() {
   const [certificateOpen, setCertificateOpen] = useState(false);
+  const verificationDate = currentVerificationDate();
 
   return (
     <>
-      <button
-        type="button"
-        className="sbc-badge-trigger"
-        onClick={() => setCertificateOpen(true)}
-        aria-label="عرض شهادة توثيق متجر قدراتك"
-        aria-haspopup="dialog"
-      >
-        <img src="/saudi-business-badge.png" alt="متجر موثق" />
-      </button>
+      {!certificateOpen && (
+        <button
+          type="button"
+          className="sbc-badge-trigger"
+          onClick={() => setCertificateOpen(true)}
+          aria-label="عرض شهادة توثيق متجر قدراتك"
+          aria-haspopup="dialog"
+        >
+          <img src="/saudi-business-badge.png" alt="متجر موثق" />
+        </button>
+      )}
 
       {certificateOpen && (
         <div
@@ -58,27 +71,38 @@ function SaudiBusinessSeal() {
             >
               <X size={20} />
             </button>
-            <div className="sbc-certificate-visual">
+            <div className="sbc-certificate-card">
               <img
-                src="/saudi-business-certificate.png"
-                alt="شهادة توثيق منصة قدراتك لدى المركز السعودي للتنافسية والأعمال مع رمز التحقق"
+                className="sbc-center-logo"
+                src="/saudi-center-logo.png"
+                alt="المركز السعودي للتنافسية والأعمال"
               />
+              <h3>موثق لدى المركز السعودي للتنافسية والأعمال</h3>
+              <p className="sbc-certificate-location">
+                الموقع: <a href="https://qodratak.sa" target="_blank" rel="noreferrer">https://qodratak.sa</a>
+              </p>
+              <p className="sbc-certificate-brand">منصة قدراتك</p>
+              <div className="sbc-qr-frame" aria-label="رمز التحقق">
+                <div className="sbc-qr-frame__inner">
+                  <img src="/saudi-certificate-qr.png" alt="رمز الاستجابة السريعة للتحقق" />
+                </div>
+              </div>
+              <div className="sbc-certificate-status">
+                <span>الحالة:</span>
+                <strong>سارية</strong>
+              </div>
+              <p className="sbc-certificate-date">
+                تاريخ التحقق: <b dir="ltr">{verificationDate}</b>
+              </p>
               <a
-                className="sbc-certificate-link-overlay"
-                href="https://eauthenticate.saudibusiness.gov.sa/certificate-details/0000321867?vt=1.WGT.1788911379.hlwg8kpZR93H.SYkJa9I1EF-CZ2Mj1zFLtk60KmeDzcc83I8opT_-mFo"
+                className="sbc-certificate-link"
+                href={SAUDI_CERTIFICATE_URL}
                 target="_blank"
                 rel="noreferrer"
-                aria-label="عرض التحقق من الشهادة"
-              />
+              >
+                <span aria-hidden="true">↗</span> عرض التحقق
+              </a>
             </div>
-            <a
-              className="sbc-certificate-link"
-              href="https://eauthenticate.saudibusiness.gov.sa/certificate-details/0000321867?vt=1.WGT.1788911379.hlwg8kpZR93H.SYkJa9I1EF-CZ2Mj1zFLtk60KmeDzcc83I8opT_-mFo"
-              target="_blank"
-              rel="noreferrer"
-            >
-              الذهاب إلى رابط التحقق
-            </a>
           </section>
         </div>
       )}
