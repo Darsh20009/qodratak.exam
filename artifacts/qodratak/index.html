@@ -83,12 +83,12 @@
 
       .sbc-badge-trigger {
         position: fixed;
-        left: 16px;
-        bottom: 16px;
+        left: 10px;
+        bottom: 10px;
         z-index: 60;
         display: block;
-        width: 198px;
-        max-width: calc(100vw - 32px);
+        width: 116px;
+        max-width: calc(100vw - 20px);
         padding: 0;
         overflow: hidden;
         border: 0;
@@ -120,34 +120,34 @@
         position: fixed;
         inset: 0;
         z-index: 100;
-        display: grid;
-        place-items: center;
-        padding: 18px;
+        display: flex;
+        align-items: flex-end;
+        justify-content: flex-start;
+        padding: 0 10px 72px;
         overflow-y: auto;
-        background: rgba(6, 10, 23, 0.82);
-        backdrop-filter: blur(8px);
+        background: transparent;
       }
 
       .sbc-certificate-dialog {
         position: relative;
-        width: min(100%, 544px);
-        max-height: calc(100vh - 36px);
+        width: min(190px, calc(100vw - 20px));
+        max-height: 68vh;
         overflow: auto;
-        padding: 10px;
-        border: 1px solid rgba(145, 215, 197, 0.36);
-        border-radius: 24px;
+        padding: 5px;
+        border: 1px solid rgba(145, 215, 197, 0.42);
+        border-radius: 17px;
         background: #272047;
-        box-shadow: 0 24px 70px rgba(0, 0, 0, 0.42);
+        box-shadow: 0 16px 38px rgba(0, 0, 0, 0.36);
       }
 
       .sbc-certificate-close {
         position: absolute;
-        top: 16px;
-        right: 16px;
+        top: 7px;
+        right: 7px;
         z-index: 2;
         display: grid;
-        width: 36px;
-        height: 36px;
+        width: 25px;
+        height: 25px;
         place-items: center;
         color: #fff;
         border: 1px solid rgba(255, 255, 255, 0.28);
@@ -159,7 +159,7 @@
       .sbc-certificate-visual {
         position: relative;
         overflow: hidden;
-        border-radius: 18px;
+        border-radius: 13px;
         line-height: 0;
       }
 
@@ -180,12 +180,12 @@
 
       .sbc-certificate-link {
         display: block;
-        margin: 10px 8px 2px;
-        padding: 12px 16px;
+        margin: 5px 3px 1px;
+        padding: 7px 8px;
         color: #fff;
-        border-radius: 14px;
+        border-radius: 9px;
         background: #7053d5;
-        font-size: 14px;
+        font-size: 10px;
         font-weight: 900;
         text-align: center;
         text-decoration: none;
@@ -199,24 +199,25 @@
 
       @media (max-width: 640px) {
         .sbc-badge-trigger {
-          left: 10px;
-          bottom: max(10px, env(safe-area-inset-bottom));
-          width: 174px;
+          left: 7px;
+          bottom: max(7px, env(safe-area-inset-bottom));
+          width: 104px;
         }
 
         .sbc-certificate-backdrop {
-          padding: 10px;
+          padding: 0 7px max(65px, calc(env(safe-area-inset-bottom) + 58px));
         }
 
         .sbc-certificate-dialog {
-          max-height: calc(100vh - 20px);
-          padding: 7px;
-          border-radius: 20px;
+          width: min(178px, calc(100vw - 14px));
+          max-height: 62vh;
+          padding: 4px;
+          border-radius: 15px;
         }
 
         .sbc-certificate-close {
-          top: 12px;
-          right: 12px;
+          top: 6px;
+          right: 6px;
         }
       }
     </style>
