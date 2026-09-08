@@ -37,7 +37,8 @@ export type WhatsAppOutboundKind =
   | "customer_purchase"
   | "admin_new_student"
   | "admin_subscription"
-  | "admin_daily_report";
+  | "admin_daily_report"
+  | "admin_email";
 
 const outboundPriorities: Record<WhatsAppOutboundKind, number> = {
   otp: 0,
@@ -45,6 +46,7 @@ const outboundPriorities: Record<WhatsAppOutboundKind, number> = {
   admin_new_student: 2,
   admin_subscription: 2,
   admin_daily_report: 3,
+  admin_email: 2,
 };
 
 const authDir = path.resolve(process.cwd(), ".whatsapp-auth");

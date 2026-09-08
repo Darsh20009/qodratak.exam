@@ -2,18 +2,25 @@ import nodemailer from 'nodemailer';
 import crypto from 'crypto';
 
 const SMTP2GO_API_KEY = process.env.SMTP2GO_API_KEY;
-const SMTP_HOST = process.env.SMTP_HOST || 'qirox.online';
-const SMTP_PORT = Number(process.env.SMTP_PORT || 465);
-const SMTP_SECURE = process.env.SMTP_SECURE !== 'false';
-const SMTP_USER = process.env.SMTP_USER || 'qodratak@qirox.online';
-const SMTP_PASS = process.env.SMTP_PASS;
-const SYSTEM_EMAIL = 'Qodratak.Platform@gmail.com';
-const FROM_EMAIL = process.env.FROM_EMAIL || SYSTEM_EMAIL;
+const SMTP_HOST = process.env.MAIL_HOST || 'mailserver.dmail.sa';
+const SMTP_PORT = Number(process.env.MAIL_SMTP_PORT || 465);
+const SMTP_SECURE = process.env.MAIL_SMTP_SECURE !== 'false';
+const SMTP_USER = process.env.MAIL_USER || 'info@qodratak.sa';
+const SMTP_PASS = process.env.QODRATAK_MAIL_PASSWORD || process.env.SMTP_PASS;
+const SYSTEM_EMAIL = 'info@qodratak.sa';
+const FROM_EMAIL = SYSTEM_EMAIL;
 const FROM_NAME = process.env.FROM_NAME || 'مؤسسة قدراتك العالية';
 const QIROX_API_BASE_URL = (process.env.QIROX_API_BASE_URL || '').replace(/\/+$/, '');
 const QIROX_PROJECT_ID = (process.env.QIROX_PROJECT_ID || '').trim();
 const QIROX_PROJECT_API_KEY = (process.env.QIROX_PROJECT_API_KEY || '').trim();
 let smtpTransporter: ReturnType<typeof nodemailer.createTransport> | null = null;
+let emailQueue: Promise<void> = Promise.resolve();
+
+function enqueueEmail<T>(job: () => Promise<T>): Promise<T> {
+  const next = emailQueue.then(job, job);
+  emailQueue = next.then(() => undefined, () => undefined);
+  return next;
+}
 
 function getSmtpTransporter() {
   if (!SMTP_PASS) return null;
@@ -29,34 +36,20 @@ function getSmtpTransporter() {
   return smtpTransporter;
 }
 
-async function sendEmail(to: string | string[], subject: string, htmlBody: string, textBody: string): Promise<boolean> {
+async function sendEmailNow(to: string | string[], subject: string, htmlBody: string, textBody: string): Promise<boolean> {
   try {
     const toList = Array.isArray(to) ? to : [to];
-    if (QIROX_API_BASE_URL && QIROX_PROJECT_ID && QIROX_PROJECT_API_KEY) {
-      const qiroxResponse = await fetch(
-        `${QIROX_API_BASE_URL}/projects/${encodeURIComponent(QIROX_PROJECT_ID)}/email`,
-        {
-          method: 'POST',
-          headers: {
-            Authorization: `Bearer ${QIROX_PROJECT_API_KEY}`,
-            'Content-Type': 'application/json',
-            'Idempotency-Key': `qodratak-email-${crypto.randomUUID()}`,
-          },
-          body: JSON.stringify({
-            recipient: { email: toList[0], name: FROM_NAME },
-            subject: subject.slice(0, 200),
-            message: textBody || htmlBody.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim(),
-          }),
-          signal: AbortSignal.timeout(20_000),
-        },
-      );
-
-      if (qiroxResponse.ok) {
-        console.log(`✅ Email sent via QIROX to ${toList.join(', ')}`);
-        return true;
-      }
-
-      console.error(`❌ QIROX email send failed with status ${qiroxResponse.status}`);
+    const transporter = getSmtpTransporter();
+    if (transporter) {
+      const info = await transporter.sendMail({
+        from: `${FROM_NAME} <${FROM_EMAIL}>`,
+        to: toList,
+        subject,
+        html: htmlBody,
+        text: textBody,
+      });
+      console.log(`✅ Email sent via secure SMTP to ${toList.join(', ')} | id: ${info.messageId}`);
+      return true;
     }
 
     if (SMTP2GO_API_KEY) {
@@ -80,24 +73,41 @@ async function sendEmail(to: string | string[], subject: string, htmlBody: strin
       console.error('❌ SMTP2Go send failed:', JSON.stringify(data));
     }
 
-    const transporter = getSmtpTransporter();
-    if (!transporter) {
-      console.error('❌ Email is not configured: set SMTP2GO_API_KEY or SMTP_PASS in Replit Secrets');
-      return false;
+    if (QIROX_API_BASE_URL && QIROX_PROJECT_ID && QIROX_PROJECT_API_KEY) {
+      const qiroxResponse = await fetch(
+        `${QIROX_API_BASE_URL}/projects/${encodeURIComponent(QIROX_PROJECT_ID)}/email`,
+        {
+          method: 'POST',
+          headers: {
+            Authorization: `Bearer ${QIROX_PROJECT_API_KEY}`,
+            'Content-Type': 'application/json',
+            'Idempotency-Key': `qodratak-email-${crypto.randomUUID()}`,
+          },
+          body: JSON.stringify({
+            recipient: { email: toList[0], name: FROM_NAME },
+            subject: subject.slice(0, 200),
+            message: textBody || htmlBody.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim(),
+          }),
+          signal: AbortSignal.timeout(20_000),
+        },
+      );
+      if (qiroxResponse.ok) {
+        console.log(`✅ Email sent via QIROX to ${toList.join(', ')}`);
+        return true;
+      }
+      console.error(`❌ QIROX email send failed with status ${qiroxResponse.status}`);
     }
-    const info = await transporter.sendMail({
-      from: `${FROM_NAME} <${FROM_EMAIL}>`,
-      to: toList,
-      subject,
-      html: htmlBody,
-      text: textBody,
-    });
-    console.log(`✅ Email sent via secure SMTP to ${toList.join(', ')} | id: ${info.messageId}`);
-    return true;
+
+    console.error('❌ Email is not configured: set QODRATAK_MAIL_PASSWORD or SMTP2GO_API_KEY in Replit Secrets');
+    return false;
   } catch (error) {
     console.error('❌ Error sending email:', error);
     return false;
   }
+}
+
+async function sendEmail(to: string | string[], subject: string, htmlBody: string, textBody: string): Promise<boolean> {
+  return enqueueEmail(() => sendEmailNow(to, subject, htmlBody, textBody));
 }
 
 // ─── Shared layout helpers ───────────────────────────────────────────────────
@@ -551,6 +561,36 @@ export async function testEmailConnection(): Promise<boolean> {
 
 export async function sendCustomEmail(to: string, subject: string, htmlBody: string, textBody: string): Promise<boolean> {
   return sendEmail(to, subject, htmlBody, textBody);
+}
+
+export async function sendMailboxEmail(
+  to: string,
+  subject: string,
+  textBody: string,
+  htmlBody = textBody.replace(/\n/g, '<br/>'),
+  headers?: { inReplyTo?: string; references?: string },
+) {
+  return enqueueEmail(async () => {
+    const transporter = getSmtpTransporter();
+    if (!transporter) return sendEmailNow(to, subject, htmlBody, textBody);
+    try {
+      await transporter.sendMail({
+        from: `${FROM_NAME} <${FROM_EMAIL}>`,
+        to,
+        subject,
+        text: textBody,
+        html: htmlBody,
+        headers: {
+          ...(headers?.inReplyTo ? { 'In-Reply-To': headers.inReplyTo } : {}),
+          ...(headers?.references ? { References: headers.references } : {}),
+        },
+      });
+      return true;
+    } catch (error) {
+      console.error('❌ Mailbox send failed:', error);
+      return false;
+    }
+  });
 }
 
 // ─── Exam Booking Confirmation ────────────────────────────────────────────────

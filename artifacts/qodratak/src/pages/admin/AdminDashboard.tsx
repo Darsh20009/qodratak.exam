@@ -5,6 +5,7 @@ import AdminWalletsTab from './AdminWalletsTab';
 import AdminSeasonalExamsTab from './AdminSeasonalExamsTab';
 import AdminFoundationManagementTab from './AdminFoundationManagementTab';
 import WhatsAppAdminTab from './WhatsAppAdminTab';
+import EmailAdminTab from './EmailAdminTab';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -110,6 +111,10 @@ const ADMIN_PAGE_TIPS: Record<string, { intro: string; steps: string[] }> = {
   settings: {
     intro: 'غيّر إعدادات المنصة العامة والخطة المعروضة للطلاب.',
     steps: ['راجع القيمة الحالية قبل تعديلها.', 'احفظ كل قسم على حدة.', 'اختبر الصفحة العامة بعد تعديل الأسعار أو النصوص.'],
+  },
+  email: {
+    intro: 'أدر صندوق info@qodratak.sa واستقبل الرسائل ورد عليها من داخل لوحة الإدارة.',
+    steps: ['اقرأ الرسائل الجديدة من الوارد.', 'استخدم ردًا لإرسال الرسالة من نفس الصندوق.', 'الرسائل الواردة المهمة تُمرر إلى واتساب الأدمن بطابور آمن.'],
   },
 };
 
@@ -1033,7 +1038,9 @@ export default function AdminDashboard({ initialTab = 'overview' }: { initialTab
 
           {/* ─── EMAIL BROADCAST ─── */}
           {activeTab === 'email' && (
-            <div className="max-w-2xl space-y-5">
+            <div className="space-y-6">
+              <EmailAdminTab />
+              <div className="max-w-2xl space-y-5">
               <div className="bg-slate-900 rounded-2xl p-6 border border-slate-800">
                 <div className="flex items-center gap-3 mb-5">
                   <div className="w-10 h-10 rounded-xl bg-yellow-500/20 flex items-center justify-center">
@@ -1101,11 +1108,12 @@ export default function AdminDashboard({ initialTab = 'overview' }: { initialTab
               <div className="bg-emerald-900/20 rounded-2xl p-5 border border-emerald-900/40">
                 <h3 className="text-white font-semibold mb-3 flex items-center gap-2"><MessageSquare className="w-4 h-4 text-cyan-400" />تلميحات</h3>
                 <ul className="space-y-2 text-slate-400 text-sm">
-                  <li>• الرسائل ترسل من Qodratak.Platform@gmail.com</li>
+                   <li>• الرسائل ترسل من info@qodratak.sa</li>
                   <li>• اختر الفئة المستهدفة بعناية قبل الإرسال</li>
                   <li>• يمكنك استخدام سطر جديد لتنسيق النص</li>
                   <li>• الرسائل ترسل بتصميم احترافي تلقائياً</li>
                 </ul>
+              </div>
               </div>
             </div>
           )}

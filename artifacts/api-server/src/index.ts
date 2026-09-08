@@ -8,8 +8,9 @@ import { ExamBooking, Question } from "./mongodb/models";
 import { gameWebSocketServer } from "./multiplayerRoutes";
 import { startNotificationScheduler } from "./services/notificationService";
 import { startPushScheduler } from "./services/pushService";
-import { startAdminWhatsAppReportScheduler } from "./services/adminWhatsAppNotifications";
+import { notifyAdminIncomingEmail, startAdminWhatsAppReportScheduler } from "./services/adminWhatsAppNotifications";
 import { onWhatsAppMessage, restoreWhatsAppSession } from "./services/whatsappService";
+import { startIncomingEmailWatcher } from "./services/emailInboxService";
 import { storage } from "./storage";
 import { chatWebSocketServer } from "./websocket";
 import { logger } from "./lib/logger";
@@ -145,6 +146,15 @@ void restoreWhatsAppSession();
 startNotificationScheduler();
 startPushScheduler();
 startAdminWhatsAppReportScheduler();
+startIncomingEmailWatcher((message) =>
+  notifyAdminIncomingEmail({
+    from: message.from,
+    subject: message.subject,
+    text: message.text,
+  }).catch((error) => {
+    logger.error({ error }, "Could not forward incoming email to admin WhatsApp");
+  }),
+);
 
 setInterval(() => {
   storage.updateBotStudentsPoints();

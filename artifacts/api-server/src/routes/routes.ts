@@ -14,7 +14,7 @@ import { insertQuestionSchema } from "@workspace/db";
 import { TestType, TestDifficulty } from "../shared/types";
 import bcrypt from 'bcryptjs';
 import { exec } from 'child_process';
-import { sendTestEmail, sendOTPEmail, sendWelcomeEmail, sendSubscriptionApprovalEmail, sendExamResults, sendPasswordResetEmail, notifyAdminNewSubscription, notifyAdminReceiptUploaded, notifyAdminInstitutionRequest, sendInvitationEmail } from '../services/emailService';
+import { sendTestEmail, sendOTPEmail, sendWelcomeEmail, sendSubscriptionApprovalEmail, sendExamResults, sendPasswordResetEmail, notifyAdminNewSubscription, notifyAdminReceiptUploaded, notifyAdminInstitutionRequest, sendInvitationEmail, sendCustomEmail } from '../services/emailService';
 import crypto from 'crypto';
 import { createAdminAccessToken } from '../adminSessionToken';
 import {
@@ -404,10 +404,10 @@ async function recoverPendingAiReviews(): Promise<void> {
 export async function registerRoutes(app: Express): Promise<Server> {
   const emailProvider = process.env.SMTP2GO_API_KEY
     ? 'SMTP2Go'
-    : process.env.SMTP_PASS
-      ? `secure SMTP (${process.env.SMTP_HOST || 'qirox.online'}:${process.env.SMTP_PORT || '465'})`
+    : (process.env.QODRATAK_MAIL_PASSWORD || process.env.SMTP_PASS)
+      ? `secure SMTP (${process.env.MAIL_HOST || 'mailserver.dmail.sa'}:${process.env.MAIL_SMTP_PORT || '465'})`
       : 'not configured';
-  console.log(`✅ Email service: ${emailProvider} - ${process.env.FROM_EMAIL || process.env.SMTP_USER || 'default sender'}`);
+  console.log(`✅ Email service: ${emailProvider} - info@qodratak.sa`);
 
   // Admin middleware - Revalidates admin and its effective permissions on each request.
   const defaultLegacyAdminPermissions = [
@@ -6815,11 +6815,6 @@ app.post("/api/auth/register", async (req: Request, res: Response) => {
         return res.json({ sent: 0, failed: 0, message: 'لا يوجد مستخدمون لديهم بريد إلكتروني' });
       }
 
-      const SMTP2GO_API_KEY = process.env.SMTP2GO_API_KEY;
-      const FROM_EMAIL = process.env.FROM_EMAIL || 'Qodratak.Platform@gmail.com';
-      if (!SMTP2GO_API_KEY) {
-        return res.status(503).json({ error: 'خدمة البريد غير مهيأة' });
-      }
       const htmlBody = `
         <div dir="rtl" style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;">
           <div style="background:linear-gradient(135deg,#4f46e5,#7c3aed);padding:24px;border-radius:12px 12px 0 0;text-align:center;">
@@ -6835,27 +6830,12 @@ app.post("/api/auth/register", async (req: Request, res: Response) => {
         </div>`;
 
       let sent = 0, failed = 0;
-      const batchSize = 50;
-      for (let i = 0; i < allEmails.length; i += batchSize) {
-        const batch = allEmails.slice(i, i + batchSize);
+      for (const email of allEmails) {
         try {
-          const r = await fetch('https://api.smtp2go.com/v3/email/send', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              api_key: SMTP2GO_API_KEY,
-              sender: `مؤسسة قدراتك العالية <${FROM_EMAIL}>`,
-              to: batch,
-              subject,
-              html_body: htmlBody,
-              text_body: body,
-            }),
-          });
-          const data: any = await r.json();
-          if (data.data?.succeeded) sent += data.data.succeeded;
-          else failed += batch.length;
+          if (await sendCustomEmail(email, subject, htmlBody, body)) sent++;
+          else failed++;
         } catch {
-          failed += batch.length;
+          failed++;
         }
       }
 

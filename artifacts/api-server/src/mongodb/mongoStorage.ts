@@ -27,7 +27,7 @@ export class MongoStorage {
 
   private async seedDefaultAdmin() {
     const existingAdmin = await Admin.findOne({ username: 'admin' });
-    const adminEmail = process.env.ADMIN_EMAIL || 'Qodratak.Platform@gmail.com';
+    const adminEmail = process.env.ADMIN_EMAIL || 'info@qodratak.sa';
     const adminPhone = (process.env.ADMIN_WHATSAPP_PHONE || '966555053567').replace(/\D/g, '');
     const initialAdminPassword = process.env.ADMIN_INITIAL_PASSWORD;
     if (!existingAdmin) {

@@ -1,5 +1,6 @@
 import {
   Expense,
+  Admin,
   PlatformSetting,
   Subscription,
   TestResult,
@@ -8,12 +9,24 @@ import {
 import { sendWhatsAppText } from "./whatsappService";
 import { sendStudentWhatsAppNotification } from "./studentWhatsAppNotifications";
 
-const adminPhone = (
-  process.env.ADMIN_WHATSAPP_PHONE || "966555053567"
-).replace(/\D/g, "");
+const fallbackAdminPhone = (process.env.ADMIN_WHATSAPP_PHONE || "966555053567").replace(/\D/g, "");
 const RIYADH_OFFSET_MS = 3 * 60 * 60 * 1000;
 
 type ReportPeriod = "daily" | "weekly" | "monthly";
+
+async function getAdminPhone() {
+  try {
+    const admin = await Admin.findOne({
+      isActive: { $ne: false },
+      role: { $in: ["super_admin", "system_admin"] },
+      phone: { $exists: true, $ne: "" },
+    }).sort({ lastLoginAt: -1, createdAt: 1 }).select("phone").lean();
+    const registeredPhone = String(admin?.phone || "").replace(/\D/g, "");
+    return registeredPhone || fallbackAdminPhone;
+  } catch {
+    return fallbackAdminPhone;
+  }
+}
 
 function riyadhNow() {
   return new Date(Date.now() + RIYADH_OFFSET_MS);
@@ -62,6 +75,7 @@ export async function notifyAdminNewStudent(student: {
   role?: string;
 }) {
   if (student.role !== "student") return;
+  const adminPhone = await getAdminPhone();
   await sendWhatsAppText(
     adminPhone,
     [
@@ -82,6 +96,7 @@ export async function notifyAdminSubscription(subscription: {
   paymentMethod?: string;
   status: "pending" | "active";
 }) {
+  const adminPhone = await getAdminPhone();
   await sendWhatsAppText(
     adminPhone,
     [
@@ -95,6 +110,26 @@ export async function notifyAdminSubscription(subscription: {
       `الحالة: ${subscription.status === "active" ? "مفعّل" : "بانتظار المراجعة"}`,
     ].join("\n"),
     "admin_subscription",
+  );
+}
+
+export async function notifyAdminIncomingEmail(input: {
+  from: string;
+  subject: string;
+  text: string;
+}) {
+  const adminPhone = await getAdminPhone();
+  const body = input.text.trim().slice(0, 1800);
+  return sendWhatsAppText(
+    adminPhone,
+    [
+      "📧 رسالة بريد جديدة",
+      `من: ${input.from || "غير معروف"}`,
+      `الموضوع: ${input.subject || "(بدون عنوان)"}`,
+      "",
+      body || "لا يوجد نص قابل للعرض",
+    ].join("\n"),
+    "admin_email",
   );
 }
 
@@ -176,7 +211,7 @@ export async function sendAdminFinancialReport(period: ReportPeriod) {
   };
 
   await sendWhatsAppText(
-    adminPhone,
+    await getAdminPhone(),
     [
       `📊 النظرة المالية ${periodLabels[period]}`,
       `من: ${start.toLocaleString("ar-SA", { timeZone: "Asia/Riyadh" })}`,

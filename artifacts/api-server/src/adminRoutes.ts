@@ -7,7 +7,18 @@ import mongoose from 'mongoose';
 import { mongoStorage } from './mongodb/mongoStorage';
 import { storage } from './storage';
 import { Question, ChatMessage, Admin, WhatsAppMessage, FoundationContent, PlatformReview } from './mongodb/models';
-import { sendSubscriptionApprovalEmail } from './services/emailService';
+import { sendMailboxEmail, sendSubscriptionApprovalEmail } from './services/emailService';
+import {
+  deleteInboxMessage,
+  deleteMailboxMessage,
+  getInboxMessage,
+  getMailboxMessage,
+  getMailboxConfig,
+  listInboxMessages,
+  listSentMessages,
+  markMailboxMessage,
+  markInboxMessage,
+} from './services/emailInboxService';
 import {
   notifyAdminNewStudent,
   notifyAdminSubscription,
@@ -180,6 +191,7 @@ const DEFAULT_ADMIN_PERMISSIONS = [
   'manage_employees',
   'manage_accounting',
   'manage_question_reports',
+  'manage_email',
 ];
 const DEFAULT_SUPPORT_PERMISSIONS = ['view_dashboard', 'view_students', 'manage_support', 'view_question_reports'];
 
@@ -204,6 +216,7 @@ function requiredAdminPermission(req: Request) {
   if (pathName.startsWith('/accounting')) return 'manage_accounting';
   if (pathName.startsWith('/question-reports')) return 'manage_question_reports';
   if (pathName.startsWith('/admins')) return 'manage_admins';
+  if (pathName.startsWith('/email')) return 'manage_email';
   return null;
 }
 
@@ -1208,6 +1221,71 @@ router.post('/admins', requireAdminAuth, async (req: Request, res: Response) => 
 });
 
 // =========== Broadcast Email ============
+router.get('/email/config', requireAdminAuth, (_req: Request, res: Response) => {
+  res.json(getMailboxConfig());
+});
+
+router.get('/email/messages', requireAdminAuth, async (req: Request, res: Response) => {
+  try {
+    res.json(req.query.folder === 'sent' ? await listSentMessages() : await listInboxMessages());
+  } catch (error) {
+    console.error('[Mailbox] list failed:', error);
+    res.status(502).json({ error: 'تعذر الاتصال بصندوق البريد' });
+  }
+});
+
+router.get('/email/messages/:uid', requireAdminAuth, async (req: Request, res: Response) => {
+  const uid = Number(req.params.uid);
+  if (!Number.isInteger(uid) || uid <= 0) return res.status(400).json({ error: 'معرّف الرسالة غير صحيح' });
+  try {
+    res.json(req.query.folder === 'sent' ? await getMailboxMessage(getMailboxConfig().sentFolder, uid) : await getInboxMessage(uid));
+  } catch (error) {
+    console.error('[Mailbox] message read failed:', error);
+    res.status(404).json({ error: 'الرسالة غير موجودة أو تعذر قراءتها' });
+  }
+});
+
+router.patch('/email/messages/:uid/read', requireAdminAuth, async (req: Request, res: Response) => {
+  const uid = Number(req.params.uid);
+  if (!Number.isInteger(uid) || uid <= 0) return res.status(400).json({ error: 'معرّف الرسالة غير صحيح' });
+  try {
+    const folder = req.query.folder === 'sent' ? getMailboxConfig().sentFolder : 'INBOX';
+    res.json(await markMailboxMessage(folder, uid, Boolean(req.body?.seen)));
+  } catch {
+    res.status(404).json({ error: 'تعذر تحديث حالة الرسالة' });
+  }
+});
+
+router.delete('/email/messages/:uid', requireAdminAuth, async (req: Request, res: Response) => {
+  const uid = Number(req.params.uid);
+  if (!Number.isInteger(uid) || uid <= 0) return res.status(400).json({ error: 'معرّف الرسالة غير صحيح' });
+  try {
+    const folder = req.query.folder === 'sent' ? getMailboxConfig().sentFolder : 'INBOX';
+    res.json(await deleteMailboxMessage(folder, uid));
+  } catch {
+    res.status(404).json({ error: 'تعذر حذف الرسالة' });
+  }
+});
+
+router.post('/email/messages', requireAdminAuth, async (req: Request, res: Response) => {
+  const { to, subject, text, html, inReplyTo, references } = req.body || {};
+  if (!to || !subject || !text) return res.status(400).json({ error: 'المستلم والعنوان والمحتوى مطلوبة' });
+  try {
+    const sent = await sendMailboxEmail(
+      String(to).trim(),
+      String(subject).trim(),
+      String(text),
+      html ? String(html) : undefined,
+      { inReplyTo: inReplyTo ? String(inReplyTo) : undefined, references: references ? String(references) : undefined },
+    );
+    if (!sent) return res.status(502).json({ error: 'تعذر إرسال البريد' });
+    res.json({ success: true });
+  } catch (error) {
+    console.error('[Mailbox] send failed:', error);
+    res.status(502).json({ error: 'تعذر إرسال البريد' });
+  }
+});
+
 router.post('/broadcast-email', requireAdminAuth, async (req: Request, res: Response) => {
   try {
     const { subject, body, targetGroup } = req.body;
@@ -1613,7 +1691,7 @@ const DEFAULT_SETTINGS = [
   { key: 'bank_account_name', label: 'اسم صاحب الحساب البنكي', value: 'شركة قدراتك التعليمية', type: 'text', category: 'payment', description: 'اسم الحساب البنكي لتحويل الاشتراكات' },
   { key: 'bank_iban', label: 'رقم الآيبان', value: 'SA0000000000000000000000', type: 'text', category: 'payment', description: 'رقم الآيبان للتحويل البنكي' },
   { key: 'bank_name', label: 'اسم البنك', value: 'بنك الراجحي', type: 'text', category: 'payment', description: 'اسم البنك' },
-  { key: 'support_email', label: 'بريد الدعم الفني', value: 'Qodratak.Platform@gmail.com', type: 'text', category: 'contact', description: 'البريد الإلكتروني للدعم الفني والنظام' },
+  { key: 'support_email', label: 'بريد الدعم الفني', value: 'info@qodratak.sa', type: 'text', category: 'contact', description: 'البريد الإلكتروني للدعم الفني والنظام' },
   { key: 'support_whatsapp', label: 'واتساب الدعم', value: '+966510510140', type: 'text', category: 'contact', description: 'رقم واتساب للدعم' },
 ];
 
@@ -1629,16 +1707,16 @@ router.get('/settings', requireAdminAuth, async (req: Request, res: Response) =>
     }
     const legacySupportEmail = settings.find(setting =>
       setting.key === 'support_email' &&
-      ['support@qodratak.com', 'qoudratak@gmail.com'].includes(String(setting.value)),
+      ['support@qodratak.com', 'qoudratak@gmail.com', 'Qodratak.Platform@gmail.com'].includes(String(setting.value)),
     );
     if (legacySupportEmail) {
       await PlatformSetting.updateOne(
         { _id: legacySupportEmail._id },
-        { $set: { value: 'Qodratak.Platform@gmail.com', updatedAt: new Date() } },
+        { $set: { value: 'info@qodratak.sa', updatedAt: new Date() } },
       );
       settings = settings.map(setting =>
         setting._id.equals(legacySupportEmail._id)
-          ? { ...setting, value: 'Qodratak.Platform@gmail.com' }
+          ? { ...setting, value: 'info@qodratak.sa' }
           : setting,
       );
     }
