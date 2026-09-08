@@ -205,31 +205,24 @@ const Home: React.FC = () => {
   const [currentTime, setCurrentTime] = useState(new Date());
 
   useEffect(() => {
-    // تحقق من حالة تسجيل الدخول
-    const checkLoginStatus = () => {
-      const loginStatus = localStorage.getItem("isLoggedIn") === "true";
-      const userData = localStorage.getItem("user");
-
-      setIsLoggedIn(loginStatus);
-      if (userData) {
-        try {
-          setUser(JSON.parse(userData));
-        } catch (error) {
-          console.error("Error parsing user data:", error);
-        }
+    const checkLoginStatus = async () => {
+      try {
+        const response = await fetch('/api/user', { credentials: 'include', cache: 'no-store' });
+        const serverUser = response.ok ? await response.json() : null;
+        setUser(serverUser);
+        setIsLoggedIn(Boolean(serverUser?.id));
+      } catch {
+        setUser(null);
+        setIsLoggedIn(false);
       }
     };
 
     checkLoginStatus();
 
-    // استمع لتغييرات تسجيل الدخول
-    const handleStorageChange = () => {
-      checkLoginStatus();
-    };
-
     const handleUserLogin = (event: CustomEvent) => {
       setUser(event.detail);
       setIsLoggedIn(true);
+      checkLoginStatus();
     };
 
     // تحديث الوقت كل ثانية للتأثيرات الديناميكية
@@ -237,11 +230,9 @@ const Home: React.FC = () => {
       setCurrentTime(new Date());
     }, 1000);
 
-    window.addEventListener('storage', handleStorageChange);
     window.addEventListener('userLoggedIn', handleUserLogin as EventListener);
 
     return () => {
-      window.removeEventListener('storage', handleStorageChange);
       window.removeEventListener('userLoggedIn', handleUserLogin as EventListener);
       clearInterval(timeInterval);
     };

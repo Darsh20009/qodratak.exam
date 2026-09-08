@@ -167,11 +167,28 @@ export const requireAdmin = async (req: Request, res: Response, next: NextFuncti
     
     // التحقق من جلسة المدير (باستخدام الهيكل الفعلي: isAdmin + adminId)
     if (session?.isAdmin && session?.adminId) {
+      const role = session.adminRole || session.admin?.role || 'admin';
+      const sessionPermissions = Array.isArray(session.adminPermissions)
+        ? session.adminPermissions
+        : Array.isArray(session.admin?.permissions)
+          ? session.admin.permissions
+          : [];
+      const isFullAdmin = role === 'super_admin' || role === 'system_admin';
+
+      // Never treat an old/incomplete session as an unrestricted administrator.
+      // The session must carry real permissions, except for explicitly full roles.
+      if (!isFullAdmin && sessionPermissions.length === 0) {
+        return res.status(403).json({
+          error: 'جلسة الإدارة قديمة أو غير مكتملة الصلاحيات. سجّل الدخول مرة أخرى.',
+          code: 'ADMIN_PERMISSIONS_REQUIRED',
+        });
+      }
+
       (req as any).adminSession = {
         adminId: session.adminId,
-        username: session.adminUsername || 'admin',
-        role: session.adminRole || 'admin',
-        permissions: session.adminPermissions || ['all'],
+        username: session.adminUsername || session.admin?.username || 'admin',
+        role,
+        permissions: isFullAdmin ? ['all'] : sessionPermissions,
       } as AdminSessionData;
       return next();
     }

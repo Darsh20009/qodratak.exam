@@ -46,52 +46,37 @@ export const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
   const currentRank = rankData?.currentRank || 0;
 
   useEffect(() => {
-    // Check if we have a user stored in localStorage
-    const storedUser = localStorage.getItem('user');
-    if (storedUser) {
+    let cancelled = false;
+    const fetchServerUser = async () => {
       try {
-        const user = JSON.parse(storedUser);
-
-        // Check subscription status
-        const today = new Date();
-        const endDate = new Date(user.subscription?.endDate);
-        const isSubscriptionExpired = !['Pro', 'Pro Life', 'Pro Life Plus', 'Pro Live'].includes(user.subscription?.type || '') && endDate < today;
-
-        if (isSubscriptionExpired) {
-          localStorage.removeItem('user');
-          setLocation('/profile');
-          return;
-        }
-
-        setUserName(user.name);
-        setUserPoints(user.points || 0);
-        setUserLevel(user.level || 0);
+        const response = await fetch('/api/user', { credentials: 'include', cache: 'no-store' });
+        if (!response.ok) throw new Error('unauthenticated');
+        const serverUser = await response.json();
+        if (cancelled) return;
+        setUserName(serverUser.name || serverUser.username || null);
+        setUserPoints(serverUser.points || 0);
+        setUserLevel(serverUser.level || 0);
         setIsLoggedIn(true);
-        setUser(user);
-
-        // Broadcast login state
-        window.dispatchEvent(new CustomEvent('userLoggedIn', { detail: user }));
-
-        // Update all auth states
-        document.cookie = `isLoggedIn=true; path=/; max-age=86400`;
-        document.cookie = `userName=${user.name}; path=/; max-age=86400`;
-        document.cookie = `userSubscription=${user.subscription.type}; path=/; max-age=86400`;
-        document.cookie = `userPoints=${user.points || 0}; path=/; max-age=86400`;
-        document.cookie = `userLevel=${user.level || 0}; path=/; max-age=86400`;
-
-        // Update session storage for quicker access
-        sessionStorage.setItem('currentUser', JSON.stringify(user));
-
-      } catch (e) {
-        console.error("Error parsing stored user:", e);
-        localStorage.removeItem('user');
-        document.cookie = 'isLoggedIn=false; path=/';
-        setLocation('/profile');
+        setUser(serverUser);
+      } catch {
+        if (cancelled) return;
+        setUserName(null);
+        setUserPoints(0);
+        setUserLevel(0);
+        setIsLoggedIn(false);
+        setUser(null);
+        if (location !== '/profile' && location !== '/') setLocation('/profile');
       }
-    } else if (location !== '/profile' && location !== '/') {
-      // Redirect to login if not authenticated and not on home page
-      setLocation('/profile');
-    }
+    };
+
+    fetchServerUser();
+    window.addEventListener('userLoggedIn', fetchServerUser);
+    window.addEventListener('serverUserUpdated', fetchServerUser);
+    return () => {
+      cancelled = true;
+      window.removeEventListener('userLoggedIn', fetchServerUser);
+      window.removeEventListener('serverUserUpdated', fetchServerUser);
+    };
   }, [location, setLocation]);
 
   const getNavItems = (subscription: string = 'free') => {

@@ -148,8 +148,6 @@ export function AuthModal({ open, mode, onClose, onModeChange }: { open: boolean
     const returnPath = requestedReturn && requestedReturn.startsWith("/") && !requestedReturn.startsWith("//")
       ? requestedReturn
       : null;
-    localStorage.setItem("user", JSON.stringify(user));
-    localStorage.setItem("isLoggedIn", "true");
     queryClient.setQueryData(["/api/user"], user);
     window.dispatchEvent(new CustomEvent("userLoggedIn", { detail: user }));
     onClose();

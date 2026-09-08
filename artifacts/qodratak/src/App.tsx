@@ -254,8 +254,6 @@ function MainLayout({ children }: { children: React.ReactNode }) {
       setUserSubscription(serverUser.subscription?.type || 'free');
       setUserId(serverUser.id ?? null);
 
-      // Temporary display cache for legacy pages. It never restores authentication.
-      localStorage.setItem('user', JSON.stringify(serverUser));
     };
 
     const fetchServerUserData = async () => {
@@ -272,7 +270,6 @@ function MainLayout({ children }: { children: React.ReactNode }) {
         setUserName(null);
         setUserSubscription('free');
         setUserId(null);
-        localStorage.removeItem('user');
       } catch {
         setUserName(null);
         setUserSubscription('free');
@@ -314,15 +311,6 @@ function MainLayout({ children }: { children: React.ReactNode }) {
             const points = rankData.totalPoints || 0;
             setUserPoints(points);
 
-            // حفظ النقاط في localStorage تلقائياً
-            const storedUser = localStorage.getItem('user');
-            if (storedUser) {
-              try {
-                const user = JSON.parse(storedUser);
-                user.points = points;
-                localStorage.setItem('user', JSON.stringify(user));
-              } catch (e) {}
-            }
           }
         } catch (error) {
           console.error('فشل جلب النقاط:', error);
@@ -1254,7 +1242,7 @@ function App() {
 
   return (
     <QueryClientProvider client={queryClient}>
-      <ThemeProvider attribute="class" defaultTheme="dark" enableSystem={false}>
+      <ThemeProvider attribute="class" defaultTheme="system" enableSystem={true}>
         <TooltipProvider>
           <Toaster />
           <React.Suspense fallback={<RouteLoadingFallback />}>

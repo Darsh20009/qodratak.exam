@@ -19,14 +19,15 @@ export default function ProtectedRoute({
   const [hasUsedFreeTrial, setHasUsedFreeTrial] = useState(false);
 
   useEffect(() => {
-    const storedUser = localStorage.getItem("user");
-    if (storedUser) {
-      try {
-        setUser(JSON.parse(storedUser));
-      } catch (error) {
-        console.error("Error parsing user:", error);
-      }
-    }
+    let cancelled = false;
+    fetch('/api/user', { credentials: 'include', cache: 'no-store' })
+      .then((response) => response.ok ? response.json() : null)
+      .then((serverUser) => {
+        if (!cancelled) setUser(serverUser);
+      })
+      .catch(() => {
+        if (!cancelled) setUser(null);
+      });
 
     // Check if user has used free trial
     const freeTrialUsed = localStorage.getItem(`freeTrial_${user?.email || 'anonymous'}`) || 
@@ -39,7 +40,10 @@ export default function ProtectedRoute({
     };
 
     window.addEventListener('userLoggedIn', handleUserChange);
-    return () => window.removeEventListener('userLoggedIn', handleUserChange);
+    return () => {
+      cancelled = true;
+      window.removeEventListener('userLoggedIn', handleUserChange);
+    };
   }, [user?.email]);
 
   const handleUseFreeTrial = () => {

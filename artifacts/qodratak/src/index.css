@@ -132,6 +132,75 @@
   color: hsl(var(--foreground));
 }
 
+/* Admin and auth screens still contain a few legacy brand classes. Keep their
+   palette coherent when the shared theme switches to dark mode. */
+.dark .qodratak-admin-surface,
+.dark .qodratak-login-surface,
+.dark .qodratak-admin-login-surface {
+  color: hsl(var(--foreground));
+}
+
+.dark .qodratak-admin-surface [class~="bg-[#F7F4EE]"],
+.dark .qodratak-login-surface [class~="bg-[#EDF1F4]"],
+.dark .qodratak-admin-login-surface [class~="bg-[#F7F4EE]"] {
+  background-color: hsl(var(--background)) !important;
+}
+
+.dark .qodratak-admin-surface [class~="bg-[#FFFCF7]"],
+.dark .qodratak-login-surface [class~="bg-white"],
+.dark .qodratak-admin-login-surface [class~="bg-[#FFFCF7]"] {
+  background-color: hsl(var(--card)) !important;
+}
+
+.dark .qodratak-admin-surface [class~="text-[#24202D]"],
+.dark .qodratak-admin-surface [class~="text-[#171723]"],
+.dark .qodratak-login-surface [class~="text-[#0D1B2A]"],
+.dark .qodratak-admin-login-surface [class~="text-[#24202D]"] {
+  color: hsl(var(--foreground)) !important;
+}
+
+.dark .qodratak-admin-surface [class~="text-[#625D69]"],
+.dark .qodratak-admin-surface [class~="text-[#8E8993]"],
+.dark .qodratak-login-surface [class~="text-slate-500"],
+.dark .qodratak-login-surface [class~="text-slate-400"] {
+  color: hsl(var(--muted-foreground)) !important;
+}
+
+.dark .qodratak-admin-surface [class~="border-[#24202D]/10"],
+.dark .qodratak-admin-surface [class~="border-[#24202D]/15"],
+.dark .qodratak-login-surface [class~="border-slate-200"],
+.dark .qodratak-login-surface [class~="border-slate-100"] {
+  border-color: hsl(var(--border)) !important;
+}
+
+.dark .qodratak-login-surface [class~="bg-[#F8FAFB]"],
+.dark .qodratak-login-surface [class~="bg-slate-50"] {
+  background-color: hsl(var(--muted)) !important;
+}
+
+.dark .qodratak-login-surface input {
+  color: hsl(var(--foreground)) !important;
+}
+
+.dark .qodratak-login-surface input::placeholder {
+  color: hsl(var(--muted-foreground)) !important;
+}
+
+.dark [data-radix-dialog-content] [class~="bg-[#FFFCF7]"],
+.dark [data-radix-dialog-content] [class~="bg-[#F8F6F1]"] {
+  background-color: hsl(var(--card)) !important;
+}
+
+.dark [data-radix-dialog-content] [class~="text-[#171723]"],
+.dark [data-radix-dialog-content] [class~="text-[#24202D]"] {
+  color: hsl(var(--foreground)) !important;
+}
+
+.dark [data-radix-dialog-content] [class~="text-[#6B625B]"],
+.dark [data-radix-dialog-content] [class~="text-[#8B8278]"] {
+  color: hsl(var(--muted-foreground)) !important;
+}
+
 /* A restrained visual layer for the student app: keep useful interaction
    feedback, but remove decorative glow, floating shapes, and heavy shadows. */
 .qodratak-page-surface .shadow-2xl,

@@ -15,6 +15,7 @@ import { useToast } from '@/hooks/use-toast';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { apiRequest } from '@/lib/queryClient';
 import { clearAdminAccessToken } from '@/lib/adminSession';
+import { ThemeToggle } from '@/components/ThemeToggle';
 import {
   Users, CreditCard, FileText, Activity, TrendingUp,
   Clock, CheckCircle, XCircle, Search, LogOut, Download,
@@ -25,7 +26,7 @@ import {
   Menu, X, Briefcase, PiggyBank, Plus, Trash2, Edit, ArrowUpCircle, ArrowDownCircle,
   Megaphone, Sliders, FlaskConical, ToggleLeft, ToggleRight,
   Globe, HeadphonesIcon, UserCog, KeyRound, Save,
-  BellRing, Users2, CheckCheck, Clock3,
+  BellRing, Users2, CheckCheck, Clock3, HelpCircle,
   AlertTriangle, Flag, BarChart2, MessageCircle,
   Wallet, ArrowDownLeft, ArrowUpRight, ArrowLeftRight, Gift, Sparkles, Video
 } from 'lucide-react';
@@ -65,6 +66,52 @@ const NAV_ITEMS = [
   { key: 'seasonal-exams', icon: Sparkles, label: 'الاختبارات الموسمية', color: 'text-[#B65D36]' },
   { key: 'foundation-management', icon: Video, label: 'محتوى التأسيس والمراجعات', color: 'text-[#2E8B70]' },
 ];
+
+const PRIMARY_ADMIN_NAV_KEYS = new Set([
+  'overview',
+  'users',
+  'subscriptions',
+  'tests',
+  'questions',
+  'announcements',
+  'support',
+  'settings',
+]);
+
+const ADMIN_PAGE_TIPS: Record<string, { intro: string; steps: string[] }> = {
+  overview: {
+    intro: 'ابدأ من هنا لمتابعة حالة المنصة قبل الدخول إلى التفاصيل.',
+    steps: ['راجع الاشتراكات والطلبات المعلقة أولًا.', 'استخدم الإجراءات السريعة للانتقال إلى أكثر المهام تكرارًا.', 'حدّث البيانات من زر التحديث بعد أي إجراء.'],
+  },
+  users: {
+    intro: 'ابحث عن حسابات الطلاب وتابع نشاطهم وبياناتهم الأساسية.',
+    steps: ['استخدم البحث بالبريد أو الاسم أو رقم الجوال.', 'افتح ملف الطالب لمراجعة التقدم والاختبارات.', 'نفّذ التعديلات الإدارية عند الحاجة فقط.'],
+  },
+  subscriptions: {
+    intro: 'راجع طلبات الاشتراك والتحويلات قبل اعتمادها.',
+    steps: ['افتح الإيصال وتحقق من بيانات العملية.', 'اعتمد أو ارفض مع كتابة سبب واضح عند الرفض.', 'تأكد من ظهور حالة الاشتراك بعد الحفظ.'],
+  },
+  tests: {
+    intro: 'تابع الاختبارات ونتائج الطلاب من مكان واحد.',
+    steps: ['استخدم الفلاتر لتضييق النتائج.', 'راجع الإحصائيات قبل اتخاذ قرارات المحتوى.', 'اترك بنك الأسئلة والتقارير للمراجعة التفصيلية.'],
+  },
+  questions: {
+    intro: 'أدر بنك الأسئلة وصحح المحتوى الذي يحتاج مراجعة.',
+    steps: ['ابحث قبل إضافة سؤال مكرر.', 'راجع الصور والإجابة الصحيحة قبل الحفظ.', 'استخدم البلاغات لمتابعة ملاحظات الطلاب.'],
+  },
+  announcements: {
+    intro: 'أنشئ رسائل واضحة ومحددة للفئة المستهدفة.',
+    steps: ['اكتب عنوانًا مختصرًا ورسالة مباشرة.', 'حدد الجمهور وتاريخ الانتهاء عند الحاجة.', 'تأكد من حالة النشر قبل المغادرة.'],
+  },
+  support: {
+    intro: 'تابع طلبات الدعم ورسائل التواصل التي تحتاج ردًا.',
+    steps: ['ابدأ بالتذاكر المفتوحة والأقدم.', 'أضف ملاحظة عملية قبل تغيير الحالة.', 'لا ترسل رسائل جماعية من هذه الصفحة.'],
+  },
+  settings: {
+    intro: 'غيّر إعدادات المنصة العامة والخطة المعروضة للطلاب.',
+    steps: ['راجع القيمة الحالية قبل تعديلها.', 'احفظ كل قسم على حدة.', 'اختبر الصفحة العامة بعد تعديل الأسعار أو النصوص.'],
+  },
+};
 
 function formatDate(d: string | null | undefined) {
   if (!d) return '-';
@@ -133,6 +180,8 @@ export default function AdminDashboard({ initialTab = 'overview' }: { initialTab
   const [manualSubForm, setManualSubForm] = useState({ userId: '', type: 'Pro', durationDays: '90', price: '39', notes: '' });
   const [manualSubSearch, setManualSubSearch] = useState('');
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
+  const [showMoreAdminNav, setShowMoreAdminNav] = useState(!PRIMARY_ADMIN_NAV_KEYS.has(initialTab));
+  const [showTips, setShowTips] = useState(false);
   const [showAddEmployee, setShowAddEmployee] = useState(false);
   const [showAddExpense, setShowAddExpense] = useState(false);
   const [editingEmployee, setEditingEmployee] = useState<any | null>(null);
@@ -449,6 +498,10 @@ export default function AdminDashboard({ initialTab = 'overview' }: { initialTab
     }
   }, [sessionLoading, session, setLocation]);
 
+  useEffect(() => {
+    if (!PRIMARY_ADMIN_NAV_KEYS.has(activeTab)) setShowMoreAdminNav(true);
+  }, [activeTab]);
+
   if (sessionLoading || !(session as any)?.authenticated) {
     return <div className="flex min-h-screen flex-col items-center justify-center gap-4 bg-[#F7F4EE]"><div className="h-10 w-10 animate-spin rounded-full border-4 border-[#B65D36] border-t-transparent" /><p className="text-sm text-[#625D69]">جارٍ التحقق...</p></div>;
   }
@@ -465,7 +518,7 @@ export default function AdminDashboard({ initialTab = 'overview' }: { initialTab
   const handleTabChange = (key: string) => { setActiveTab(key); setIsMobileSidebarOpen(false); };
 
   return (
-    <div className="min-h-screen bg-[#F7F4EE] text-[#24202D] flex" dir="rtl">
+    <div className="qodratak-admin-surface min-h-screen bg-[#F7F4EE] text-[#24202D] flex" dir="rtl">
       {/* Mobile Overlay */}
       {isMobileSidebarOpen && (
         <div className="fixed inset-0 bg-black/60 z-30 lg:hidden" onClick={() => setIsMobileSidebarOpen(false)} />
@@ -503,8 +556,10 @@ export default function AdminDashboard({ initialTab = 'overview' }: { initialTab
         </div>
 
         {/* Navigation */}
-        <nav className="flex-1 p-3 space-y-0.5">
-          {NAV_ITEMS.map(item => {
+        <nav className="flex-1 space-y-4 p-3">
+          <div className="space-y-0.5">
+            <p className="px-3 pb-2 text-[10px] font-bold tracking-wide text-[#8E8993]">الأساسيات</p>
+            {NAV_ITEMS.filter(item => PRIMARY_ADMIN_NAV_KEYS.has(item.key)).map(item => {
             const isActive = activeTab === item.key;
             const hasBadge = (item.key === 'subscriptions' && pendingSubCount > 0) || (item.key === 'institutions' && pendingInstCount > 0);
             return (
@@ -527,7 +582,39 @@ export default function AdminDashboard({ initialTab = 'overview' }: { initialTab
                 {isActive && <ChevronRight className="h-3 w-3 text-[#B65D36]" />}
               </button>
             );
-          })}
+            })}
+          </div>
+          <div className="space-y-0.5">
+            <button
+              type="button"
+              onClick={() => setShowMoreAdminNav((value) => !value)}
+              className="flex w-full items-center justify-between rounded-xl px-3 py-2 text-[10px] font-bold tracking-wide text-[#8E8993] transition-colors hover:bg-[#F7F4EE] hover:text-[#24202D]"
+              aria-expanded={showMoreAdminNav}
+            >
+              <span>المزيد من الأدوات</span>
+              <ChevronRight className={`h-3.5 w-3.5 transition-transform ${showMoreAdminNav ? 'rotate-90' : ''}`} />
+            </button>
+            {showMoreAdminNav && NAV_ITEMS.filter(item => !PRIMARY_ADMIN_NAV_KEYS.has(item.key)).map(item => {
+              const isActive = activeTab === item.key;
+              const hasBadge = item.key === 'institutions' && pendingInstCount > 0;
+              return (
+                <button
+                  key={item.key}
+                  onClick={() => handleTabChange(item.key)}
+                  className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all ${
+                    isActive
+                      ? 'border border-[#F4AA85]/40 bg-[#F4AA85]/20 text-[#24202D]'
+                      : 'text-[#625D69] hover:bg-[#F7F4EE] hover:text-[#24202D]'
+                  }`}
+                >
+                  <item.icon className={`h-4 w-4 ${isActive ? 'text-[#B65D36]' : item.color}`} />
+                  <span className="flex-1 text-right">{item.label}</span>
+                  {hasBadge && <span className="w-5 h-5 rounded-full bg-red-500 text-white text-xs flex items-center justify-center font-bold shadow-md">{pendingInstCount}</span>}
+                  {isActive && <ChevronRight className="h-3 w-3 text-[#B65D36]" />}
+                </button>
+              );
+            })}
+          </div>
         </nav>
 
         {/* Logout */}
@@ -559,6 +646,15 @@ export default function AdminDashboard({ initialTab = 'overview' }: { initialTab
             </div>
           </div>
           <div className="flex items-center gap-2">
+            <ThemeToggle />
+            <button
+              onClick={() => setShowTips((value) => !value)}
+              className={`relative flex h-9 w-9 items-center justify-center rounded-lg border border-[#24202D]/10 bg-[#F7F4EE] text-[#625D69] transition-colors hover:text-[#24202D] ${showTips ? 'bg-[#F4AA85]/20 text-[#B65D36]' : ''}`}
+              aria-label="إظهار إرشادات الصفحة"
+              aria-expanded={showTips}
+            >
+              <HelpCircle className="w-4 h-4" />
+            </button>
             <button className="relative flex h-9 w-9 items-center justify-center rounded-lg border border-[#24202D]/10 bg-[#F7F4EE] text-[#625D69] transition-colors hover:text-[#24202D]">
               <Bell className="w-4 h-4" />
               {(pendingSubCount + pendingInstCount) > 0 && (
@@ -570,6 +666,26 @@ export default function AdminDashboard({ initialTab = 'overview' }: { initialTab
             </button>
           </div>
         </div>
+
+        {showTips && (
+          <div className="mx-4 mt-4 rounded-2xl border border-[#B65D36]/20 bg-[#FFF8F2] p-4 shadow-sm md:mx-6" role="status">
+            <div className="flex items-start gap-3">
+              <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-[#F4AA85]/25 text-[#B65D36]">
+                <HelpCircle className="h-5 w-5" />
+              </div>
+              <div className="min-w-0">
+                <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
+                  <h2 className="text-sm font-bold text-[#24202D]">إرشادات هذه الصفحة</h2>
+                  <span className="text-xs text-[#8E8993]">مساعدة سريعة للأدمن</span>
+                </div>
+                <p className="mt-1 text-sm leading-6 text-[#625D69]">{ADMIN_PAGE_TIPS[activeTab]?.intro || 'استخدم القائمة للوصول إلى أدوات الإدارة المتقدمة.'}</p>
+                <ul className="mt-2 grid gap-1 text-xs leading-5 text-[#625D69] md:grid-cols-3">
+                  {(ADMIN_PAGE_TIPS[activeTab]?.steps || ['ابدأ بالأساسيات.', 'راجع البيانات قبل الحفظ.', 'تأكد من ظهور نتيجة الإجراء.']).map((step) => <li key={step}>• {step}</li>)}
+                </ul>
+              </div>
+            </div>
+          </div>
+        )}
 
         <div className="p-4 md:p-6">
 

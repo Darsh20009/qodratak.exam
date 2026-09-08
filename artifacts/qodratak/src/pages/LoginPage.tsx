@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { useLocation, useSearch } from "wouter";
+import { useQueryClient } from "@tanstack/react-query";
 import { Eye, EyeOff, LogIn, Fingerprint, UserPlus, Shield, KeyRound, HelpCircle, Trophy, Zap, Mail, Phone, User, ExternalLink, Lock, Hash, RefreshCw, CheckCircle2, Smartphone, Building2, GraduationCap } from "lucide-react";
 import { startAuthentication } from '@simplewebauthn/browser';
 import { SiTelegram } from "react-icons/si";
@@ -357,10 +358,12 @@ export default function LoginPage() {
   const returnPath = (() => {
     try {
       const p = new URLSearchParams(searchStr).get('return');
-      return p ? decodeURIComponent(p) : '/';
+      const decoded = p ? decodeURIComponent(p) : '/';
+      return decoded.startsWith('/') && !decoded.startsWith('//') ? decoded : '/';
     } catch { return '/'; }
   })();
   const { toast } = useToast();
+  const queryClient = useQueryClient();
   const [isLoading, setIsLoading] = useState(false);
   const [isBiometricLoading, setIsBiometricLoading] = useState(false);
   const [isTelegramLoading, setIsTelegramLoading] = useState(false);
@@ -377,11 +380,11 @@ export default function LoginPage() {
   const isInIframe = typeof window !== 'undefined' && window.top !== window.self;
 
   const handleSuccessfulLogin = useCallback((result: any) => {
-    localStorage.setItem('user', JSON.stringify(result));
+    queryClient.setQueryData(['/api/user'], result);
     window.dispatchEvent(new CustomEvent('userLoggedIn', { detail: result }));
     toast({ title: 'مرحباً بعودتك!', description: `أهلاً ${result.fullName || result.name || result.username}` });
     setLocation(result.role === 'institution_admin' ? '/institution' : returnPath);
-  }, [setLocation, returnPath, toast]);
+  }, [queryClient, setLocation, returnPath, toast]);
 
   useEffect(() => {
     return () => { if (telegramPollRef.current) clearInterval(telegramPollRef.current); };
@@ -517,7 +520,7 @@ export default function LoginPage() {
       });
       const result = await verifyRes.json();
       if (result.success) {
-        localStorage.setItem('user', JSON.stringify(result.user));
+        queryClient.setQueryData(['/api/user'], result.user);
         window.dispatchEvent(new CustomEvent('userLoggedIn', { detail: result.user }));
         toast({ title: '✅ تم تسجيل الدخول بالبصمة' });
         setLocation(returnPath);
@@ -539,7 +542,7 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen bg-[#EDF1F4] px-4 py-5 sm:px-8 sm:py-8" dir="rtl">
+    <div className="qodratak-login-surface min-h-screen bg-[#EDF1F4] px-4 py-5 sm:px-8 sm:py-8" dir="rtl">
       <div className="mx-auto grid min-h-[calc(100vh-4rem)] max-w-6xl overflow-hidden rounded-[28px] border border-slate-200 bg-white shadow-[0_25px_80px_rgba(13,27,42,.12)] lg:grid-cols-[.95fr_1.05fr]">
         <aside className="relative hidden overflow-hidden bg-[#0D1B2A] p-10 lg:flex lg:flex-col">
           <div className="absolute inset-0 opacity-30" style={{ backgroundImage: "linear-gradient(rgba(247,247,117,.09) 1px, transparent 1px), linear-gradient(90deg, rgba(247,247,117,.09) 1px, transparent 1px)", backgroundSize: "40px 40px", maskImage: "linear-gradient(to bottom, black, transparent)" }} />

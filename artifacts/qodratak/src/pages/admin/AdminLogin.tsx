@@ -4,6 +4,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import { ArrowRight, KeyRound, Loader2, LockKeyhole, ShieldCheck } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { setAdminAccessToken } from '@/lib/adminSession';
+import { ThemeToggle } from '@/components/ThemeToggle';
 
 export default function AdminLogin() {
   const [, setLocation] = useLocation();
@@ -86,9 +87,10 @@ export default function AdminLogin() {
   };
 
   return (
-    <main className="min-h-screen bg-[#F7F4EE] px-4 py-8 text-[#24202D]" dir="rtl">
+    <main className="qodratak-admin-login-surface min-h-screen bg-[#F7F4EE] px-4 py-8 text-[#24202D]" dir="rtl">
       <div className="mx-auto flex min-h-[calc(100vh-4rem)] max-w-5xl items-center">
-        <div className="grid w-full overflow-hidden rounded-3xl border border-[#24202D]/10 bg-[#FFFCF7] shadow-[0_18px_50px_rgba(36,32,45,0.08)] md:grid-cols-[0.92fr_1.08fr]">
+        <div className="relative grid w-full overflow-hidden rounded-3xl border border-[#24202D]/10 bg-[#FFFCF7] shadow-[0_18px_50px_rgba(36,32,45,0.08)] md:grid-cols-[0.92fr_1.08fr]">
+          <div className="absolute left-4 top-4 z-10"><ThemeToggle /></div>
           <section className="hidden bg-[#24202D] p-10 text-[#FFFCF7] md:flex md:flex-col md:justify-between">
             <div className="flex items-center gap-3">
               <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-[#FFFCF7]">

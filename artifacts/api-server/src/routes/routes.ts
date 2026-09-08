@@ -409,7 +409,62 @@ export async function registerRoutes(app: Express): Promise<Server> {
       : 'not configured';
   console.log(`✅ Email service: ${emailProvider} - ${process.env.FROM_EMAIL || process.env.SMTP_USER || 'default sender'}`);
 
-  // Admin middleware - Revalidates admin on each request
+  // Admin middleware - Revalidates admin and its effective permissions on each request.
+  const defaultLegacyAdminPermissions = [
+    'view_dashboard',
+    'view_students',
+    'manage_students',
+    'view_subscriptions',
+    'manage_subscriptions',
+    'view_questions',
+    'manage_questions',
+    'manage_tests',
+    'manage_announcements',
+    'manage_support',
+    'manage_settings',
+    'manage_exams',
+    'manage_institutions',
+    'manage_notifications',
+    'manage_content',
+    'manage_wallets',
+    'manage_employees',
+    'manage_accounting',
+    'manage_question_reports',
+    'manage_admins',
+  ];
+  const defaultSupportAdminPermissions = ['view_dashboard', 'view_students', 'manage_support', 'view_question_reports'];
+  const legacyAdminPermission = (req: Request) => {
+    const pathName = req.path.replace(/^\/api\/admin/, '');
+    const readOnly = req.method === 'GET';
+    if (pathName.startsWith('/dashboard')) return 'view_dashboard';
+    if (pathName.startsWith('/users')) return readOnly ? 'view_students' : 'manage_students';
+    if (pathName.startsWith('/subscriptions')) return readOnly ? 'view_subscriptions' : 'manage_subscriptions';
+    if (pathName.startsWith('/questions')) return readOnly ? 'view_questions' : 'manage_questions';
+    if (pathName.startsWith('/test-templates')) return 'manage_tests';
+    if (pathName.startsWith('/announcements') || pathName === '/broadcast-email') return 'manage_announcements';
+    if (pathName.startsWith('/support-tickets') || pathName.startsWith('/whatsapp')) return 'manage_support';
+    if (pathName.startsWith('/settings') || pathName.startsWith('/subscription-plan')) return 'manage_settings';
+    if (pathName.startsWith('/scheduled-exams')) return 'manage_exams';
+    if (pathName.startsWith('/institution-requests')) return 'manage_institutions';
+    if (pathName.startsWith('/notifications')) return 'manage_notifications';
+    if (pathName.startsWith('/seasonal-exams') || pathName.startsWith('/foundation-content') || pathName.startsWith('/platform-reviews')) return 'manage_content';
+    if (pathName.startsWith('/wallets') || pathName.startsWith('/leaderboard')) return 'manage_wallets';
+    if (pathName.startsWith('/employees')) return 'manage_employees';
+    if (pathName.startsWith('/accounting')) return 'manage_accounting';
+    if (pathName.startsWith('/question-reports')) return 'manage_question_reports';
+    if (pathName.startsWith('/admins')) return 'manage_admins';
+    return null;
+  };
+  const hasLegacyAdminPermission = (admin: any, permission: string | null) => {
+    if (!permission) return true;
+    if (admin?.role === 'super_admin' || admin?.role === 'system_admin') return true;
+    const permissions = Array.isArray(admin?.permissions) && admin.permissions.length > 0
+      ? admin.permissions
+      : admin?.role === 'support'
+        ? defaultSupportAdminPermissions
+        : defaultLegacyAdminPermissions;
+    return permissions.includes('all') || permissions.includes(permission);
+  };
   const requireAdmin = async (req: Request, res: Response, next: Function) => {
     try {
       const sessionAdmin = (req.session as any).admin;
@@ -421,6 +476,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if ((req.session as any).isAdmin && (req.session as any).adminId) {
         const admin = await mongoStorage.getAdminById((req.session as any).adminId);
         if (admin && admin.isActive !== false) {
+          if (!hasLegacyAdminPermission(admin, legacyAdminPermission(req))) {
+            return res.status(403).json({ error: 'ليس لديك صلاحية للوصول إلى هذا القسم' });
+          }
           (req as any).admin = admin;
           next();
         } else {
@@ -428,7 +486,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           (req.session as any).adminId = null;
           res.status(401).json({ error: 'تم إلغاء صلاحيات المدير' });
         }
-      } else {
+    } else {
         res.status(401).json({ error: 'غير مصرح - يجب تسجيل الدخول كمدير' });
       }
     } catch (error) {
@@ -1921,6 +1979,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
               permissions: adminDoc.permissions || ['all'],
             };
             (req.session as any).admin = adminIdentity;
+            (req.session as any).adminRole = adminIdentity.role;
+            (req.session as any).adminUsername = adminIdentity.username;
+            (req.session as any).adminPermissions = adminIdentity.permissions;
             return new Promise<void>((resolve) => {
               req.session.save((err) => {
                 if (err) {
@@ -6286,10 +6347,15 @@ app.post("/api/auth/register", async (req: Request, res: Response) => {
 
   // Admin Logout
   app.post("/api/admin/logout", (req: Request, res: Response) => {
-    (req.session as any).adminId = null;
-    (req.session as any).isAdmin = false;
-    (req.session as any).admin = null;
-    res.json({ success: true });
+    req.session.destroy((error) => {
+      if (error) {
+        console.error('[Admin] legacy logout error:', error);
+        return res.status(500).json({ error: 'تعذر تسجيل الخروج' });
+      }
+      res.clearCookie('__Host-qodratak.sid', { path: '/' });
+      res.clearCookie('qodratak.sid', { path: '/' });
+      return res.json({ success: true });
+    });
   });
 
   // Admin Session Check - Validates admin exists in database

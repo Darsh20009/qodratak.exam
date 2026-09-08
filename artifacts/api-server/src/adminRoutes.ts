@@ -37,9 +37,23 @@ const questionImagesDir = 'uploads/question-images';
 function getDevelopmentDemoAdmin(username: string) {
   if (process.env.NODE_ENV === 'production') return null;
 
+  const normalizedUsername = username.trim().toLowerCase();
+  // Keep the development login usable even when the legacy user export has
+  // been removed from a fresh checkout. This branch is never enabled in
+  // production and is intentionally limited to the existing demo identity.
+  if (normalizedUsername === 'admin-demo') {
+    return {
+      id: 'demo-admin',
+      username: 'admin-demo',
+      fullName: 'مدير قدراتك التجريبي',
+      role: 'admin',
+      isDemo: true,
+      password: '$2b$10$U1dAOrsiPUiCW8OvUSutx.Oe6vl4b9zRialmhy3wHfm.ktu9ChbUC',
+    };
+  }
+
   try {
     const users = JSON.parse(fs.readFileSync('attached_assets/user.json', 'utf-8'));
-    const normalizedUsername = username.trim().toLowerCase();
     const user = users.find((candidate: any) =>
       candidate?.isDemo &&
       candidate?.role === 'admin' &&
@@ -213,28 +227,28 @@ function effectiveAdminPermissions(admin: any) {
 }
 
 const requireAdminAuth = async (req: Request, res: Response, next: NextFunction) => {
-  const adminSession = (req.session as any)?.admin;
+  let adminSession = (req.session as any)?.admin;
   const isAdminByFlag = (req.session as any)?.isAdmin && (req.session as any)?.adminId;
 
   if (!adminSession && !isAdminByFlag) {
     const tokenAdmin = verifyAdminAccessToken(req);
     if (tokenAdmin?.isDemo) {
       (req.session as any).admin = tokenAdmin;
-      return next();
+      adminSession = tokenAdmin;
     }
 
-    if (tokenAdmin) {
+    if (!adminSession && tokenAdmin) {
       try {
         const admin = await mongoStorage.getAdminById(tokenAdmin.adminId);
         if (admin && admin.isActive !== false) {
-          (req.session as any).admin = {
+          adminSession = {
             adminId: String(admin._id),
             username: admin.username,
             fullName: admin.fullName,
             role: admin.role,
             permissions: effectiveAdminPermissions(admin),
           };
-          return next();
+          (req.session as any).admin = adminSession;
         }
       } catch {
         // The standard authorization response below is intentionally generic.
@@ -297,6 +311,9 @@ router.post('/login', async (req: Request, res: Response) => {
       (req.session as any).admin = adminIdentity;
       (req.session as any).isAdmin = true;
       (req.session as any).adminId = String(demoAdmin.id);
+      (req.session as any).adminRole = adminIdentity.role;
+      (req.session as any).adminUsername = adminIdentity.username;
+      (req.session as any).adminPermissions = adminIdentity.permissions;
 
       return req.session.save((err) => {
         if (err) {
@@ -352,6 +369,9 @@ router.post('/login', async (req: Request, res: Response) => {
     (req.session as any).admin = adminIdentity;
     (req.session as any).isAdmin = true;
     (req.session as any).adminId = String(admin._id);
+    (req.session as any).adminRole = adminIdentity.role;
+    (req.session as any).adminUsername = adminIdentity.username;
+    (req.session as any).adminPermissions = adminIdentity.permissions;
 
     req.session.save((err) => {
       if (err) {
@@ -376,8 +396,16 @@ router.post('/login', async (req: Request, res: Response) => {
 });
 
 router.post('/logout', (req: Request, res: Response) => {
-  (req.session as any).admin = null;
-  res.json({ success: true });
+  req.session.destroy((error) => {
+    if (error) {
+      console.error('[Admin] logout error:', error);
+      return res.status(500).json({ error: 'تعذر تسجيل الخروج' });
+    }
+
+    res.clearCookie('__Host-qodratak.sid', { path: '/' });
+    res.clearCookie('qodratak.sid', { path: '/' });
+    return res.json({ success: true });
+  });
 });
 
 router.get('/session', requireAdminAuth, (req: Request, res: Response) => {
