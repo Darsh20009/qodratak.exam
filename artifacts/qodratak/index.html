@@ -81,113 +81,142 @@
         100% { transform: scale(1); box-shadow: 0 8px 25px rgba(0, 91, 179, 0.3); }
       }
 
-      /* Saudi Business verification seal. The official provider element is
-         kept hidden after its token is loaded; the visible mark below is
-         rendered by LandingPage so the provider's white canvas can never
-         leak into the page. */
-      .sbc-verify-seal {
-        position: absolute !important;
-        width: 1px !important;
-        height: 1px !important;
-        overflow: hidden !important;
-        opacity: 0 !important;
-        pointer-events: none !important;
-        clip: rect(0 0 0 0) !important;
-        clip-path: inset(50%) !important;
-      }
-
-      .sbc-verify-seal > * {
-        display: none !important;
-      }
-
-      .sbc-custom-seal {
+      .sbc-badge-trigger {
         position: fixed;
         left: 16px;
         bottom: 16px;
         z-index: 60;
-        display: inline-flex;
-        align-items: center;
-        gap: 9px;
-        min-height: 56px;
+        display: block;
+        width: 198px;
         max-width: calc(100vw - 32px);
-        padding: 8px 12px 8px 10px;
-        color: #fff;
-        direction: rtl;
-        border: 1px solid rgba(145, 215, 197, 0.5);
-        border-radius: 18px;
-        background: linear-gradient(135deg, #21153f 0%, #3a2466 100%);
-        box-shadow: 0 12px 26px rgba(8, 13, 28, 0.28);
-        font-family: inherit;
-        isolation: isolate;
-      }
-
-      .sbc-custom-seal__mark {
-        display: grid;
-        width: 38px;
-        height: 38px;
-        flex: 0 0 auto;
-        place-items: center;
-        color: #91d7c5;
-        border-radius: 12px;
-        border: 1px solid rgba(145, 215, 197, 0.62);
+        padding: 0;
+        overflow: hidden;
+        border: 0;
+        border-radius: 9999px;
         background: transparent;
+        box-shadow: 0 12px 26px rgba(8, 13, 28, 0.26);
+        cursor: pointer;
+        line-height: 0;
+        transition: transform 160ms ease, box-shadow 160ms ease;
       }
 
-      .sbc-custom-seal__mark svg {
-        width: 28px;
-        height: 28px;
+      .sbc-badge-trigger:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 16px 30px rgba(8, 13, 28, 0.34);
       }
 
-      .sbc-custom-seal__copy {
+      .sbc-badge-trigger:focus-visible {
+        outline: 3px solid #91d7c5;
+        outline-offset: 4px;
+      }
+
+      .sbc-badge-trigger img {
+        display: block;
+        width: 100%;
+        height: auto;
+      }
+
+      .sbc-certificate-backdrop {
+        position: fixed;
+        inset: 0;
+        z-index: 100;
         display: grid;
-        gap: 1px;
-        text-align: right;
-        white-space: nowrap;
-      }
-
-      .sbc-custom-seal__copy strong {
-        font-size: 15px;
-        line-height: 1.2;
-        font-weight: 900;
-      }
-
-      .sbc-custom-seal__copy small {
-        color: rgba(255, 255, 255, 0.72);
-        font-size: 9px;
-        line-height: 1.2;
-        font-weight: 700;
-      }
-
-      .sbc-custom-seal__check {
-        display: grid;
-        width: 21px;
-        height: 21px;
-        flex: 0 0 auto;
         place-items: center;
-        color: #172338;
+        padding: 18px;
+        overflow-y: auto;
+        background: rgba(6, 10, 23, 0.82);
+        backdrop-filter: blur(8px);
+      }
+
+      .sbc-certificate-dialog {
+        position: relative;
+        width: min(100%, 544px);
+        max-height: calc(100vh - 36px);
+        overflow: auto;
+        padding: 10px;
+        border: 1px solid rgba(145, 215, 197, 0.36);
+        border-radius: 24px;
+        background: #272047;
+        box-shadow: 0 24px 70px rgba(0, 0, 0, 0.42);
+      }
+
+      .sbc-certificate-close {
+        position: absolute;
+        top: 16px;
+        right: 16px;
+        z-index: 2;
+        display: grid;
+        width: 36px;
+        height: 36px;
+        place-items: center;
+        color: #fff;
+        border: 1px solid rgba(255, 255, 255, 0.28);
         border-radius: 999px;
-        background: #91d7c5;
+        background: rgba(19, 14, 45, 0.72);
+        cursor: pointer;
+      }
+
+      .sbc-certificate-visual {
+        position: relative;
+        overflow: hidden;
+        border-radius: 18px;
+        line-height: 0;
+      }
+
+      .sbc-certificate-visual img {
+        display: block;
+        width: 100%;
+        height: auto;
+      }
+
+      .sbc-certificate-link-overlay {
+        position: absolute;
+        left: 26%;
+        bottom: 2.5%;
+        width: 48%;
+        height: 9%;
+        border-radius: 999px;
+      }
+
+      .sbc-certificate-link {
+        display: block;
+        margin: 10px 8px 2px;
+        padding: 12px 16px;
+        color: #fff;
+        border-radius: 14px;
+        background: #7053d5;
         font-size: 14px;
-        font-weight: 950;
+        font-weight: 900;
+        text-align: center;
+        text-decoration: none;
+        transition: background 160ms ease, transform 160ms ease;
+      }
+
+      .sbc-certificate-link:hover {
+        background: #8166e4;
+        transform: translateY(-1px);
       }
 
       @media (max-width: 640px) {
-        .sbc-custom-seal {
-          left: 10px !important;
-          bottom: max(10px, env(safe-area-inset-bottom)) !important;
-          min-height: 52px;
-          padding: 7px 10px 7px 8px;
-          border-radius: 16px;
+        .sbc-badge-trigger {
+          left: 10px;
+          bottom: max(10px, env(safe-area-inset-bottom));
+          width: 174px;
         }
 
-        .sbc-custom-seal__mark {
-          width: 34px;
-          height: 34px;
-          border-radius: 10px;
+        .sbc-certificate-backdrop {
+          padding: 10px;
         }
 
-        .sbc-custom-seal__copy strong {
-          font-size: 14px;
+        .sbc-certificate-dialog {
+          max-height: calc(100vh - 20px);
+          padding: 7px;
+          border-radius: 20px;
+        }
+
+        .sbc-certificate-close {
+          top: 12px;
+          right: 12px;
         }
       }
     </style>

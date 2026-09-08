@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { Link } from "wouter";
 import {
   ArrowLeft,
@@ -10,9 +10,9 @@ import {
   Languages,
   Menu,
   MessageCircle,
+  X,
   Target,
   UsersRound,
-  X,
 } from "lucide-react";
 import { AuthModal } from "@/components/AuthModal";
 import { Footer } from "@/components/Footer";
@@ -23,38 +23,66 @@ const SIGNAL = "#FF8A70";
 const MINT = "#91D7C5";
 
 function SaudiBusinessSeal() {
-  useEffect(() => {
-    const seal = document.createElement("div");
-    seal.className = "sbc-verify-seal";
-    seal.dataset.token = "QVllTDdEcm91V0cxa25lTW1iRUJzQT09";
-    seal.dataset.position = "bottom-left";
-    document.body.appendChild(seal);
-
-    const script = document.createElement("script");
-    script.src = "https://eauthenticate.saudibusiness.gov.sa/EAuthSealApi/seal.js";
-    script.async = true;
-    document.body.appendChild(script);
-
-    return () => {
-      script.remove();
-      seal.remove();
-    };
-  }, []);
+  const [certificateOpen, setCertificateOpen] = useState(false);
 
   return (
-    <div className="sbc-custom-seal" role="img" aria-label="متجر موثق من منصة الأعمال السعودية">
-      <span className="sbc-custom-seal__mark" aria-hidden="true">
-        <svg viewBox="0 0 32 32" fill="none">
-          <path d="M16 4.5v17.25M16 10.5c-2.4-3.1-5.2-4.2-7.8-4.2 1.1 3.7 3.5 5.6 7.8 6.1M16 14.2c2.35-3.1 5.15-4.2 7.8-4.2-1.1 3.7-3.5 5.6-7.8 6.1M16 18.1c-2.35-2.35-4.85-3.15-7.3-2.9 1.25 3.05 3.6 4.45 7.3 4.35M16 19.7c2.35-2.35 4.85-3.15 7.3-2.9-1.25 3.05-3.6 4.45-7.3 4.35" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
-          <path d="M7 26h18M10 23.5l-2.5 2.5M22 23.5l2.5 2.5" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
-        </svg>
-      </span>
-      <span className="sbc-custom-seal__copy">
-        <strong>متجر موثق</strong>
-        <small>منصة الأعمال السعودية</small>
-      </span>
-      <span className="sbc-custom-seal__check" aria-hidden="true">✓</span>
-    </div>
+    <>
+      <button
+        type="button"
+        className="sbc-badge-trigger"
+        onClick={() => setCertificateOpen(true)}
+        aria-label="عرض شهادة توثيق متجر قدراتك"
+        aria-haspopup="dialog"
+      >
+        <img src="/saudi-business-badge.png" alt="متجر موثق" />
+      </button>
+
+      {certificateOpen && (
+        <div
+          className="sbc-certificate-backdrop"
+          role="presentation"
+          onClick={() => setCertificateOpen(false)}
+        >
+          <section
+            className="sbc-certificate-dialog"
+            role="dialog"
+            aria-modal="true"
+            aria-label="شهادة توثيق متجر قدراتك"
+            onClick={(event) => event.stopPropagation()}
+          >
+            <button
+              type="button"
+              className="sbc-certificate-close"
+              onClick={() => setCertificateOpen(false)}
+              aria-label="إغلاق شهادة التوثيق"
+            >
+              <X size={20} />
+            </button>
+            <div className="sbc-certificate-visual">
+              <img
+                src="/saudi-business-certificate.png"
+                alt="شهادة توثيق منصة قدراتك لدى المركز السعودي للتنافسية والأعمال مع رمز التحقق"
+              />
+              <a
+                className="sbc-certificate-link-overlay"
+                href="https://eauthenticate.saudibusiness.gov.sa/certificate-details/0000321867?vt=1.WGT.1788911379.hlwg8kpZR93H.SYkJa9I1EF-CZ2Mj1zFLtk60KmeDzcc83I8opT_-mFo"
+                target="_blank"
+                rel="noreferrer"
+                aria-label="عرض التحقق من الشهادة"
+              />
+            </div>
+            <a
+              className="sbc-certificate-link"
+              href="https://eauthenticate.saudibusiness.gov.sa/certificate-details/0000321867?vt=1.WGT.1788911379.hlwg8kpZR93H.SYkJa9I1EF-CZ2Mj1zFLtk60KmeDzcc83I8opT_-mFo"
+              target="_blank"
+              rel="noreferrer"
+            >
+              الذهاب إلى رابط التحقق
+            </a>
+          </section>
+        </div>
+      )}
+    </>
   );
 }
 
