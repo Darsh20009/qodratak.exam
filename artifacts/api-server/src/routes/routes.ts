@@ -2247,6 +2247,14 @@ function hasUsableUserPassword(password: unknown) {
   return Boolean(value) && value !== 'external-auth';
 }
 
+function phoneStorageCandidates(phone: string) {
+  const candidates = new Set([phone, `+${phone}`]);
+  if (phone.startsWith('966') && phone.length === 12) {
+    candidates.add(`0${phone.slice(3)}`);
+  }
+  return [...candidates];
+}
+
   app.post('/api/auth/phone-otp/request', async (req: Request, res: Response) => {
     try {
       const purpose = req.body?.purpose === 'login' ? 'login' : 'signup';
@@ -2261,8 +2269,14 @@ function hasUsableUserPassword(password: unknown) {
       let phoneExistsForAdmin = false;
       if (mongoose.connection.readyState === 1) {
         const { User: MongoUser, Admin } = await import('./mongodb/models');
-        phoneExistsInMongo = Boolean(await MongoUser.exists({ phone }));
-        phoneExistsForAdmin = Boolean(await Admin.exists({ phone, isActive: true }));
+        const phoneCandidates = phoneStorageCandidates(phone);
+        phoneExistsInMongo = Boolean(await MongoUser.exists({
+          $or: [
+            { phone: { $in: phoneCandidates } },
+            { whatsappPhone: { $in: phoneCandidates } },
+          ],
+        }));
+        phoneExistsForAdmin = Boolean(await Admin.exists({ phone: { $in: phoneCandidates }, isActive: true }));
       }
 
       if (purpose === 'signup' && (phoneExistsLocally || phoneExistsInMongo)) {
@@ -2348,7 +2362,13 @@ function hasUsableUserPassword(password: unknown) {
       }
       if (mongoose.connection.readyState === 1) {
         const { User: MongoUser } = await import('./mongodb/models');
-        const mongoUser = await MongoUser.findOne({ phone: verification.phone }) as any;
+        const phoneCandidates = phoneStorageCandidates(verification.phone);
+        const mongoUser = await MongoUser.findOne({
+          $or: [
+            { phone: { $in: phoneCandidates } },
+            { whatsappPhone: { $in: phoneCandidates } },
+          ],
+        }) as any;
         if (mongoUser) {
           const deviceAccess = registerDevice(mongoUser.devices, req, req.body?.deviceId);
           if (!deviceAccess.allowed) {
@@ -2363,7 +2383,7 @@ function hasUsableUserPassword(password: unknown) {
             fullName: mongoUser.fullName || mongoUser.username,
             username: mongoUser.username,
             email: mongoUser.email,
-            phone: mongoUser.phone,
+             phone: mongoUser.phone || mongoUser.whatsappPhone,
             role: mongoUser.role || 'student',
             points: mongoUser.points || 0,
             level: mongoUser.level || 1,

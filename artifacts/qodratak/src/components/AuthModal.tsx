@@ -42,8 +42,14 @@ const countries = [
 
 const emailDomains = ["gmail.com", "outlook.com", "hotmail.com", "yahoo.com", "icloud.com"];
 
+function normalizeInputDigits(value: string) {
+  return value
+    .replace(/[٠-٩]/g, (digit) => String(digit.charCodeAt(0) - 0x0660))
+    .replace(/[۰-۹]/g, (digit) => String(digit.charCodeAt(0) - 0x06f0));
+}
+
 function fullPhone(code: string, value: string) {
-  return `+${code}${value.replace(/\D/g, "").replace(/^0+/, "")}`;
+  return `+${normalizeInputDigits(code)}${normalizeInputDigits(value).replace(/\D/g, "").replace(/^0+/, "")}`;
 }
 
 function PhoneField({ code, number, onCode, onNumber, disabled }: { code: string; number: string; onCode: (value: string) => void; onNumber: (value: string) => void; disabled?: boolean }) {
@@ -56,7 +62,7 @@ function PhoneField({ code, number, onCode, onNumber, disabled }: { code: string
         <ChevronDown className="pointer-events-none absolute left-2 h-3.5 w-3.5 text-[#8B8278]" />
       </div>
       <div className="flex items-center px-2 text-sm font-bold text-[#6B625B]">+{code}</div>
-      <input type="tel" inputMode="tel" autoComplete="tel-national" required disabled={disabled} value={number} onChange={(event) => onNumber(event.target.value.replace(/\D/g, "").slice(0, 14))} placeholder="5XXXXXXXX" className="min-w-0 flex-1 bg-transparent px-2 text-left text-sm text-[#171723] outline-none" />
+       <input type="tel" inputMode="tel" autoComplete="tel-national" required disabled={disabled} value={number} onChange={(event) => onNumber(normalizeInputDigits(event.target.value).replace(/\D/g, "").slice(0, 14))} placeholder="5XXXXXXXX" className="min-w-0 flex-1 bg-transparent px-2 text-left text-sm text-[#171723] outline-none" />
     </div>
   );
 }
@@ -466,11 +472,11 @@ export function AuthModal({ open, mode, onClose, onModeChange }: { open: boolean
                 </div>
                 <div className="relative">
                   <Lock className="pointer-events-none absolute right-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-[#8B8278]" />
-                  <input required inputMode="numeric" pattern="\d{8}" maxLength={8} type={showPassword ? "text" : "password"} value={passwordSetup} onChange={(event) => setPasswordSetup(event.target.value.replace(/\D/g, "").slice(0, 8))} placeholder="كلمة مرور من 8 أرقام" dir="ltr" className="h-12 w-full rounded-xl border border-[#24202D]/15 bg-[#F8F6F1] px-11 text-center text-sm tracking-[.2em] outline-none focus:border-[#171723]" />
+                  <input required inputMode="numeric" pattern="\d{8}" maxLength={8} type={showPassword ? "text" : "password"} value={passwordSetup} onChange={(event) => setPasswordSetup(normalizeInputDigits(event.target.value).replace(/\D/g, "").slice(0, 8))} placeholder="كلمة مرور من 8 أرقام" dir="ltr" className="h-12 w-full rounded-xl border border-[#24202D]/15 bg-[#F8F6F1] px-11 text-center text-sm tracking-[.2em] outline-none focus:border-[#171723]" />
                 </div>
                 <div className="relative">
                   <Lock className="pointer-events-none absolute right-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-[#8B8278]" />
-                  <input required inputMode="numeric" pattern="\d{8}" maxLength={8} type={showPassword ? "text" : "password"} value={passwordSetupConfirm} onChange={(event) => setPasswordSetupConfirm(event.target.value.replace(/\D/g, "").slice(0, 8))} placeholder="تأكيد كلمة المرور" dir="ltr" className="h-12 w-full rounded-xl border border-[#24202D]/15 bg-[#F8F6F1] px-11 text-center text-sm tracking-[.2em] outline-none focus:border-[#171723]" />
+                  <input required inputMode="numeric" pattern="\d{8}" maxLength={8} type={showPassword ? "text" : "password"} value={passwordSetupConfirm} onChange={(event) => setPasswordSetupConfirm(normalizeInputDigits(event.target.value).replace(/\D/g, "").slice(0, 8))} placeholder="تأكيد كلمة المرور" dir="ltr" className="h-12 w-full rounded-xl border border-[#24202D]/15 bg-[#F8F6F1] px-11 text-center text-sm tracking-[.2em] outline-none focus:border-[#171723]" />
                 </div>
                 <button type="button" onClick={() => setShowPassword((value) => !value)} className="text-right text-[11px] font-bold text-[#6B625B]">{showPassword ? "إخفاء كلمة المرور" : "إظهار كلمة المرور"}</button>
               </div>
@@ -487,7 +493,7 @@ export function AuthModal({ open, mode, onClose, onModeChange }: { open: boolean
               <div className="mt-5 space-y-3">
                 {/* Student Signup Fields */}
                 {mode === "signup" && accountType === "student" && !otpSent && !phoneToken && <label className="block"><span className="mb-1.5 flex items-center gap-1.5 text-xs font-black text-[#4F4A58]"><Phone className="h-3.5 w-3.5" /> رقم الجوال</span><PhoneField code={countryCode} number={phone} onCode={setCountryCode} onNumber={setPhone} /></label>}
-                {mode === "signup" && accountType === "student" && otpSent && !phoneToken && <div className="relative"><KeyRound className="pointer-events-none absolute right-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-[#8B8278]" /><input required inputMode="numeric" autoComplete="one-time-code" value={otp} onChange={(event) => setOtp(event.target.value.replace(/\D/g, "").slice(0, 4))} placeholder="رمز واتساب المكون من 4 أرقام" dir="ltr" className="h-12 w-full rounded-xl border border-[#24202D]/15 bg-[#F8F6F1] px-11 text-center text-sm tracking-[.2em] outline-none focus:border-[#171723]" /></div>}
+                {mode === "signup" && accountType === "student" && otpSent && !phoneToken && <div className="relative"><KeyRound className="pointer-events-none absolute right-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-[#8B8278]" /><input required inputMode="numeric" autoComplete="one-time-code" value={otp} onChange={(event) => setOtp(normalizeInputDigits(event.target.value).replace(/\D/g, "").slice(0, 4))} placeholder="رمز واتساب المكون من 4 أرقام" dir="ltr" className="h-12 w-full rounded-xl border border-[#24202D]/15 bg-[#F8F6F1] px-11 text-center text-sm tracking-[.2em] outline-none focus:border-[#171723]" /></div>}
                 {mode === "signup" && accountType === "student" && phoneToken && <>
                   <div className="flex items-center gap-2 rounded-xl bg-[#EFF8F4] px-3 py-2 text-xs font-bold text-[#398B79]"><CheckCircle2 className="h-4 w-4" /> تم تأكيد رقم الجوال، أكمل بياناتك</div>
                   <div className="relative"><User className="pointer-events-none absolute right-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-[#8B8278]" /><input required value={fullName} onChange={(event) => setFullName(event.target.value)} placeholder="الاسم الثنائي" autoComplete="name" className="h-12 w-full rounded-xl border border-[#24202D]/15 bg-[#F8F6F1] px-11 text-sm outline-none focus:border-[#171723]" /></div>
@@ -519,7 +525,7 @@ export function AuthModal({ open, mode, onClose, onModeChange }: { open: boolean
                         {parentOtpSent && (
                           <div className="relative animate-fade-in-up">
                             <KeyRound className="pointer-events-none absolute right-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-[#8B8278]" />
-                            <input required inputMode="numeric" autoComplete="one-time-code" value={parentOtp} onChange={(event) => setParentOtp(event.target.value.replace(/\D/g, "").slice(0, 4))} placeholder="رمز واتساب لولي الأمر (4 أرقام)" dir="ltr" className="h-12 w-full rounded-xl border border-[#24202D]/15 bg-[#F8F6F1] px-11 text-center text-sm tracking-[.2em] outline-none focus:border-[#171723]" />
+                            <input required inputMode="numeric" autoComplete="one-time-code" value={parentOtp} onChange={(event) => setParentOtp(normalizeInputDigits(event.target.value).replace(/\D/g, "").slice(0, 4))} placeholder="رمز واتساب لولي الأمر (4 أرقام)" dir="ltr" className="h-12 w-full rounded-xl border border-[#24202D]/15 bg-[#F8F6F1] px-11 text-center text-sm tracking-[.2em] outline-none focus:border-[#171723]" />
                           </div>
                         )}
                       </>
@@ -551,7 +557,7 @@ export function AuthModal({ open, mode, onClose, onModeChange }: { open: boolean
                           {childOtpSent && (
                             <div className="relative animate-fade-in-up">
                               <KeyRound className="pointer-events-none absolute right-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-[#8B8278]" />
-                              <input inputMode="numeric" autoComplete="off" value={childOtp} onChange={(event) => setChildOtp(event.target.value.replace(/\D/g, "").slice(0, 4))} placeholder="رمز واتساب المرسل للطالب (4 أرقام)" dir="ltr" className="h-11 w-full rounded-xl border border-[#24202D]/15 bg-white px-11 text-center text-sm tracking-[.2em] outline-none focus:border-[#171723]" />
+                              <input inputMode="numeric" autoComplete="off" value={childOtp} onChange={(event) => setChildOtp(normalizeInputDigits(event.target.value).replace(/\D/g, "").slice(0, 4))} placeholder="رمز واتساب المرسل للطالب (4 أرقام)" dir="ltr" className="h-11 w-full rounded-xl border border-[#24202D]/15 bg-white px-11 text-center text-sm tracking-[.2em] outline-none focus:border-[#171723]" />
                             </div>
                           )}
                           <button
@@ -576,7 +582,7 @@ export function AuthModal({ open, mode, onClose, onModeChange }: { open: boolean
                 {/* Login Fields */}
                 {mode === "login" && <label className="block"><span className="mb-1.5 flex items-center gap-1.5 text-xs font-black text-[#4F4A58]"><Phone className="h-3.5 w-3.5" /> رقم الجوال</span><PhoneField code={countryCode} number={phone} onCode={setCountryCode} onNumber={setPhone} /></label>}
                 {mode === "login" && phoneLoginMode === "password" && <div className="relative"><Lock className="pointer-events-none absolute right-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-[#8B8278]" /><input required type={showPassword ? "text" : "password"} autoComplete="current-password" value={password} onChange={(event) => setPassword(event.target.value)} placeholder="كلمة المرور" className="h-12 w-full rounded-xl border border-[#24202D]/15 bg-[#F8F6F1] px-11 text-sm outline-none focus:border-[#171723]" /></div>}
-                {mode === "login" && phoneLoginMode === "otp" && otpSent && <div className="relative"><KeyRound className="pointer-events-none absolute right-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-[#8B8278]" /><input required inputMode="numeric" autoComplete="one-time-code" value={otp} onChange={(event) => setOtp(event.target.value.replace(/\D/g, "").slice(0, 4))} placeholder="رمز التحقق المكون من 4 أرقام" dir="ltr" className="h-12 w-full rounded-xl border border-[#24202D]/15 bg-[#F8F6F1] px-11 text-center text-sm text-[#171723] placeholder:text-[#8B8278] tracking-[.2em] outline-none focus:border-[#171723]" /></div>}
+                {mode === "login" && phoneLoginMode === "otp" && otpSent && <div className="relative"><KeyRound className="pointer-events-none absolute right-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-[#8B8278]" /><input required inputMode="numeric" autoComplete="one-time-code" value={otp} onChange={(event) => setOtp(normalizeInputDigits(event.target.value).replace(/\D/g, "").slice(0, 4))} placeholder="رمز التحقق المكون من 4 أرقام" dir="ltr" className="h-12 w-full rounded-xl border border-[#24202D]/15 bg-[#F8F6F1] px-11 text-center text-sm text-[#171723] placeholder:text-[#8B8278] tracking-[.2em] outline-none focus:border-[#171723]" /></div>}
                 {mode === "login" && phoneLoginMode === "password" && <button type="button" onClick={() => { setPhoneLoginMode("otp"); setPassword(""); setOtp(""); setOtpSent(false); }} className="text-right text-[11px] font-bold text-[#6B625B]">العودة للدخول برمز واتساب</button>}
                 {mode === "login" && phoneLoginMode === "otp" && <button type="button" onClick={() => { setPhoneLoginMode("password"); setPassword(""); setOtp(""); setOtpSent(false); }} className="text-right text-[11px] font-bold text-[#6B625B]">لم يصلك الرمز؟ الدخول بكلمة المرور</button>}
               </div>

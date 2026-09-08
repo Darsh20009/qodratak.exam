@@ -30,8 +30,14 @@ function recordKey(phone: string, purpose: OtpPurpose) {
   return `${purpose}:${phone}`;
 }
 
+function normalizeDigits(value: unknown) {
+  return String(value ?? "")
+    .replace(/[٠-٩]/g, (digit) => String(digit.charCodeAt(0) - 0x0660))
+    .replace(/[۰-۹]/g, (digit) => String(digit.charCodeAt(0) - 0x06f0));
+}
+
 export function normalizeSaudiPhone(value: unknown) {
-  let digits = String(value || "").replace(/\D/g, "");
+  let digits = normalizeDigits(value).replace(/\D/g, "");
   if (digits.startsWith("00")) digits = digits.slice(2);
   if (digits.startsWith("05")) digits = `966${digits.slice(1)}`;
   else if (digits.startsWith("5") && digits.length === 9) digits = `966${digits}`;
@@ -90,7 +96,7 @@ export function verifyPhoneOtp(phoneInput: unknown, otpInput: unknown, purpose: 
   }
 
   const actual = Buffer.from(record.digest, "hex");
-  const candidate = Buffer.from(digest(`${key}:${String(otpInput || "").trim()}`), "hex");
+  const candidate = Buffer.from(digest(`${key}:${normalizeDigits(otpInput).trim()}`), "hex");
   const valid = actual.length === candidate.length && crypto.timingSafeEqual(actual, candidate);
   if (!valid) {
     record.attemptsLeft -= 1;

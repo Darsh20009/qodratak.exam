@@ -107,6 +107,30 @@
         max-width: 100% !important;
         border-radius: 12px !important;
         background: transparent !important;
+        border: 0 !important;
+        box-shadow: none !important;
+      }
+
+      /* The provider may return its mark as a white-backed image. Blend only
+         that generated layer with the branded host so the white canvas vanishes. */
+      .sbc-verify-seal img,
+      .sbc-verify-seal picture {
+        max-width: 100% !important;
+        mix-blend-mode: multiply !important;
+        border: 0 !important;
+        outline: 0 !important;
+        box-shadow: none !important;
+      }
+
+      .sbc-verify-seal table,
+      .sbc-verify-seal tbody,
+      .sbc-verify-seal tr,
+      .sbc-verify-seal td,
+      .sbc-verify-seal span,
+      .sbc-verify-seal a {
+        background: transparent !important;
+        border: 0 !important;
+        box-shadow: none !important;
       }
 
       @media (max-width: 640px) {
