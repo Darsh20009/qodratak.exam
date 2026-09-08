@@ -126,6 +126,7 @@
         padding: 0 10px 72px;
         overflow-y: auto;
         background: transparent;
+        direction: ltr;
       }
 
       .sbc-certificate-dialog {
@@ -138,22 +139,7 @@
         border-radius: 20px;
         background: linear-gradient(160deg, #211944, #2d225a);
         box-shadow: 0 16px 38px rgba(0, 0, 0, 0.36);
-      }
-
-      .sbc-certificate-close {
-        position: absolute;
-        top: 7px;
-        right: 7px;
-        z-index: 2;
-        display: grid;
-        width: 27px;
-        height: 27px;
-        place-items: center;
-        color: #fff;
-        border: 1px solid rgba(255, 255, 255, 0.28);
-        border-radius: 999px;
-        background: rgba(19, 14, 45, 0.72);
-        cursor: pointer;
+        direction: rtl;
       }
 
       .sbc-certificate-card {
@@ -213,7 +199,7 @@
         overflow: hidden;
         border-radius: 23px;
         isolation: isolate;
-        background: transparent;
+        background: #7053d5;
       }
 
       .sbc-qr-frame::before {
@@ -221,7 +207,14 @@
         inset: -60%;
         z-index: 0;
         content: "";
-        background: conic-gradient(from 0deg, #7053d5, #b69aff, #5e43bc, #91d7c5, #7053d5);
+        background: conic-gradient(
+          from 0deg,
+          transparent 0deg 28deg,
+          rgba(255, 255, 255, 0.3) 42deg,
+          #fff 62deg 86deg,
+          rgba(255, 255, 255, 0.3) 106deg,
+          transparent 122deg 360deg
+        );
         animation: sbc-qr-border-spin 4s linear infinite;
       }
 
@@ -303,11 +296,6 @@
           max-height: 76vh;
           padding: 4px;
           border-radius: 15px;
-        }
-
-        .sbc-certificate-close {
-          top: 6px;
-          right: 6px;
         }
 
         .sbc-certificate-card {

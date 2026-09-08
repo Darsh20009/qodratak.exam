@@ -63,14 +63,6 @@ function SaudiBusinessSeal() {
             aria-label="شهادة توثيق متجر قدراتك"
             onClick={(event) => event.stopPropagation()}
           >
-            <button
-              type="button"
-              className="sbc-certificate-close"
-              onClick={() => setCertificateOpen(false)}
-              aria-label="إغلاق شهادة التوثيق"
-            >
-              <X size={20} />
-            </button>
             <div className="sbc-certificate-card">
               <img
                 className="sbc-center-logo"
