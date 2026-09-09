@@ -18,6 +18,7 @@ import {
 } from "lucide-react";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { logout } from "@/utils/logout";
 
 // ─── Types ───────────────────────────────────────────────────────────
 
@@ -334,7 +335,7 @@ function DashboardOverview({ data, onSelectClass, onEditClass }: {
   };
 
   return (
-    <div className="p-6 md:p-8 space-y-8 animate-fade-in">
+    <div className="p-4 sm:p-6 md:p-8 space-y-6 md:space-y-8 animate-fade-in">
       <div>
         <h2 className="text-2xl font-bold text-slate-900 mb-1">مرحباً أ. {data.teacher.name.split(' ')[0]} 👋</h2>
         <p className="text-slate-500">إليك نظرة عامة على فصولك وطلابك اليوم.</p>
@@ -523,12 +524,12 @@ function ClassRoster({ classId, onBack }: { classId: string, onBack: () => void 
           </div>
         </div>
 
-        <form onSubmit={handleAddStudent} className="flex gap-2">
+        <form onSubmit={handleAddStudent} className="flex w-full gap-2 md:w-auto">
           <Input
             placeholder="يوزر، بريد، أو جوال الطالب..."
             value={studentId}
             onChange={e => setStudentId(e.target.value)}
-            className="w-64 bg-white"
+            className="min-w-0 flex-1 bg-white md:w-64 md:flex-none"
             disabled={addStudent.isPending}
           />
           <Button type="submit" disabled={addStudent.isPending || !studentId.trim()}>
@@ -608,6 +609,7 @@ export default function TeacherSystemPage() {
   const [selectedClassId, setSelectedClassId] = useState<string | null>(null);
   const [modalOpen, setModalOpen] = useState(false);
   const [editingClass, setEditingClass] = useState<TeacherClass | null>(null);
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
 
   const openCreateModal = () => {
     setEditingClass(null);
@@ -617,6 +619,12 @@ export default function TeacherSystemPage() {
   const openEditModal = (c: TeacherClass) => {
     setEditingClass(c);
     setModalOpen(true);
+  };
+
+  const handleLogout = async () => {
+    if (isLoggingOut) return;
+    setIsLoggingOut(true);
+    await logout();
   };
 
   if (isLoading) {
@@ -664,17 +672,17 @@ export default function TeacherSystemPage() {
       <div className="min-h-screen bg-slate-50 flex flex-col font-sans" dir="rtl">
 
         {/* Header */}
-        <header className="bg-white border-b border-slate-200 h-16 flex items-center justify-between px-6 sticky top-0 z-20">
-          <div className="flex items-center gap-4">
+        <header className="bg-white border-b border-slate-200 h-16 flex items-center justify-between px-3 sm:px-6 sticky top-0 z-20">
+          <div className="flex min-w-0 items-center gap-2 sm:gap-4">
             <Link href="/">
               <div className="w-9 h-9 bg-slate-900 rounded-lg flex items-center justify-center text-white font-black cursor-pointer hover:bg-slate-800 transition">
                 ق
               </div>
             </Link>
             <div className="h-6 w-px bg-slate-200"></div>
-            <h1 className="text-lg font-bold text-slate-800 tracking-tight">مساحة المعلم</h1>
+            <h1 className="truncate text-base font-bold tracking-tight text-slate-800 sm:text-lg">مساحة المعلم</h1>
           </div>
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-2 sm:gap-4">
             <div className="hidden md:block text-sm font-medium text-slate-700 text-left dir-ltr">
               {data.teacher.name}
               <div className="text-xs text-slate-400 font-normal">{data.teacher.email}</div>
@@ -684,6 +692,20 @@ export default function TeacherSystemPage() {
                 {data.teacher.name.substring(0, 2)}
               </AvatarFallback>
             </Avatar>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={handleLogout}
+              disabled={isLoggingOut}
+              className="gap-1.5 border-red-200 px-2.5 text-red-600 hover:bg-red-50 hover:text-red-700 sm:px-3"
+              aria-label="تسجيل الخروج"
+              data-testid="button-teacher-logout"
+            >
+              <LogOut className="h-4 w-4" />
+              <span className="sm:hidden">{isLoggingOut ? 'جارٍ الخروج' : 'خروج'}</span>
+              <span className="hidden sm:inline">{isLoggingOut ? 'جارٍ تسجيل الخروج' : 'تسجيل الخروج'}</span>
+            </Button>
           </div>
         </header>
 
