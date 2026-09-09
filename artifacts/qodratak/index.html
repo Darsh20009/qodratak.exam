@@ -120,8 +120,19 @@
 
       .sbc-badge-trigger .sbc-verify-seal,
       .sbc-badge-trigger .sbc-verify-seal > a {
+        position: absolute;
+        inset: 0;
+        z-index: 1;
         display: block;
         width: 100%;
+      }
+
+      .sbc-badge-trigger .sbc-seal-fallback {
+        position: relative;
+        z-index: 0;
+        display: block;
+        width: 100%;
+        height: auto;
       }
 
       .sbc-certificate-backdrop {

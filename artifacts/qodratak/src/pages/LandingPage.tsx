@@ -98,6 +98,11 @@ function SaudiBusinessSeal() {
           aria-label="عرض شهادة توثيق متجر قدراتك"
           aria-haspopup="dialog"
         >
+          <img
+            className="sbc-seal-fallback"
+            src="/saudi-business-badge.png"
+            alt="متجر موثق"
+          />
           <div
             ref={sealRef}
             className="sbc-verify-seal"
