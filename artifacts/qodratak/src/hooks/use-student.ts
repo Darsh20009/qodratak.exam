@@ -44,7 +44,7 @@ async function fetchJson<T>(url: string, options?: RequestInit): Promise<T> {
   return body as T;
 }
 
-export function useStudentDashboard() {
+export function useStudentDashboard(enabled = true) {
   return useQuery<StudentDashboard>({
     queryKey: ["/api/student/dashboard"],
     queryFn: async () => {
@@ -99,6 +99,7 @@ export function useStudentDashboard() {
     },
     staleTime: 15000,
     refetchOnWindowFocus: true,
+    enabled,
   });
 }
 

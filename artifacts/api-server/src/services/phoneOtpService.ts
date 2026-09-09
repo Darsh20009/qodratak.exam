@@ -82,7 +82,12 @@ export async function requestPhoneOtp(phoneInput: unknown, purpose: OtpPurpose) 
   return { phone, retryAfter: 60, sent: true as const };
 }
 
-export function verifyPhoneOtp(phoneInput: unknown, otpInput: unknown, purpose: OtpPurpose) {
+export function verifyPhoneOtp(
+  phoneInput: unknown,
+  otpInput: unknown,
+  purpose: OtpPurpose,
+  options: { consume?: boolean } = {},
+) {
   const phone = normalizeSaudiPhone(phoneInput);
   const key = recordKey(phone, purpose);
   const record = otpStore.get(key);
@@ -103,11 +108,18 @@ export function verifyPhoneOtp(phoneInput: unknown, otpInput: unknown, purpose: 
     throw new Error("OTP_INVALID");
   }
 
-  otpStore.delete(key);
+  if (options.consume !== false) {
+    otpStore.delete(key);
+  }
   return {
     phone,
     verificationToken: createPhoneVerificationToken(phone, purpose),
   };
+}
+
+export function consumePhoneOtp(phoneInput: unknown, purpose: OtpPurpose) {
+  const phone = normalizeSaudiPhone(phoneInput);
+  otpStore.delete(recordKey(phone, purpose));
 }
 
 function createPhoneVerificationToken(phone: string, purpose: OtpPurpose) {

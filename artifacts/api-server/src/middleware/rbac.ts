@@ -2,7 +2,9 @@
 // Sprint 0 - Foundation
 
 import { Request, Response, NextFunction } from 'express';
+import mongoose from 'mongoose';
 import { UserRole, Permission, hasPermission, hasAnyPermission, isAdminRole, permissions } from '../shared/permissions';
+import { User } from '../mongodb/models';
 
 // واجهة بيانات المستخدم للـ RBAC
 export interface RBACUser {
@@ -35,8 +37,26 @@ export const requireAuth = async (req: Request, res: Response, next: NextFunctio
       });
     }
     
+    // استخدم الدور الحالي من قاعدة البيانات عند توفرها حتى لا تعتمد الصلاحيات
+    // على نسخة قديمة بقيت في الجلسة بعد تعديل الحساب.
+    let role = session.userRole;
+    if (mongoose.connection.readyState === 1) {
+      const userId = String(session.userId);
+      const mongoUser = mongoose.Types.ObjectId.isValid(userId)
+        ? await User.findById(userId).select({ role: 1, email: 1, username: 1, institutionId: 1 }).lean()
+        : session.userEmail
+          ? await User.findOne({ email: session.userEmail }).select({ role: 1, email: 1, username: 1, institutionId: 1 }).lean()
+          : null;
+
+      if (mongoUser) {
+        role = mongoUser.role;
+        session.userRole = mongoUser.role;
+        session.userEmail = mongoUser.email || session.userEmail;
+        session.institutionId = mongoUser.institutionId || session.institutionId;
+      }
+    }
+
     // التحقق من وجود الدور - فشل آمن إذا لم يوجد
-    const role = session.userRole;
     if (!role) {
       console.warn(`[RBAC] User ${session.userId} has no role defined, denying access`);
       return res.status(401).json({ 

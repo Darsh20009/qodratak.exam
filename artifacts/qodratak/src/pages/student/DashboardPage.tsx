@@ -25,8 +25,9 @@ import { Input } from "@/components/ui/input";
 import SubscriptionRenewalDialog from "@/components/SubscriptionRenewalDialog";
 
 export default function DashboardPage() {
-  const { user } = useUser();
-  const { data: dashboard, isLoading, isError } = useStudentDashboard();
+  const { user, isLoading: isUserLoading } = useUser();
+  const isStudent = user?.role === "student";
+  const { data: dashboard, isLoading, isError, error } = useStudentDashboard(isStudent);
   const updateExamDate = useUpdateExamDate();
   const { data: reviews = [] } = usePlatformReviews();
   const submitReview = useSubmitReview();
@@ -39,10 +40,37 @@ export default function DashboardPage() {
   const userName = user?.name || user?.username || "طالب";
   const firstName = userName.split(" ")[0];
 
-  if (isLoading) {
+  if (isUserLoading || (isStudent && isLoading)) {
     return (
       <div className="flex h-full items-center justify-center">
         <Loader2 className="h-8 w-8 animate-spin text-[#0D1B2A] dark:text-primary" />
+      </div>
+    );
+  }
+
+  if (!user) {
+    return (
+      <div className="flex h-full flex-col items-center justify-center text-center p-6">
+        <AlertTriangle className="h-12 w-12 text-amber-500 mb-4" />
+        <h2 className="text-xl font-black text-foreground">انتهت جلسة تسجيل الدخول</h2>
+        <p className="text-muted-foreground mt-2">سجّل الدخول من جديد للوصول إلى لوحة التحكم.</p>
+        <Link href="/login" className="mt-4 font-black text-primary">الانتقال إلى تسجيل الدخول</Link>
+      </div>
+    );
+  }
+
+  if (!isStudent) {
+    return (
+      <div className="flex h-full flex-col items-center justify-center text-center p-6">
+        <AlertTriangle className="h-12 w-12 text-amber-500 mb-4" />
+        <h2 className="text-xl font-black text-foreground">هذه ليست لوحة حسابك</h2>
+        <p className="text-muted-foreground mt-2">سيتم توجيهك إلى المساحة المناسبة لنوع حسابك.</p>
+        <Link
+          href={user.role === "parent" ? "/parent-dashboard" : user.role === "institution_admin" ? "/institution" : user.role === "teacher" ? "/teacher" : "/"}
+          className="mt-4 font-black text-primary"
+        >
+          فتح لوحة حسابي
+        </Link>
       </div>
     );
   }
@@ -52,7 +80,7 @@ export default function DashboardPage() {
       <div className="flex h-full flex-col items-center justify-center text-center p-6">
         <AlertTriangle className="h-12 w-12 text-red-500 mb-4" />
         <h2 className="text-xl font-black text-foreground">حدث خطأ في تحميل البيانات</h2>
-        <p className="text-muted-foreground mt-2">يرجى المحاولة مرة أخرى لاحقاً.</p>
+        <p className="text-muted-foreground mt-2">{error instanceof Error ? error.message : "يرجى المحاولة مرة أخرى لاحقاً."}</p>
       </div>
     );
   }

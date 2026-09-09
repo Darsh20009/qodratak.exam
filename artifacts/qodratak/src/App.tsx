@@ -825,7 +825,14 @@ function Router({ splashDone }: { splashDone: boolean }) {
         {() => {
           if (isUserLoading) return <LandingPage />;
           if (serverUser?.role === 'parent') return <ParentDashboardPage />;
-          return serverUser ? <StudentShell><DashboardPage /></StudentShell> : <LandingPage />;
+          if (serverUser?.role === 'institution_admin') return <Redirect to="/institution" />;
+          if (serverUser?.role === 'teacher') return <Redirect to="/teacher" />;
+          if (serverUser?.role === 'system_admin' || serverUser?.role === 'support_admin') {
+            return <Redirect to="/admin/dashboard" />;
+          }
+          return serverUser?.role === 'student'
+            ? <StudentShell><DashboardPage /></StudentShell>
+            : <LandingPage />;
         }}
       </Route>
 

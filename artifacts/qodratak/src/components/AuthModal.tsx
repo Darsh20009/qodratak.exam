@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useLocation } from "wouter";
 import { useQueryClient } from "@tanstack/react-query";
 import { CheckCircle2, ChevronDown, Eye, EyeOff, KeyRound, Laptop, Loader2, Lock, Mail, MessageCircle, Phone, Smartphone, Trash2, User, UsersRound, X } from "lucide-react";
@@ -125,6 +125,7 @@ export function AuthModal({ open, mode, onClose, onModeChange }: { open: boolean
   const [phone, setPhone] = useState("");
   const [otp, setOtp] = useState("");
   const [otpSent, setOtpSent] = useState(false);
+  const [resendAfter, setResendAfter] = useState(0);
   const [phoneToken, setPhoneToken] = useState("");
   const [fullName, setFullName] = useState("");
   const [username, setUsername] = useState("");
@@ -138,6 +139,14 @@ export function AuthModal({ open, mode, onClose, onModeChange }: { open: boolean
   const [loading, setLoading] = useState(false);
   const [deviceLimit, setDeviceLimit] = useState<{ devices: DeviceLimitDevice[]; managementToken: string } | null>(null);
   const [removingDeviceId, setRemovingDeviceId] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (resendAfter <= 0) return;
+    const timer = window.setInterval(() => {
+      setResendAfter((seconds) => Math.max(0, seconds - 1));
+    }, 1000);
+    return () => window.clearInterval(timer);
+  }, [resendAfter]);
 
   // Parent specific state
   const [parentName, setParentName] = useState("");
@@ -155,7 +164,7 @@ export function AuthModal({ open, mode, onClose, onModeChange }: { open: boolean
   const [verifiedChildren, setVerifiedChildren] = useState<{phone: string, verificationToken: string}[]>([]);
 
   const resetFlow = (nextMode?: AuthMode) => {
-    setOtp(""); setOtpSent(false); setPhoneToken(""); setFullName(""); setUsername(""); setEmail(""); setPassword(""); setConfirmPassword(""); setPasswordSetup(""); setPasswordSetupConfirm(""); setPasswordSetupRequired(false); setPhoneLoginMode("otp"); setLoading(false);
+    setOtp(""); setOtpSent(false); setResendAfter(0); setPhoneToken(""); setFullName(""); setUsername(""); setEmail(""); setPassword(""); setConfirmPassword(""); setPasswordSetup(""); setPasswordSetupConfirm(""); setPasswordSetupRequired(false); setPhoneLoginMode("otp"); setLoading(false);
     setAccountType(null);
     setParentName(""); setParentPhone(""); setParentOtp(""); setParentOtpSent(false); setParentToken("");
     setChildPhone(""); setChildOtp(""); setChildOtpSent(false); setVerifiedChildren([]);
@@ -173,13 +182,16 @@ export function AuthModal({ open, mode, onClose, onModeChange }: { open: boolean
       ? requestedReturn
       : null;
     queryClient.setQueryData(["/api/user"], user);
+    queryClient.removeQueries({ queryKey: ["/api/student/dashboard"] });
     window.dispatchEvent(new CustomEvent("userLoggedIn", { detail: user }));
     onClose();
-    if (user.role === "parent") {
-      setLocation(returnPath || "/parent-dashboard");
-    } else {
-      setLocation(returnPath || (user.role === "institution_admin" ? "/institution" : "/"));
-    }
+    const roleDestination =
+      user.role === "parent" ? "/parent-dashboard"
+        : user.role === "institution_admin" ? "/institution"
+          : user.role === "teacher" ? "/teacher"
+            : user.role === "system_admin" || user.role === "support_admin" ? "/admin/dashboard"
+              : "/";
+    setLocation(returnPath || roleDestination);
   };
 
   const showDeviceLimit = (result: any) => {
@@ -238,11 +250,13 @@ export function AuthModal({ open, mode, onClose, onModeChange }: { open: boolean
     });
     const result = await readAuthResponse(response);
     if (!response.ok) {
+      if (Number(result.retryAfter) > 0) setResendAfter(Number(result.retryAfter));
       if (showDeviceLimit(result)) return;
       throw new Error(result.error || result.message || "تعذر التحقق من رقم الجوال");
     }
     if (!otpSent) {
       setOtpSent(true);
+      setResendAfter(Number(result.retryAfter) || 60);
       toast({ title: "تم إرسال الرمز", description: "أدخل الرمز الذي وصلك عبر واتساب." });
       return;
     }
@@ -260,6 +274,34 @@ export function AuthModal({ open, mode, onClose, onModeChange }: { open: boolean
     } else {
       setPhoneToken(result.verificationToken);
       toast({ title: "تم تأكيد الرقم", description: "أكمل البيانات ثم أنشئ حسابك." });
+    }
+  };
+
+  const resendPhoneOtp = async () => {
+    if (loading || resendAfter > 0) return;
+    setLoading(true);
+    try {
+      const response = await fetch("/api/auth/phone-otp/request", {
+        method: "POST",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          phone: fullPhone(countryCode, phone),
+          purpose: mode === "login" ? "login" : "signup",
+        }),
+      });
+      const result = await readAuthResponse(response);
+      if (!response.ok) {
+        if (Number(result.retryAfter) > 0) setResendAfter(Number(result.retryAfter));
+        throw new Error(result.error || result.message || "تعذر إعادة إرسال الرمز");
+      }
+      setOtp("");
+      setResendAfter(Number(result.retryAfter) || 60);
+      toast({ title: "تم إرسال رمز جديد", description: "استخدم آخر رمز وصلك عبر واتساب." });
+    } catch (error: any) {
+      toast({ title: "تعذر إعادة إرسال الرمز", description: error.message || "حاول مرة أخرى بعد قليل.", variant: "destructive" });
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -606,7 +648,21 @@ export function AuthModal({ open, mode, onClose, onModeChange }: { open: boolean
                 {mode === "login" && phoneLoginMode === "password" && <div className="relative"><Lock className="pointer-events-none absolute right-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-[#8B8278]" /><input required type={showPassword ? "text" : "password"} autoComplete="current-password" value={password} onChange={(event) => setPassword(event.target.value)} placeholder="كلمة المرور" className="h-12 w-full rounded-xl border border-[#24202D]/15 bg-[#F8F6F1] px-11 text-sm outline-none focus:border-[#171723]" /></div>}
                 {mode === "login" && phoneLoginMode === "otp" && otpSent && <div className="relative"><KeyRound className="pointer-events-none absolute right-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-[#8B8278]" /><input required inputMode="numeric" autoComplete="one-time-code" value={otp} onChange={(event) => setOtp(normalizeInputDigits(event.target.value).replace(/\D/g, "").slice(0, 4))} placeholder="رمز التحقق المكون من 4 أرقام" dir="ltr" className="h-12 w-full rounded-xl border border-[#24202D]/15 bg-[#F8F6F1] px-11 text-center text-sm text-[#171723] placeholder:text-[#8B8278] tracking-[.2em] outline-none focus:border-[#171723]" /></div>}
                 {mode === "login" && phoneLoginMode === "password" && <button type="button" onClick={() => { setPhoneLoginMode("otp"); setPassword(""); setOtp(""); setOtpSent(false); }} className="text-right text-[11px] font-bold text-[#6B625B]">العودة للدخول برمز واتساب</button>}
-                {mode === "login" && phoneLoginMode === "otp" && <button type="button" onClick={() => { setPhoneLoginMode("password"); setPassword(""); setOtp(""); setOtpSent(false); }} className="text-right text-[11px] font-bold text-[#6B625B]">لم يصلك الرمز؟ الدخول بكلمة المرور</button>}
+                {mode === "login" && phoneLoginMode === "otp" && (
+                  <div className="flex items-center justify-between gap-3 text-[11px]">
+                    <button type="button" onClick={() => { setPhoneLoginMode("password"); setPassword(""); setOtp(""); setOtpSent(false); setResendAfter(0); }} className="text-right font-bold text-[#6B625B]">الدخول بكلمة المرور</button>
+                    {otpSent && (
+                      <button
+                        type="button"
+                        onClick={resendPhoneOtp}
+                        disabled={loading || resendAfter > 0}
+                        className="font-black text-[#171723] disabled:cursor-not-allowed disabled:text-[#A49B91]"
+                      >
+                        {resendAfter > 0 ? `طلب رمز جديد بعد ${resendAfter} ث` : "طلب رمز جديد"}
+                      </button>
+                    )}
+                  </div>
+                )}
               </div>
             ) : null}
 

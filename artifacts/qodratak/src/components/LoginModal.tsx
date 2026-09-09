@@ -1,5 +1,6 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useLocation } from "wouter";
+import { useQueryClient } from "@tanstack/react-query";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { Eye, EyeOff, KeyRound, LogIn, MessageCircle, Shield, User, X, Building2, GraduationCap } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
@@ -22,6 +23,7 @@ interface LoginModalProps {
 
 export function LoginModal({ open, onClose, onSwitchToSignup }: LoginModalProps) {
   const [, setLocation] = useLocation();
+  const queryClient = useQueryClient();
   const { toast } = useToast();
   const [identifier, setIdentifier] = useState("");
   const [password, setPassword] = useState("");
@@ -30,6 +32,62 @@ export function LoginModal({ open, onClose, onSwitchToSignup }: LoginModalProps)
   const [loginMode, setLoginMode] = useState<"password" | "whatsapp">("password");
   const [otp, setOtp] = useState("");
   const [otpSent, setOtpSent] = useState(false);
+  const [resendAfter, setResendAfter] = useState(0);
+
+  useEffect(() => {
+    if (resendAfter <= 0) return;
+    const timer = window.setInterval(() => {
+      setResendAfter((seconds) => Math.max(0, seconds - 1));
+    }, 1000);
+    return () => window.clearInterval(timer);
+  }, [resendAfter]);
+
+  const normalizeDigits = (value: string) =>
+    value
+      .replace(/[٠-٩]/g, (digit) => String(digit.charCodeAt(0) - 0x0660))
+      .replace(/[۰-۹]/g, (digit) => String(digit.charCodeAt(0) - 0x06f0));
+
+  const destinationForRole = (role: string) => {
+    if (role === "parent") return "/parent-dashboard";
+    if (role === "institution_admin") return "/institution";
+    if (role === "teacher") return "/teacher";
+    if (role === "system_admin" || role === "support_admin") return "/admin/dashboard";
+    return "/";
+  };
+
+  async function sendPhoneOtp() {
+    const response = await fetch("/api/auth/phone-otp/request", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      credentials: "include",
+      body: JSON.stringify({ phone: identifier.trim(), purpose: "login" }),
+    });
+    const result = await response.json().catch(() => null);
+    if (!response.ok) {
+      if (Number(result?.retryAfter) > 0) setResendAfter(Number(result.retryAfter));
+      throw new Error(result?.error || "تعذر إرسال رمز التحقق");
+    }
+    setOtp("");
+    setOtpSent(true);
+    setResendAfter(Number(result?.retryAfter) || 60);
+    toast({ title: "تم إرسال الرمز", description: "أدخل الرمز الذي وصلك عبر واتساب." });
+  }
+
+  async function handleResend() {
+    if (isLoading || resendAfter > 0) return;
+    setIsLoading(true);
+    try {
+      await sendPhoneOtp();
+    } catch (error: any) {
+      toast({
+        title: "تعذر إعادة إرسال الرمز",
+        description: error.message || "حاول مرة أخرى بعد قليل.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  }
 
   function reset() {
     setIdentifier("");
@@ -39,6 +97,7 @@ export function LoginModal({ open, onClose, onSwitchToSignup }: LoginModalProps)
     setLoginMode("password");
     setOtp("");
     setOtpSent(false);
+    setResendAfter(0);
   }
 
   function close() {
@@ -52,6 +111,10 @@ export function LoginModal({ open, onClose, onSwitchToSignup }: LoginModalProps)
 
     try {
       if (loginMode === "whatsapp") {
+        if (!otpSent) {
+          await sendPhoneOtp();
+          return;
+        }
         const response = await fetch(otpSent ? "/api/auth/phone-otp/verify" : "/api/auth/phone-otp/request", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -65,17 +128,13 @@ export function LoginModal({ open, onClose, onSwitchToSignup }: LoginModalProps)
         });
         const result = await response.json();
         if (!response.ok) throw new Error(result.error || "تعذر التحقق من رقم الجوال");
-        if (!otpSent) {
-          setOtpSent(true);
-          toast({ title: "تم إرسال الرمز", description: "أدخل الرمز الذي وصلك عبر واتساب." });
-          return;
-        }
-
         localStorage.setItem("user", JSON.stringify(result));
+        queryClient.setQueryData(["/api/user"], result);
+        queryClient.removeQueries({ queryKey: ["/api/student/dashboard"] });
         window.dispatchEvent(new CustomEvent("userLoggedIn", { detail: result }));
         toast({ title: "أهلًا بعودتك", description: "تم تسجيل الدخول برقم واتساب." });
         close();
-        setLocation(result.role === "institution_admin" ? "/institution" : "/");
+        setLocation(destinationForRole(result.role));
         return;
       }
 
@@ -120,13 +179,15 @@ export function LoginModal({ open, onClose, onSwitchToSignup }: LoginModalProps)
       }
 
       localStorage.setItem("user", JSON.stringify(result));
+      queryClient.setQueryData(["/api/user"], result);
+      queryClient.removeQueries({ queryKey: ["/api/student/dashboard"] });
       window.dispatchEvent(new CustomEvent("userLoggedIn", { detail: result }));
       toast({
         title: "أهلًا بعودتك",
-        description: result.role === "institution_admin" ? "سيتم فتح بوابة المؤسسة." : "سيتم فتح لوحة تقدمك.",
+        description: "سيتم فتح المساحة المناسبة لنوع حسابك.",
       });
       close();
-      setLocation(result.role === "institution_admin" ? "/institution" : "/");
+      setLocation(destinationForRole(result.role));
     } catch (error: any) {
       toast({
         title: "تعذر تسجيل الدخول",
@@ -248,13 +309,23 @@ export function LoginModal({ open, onClose, onSwitchToSignup }: LoginModalProps)
                     required
                     autoComplete="one-time-code"
                     value={otp}
-                     onChange={(event) => setOtp(event.target.value.replace(/\D/g, "").slice(0, 4))}
+                      onChange={(event) => setOtp(normalizeDigits(event.target.value).replace(/\D/g, "").slice(0, 4))}
                      placeholder="0000"
                     dir="ltr"
                     className="w-full rounded-xl border border-[#24202D]/15 bg-[#F8F6F1] py-3.5 pl-4 pr-11 text-center text-sm tracking-[.35em] text-[#171723] outline-none transition focus:border-[#171723] focus:bg-white focus:ring-4 focus:ring-[#171723]/10"
                   />
                 </div>
-                <button type="button" onClick={() => { setOtpSent(false); setOtp(""); }} className="text-xs font-bold text-[#6B625B] hover:text-[#171723]">تغيير الرقم أو إعادة الإرسال</button>
+                <div className="flex items-center justify-between gap-3">
+                  <button type="button" onClick={() => { setOtpSent(false); setOtp(""); setResendAfter(0); }} className="text-xs font-bold text-[#6B625B] hover:text-[#171723]">تغيير رقم الجوال</button>
+                  <button
+                    type="button"
+                    onClick={handleResend}
+                    disabled={isLoading || resendAfter > 0}
+                    className="text-xs font-black text-[#171723] disabled:cursor-not-allowed disabled:text-[#A49B91]"
+                  >
+                    {resendAfter > 0 ? `طلب رمز جديد بعد ${resendAfter} ث` : "طلب رمز جديد"}
+                  </button>
+                </div>
               </label>
             ) : null}
 

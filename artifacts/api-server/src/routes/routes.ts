@@ -22,6 +22,7 @@ import {
   notifyAdminSubscription,
 } from '../services/adminWhatsAppNotifications';
 import {
+  consumePhoneOtp,
   normalizeSaudiPhone,
   requestPhoneOtp,
   verifyPhoneOtp,
@@ -2006,14 +2007,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // قراءة ملف المستخدمين
       let users = [];
-      try {
-        const usersData = fs.readFileSync("attached_assets/user.json", "utf-8");
-        users = JSON.parse(usersData);
-      } catch (error) {
-        console.error("Error reading users file:", error);
-        // MongoDB-backed accounts can still authenticate when the legacy
-        // local user export is unavailable.
-        users = [];
+      const legacyUsersPath = "attached_assets/user.json";
+      if (fs.existsSync(legacyUsersPath)) {
+        try {
+          const usersData = fs.readFileSync(legacyUsersPath, "utf-8");
+          users = JSON.parse(usersData);
+        } catch (error) {
+          console.error("Error reading users file:", error);
+        }
+      }
+      if (process.env.NODE_ENV !== 'production') {
+        const existingIds = new Set(users.map((candidate: any) => String(candidate?.id)));
+        users.push(...developmentDemoUsers().filter((candidate) => !existingIds.has(candidate.id)));
       }
 
       // البحث عن المستخدم بالبريد أو اسم المستخدم أو رقم الجوال
@@ -2177,7 +2182,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // التحقق من حالة الاشتراك
       const today = new Date();
-      let shouldUpdateUser = true;
+      let shouldUpdateUser = !user.isDemo;
 
       if (user.subscription) {
         // التحقق من انتهاء الاشتراك لجميع الباقات المدفوعة
@@ -2320,9 +2325,57 @@ function phoneStorageCandidates(phone: string) {
   return [...candidates];
 }
 
+function developmentDemoUsers() {
+  if (process.env.NODE_ENV === 'production') return [];
+  return [
+    {
+      id: 'development-student-demo',
+      name: 'طالب تجريبي',
+      fullName: 'طالب تجريبي',
+      username: 'student-demo',
+      email: 'student-demo@qodratak.local',
+      password: 'StudentDemo@2026',
+      role: 'student',
+      points: 0,
+      level: 1,
+      subscription: { type: 'free', status: 'active' },
+      devices: [],
+      isDemo: true,
+    },
+    {
+      id: 'development-institution-demo',
+      name: 'مؤسسة تجريبية',
+      fullName: 'مؤسسة تجريبية',
+      username: 'institution-demo',
+      email: 'institution-demo@qodratak.local',
+      password: 'InstitutionDemo@2026',
+      role: 'institution_admin',
+      points: 0,
+      level: 1,
+      subscription: { type: 'free', status: 'active' },
+      devices: [],
+      isDemo: true,
+    },
+    {
+      id: 'development-admin-demo',
+      name: 'مدير تجريبي',
+      fullName: 'مدير تجريبي',
+      username: 'admin-demo',
+      email: 'admin-demo@qodratak.local',
+      password: 'AdminDemo@2026',
+      role: 'admin',
+      devices: [],
+      isDemo: true,
+    },
+  ];
+}
+
   app.post('/api/auth/phone-otp/request', async (req: Request, res: Response) => {
     try {
-      const purpose = req.body?.purpose === 'login' ? 'login' : 'signup';
+      const purpose = req.body?.purpose;
+      if (purpose !== 'login' && purpose !== 'signup') {
+        return res.status(400).json({ error: 'نوع طلب رمز التحقق غير صالح' });
+      }
       const phone = normalizeSaudiPhone(req.body?.phone);
       let users: any[] = [];
       try { users = JSON.parse(fs.readFileSync('attached_assets/user.json', 'utf-8')); } catch {}
@@ -2377,8 +2430,16 @@ function phoneStorageCandidates(phone: string) {
 
   app.post('/api/auth/phone-otp/verify', async (req: Request, res: Response) => {
     try {
-      const purpose = req.body?.purpose === 'login' ? 'login' : 'signup';
-      const verification = verifyPhoneOtp(req.body?.phone, req.body?.otp, purpose);
+      const purpose = req.body?.purpose;
+      if (purpose !== 'login' && purpose !== 'signup') {
+        return res.status(400).json({ error: 'نوع طلب رمز التحقق غير صالح' });
+      }
+      const verification = verifyPhoneOtp(
+        req.body?.phone,
+        req.body?.otp,
+        purpose,
+        { consume: purpose !== 'login' },
+      );
       if (purpose === 'signup') {
         return res.json({
           success: true,
@@ -2413,6 +2474,7 @@ function phoneStorageCandidates(phone: string) {
           (req.session as any).admin = adminIdentity;
           return req.session.save((sessionError) => {
             if (sessionError) return res.status(500).json({ error: 'تعذر حفظ جلسة الدخول' });
+            consumePhoneOtp(verification.phone, 'login');
             return res.json({
               isAdmin: true,
               admin: {
@@ -2483,6 +2545,7 @@ function phoneStorageCandidates(phone: string) {
         };
         return req.session.save((sessionError) => {
           if (sessionError) return res.status(500).json({ error: 'تعذر حفظ جلسة إعداد كلمة المرور' });
+          consumePhoneOtp(verification.phone, 'login');
           return res.json({
             requiresPasswordSetup: true,
             passwordSetupRequired: true,
@@ -2497,6 +2560,7 @@ function phoneStorageCandidates(phone: string) {
       (req.session as any).userRole = loginUser.role || 'student';
       return req.session.save((sessionError) => {
         if (sessionError) return res.status(500).json({ error: 'تعذر حفظ جلسة الدخول' });
+        consumePhoneOtp(verification.phone, 'login');
         const { password: _password, ...safeUser } = loginUser;
         return res.json(safeUser);
       });
@@ -2508,7 +2572,12 @@ function phoneStorageCandidates(phone: string) {
         OTP_ATTEMPTS_EXCEEDED: 'تم تجاوز عدد المحاولات. اطلب رمزاً جديداً.',
       };
       const message = messages[error?.message];
-      return res.status(message ? 400 : 500).json({ error: message || 'تعذر التحقق من الرمز' });
+      if (!message) {
+        console.error('WhatsApp OTP login completion error:', error);
+      }
+      return res.status(message ? 400 : 500).json({
+        error: message || 'تم التحقق من الرمز، لكن تعذر إكمال تسجيل الدخول. حاول مرة أخرى بنفس الرمز.',
+      });
     }
   });
 
@@ -4894,9 +4963,13 @@ app.post("/api/auth/register", async (req: Request, res: Response) => {
       // MongoDB is the primary source for current sessions. The legacy JSON
       // file is optional and is only used for accounts created by the old flow.
       let user: any = null;
-      try {
+      if (mongoose.connection.readyState === 1) try {
         const { User } = await import('./mongodb/models');
-        const mongoUser = await User.findById(userId) || (sessionEmail ? await User.findOne({ email: sessionEmail }) : null);
+        const mongoUser = mongoose.Types.ObjectId.isValid(String(userId))
+          ? await User.findById(userId)
+          : sessionEmail
+            ? await User.findOne({ email: sessionEmail })
+            : null;
         if (mongoUser) {
           const activeSubscription = await findActiveMongoSubscription(
             mongoUser._id,
@@ -4940,6 +5013,10 @@ app.post("/api/auth/register", async (req: Request, res: Response) => {
         }
       }
 
+      if (!user && process.env.NODE_ENV !== 'production') {
+        user = developmentDemoUsers().find((candidate) => String(candidate.id) === String(userId)) || null;
+      }
+
       if (!user) {
         // Session exists but user not found - clear session
         req.session.destroy((err) => {
@@ -4970,6 +5047,7 @@ app.post("/api/auth/register", async (req: Request, res: Response) => {
         username: user.name,
         name: user.name,
         email: user.email,
+        role: user.role || (req.session as any)?.userRole || 'student',
         points: realPoints,
         level: user.level || 1,
         testsTaken: testsCount,
@@ -10683,6 +10761,17 @@ app.post("/api/auth/register", async (req: Request, res: Response) => {
   app.get('/api/student/dashboard', requireAuth, async (req: Request, res: Response) => {
     const userId = studentOnly(req, res);
     if (!userId) return;
+    if (mongoose.connection.readyState !== 1 && process.env.NODE_ENV !== 'production') {
+      return res.json({
+        totals: { tests: 0, questions: 0, correct: 0, wrong: 0, skipped: 0, averagePercentage: 0 },
+        recentTests: [],
+        weaknesses: [],
+        upcomingExam: null,
+        recommendedPlan: { level: 'foundation', sessionsPerWeek: 4, focus: 'ابدأ بالتأسيس ثم انتقل إلى التدريب المحوسب.' },
+        subscription: { state: 'none', type: 'free', status: 'active', endDate: null },
+        library: { folders: 0, books: 0, savedQuestions: 0 },
+      });
+    }
     try {
       const { User, TestResult, ErrorLog, ExamBooking, Subscription, Folder, FolderQuestion } = await import('../mongodb/models');
       const now = new Date();
