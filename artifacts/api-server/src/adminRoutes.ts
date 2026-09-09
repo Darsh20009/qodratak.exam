@@ -688,9 +688,12 @@ router.get('/users', requireAdminAuth, async (req: Request, res: Response) => {
   try {
     const page = parseInt(req.query.page as string) || 1;
     const limit = parseInt(req.query.limit as string) || 20;
-    const search = req.query.search as string;
+    const search = String(req.query.search || '').trim();
+    const requestedRole = String(req.query.role || 'all').trim();
+    const allowedRoles = new Set(['all', 'student', 'parent', 'teacher', 'institution_admin']);
+    const role = allowedRoles.has(requestedRole) ? requestedRole : 'all';
 
-    const result = await mongoStorage.getAllUsers(page, limit, search);
+    const result = await mongoStorage.getAllUsers(page, limit, search || undefined, role);
 
     res.json({
       users: result.users,
@@ -728,13 +731,58 @@ router.get('/users/:id', requireAdminAuth, async (req: Request, res: Response) =
 
 router.put('/users/:id', requireAdminAuth, async (req: Request, res: Response) => {
   try {
-    const updated = await mongoStorage.updateUser(req.params.id, req.body);
+    const { User } = await import('./mongodb/models');
+    if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
+      return res.status(400).json({ error: 'معرف المستخدم غير صالح' });
+    }
+    const existing = await User.findById(req.params.id).select('_id role');
+    if (!existing) {
+      return res.status(404).json({ error: 'المستخدم غير موجود' });
+    }
+
+    const allowedRoles = new Set(['student', 'parent', 'teacher', 'institution_admin']);
+    const allowedFields = [
+      'username', 'fullName', 'email', 'phone', 'role', 'institutionId',
+      'isActive', 'isVerified', 'emailVerified', 'points', 'level',
+      'academicTrack', 'gradeLevel', 'studyGoal', 'targetScore',
+      'guardianPhone', 'targetExamDate', 'bio', 'city', 'subscription',
+    ];
+    const updates: Record<string, unknown> = {};
+    for (const field of allowedFields) {
+      if (Object.prototype.hasOwnProperty.call(req.body || {}, field)) {
+        updates[field] = req.body[field];
+      }
+    }
+    if (updates.role && !allowedRoles.has(String(updates.role))) {
+      return res.status(400).json({ error: 'دور الحساب غير مسموح' });
+    }
+    if (Object.prototype.hasOwnProperty.call(updates, 'institutionId')) {
+      const institutionId = updates.institutionId;
+      updates.institutionId = institutionId ? String(institutionId) : undefined;
+    }
+    if (Object.prototype.hasOwnProperty.call(updates, 'username') && !String(updates.username || '').trim()) {
+      return res.status(400).json({ error: 'اسم المستخدم مطلوب' });
+    }
+    if (Object.prototype.hasOwnProperty.call(updates, 'email')) {
+      updates.email = String(updates.email || '').trim().toLowerCase() || undefined;
+    }
+    if (Object.prototype.hasOwnProperty.call(updates, 'phone')) {
+      updates.phone = String(updates.phone || '').trim() || undefined;
+    }
+
+    const updated = await mongoStorage.updateUser(req.params.id, updates as any);
     if (!updated) {
       return res.status(404).json({ error: 'المستخدم غير موجود' });
     }
-    res.json({ success: true, user: updated });
+    const safeUser = await User.findById(updated._id)
+      .select('-password -otpCode -otpExpiry -pinHash -totpSecret -recoveryPassphrase -resetPasswordToken -resetPasswordTokenExpiry -pushChallenge -pending2FAUserId -devices -webauthnCredentials')
+      .lean();
+    res.json({ success: true, user: safeUser });
   } catch (error) {
     console.error('Update user error:', error);
+    if ((error as any)?.code === 11000) {
+      return res.status(409).json({ error: 'اسم المستخدم أو البريد الإلكتروني مستخدم بالفعل' });
+    }
     res.status(500).json({ error: 'فشل في تحديث المستخدم' });
   }
 });
@@ -742,11 +790,18 @@ router.put('/users/:id', requireAdminAuth, async (req: Request, res: Response) =
 router.delete('/users/:id', requireAdminAuth, async (req: Request, res: Response) => {
   try {
     const { User } = await import('./mongodb/models');
+    if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
+      return res.status(400).json({ error: 'معرف المستخدم غير صالح' });
+    }
+    const currentAdminId = String((req.session as any)?.admin?.adminId || (req.session as any)?.adminId || '');
+    if (currentAdminId && currentAdminId === req.params.id) {
+      return res.status(400).json({ error: 'لا يمكن حذف حساب المدير المستخدم حاليًا' });
+    }
     const result = await User.findByIdAndDelete(req.params.id);
     if (!result) {
       return res.status(404).json({ error: 'المستخدم غير موجود' });
     }
-    res.json({ success: true });
+    res.json({ success: true, message: 'تم حذف الحساب مع الاحتفاظ بالسجلات التاريخية المرتبطة به' });
   } catch (error) {
     console.error('Delete user error:', error);
     res.status(500).json({ error: 'فشل في حذف المستخدم' });

@@ -60,7 +60,7 @@ export class MongoStorage {
     }, { new: true });
   }
 
-  async getAllUsers(page = 1, limit = 20, search?: string): Promise<{ users: IUser[], total: number }> {
+  async getAllUsers(page = 1, limit = 20, search?: string, role?: string): Promise<{ users: IUser[], total: number }> {
     const query: any = {};
     if (search) {
       query.$or = [
@@ -70,9 +70,13 @@ export class MongoStorage {
         { phone: { $regex: search, $options: 'i' } },
       ];
     }
+    if (role && role !== 'all') {
+      query.role = role;
+    }
     
     const total = await User.countDocuments(query);
     const users = await User.find(query)
+      .select('-password -otpCode -otpExpiry -pinHash -totpSecret -recoveryPassphrase -resetPasswordToken -resetPasswordTokenExpiry -pushChallenge -pending2FAUserId -devices -webauthnCredentials')
       .sort({ createdAt: -1 })
       .skip((page - 1) * limit)
       .limit(limit);
