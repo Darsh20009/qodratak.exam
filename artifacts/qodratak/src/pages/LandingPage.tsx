@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Link } from "wouter";
 import {
   ArrowLeft,
@@ -21,7 +21,9 @@ import { ThemeToggle } from "@/components/ThemeToggle";
 const NAVY = "#171723";
 const SIGNAL = "#FF8A70";
 const MINT = "#91D7C5";
-const SAUDI_CERTIFICATE_URL = "https://eauthenticate.saudibusiness.gov.sa/certificate-details/0000321867?vt=1.WGT.1788911379.hlwg8kpZR93H.SYkJa9I1EF-CZ2Mj1zFLtk60KmeDzcc83I8opT_-mFo";
+const SAUDI_CERTIFICATE_TOKEN = "QVllTDdEcm91V0cxa25lTW1iRUJzQT09";
+const SAUDI_CERTIFICATE_FALLBACK_URL = "https://eauthenticate.saudibusiness.gov.sa/certificate-details/0000321867?vt=1.WGT.1788911379.hlwg8kpZR93H.SYkJa9I1EF-CZ2Mj1zFLtk60KmeDzcc83I8opT_-mFo";
+const SAUDI_CERTIFICATE_SEAL_SCRIPT = "https://eauthenticate.saudibusiness.gov.sa/EAuthSealApi/seal.js";
 
 function currentVerificationDate() {
   const date = new Date();
@@ -34,7 +36,46 @@ function currentVerificationDate() {
 
 function SaudiBusinessSeal() {
   const [certificateOpen, setCertificateOpen] = useState(false);
+  const [verificationUrl, setVerificationUrl] = useState(SAUDI_CERTIFICATE_FALLBACK_URL);
+  const sealRef = useRef<HTMLDivElement>(null);
   const verificationDate = currentVerificationDate();
+
+  useEffect(() => {
+    if (!certificateOpen || !sealRef.current) return;
+
+    const seal = sealRef.current;
+    const readVerificationUrl = () => {
+      const generatedLink = seal.querySelector<HTMLAnchorElement>("a[href]");
+      const generatedUrl = generatedLink?.href;
+
+      if (generatedUrl && /^https?:\/\//i.test(generatedUrl)) {
+        setVerificationUrl(generatedUrl);
+      }
+    };
+
+    const observer = new MutationObserver(readVerificationUrl);
+    observer.observe(seal, {
+      childList: true,
+      subtree: true,
+      attributes: true,
+      attributeFilter: ["href", "data-href", "data-url"],
+    });
+
+    const script = document.createElement("script");
+    script.src = SAUDI_CERTIFICATE_SEAL_SCRIPT;
+    script.async = true;
+    script.addEventListener("load", readVerificationUrl);
+    document.body.appendChild(script);
+
+    const retryTimer = window.setTimeout(readVerificationUrl, 1500);
+
+    return () => {
+      observer.disconnect();
+      script.removeEventListener("load", readVerificationUrl);
+      script.remove();
+      window.clearTimeout(retryTimer);
+    };
+  }, [certificateOpen]);
 
   return (
     <>
@@ -79,6 +120,13 @@ function SaudiBusinessSeal() {
                   <img src="/saudi-certificate-qr.png" alt="رمز الاستجابة السريعة للتحقق" />
                 </div>
               </div>
+              <div
+                ref={sealRef}
+                className="sbc-verify-seal sr-only"
+                data-token={SAUDI_CERTIFICATE_TOKEN}
+                data-position="bottom-left"
+                aria-hidden="true"
+              />
               <div className="sbc-certificate-status">
                 <span>الحالة:</span>
                 <strong>سارية</strong>
@@ -88,7 +136,7 @@ function SaudiBusinessSeal() {
               </p>
               <a
                 className="sbc-certificate-link"
-                href={SAUDI_CERTIFICATE_URL}
+                href={verificationUrl}
                 target="_blank"
                 rel="noreferrer"
               >
