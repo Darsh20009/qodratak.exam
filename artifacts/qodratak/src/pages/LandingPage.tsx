@@ -79,39 +79,6 @@ function SaudiBusinessSeal() {
 
   return (
     <>
-      {!certificateOpen && (
-        <div
-          role="button"
-          tabIndex={0}
-          className="sbc-badge-trigger"
-          onClick={(event) => {
-            if (!(event.target as HTMLElement).closest("a[href]")) {
-              setCertificateOpen(true);
-            }
-          }}
-          onKeyDown={(event) => {
-            if (event.key === "Enter" || event.key === " ") {
-              event.preventDefault();
-              setCertificateOpen(true);
-            }
-          }}
-          aria-label="عرض شهادة توثيق متجر قدراتك"
-          aria-haspopup="dialog"
-        >
-          <img
-            className="sbc-seal-fallback"
-            src="/saudi-business-badge.png"
-            alt="متجر موثق"
-          />
-          <div
-            ref={sealRef}
-            className="sbc-verify-seal"
-            data-token={SAUDI_CERTIFICATE_TOKEN}
-            data-position="bottom-left"
-          />
-        </div>
-      )}
-
       {certificateOpen && (
         <div
           className="sbc-certificate-backdrop"
