@@ -558,6 +558,20 @@ export function AuthModal({ open, mode, onClose, onModeChange }: { open: boolean
                 {/* Student Signup Fields */}
                 {mode === "signup" && accountType === "student" && !otpSent && !phoneToken && <label className="block"><span className="mb-1.5 flex items-center gap-1.5 text-xs font-black text-[#4F4A58]"><Phone className="h-3.5 w-3.5" /> رقم الجوال</span><PhoneField code={countryCode} number={phone} onCode={setCountryCode} onNumber={setPhone} /></label>}
                 {mode === "signup" && accountType === "student" && otpSent && !phoneToken && <div className="relative"><KeyRound className="pointer-events-none absolute right-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-[#8B8278]" /><input required inputMode="numeric" autoComplete="one-time-code" value={otp} onChange={(event) => setOtp(normalizeInputDigits(event.target.value).replace(/\D/g, "").slice(0, 4))} placeholder="رمز واتساب المكون من 4 أرقام" dir="ltr" className="h-12 w-full rounded-xl border border-[#24202D]/15 bg-[#F8F6F1] px-11 text-center text-sm tracking-[.2em] outline-none focus:border-[#171723]" /></div>}
+                {mode === "signup" && accountType === "student" && otpSent && !phoneToken && (
+                  <div className="flex items-center justify-between rounded-xl border border-[#24202D]/10 bg-white px-3 py-2.5">
+                    <span className="text-[11px] font-bold text-[#6B625B]">لم يصلك الرمز؟</span>
+                    <button
+                      type="button"
+                      onClick={resendPhoneOtp}
+                      disabled={loading || resendAfter > 0}
+                      className="text-xs font-black text-[#171723] underline decoration-[#171723]/25 underline-offset-4 disabled:cursor-not-allowed disabled:text-[#9B948C] disabled:no-underline"
+                      data-testid="button-signup-resend-whatsapp-otp"
+                    >
+                      {resendAfter > 0 ? `إعادة الإرسال بعد ${resendAfter} ث` : "إعادة إرسال رمز واتساب"}
+                    </button>
+                  </div>
+                )}
                 {mode === "signup" && accountType === "student" && phoneToken && <>
                   <div className="flex items-center gap-2 rounded-xl bg-[#EFF8F4] px-3 py-2 text-xs font-bold text-[#398B79]"><CheckCircle2 className="h-4 w-4" /> تم تأكيد رقم الجوال، أكمل بياناتك</div>
                   <div className="relative"><User className="pointer-events-none absolute right-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-[#8B8278]" /><input required value={fullName} onChange={(event) => setFullName(event.target.value)} placeholder="الاسم الثنائي" autoComplete="name" className="h-12 w-full rounded-xl border border-[#24202D]/15 bg-[#F8F6F1] px-11 text-sm outline-none focus:border-[#171723]" /></div>
