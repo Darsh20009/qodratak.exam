@@ -186,6 +186,44 @@
   color: hsl(var(--muted-foreground)) !important;
 }
 
+.dark .qodratak-admin-login-surface {
+  background-color: #0d1817 !important;
+  color: #edf7f2 !important;
+}
+
+.dark .qodratak-admin-login-surface [class~="text-[#625D69]"],
+.dark .qodratak-admin-login-surface [class~="text-[#8E8993]"],
+.dark .qodratak-admin-login-surface [class~="text-[#9E99A2]"] {
+  color: #9fb4ab !important;
+}
+
+.dark .qodratak-admin-login-surface input {
+  background-color: #162725 !important;
+  border-color: #2b4840 !important;
+  color: #edf7f2 !important;
+}
+
+.dark .qodratak-admin-login-surface input::placeholder {
+  color: #81988e !important;
+}
+
+.dark .qodratak-admin-login-surface [class~="bg-[#F4AA85]/10"] {
+  background-color: #30291e !important;
+}
+
+.dark .qodratak-admin-login-surface [class~="text-[#8D482C]"],
+.dark .qodratak-admin-login-surface [class~="text-[#B65D36]"] {
+  color: #f1c58f !important;
+}
+
+.dark .qodratak-admin-login-surface [class~="bg-[#24202D]"] {
+  background-color: #173834 !important;
+}
+
+.dark .qodratak-admin-login-surface [class~="bg-[#24202D]"]:hover {
+  background-color: #237f79 !important;
+}
+
 .dark [data-radix-dialog-content] [class~="bg-[#FFFCF7]"],
 .dark [data-radix-dialog-content] [class~="bg-[#F8F6F1]"] {
   background-color: hsl(var(--card)) !important;
@@ -199,6 +237,174 @@
 .dark [data-radix-dialog-content] [class~="text-[#6B625B]"],
 .dark [data-radix-dialog-content] [class~="text-[#8B8278]"] {
   color: hsl(var(--muted-foreground)) !important;
+}
+
+/* Admin workspace theme bridge.
+   The admin area still contains legacy utility classes with fixed dark
+   surfaces, while the approved overview has its own light palette. Keep the
+   bridge scoped to admin pages so the student experience is unaffected. */
+.qodratak-admin-surface {
+  --admin-surface: #f2f5f0;
+  --admin-panel: #fbfcf8;
+  --admin-panel-muted: #f7faf6;
+  --admin-border: #dfe4df;
+  --admin-text: #173834;
+  --admin-muted: #75807a;
+  --admin-navigation: #ffffff;
+  background-color: var(--admin-surface) !important;
+  color: var(--admin-text) !important;
+}
+
+.dark .qodratak-admin-surface {
+  --admin-surface: #07111f;
+  --admin-panel: #0d1c2c;
+  --admin-panel-muted: #12283a;
+  --admin-border: rgba(255, 255, 255, 0.1);
+  --admin-text: #f3f7f4;
+  --admin-muted: #94a7a1;
+  --admin-navigation: #0a1726;
+}
+
+.qodratak-admin-surface > main {
+  background-color: var(--admin-surface);
+  color: var(--admin-text);
+}
+
+.qodratak-admin-surface > aside {
+  background-color: var(--admin-navigation) !important;
+  border-color: var(--admin-border) !important;
+}
+
+.light .qodratak-admin-surface > aside [class~="text-white"],
+.light .qodratak-admin-surface > aside [class~="text-slate-400"] {
+  color: #53645d !important;
+}
+
+.light .qodratak-admin-surface > aside [class~="text-slate-500"],
+.light .qodratak-admin-surface > aside [class~="text-slate-600"] {
+  color: #89948d !important;
+}
+
+.light .qodratak-admin-surface > aside [class~="border-white/[0.08]"],
+.light .qodratak-admin-surface > aside [class~="border-white/10"] {
+  border-color: #dfe4df !important;
+}
+
+.light .qodratak-admin-surface > aside [class~="bg-white/[0.035]"],
+.light .qodratak-admin-surface > aside [class~="bg-white/[0.05]"] {
+  background-color: #f8faf7 !important;
+}
+
+.light .qodratak-admin-surface > aside [class~="text-[#d7ffa1]"] {
+  color: #237f79 !important;
+}
+
+.light .qodratak-admin-surface > aside [class~="bg-[#b8f36b]/10"] {
+  background-color: #e8f2ed !important;
+}
+
+.light .qodratak-admin-surface > aside [class~="text-red-300"] {
+  color: #bd6558 !important;
+}
+
+.light .qodratak-admin-surface > main > div:first-child {
+  background-color: rgba(249, 251, 247, 0.92) !important;
+  border-color: #dfe4df !important;
+}
+
+.light .qodratak-admin-surface > main > div:first-child [class~="text-white"] {
+  color: #173834 !important;
+}
+
+.light .qodratak-admin-surface > main > div:first-child [class~="text-slate-400"],
+.light .qodratak-admin-surface > main > div:first-child [class~="text-slate-500"] {
+  color: #75807a !important;
+}
+
+.light .qodratak-admin-surface [class~="bg-[#07111F]"],
+.light .qodratak-admin-surface [class~="bg-[#0A1726]"],
+.light .qodratak-admin-surface [class~="bg-[#0d1c2c]"],
+.light .qodratak-admin-surface [class~="bg-slate-800"],
+.light .qodratak-admin-surface [class~="bg-slate-900"] {
+  background-color: var(--admin-panel) !important;
+}
+
+.light .qodratak-admin-surface [class~="text-slate-100"],
+.light .qodratak-admin-surface [class~="text-white"] {
+  color: var(--admin-text) !important;
+}
+
+.light .qodratak-admin-surface [class~="text-slate-300"],
+.light .qodratak-admin-surface [class~="text-slate-400"],
+.light .qodratak-admin-surface [class~="text-slate-500"],
+.light .qodratak-admin-surface [class~="text-slate-600"] {
+  color: var(--admin-muted) !important;
+}
+
+.light .qodratak-admin-surface [class~="border-white/[0.08]"],
+.light .qodratak-admin-surface [class~="border-white/10"],
+.light .qodratak-admin-surface [class~="border-white/15"] {
+  border-color: var(--admin-border) !important;
+}
+
+.dark .admin-overview-premium {
+  background-color: #0d1817 !important;
+  color: #edf7f2 !important;
+}
+
+.dark .admin-overview-premium .admin-overview-card {
+  background-color: #162725 !important;
+  border-color: #2b4840 !important;
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.2) !important;
+}
+
+.dark .admin-overview-premium [class~="text-[#173834]"],
+.dark .admin-overview-premium [class~="text-[#304942]"],
+.dark .admin-overview-premium [class~="text-[#3d554d]"],
+.dark .admin-overview-premium [class~="text-[#53645d]"] {
+  color: #edf7f2 !important;
+}
+
+.dark .admin-overview-premium [class~="text-[#617069]"],
+.dark .admin-overview-premium [class~="text-[#697871]"],
+.dark .admin-overview-premium [class~="text-[#718078]"],
+.dark .admin-overview-premium [class~="text-[#75807a]"],
+.dark .admin-overview-premium [class~="text-[#7f8c84]"],
+.dark .admin-overview-premium [class~="text-[#86918a]"],
+.dark .admin-overview-premium [class~="text-[#89948d]"],
+.dark .admin-overview-premium [class~="text-[#8c9991]"],
+.dark .admin-overview-premium [class~="text-[#95a098]"] {
+  color: #9fb4ab !important;
+}
+
+.dark .admin-overview-premium [class~="bg-[#f7faf6]"],
+.dark .admin-overview-premium [class~="bg-[#f8faf7]"],
+.dark .admin-overview-premium [class~="bg-[#f5f8f4]"],
+.dark .admin-overview-premium [class~="bg-[#f3f6f2]"],
+.dark .admin-overview-premium [class~="bg-[#edf1ec]"],
+.dark .admin-overview-premium [class~="bg-[#edf0eb]"] {
+  background-color: #1c302d !important;
+}
+
+.dark .admin-overview-premium [class~="border-[#dfe4df]"],
+.dark .admin-overview-premium [class~="border-[#e3e8e2]"],
+.dark .admin-overview-premium [class~="border-[#e8ece7]"] {
+  border-color: #2b4840 !important;
+}
+
+.dark .admin-overview-premium [class~="bg-[#fffaf0]"],
+.dark .admin-overview-premium [class~="bg-[#fff8f6]"] {
+  background-color: #30291e !important;
+}
+
+.dark .admin-overview-premium [class~="text-[#62502d]"],
+.dark .admin-overview-premium [class~="text-[#674641]"],
+.dark .admin-overview-premium [class~="text-[#8b7040]"] {
+  color: #f1d59b !important;
+}
+
+.dark .admin-overview-premium [class~="bg-[#f3faf6]"] {
+  background-color: #17332c !important;
 }
 
 /* A restrained visual layer for the student app: keep useful interaction
