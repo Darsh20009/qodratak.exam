@@ -1,4 +1,5 @@
 import mongoose from 'mongoose';
+import { mongoHealthAlertMonitor } from "../services/mongodbHealthAlert";
 
 let isConnected = false;
 let connectionListenersRegistered = false;
@@ -9,20 +10,23 @@ function registerConnectionListeners(): void {
 
   mongoose.connection.on('connected', () => {
     isConnected = true;
+    mongoHealthAlertMonitor.markConnected();
   });
 
   mongoose.connection.on('reconnected', () => {
     isConnected = true;
+    mongoHealthAlertMonitor.markConnected();
   });
 
-  mongoose.connection.on('error', (err) => {
-    console.error('MongoDB connection error:', err);
+  mongoose.connection.on('error', () => {
     isConnected = false;
+    mongoHealthAlertMonitor.markDisconnected();
   });
 
   mongoose.connection.on('disconnected', () => {
     console.log('MongoDB disconnected');
     isConnected = false;
+    mongoHealthAlertMonitor.markDisconnected();
   });
 }
 
@@ -55,7 +59,7 @@ export async function connectToMongoDB(): Promise<boolean> {
 
     return true;
   } catch (error) {
-    console.error('❌ Failed to connect to MongoDB:', error);
+    mongoHealthAlertMonitor.markDisconnected();
     throw error;
   }
 }
@@ -68,6 +72,7 @@ export async function disconnectFromMongoDB(): Promise<void> {
   if (isConnected) {
     await mongoose.disconnect();
     isConnected = false;
+    mongoHealthAlertMonitor.markConnected();
     console.log('Disconnected from MongoDB');
   }
 }
