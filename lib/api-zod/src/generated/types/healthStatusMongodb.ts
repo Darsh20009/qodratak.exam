@@ -5,13 +5,6 @@
  * API specification
  * OpenAPI spec version: 0.1.0
  */
-export type HealthStatusStatus = typeof HealthStatusStatus[keyof typeof HealthStatusStatus];
-
-
-export const HealthStatusStatus = {
-  ok: 'ok',
-  unhealthy: 'unhealthy',
-} as const;
 
 export type HealthStatusMongodb = typeof HealthStatusMongodb[keyof typeof HealthStatusMongodb];
 
@@ -20,9 +13,3 @@ export const HealthStatusMongodb = {
   connected: 'connected',
   disconnected: 'disconnected',
 } as const;
-
-export interface HealthStatus {
-  status: HealthStatusStatus;
-  mongodb: HealthStatusMongodb;
-}
-

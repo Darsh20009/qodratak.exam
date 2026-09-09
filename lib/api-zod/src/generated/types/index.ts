@@ -7,3 +7,5 @@
  */
 
 export * from './healthStatus';
+export * from './healthStatusMongodb';
+export * from './healthStatusStatus';

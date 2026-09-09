@@ -1,12 +1,38 @@
 import mongoose from 'mongoose';
 
 let isConnected = false;
+let connectionListenersRegistered = false;
+
+function registerConnectionListeners(): void {
+  if (connectionListenersRegistered) return;
+  connectionListenersRegistered = true;
+
+  mongoose.connection.on('connected', () => {
+    isConnected = true;
+  });
+
+  mongoose.connection.on('reconnected', () => {
+    isConnected = true;
+  });
+
+  mongoose.connection.on('error', (err) => {
+    console.error('MongoDB connection error:', err);
+    isConnected = false;
+  });
+
+  mongoose.connection.on('disconnected', () => {
+    console.log('MongoDB disconnected');
+    isConnected = false;
+  });
+}
 
 export async function connectToMongoDB(): Promise<boolean> {
   if (getConnectionStatus()) {
     console.log('📦 MongoDB-backed storage is already active');
     return true;
   }
+
+  registerConnectionListeners();
 
   const mongoUri = process.env.MONGODB_URI;
 
@@ -26,16 +52,6 @@ export async function connectToMongoDB(): Promise<boolean> {
 
     isConnected = true;
     console.log(`✅ MongoDB-backed storage active (database: ${mongoose.connection.name})`);
-
-    mongoose.connection.on('error', (err) => {
-      console.error('MongoDB connection error:', err);
-      isConnected = false;
-    });
-
-    mongoose.connection.on('disconnected', () => {
-      console.log('MongoDB disconnected');
-      isConnected = false;
-    });
 
     return true;
   } catch (error) {
