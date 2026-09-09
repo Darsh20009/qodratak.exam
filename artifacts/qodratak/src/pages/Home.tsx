@@ -105,27 +105,6 @@ const statisticsData = [
   { value: "∞", label: "فرص للتعلم", icon: Trophy, color: "text-orange-500" }
 ];
 
-const testimonials = [
-  {
-    name: "أحمد محمد",
-    text: "منصة رائعة ساعدتني في تحسين درجتي في اختبار قياس بشكل كبير",
-    avatar: "👨‍🎓",
-    rating: 5
-  },
-  {
-    name: "فاطمة السعيد",
-    text: "التحديات التفاعلية جعلت التعلم أكثر متعة وفعالية",
-    avatar: "👩‍💼",
-    rating: 5
-  },
-  {
-    name: "خالد العتيبي",
-    text: "أفضل منصة للتحضير لاختبارات القدرات، نتائج مذهلة!",
-    avatar: "👨‍🏫",
-    rating: 5
-  }
-];
-
 const RecentTestResults: React.FC<{ userId?: string | number }> = ({ userId }) => {
   const { data: testResults = [], isLoading } = useQuery<any[]>({
     queryKey: ['/api/test-results/user', userId],
@@ -203,6 +182,20 @@ const Home: React.FC = () => {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [user, setUser] = useState<any>(null);
   const [currentTime, setCurrentTime] = useState(new Date());
+  const { data: approvedReviewsData, isLoading: reviewsLoading } = useQuery<{
+    reviews?: Array<{ id?: string; _id?: string; authorName?: string; text: string; rating: number }>;
+  }>({
+    queryKey: ['/api/platform-reviews/approved'],
+    queryFn: getQueryFn({ on401: "returnNull" }),
+    staleTime: 30_000,
+  });
+  const testimonials = (approvedReviewsData?.reviews || []).map((review, index) => ({
+    id: review.id || review._id || `review-${index}`,
+    name: review.authorName || 'طالب قدراتك',
+    text: review.text,
+    avatar: '🎓',
+    rating: Math.max(1, Math.min(5, review.rating || 5)),
+  }));
 
   useEffect(() => {
     const checkLoginStatus = async () => {
@@ -755,28 +748,38 @@ const Home: React.FC = () => {
             </p>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            {testimonials.map((testimonial, index) => (
-              <Card key={index} className="group relative p-6 bg-gradient-to-br from-background/95 to-background/90 hover:shadow-2xl transition-all duration-500 hover:-translate-y-2 border-2 border-border/50 hover:border-primary/30">
-                <CardContent className="p-0">
-                  <div className="flex items-center gap-4 mb-4">
-                    <div className="text-3xl animate-bounce" style={{animationDelay: `${index * 0.2}s`}}>
-                      {testimonial.avatar}
-                    </div>
-                    <div>
-                      <h4 className="font-bold text-lg">{testimonial.name}</h4>
-                      <div className="flex gap-1">
-                        {[...Array(testimonial.rating)].map((_, i) => (
-                          <span key={i} className="text-yellow-400 animate-pulse" style={{animationDelay: `${i * 0.1}s`}}>⭐</span>
-                        ))}
+          {reviewsLoading ? (
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+              {[0, 1, 2].map((item) => <div key={item} className="h-44 animate-pulse rounded-2xl border border-border/50 bg-background/60" />)}
+            </div>
+          ) : testimonials.length > 0 ? (
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+              {testimonials.map((testimonial, index) => (
+                <Card key={testimonial.id} className="group relative p-6 bg-gradient-to-br from-background/95 to-background/90 hover:shadow-2xl transition-all duration-500 hover:-translate-y-2 border-2 border-border/50 hover:border-primary/30">
+                  <CardContent className="p-0">
+                    <div className="flex items-center gap-4 mb-4">
+                      <div className="text-3xl" aria-hidden="true">
+                        {testimonial.avatar}
+                      </div>
+                      <div>
+                        <h4 className="font-bold text-lg">{testimonial.name}</h4>
+                        <div className="flex gap-1" aria-label={`التقييم ${testimonial.rating} من 5`}>
+                          {[...Array(testimonial.rating)].map((_, i) => (
+                            <span key={i} className="text-yellow-400">★</span>
+                          ))}
+                        </div>
                       </div>
                     </div>
-                  </div>
-                  <p className="text-muted-foreground italic">"{testimonial.text}"</p>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
+                    <p className="text-muted-foreground italic">"{testimonial.text}"</p>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          ) : (
+            <div className="mx-auto max-w-2xl rounded-2xl border border-dashed border-border/70 bg-background/50 px-6 py-10 text-center text-muted-foreground">
+              ستظهر هنا تقييمات الطلاب بعد مراجعتها واعتمادها من فريق قدراتك.
+            </div>
+          )}
         </div>
       </section>
 

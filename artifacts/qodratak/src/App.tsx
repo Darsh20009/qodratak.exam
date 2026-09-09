@@ -811,7 +811,7 @@ function Router({ splashDone }: { splashDone: boolean }) {
   return (
     <>
       {splashDone && <RotateDevicePrompt />}
-      <RouteSEO />
+       <RouteSEO isAuthenticated={Boolean(serverUser)} isLoading={isUserLoading} />
       <AuthenticatedRouteBoundary>
       <PageTransition>
       <Switch>

@@ -6,6 +6,7 @@ import AdminSeasonalExamsTab from './AdminSeasonalExamsTab';
 import AdminFoundationManagementTab from './AdminFoundationManagementTab';
 import WhatsAppAdminTab from './WhatsAppAdminTab';
 import EmailAdminTab from './EmailAdminTab';
+import AdminOverview from './AdminOverview';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -523,23 +524,23 @@ export default function AdminDashboard({ initialTab = 'overview' }: { initialTab
   const handleTabChange = (key: string) => { setActiveTab(key); setIsMobileSidebarOpen(false); };
 
   return (
-    <div className="qodratak-admin-surface min-h-screen bg-[#F7F4EE] text-[#24202D] flex" dir="rtl">
+    <div className="qodratak-admin-surface min-h-screen bg-[#07111F] text-slate-100 flex" dir="rtl">
       {/* Mobile Overlay */}
       {isMobileSidebarOpen && (
         <div className="fixed inset-0 bg-black/60 z-30 lg:hidden" onClick={() => setIsMobileSidebarOpen(false)} />
       )}
 
       {/* ═══ SIDEBAR ═══ */}
-      <aside className={`fixed lg:static inset-y-0 right-0 z-40 flex h-screen w-64 flex-shrink-0 flex-col overflow-y-auto border-l border-[#24202D]/10 bg-[#FFFCF7] transition-transform duration-300 ${isMobileSidebarOpen ? 'translate-x-0' : 'translate-x-full lg:translate-x-0'}`}>
+      <aside className={`fixed lg:static inset-y-0 right-0 z-40 flex h-screen w-72 flex-shrink-0 flex-col overflow-y-auto border-l border-white/[0.08] bg-[#0A1726] transition-transform duration-300 ${isMobileSidebarOpen ? 'translate-x-0' : 'translate-x-full lg:translate-x-0'}`}>
         {/* Logo */}
-        <div className="border-b border-[#24202D]/10 p-5">
+        <div className="border-b border-white/[0.08] p-5">
           <div className="flex items-center gap-3">
-            <div className="h-11 w-11 overflow-hidden rounded-2xl border border-[#24202D]/10 bg-[#F7F4EE] p-1">
+            <div className="h-11 w-11 overflow-hidden rounded-2xl border border-[#b8f36b]/20 bg-white/[0.06] p-1">
               <img src="/qodratak-logo-transparent.png" alt="قدراتك" className="w-full h-full object-contain" />
             </div>
             <div>
-              <p className="text-sm font-bold text-[#24202D]">لوحة التحكم</p>
-              <p className="flex items-center gap-1 text-xs text-[#625D69]">
+              <p className="text-sm font-bold text-white">لوحة التحكم</p>
+              <p className="flex items-center gap-1 text-xs text-slate-500">
                 <Shield className="w-3 h-3" />
                 قدراتك — المدير
               </p>
@@ -548,14 +549,14 @@ export default function AdminDashboard({ initialTab = 'overview' }: { initialTab
         </div>
 
         {/* Admin info */}
-        <div className="border-b border-[#24202D]/10 p-4">
-          <div className="flex items-center gap-3 rounded-xl border border-[#24202D]/10 bg-[#F7F4EE] p-3">
-            <div className="flex h-9 w-9 items-center justify-center rounded-full bg-[#24202D] text-sm font-bold text-[#FFFCF7]">
+        <div className="border-b border-white/[0.08] p-4">
+          <div className="flex items-center gap-3 rounded-2xl border border-white/[0.08] bg-white/[0.035] p-3">
+            <div className="flex h-9 w-9 items-center justify-center rounded-full bg-[#b8f36b] text-sm font-black text-[#07111F]">
               {admin?.fullName?.[0] || admin?.username?.[0] || 'A'}
             </div>
             <div className="min-w-0">
-              <p className="truncate text-sm font-medium text-[#24202D]">{admin?.fullName || admin?.username}</p>
-              <p className="text-xs text-[#625D69]">{admin?.role === 'super_admin' ? 'مدير عام' : 'مدير'}</p>
+              <p className="truncate text-sm font-medium text-white">{admin?.fullName || admin?.username}</p>
+              <p className="text-xs text-slate-500">{admin?.role === 'super_admin' ? 'مدير عام' : 'مدير'}</p>
             </div>
           </div>
         </div>
@@ -563,7 +564,7 @@ export default function AdminDashboard({ initialTab = 'overview' }: { initialTab
         {/* Navigation */}
         <nav className="flex-1 space-y-4 p-3">
           <div className="space-y-0.5">
-            <p className="px-3 pb-2 text-[10px] font-bold tracking-wide text-[#8E8993]">الأساسيات</p>
+            <p className="px-3 pb-2 text-[10px] font-bold tracking-wide text-slate-600">الأساسيات</p>
             {NAV_ITEMS.filter(item => PRIMARY_ADMIN_NAV_KEYS.has(item.key)).map(item => {
             const isActive = activeTab === item.key;
             const hasBadge = (item.key === 'subscriptions' && pendingSubCount > 0) || (item.key === 'institutions' && pendingInstCount > 0);
@@ -573,18 +574,18 @@ export default function AdminDashboard({ initialTab = 'overview' }: { initialTab
                 onClick={() => handleTabChange(item.key)}
                 className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all ${
                   isActive
-                    ? 'border border-[#F4AA85]/40 bg-[#F4AA85]/20 text-[#24202D]'
-                    : 'text-[#625D69] hover:bg-[#F7F4EE] hover:text-[#24202D]'
+                     ? 'border border-[#b8f36b]/25 bg-[#b8f36b]/10 text-[#d7ffa1]'
+                     : 'text-slate-400 hover:bg-white/[0.05] hover:text-white'
                 }`}
               >
-                <item.icon className={`h-4 w-4 ${isActive ? 'text-[#B65D36]' : item.color}`} />
+                 <item.icon className={`h-4 w-4 ${isActive ? 'text-[#b8f36b]' : 'text-slate-500'}`} />
                 <span className="flex-1 text-right">{item.label}</span>
                 {hasBadge && (
                   <span className="w-5 h-5 rounded-full bg-red-500 text-white text-xs flex items-center justify-center font-bold shadow-md">
                     {item.key === 'subscriptions' ? pendingSubCount : pendingInstCount}
                   </span>
                 )}
-                {isActive && <ChevronRight className="h-3 w-3 text-[#B65D36]" />}
+                 {isActive && <ChevronRight className="h-3 w-3 text-[#b8f36b]" />}
               </button>
             );
             })}
@@ -593,7 +594,7 @@ export default function AdminDashboard({ initialTab = 'overview' }: { initialTab
             <button
               type="button"
               onClick={() => setShowMoreAdminNav((value) => !value)}
-              className="flex w-full items-center justify-between rounded-xl px-3 py-2 text-[10px] font-bold tracking-wide text-[#8E8993] transition-colors hover:bg-[#F7F4EE] hover:text-[#24202D]"
+               className="flex w-full items-center justify-between rounded-xl px-3 py-2 text-[10px] font-bold tracking-wide text-slate-600 transition-colors hover:bg-white/[0.05] hover:text-white"
               aria-expanded={showMoreAdminNav}
             >
               <span>المزيد من الأدوات</span>
@@ -608,14 +609,14 @@ export default function AdminDashboard({ initialTab = 'overview' }: { initialTab
                   onClick={() => handleTabChange(item.key)}
                   className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all ${
                     isActive
-                      ? 'border border-[#F4AA85]/40 bg-[#F4AA85]/20 text-[#24202D]'
-                      : 'text-[#625D69] hover:bg-[#F7F4EE] hover:text-[#24202D]'
+                     ? 'border border-[#b8f36b]/25 bg-[#b8f36b]/10 text-[#d7ffa1]'
+                     : 'text-slate-400 hover:bg-white/[0.05] hover:text-white'
                   }`}
                 >
-                  <item.icon className={`h-4 w-4 ${isActive ? 'text-[#B65D36]' : item.color}`} />
+                   <item.icon className={`h-4 w-4 ${isActive ? 'text-[#b8f36b]' : 'text-slate-500'}`} />
                   <span className="flex-1 text-right">{item.label}</span>
                   {hasBadge && <span className="w-5 h-5 rounded-full bg-red-500 text-white text-xs flex items-center justify-center font-bold shadow-md">{pendingInstCount}</span>}
-                  {isActive && <ChevronRight className="h-3 w-3 text-[#B65D36]" />}
+                   {isActive && <ChevronRight className="h-3 w-3 text-[#b8f36b]" />}
                 </button>
               );
             })}
@@ -623,10 +624,10 @@ export default function AdminDashboard({ initialTab = 'overview' }: { initialTab
         </nav>
 
         {/* Logout */}
-        <div className="border-t border-[#24202D]/10 p-3">
+        <div className="border-t border-white/[0.08] p-3">
           <button
             onClick={handleLogout}
-            className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-red-400 hover:bg-red-500/10 hover:text-red-300 transition-all"
+             className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-red-300 hover:bg-red-500/10 hover:text-red-200 transition-all"
           >
             <LogOut className="w-4 h-4" />
             <span>تسجيل الخروج</span>
@@ -637,54 +638,54 @@ export default function AdminDashboard({ initialTab = 'overview' }: { initialTab
       {/* ═══ MAIN CONTENT ═══ */}
       <main className="flex-1 overflow-y-auto min-w-0">
         {/* Top bar */}
-        <div className="sticky top-0 z-10 flex items-center justify-between border-b border-[#24202D]/10 bg-[#FFFCF7]/95 px-4 py-4 backdrop-blur md:px-6">
+        <div className="sticky top-0 z-10 flex items-center justify-between border-b border-white/[0.08] bg-[#07111F]/90 px-4 py-4 backdrop-blur-xl md:px-8">
           <div className="flex items-center gap-3">
-            <button onClick={() => setIsMobileSidebarOpen(true)} className="flex h-9 w-9 items-center justify-center rounded-lg bg-[#F7F4EE] text-[#625D69] transition-colors hover:text-[#24202D] lg:hidden">
+             <button onClick={() => setIsMobileSidebarOpen(true)} className="flex h-9 w-9 items-center justify-center rounded-lg border border-white/10 bg-white/[0.04] text-slate-400 transition-colors hover:text-white lg:hidden">
               <Menu className="w-5 h-5" />
             </button>
             <div>
               <h1 className="flex items-center gap-2 text-base font-bold text-[#24202D] md:text-lg">
-                {(() => { const item = NAV_ITEMS.find(n => n.key === activeTab); return item ? <item.icon className={`w-5 h-5 ${item.color}`} /> : null; })()}
-                {NAV_ITEMS.find(n => n.key === activeTab)?.label}
+                 {(() => { const item = NAV_ITEMS.find(n => n.key === activeTab); return item ? <item.icon className="w-5 h-5 text-[#b8f36b]" /> : null; })()}
+                 <span className="text-white">{NAV_ITEMS.find(n => n.key === activeTab)?.label}</span>
               </h1>
-              <p className="hidden text-xs text-[#625D69] md:block">{new Date().toLocaleDateString('ar-SA', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</p>
+               <p className="hidden text-xs text-slate-500 md:block">{new Date().toLocaleDateString('ar-SA', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</p>
             </div>
           </div>
           <div className="flex items-center gap-2">
             <ThemeToggle />
             <button
               onClick={() => setShowTips((value) => !value)}
-              className={`relative flex h-9 w-9 items-center justify-center rounded-lg border border-[#24202D]/10 bg-[#F7F4EE] text-[#625D69] transition-colors hover:text-[#24202D] ${showTips ? 'bg-[#F4AA85]/20 text-[#B65D36]' : ''}`}
+               className={`relative flex h-9 w-9 items-center justify-center rounded-lg border border-white/[0.08] bg-white/[0.04] text-slate-400 transition-colors hover:text-white ${showTips ? 'bg-[#b8f36b]/10 text-[#b8f36b]' : ''}`}
               aria-label="إظهار إرشادات الصفحة"
               aria-expanded={showTips}
             >
               <HelpCircle className="w-4 h-4" />
             </button>
-            <button className="relative flex h-9 w-9 items-center justify-center rounded-lg border border-[#24202D]/10 bg-[#F7F4EE] text-[#625D69] transition-colors hover:text-[#24202D]">
+             <button className="relative flex h-9 w-9 items-center justify-center rounded-lg border border-white/[0.08] bg-white/[0.04] text-slate-400 transition-colors hover:text-white">
               <Bell className="w-4 h-4" />
               {(pendingSubCount + pendingInstCount) > 0 && (
-                <span className="absolute left-1 top-1 h-2.5 w-2.5 rounded-full border border-[#FFFCF7] bg-red-500" />
+                 <span className="absolute left-1 top-1 h-2.5 w-2.5 rounded-full border border-[#07111F] bg-amber-300" />
               )}
             </button>
-            <button onClick={() => queryClient.invalidateQueries()} className="flex h-9 w-9 items-center justify-center rounded-lg border border-[#24202D]/10 bg-[#F7F4EE] text-[#625D69] transition-colors hover:text-[#24202D]">
+             <button onClick={() => queryClient.invalidateQueries()} className="flex h-9 w-9 items-center justify-center rounded-lg border border-white/[0.08] bg-white/[0.04] text-slate-400 transition-colors hover:text-white">
               <RefreshCw className="w-4 h-4" />
             </button>
           </div>
         </div>
 
         {showTips && (
-          <div className="mx-4 mt-4 rounded-2xl border border-[#B65D36]/20 bg-[#FFF8F2] p-4 shadow-sm md:mx-6" role="status">
+           <div className="mx-4 mt-4 rounded-2xl border border-[#b8f36b]/20 bg-[#0d1c2c] p-4 shadow-sm md:mx-8" role="status">
             <div className="flex items-start gap-3">
-              <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-[#F4AA85]/25 text-[#B65D36]">
+               <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-[#b8f36b]/10 text-[#b8f36b]">
                 <HelpCircle className="h-5 w-5" />
               </div>
               <div className="min-w-0">
                 <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
-                  <h2 className="text-sm font-bold text-[#24202D]">إرشادات هذه الصفحة</h2>
-                  <span className="text-xs text-[#8E8993]">مساعدة سريعة للأدمن</span>
+                   <h2 className="text-sm font-bold text-white">إرشادات هذه الصفحة</h2>
+                   <span className="text-xs text-slate-500">مساعدة سريعة للأدمن</span>
                 </div>
-                <p className="mt-1 text-sm leading-6 text-[#625D69]">{ADMIN_PAGE_TIPS[activeTab]?.intro || 'استخدم القائمة للوصول إلى أدوات الإدارة المتقدمة.'}</p>
-                <ul className="mt-2 grid gap-1 text-xs leading-5 text-[#625D69] md:grid-cols-3">
+                 <p className="mt-1 text-sm leading-6 text-slate-300">{ADMIN_PAGE_TIPS[activeTab]?.intro || 'استخدم القائمة للوصول إلى أدوات الإدارة المتقدمة.'}</p>
+                 <ul className="mt-2 grid gap-1 text-xs leading-5 text-slate-500 md:grid-cols-3">
                   {(ADMIN_PAGE_TIPS[activeTab]?.steps || ['ابدأ بالأساسيات.', 'راجع البيانات قبل الحفظ.', 'تأكد من ظهور نتيجة الإجراء.']).map((step) => <li key={step}>• {step}</li>)}
                 </ul>
               </div>
@@ -696,93 +697,20 @@ export default function AdminDashboard({ initialTab = 'overview' }: { initialTab
 
           {/* ─── OVERVIEW ─── */}
           {activeTab === 'overview' && (
-            <div className="space-y-6">
-              {statsLoading ? (
-                <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-                  {[...Array(8)].map((_, i) => <div key={i} className="h-28 animate-pulse rounded-2xl border border-[#24202D]/10 bg-[#FFFCF7]" />)}
-                </div>
-              ) : stats ? (
-                <>
-                  <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-                    <StatCard icon={Users} label="إجمالي الطلاب" value={stats.users.totalUsers} sub={`+${stats.users.newUsersToday} اليوم`} color="bg-[#DDE7F7]" bg="" />
-                    <StatCard icon={Activity} label="نشطون اليوم" value={stats.users.activeToday} sub={`${stats.users.activeThisWeek} هذا الأسبوع`} color="bg-[#F4AA85]/20" bg="" />
-                    <StatCard icon={CreditCard} label="اشتراكات نشطة" value={stats.subscriptions.activeSubscriptions} sub={pendingSubCount > 0 ? `${pendingSubCount} بانتظار المراجعة` : undefined} color="bg-[#EAE4F7]" bg="" />
-                    <StatCard icon={DollarSign} label="إيرادات الشهر" value={`${stats.subscriptions.revenueThisMonth.toLocaleString()} ر.س`} sub={`+${stats.subscriptions.newSubscriptionsThisWeek} اشتراك هذا الأسبوع`} color="bg-[#F7E8C7]" bg="" />
-                  </div>
-                  <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-                    <StatCard icon={FileText} label="إجمالي الاختبارات" value={stats.tests.totalTests} sub={`${stats.tests.testsToday} اليوم`} color="bg-[#FBE7D9]" bg="" />
-                    <StatCard icon={Star} label="متوسط الدرجات" value={`${stats.tests.averageScore.toFixed(1)}%`} sub="عبر جميع الاختبارات" color="bg-[#F7E8C7]" bg="" />
-                    <StatCard icon={TrendingUp} label="اشتراكات جديدة" value={stats.subscriptions.newSubscriptionsToday} sub="اليوم" color="bg-[#DDE7F7]" bg="" />
-                    <StatCard icon={Trophy} label="متوقفون" value={stats.subscriptions.expiredSubscriptions} sub="اشتراك منتهي" color="bg-[#EAE4F7]" bg="" />
-                  </div>
-
-                  {/* Quick actions */}
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <div className="rounded-2xl border border-[#24202D]/10 bg-[#FFFCF7] p-5 shadow-[0_6px_20px_rgba(36,32,45,0.04)]">
-                      <h3 className="mb-4 flex items-center gap-2 font-semibold text-[#24202D]"><Zap className="h-4 w-4 text-[#B65D36]" /> إجراءات سريعة</h3>
-                      <div className="space-y-2">
-                        <button onClick={() => setActiveTab('subscriptions')} className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-right text-sm text-[#625D69] transition-colors hover:bg-[#F7F4EE] hover:text-[#24202D]">
-                          <CreditCard className="h-4 w-4 text-[#7964C1]" />
-                          مراجعة الاشتراكات المعلقة
-                          {pendingSubCount > 0 && <Badge className="mr-auto bg-red-500 text-white border-0 text-xs">{pendingSubCount}</Badge>}
-                        </button>
-                        <button onClick={() => setActiveTab('email')} className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-right text-sm text-[#625D69] transition-colors hover:bg-[#F7F4EE] hover:text-[#24202D]">
-                          <Mail className="h-4 w-4 text-[#B65D36]" />
-                          إرسال بريد جماعي
-                        </button>
-                        <button onClick={() => setActiveTab('questions')} className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-right text-sm text-[#625D69] transition-colors hover:bg-[#F7F4EE] hover:text-[#24202D]">
-                          <BookOpen className="h-4 w-4 text-[#7964C1]" />
-                          إدارة بنك الأسئلة
-                        </button>
-                        <button onClick={() => setActiveTab('exams')} className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-right text-sm text-[#625D69] transition-colors hover:bg-[#F7F4EE] hover:text-[#24202D]">
-                          <CalendarCheck className="h-4 w-4 text-[#B65D36]" />
-                          عرض الاختبارات المجدولة
-                        </button>
-                      </div>
-                    </div>
-                    <div className="rounded-2xl border border-[#24202D]/10 bg-[#FFFCF7] p-5 shadow-[0_6px_20px_rgba(36,32,45,0.04)]">
-                      <h3 className="mb-4 flex items-center gap-2 font-semibold text-[#24202D]"><BarChart3 className="h-4 w-4 text-[#7964C1]" /> حالة النظام</h3>
-                      <div className="space-y-3">
-                        {[
-                          { label: 'قاعدة البيانات', status: 'متصلة', ok: true },
-                          { label: 'خدمة البريد', status: 'جاهزة', ok: true },
-                          { label: 'الخادم', status: 'يعمل', ok: true },
-                          { label: 'WebSocket', status: 'نشط', ok: true },
-                        ].map(s => (
-                          <div key={s.label} className="flex items-center justify-between">
-                            <span className="text-sm text-[#625D69]">{s.label}</span>
-                            <span className={`rounded-full px-2 py-0.5 text-xs ${s.ok ? 'bg-[#F4AA85]/20 text-[#8D482C]' : 'bg-red-500/10 text-red-600'}`}>{s.status}</span>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                    <div className="rounded-2xl border border-[#24202D]/10 bg-[#FFFCF7] p-5 shadow-[0_6px_20px_rgba(36,32,45,0.04)]">
-                      <h3 className="mb-4 flex items-center gap-2 font-semibold text-[#24202D]"><Bell className="h-4 w-4 text-[#B65D36]" /> تنبيهات</h3>
-                      <div className="space-y-2">
-                        {pendingSubCount > 0 && (
-                          <div className="flex items-center gap-2 rounded-lg bg-[#F7E8C7]/60 p-2 text-sm text-[#7D5A18]">
-                            <AlertCircle className="w-4 h-4 flex-shrink-0" />
-                            {pendingSubCount} اشتراك بانتظار المراجعة
-                          </div>
-                        )}
-                        {pendingInstCount > 0 && (
-                          <div className="flex items-center gap-2 rounded-lg bg-[#FBE7D9] p-2 text-sm text-[#8D482C]">
-                            <Building2 className="w-4 h-4 flex-shrink-0" />
-                            {pendingInstCount} طلب مؤسسة جديد
-                          </div>
-                        )}
-                        {pendingSubCount === 0 && pendingInstCount === 0 && (
-                          <div className="flex items-center gap-2 rounded-lg bg-[#F7F4EE] p-2 text-sm text-[#625D69]">
-                            <CheckCircle className="w-4 h-4 flex-shrink-0" />
-                            لا توجد تنبيهات معلقة
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                </>
-              ) : null}
-            </div>
+            statsLoading ? (
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
+                {[...Array(8)].map((_, i) => <div key={i} className="h-32 animate-pulse rounded-[1.35rem] border border-white/[0.08] bg-[#0d1c2c]" />)}
+              </div>
+            ) : stats ? (
+              <AdminOverview
+                stats={stats}
+                pendingSubCount={pendingSubCount}
+                pendingInstCount={pendingInstCount}
+                onNavigate={setActiveTab}
+              />
+            ) : (
+              <div className="rounded-[1.5rem] border border-white/[0.08] bg-[#0d1c2c] p-10 text-center text-sm text-slate-400">تعذر تحميل ملخص المنصة.</div>
+            )
           )}
 
           {/* ─── USERS ─── */}

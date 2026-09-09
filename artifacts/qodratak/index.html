@@ -1,12 +1,12 @@
 <!DOCTYPE html>
-<html lang="ar" dir="rtl" class="dark">
+<html lang="ar" dir="rtl">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
     
     <!-- Official identity and search metadata -->
-    <title data-rh="true">منصة قدراتك | القدرات والتحصيلي وIELTS وGAT</title>
-    <meta data-rh="true" name="description" content="منصة قدرات تعليمية لطلاب السعودية: تأسيس ومحوسب للقدرات، تدريب التحصيلي، اختبارات يومية وتحليل واضح للتقدم." />
+    <title data-rh="true">منصة قدراتك | تدريب القدرات والتحصيلي بخطة واضحة</title>
+    <meta data-rh="true" name="description" content="منصة قدراتك التعليمية للاستعداد لاختبارات القدرات والتحصيلي عبر تدريب منظم، محاكاة، بنك أسئلة وتحليل واضح للتقدم." />
     <meta data-rh="true" name="author" content="منصة قدراتك" />
     <meta data-rh="true" name="robots" content="index, follow" />
     <link data-rh="true" rel="canonical" href="https://qodratak.sa/" />
@@ -15,8 +15,10 @@
     <link rel="manifest" href="/manifest.json" />
     
     <!-- Favicons - Multiple sizes for different platforms -->
+    <link rel="icon" href="/favicon.ico" sizes="any">
     <link rel="icon" type="image/svg+xml" href="/favicon.svg">
-    <link rel="icon" type="image/png" sizes="512x512" href="/qodratak-logo-transparent.png">
+    <link rel="icon" type="image/png" sizes="192x192" href="/qodratak-app-icon-192.png">
+    <link rel="icon" type="image/png" sizes="512x512" href="/qodratak-app-icon.png">
     
     <!-- Apple Touch Icons for iOS -->
     <link rel="apple-touch-icon" href="/qodratak-app-icon.png" />
@@ -37,8 +39,8 @@
     
     <!-- Open Graph / Facebook Meta Tags -->
     <meta data-rh="true" property="og:type" content="website" />
-    <meta data-rh="true" property="og:title" content="منصة قدراتك | القدرات والتحصيلي وIELTS وGAT" />
-    <meta data-rh="true" property="og:description" content="منصة قدرات تعليمية لطلاب السعودية: تأسيس ومحوسب للقدرات، تدريب التحصيلي، اختبارات يومية وتحليل واضح للتقدم." />
+    <meta data-rh="true" property="og:title" content="منصة قدراتك | تدريب القدرات والتحصيلي بخطة واضحة" />
+    <meta data-rh="true" property="og:description" content="منصة قدراتك التعليمية للاستعداد لاختبارات القدرات والتحصيلي عبر تدريب منظم، محاكاة، بنك أسئلة وتحليل واضح للتقدم." />
     <meta data-rh="true" property="og:image" content="https://qodratak.sa/qodratak-app-icon.png" />
     <meta data-rh="true" property="og:image:width" content="512" />
     <meta data-rh="true" property="og:image:height" content="512" />
@@ -49,8 +51,8 @@
     
     <!-- Twitter Card Meta Tags -->
     <meta data-rh="true" name="twitter:card" content="summary_large_image" />
-    <meta data-rh="true" name="twitter:title" content="منصة قدراتك | القدرات والتحصيلي وIELTS وGAT" />
-    <meta data-rh="true" name="twitter:description" content="منصة قدرات تعليمية لطلاب السعودية: تأسيس ومحوسب للقدرات، تدريب التحصيلي، اختبارات يومية وتحليل واضح للتقدم." />
+    <meta data-rh="true" name="twitter:title" content="منصة قدراتك | تدريب القدرات والتحصيلي بخطة واضحة" />
+    <meta data-rh="true" name="twitter:description" content="منصة قدراتك التعليمية للاستعداد لاختبارات القدرات والتحصيلي عبر تدريب منظم، محاكاة، بنك أسئلة وتحليل واضح للتقدم." />
     <meta data-rh="true" name="twitter:image" content="https://qodratak.sa/qodratak-app-icon.png" />
     <meta data-rh="true" name="twitter:image:alt" content="شعار منصة قدراتك" />
     <meta data-rh="true" name="twitter:url" content="https://qodratak.sa/" />
@@ -325,7 +327,14 @@
             "width": 674,
             "height": 580
           },
-          "description": "منصة قدرات تعليمية لطلاب السعودية للاستعداد للقدرات والتحصيلي وIELTS وGAT عبر تدريب منظم واختبارات محاكية وتحليل واضح للتقدم.",
+          "description": "منصة قدرات تعليمية لطلاب السعودية للاستعداد للقدرات والتحصيلي عبر تدريب منظم واختبارات محاكية وتحليل واضح للتقدم.",
+          "email": "info@qodratak.sa",
+          "contactPoint": {
+            "@type": "ContactPoint",
+            "email": "info@qodratak.sa",
+            "contactType": "customer support",
+            "availableLanguage": ["ar", "en"]
+          },
           "sameAs": ["https://t.me/qodratak2030"]
         },
         {
@@ -347,6 +356,28 @@
           "operatingSystem": "Web",
           "inLanguage": "ar-SA",
           "publisher": { "@id": "https://qodratak.sa/#organization" }
+        },
+        {
+          "@type": "FAQPage",
+          "@id": "https://qodratak.sa/#faq",
+          "mainEntity": [
+            {
+              "@type": "Question",
+              "name": "ما الذي تقدمه منصة قدراتك؟",
+              "acceptedAnswer": {
+                "@type": "Answer",
+                "text": "تقدم قدراتك تدريبًا منظمًا على اختبارات القدرات والتحصيلي، مع بنك أسئلة واختبارات محاكية وتحليل للتقدم."
+              }
+            },
+            {
+              "@type": "Question",
+              "name": "هل يمكن استخدام المنصة من الجوال؟",
+              "acceptedAnswer": {
+                "@type": "Answer",
+                "text": "نعم، تعمل منصة قدراتك من المتصفح على الجوال والكمبيوتر ويمكن تثبيتها كتطبيق ويب."
+              }
+            }
+          ]
         }
       ]
     }

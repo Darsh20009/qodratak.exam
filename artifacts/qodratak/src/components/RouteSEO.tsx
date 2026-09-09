@@ -91,20 +91,10 @@ const PUBLIC_ROUTE_METADATA: Record<string, RouteMetadata> = {
   },
 };
 
-export function RouteSEO() {
+export function RouteSEO({ isAuthenticated, isLoading }: { isAuthenticated?: boolean; isLoading?: boolean }) {
   const [location] = useLocation();
   const metadata = PUBLIC_ROUTE_METADATA[location];
-  const isAuthenticatedRoot =
-    location === "/" &&
-    (() => {
-      try {
-        const user = JSON.parse(localStorage.getItem("user") || "{}");
-        return Boolean(user?.id || user?._id);
-      } catch {
-        return false;
-      }
-    })();
-  const isPublicRoute = Boolean(metadata) && !isAuthenticatedRoot;
+  const isPublicRoute = !isLoading && Boolean(metadata) && !(location === "/" && isAuthenticated);
 
   return (
     <SEO
