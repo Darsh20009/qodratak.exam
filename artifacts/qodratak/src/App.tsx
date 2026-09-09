@@ -1180,6 +1180,9 @@ function Router({ splashDone }: { splashDone: boolean }) {
       <Route path="/admin/users">
         {() => <AdminDashboard initialTab="users" />}
       </Route>
+      <Route path="/admin/accounts">
+        {() => <AdminDashboard initialTab="accounts" />}
+      </Route>
       <Route path="/admin/institutions">
         {() => <AdminDashboard initialTab="active-institutions" />}
       </Route>

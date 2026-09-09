@@ -4,7 +4,7 @@ import { BookOpen, CheckCircle, Edit, Eye, Loader2, MessageSquare, Plus, Star, T
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { useToast } from '@/hooks/use-toast';
 import { apiRequest } from '@/lib/queryClient';
 
@@ -100,6 +100,7 @@ export default function AdminFoundationManagementTab() {
   const [lessonForm, setLessonForm] = useState<FoundationContent>(emptyLesson);
   const [questionPickerOpen, setQuestionPickerOpen] = useState(false);
   const [questionSearch, setQuestionSearch] = useState('');
+  const [questionPage, setQuestionPage] = useState(1);
   const [reviewDialog, setReviewDialog] = useState<PlatformReview | null>(null);
   const [reply, setReply] = useState('');
 
@@ -114,8 +115,8 @@ export default function AdminFoundationManagementTab() {
     enabled: section === 'reviews',
   });
   const questionsQuery = useQuery({
-    queryKey: ['/api/admin/foundation-content/questions', questionSearch],
-    queryFn: () => getJson(`/api/admin/foundation-content/questions?search=${encodeURIComponent(questionSearch)}`),
+    queryKey: ['/api/admin/foundation-content/questions', questionSearch, questionPage],
+    queryFn: () => getJson(`/api/admin/foundation-content/questions?search=${encodeURIComponent(questionSearch)}&page=${questionPage}&limit=50`),
     enabled: questionPickerOpen,
   });
   const lessons = useMemo(() => listFrom<FoundationContent>(lessonsQuery.data, ['content', 'foundationContent', 'items', 'data']), [lessonsQuery.data]);
@@ -268,13 +269,24 @@ export default function AdminFoundationManagementTab() {
       </Dialog>
       <Dialog open={questionPickerOpen} onOpenChange={setQuestionPickerOpen}>
         <DialogContent className="max-h-[90vh] overflow-y-auto bg-slate-950 text-white sm:max-w-3xl">
-          <DialogHeader><DialogTitle>اختيار أسئلة الاختبار</DialogTitle><p className="text-sm text-slate-400">اختر الأسئلة التي ستظهر للطالب بعد الدرس. الإجابات الصحيحة لا تظهر للطالب.</p></DialogHeader>
-          <Input value={questionSearch} onChange={e => setQuestionSearch(e.target.value)} placeholder="ابحث في نص السؤال أو التصنيف..." className="border-slate-700 bg-slate-900" />
+          <DialogHeader>
+            <DialogTitle>اختيار أسئلة الاختبار</DialogTitle>
+            <DialogDescription className="text-sm text-slate-400">اختر الأسئلة التي ستظهر للطالب بعد الدرس. الإجابات الصحيحة لا تظهر للطالب.</DialogDescription>
+          </DialogHeader>
+          <Input value={questionSearch} onChange={e => { setQuestionSearch(e.target.value); setQuestionPage(1); }} placeholder="ابحث في نص السؤال أو التصنيف..." className="border-slate-700 bg-slate-900" />
           <div className="max-h-[55vh] space-y-2 overflow-y-auto pr-1">
             {questionsQuery.isLoading ? <Loading /> : availableQuestions.length === 0 ? <EmptyState label="لا توجد أسئلة مطابقة." /> : availableQuestions.map(question => {
               const selected = selectedQuestionIds.includes(question._id);
               return <button type="button" key={question._id} onClick={() => toggleQuestion(question._id)} className={`w-full rounded-xl border p-3 text-right transition-colors ${selected ? 'border-emerald-500/60 bg-emerald-500/10' : 'border-slate-800 bg-slate-900/60 hover:border-slate-600'}`}><div className="flex items-start gap-3"><span className={`mt-1 flex h-5 w-5 shrink-0 items-center justify-center rounded border text-xs ${selected ? 'border-emerald-400 bg-emerald-500 text-white' : 'border-slate-600 text-transparent'}`}>✓</span><span className="min-w-0 flex-1"><span className="block text-sm font-medium text-slate-100">{question.text}</span><span className="mt-1 block text-xs text-slate-500">#{question.questionId} · {question.subcategory || 'عام'} · {question.difficulty}</span></span></div></button>;
             })}
+          </div>
+          <div className="flex items-center justify-between border-t border-slate-800 pt-3 text-xs text-slate-400">
+            <span>عرض {availableQuestions.length} من أصل {questionsQuery.data?.total || 0} سؤال</span>
+            <div className="flex items-center gap-2">
+              <Button type="button" variant="outline" size="sm" disabled={questionPage <= 1 || questionsQuery.isFetching} onClick={() => setQuestionPage(page => page - 1)} className="border-slate-700 text-slate-300">السابق</Button>
+              <span>صفحة {questionPage} من {questionsQuery.data?.totalPages || 1}</span>
+              <Button type="button" variant="outline" size="sm" disabled={questionPage >= (questionsQuery.data?.totalPages || 1) || questionsQuery.isFetching} onClick={() => setQuestionPage(page => page + 1)} className="border-slate-700 text-slate-300">التالي</Button>
+            </div>
           </div>
           <div className="flex items-center justify-between border-t border-slate-800 pt-3"><span className="text-sm text-emerald-300">{selectedQuestionIds.length} سؤال مختار</span><Button type="button" onClick={() => setQuestionPickerOpen(false)} className="bg-emerald-600 hover:bg-emerald-500">تم</Button></div>
         </DialogContent>

@@ -551,6 +551,8 @@ router.get('/foundation-content/questions', requireAdminAuth, async (req: Reques
   try {
     const search = String(req.query.search || '').trim();
     const category = String(req.query.category || '').trim();
+    const page = Math.max(1, parseInt(String(req.query.page || '1'), 10) || 1);
+    const limit = Math.min(100, Math.max(1, parseInt(String(req.query.limit || '50'), 10) || 50));
     const query: Record<string, unknown> = {};
     if (category && category !== 'all') query.category = category;
     if (search) {
@@ -560,12 +562,16 @@ router.get('/foundation-content/questions', requireAdminAuth, async (req: Reques
         { topic: { $regex: search, $options: 'i' } },
       ];
     }
-    const questions = await Question.find(query)
+    const [total, questions] = await Promise.all([
+      Question.countDocuments(query),
+      Question.find(query)
       .sort({ questionId: 1 })
-      .limit(100)
+      .skip((page - 1) * limit)
+      .limit(limit)
       .select('_id questionId text category subcategory difficulty options correctOptionIndex explanation imageUrl imageUrls')
-      .lean();
-    res.json({ questions });
+      .lean(),
+    ]);
+    res.json({ questions, total, page, limit, totalPages: Math.ceil(total / limit) });
   } catch (error) {
     console.error('Get foundation quiz questions error:', error);
     res.status(500).json({ error: 'فشل في جلب أسئلة الاختبار' });
@@ -684,6 +690,54 @@ router.get('/dashboard/stats', requireAdminAuth, async (req: Request, res: Respo
 
 // ── USERS ────────────────────────────────────────────────────
 
+router.post('/users', requireAdminAuth, async (req: Request, res: Response) => {
+  try {
+    const { User } = await import('./mongodb/models');
+    const body = req.body || {};
+    const username = String(body.username || '').trim();
+    const password = String(body.password || '');
+    if (!username || password.length < 6) {
+      return res.status(400).json({ error: 'اسم المستخدم وكلمة المرور (6 أحرف على الأقل) مطلوبان' });
+    }
+    const allowedRoles = new Set(['student', 'parent', 'teacher', 'institution_admin']);
+    const role = allowedRoles.has(String(body.role)) ? String(body.role) : 'student';
+    const existing = await User.findOne({
+      $or: [
+        { username: username.toLowerCase() },
+        ...(body.email ? [{ email: String(body.email).trim().toLowerCase() }] : []),
+      ],
+    }).select('_id');
+    if (existing) {
+      return res.status(409).json({ error: 'اسم المستخدم أو البريد الإلكتروني مستخدم بالفعل' });
+    }
+
+    const created = await mongoStorage.createUser({
+      username,
+      password,
+      fullName: String(body.fullName || '').trim() || undefined,
+      email: String(body.email || '').trim().toLowerCase() || undefined,
+      phone: String(body.phone || '').trim() || undefined,
+      role: role as any,
+      institutionId: body.institutionId || undefined,
+      isActive: body.isActive !== false,
+      isVerified: Boolean(body.isVerified),
+      emailVerified: Boolean(body.emailVerified),
+      points: Number(body.points) || 0,
+      level: Number(body.level) || 1,
+    } as any);
+    const safeUser = await User.findById(created._id)
+      .select('-password -otpCode -otpExpiry -pinHash -totpSecret -recoveryPassphrase -resetPasswordToken -resetPasswordTokenExpiry -pushChallenge -pending2FAUserId -devices -webauthnCredentials')
+      .lean();
+    res.status(201).json({ success: true, user: safeUser });
+  } catch (error) {
+    console.error('Create user error:', error);
+    if ((error as any)?.code === 11000) {
+      return res.status(409).json({ error: 'اسم المستخدم أو البريد الإلكتروني مستخدم بالفعل' });
+    }
+    res.status(500).json({ error: 'فشل في إنشاء الحساب' });
+  }
+});
+
 router.get('/users', requireAdminAuth, async (req: Request, res: Response) => {
   try {
     const page = parseInt(req.query.page as string) || 1;
@@ -709,7 +763,9 @@ router.get('/users', requireAdminAuth, async (req: Request, res: Response) => {
 
 router.get('/users/:id', requireAdminAuth, async (req: Request, res: Response) => {
   try {
-    const user = await mongoStorage.getUserById(req.params.id);
+    const user = await User.findById(req.params.id)
+      .select('-password -otpCode -otpExpiry -pinHash -totpSecret -recoveryPassphrase -resetPasswordToken -resetPasswordTokenExpiry -pushChallenge -pending2FAUserId -devices -webauthnCredentials')
+      .lean();
     if (!user) {
       return res.status(404).json({ error: 'المستخدم غير موجود' });
     }
@@ -742,7 +798,7 @@ router.put('/users/:id', requireAdminAuth, async (req: Request, res: Response) =
 
     const allowedRoles = new Set(['student', 'parent', 'teacher', 'institution_admin']);
     const allowedFields = [
-      'username', 'fullName', 'email', 'phone', 'role', 'institutionId',
+      'username', 'fullName', 'email', 'phone', 'password', 'role', 'institutionId',
       'isActive', 'isVerified', 'emailVerified', 'points', 'level',
       'academicTrack', 'gradeLevel', 'studyGoal', 'targetScore',
       'guardianPhone', 'targetExamDate', 'bio', 'city', 'subscription',
@@ -768,6 +824,14 @@ router.put('/users/:id', requireAdminAuth, async (req: Request, res: Response) =
     }
     if (Object.prototype.hasOwnProperty.call(updates, 'phone')) {
       updates.phone = String(updates.phone || '').trim() || undefined;
+    }
+    if (Object.prototype.hasOwnProperty.call(updates, 'password')) {
+      const password = String(updates.password || '');
+      if (!password) {
+        delete updates.password;
+      } else if (password.length < 6) {
+        return res.status(400).json({ error: 'كلمة المرور يجب أن تكون 6 أحرف على الأقل' });
+      }
     }
 
     const updated = await mongoStorage.updateUser(req.params.id, updates as any);

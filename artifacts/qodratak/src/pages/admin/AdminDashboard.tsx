@@ -4,6 +4,7 @@ import QuestionsManagementPage from './QuestionsManagementPage';
 import AdminWalletsTab from './AdminWalletsTab';
 import AdminSeasonalExamsTab from './AdminSeasonalExamsTab';
 import AdminFoundationManagementTab from './AdminFoundationManagementTab';
+import AdminAccountManagementTab from './AdminAccountManagementTab';
 import WhatsAppAdminTab from './WhatsAppAdminTab';
 import EmailAdminTab from './EmailAdminTab';
 import AdminOverview from './AdminOverview';
@@ -50,6 +51,7 @@ interface ActiveInstitution { id: string; name: string; nameEn?: string; type: s
 const NAV_ITEMS = [
   { key: 'overview', icon: LayoutDashboard, label: 'نظرة عامة', color: 'text-[#625D69]' },
   { key: 'users', icon: Users, label: 'الطلاب', color: 'text-[#B65D36]' },
+  { key: 'accounts', icon: UserCog, label: 'إدارة الحسابات', color: 'text-cyan-300' },
   { key: 'subscriptions', icon: CreditCard, label: 'الاشتراكات', color: 'text-[#7964C1]' },
   { key: 'tests', icon: FileText, label: 'الاختبارات', color: 'text-[#B65D36]' },
   { key: 'questions', icon: BookOpen, label: 'بنك الأسئلة', color: 'text-[#7964C1]' },
@@ -75,6 +77,7 @@ const NAV_ITEMS = [
 const PRIMARY_ADMIN_NAV_KEYS = new Set([
   'overview',
   'users',
+  'accounts',
   'subscriptions',
   'tests',
   'questions',
@@ -92,6 +95,10 @@ const ADMIN_PAGE_TIPS: Record<string, { intro: string; steps: string[] }> = {
   users: {
     intro: 'ابحث عن حسابات الطلاب وتابع نشاطهم وبياناتهم الأساسية.',
     steps: ['استخدم البحث بالبريد أو الاسم أو رقم الجوال.', 'افتح ملف الطالب لمراجعة التقدم والاختبارات.', 'نفّذ التعديلات الإدارية عند الحاجة فقط.'],
+  },
+  accounts: {
+    intro: 'أدر حسابات الطلاب والمدرسين وأولياء الأمور ومسؤولي المؤسسات من مكان واحد.',
+    steps: ['استخدم فلتر الدور للوصول إلى المدرسين بسرعة.', 'عدّل البيانات الأساسية أو كلمة المرور عند الحاجة.', 'عطّل الحساب بدل حذفه إذا كنت تحتاج إلى الاحتفاظ بإمكانية استعادته.'],
   },
   subscriptions: {
     intro: 'راجع طلبات الاشتراك والتحويلات قبل اعتمادها.',
@@ -257,7 +264,7 @@ export default function AdminDashboard({ initialTab = 'overview' }: { initialTab
   const { data: usersData, isLoading: usersLoading } = useQuery({
     queryKey: ['/api/admin/users', usersPage, searchQuery],
     queryFn: async () => {
-      const params = new URLSearchParams({ page: String(usersPage), limit: '20', ...(searchQuery && { search: searchQuery }) });
+      const params = new URLSearchParams({ page: String(usersPage), limit: '20', role: 'student', ...(searchQuery && { search: searchQuery }) });
       const res = await fetch(`/api/admin/users?${params}`, { credentials: 'include' });
       return res.json();
     },
@@ -798,6 +805,8 @@ export default function AdminDashboard({ initialTab = 'overview' }: { initialTab
               </div>
             </div>
           )}
+
+          {activeTab === 'accounts' && <AdminAccountManagementTab />}
 
           {/* ─── SUBSCRIPTIONS ─── */}
           {activeTab === 'subscriptions' && (
