@@ -900,7 +900,18 @@ function Router({ splashDone }: { splashDone: boolean }) {
       </Route>
 
       <Route path="/teacher">
-        {() => <StudentShell><TeacherSystemPage /></StudentShell>}
+        {() => {
+          if (isUserLoading) {
+            return (
+              <div className="flex min-h-screen items-center justify-center bg-slate-50" dir="rtl">
+                <div className="text-sm font-bold text-slate-500">جاري التحقق من صلاحية المعلم...</div>
+              </div>
+            );
+          }
+          if (!serverUser) return <Redirect to="/login?return=%2Fteacher" />;
+          if (serverUser.role !== 'teacher') return <Redirect to="/" />;
+          return <TeacherSystemPage />;
+        }}
       </Route>
 
       <Route path="/qiyas-hub">

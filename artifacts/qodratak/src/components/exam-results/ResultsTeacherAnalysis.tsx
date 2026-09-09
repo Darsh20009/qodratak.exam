@@ -112,7 +112,7 @@ export default function ResultsTeacherAnalysis({ wrongQuestions, totalQuestions,
     // Also call teacher analyze endpoint for richer analysis
     (async () => {
       try {
-        const res = await fetch("/api/teacher/analyze", {
+        const res = await fetch("/api/student/teacher-analysis", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({

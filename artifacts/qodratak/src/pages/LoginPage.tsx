@@ -11,6 +11,7 @@ import { getDeviceId } from "@/lib/device";
 const developmentAccounts = [
   { label: "الأدمن التجريبي", identifier: "admin-demo", password: "AdminDemo@2026", Icon: Shield },
   { label: "الطالب التجريبي", identifier: "student-demo", password: "StudentDemo@2026", Icon: GraduationCap },
+  { label: "المعلم التجريبي", identifier: "teacher-demo", password: "TeacherDemo@2026", Icon: GraduationCap },
   { label: "المؤسسة التجريبية", identifier: "institution-demo", password: "InstitutionDemo@2026", Icon: Building2 },
 ];
 

@@ -2357,6 +2357,20 @@ function developmentDemoUsers() {
       isDemo: true,
     },
     {
+      id: 'development-teacher-demo',
+      name: 'معلم تجريبي',
+      fullName: 'معلم تجريبي',
+      username: 'teacher-demo',
+      email: 'teacher-demo@qodratak.local',
+      password: 'TeacherDemo@2026',
+      role: 'teacher',
+      points: 0,
+      level: 1,
+      subscription: { type: 'teacher', status: 'active' },
+      devices: [],
+      isDemo: true,
+    },
+    {
       id: 'development-admin-demo',
       name: 'مدير تجريبي',
       fullName: 'مدير تجريبي',
@@ -3561,8 +3575,8 @@ app.post("/api/auth/register", async (req: Request, res: Response) => {
     }
   });
 
-  // Multi-role registration endpoint (Students: 7-day trial, Teachers: free forever)
-  // NOTE: Institutions must use /api/auth/institution-request instead
+  // Public registration is limited to students. Teacher and institution
+  // accounts are provisioned by authorized administrators.
   app.post("/api/auth/register-multi", async (req: Request, res: Response) => {
     try {
       const { fullName, username, email, phone, password, role, whatsapp, telegramUsername, academicTrack, gradeLevel, studyGoal, targetScore, phoneVerificationToken } = req.body;
@@ -3587,8 +3601,6 @@ app.post("/api/auth/register", async (req: Request, res: Response) => {
         return res.status(400).json({ message: "اسم المستخدم يجب أن يكون 3 أحرف على الأقل" });
       }
 
-      // Only allow student and teacher registration directly
-      // Institutions must submit a request through /api/auth/institution-request
       if (role === 'institution_admin') {
         return res.status(400).json({ 
           message: "لا يمكن التسجيل كمؤسسة مباشرة. يرجى إرسال طلب تسجيل مؤسسة",
@@ -3596,8 +3608,14 @@ app.post("/api/auth/register", async (req: Request, res: Response) => {
         });
       }
 
-      const validRoles = ['student', 'teacher'];
-      if (!validRoles.includes(role)) {
+      if (role === 'teacher') {
+        return res.status(403).json({
+          message: "حسابات المعلمين تُنشأ من إدارة المنصة أو المؤسسة فقط",
+          code: "TEACHER_PROVISIONING_REQUIRED",
+        });
+      }
+
+      if (role !== 'student') {
         return res.status(400).json({ message: "نوع الحساب غير صالح" });
       }
 
@@ -3630,29 +3648,14 @@ app.post("/api/auth/register", async (req: Request, res: Response) => {
       const today = new Date();
       const newUserId = users.length + 1;
 
-      // Set subscription based on role
-      let subscription;
-      if (role === 'student') {
-        // Students: 7-day free trial as advertised
-        const trialEnd = new Date(today.getTime() + 7 * 24 * 60 * 60 * 1000);
-        subscription = {
-          type: "free_trial",
-          status: "active",
-          startDate: today.toISOString().split('T')[0],
-          endDate: trialEnd.toISOString().split('T')[0],
-          trialDays: 7,
-        };
-      } else if (role === 'teacher') {
-        // Teachers: free forever
-        const farFuture = new Date(today.getTime() + 100 * 365 * 24 * 60 * 60 * 1000); // 100 years
-        subscription = {
-          type: "teacher_free",
-          status: "active",
-          startDate: today.toISOString().split('T')[0],
-          endDate: farFuture.toISOString().split('T')[0],
-          isPermanent: true
-        };
-      }
+      const trialEnd = new Date(today.getTime() + 7 * 24 * 60 * 60 * 1000);
+      const subscription = {
+        type: "free_trial",
+        status: "active",
+        startDate: today.toISOString().split('T')[0],
+        endDate: trialEnd.toISOString().split('T')[0],
+        trialDays: 7,
+      };
 
       // Create user object based on role
       const newUser: any = {
@@ -10535,7 +10538,292 @@ app.post("/api/auth/register", async (req: Request, res: Response) => {
   });
 
   // ══════════════ نظام المعلم ══════════════
-  app.post('/api/teacher/analyze', async (req: Request, res: Response) => {
+  const teacherClassPayload = (body: any, partial = false) => {
+    const source = body && typeof body === 'object' ? body : {};
+    const payload: Record<string, string> = {};
+    const requiredFields = ['name', 'subject', 'program'] as const;
+
+    for (const field of requiredFields) {
+      if (source[field] !== undefined) payload[field] = String(source[field]).trim();
+    }
+    for (const field of ['gradeLevel', 'description'] as const) {
+      if (source[field] !== undefined) payload[field] = String(source[field]).trim();
+    }
+
+    if (!partial && (!payload.name || !payload.subject || !payload.program)) {
+      throw new Error('CLASS_REQUIRED_FIELDS');
+    }
+    if (payload.name !== undefined && (payload.name.length < 2 || payload.name.length > 120)) {
+      throw new Error('INVALID_CLASS_NAME');
+    }
+    if (payload.subject !== undefined && (payload.subject.length < 2 || payload.subject.length > 120)) {
+      throw new Error('INVALID_CLASS_SUBJECT');
+    }
+    if (payload.program !== undefined && !['qudrat', 'tahsili', 'general'].includes(payload.program)) {
+      throw new Error('INVALID_CLASS_PROGRAM');
+    }
+    if (payload.gradeLevel && payload.gradeLevel.length > 80) throw new Error('INVALID_GRADE_LEVEL');
+    if (payload.description && payload.description.length > 500) throw new Error('INVALID_CLASS_DESCRIPTION');
+    return payload;
+  };
+
+  const teacherIdentity = (req: Request) => {
+    const rbacUser = (req as any).rbacUser;
+    return {
+      id: String(rbacUser.id),
+      name: String(rbacUser.username || rbacUser.email || 'المعلم'),
+      email: rbacUser.email ? String(rbacUser.email) : undefined,
+      institutionId: rbacUser.institutionId,
+    };
+  };
+
+  const teacherClassResponse = (teacherClass: any, studentCount = 0) => ({
+    id: String(teacherClass._id),
+    name: teacherClass.name,
+    subject: teacherClass.subject,
+    program: teacherClass.program,
+    gradeLevel: teacherClass.gradeLevel || '',
+    description: teacherClass.description || '',
+    studentCount,
+    createdAt: teacherClass.createdAt,
+    updatedAt: teacherClass.updatedAt,
+  });
+
+  const requireMongoForTeacher = (_req: Request, res: Response, next: () => void) => {
+    if (mongoose.connection.readyState !== 1) {
+      return res.status(503).json({
+        error: 'قاعدة البيانات غير متاحة حالياً. حاول مرة أخرى بعد قليل.',
+        code: 'DATABASE_UNAVAILABLE',
+      });
+    }
+    next();
+  };
+
+  app.get('/api/teacher/dashboard', requireAuth, requireRole('teacher'), requireMongoForTeacher, async (req: Request, res: Response) => {
+    try {
+      const identity = teacherIdentity(req);
+      const { TeacherClass, TeacherClassMembership, User } = await import('../mongodb/models');
+      const classes = await TeacherClass.find({ teacherId: identity.id, isActive: true }).sort({ updatedAt: -1 }).lean();
+      const classIds = classes.map((teacherClass: any) => teacherClass._id);
+      const memberships = classIds.length
+        ? await TeacherClassMembership.find({ teacherId: identity.id, classId: { $in: classIds } }).select('classId studentId').lean()
+        : [];
+      const counts = new Map<string, number>();
+      const studentIds = new Set<string>();
+      for (const membership of memberships as any[]) {
+        const classId = String(membership.classId);
+        counts.set(classId, (counts.get(classId) || 0) + 1);
+        studentIds.add(String(membership.studentId));
+      }
+
+      const validStudentIds = [...studentIds].filter((id) => mongoose.Types.ObjectId.isValid(id));
+      const recentThreshold = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+      const attentionThreshold = new Date(Date.now() - 14 * 24 * 60 * 60 * 1000);
+      const [activeStudents, needsAttention] = validStudentIds.length
+        ? await Promise.all([
+            User.countDocuments({ _id: { $in: validStudentIds }, role: 'student', isActive: true, lastVisit: { $gte: recentThreshold } }),
+            User.countDocuments({
+              _id: { $in: validStudentIds },
+              role: 'student',
+              isActive: true,
+              $or: [{ lastVisit: { $lt: attentionThreshold } }, { lastVisit: { $exists: false } }],
+            }),
+          ])
+        : [0, 0];
+
+      const teacherRecord = mongoose.Types.ObjectId.isValid(identity.id)
+        ? await User.findById(identity.id).select('fullName username email').lean()
+        : identity.email
+          ? await User.findOne({ email: identity.email }).select('fullName username email').lean()
+          : null;
+
+      return res.json({
+        teacher: {
+          id: identity.id,
+          name: teacherRecord?.fullName || teacherRecord?.username || identity.name,
+          email: teacherRecord?.email || identity.email || '',
+        },
+        stats: {
+          classes: classes.length,
+          students: studentIds.size,
+          activeStudents,
+          needsAttention,
+        },
+        classes: classes.map((teacherClass: any) => teacherClassResponse(teacherClass, counts.get(String(teacherClass._id)) || 0)),
+      });
+    } catch (error) {
+      console.error('Teacher dashboard error:', error);
+      return res.status(500).json({ error: 'تعذر تحميل لوحة المعلم' });
+    }
+  });
+
+  app.post('/api/teacher/classes', requireAuth, requireRole('teacher'), requireMongoForTeacher, async (req: Request, res: Response) => {
+    try {
+      const identity = teacherIdentity(req);
+      const payload = teacherClassPayload(req.body);
+      const { TeacherClass } = await import('../mongodb/models');
+      const created = await TeacherClass.create({
+        ...payload,
+        teacherId: identity.id,
+        institutionId: identity.institutionId || undefined,
+      });
+      return res.status(201).json(teacherClassResponse(created.toObject(), 0));
+    } catch (error: any) {
+      if (error?.code === 11000) return res.status(409).json({ error: 'يوجد فصل بهذا الاسم بالفعل' });
+      if (String(error?.message || '').startsWith('INVALID_') || error?.message === 'CLASS_REQUIRED_FIELDS') {
+        return res.status(400).json({ error: 'تحقق من اسم الفصل والمادة والبرنامج والحقول المدخلة' });
+      }
+      console.error('Create teacher class error:', error);
+      return res.status(500).json({ error: 'تعذر إنشاء الفصل' });
+    }
+  });
+
+  app.patch('/api/teacher/classes/:classId', requireAuth, requireRole('teacher'), requireMongoForTeacher, async (req: Request, res: Response) => {
+    try {
+      const identity = teacherIdentity(req);
+      if (!mongoose.Types.ObjectId.isValid(req.params.classId)) return res.status(404).json({ error: 'الفصل غير موجود' });
+      const payload = teacherClassPayload(req.body, true);
+      if (!Object.keys(payload).length) return res.status(400).json({ error: 'لا توجد تغييرات صالحة للحفظ' });
+      const { TeacherClass, TeacherClassMembership } = await import('../mongodb/models');
+      const updated = await TeacherClass.findOneAndUpdate(
+        { _id: req.params.classId, teacherId: identity.id, isActive: true },
+        { $set: payload },
+        { returnDocument: 'after', runValidators: true },
+      ).lean();
+      if (!updated) return res.status(404).json({ error: 'الفصل غير موجود' });
+      const studentCount = await TeacherClassMembership.countDocuments({ classId: updated._id, teacherId: identity.id });
+      return res.json(teacherClassResponse(updated, studentCount));
+    } catch (error: any) {
+      if (error?.code === 11000) return res.status(409).json({ error: 'يوجد فصل بهذا الاسم بالفعل' });
+      if (String(error?.message || '').startsWith('INVALID_')) return res.status(400).json({ error: 'تحقق من بيانات الفصل' });
+      console.error('Update teacher class error:', error);
+      return res.status(500).json({ error: 'تعذر تحديث الفصل' });
+    }
+  });
+
+  app.delete('/api/teacher/classes/:classId', requireAuth, requireRole('teacher'), requireMongoForTeacher, async (req: Request, res: Response) => {
+    try {
+      const identity = teacherIdentity(req);
+      if (!mongoose.Types.ObjectId.isValid(req.params.classId)) return res.status(404).json({ error: 'الفصل غير موجود' });
+      const { TeacherClass, TeacherClassMembership } = await import('../mongodb/models');
+      const teacherClass = await TeacherClass.findOne({ _id: req.params.classId, teacherId: identity.id, isActive: true }).select('_id').lean();
+      if (!teacherClass) return res.status(404).json({ error: 'الفصل غير موجود' });
+      const studentCount = await TeacherClassMembership.countDocuments({ classId: teacherClass._id, teacherId: identity.id });
+      if (studentCount > 0) return res.status(409).json({ error: 'أزل الطلاب من الفصل قبل حذفه' });
+      await TeacherClass.deleteOne({ _id: teacherClass._id, teacherId: identity.id });
+      return res.status(204).send();
+    } catch (error) {
+      console.error('Delete teacher class error:', error);
+      return res.status(500).json({ error: 'تعذر حذف الفصل' });
+    }
+  });
+
+  app.get('/api/teacher/classes/:classId/students', requireAuth, requireRole('teacher'), requireMongoForTeacher, async (req: Request, res: Response) => {
+    try {
+      const identity = teacherIdentity(req);
+      if (!mongoose.Types.ObjectId.isValid(req.params.classId)) return res.status(404).json({ error: 'الفصل غير موجود' });
+      const { TeacherClass, TeacherClassMembership, User } = await import('../mongodb/models');
+      const teacherClass = await TeacherClass.findOne({ _id: req.params.classId, teacherId: identity.id, isActive: true }).lean();
+      if (!teacherClass) return res.status(404).json({ error: 'الفصل غير موجود' });
+      const memberships = await TeacherClassMembership.find({ classId: teacherClass._id, teacherId: identity.id }).sort({ joinedAt: -1 }).lean();
+      const students = memberships.length
+        ? await User.find({ _id: { $in: memberships.map((membership: any) => membership.studentId) }, role: 'student' })
+            .select('fullName username email phone level totalTestsTaken lastVisit isActive')
+            .lean()
+        : [];
+      const membershipByStudent = new Map(memberships.map((membership: any) => [String(membership.studentId), membership]));
+      const roster = students.map((student: any) => ({
+        id: String(student._id),
+        fullName: student.fullName || student.username,
+        username: student.username,
+        email: student.email || '',
+        phone: student.phone || '',
+        level: Number(student.level || 1),
+        totalTestsTaken: Number(student.totalTestsTaken || 0),
+        lastVisit: student.lastVisit || null,
+        isActive: student.isActive !== false,
+        joinedAt: membershipByStudent.get(String(student._id))?.joinedAt,
+      }));
+      return res.json({
+        class: teacherClassResponse(teacherClass, roster.length),
+        students: roster,
+      });
+    } catch (error) {
+      console.error('Teacher class roster error:', error);
+      return res.status(500).json({ error: 'تعذر تحميل طلاب الفصل' });
+    }
+  });
+
+  app.post('/api/teacher/classes/:classId/students', requireAuth, requireRole('teacher'), requireMongoForTeacher, async (req: Request, res: Response) => {
+    try {
+      const identity = teacherIdentity(req);
+      if (!mongoose.Types.ObjectId.isValid(req.params.classId)) return res.status(404).json({ error: 'الفصل غير موجود' });
+      const identifier = String(req.body?.identifier || '').trim();
+      if (identifier.length < 3 || identifier.length > 160) return res.status(400).json({ error: 'أدخل اسم مستخدم أو بريدًا أو رقم جوال صالحًا' });
+      const { TeacherClass, TeacherClassMembership, User } = await import('../mongodb/models');
+      const teacherClass = await TeacherClass.findOne({ _id: req.params.classId, teacherId: identity.id, isActive: true }).select('_id').lean();
+      if (!teacherClass) return res.status(404).json({ error: 'الفصل غير موجود' });
+      const normalized = identifier.toLowerCase();
+      const phoneCandidates = phoneStorageCandidates(identifier);
+      const student = await User.findOne({
+        role: 'student',
+        isActive: { $ne: false },
+        $or: [
+          { username: identifier },
+          { username: normalized },
+          { email: normalized },
+          ...(phoneCandidates.length ? [{ phone: { $in: phoneCandidates } }] : []),
+        ],
+      }).select('fullName username email phone level totalTestsTaken lastVisit isActive').lean();
+      if (!student) return res.status(404).json({ error: 'لم يتم العثور على طالب مطابق' });
+      const membership = await TeacherClassMembership.create({
+        teacherId: identity.id,
+        classId: teacherClass._id,
+        studentId: student._id,
+      });
+      return res.status(201).json({
+        id: String(student._id),
+        fullName: student.fullName || student.username,
+        username: student.username,
+        email: student.email || '',
+        phone: student.phone || '',
+        level: Number(student.level || 1),
+        totalTestsTaken: Number(student.totalTestsTaken || 0),
+        lastVisit: student.lastVisit || null,
+        isActive: student.isActive !== false,
+        joinedAt: membership.joinedAt,
+      });
+    } catch (error: any) {
+      if (error?.code === 11000) return res.status(409).json({ error: 'الطالب موجود في هذا الفصل بالفعل' });
+      console.error('Add teacher class student error:', error);
+      return res.status(500).json({ error: 'تعذر إضافة الطالب إلى الفصل' });
+    }
+  });
+
+  app.delete('/api/teacher/classes/:classId/students/:studentId', requireAuth, requireRole('teacher'), requireMongoForTeacher, async (req: Request, res: Response) => {
+    try {
+      const identity = teacherIdentity(req);
+      if (!mongoose.Types.ObjectId.isValid(req.params.classId) || !mongoose.Types.ObjectId.isValid(req.params.studentId)) {
+        return res.status(404).json({ error: 'الطالب أو الفصل غير موجود' });
+      }
+      const { TeacherClass, TeacherClassMembership } = await import('../mongodb/models');
+      const teacherClass = await TeacherClass.findOne({ _id: req.params.classId, teacherId: identity.id, isActive: true }).select('_id').lean();
+      if (!teacherClass) return res.status(404).json({ error: 'الفصل غير موجود' });
+      const removed = await TeacherClassMembership.deleteOne({
+        teacherId: identity.id,
+        classId: teacherClass._id,
+        studentId: req.params.studentId,
+      });
+      if (!removed.deletedCount) return res.status(404).json({ error: 'الطالب غير موجود في هذا الفصل' });
+      return res.status(204).send();
+    } catch (error) {
+      console.error('Remove teacher class student error:', error);
+      return res.status(500).json({ error: 'تعذر إزالة الطالب من الفصل' });
+    }
+  });
+
+  // Student-facing diagnostic coach retained under an authenticated student route.
+  app.post('/api/student/teacher-analysis', requireAuth, requireRole('student'), async (req: Request, res: Response) => {
     try {
       const { examType, answers, questions, timings } = req.body;
       if (!questions || !Array.isArray(questions)) return res.status(400).json({ error: 'بيانات غير صحيحة' });
@@ -10583,7 +10871,7 @@ app.post("/api/auth/register", async (req: Request, res: Response) => {
     }
   });
 
-  app.post('/api/teacher/chat', async (req: Request, res: Response) => {
+  app.post('/api/student/teacher-chat', requireAuth, requireRole('student'), async (req: Request, res: Response) => {
     try {
       const { message, context, history } = req.body;
       if (!message) return res.status(400).json({ error: 'الرسالة مطلوبة' });

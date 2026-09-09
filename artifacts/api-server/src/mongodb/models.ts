@@ -95,6 +95,28 @@ export interface IRegisteredDevice {
   lastSeenAt: Date;
 }
 
+export interface ITeacherClass extends Document {
+  teacherId: string;
+  institutionId?: mongoose.Types.ObjectId;
+  name: string;
+  subject: string;
+  program: 'qudrat' | 'tahsili' | 'general';
+  gradeLevel?: string;
+  description?: string;
+  isActive: boolean;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export interface ITeacherClassMembership extends Document {
+  teacherId: string;
+  classId: mongoose.Types.ObjectId;
+  studentId: mongoose.Types.ObjectId;
+  joinedAt: Date;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
 export interface IWhatsAppMessage extends Document {
   messageId: string;
   phone: string;
@@ -136,6 +158,29 @@ const registeredDeviceSchema = new Schema<IRegisteredDevice>({
   firstSeenAt: { type: Date, default: Date.now },
   lastSeenAt: { type: Date, default: Date.now },
 }, { _id: false });
+
+const teacherClassSchema = new Schema<ITeacherClass>({
+  teacherId: { type: String, required: true, index: true },
+  institutionId: { type: Schema.Types.ObjectId, ref: 'Institution', index: true },
+  name: { type: String, required: true, trim: true, maxlength: 120 },
+  subject: { type: String, required: true, trim: true, maxlength: 120 },
+  program: { type: String, enum: ['qudrat', 'tahsili', 'general'], default: 'qudrat', index: true },
+  gradeLevel: { type: String, trim: true, maxlength: 80 },
+  description: { type: String, trim: true, maxlength: 500 },
+  isActive: { type: Boolean, default: true, index: true },
+}, { timestamps: true });
+
+teacherClassSchema.index({ teacherId: 1, name: 1 }, { unique: true });
+
+const teacherClassMembershipSchema = new Schema<ITeacherClassMembership>({
+  teacherId: { type: String, required: true, index: true },
+  classId: { type: Schema.Types.ObjectId, ref: 'TeacherClass', required: true, index: true },
+  studentId: { type: Schema.Types.ObjectId, ref: 'User', required: true, index: true },
+  joinedAt: { type: Date, default: Date.now },
+}, { timestamps: true });
+
+teacherClassMembershipSchema.index({ classId: 1, studentId: 1 }, { unique: true });
+teacherClassMembershipSchema.index({ teacherId: 1, studentId: 1 });
 
 const whatsAppMessageSchema = new Schema<IWhatsAppMessage>({
   messageId: { type: String, required: true, unique: true },
@@ -1080,6 +1125,12 @@ export const SupportTicket = mongoose.model<ISupportTicket>('SupportTicket', sup
 export const InAppNotification = mongoose.model<IInAppNotification>('InAppNotification', inAppNotificationSchema);
 export const PushSubscription = mongoose.model<IPushSubscription>('PushSubscription', pushSubscriptionSchema);
 export const GameRoom = mongoose.model<IGameRoom>('GameRoom', gameRoomSchema);
+export const TeacherClass = mongoose.models['TeacherClass']
+  ? mongoose.model<ITeacherClass>('TeacherClass')
+  : mongoose.model<ITeacherClass>('TeacherClass', teacherClassSchema);
+export const TeacherClassMembership = mongoose.models['TeacherClassMembership']
+  ? mongoose.model<ITeacherClassMembership>('TeacherClassMembership')
+  : mongoose.model<ITeacherClassMembership>('TeacherClassMembership', teacherClassMembershipSchema);
 
 // ─── QUESTION REPORT ───
 export interface IQuestionReport extends Document {

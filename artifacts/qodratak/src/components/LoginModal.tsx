@@ -12,6 +12,7 @@ const SIGNAL = "#FF8A70";
 const demoAccounts = [
   { label: "أدمن", identifier: "admin-demo", password: "AdminDemo@2026", icon: Shield },
   { label: "طالب", identifier: "student-demo", password: "StudentDemo@2026", icon: GraduationCap },
+  { label: "معلم", identifier: "teacher-demo", password: "TeacherDemo@2026", icon: GraduationCap },
   { label: "مؤسسة", identifier: "institution-demo", password: "InstitutionDemo@2026", icon: Building2 },
 ] as const;
 
