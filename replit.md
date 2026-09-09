@@ -20,14 +20,14 @@ development.
 
 ## Current environment
 
-The app starts without external database credentials by using its local
-in-memory storage fallback. This is suitable for previewing the interface, but
-data, accounts, and sessions are not durable between restarts.
+`MONGODB_URI` is configured in Replit Secrets. The API uses the existing MongoDB
+dataset for accounts, progress, questions, subscriptions, and persistent
+sessions. If the secret is unavailable in a development fork, the app falls
+back to in-memory preview data and development-only demo accounts.
 
-For durable operation, configure `MONGODB_URI` in Replit Secrets. Optional
-features such as AI assistance, email, OAuth, payments, WebAuthn, and push
-notifications require their corresponding environment variables. The available
-example is `artifacts/api-server/.env.example`.
+Optional features such as AI assistance, email, OAuth, payments, WebAuthn, and
+push notifications require their corresponding environment variables. The
+available example is `artifacts/api-server/.env.example`.
 
 Do not place credentials in the repository. Use Replit Secrets for all
 environment values.

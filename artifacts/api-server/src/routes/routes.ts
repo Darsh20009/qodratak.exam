@@ -10761,7 +10761,9 @@ app.post("/api/auth/register", async (req: Request, res: Response) => {
   app.get('/api/student/dashboard', requireAuth, async (req: Request, res: Response) => {
     const userId = studentOnly(req, res);
     if (!userId) return;
-    if (mongoose.connection.readyState !== 1 && process.env.NODE_ENV !== 'production') {
+    const isDevelopmentDemo = process.env.NODE_ENV !== 'production'
+      && String(userId).startsWith('development-');
+    if (process.env.NODE_ENV !== 'production' && (mongoose.connection.readyState !== 1 || isDevelopmentDemo)) {
       return res.json({
         totals: { tests: 0, questions: 0, correct: 0, wrong: 0, skipped: 0, averagePercentage: 0 },
         recentTests: [],
