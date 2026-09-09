@@ -1,43 +1,14 @@
 import {
-  Activity,
-  AlertCircle,
-  ArrowUpLeft,
-  BarChart3,
-  Bell,
-  BookOpen,
-  Building2,
-  CheckCircle2,
-  CreditCard,
-  Database,
-  FileText,
-  Mail,
-  Server,
-  Sparkles,
-  TrendingUp,
-  Users,
-  Zap,
+  Activity, AlertCircle, ArrowUpLeft, Bell, BookOpen, BriefcaseBusiness,
+  Check, CheckCircle2, ChevronLeft, CreditCard, Database, FileText, Gauge,
+  Inbox, Mail, MoreHorizontal, RefreshCw, Server, Settings2, ShieldCheck,
+  TrendingUp, Users, Wifi, Zap,
 } from 'lucide-react';
 
 interface DashboardStats {
-  users: {
-    totalUsers: number;
-    activeToday: number;
-    activeThisWeek: number;
-    newUsersToday: number;
-  };
-  subscriptions: {
-    activeSubscriptions: number;
-    revenueThisMonth: number;
-    newSubscriptionsToday: number;
-    newSubscriptionsThisWeek: number;
-    expiredSubscriptions: number;
-  };
-  tests: {
-    totalTests: number;
-    testsToday: number;
-    averageScore: number;
-    testsByType?: Record<string, number>;
-  };
+  users: { totalUsers: number; activeToday: number; activeThisWeek: number; newUsersToday: number };
+  subscriptions: { activeSubscriptions: number; revenueThisMonth: number; newSubscriptionsToday: number; newSubscriptionsThisWeek: number; expiredSubscriptions: number };
+  tests: { totalTests: number; testsToday: number; averageScore: number; testsByType?: Record<string, number> };
 }
 
 interface AdminOverviewProps {
@@ -52,67 +23,30 @@ const money = (value: number) => `${number(value)} ر.س`;
 
 function Sparkline({ values, color }: { values: number[]; color: string }) {
   const max = Math.max(...values, 1);
-  const points = values.map((value, index) => {
-    const x = (index / Math.max(values.length - 1, 1)) * 100;
-    const y = 34 - (value / max) * 27;
-    return `${x},${y}`;
-  }).join(' ');
-
-  return (
-    <svg viewBox="0 0 100 40" preserveAspectRatio="none" className="h-12 w-28 overflow-visible" aria-hidden="true">
-      <path d={`M ${points} L 100 40 L 0 40 Z`} fill={color} opacity="0.12" />
-      <polyline points={points} fill="none" stroke={color} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
-      <circle cx={100} cy={Number(points.split(' ').at(-1)?.split(',')[1] || 34)} r="2.5" fill={color} />
-    </svg>
-  );
+  const points = values.map((value, index) => `${(index / Math.max(values.length - 1, 1)) * 100},${31 - (value / max) * 23}`).join(' ');
+  return <svg viewBox="0 0 100 36" className="h-10 w-24 overflow-visible" aria-hidden="true"><polyline points={points} fill="none" stroke={color} strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" /><circle cx="100" cy={Number(points.split(' ').at(-1)?.split(',')[1] || 31)} r="2.2" fill={color} /></svg>;
 }
 
-function MetricCard({
-  label,
-  value,
-  helper,
-  icon: Icon,
-  accent,
-  values,
-}: {
-  label: string;
-  value: string;
-  helper: string;
-  icon: typeof Users;
-  accent: string;
-  values: number[];
-}) {
-  return (
-    <article className="group relative overflow-hidden rounded-[1.35rem] border border-white/[0.08] bg-[#0d1c2c] p-5 shadow-[0_18px_50px_rgba(0,0,0,0.18)] transition-transform duration-300 hover:-translate-y-1">
-      <div className="absolute -left-8 -top-10 h-28 w-28 rounded-full opacity-20 blur-2xl" style={{ backgroundColor: accent }} />
-      <div className="relative flex items-start justify-between gap-3">
-        <span className="flex h-11 w-11 items-center justify-center rounded-2xl border border-white/10 bg-white/[0.06]" style={{ color: accent }}>
-          <Icon className="h-5 w-5" />
-        </span>
-        <Sparkline values={values} color={accent} />
-      </div>
-      <p className="relative mt-5 text-xs font-medium text-slate-400">{label}</p>
-      <p className="relative mt-1 text-2xl font-black tracking-tight text-white">{value}</p>
-      <p className="relative mt-2 flex items-center gap-1 text-xs text-slate-500">
-        <ArrowUpLeft className="h-3.5 w-3.5 text-[#b8f36b]" />
-        {helper}
-      </p>
-    </article>
-  );
+function MetricCard({ label, value, helper, icon: Icon, tone, values }: { label: string; value: string; helper: string; icon: typeof Users; tone: 'teal' | 'gold' | 'coral' | 'ink'; values: number[] }) {
+  const styles = {
+    teal: { icon: 'bg-[#e0f1ec] text-[#237f79]', line: '#237f79' },
+    gold: { icon: 'bg-[#f7edd8] text-[#9a722b]', line: '#c99d4d' },
+    coral: { icon: 'bg-[#fae4df] text-[#bd6558]', line: '#dd7868' },
+    ink: { icon: 'bg-[#e6e6ef] text-[#5e5a82]', line: '#7c7698' },
+  }[tone];
+  return <article className="group rounded-[1.35rem] border border-[#dfe4df] bg-[#fbfcf8] p-5 shadow-[0_10px_30px_rgba(31,50,47,0.05)] transition duration-300 hover:-translate-y-0.5 hover:border-[#b9d6cc] hover:shadow-[0_16px_38px_rgba(31,50,47,0.1)]">
+    <div className="flex items-start justify-between gap-3"><span className={`flex h-10 w-10 items-center justify-center rounded-[0.85rem] ${styles.icon}`}><Icon className="h-[18px] w-[18px]" strokeWidth={1.8} /></span><Sparkline values={values} color={styles.line} /></div>
+    <p className="mt-5 text-[12px] font-semibold text-[#75807a]">{label}</p><p className="mt-1 text-[1.65rem] font-extrabold tracking-[-0.04em] text-[#173834]">{value}</p>
+    <div className="mt-2 flex items-center gap-1.5 text-[11px] text-[#718078]"><TrendingUp className="h-3.5 w-3.5 text-[#237f79]" />{helper}</div>
+  </article>;
 }
 
-function StatusRow({ icon: Icon, label, detail, tone = 'ok' }: { icon: typeof Database; label: string; detail: string; tone?: 'ok' | 'warn' }) {
-  return (
-    <div className="flex items-center justify-between gap-3 rounded-xl border border-white/[0.06] bg-white/[0.025] px-3 py-3">
-      <div className="flex min-w-0 items-center gap-3">
-        <span className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-xl ${tone === 'ok' ? 'bg-[#b8f36b]/10 text-[#b8f36b]' : 'bg-amber-300/10 text-amber-300'}`}>
-          <Icon className="h-4 w-4" />
-        </span>
-        <span className="truncate text-sm text-slate-300">{label}</span>
-      </div>
-      <span className={`shrink-0 text-xs font-semibold ${tone === 'ok' ? 'text-[#b8f36b]' : 'text-amber-300'}`}>{detail}</span>
-    </div>
-  );
+function Heading({ icon: Icon, title, detail }: { icon: typeof Activity; title: string; detail: string }) {
+  return <div className="flex items-start gap-3"><span className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-[#e8f2ed] text-[#237f79]"><Icon className="h-4 w-4" strokeWidth={1.8} /></span><div><h2 className="text-[15px] font-extrabold text-[#173834]">{title}</h2><p className="mt-1 text-[11px] leading-5 text-[#86918a]">{detail}</p></div></div>;
+}
+
+function StatusRow({ icon: Icon, label, detail, warning = false }: { icon: typeof Database; label: string; detail: string; warning?: boolean }) {
+  return <div className="flex items-center justify-between gap-3 rounded-xl border border-[#e3e8e2] bg-[#f7faf6] px-3.5 py-3"><div className="flex min-w-0 items-center gap-2.5"><span className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-lg ${warning ? 'bg-[#fff1d9] text-[#b27c2d]' : 'bg-[#e2f1eb] text-[#237f79]'}`}><Icon className="h-3.5 w-3.5" /></span><span className="truncate text-[12px] font-semibold text-[#53645d]">{label}</span></div><span className={`shrink-0 text-[11px] font-bold ${warning ? 'text-[#b27c2d]' : 'text-[#237f79]'}`}>{detail}</span></div>;
 }
 
 export default function AdminOverview({ stats, pendingSubCount, pendingInstCount, onNavigate }: AdminOverviewProps) {
@@ -120,152 +54,24 @@ export default function AdminOverview({ stats, pendingSubCount, pendingInstCount
   const maxTestCount = Math.max(...testTypes.map(([, value]) => value), 1);
   const activeRatio = stats.users.totalUsers ? Math.round((stats.users.activeToday / stats.users.totalUsers) * 100) : 0;
   const subscriptionRatio = stats.users.totalUsers ? Math.min(100, Math.round((stats.subscriptions.activeSubscriptions / stats.users.totalUsers) * 100)) : 0;
-
-  return (
-    <div className="space-y-6">
-      <section className="relative isolate overflow-hidden rounded-[1.75rem] border border-[#b8f36b]/20 bg-[linear-gradient(135deg,#12283a_0%,#0b1827_55%,#101d2d_100%)] p-6 shadow-[0_24px_80px_rgba(0,0,0,0.25)] md:p-8">
-        <div className="pointer-events-none absolute -left-24 -top-32 h-80 w-80 rounded-full bg-[#b8f36b]/10 blur-3xl" />
-        <div className="pointer-events-none absolute -bottom-28 right-20 h-64 w-64 rounded-full bg-cyan-300/10 blur-3xl" />
-        <div className="pointer-events-none absolute inset-0 opacity-20 [background-image:linear-gradient(rgba(255,255,255,.08)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,.08)_1px,transparent_1px)] [background-size:32px_32px]" />
-        <div className="relative flex flex-col justify-between gap-8 lg:flex-row lg:items-end">
-          <div className="max-w-2xl">
-            <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-[#b8f36b]/20 bg-[#b8f36b]/10 px-3 py-1.5 text-xs font-bold text-[#d7ffa1]">
-              <Sparkles className="h-3.5 w-3.5" />
-              مركز قيادة قدراتك
-            </div>
-            <h2 className="text-3xl font-black tracking-tight text-white md:text-4xl">صورة واضحة لاتجاه المنصة</h2>
-            <p className="mt-3 max-w-xl text-sm leading-7 text-slate-300 md:text-base">
-              راقب نشاط الطلاب، صحة الاشتراكات وأداء الاختبارات من مساحة واحدة، واتخذ الإجراء المناسب قبل أن تتحول الإشارة إلى مشكلة.
-            </p>
-          </div>
-          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
-            <div className="rounded-2xl border border-white/10 bg-black/10 px-4 py-3 backdrop-blur">
-              <p className="text-[10px] font-bold text-slate-500">نشاط اليوم</p>
-              <p className="mt-1 text-xl font-black text-[#b8f36b]">{activeRatio}%</p>
-            </div>
-            <div className="rounded-2xl border border-white/10 bg-black/10 px-4 py-3 backdrop-blur">
-              <p className="text-[10px] font-bold text-slate-500">متوسط الدرجات</p>
-              <p className="mt-1 text-xl font-black text-white">{stats.tests.averageScore.toFixed(1)}%</p>
-            </div>
-            <div className="col-span-2 rounded-2xl border border-white/10 bg-black/10 px-4 py-3 backdrop-blur sm:col-span-1">
-              <p className="text-[10px] font-bold text-slate-500">تدفق اليوم</p>
-              <p className="mt-1 text-xl font-black text-cyan-200">{number(stats.tests.testsToday)} اختبار</p>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      <section className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
-        <MetricCard label="إجمالي الطلاب" value={number(stats.users.totalUsers)} helper={`+${number(stats.users.newUsersToday)} طالب اليوم`} icon={Users} accent="#7dd3fc" values={[12, 18, 15, 24, 22, stats.users.totalUsers || 1]} />
-        <MetricCard label="نشاط الطلاب اليوم" value={number(stats.users.activeToday)} helper={`${number(stats.users.activeThisWeek)} خلال الأسبوع`} icon={Activity} accent="#b8f36b" values={[8, 12, 10, 17, 21, stats.users.activeToday || 1]} />
-        <MetricCard label="اشتراكات نشطة" value={number(stats.subscriptions.activeSubscriptions)} helper={`+${number(stats.subscriptions.newSubscriptionsThisWeek)} هذا الأسبوع`} icon={CreditCard} accent="#c4b5fd" values={[9, 14, 13, 19, 24, stats.subscriptions.activeSubscriptions || 1]} />
-        <MetricCard label="إيرادات الشهر" value={money(stats.subscriptions.revenueThisMonth)} helper={`${number(stats.subscriptions.newSubscriptionsToday)} اشتراك جديد اليوم`} icon={TrendingUp} accent="#fbbf24" values={[5, 10, 8, 16, 14, stats.subscriptions.revenueThisMonth || 1]} />
-      </section>
-
-      <section className="grid gap-6 xl:grid-cols-[1.35fr_0.85fr]">
-        <article className="rounded-[1.5rem] border border-white/[0.08] bg-[#0d1c2c] p-5 shadow-[0_18px_50px_rgba(0,0,0,0.16)] md:p-6">
-          <div className="flex flex-wrap items-start justify-between gap-3">
-            <div>
-              <p className="flex items-center gap-2 text-sm font-bold text-white"><BarChart3 className="h-4 w-4 text-[#b8f36b]" /> خريطة الاختبارات</p>
-              <p className="mt-1 text-xs text-slate-500">توزيع المحاولات حسب نوع الاختبار</p>
-            </div>
-            <span className="rounded-full border border-white/10 px-3 py-1 text-xs text-slate-400">{number(stats.tests.totalTests)} إجمالي</span>
-          </div>
-          <div className="mt-7 space-y-4">
-            {testTypes.length > 0 ? testTypes.map(([label, value], index) => (
-              <div key={label}>
-                <div className="mb-2 flex items-center justify-between gap-3 text-xs">
-                  <span className="text-slate-300">{label}</span>
-                  <span className="font-bold text-white">{number(value)}</span>
-                </div>
-                <div className="h-2 overflow-hidden rounded-full bg-white/[0.06]">
-                  <div
-                    className={`h-full rounded-full ${index % 3 === 0 ? 'bg-[#b8f36b]' : index % 3 === 1 ? 'bg-cyan-300' : 'bg-violet-300'}`}
-                    style={{ width: `${Math.max(5, (value / maxTestCount) * 100)}%` }}
-                  />
-                </div>
-              </div>
-            )) : (
-              <div className="rounded-2xl border border-dashed border-white/10 py-12 text-center text-sm text-slate-500">لا توجد بيانات اختبار كافية بعد</div>
-            )}
-          </div>
-          <div className="mt-7 grid grid-cols-2 gap-3 border-t border-white/[0.07] pt-5">
-            <div className="rounded-2xl bg-white/[0.035] p-3"><p className="text-[11px] text-slate-500">اختبارات اليوم</p><p className="mt-1 text-xl font-black text-white">{number(stats.tests.testsToday)}</p></div>
-            <div className="rounded-2xl bg-white/[0.035] p-3"><p className="text-[11px] text-slate-500">اختبارات منتهية</p><p className="mt-1 text-xl font-black text-white">{number(stats.subscriptions.expiredSubscriptions)}</p></div>
-          </div>
-        </article>
-
-        <article className="rounded-[1.5rem] border border-white/[0.08] bg-[#0d1c2c] p-5 shadow-[0_18px_50px_rgba(0,0,0,0.16)] md:p-6">
-          <div className="flex items-start justify-between">
-            <div>
-              <p className="flex items-center gap-2 text-sm font-bold text-white"><Activity className="h-4 w-4 text-cyan-300" /> نبض الاشتراكات</p>
-              <p className="mt-1 text-xs text-slate-500">نسبة الاشتراكات النشطة من قاعدة الطلاب</p>
-            </div>
-            <div className="relative h-20 w-20 rounded-full" style={{ background: `conic-gradient(#b8f36b ${subscriptionRatio}%, rgba(255,255,255,.07) 0)` }}>
-              <div className="absolute inset-2 flex flex-col items-center justify-center rounded-full bg-[#0d1c2c]">
-                <span className="text-lg font-black text-white">{subscriptionRatio}%</span>
-                <span className="text-[9px] text-slate-500">نشط</span>
-              </div>
-            </div>
-          </div>
-          <div className="mt-7 space-y-3">
-            <StatusRow icon={CheckCircle2} label="اشتراكات نشطة" detail={number(stats.subscriptions.activeSubscriptions)} />
-            <StatusRow icon={AlertCircle} label="بانتظار المراجعة" detail={number(pendingSubCount)} tone={pendingSubCount ? 'warn' : 'ok'} />
-            <StatusRow icon={TrendingUp} label="إيرادات هذا الشهر" detail={money(stats.subscriptions.revenueThisMonth)} />
-          </div>
-          <button onClick={() => onNavigate('subscriptions')} className="mt-5 flex w-full items-center justify-center gap-2 rounded-xl border border-white/10 bg-white/[0.04] py-3 text-xs font-bold text-slate-300 transition-colors hover:border-[#b8f36b]/40 hover:text-[#d7ffa1]">
-            فتح إدارة الاشتراكات <ArrowUpLeft className="h-4 w-4" />
-          </button>
-        </article>
-      </section>
-
-      <section className="grid gap-6 lg:grid-cols-[0.9fr_1.1fr]">
-        <article className="rounded-[1.5rem] border border-white/[0.08] bg-[#0d1c2c] p-5 shadow-[0_18px_50px_rgba(0,0,0,0.16)] md:p-6">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="flex items-center gap-2 text-sm font-bold text-white"><Zap className="h-4 w-4 text-amber-300" /> إجراءات سريعة</p>
-              <p className="mt-1 text-xs text-slate-500">اختصارات العمل الأكثر استخدامًا</p>
-            </div>
-          </div>
-          <div className="mt-5 grid gap-2 sm:grid-cols-2 lg:grid-cols-1">
-            {[
-              { tab: 'subscriptions', label: 'مراجعة الاشتراكات', icon: CreditCard, badge: pendingSubCount },
-              { tab: 'email', label: 'إرسال بريد جماعي', icon: Mail },
-              { tab: 'questions', label: 'إدارة بنك الأسئلة', icon: BookOpen },
-              { tab: 'exams', label: 'عرض الاختبارات المجدولة', icon: FileText },
-            ].map(({ tab, label, icon: Icon, badge }) => (
-              <button key={tab} onClick={() => onNavigate(tab)} className="flex items-center gap-3 rounded-xl border border-white/[0.06] bg-white/[0.025] px-3 py-3 text-right text-sm text-slate-300 transition-colors hover:border-white/15 hover:bg-white/[0.06] hover:text-white">
-                <Icon className="h-4 w-4 text-cyan-300" />
-                <span className="flex-1">{label}</span>
-                {!!badge && <span className="rounded-full bg-amber-300/15 px-2 py-0.5 text-[10px] font-bold text-amber-200">{badge}</span>}
-                <ArrowUpLeft className="h-3.5 w-3.5 text-slate-600" />
-              </button>
-            ))}
-          </div>
-        </article>
-
-        <article className="rounded-[1.5rem] border border-white/[0.08] bg-[#0d1c2c] p-5 shadow-[0_18px_50px_rgba(0,0,0,0.16)] md:p-6">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="flex items-center gap-2 text-sm font-bold text-white"><Server className="h-4 w-4 text-[#b8f36b]" /> صحة المنصة</p>
-              <p className="mt-1 text-xs text-slate-500">المكونات الأساسية تعمل بصورة طبيعية</p>
-            </div>
-            <span className="flex items-center gap-1.5 rounded-full bg-[#b8f36b]/10 px-3 py-1 text-[10px] font-bold text-[#b8f36b]"><span className="h-1.5 w-1.5 rounded-full bg-[#b8f36b]" /> مباشر</span>
-          </div>
-          <div className="mt-5 grid gap-2 sm:grid-cols-2">
-            <StatusRow icon={Database} label="قاعدة البيانات" detail="متصلة" />
-            <StatusRow icon={Mail} label="خدمة البريد" detail="جاهزة" />
-            <StatusRow icon={Server} label="الخادم" detail="يعمل" />
-            <StatusRow icon={Bell} label="التنبيهات" detail={pendingInstCount ? `${pendingInstCount} معلقة` : 'هادئة'} tone={pendingInstCount ? 'warn' : 'ok'} />
-          </div>
-          {(pendingSubCount > 0 || pendingInstCount > 0) && (
-            <div className="mt-4 flex items-start gap-2 rounded-xl border border-amber-300/20 bg-amber-300/10 p-3 text-xs leading-6 text-amber-100">
-              <AlertCircle className="mt-0.5 h-4 w-4 shrink-0 text-amber-300" />
-              توجد عناصر تحتاج مراجعة: {pendingSubCount > 0 ? `${pendingSubCount} اشتراك` : ''}{pendingSubCount > 0 && pendingInstCount > 0 ? ' و' : ''}{pendingInstCount > 0 ? `${pendingInstCount} طلب مؤسسة` : ''}.
-            </div>
-          )}
-        </article>
-      </section>
+  const card = 'rounded-[1.45rem] border border-[#dfe4df] bg-[#fbfcf8] p-5 shadow-[0_10px_30px_rgba(31,50,47,0.04)] sm:p-6';
+  const quick = [
+    { tab: 'subscriptions', label: 'الاشتراكات', sub: `${number(pendingSubCount)} تحتاج مراجعة`, icon: CreditCard, tone: 'text-[#237f79] bg-[#e5f2ed]' },
+    { tab: 'questions', label: 'بنك الأسئلة', sub: 'إدارة المحتوى', icon: BookOpen, tone: 'text-[#9a722b] bg-[#f8edd8]' },
+    { tab: 'exams', label: 'الاختبارات', sub: `${number(stats.tests.testsToday)} اليوم`, icon: FileText, tone: 'text-[#bd6558] bg-[#fae5df]' },
+    { tab: 'email', label: 'إرسال بريد', sub: 'التواصل مع الطلاب', icon: Mail, tone: 'text-[#5e5a82] bg-[#ebeaf3]' },
+  ];
+  return <main dir="rtl" className="min-h-full bg-[#f2f5f0] px-3 py-4 text-right text-[#173834] sm:px-5 lg:px-8 lg:py-7">
+    <div className="mx-auto max-w-[1480px]">
+      <header className="mb-5 flex items-center justify-between gap-3"><div className="flex items-center gap-3"><div className="flex h-11 w-11 items-center justify-center rounded-[1rem] bg-[#173834] text-lg font-black text-[#e9d7a8]">قـ</div><div><p className="text-[11px] font-bold tracking-[0.08em] text-[#7f8c84]">قدراتك <span className="mx-1 text-[#c99d4d]">/</span> مساحة العمل</p><h1 className="mt-0.5 text-lg font-extrabold text-[#173834]">نظرة عامة</h1></div></div><div className="flex items-center gap-2"><span className="hidden items-center gap-2 rounded-full border border-[#dce4dc] bg-[#f9fbf7] px-3 py-2 text-[11px] font-semibold text-[#6d7b73] sm:flex"><span className="h-2 w-2 rounded-full bg-[#4caa78]" />آخر تحديث مباشر</span><button type="button" aria-label="التنبيهات" className="relative flex h-10 w-10 items-center justify-center rounded-xl border border-[#dce4dc] bg-[#f9fbf7] text-[#65736d] transition hover:text-[#237f79] focus:outline-none focus:ring-2 focus:ring-[#c99d4d]/60"><Bell className="h-4 w-4" />{(pendingSubCount + pendingInstCount) > 0 && <span className="absolute right-2 top-2 h-1.5 w-1.5 rounded-full bg-[#dd7868]" />}</button></div></header>
+      <section className="relative overflow-hidden rounded-[1.75rem] bg-[#173834] px-5 py-6 shadow-[0_18px_45px_rgba(23,56,52,0.16)] sm:px-7 sm:py-7 lg:px-10 lg:py-8"><div className="pointer-events-none absolute -left-20 -top-28 h-64 w-64 rounded-full border-[26px] border-[#c99d4d]/10" /><div className="pointer-events-none absolute bottom-[-110px] right-[28%] h-64 w-64 rounded-full bg-[#237f79]/35 blur-3xl" /><div className="relative flex flex-col justify-between gap-7 lg:flex-row lg:items-end"><div className="max-w-[620px]"><div className="mb-4 inline-flex items-center gap-2 rounded-full border border-[#c6a561]/35 bg-[#c99d4d]/12 px-3 py-1.5 text-[10px] font-extrabold text-[#ead7a7]"><ShieldCheck className="h-3.5 w-3.5" />غرفة العمليات</div><h2 className="text-[1.7rem] font-extrabold leading-[1.25] tracking-[-0.04em] text-[#f3f4ec] sm:text-[2.15rem]">المنصة تمضي بهدوء.<br /><span className="text-[#d7ba78]">وهذه هي الصورة التي تهم.</span></h2><p className="mt-4 max-w-[560px] text-[12px] leading-7 text-[#b7c9c0] sm:text-[13px]">مؤشرات الطلاب والاشتراكات والاختبارات مجمّعة في مكان واحد، لتعرف ما يحتاج انتباهك قبل أن يبدأ يوم المراجعة.</p></div><div className="grid grid-cols-3 gap-2.5 sm:gap-3">{[['نشاط اليوم', `${activeRatio}%`, 'text-[#dcecae]'], ['متوسط الأداء', `${stats.tests.averageScore.toFixed(1)}%`, 'text-[#f0d696]'], ['اختبارات اليوم', number(stats.tests.testsToday), 'text-[#b7e0d2]']].map(([label, value, color]) => <div key={label} className="rounded-2xl border border-white/10 bg-white/[0.07] px-3 py-3.5 backdrop-blur"><p className="text-[10px] font-semibold text-[#9eb5aa]">{label}</p><p className={`mt-1 text-xl font-extrabold ${color}`}>{value}</p></div>)}</div></div></section>
+      <section className="mt-5 grid grid-cols-1 gap-3.5 sm:grid-cols-2 xl:grid-cols-4"><MetricCard label="إجمالي الطلاب" value={number(stats.users.totalUsers)} helper={`+${number(stats.users.newUsersToday)} طالب جديد اليوم`} icon={Users} tone="teal" values={[12, 18, 15, 24, 22, stats.users.totalUsers || 1]} /><MetricCard label="نشاط الطلاب اليوم" value={number(stats.users.activeToday)} helper={`${number(stats.users.activeThisWeek)} طالب خلال الأسبوع`} icon={Activity} tone="gold" values={[8, 12, 10, 17, 21, stats.users.activeToday || 1]} /><MetricCard label="اشتراكات نشطة" value={number(stats.subscriptions.activeSubscriptions)} helper={`+${number(stats.subscriptions.newSubscriptionsThisWeek)} هذا الأسبوع`} icon={CreditCard} tone="ink" values={[9, 14, 13, 19, 24, stats.subscriptions.activeSubscriptions || 1]} /><MetricCard label="إيرادات هذا الشهر" value={money(stats.subscriptions.revenueThisMonth)} helper={`${number(stats.subscriptions.newSubscriptionsToday)} اشتراكاً جديداً اليوم`} icon={TrendingUp} tone="coral" values={[5, 10, 8, 16, 14, stats.subscriptions.revenueThisMonth || 1]} /></section>
+      <section className="mt-5 grid gap-5 xl:grid-cols-[1.45fr_0.85fr]"><article className={card}><div className="flex items-start justify-between gap-4"><Heading icon={Gauge} title="إيقاع التعلّم" detail="حجم المحاولات وتوزيعها على مسارات الاختبار" /><span className="rounded-xl bg-[#e8f2ed] px-3 py-2 text-[10px] font-bold text-[#237f79]">ملخص حي</span></div><div className="mt-7 space-y-4">{testTypes.length ? testTypes.map(([label, value], index) => <div key={label}><div className="mb-1.5 flex items-center justify-between gap-3 text-[11px]"><span className="font-semibold text-[#617069]">{label}</span><span className="font-extrabold text-[#304942]">{number(value)}</span></div><div className="h-2 overflow-hidden rounded-full bg-[#edf1ec]"><div className={`h-full rounded-full ${index % 3 === 0 ? 'bg-[#237f79]' : index % 3 === 1 ? 'bg-[#c99d4d]' : 'bg-[#dd7868]'}`} style={{ width: `${Math.max(5, (value / maxTestCount) * 100)}%` }} /></div></div>) : <div className="rounded-xl border border-dashed border-[#dfe4df] py-10 text-center text-xs text-[#89948d]">لا توجد بيانات اختبار كافية بعد</div>}</div><div className="mt-6 grid grid-cols-2 gap-3 border-t border-[#e8ece7] pt-4"><div><p className="text-[10px] font-semibold text-[#89948d]">اختبارات اليوم</p><p className="mt-1 text-base font-extrabold text-[#173834]">{number(stats.tests.testsToday)}</p></div><div><p className="text-[10px] font-semibold text-[#89948d]">متوسط الدرجات</p><p className="mt-1 text-base font-extrabold text-[#237f79]">{stats.tests.averageScore.toFixed(1)}%</p></div></div></article>
+        <article className={card}><Heading icon={CreditCard} title="نبض الاشتراكات" detail="صورة سريعة عن قاعدة المشتركين" /><div className="mt-6 flex items-center gap-5"><div className="relative h-[94px] w-[94px] shrink-0 rounded-full" style={{ background: `conic-gradient(#c99d4d ${subscriptionRatio}%, #edf0eb 0)` }}><div className="absolute inset-[9px] flex flex-col items-center justify-center rounded-full bg-[#fbfcf8]"><span className="text-xl font-extrabold text-[#173834]">{subscriptionRatio}%</span><span className="text-[9px] font-semibold text-[#89948d]">من الطلاب</span></div></div><div><p className="text-[11px] font-semibold text-[#7b8981]">إيرادات الشهر</p><p className="mt-1 text-xl font-extrabold text-[#173834]">{money(stats.subscriptions.revenueThisMonth)}</p></div></div><div className="mt-6 space-y-2.5"><StatusRow icon={CheckCircle2} label="اشتراكات نشطة" detail={number(stats.subscriptions.activeSubscriptions)} /><StatusRow icon={AlertCircle} label="بانتظار المراجعة" detail={number(pendingSubCount)} warning={pendingSubCount > 0} /><StatusRow icon={RefreshCw} label="اشتراكات منتهية" detail={number(stats.subscriptions.expiredSubscriptions)} /></div><button type="button" onClick={() => onNavigate('subscriptions')} className="mt-5 flex w-full items-center justify-center gap-2 rounded-xl border border-[#c9ddd4] bg-[#edf6f1] py-3 text-[11px] font-extrabold text-[#237f79] transition hover:bg-[#e1f0e9] focus:outline-none focus:ring-2 focus:ring-[#c99d4d]/50">فتح إدارة الاشتراكات <ArrowUpLeft className="h-3.5 w-3.5" /></button></article></section>
+      <section className="mt-5 grid gap-5 lg:grid-cols-[0.82fr_1.18fr]"><article className={card}><Heading icon={Inbox} title="ما يحتاج انتباهك" detail="نقاط صغيرة قبل أن تبدأ جولتك" /><div className="mt-5 space-y-2.5"><button type="button" onClick={() => onNavigate('subscriptions')} className="flex w-full items-center gap-3 rounded-xl border border-[#eadfca] bg-[#fffaf0] p-3 text-right transition hover:-translate-x-0.5 hover:border-[#d9bd83] focus:outline-none focus:ring-2 focus:ring-[#c99d4d]/50"><CreditCard className="h-4 w-4 text-[#aa7c2c]" /><span className="min-w-0 flex-1"><span className="block text-[11px] font-extrabold text-[#62502d]">طلبات اشتراك جديدة</span><span className="mt-0.5 block text-[10px] text-[#9b875e]">تحتاج إلى مراجعة يدوية</span></span><span className="rounded-full bg-[#f1dcae] px-2 py-1 text-[10px] font-extrabold text-[#866323]">{number(pendingSubCount)}</span><ChevronLeft className="h-3.5 w-3.5 text-[#b9a277]" /></button><button type="button" onClick={() => onNavigate('institutions')} className="flex w-full items-center gap-3 rounded-xl border border-[#f0dcd8] bg-[#fff8f6] p-3 text-right transition hover:-translate-x-0.5 hover:border-[#dfaaa0] focus:outline-none focus:ring-2 focus:ring-[#dd7868]/40"><BriefcaseBusiness className="h-4 w-4 text-[#bd6558]" /><span className="min-w-0 flex-1"><span className="block text-[11px] font-extrabold text-[#674641]">طلبات المؤسسات</span><span className="mt-0.5 block text-[10px] text-[#a1847f]">طلبات انضمام جديدة</span></span><span className="rounded-full bg-[#f3d0c9] px-2 py-1 text-[10px] font-extrabold text-[#a35449]">{number(pendingInstCount)}</span><ChevronLeft className="h-3.5 w-3.5 text-[#c8978e]" /></button>{!pendingSubCount && !pendingInstCount && <div className="flex items-center gap-3 rounded-xl border border-[#dbe9e1] bg-[#f3faf6] p-3 text-[11px] font-bold text-[#42645a]"><Check className="h-4 w-4 text-[#237f79]" />لا توجد عناصر معلقة للمراجعة</div>}</div></article>
+        <article className={card}><div className="flex items-start justify-between gap-4"><Heading icon={Zap} title="الوصول السريع" detail="الأماكن التي تعود إليها يومياً" /><button type="button" onClick={() => onNavigate('settings')} aria-label="إعدادات" className="rounded-lg p-2 text-[#9aa59e] hover:bg-[#eef3ee] hover:text-[#237f79]"><MoreHorizontal className="h-4 w-4" /></button></div><div className="mt-5 grid grid-cols-2 gap-2.5 sm:grid-cols-4">{quick.map(({ tab, label, sub, icon: Icon, tone }) => <button key={tab} type="button" onClick={() => onNavigate(tab)} className="group rounded-xl border border-[#e3e8e2] bg-[#f8faf7] p-3 text-right transition hover:-translate-y-0.5 hover:border-[#b6d2c8] focus:outline-none focus:ring-2 focus:ring-[#c99d4d]/50"><span className={`flex h-8 w-8 items-center justify-center rounded-lg ${tone}`}><Icon className="h-4 w-4" /></span><span className="mt-3 block text-[11px] font-extrabold text-[#3d554d]">{label}</span><span className="mt-1 block truncate text-[9px] font-semibold text-[#8c9991]">{sub}</span><ArrowUpLeft className="mt-3 h-3.5 w-3.5 text-[#b8c1bb]" /></button>)}</div></article></section>
+      <section className={`mt-5 ${card}`}><div className="flex flex-col justify-between gap-3 sm:flex-row sm:items-center"><Heading icon={Server} title="صحة المنصة" detail="الخدمات الأساسية تراقب نفسها باستمرار" /><span className="flex items-center gap-2 rounded-full bg-[#e7f4eb] px-3 py-1.5 text-[10px] font-extrabold text-[#39805e]"><span className="h-1.5 w-1.5 rounded-full bg-[#4caa78]" />كل شيء يعمل</span></div><div className="mt-5 grid gap-2.5 sm:grid-cols-2 xl:grid-cols-4"><StatusRow icon={Database} label="قاعدة البيانات" detail="متصلة" /><StatusRow icon={Mail} label="خدمة البريد" detail="جاهزة" /><StatusRow icon={Wifi} label="بوابة الاختبارات" detail="مستقرة" /><StatusRow icon={Bell} label="طلبات المؤسسات" detail={pendingInstCount ? `${number(pendingInstCount)} معلقة` : 'هادئة'} warning={pendingInstCount > 0} /></div>{(pendingSubCount > 0 || pendingInstCount > 0) && <div className="mt-4 flex items-start gap-2.5 rounded-xl border border-[#eadfca] bg-[#fffaf0] p-3 text-[10px] leading-6 text-[#8b7040]"><AlertCircle className="mt-1 h-3.5 w-3.5 shrink-0 text-[#bd8a38]" />هناك عناصر في قائمة المراجعة. لا يوجد تأثير على تجربة الطلاب حالياً.</div>}</section>
+      <footer className="flex justify-between px-1 pb-2 pt-5 text-[10px] font-semibold text-[#95a098]"><span>بيانات مباشرة من لوحة الإدارة</span><button type="button" onClick={() => onNavigate('settings')} className="flex items-center gap-1.5 hover:text-[#237f79]"><Settings2 className="h-3.5 w-3.5" />إعدادات مساحة العمل</button></footer>
     </div>
-  );
+  </main>;
 }
