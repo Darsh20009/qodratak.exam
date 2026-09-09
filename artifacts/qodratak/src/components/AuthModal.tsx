@@ -42,6 +42,30 @@ const countries = [
 
 const emailDomains = ["gmail.com", "outlook.com", "hotmail.com", "yahoo.com", "icloud.com"];
 
+async function readAuthResponse(response: Response): Promise<Record<string, any>> {
+  const body = await response.text();
+  if (!body.trim()) {
+    return {
+      error: response.ok
+        ? "لم يُرجع الخادم بيانات تسجيل الدخول. حاول مرة أخرى."
+        : `تعذر إكمال الطلب حالياً (رمز الخادم ${response.status}). حاول مرة أخرى.`,
+    };
+  }
+
+  try {
+    const parsed = JSON.parse(body);
+    return parsed && typeof parsed === "object"
+      ? parsed
+      : { error: "استجابة غير صالحة من الخادم. حاول مرة أخرى." };
+  } catch {
+    return {
+      error: response.ok
+        ? "استجابة غير صالحة من الخادم. حاول مرة أخرى."
+        : `تعذر إكمال الطلب حالياً (رمز الخادم ${response.status}). حاول مرة أخرى.`,
+    };
+  }
+}
+
 function normalizeInputDigits(value: string) {
   return value
     .replace(/[٠-٩]/g, (digit) => String(digit.charCodeAt(0) - 0x0660))
@@ -179,7 +203,7 @@ export function AuthModal({ open, mode, onClose, onModeChange }: { open: boolean
         credentials: "include",
         headers: { "x-device-management-token": deviceLimit.managementToken },
       });
-      const result = await response.json();
+       const result = await readAuthResponse(response);
       if (!response.ok) throw new Error(result.error || "تعذر حذف الجهاز");
       setDeviceLimit((current) => current
         ? { ...current, devices: current.devices.filter((item) => item.id !== device.id) }
@@ -212,7 +236,7 @@ export function AuthModal({ open, mode, onClose, onModeChange }: { open: boolean
       method: "POST", credentials: "include", headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ phone: number, otp, purpose, deviceId: getDeviceId() }),
     });
-    const result = await response.json();
+    const result = await readAuthResponse(response);
     if (!response.ok) {
       if (showDeviceLimit(result)) return;
       throw new Error(result.error || result.message || "تعذر التحقق من رقم الجوال");
@@ -248,7 +272,7 @@ export function AuthModal({ open, mode, onClose, onModeChange }: { open: boolean
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ password: passwordSetup, confirmPassword: passwordSetupConfirm }),
     });
-    const result = await response.json();
+    const result = await readAuthResponse(response);
     if (!response.ok) throw new Error(result.error || result.message || "تعذر حفظ كلمة المرور");
     await finishLogin(result);
   };
@@ -263,7 +287,7 @@ export function AuthModal({ open, mode, onClose, onModeChange }: { open: boolean
         method: "POST", credentials: "include", headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ phone: number, kind: "child" }),
       });
-      const result = await response.json();
+      const result = await readAuthResponse(response);
       if (!response.ok) throw new Error(result.error || result.message || "تعذر إرسال الرمز للطالب");
       setChildOtpSent(true);
       toast({ title: "تم إرسال الرمز", description: "أدخل الرمز الذي وصل إلى جوال الطالب." });
@@ -282,7 +306,7 @@ export function AuthModal({ open, mode, onClose, onModeChange }: { open: boolean
         method: "POST", credentials: "include", headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ phone: number, otp: childOtp, kind: "child" }),
       });
-      const result = await response.json();
+      const result = await readAuthResponse(response);
       if (!response.ok) throw new Error(result.error || result.message || "تعذر التحقق من رمز الطالب");
       setVerifiedChildren([...verifiedChildren, { phone: number, verificationToken: result.verificationToken }]);
       setChildPhone("");
@@ -316,7 +340,7 @@ export function AuthModal({ open, mode, onClose, onModeChange }: { open: boolean
               method: "POST", credentials: "include", headers: { "Content-Type": "application/json" },
               body: JSON.stringify({ identifier: number, password, deviceId: getDeviceId() }),
             });
-            const result = await response.json();
+            const result = await readAuthResponse(response);
             if (!response.ok) {
               if (showDeviceLimit(result)) return;
               throw new Error(result.message || result.error || "بيانات الدخول غير صحيحة");
@@ -332,7 +356,7 @@ export function AuthModal({ open, mode, onClose, onModeChange }: { open: boolean
           method: "POST", credentials: "include", headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ identifier: email, password, deviceId: getDeviceId() }),
         });
-        const result = await response.json();
+        const result = await readAuthResponse(response);
         if (!response.ok) {
           if (showDeviceLimit(result)) return;
           throw new Error(result.message || "بيانات الدخول غير صحيحة");
@@ -358,7 +382,7 @@ export function AuthModal({ open, mode, onClose, onModeChange }: { open: boolean
           method: "POST", credentials: "include", headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ fullName: fullName.trim(), username: username.trim(), email: email ? email.toLowerCase() : undefined, phone: number, whatsapp: number, password, role: "student", phoneVerificationToken: phoneToken }),
         });
-        const result = await response.json();
+        const result = await readAuthResponse(response);
         if (!response.ok) {
           if (showDeviceLimit(result)) return;
           throw new Error(result.message || "تعذر إنشاء الحساب");
@@ -376,7 +400,7 @@ export function AuthModal({ open, mode, onClose, onModeChange }: { open: boolean
               method: "POST", credentials: "include", headers: { "Content-Type": "application/json" },
               body: JSON.stringify({ phone: number, kind: "parent" }),
             });
-            const result = await response.json();
+            const result = await readAuthResponse(response);
             if (!response.ok) throw new Error(result.error || result.message || "تعذر إرسال الرمز");
             setParentOtpSent(true);
             toast({ title: "تم إرسال الرمز", description: "أدخل الرمز الذي وصلك عبر واتساب." });
@@ -386,7 +410,7 @@ export function AuthModal({ open, mode, onClose, onModeChange }: { open: boolean
               method: "POST", credentials: "include", headers: { "Content-Type": "application/json" },
               body: JSON.stringify({ phone: number, otp: parentOtp, kind: "parent" }),
             });
-            const result = await response.json();
+            const result = await readAuthResponse(response);
             if (!response.ok) throw new Error(result.error || result.message || "تعذر التحقق من الرمز");
             setParentToken(result.verificationToken);
             toast({ title: "تم تأكيد الرقم", description: "يمكنك الآن إضافة أبنائك." });
@@ -405,7 +429,7 @@ export function AuthModal({ open, mode, onClose, onModeChange }: { open: boolean
               children: verifiedChildren
             }),
           });
-          const result = await response.json();
+          const result = await readAuthResponse(response);
           if (!response.ok) throw new Error(result.error || result.message || "تعذر إنشاء حساب ولي الأمر");
           await finishLogin(result);
         }
