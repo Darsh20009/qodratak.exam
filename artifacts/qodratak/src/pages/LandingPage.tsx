@@ -41,7 +41,7 @@ function SaudiBusinessSeal() {
   const verificationDate = currentVerificationDate();
 
   useEffect(() => {
-    if (!certificateOpen || !sealRef.current) return;
+    if (certificateOpen || !sealRef.current) return;
 
     const seal = sealRef.current;
     const readVerificationUrl = () => {
@@ -80,15 +80,31 @@ function SaudiBusinessSeal() {
   return (
     <>
       {!certificateOpen && (
-        <button
-          type="button"
+        <div
+          role="button"
+          tabIndex={0}
           className="sbc-badge-trigger"
-          onClick={() => setCertificateOpen(true)}
+          onClick={(event) => {
+            if (!(event.target as HTMLElement).closest("a[href]")) {
+              setCertificateOpen(true);
+            }
+          }}
+          onKeyDown={(event) => {
+            if (event.key === "Enter" || event.key === " ") {
+              event.preventDefault();
+              setCertificateOpen(true);
+            }
+          }}
           aria-label="عرض شهادة توثيق متجر قدراتك"
           aria-haspopup="dialog"
         >
-          <img src="/saudi-business-badge.png" alt="متجر موثق" />
-        </button>
+          <div
+            ref={sealRef}
+            className="sbc-verify-seal"
+            data-token={SAUDI_CERTIFICATE_TOKEN}
+            data-position="bottom-left"
+          />
+        </div>
       )}
 
       {certificateOpen && (
@@ -120,13 +136,6 @@ function SaudiBusinessSeal() {
                   <img src="/saudi-certificate-qr.png" alt="رمز الاستجابة السريعة للتحقق" />
                 </div>
               </div>
-              <div
-                ref={sealRef}
-                className="sbc-verify-seal sr-only"
-                data-token={SAUDI_CERTIFICATE_TOKEN}
-                data-position="bottom-left"
-                aria-hidden="true"
-              />
               <div className="sbc-certificate-status">
                 <span>الحالة:</span>
                 <strong>سارية</strong>
