@@ -104,6 +104,9 @@ try {
   }
 } catch (error) {
   logger.warn({ error }, "MongoDB unavailable; using fallback storage");
+  if (process.env.NODE_ENV === "production") {
+    throw error;
+  }
 }
 
 const server = await registerRoutes(app);

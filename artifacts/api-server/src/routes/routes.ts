@@ -36,6 +36,10 @@ import {
   registerDevice,
 } from '../services/deviceSecurity';
 import { createPushSubscriptionRouter } from '../pushSubscriptionRoutes';
+import {
+  PersistentMediaStorageUnavailableError,
+  storeMediaBuffer,
+} from '../services/mediaStorage';
 
 function getQuestionImageUrls(question: { imageUrl?: unknown; imageUrls?: unknown }): string[] {
   const urls = [
@@ -6180,19 +6184,8 @@ app.post("/api/auth/register", async (req: Request, res: Response) => {
     fs.mkdirSync(uploadsDir, { recursive: true });
   }
 
-  const receiptStorage = multer.diskStorage({
-    destination: (req, file, cb) => {
-      cb(null, uploadsDir);
-    },
-    filename: (req, file, cb) => {
-      const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-      const ext = path.extname(file.originalname);
-      cb(null, 'receipt-' + uniqueSuffix + ext);
-    }
-  });
-
   const uploadReceipt = multer({
-    storage: receiptStorage,
+    storage: multer.memoryStorage(),
     limits: { fileSize: 10 * 1024 * 1024 }, // 10MB limit
     fileFilter: (req, file, cb) => {
       const allowedTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp', 'application/pdf'];
@@ -6215,15 +6208,8 @@ app.post("/api/auth/register", async (req: Request, res: Response) => {
   const avatarsDir = path.join(process.cwd(), 'uploads', 'avatars');
   if (!fs.existsSync(avatarsDir)) fs.mkdirSync(avatarsDir, { recursive: true });
 
-  const avatarStorage = multer.diskStorage({
-    destination: (_req, _file, cb) => cb(null, avatarsDir),
-    filename: (_req, file, cb) => {
-      const ext = path.extname(file.originalname).toLowerCase() || '.jpg';
-      cb(null, `avatar-${Date.now()}-${Math.round(Math.random() * 1e6)}${ext}`);
-    }
-  });
   const uploadAvatar = multer({
-    storage: avatarStorage,
+    storage: multer.memoryStorage(),
     limits: { fileSize: 5 * 1024 * 1024 },
     fileFilter: (_req, file, cb) => {
       if (file.mimetype.startsWith('image/')) cb(null, true);
@@ -6237,34 +6223,30 @@ app.post("/api/auth/register", async (req: Request, res: Response) => {
       if (!sessionUserId) return res.status(401).json({ error: 'يجب تسجيل الدخول أولاً' });
       if (!req.file) return res.status(400).json({ error: 'لم يتم رفع أي صورة' });
 
-      const avatarUrl = `/api/uploads/avatars/${req.file.filename}`;
-
-      // Update user.json
-      try {
-        const users = JSON.parse(fs.readFileSync('attached_assets/user.json', 'utf-8'));
-        const idx = users.findIndex((u: any) => String(u.id) === String(sessionUserId));
-        if (idx !== -1) {
-          users[idx].avatarUrl = avatarUrl;
-          fs.writeFileSync('attached_assets/user.json', JSON.stringify(users, null, 2));
-        }
-      } catch {}
+      const avatar = await storeMediaBuffer(req.file.buffer, {
+        folder: 'qodratak/avatars',
+        originalName: req.file.originalname,
+        contentType: req.file.mimetype,
+        legacyDirectory: avatarsDir,
+        legacyUrlPrefix: '/api/uploads/avatars',
+      });
+      const avatarUrl = avatar.url;
 
       // Update MongoDB
-      try {
-        const { User: MongoUser } = await import('./mongodb/models');
-        const mongoId = mongoose.Types.ObjectId.isValid(String(sessionUserId))
-          ? String(sessionUserId)
-          : null;
-        if (mongoId) {
-          await MongoUser.updateOne({ _id: mongoId }, { $set: { avatarUrl } });
-        } else {
-          await MongoUser.updateOne({ pgUserId: Number(sessionUserId) }, { $set: { avatarUrl } });
-        }
-      } catch {}
+      const { User: MongoUser } = await import('./mongodb/models');
+      const mongoId = mongoose.Types.ObjectId.isValid(String(sessionUserId))
+        ? String(sessionUserId)
+        : null;
+      if (mongoId) {
+        await MongoUser.updateOne({ _id: mongoId }, { $set: { avatar: avatarUrl, avatarMetadata: avatar } });
+      } else {
+        await MongoUser.updateOne({ pgUserId: Number(sessionUserId) }, { $set: { avatar: avatarUrl, avatarMetadata: avatar } });
+      }
 
-      res.json({ success: true, avatarUrl });
+      res.json({ success: true, avatarUrl, avatarMetadata: avatar });
     } catch (err: any) {
-      res.status(500).json({ error: err.message || 'فشل رفع الصورة' });
+      const status = err instanceof PersistentMediaStorageUnavailableError ? 503 : 500;
+      res.status(status).json({ error: err.message || 'فشل رفع الصورة' });
     }
   });
 
@@ -6629,15 +6611,8 @@ app.post("/api/auth/register", async (req: Request, res: Response) => {
   const questionImagesDir = path.join(process.cwd(), 'uploads', 'question-images');
   if (!fs.existsSync(questionImagesDir)) fs.mkdirSync(questionImagesDir, { recursive: true });
 
-  const questionImageStorage = multer.diskStorage({
-    destination: (_req, _file, cb) => cb(null, questionImagesDir),
-    filename: (_req, file, cb) => {
-      const ext = path.extname(file.originalname);
-      cb(null, `q-img-${Date.now()}-${Math.floor(Math.random() * 1e9)}${ext}`);
-    },
-  });
   const uploadQuestionImage = multer({
-    storage: questionImageStorage,
+    storage: multer.memoryStorage(),
     limits: { fileSize: 5 * 1024 * 1024 },
     fileFilter: (_req, file, cb) => {
       if (file.mimetype.startsWith('image/')) cb(null, true);
@@ -6739,24 +6714,42 @@ app.post("/api/auth/register", async (req: Request, res: Response) => {
   app.post("/api/admin/questions/:id/image", requireAdmin, uploadQuestionImage.single('image'), async (req: Request, res: Response) => {
     try {
       if (!req.file) return res.status(400).json({ error: 'لم يتم رفع أي صورة' });
-      const imageUrl = `/api/uploads/question-images/${req.file.filename}`;
-      const updated = await mongoStorage.updateQuestion(req.params.id, { imageUrl } as any);
+      const image = await storeMediaBuffer(req.file.buffer, {
+        folder: 'qodratak/questions/legacy-admin',
+        originalName: req.file.originalname,
+        contentType: req.file.mimetype,
+        legacyDirectory: questionImagesDir,
+        legacyUrlPrefix: '/api/uploads/question-images',
+      });
+      const updated = await mongoStorage.updateQuestion(req.params.id, {
+        imageUrl: image.url,
+        imageUrls: [image.url],
+        imageMetadata: image,
+      } as any);
       if (!updated) return res.status(404).json({ error: 'السؤال غير موجود' });
-      res.json({ imageUrl });
+      res.json({ imageUrl: image.url, imageMetadata: image });
     } catch (error) {
       console.error('Error uploading question image:', error);
-      res.status(500).json({ error: 'فشل في رفع الصورة' });
+      const status = error instanceof PersistentMediaStorageUnavailableError ? 503 : 500;
+      res.status(status).json({ error: error instanceof Error ? error.message : 'فشل في رفع الصورة' });
     }
   });
 
   app.post("/api/admin/questions/upload-image-standalone", requireAdmin, uploadQuestionImage.single('image'), async (req: Request, res: Response) => {
     try {
       if (!req.file) return res.status(400).json({ error: 'لم يتم رفع أي صورة' });
-      const imageUrl = `/api/uploads/question-images/${req.file.filename}`;
-      res.json({ imageUrl });
+      const image = await storeMediaBuffer(req.file.buffer, {
+        folder: 'qodratak/questions/legacy-admin',
+        originalName: req.file.originalname,
+        contentType: req.file.mimetype,
+        legacyDirectory: questionImagesDir,
+        legacyUrlPrefix: '/api/uploads/question-images',
+      });
+      res.json({ imageUrl: image.url, imageMetadata: image });
     } catch (error) {
       console.error('Error uploading standalone image:', error);
-      res.status(500).json({ error: 'فشل في رفع الصورة' });
+      const status = error instanceof PersistentMediaStorageUnavailableError ? 503 : 500;
+      res.status(status).json({ error: error instanceof Error ? error.message : 'فشل في رفع الصورة' });
     }
   });
 
@@ -6965,9 +6958,18 @@ app.post("/api/auth/register", async (req: Request, res: Response) => {
 
       let receiptUrl = null;
       let receiptFilename = null;
+      let receiptMetadata: Record<string, unknown> | undefined;
       if (req.file) {
-        receiptFilename = req.file.filename;
-        receiptUrl = `/api/uploads/receipts/${req.file.filename}`;
+        const receipt = await storeMediaBuffer(req.file.buffer, {
+          folder: 'qodratak/subscription-receipts',
+          originalName: req.file.originalname,
+          contentType: req.file.mimetype,
+          legacyDirectory: uploadsDir,
+          legacyUrlPrefix: '/api/uploads/receipts',
+        });
+        receiptFilename = receipt.publicId || receipt.originalName || receipt.url;
+        receiptUrl = receipt.url;
+        receiptMetadata = receipt;
       }
 
       const subscription = await mongoStorage.createSubscription({
@@ -6980,6 +6982,7 @@ app.post("/api/auth/register", async (req: Request, res: Response) => {
         paymentMethod: paymentMethod || 'bank',
         transferReceiptUrl: receiptUrl || undefined,
         transferReceiptFilename: receiptFilename || undefined,
+        transferReceiptMetadata: receiptMetadata,
         price: planPrice,
       });
       void notifyAdminSubscription({
@@ -7164,10 +7167,19 @@ app.post("/api/auth/register", async (req: Request, res: Response) => {
 
       let receiptUrl = null;
       let receiptFilename = null;
+      let receiptMetadata: Record<string, unknown> | undefined;
 
       if (req.file) {
-        receiptFilename = req.file.filename;
-        receiptUrl = `/api/uploads/receipts/${req.file.filename}`;
+        const receipt = await storeMediaBuffer(req.file.buffer, {
+          folder: 'qodratak/subscription-receipts',
+          originalName: req.file.originalname,
+          contentType: req.file.mimetype,
+          legacyDirectory: uploadsDir,
+          legacyUrlPrefix: '/api/uploads/receipts',
+        });
+        receiptFilename = receipt.publicId || receipt.originalName || receipt.url;
+        receiptUrl = receipt.url;
+        receiptMetadata = receipt;
       }
 
       const subscription = await mongoStorage.createSubscription({
@@ -7181,6 +7193,7 @@ app.post("/api/auth/register", async (req: Request, res: Response) => {
         transactionId: transactionId || undefined,
         transferReceiptUrl: receiptUrl || undefined,
         transferReceiptFilename: receiptFilename || undefined,
+        transferReceiptMetadata: receiptMetadata,
         price: primaryPlan.priceSar,
       });
       void notifyAdminSubscription({
@@ -7208,7 +7221,8 @@ app.post("/api/auth/register", async (req: Request, res: Response) => {
       res.json({ success: true, subscription });
     } catch (error) {
       console.error('Error creating subscription:', error);
-      res.status(500).json({ error: 'فشل في إنشاء الاشتراك' });
+      const status = error instanceof PersistentMediaStorageUnavailableError ? 503 : 500;
+      res.status(status).json({ error: error instanceof Error ? error.message : 'فشل في إنشاء الاشتراك' });
     }
   });
 
@@ -7219,12 +7233,20 @@ app.post("/api/auth/register", async (req: Request, res: Response) => {
         return res.status(400).json({ error: 'لم يتم رفع أي ملف' });
       }
 
-      const receiptUrl = `/api/uploads/receipts/${req.file.filename}`;
-      const receiptFilename = req.file.filename;
+      const receipt = await storeMediaBuffer(req.file.buffer, {
+        folder: 'qodratak/subscription-receipts',
+        originalName: req.file.originalname,
+        contentType: req.file.mimetype,
+        legacyDirectory: uploadsDir,
+        legacyUrlPrefix: '/api/uploads/receipts',
+      });
+      const receiptUrl = receipt.url;
+      const receiptFilename = receipt.publicId || receipt.originalName || receipt.url;
 
       const subscription = await mongoStorage.updateSubscription(req.params.id, {
         transferReceiptUrl: receiptUrl,
         transferReceiptFilename: receiptFilename,
+        transferReceiptMetadata: receipt,
       });
 
       if (!subscription) {
@@ -7247,7 +7269,8 @@ app.post("/api/auth/register", async (req: Request, res: Response) => {
       res.json({ success: true, subscription });
     } catch (error) {
       console.error('Error uploading receipt:', error);
-      res.status(500).json({ error: 'فشل في رفع سند التحويل' });
+      const status = error instanceof PersistentMediaStorageUnavailableError ? 503 : 500;
+      res.status(status).json({ error: error instanceof Error ? error.message : 'فشل في رفع سند التحويل' });
     }
   });
 

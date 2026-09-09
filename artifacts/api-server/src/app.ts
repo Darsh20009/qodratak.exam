@@ -13,6 +13,9 @@ import { logger } from "./lib/logger";
 const app: Express = express();
 const sessionSecret = process.env.SESSION_SECRET;
 const mongoUrl = process.env.MONGODB_URI;
+if (process.env.NODE_ENV === "production" && !mongoUrl) {
+  throw new Error("MONGODB_URI is required in production");
+}
 const isEmbeddedPreview = Boolean(
   process.env.REPLIT_DEV_DOMAIN || process.env.REPLIT_DOMAINS,
 );

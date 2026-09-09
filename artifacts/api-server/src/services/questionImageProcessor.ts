@@ -19,6 +19,15 @@ export interface QuestionImageProcessingResult {
   };
 }
 
+export interface PreparedQuestionImage {
+  processedBuffer: Buffer;
+  originalBuffer: Buffer;
+  format: string;
+  width: number;
+  height: number;
+  processing: QuestionImageProcessingResult['processing'];
+}
+
 function extensionForFormat(format: string) {
   return format === 'jpeg' ? 'jpg' : format;
 }
@@ -73,12 +82,7 @@ function cleanLightBackground(data: Buffer, channels: number) {
   return { backgroundPixels, watermarkPixels };
 }
 
-export async function processQuestionImage(buffer: Buffer): Promise<QuestionImageProcessingResult> {
-  await Promise.all([
-    fs.mkdir(publicImagesDir, { recursive: true }),
-    fs.mkdir(privateOriginalsDir, { recursive: true }),
-  ]);
-
+export async function prepareQuestionImage(buffer: Buffer): Promise<PreparedQuestionImage> {
   const source = sharp(buffer, { limitInputPixels: maxInputPixels, animated: false }).rotate();
   const metadata = await source.metadata();
   if (!metadata.format || !supportedFormats.has(metadata.format)) {
@@ -91,14 +95,6 @@ export async function processQuestionImage(buffer: Buffer): Promise<QuestionImag
     throw new Error('أبعاد الصورة كبيرة جدًا');
   }
 
-  const token = crypto.randomUUID();
-  const originalFilename = `q-original-${token}.${extensionForFormat(metadata.format)}`;
-  const processedFilename = `q-img-${token}.png`;
-  const originalPath = path.join(privateOriginalsDir, originalFilename);
-  const processedPath = path.join(publicImagesDir, processedFilename);
-
-  await fs.writeFile(originalPath, buffer);
-
   try {
     const { data, info } = await source
       .ensureAlpha()
@@ -106,15 +102,18 @@ export async function processQuestionImage(buffer: Buffer): Promise<QuestionImag
       .toBuffer({ resolveWithObject: true });
     const cleaned = cleanLightBackground(data, info.channels);
 
-    await sharp(data, {
+    const processedBuffer = await sharp(data, {
       raw: { width: info.width, height: info.height, channels: info.channels },
     })
       .png({ compressionLevel: 9 })
-      .toFile(processedPath);
+      .toBuffer();
 
     return {
-      imageUrl: `/api/uploads/question-images/${processedFilename}`,
-      originalUrl: `/api/admin/question-images/original/${originalFilename}`,
+      processedBuffer,
+      originalBuffer: buffer,
+      format: 'png',
+      width: info.width,
+      height: info.height,
       processing: {
         status: 'processed',
         backgroundRemoved: cleaned.backgroundPixels > 0,
@@ -122,12 +121,12 @@ export async function processQuestionImage(buffer: Buffer): Promise<QuestionImag
       },
     };
   } catch (error) {
-    // The original is already private and preserved. A validated source image
-    // remains usable when a rare decoder or processing error occurs.
-    await fs.writeFile(processedPath, buffer);
     return {
-      imageUrl: `/api/uploads/question-images/${processedFilename}`,
-      originalUrl: `/api/admin/question-images/original/${originalFilename}`,
+      processedBuffer: buffer,
+      originalBuffer: buffer,
+      format: extensionForFormat(metadata.format),
+      width,
+      height,
       processing: {
         status: 'original_only',
         backgroundRemoved: false,
@@ -136,6 +135,29 @@ export async function processQuestionImage(buffer: Buffer): Promise<QuestionImag
       },
     };
   }
+}
+
+export async function processQuestionImage(buffer: Buffer): Promise<QuestionImageProcessingResult> {
+  await Promise.all([
+    fs.mkdir(publicImagesDir, { recursive: true }),
+    fs.mkdir(privateOriginalsDir, { recursive: true }),
+  ]);
+
+  const prepared = await prepareQuestionImage(buffer);
+  const token = crypto.randomUUID();
+  const originalFilename = `q-original-${token}.${prepared.format}`;
+  const processedFilename = `q-img-${token}.${prepared.format === 'png' ? 'png' : prepared.format}`;
+
+  await Promise.all([
+    fs.writeFile(path.join(privateOriginalsDir, originalFilename), prepared.originalBuffer),
+    fs.writeFile(path.join(publicImagesDir, processedFilename), prepared.processedBuffer),
+  ]);
+
+  return {
+    imageUrl: `/api/uploads/question-images/${processedFilename}`,
+    originalUrl: `/api/admin/question-images/original/${originalFilename}`,
+    processing: prepared.processing,
+  };
 }
 
 export function getPrivateQuestionImageOriginal(filename: string) {

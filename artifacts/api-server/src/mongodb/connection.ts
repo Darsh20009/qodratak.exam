@@ -11,6 +11,9 @@ export async function connectToMongoDB(): Promise<boolean> {
   const mongoUri = process.env.MONGODB_URI;
 
   if (!mongoUri) {
+    if (process.env.NODE_ENV === 'production') {
+      throw new Error('MONGODB_URI is required in production; refusing to start without persistent database storage.');
+    }
     console.warn('⚠️ MONGODB_URI not set - using in-memory storage as fallback');
     return false;
   }
@@ -37,6 +40,9 @@ export async function connectToMongoDB(): Promise<boolean> {
     return true;
   } catch (error) {
     console.error('❌ Failed to connect to MongoDB:', error);
+    if (process.env.NODE_ENV === 'production') {
+      throw error;
+    }
     return false;
   }
 }

@@ -33,6 +33,7 @@ export interface IUser extends Document {
   webauthnCredentials?: IWebAuthnCredential[];
   devices?: IRegisteredDevice[];
   avatar?: string;
+  avatarMetadata?: Record<string, unknown>;
   bio?: string;
   pinHash?: string;
   totpSecret?: string;
@@ -192,6 +193,7 @@ const userSchema = new Schema<IUser>({
   webauthnCredentials: { type: [webAuthnCredentialSchema], default: [] },
   devices: { type: [registeredDeviceSchema], default: [] },
   avatar: { type: String },
+  avatarMetadata: { type: Schema.Types.Mixed },
   bio: { type: String },
   pinHash: { type: String },
   totpSecret: { type: String },
@@ -307,6 +309,7 @@ export interface ISubscription extends Document {
   transactionId?: string;
   transferReceiptUrl?: string;
   transferReceiptFilename?: string;
+  transferReceiptMetadata?: Record<string, unknown>;
   price: number;
   notes?: string;
   approvedBy?: mongoose.Types.ObjectId;
@@ -327,6 +330,7 @@ const subscriptionSchema = new Schema<ISubscription>({
   transactionId: { type: String },
   transferReceiptUrl: { type: String },
   transferReceiptFilename: { type: String },
+  transferReceiptMetadata: { type: Schema.Types.Mixed },
   price: { type: Number, required: true },
   notes: { type: String },
   approvedBy: { type: Schema.Types.ObjectId, ref: 'Admin' },
@@ -399,6 +403,8 @@ export interface IQuestion extends Document {
   imageUrls?: string[];
   imageOriginalUrl?: string;
   imageOriginalUrls?: string[];
+  imageMetadata?: Record<string, unknown>;
+  imageOriginalMetadata?: Record<string, unknown>;
   imageProcessing?: {
     status: 'processed' | 'original_only';
     backgroundRemoved: boolean;
@@ -433,6 +439,8 @@ const questionSchema = new Schema<IQuestion>({
   imageUrls: { type: [String], default: [] },
   imageOriginalUrl: { type: String },
   imageOriginalUrls: { type: [String], default: [] },
+  imageMetadata: { type: Schema.Types.Mixed },
+  imageOriginalMetadata: { type: Schema.Types.Mixed },
   imageProcessing: {
     status: { type: String, enum: ['processed', 'original_only'] },
     backgroundRemoved: { type: Boolean },

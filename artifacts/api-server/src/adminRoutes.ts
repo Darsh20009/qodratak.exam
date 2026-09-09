@@ -27,7 +27,16 @@ import {
   sendWhatsAppCampaign,
 } from './services/adminWhatsAppNotifications';
 import { createAdminAccessToken, verifyAdminAccessToken } from './adminSessionToken';
-import { getPrivateQuestionImageOriginal, processQuestionImage } from './services/questionImageProcessor';
+import {
+  getPrivateQuestionImageOriginal,
+  prepareQuestionImage,
+  processQuestionImage,
+} from './services/questionImageProcessor';
+import {
+  hasPersistentMediaStorage,
+  PersistentMediaStorageUnavailableError,
+  storeMediaBuffer,
+} from './services/mediaStorage';
 import { extractQuestionFromImages } from './services/aiService';
 import {
   connectWhatsApp,
@@ -138,16 +147,8 @@ async function getLocalDashboardData() {
   };
 }
 
-const receiptStorage = multer.diskStorage({
-  destination: (req, file, cb) => cb(null, uploadDir),
-  filename: (req, file, cb) => {
-    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-    cb(null, 'receipt-' + uniqueSuffix + path.extname(file.originalname));
-  }
-});
-
 const uploadReceipt = multer({
-  storage: receiptStorage,
+  storage: multer.memoryStorage(),
   limits: { fileSize: 5 * 1024 * 1024 },
   fileFilter: (req, file, cb) => {
     const allowed = /jpeg|jpg|png|pdf/;
@@ -158,6 +159,50 @@ const uploadReceipt = multer({
     }
   }
 });
+
+async function storeQuestionImage(buffer: Buffer, originalName: string) {
+  if (!hasPersistentMediaStorage()) {
+    if (process.env.NODE_ENV === 'production') {
+      throw new PersistentMediaStorageUnavailableError();
+    }
+    const local = await processQuestionImage(buffer);
+    return {
+      ...local,
+      imageMetadata: { storage: 'local-development', bytes: buffer.byteLength, originalName },
+      imageOriginalMetadata: { storage: 'local-development', bytes: buffer.byteLength, originalName },
+    };
+  }
+
+  const prepared = await prepareQuestionImage(buffer);
+  const [processedAsset, originalAsset] = await Promise.all([
+    storeMediaBuffer(prepared.processedBuffer, {
+      folder: 'qodratak/questions/processed',
+      originalName: `question-${originalName || 'image'}.png`,
+      contentType: 'image/png',
+      legacyDirectory: 'uploads/question-images',
+      legacyUrlPrefix: '/api/uploads/question-images',
+    }),
+    storeMediaBuffer(prepared.originalBuffer, {
+      folder: 'qodratak/questions/originals',
+      originalName: originalName || 'question-image',
+      contentType: `image/${prepared.format === 'jpg' ? 'jpeg' : prepared.format}`,
+      legacyDirectory: 'private_uploads/question-image-originals',
+      legacyUrlPrefix: '/api/admin/question-images/original',
+    }),
+  ]);
+
+  return {
+    imageUrl: processedAsset.url,
+    originalUrl: originalAsset.url,
+    processing: prepared.processing,
+    imageMetadata: processedAsset,
+    imageOriginalMetadata: originalAsset,
+  };
+}
+
+function mediaErrorStatus(error: unknown) {
+  return error instanceof PersistentMediaStorageUnavailableError ? 503 : 500;
+}
 
 const uploadQuestionImage = multer({
   storage: multer.memoryStorage(),
@@ -756,10 +801,18 @@ router.post('/subscriptions/upload-receipt', requireAdminAuth, uploadReceipt.sin
     if (!req.file) {
       return res.status(400).json({ error: 'لم يتم رفع أي ملف' });
     }
-    const receiptUrl = `/api/uploads/receipts/${req.file.filename}`;
-    res.json({ success: true, receiptUrl });
+    const receipt = await storeMediaBuffer(req.file.buffer, {
+      folder: 'qodratak/subscription-receipts',
+      originalName: req.file.originalname,
+      contentType: req.file.mimetype,
+      legacyDirectory: uploadDir,
+      legacyUrlPrefix: '/api/uploads/receipts',
+    });
+    res.json({ success: true, receiptUrl: receipt.url, receiptMetadata: receipt });
   } catch (error) {
-    res.status(500).json({ error: 'فشل في رفع الملف' });
+    res.status(mediaErrorStatus(error)).json({
+      error: error instanceof Error ? error.message : 'فشل في رفع الملف',
+    });
   }
 });
 
@@ -816,7 +869,7 @@ router.get('/questions/:id', requireAdminAuth, async (req: Request, res: Respons
 router.post('/questions', requireAdminAuth, async (req: Request, res: Response) => {
   try {
     const adminSession = (req.session as any).admin;
-    const { text, category, subcategory, options, correctOptionIndex, difficulty, explanation, imageUrl, imageUrls, imageOriginalUrl, imageOriginalUrls, imageProcessing, imageProcessings } = req.body;
+    const { text, category, subcategory, options, correctOptionIndex, difficulty, explanation, imageUrl, imageUrls, imageOriginalUrl, imageOriginalUrls, imageProcessing, imageProcessings, imageMetadata, imageOriginalMetadata } = req.body;
 
     if (!text || !category || !options || correctOptionIndex === undefined) {
       return res.status(400).json({ error: 'البيانات الأساسية مطلوبة' });
@@ -838,6 +891,8 @@ router.post('/questions', requireAdminAuth, async (req: Request, res: Response) 
       imageUrls: Array.isArray(imageUrls) ? imageUrls : imageUrl ? [imageUrl] : [],
       imageOriginalUrl: imageOriginalUrl || undefined,
       imageOriginalUrls: Array.isArray(imageOriginalUrls) ? imageOriginalUrls : imageOriginalUrl ? [imageOriginalUrl] : [],
+      imageMetadata: imageMetadata || undefined,
+      imageOriginalMetadata: imageOriginalMetadata || undefined,
       imageProcessing: imageProcessing || undefined,
       imageProcessings: Array.isArray(imageProcessings) ? imageProcessings : imageProcessing ? [imageProcessing] : [],
       createdBy: adminSession.username,
@@ -853,7 +908,7 @@ router.post('/questions', requireAdminAuth, async (req: Request, res: Response) 
 
 router.put('/questions/:id', requireAdminAuth, async (req: Request, res: Response) => {
   try {
-    const { text, category, subcategory, options, correctOptionIndex, difficulty, explanation, imageUrl, imageUrls, imageOriginalUrl, imageOriginalUrls, imageProcessing, imageProcessings } = req.body;
+    const { text, category, subcategory, options, correctOptionIndex, difficulty, explanation, imageUrl, imageUrls, imageOriginalUrl, imageOriginalUrls, imageProcessing, imageProcessings, imageMetadata, imageOriginalMetadata } = req.body;
 
     const updated = await Question.findByIdAndUpdate(
       req.params.id,
@@ -869,6 +924,8 @@ router.put('/questions/:id', requireAdminAuth, async (req: Request, res: Respons
         ...(imageUrls !== undefined && { imageUrls: Array.isArray(imageUrls) ? imageUrls : [] }),
         ...(imageOriginalUrl !== undefined && { imageOriginalUrl }),
         ...(imageOriginalUrls !== undefined && { imageOriginalUrls: Array.isArray(imageOriginalUrls) ? imageOriginalUrls : [] }),
+        ...(imageMetadata !== undefined && { imageMetadata }),
+        ...(imageOriginalMetadata !== undefined && { imageOriginalMetadata }),
         ...(imageProcessing !== undefined && { imageProcessing }),
         ...(imageProcessings !== undefined && { imageProcessings: Array.isArray(imageProcessings) ? imageProcessings : [] }),
         updatedAt: new Date(),
@@ -905,7 +962,7 @@ router.post('/questions/:id/image', requireAdminAuth, uploadQuestionImage.single
       return res.status(400).json({ error: 'لم يتم رفع أي صورة' });
     }
 
-    const processed = await processQuestionImage(req.file.buffer);
+    const processed = await storeQuestionImage(req.file.buffer, req.file.originalname);
 
     const updated = await Question.findByIdAndUpdate(
       req.params.id,
@@ -916,6 +973,8 @@ router.post('/questions/:id/image', requireAdminAuth, uploadQuestionImage.single
         imageOriginalUrls: [processed.originalUrl],
         imageProcessing: processed.processing,
         imageProcessings: [processed.processing],
+        imageMetadata: processed.imageMetadata,
+        imageOriginalMetadata: processed.imageOriginalMetadata,
         updatedAt: new Date(),
       },
       { new: true }
@@ -926,9 +985,11 @@ router.post('/questions/:id/image', requireAdminAuth, uploadQuestionImage.single
     }
 
     res.json({ success: true, ...processed, question: updated });
-  } catch (error) {
+    } catch (error) {
     console.error('Upload question image error:', error);
-    res.status(500).json({ error: 'فشل في رفع الصورة' });
+    res.status(mediaErrorStatus(error)).json({
+      error: error instanceof Error ? error.message : 'فشل في رفع الصورة',
+    });
   }
 });
 
@@ -937,9 +998,11 @@ router.post('/questions/upload-image-standalone', requireAdminAuth, uploadQuesti
     if (!req.file) {
       return res.status(400).json({ error: 'لم يتم رفع أي صورة' });
     }
-    res.json({ success: true, ...(await processQuestionImage(req.file.buffer)) });
+    res.json({ success: true, ...(await storeQuestionImage(req.file.buffer, req.file.originalname)) });
   } catch (error) {
-    res.status(500).json({ error: 'فشل في رفع الصورة' });
+    res.status(mediaErrorStatus(error)).json({
+      error: error instanceof Error ? error.message : 'فشل في رفع الصورة',
+    });
   }
 });
 
@@ -951,7 +1014,7 @@ router.post('/questions/analyze-images', requireAdminAuth, uploadQuestionImage.a
     }
 
     const processedImages = await Promise.all(files.map(async file => ({
-      ...(await processQuestionImage(file.buffer)),
+      ...(await storeQuestionImage(file.buffer, file.originalname)),
       filename: file.originalname,
     })));
 
@@ -976,7 +1039,9 @@ router.post('/questions/analyze-images', requireAdminAuth, uploadQuestionImage.a
     });
   } catch (error) {
     console.error('Analyze question images error:', error);
-    res.status(500).json({ error: 'تعذرت معالجة صور السؤال' });
+    res.status(mediaErrorStatus(error)).json({
+      error: error instanceof Error ? error.message : 'تعذرت معالجة صور السؤال',
+    });
   }
 });
 
