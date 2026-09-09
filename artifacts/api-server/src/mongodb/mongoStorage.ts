@@ -18,65 +18,9 @@ export class MongoStorage {
     const connected = await connectToMongoDB();
     if (connected) {
       this.isInitialized = true;
-      await this.seedDefaultAdmin();
-      await this.repairQuestionIds();
-      console.log('✅ MongoDB Storage initialized');
+      console.log('✅ MongoDB storage initialized without migration or reseeding');
     }
     return connected;
-  }
-
-  private async seedDefaultAdmin() {
-    const existingAdmin = await Admin.findOne({ username: 'admin' });
-    const adminEmail = process.env.ADMIN_EMAIL || 'info@qodratak.sa';
-    const adminPhone = (process.env.ADMIN_WHATSAPP_PHONE || '966555053567').replace(/\D/g, '');
-    const initialAdminPassword = process.env.ADMIN_INITIAL_PASSWORD;
-    if (!existingAdmin) {
-      if (!initialAdminPassword) {
-        console.warn('⚠️ Default admin was not created because ADMIN_INITIAL_PASSWORD is not configured');
-        return;
-      }
-      const hashedPassword = await bcrypt.hash(initialAdminPassword, 10);
-      await Admin.create({
-        username: 'admin',
-        password: hashedPassword,
-        email: adminEmail,
-        phone: adminPhone,
-        fullName: 'مدير النظام',
-        role: 'super_admin',
-        permissions: ['all'],
-      });
-      console.log('✅ Default admin created (username: admin; configure ADMIN_INITIAL_PASSWORD for the initial password)');
-    } else {
-      const updates: Record<string, string> = {};
-      if (existingAdmin.email === 'admin@qudratuk.com' || existingAdmin.email === 'admin@qodratak.sa') {
-        updates.email = adminEmail;
-      }
-      if (existingAdmin.phone !== adminPhone) updates.phone = adminPhone;
-      if (Object.keys(updates).length > 0) {
-        await Admin.updateOne({ username: 'admin' }, { $set: updates });
-        console.log('✅ Updated default admin contact details');
-      }
-    }
-  }
-
-  private async repairQuestionIds() {
-    try {
-      const questionsWithoutId = await Question.find({ questionId: { $exists: false } });
-      if (questionsWithoutId.length > 0) {
-        console.log(`🔧 Found ${questionsWithoutId.length} questions without questionId - repairing...`);
-        
-        for (let i = 0; i < questionsWithoutId.length; i++) {
-          const question = questionsWithoutId[i];
-          await Question.findByIdAndUpdate(question._id, {
-            questionId: i + 1
-          });
-        }
-        
-        console.log(`✅ Repaired ${questionsWithoutId.length} questions with questionId`);
-      }
-    } catch (error) {
-      console.error('Error repairing question IDs:', error);
-    }
   }
 
   isConnected(): boolean {

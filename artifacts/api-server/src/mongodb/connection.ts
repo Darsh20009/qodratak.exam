@@ -3,8 +3,8 @@ import mongoose from 'mongoose';
 let isConnected = false;
 
 export async function connectToMongoDB(): Promise<boolean> {
-  if (isConnected) {
-    console.log('📦 Already connected to MongoDB');
+  if (getConnectionStatus()) {
+    console.log('📦 MongoDB-backed storage is already active');
     return true;
   }
 
@@ -25,7 +25,7 @@ export async function connectToMongoDB(): Promise<boolean> {
     });
 
     isConnected = true;
-    console.log('✅ Connected to MongoDB successfully');
+    console.log(`✅ MongoDB-backed storage active (database: ${mongoose.connection.name})`);
 
     mongoose.connection.on('error', (err) => {
       console.error('MongoDB connection error:', err);
@@ -40,10 +40,7 @@ export async function connectToMongoDB(): Promise<boolean> {
     return true;
   } catch (error) {
     console.error('❌ Failed to connect to MongoDB:', error);
-    if (process.env.NODE_ENV === 'production') {
-      throw error;
-    }
-    return false;
+    throw error;
   }
 }
 
