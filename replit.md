@@ -2,17 +2,21 @@
 
 ## Start the app
 
-The project uses the existing pnpm workspace with a Vite frontend and Express API:
+The project uses the existing pnpm workspace with a Vite frontend and Express API.
+Install the locked dependencies once:
 
 ```bash
 pnpm install --frozen-lockfile
-pnpm --filter @workspace/api-server run dev
-PORT=5000 BASE_PATH=/ pnpm --filter @workspace/qodratak run dev
 ```
 
-The `Start application` workflow serves the web preview on port `5000`. The
-`API Server` workflow runs the backend on port `8080`; Vite proxies `/api`
-requests and WebSocket upgrades to it during development.
+Use the artifact-owned workflows for normal development:
+
+- `artifacts/qodratak: web` serves the root web preview.
+- `artifacts/api-server: API Server` runs the Express backend.
+
+Replit injects each service's `PORT` and the web app's `BASE_PATH`. The frontend
+proxies `/api` requests and WebSocket upgrades to the API service during
+development.
 
 ## Current environment
 
@@ -22,8 +26,8 @@ data, accounts, and sessions are not durable between restarts.
 
 For durable operation, configure `MONGODB_URI` in Replit Secrets. Optional
 features such as AI assistance, email, OAuth, payments, WebAuthn, and push
-notifications require their corresponding environment variables described in
-`README.md`.
+notifications require their corresponding environment variables. The available
+example is `artifacts/api-server/.env.example`.
 
 Do not place credentials in the repository. Use Replit Secrets for all
 environment values.
@@ -45,7 +49,8 @@ _Describe the high-level user-facing capabilities of this app once they exist._
 
 ## Run & Operate
 
-- `pnpm --filter @workspace/api-server run dev` — run the API server (port 8080)
+- `pnpm --filter @workspace/api-server run dev` — run the API server manually (requires `PORT`)
+- `pnpm --filter @workspace/qodratak run dev` — run the web app manually (requires `PORT` and `BASE_PATH`)
 - `pnpm run typecheck` — full typecheck across all packages
 - `pnpm run build` — typecheck + build all packages
 - `pnpm --filter @workspace/api-spec run codegen` — regenerate API hooks and Zod schemas from the OpenAPI spec
