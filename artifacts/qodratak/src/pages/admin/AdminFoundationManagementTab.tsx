@@ -21,6 +21,23 @@ interface FoundationContent {
   published: boolean;
   linkedQuizRoute?: string;
   durationMinutes?: number;
+  quiz?: {
+    title: string;
+    instructions?: string;
+    questionIds: string[];
+    passingScore: number;
+    timeLimitMinutes?: number;
+  };
+}
+interface QuestionSummary {
+  _id: string;
+  questionId: number;
+  text: string;
+  category: string;
+  subcategory?: string;
+  difficulty: string;
+  options: string[];
+  correctOptionIndex: number;
 }
 interface PlatformReview {
   _id?: string;
@@ -35,7 +52,7 @@ interface PlatformReview {
   createdAt?: string;
 }
 
-const emptyLesson: FoundationContent = { program: 'qudrat', title: '', description: '', videoUrl: '', thumbnailUrl: '', order: 0, published: false, linkedQuizRoute: '', durationMinutes: undefined };
+const emptyLesson: FoundationContent = { program: 'qudrat', title: '', description: '', videoUrl: '', thumbnailUrl: '', order: 0, published: false, linkedQuizRoute: '', durationMinutes: undefined, quiz: undefined };
 const recordId = (record: { _id?: string; id?: string }) => record._id || record.id || '';
 function getEmbedUrl(value: string) {
   try {
@@ -81,6 +98,8 @@ export default function AdminFoundationManagementTab() {
   const [lessonDialogOpen, setLessonDialogOpen] = useState(false);
   const [editingLesson, setEditingLesson] = useState<FoundationContent | null>(null);
   const [lessonForm, setLessonForm] = useState<FoundationContent>(emptyLesson);
+  const [questionPickerOpen, setQuestionPickerOpen] = useState(false);
+  const [questionSearch, setQuestionSearch] = useState('');
   const [reviewDialog, setReviewDialog] = useState<PlatformReview | null>(null);
   const [reply, setReply] = useState('');
 
@@ -94,6 +113,11 @@ export default function AdminFoundationManagementTab() {
     queryFn: () => getJson('/api/admin/platform-reviews'),
     enabled: section === 'reviews',
   });
+  const questionsQuery = useQuery({
+    queryKey: ['/api/admin/foundation-content/questions', questionSearch],
+    queryFn: () => getJson(`/api/admin/foundation-content/questions?search=${encodeURIComponent(questionSearch)}`),
+    enabled: questionPickerOpen,
+  });
   const lessons = useMemo(() => listFrom<FoundationContent>(lessonsQuery.data, ['content', 'foundationContent', 'items', 'data']), [lessonsQuery.data]);
   const reviews = useMemo(() => listFrom<PlatformReview>(reviewsQuery.data, ['reviews', 'platformReviews', 'items', 'data']), [reviewsQuery.data]);
 
@@ -104,6 +128,9 @@ export default function AdminFoundationManagementTab() {
         thumbnailUrl: lessonForm.thumbnailUrl || undefined,
         linkedQuizRoute: lessonForm.linkedQuizRoute || undefined,
         durationMinutes: lessonForm.durationMinutes || undefined,
+        quiz: lessonForm.quiz
+          ? { ...lessonForm.quiz, questionIds: lessonForm.quiz.questionIds }
+          : null,
       };
       const response = editingLesson
         ? await apiRequest('PUT', `/api/admin/foundation-content/${recordId(editingLesson)}`, body)
@@ -151,6 +178,18 @@ export default function AdminFoundationManagementTab() {
   useEffect(() => setReply(reviewDialog?.adminReply || ''), [reviewDialog]);
   const openCreate = () => { setEditingLesson(null); setLessonForm(emptyLesson); setLessonDialogOpen(true); };
   const openEdit = (lesson: FoundationContent) => { setEditingLesson(lesson); setLessonForm({ ...emptyLesson, ...lesson }); setLessonDialogOpen(true); };
+  const availableQuestions = listFrom<QuestionSummary>(questionsQuery.data, ['questions', 'items', 'data']);
+  const selectedQuestionIds = lessonForm.quiz?.questionIds || [];
+  const toggleQuestion = (questionId: string) => {
+    setLessonForm(current => {
+      const quiz = current.quiz || { title: 'اختبار الدرس', instructions: '', questionIds: [], passingScore: 60 };
+      const questionIds = quiz.questionIds.includes(questionId)
+        ? quiz.questionIds.filter(id => id !== questionId)
+        : [...quiz.questionIds, questionId];
+      return { ...current, quiz: { ...quiz, questionIds } };
+    });
+  };
+  const removeQuiz = () => setLessonForm(current => ({ ...current, quiz: undefined }));
   const studentLabel = (review: PlatformReview) => {
     if (review.studentName) return review.studentName;
     if (typeof review.userId === 'object') return review.userId.fullName || review.userId.username || review.userId.email || review.userId._id || 'طالب غير معروف';
@@ -185,7 +224,61 @@ export default function AdminFoundationManagementTab() {
             reviews.map(review => <div key={recordId(review)} className="rounded-2xl border border-slate-800 bg-slate-900/60 p-5"><div className="flex flex-wrap justify-between gap-3"><div><p className="font-medium text-white">{studentLabel(review)}</p><p className="mt-1 text-xs text-slate-400">{typeof review.userId === 'string' ? review.userId : review.userId?._id || ''} {review.createdAt ? `· ${new Date(review.createdAt).toLocaleDateString('ar-SA')}` : ''}</p></div><div className="flex items-center gap-2"><span className="text-amber-300">{review.rating} / 5</span><span className={`rounded-full px-2 py-1 text-xs ${review.status === 'approved' ? 'bg-emerald-500/15 text-emerald-300' : review.status === 'rejected' ? 'bg-red-500/15 text-red-300' : 'bg-amber-500/15 text-amber-300'}`}>{review.status === 'approved' ? 'معتمدة' : review.status === 'rejected' ? 'مرفوضة' : 'بانتظار المراجعة'}</span></div></div><p className="mt-4 text-sm leading-7 text-slate-300">{review.text}</p>{review.adminReply && <p className="mt-3 border-r-2 border-emerald-400 pr-3 text-sm text-emerald-100">رد الإدارة: {review.adminReply}</p>}<div className="mt-4 flex flex-wrap gap-2"><Button size="sm" onClick={() => updateReview.mutate({ review, data: { status: 'approved' } })} disabled={updateReview.isPending} className="bg-emerald-700 hover:bg-emerald-600"><CheckCircle className="ml-1 h-4 w-4" />اعتماد</Button><Button size="sm" variant="outline" onClick={() => updateReview.mutate({ review, data: { status: 'rejected' } })} disabled={updateReview.isPending} className="border-red-900 text-red-300">رفض</Button><Button size="sm" variant="outline" onClick={() => updateReview.mutate({ review, data: { featured: !review.featured } })} disabled={updateReview.isPending} className="border-slate-700 text-slate-200"><Star className={`ml-1 h-4 w-4 ${review.featured ? 'fill-amber-300 text-amber-300' : ''}`} />{review.featured ? 'مميزة' : 'تمييز'}</Button><Button size="sm" variant="outline" onClick={() => setReviewDialog(review)} className="border-slate-700 text-slate-200">رد</Button><Button size="sm" variant="ghost" onClick={() => { if (window.confirm('هل تريد حذف هذه المراجعة؟')) deleteReview.mutate(review); }} className="text-red-300"><Trash2 className="h-4 w-4" /></Button></div></div>)}
         </div>
       )}
-      <Dialog open={lessonDialogOpen} onOpenChange={setLessonDialogOpen}><DialogContent className="max-h-[90vh] overflow-y-auto bg-slate-950 text-white sm:max-w-2xl"><DialogHeader><DialogTitle>{editingLesson ? 'تعديل درس تأسيسي' : 'إضافة درس تأسيسي'}</DialogTitle><p className="text-sm text-slate-400">أضف رابط الفيديو، وسيظهر للطالب داخل مشغل iframe في صفحة التأسيس.</p></DialogHeader><form className="grid gap-4" onSubmit={event => { event.preventDefault(); saveLesson.mutate(); }}><div className="grid gap-4 sm:grid-cols-2"><Field label="المسار"><select required value={lessonForm.program} onChange={e => setLessonForm(f => ({ ...f, program: e.target.value as Program }))} className="h-10 w-full rounded-md border border-slate-700 bg-slate-900 px-3 text-sm"><option value="qudrat">قدرات</option><option value="tahsili">تحصيلي</option></select></Field><Field label="ترتيب الدرس"><Input required min="0" type="number" value={lessonForm.order} onChange={e => setLessonForm(f => ({ ...f, order: Number(e.target.value) }))} className="border-slate-700 bg-slate-900" /></Field></div><Field label="عنوان الدرس"><Input required value={lessonForm.title} onChange={e => setLessonForm(f => ({ ...f, title: e.target.value }))} className="border-slate-700 bg-slate-900" /></Field><Field label="وصف الدرس"><Textarea required value={lessonForm.description} onChange={e => setLessonForm(f => ({ ...f, description: e.target.value }))} className="border-slate-700 bg-slate-900" /></Field><Field label="رابط الفيديو"><Input required type="url" dir="ltr" placeholder="https://www.youtube.com/watch?v=... أو رابط embed" value={lessonForm.videoUrl} onChange={e => setLessonForm(f => ({ ...f, videoUrl: e.target.value }))} className="border-slate-700 bg-slate-900" /><span className="text-xs text-slate-500">يفضل استخدام رابط YouTube أو Vimeo؛ يتم تحويله تلقائيًا إلى iframe للطالب.</span></Field>{lessonForm.videoUrl && <div className="overflow-hidden rounded-xl border border-slate-800 bg-black"><div className="flex items-center gap-2 border-b border-slate-800 px-3 py-2 text-xs text-slate-400"><Eye className="h-4 w-4 text-emerald-400" />معاينة المشغل داخل المنصة</div><div className="aspect-video">{getEmbedUrl(lessonForm.videoUrl) ? <iframe src={getEmbedUrl(lessonForm.videoUrl) || undefined} title="معاينة الفيديو" className="h-full w-full" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowFullScreen referrerPolicy="strict-origin-when-cross-origin" /> : <p className="p-6 text-center text-sm text-amber-300">أدخل رابط فيديو صحيحًا لمعاينته داخل المنصة.</p>}</div></div>}<div className="grid gap-4 sm:grid-cols-2"><Field label="رابط الصورة المصغرة (اختياري)"><Input type="url" dir="ltr" value={lessonForm.thumbnailUrl} onChange={e => setLessonForm(f => ({ ...f, thumbnailUrl: e.target.value }))} className="border-slate-700 bg-slate-900" /></Field><Field label="مسار الاختبار المرتبط (اختياري)"><Input dir="ltr" placeholder="/quiz/..." value={lessonForm.linkedQuizRoute} onChange={e => setLessonForm(f => ({ ...f, linkedQuizRoute: e.target.value }))} className="border-slate-700 bg-slate-900" /></Field></div><div className="flex items-center justify-between"><Field label="المدة بالدقائق (اختياري)"><Input min="1" type="number" value={lessonForm.durationMinutes ?? ''} onChange={e => setLessonForm(f => ({ ...f, durationMinutes: e.target.value ? Number(e.target.value) : undefined }))} className="w-44 border-slate-700 bg-slate-900" /></Field><label className="mt-6 flex cursor-pointer items-center gap-2 text-sm text-slate-200"><input type="checkbox" checked={lessonForm.published} onChange={e => setLessonForm(f => ({ ...f, published: e.target.checked }))} />نشر الدرس</label></div><div className="flex justify-end gap-2"><Button type="button" variant="ghost" onClick={() => setLessonDialogOpen(false)}>إلغاء</Button><Button type="submit" disabled={saveLesson.isPending} className="bg-emerald-600 hover:bg-emerald-500">{saveLesson.isPending && <Loader2 className="ml-2 h-4 w-4 animate-spin" />}حفظ الدرس</Button></div></form></DialogContent></Dialog>
+      <Dialog open={lessonDialogOpen} onOpenChange={setLessonDialogOpen}>
+        <DialogContent className="max-h-[90vh] overflow-y-auto bg-slate-950 text-white sm:max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>{editingLesson ? 'تعديل درس تأسيسي' : 'إضافة درس تأسيسي'}</DialogTitle>
+            <p className="text-sm text-slate-400">أضف رابط الفيديو، وسيظهر للطالب داخل مشغل iframe في صفحة التأسيس.</p>
+          </DialogHeader>
+          <form className="grid gap-4" onSubmit={event => { event.preventDefault(); saveLesson.mutate(); }}>
+            <div className="grid gap-4 sm:grid-cols-2">
+              <Field label="المسار"><select required value={lessonForm.program} onChange={e => setLessonForm(f => ({ ...f, program: e.target.value as Program }))} className="h-10 w-full rounded-md border border-slate-700 bg-slate-900 px-3 text-sm"><option value="qudrat">قدرات</option><option value="tahsili">تحصيلي</option></select></Field>
+              <Field label="ترتيب الدرس"><Input required min="0" type="number" value={lessonForm.order} onChange={e => setLessonForm(f => ({ ...f, order: Number(e.target.value) }))} className="border-slate-700 bg-slate-900" /></Field>
+            </div>
+            <Field label="عنوان الدرس"><Input required value={lessonForm.title} onChange={e => setLessonForm(f => ({ ...f, title: e.target.value }))} className="border-slate-700 bg-slate-900" /></Field>
+            <Field label="وصف الدرس"><Textarea required value={lessonForm.description} onChange={e => setLessonForm(f => ({ ...f, description: e.target.value }))} className="border-slate-700 bg-slate-900" /></Field>
+            <Field label="رابط الفيديو"><Input required type="url" dir="ltr" placeholder="https://www.youtube.com/watch?v=... أو رابط embed" value={lessonForm.videoUrl} onChange={e => setLessonForm(f => ({ ...f, videoUrl: e.target.value }))} className="border-slate-700 bg-slate-900" /><span className="text-xs text-slate-500">يفضل استخدام رابط YouTube أو Vimeo؛ يتم تحويله تلقائيًا إلى iframe للطالب.</span></Field>
+            {lessonForm.videoUrl && <div className="overflow-hidden rounded-xl border border-slate-800 bg-black"><div className="flex items-center gap-2 border-b border-slate-800 px-3 py-2 text-xs text-slate-400"><Eye className="h-4 w-4 text-emerald-400" />معاينة المشغل داخل المنصة</div><div className="aspect-video">{getEmbedUrl(lessonForm.videoUrl) ? <iframe src={getEmbedUrl(lessonForm.videoUrl) || undefined} title="معاينة الفيديو" className="h-full w-full" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowFullScreen referrerPolicy="strict-origin-when-cross-origin" /> : <p className="p-6 text-center text-sm text-amber-300">أدخل رابط فيديو صحيحًا لمعاينته داخل المنصة.</p>}</div></div>}
+            <div className="rounded-2xl border border-emerald-500/25 bg-emerald-500/5 p-4">
+              <div className="flex flex-wrap items-center justify-between gap-3">
+                <div><p className="font-bold text-emerald-100">اختبار قصير بعد الدرس</p><p className="mt-1 text-xs text-slate-400">اختر أسئلة من بنك الأسئلة ليحلها الطالب بعد مشاهدة الحصة.</p></div>
+                {lessonForm.quiz ? <Button type="button" variant="outline" onClick={removeQuiz} className="border-red-900 text-red-300">إزالة الاختبار</Button> : <Button type="button" onClick={() => setLessonForm(f => ({ ...f, quiz: { title: 'اختبار الدرس', instructions: '', questionIds: [], passingScore: 60 } }))} className="bg-emerald-700 hover:bg-emerald-600"><Plus className="ml-2 h-4 w-4" />إضافة اختبار</Button>}
+              </div>
+              {lessonForm.quiz && <div className="mt-4 grid gap-3">
+                <div className="grid gap-3 sm:grid-cols-2">
+                  <Field label="عنوان الاختبار"><Input value={lessonForm.quiz.title} onChange={e => setLessonForm(f => ({ ...f, quiz: f.quiz ? { ...f.quiz, title: e.target.value } : f.quiz }))} className="border-slate-700 bg-slate-900" /></Field>
+                  <Field label="درجة النجاح %"><Input min="0" max="100" type="number" value={lessonForm.quiz.passingScore} onChange={e => setLessonForm(f => ({ ...f, quiz: f.quiz ? { ...f.quiz, passingScore: Number(e.target.value) } : f.quiz }))} className="border-slate-700 bg-slate-900" /></Field>
+                </div>
+                <Field label="تعليمات للطالب (اختياري)"><Textarea value={lessonForm.quiz.instructions || ''} onChange={e => setLessonForm(f => ({ ...f, quiz: f.quiz ? { ...f.quiz, instructions: e.target.value } : f.quiz }))} placeholder="مثال: أجب عن الأسئلة بعد مشاهدة الشرح." className="border-slate-700 bg-slate-900" /></Field>
+                <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-slate-800 bg-slate-950/60 p-3">
+                  <span className="text-sm text-slate-300"><strong className="text-white">{selectedQuestionIds.length}</strong> سؤال مختار</span>
+                  <Button type="button" onClick={() => setQuestionPickerOpen(true)} className="bg-slate-700 hover:bg-slate-600">اختيار الأسئلة من البنك</Button>
+                </div>
+                {selectedQuestionIds.length === 0 && <p className="text-xs text-amber-300">اختر سؤالاً واحداً على الأقل قبل حفظ الدرس.</p>}
+              </div>}
+            </div>
+            <div className="grid gap-4 sm:grid-cols-2">
+              <Field label="رابط الصورة المصغرة (اختياري)"><Input type="url" dir="ltr" value={lessonForm.thumbnailUrl} onChange={e => setLessonForm(f => ({ ...f, thumbnailUrl: e.target.value }))} className="border-slate-700 bg-slate-900" /></Field>
+              <Field label="مسار الاختبار القديم (اختياري)"><Input dir="ltr" placeholder="/quiz/..." value={lessonForm.linkedQuizRoute} onChange={e => setLessonForm(f => ({ ...f, linkedQuizRoute: e.target.value }))} className="border-slate-700 bg-slate-900" /></Field>
+            </div>
+            <div className="flex items-center justify-between"><Field label="المدة بالدقائق (اختياري)"><Input min="1" type="number" value={lessonForm.durationMinutes ?? ''} onChange={e => setLessonForm(f => ({ ...f, durationMinutes: e.target.value ? Number(e.target.value) : undefined }))} className="w-44 border-slate-700 bg-slate-900" /></Field><label className="mt-6 flex cursor-pointer items-center gap-2 text-sm text-slate-200"><input type="checkbox" checked={lessonForm.published} onChange={e => setLessonForm(f => ({ ...f, published: e.target.checked }))} />نشر الدرس</label></div>
+            <div className="flex justify-end gap-2"><Button type="button" variant="ghost" onClick={() => setLessonDialogOpen(false)}>إلغاء</Button><Button type="submit" disabled={saveLesson.isPending} className="bg-emerald-600 hover:bg-emerald-500">{saveLesson.isPending && <Loader2 className="ml-2 h-4 w-4 animate-spin" />}حفظ الدرس</Button></div>
+          </form>
+        </DialogContent>
+      </Dialog>
+      <Dialog open={questionPickerOpen} onOpenChange={setQuestionPickerOpen}>
+        <DialogContent className="max-h-[90vh] overflow-y-auto bg-slate-950 text-white sm:max-w-3xl">
+          <DialogHeader><DialogTitle>اختيار أسئلة الاختبار</DialogTitle><p className="text-sm text-slate-400">اختر الأسئلة التي ستظهر للطالب بعد الدرس. الإجابات الصحيحة لا تظهر للطالب.</p></DialogHeader>
+          <Input value={questionSearch} onChange={e => setQuestionSearch(e.target.value)} placeholder="ابحث في نص السؤال أو التصنيف..." className="border-slate-700 bg-slate-900" />
+          <div className="max-h-[55vh] space-y-2 overflow-y-auto pr-1">
+            {questionsQuery.isLoading ? <Loading /> : availableQuestions.length === 0 ? <EmptyState label="لا توجد أسئلة مطابقة." /> : availableQuestions.map(question => {
+              const selected = selectedQuestionIds.includes(question._id);
+              return <button type="button" key={question._id} onClick={() => toggleQuestion(question._id)} className={`w-full rounded-xl border p-3 text-right transition-colors ${selected ? 'border-emerald-500/60 bg-emerald-500/10' : 'border-slate-800 bg-slate-900/60 hover:border-slate-600'}`}><div className="flex items-start gap-3"><span className={`mt-1 flex h-5 w-5 shrink-0 items-center justify-center rounded border text-xs ${selected ? 'border-emerald-400 bg-emerald-500 text-white' : 'border-slate-600 text-transparent'}`}>✓</span><span className="min-w-0 flex-1"><span className="block text-sm font-medium text-slate-100">{question.text}</span><span className="mt-1 block text-xs text-slate-500">#{question.questionId} · {question.subcategory || 'عام'} · {question.difficulty}</span></span></div></button>;
+            })}
+          </div>
+          <div className="flex items-center justify-between border-t border-slate-800 pt-3"><span className="text-sm text-emerald-300">{selectedQuestionIds.length} سؤال مختار</span><Button type="button" onClick={() => setQuestionPickerOpen(false)} className="bg-emerald-600 hover:bg-emerald-500">تم</Button></div>
+        </DialogContent>
+      </Dialog>
       <Dialog open={!!reviewDialog} onOpenChange={open => !open && setReviewDialog(null)}><DialogContent className="bg-slate-950 text-white"><DialogHeader><DialogTitle>الرد على مراجعة الطالب</DialogTitle></DialogHeader><Textarea value={reply} onChange={e => setReply(e.target.value)} placeholder="اكتب رد الإدارة..." className="min-h-28 border-slate-700 bg-slate-900" /><div className="flex justify-end gap-2"><Button variant="ghost" onClick={() => setReviewDialog(null)}>إلغاء</Button><Button disabled={!reviewDialog || updateReview.isPending} onClick={() => reviewDialog && updateReview.mutate({ review: reviewDialog, data: { adminReply: reply } })} className="bg-emerald-600 hover:bg-emerald-500">حفظ الرد</Button></div></DialogContent></Dialog>
     </div>
   );

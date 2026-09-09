@@ -24,6 +24,21 @@ export interface FoundationContent {
   order: number;
   linkedQuizRoute?: string;
   durationMinutes?: number;
+  quiz?: {
+    title: string;
+    instructions?: string;
+    passingScore: number;
+    timeLimitMinutes?: number;
+    questionIds: Array<{
+      _id: string;
+      questionId?: number;
+      text: string;
+      options: string[];
+      imageUrl?: string;
+      imageUrls?: string[];
+      explanation?: string;
+    }>;
+  };
 }
 
 export interface PlatformReview {

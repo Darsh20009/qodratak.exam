@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from "react";
-import { useFoundationContent } from "@/hooks/use-student";
+import { FoundationContent, useFoundationContent } from "@/hooks/use-student";
 import { Link } from "wouter";
 import { PlayCircle, Clock, CheckCircle2, Loader2, BookOpen, ShieldCheck } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -38,12 +38,54 @@ function getEmbedUrl(value: string) {
 
 export default function FoundationPage() {
   const [activeTab, setActiveTab] = useState<'qudrat' | 'tahsili'>('qudrat');
-  const [selectedLesson, setSelectedLesson] = useState<NonNullable<ReturnType<typeof useFoundationContent>['data']>[number] | null>(null);
+  const [selectedLesson, setSelectedLesson] = useState<FoundationContent | null>(null);
+  const [quizLesson, setQuizLesson] = useState<FoundationContent | null>(null);
+  const [quizAnswers, setQuizAnswers] = useState<Record<string, number>>({});
+  const [quizResult, setQuizResult] = useState<{ score: number; correctAnswers: number; totalQuestions: number; skippedQuestions: number; passed: boolean; passingScore: number } | null>(null);
+  const [quizSubmitting, setQuizSubmitting] = useState(false);
+  const [quizError, setQuizError] = useState('');
   const { data: content, isLoading } = useFoundationContent(activeTab);
   const selectedEmbedUrl = useMemo(
     () => (selectedLesson ? getEmbedUrl(selectedLesson.videoUrl) : null),
     [selectedLesson],
   );
+  const quizQuestions = quizLesson?.quiz?.questionIds || [];
+  const openQuiz = (lesson: FoundationContent) => {
+    setSelectedLesson(null);
+    setQuizLesson(lesson);
+    setQuizAnswers({});
+    setQuizResult(null);
+    setQuizError('');
+  };
+  const closeQuiz = () => {
+    setQuizLesson(null);
+    setQuizAnswers({});
+    setQuizResult(null);
+    setQuizError('');
+  };
+  const submitQuiz = async () => {
+    if (!quizLesson) return;
+    setQuizSubmitting(true);
+    setQuizError('');
+    try {
+      const response = await fetch(`/api/foundation-content/${quizLesson._id}/quiz/submit`, {
+        method: 'POST',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          answers: Object.entries(quizAnswers).map(([questionId, selectedOptionIndex]) => ({ questionId, selectedOptionIndex })),
+          timeTakenSeconds: 0,
+        }),
+      });
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok) throw new Error(data.error || 'تعذر تصحيح الاختبار');
+      setQuizResult(data);
+    } catch (error) {
+      setQuizError(error instanceof Error ? error.message : 'تعذر تصحيح الاختبار');
+    } finally {
+      setQuizSubmitting(false);
+    }
+  };
 
   return (
     <div className="mx-auto max-w-5xl p-5 md:p-8 animate-fade-in">
@@ -129,7 +171,11 @@ export default function FoundationPage() {
                   >
                     <PlayCircle className="ml-2 h-4 w-4" /> شاهد الدرس
                   </Button>
-                  {item.linkedQuizRoute && (
+                  {item.quiz?.questionIds?.length ? (
+                    <Button type="button" variant="outline" onClick={() => openQuiz(item)} className="flex-1 rounded-xl border-emerald-500/40 font-bold text-foreground hover:bg-emerald-50 dark:hover:bg-emerald-950/30">
+                      <CheckCircle2 className="ml-2 h-4 w-4 text-emerald-600" /> اختبار الدرس
+                    </Button>
+                  ) : item.linkedQuizRoute && (
                     <Link href="/computerized" className="flex-1">
                       <Button variant="outline" className="w-full rounded-xl font-bold border-border text-foreground hover:bg-muted">
                         <CheckCircle2 className="ml-2 h-4 w-4" /> اختبر فهمك
@@ -178,6 +224,45 @@ export default function FoundationPage() {
             <ShieldCheck className="h-4 w-4 text-emerald-400" />
             يشاهد الطالب الدرس داخل المنصة دون مغادرة صفحة التأسيس.
           </div>
+        </DialogContent>
+      </Dialog>
+      <Dialog open={!!quizLesson} onOpenChange={open => !open && closeQuiz()}>
+        <DialogContent className="max-h-[94vh] w-[calc(100%-1rem)] max-w-3xl overflow-y-auto bg-background p-4 sm:p-6">
+          <DialogHeader className="text-right">
+            <DialogTitle className="text-2xl font-black">{quizLesson?.quiz?.title || 'اختبار الدرس'}</DialogTitle>
+            {quizLesson?.quiz?.instructions && <p className="text-sm leading-6 text-muted-foreground">{quizLesson.quiz.instructions}</p>}
+          </DialogHeader>
+          {!quizResult ? (
+            <div className="space-y-5">
+              {quizQuestions.map((question, index) => (
+                <div key={question._id} className="rounded-2xl border border-border bg-card p-4 shadow-sm">
+                  <div className="mb-3 flex items-start gap-3">
+                    <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-primary/10 text-sm font-black text-primary">{index + 1}</span>
+                    <p className="whitespace-pre-wrap text-sm font-bold leading-7 text-foreground">{question.text}</p>
+                  </div>
+                  {(question.imageUrl || question.imageUrls?.[0]) && <img src={question.imageUrl || question.imageUrls?.[0]} alt="" className="mb-4 max-h-56 w-full rounded-xl object-contain" />}
+                  <div className="grid gap-2 sm:grid-cols-2">
+                    {question.options.map((option, optionIndex) => {
+                      const selected = quizAnswers[question._id] === optionIndex;
+                      return <button type="button" key={`${question._id}-${optionIndex}`} onClick={() => setQuizAnswers(current => ({ ...current, [question._id]: optionIndex }))} className={`rounded-xl border p-3 text-right text-sm transition-colors ${selected ? 'border-primary bg-primary/10 font-bold text-primary' : 'border-border bg-background hover:bg-muted'}`}><span className="ml-2 font-black">{String.fromCharCode(1575 + optionIndex)}.</span>{option}</button>;
+                    })}
+                  </div>
+                </div>
+              ))}
+              {quizError && <p className="rounded-xl bg-red-500/10 p-3 text-sm text-red-600">{quizError}</p>}
+              <div className="flex flex-wrap items-center justify-between gap-3">
+                <span className="text-sm text-muted-foreground">{Object.keys(quizAnswers).length} من {quizQuestions.length} تمت الإجابة عنها</span>
+                <Button type="button" onClick={submitQuiz} disabled={quizSubmitting || quizQuestions.length === 0} className="rounded-xl bg-primary px-6 font-bold">{quizSubmitting && <Loader2 className="ml-2 h-4 w-4 animate-spin" />}تصحيح الاختبار</Button>
+              </div>
+            </div>
+          ) : (
+            <div className="py-8 text-center">
+              <div className={`mx-auto flex h-20 w-20 items-center justify-center rounded-full text-2xl font-black ${quizResult.passed ? 'bg-emerald-500/15 text-emerald-600' : 'bg-amber-500/15 text-amber-600'}`}>{quizResult.score}%</div>
+              <h3 className="mt-5 text-2xl font-black text-foreground">{quizResult.passed ? 'أحسنت! اجتزت الاختبار' : 'بداية جيدة، راجع الشرح وحاول مرة أخرى'}</h3>
+              <p className="mt-2 text-sm text-muted-foreground">أجبت بشكل صحيح عن {quizResult.correctAnswers} من {quizResult.totalQuestions} أسئلة · درجة النجاح {quizResult.passingScore}%</p>
+              <Button type="button" onClick={closeQuiz} className="mt-6 rounded-xl">إغلاق</Button>
+            </div>
+          )}
         </DialogContent>
       </Dialog>
     </div>

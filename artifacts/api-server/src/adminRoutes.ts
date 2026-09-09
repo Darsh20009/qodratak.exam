@@ -476,7 +476,7 @@ router.get('/session', requireAdminAuth, (req: Request, res: Response) => {
 
 // ── STUDENT PRODUCT: FOUNDATION CONTENT & REVIEW MODERATION ───────────────
 const studentPrograms = new Set(['qudrat', 'tahsili']);
-const foundationFields = ['program', 'title', 'description', 'videoUrl', 'thumbnailUrl', 'order', 'published', 'linkedQuizRoute', 'durationMinutes'];
+const foundationFields = ['program', 'title', 'description', 'videoUrl', 'thumbnailUrl', 'order', 'published', 'linkedQuizRoute', 'durationMinutes', 'quiz'];
 
 function contentPayload(body: Record<string, unknown>, creating = false) {
   const payload: Record<string, unknown> = {};
@@ -498,7 +498,44 @@ function contentPayload(body: Record<string, unknown>, creating = false) {
   if (payload.published !== undefined && typeof payload.published !== 'boolean') {
     return { error: 'حالة النشر غير صالحة' };
   }
+  if (payload.quiz !== undefined && payload.quiz !== null) {
+    const quiz = payload.quiz as Record<string, unknown>;
+    const questionIds = Array.isArray(quiz.questionIds)
+      ? Array.from(new Set(quiz.questionIds.map(String).map(id => id.trim()).filter(Boolean)))
+      : [];
+    const passingScore = Number(quiz.passingScore ?? 60);
+    const timeLimitMinutes = quiz.timeLimitMinutes === undefined || quiz.timeLimitMinutes === null || quiz.timeLimitMinutes === ''
+      ? undefined
+      : Number(quiz.timeLimitMinutes);
+    if (!String(quiz.title || '').trim() || questionIds.length === 0) {
+      return { error: 'عنوان الاختبار وسؤال واحد على الأقل مطلوبان' };
+    }
+    if (questionIds.length > 50 || questionIds.some(id => !mongoose.Types.ObjectId.isValid(id))) {
+      return { error: 'قائمة أسئلة الاختبار غير صالحة أو تتجاوز 50 سؤالاً' };
+    }
+    if (!Number.isFinite(passingScore) || passingScore < 0 || passingScore > 100) {
+      return { error: 'درجة النجاح يجب أن تكون بين 0 و100' };
+    }
+    if (timeLimitMinutes !== undefined && (!Number.isInteger(timeLimitMinutes) || timeLimitMinutes < 1 || timeLimitMinutes > 180)) {
+      return { error: 'مدة الاختبار يجب أن تكون بين دقيقة و180 دقيقة' };
+    }
+    payload.quiz = {
+      title: String(quiz.title).trim(),
+      instructions: String(quiz.instructions || '').trim() || undefined,
+      questionIds,
+      passingScore,
+      timeLimitMinutes,
+    };
+  }
   return { payload };
+}
+
+async function validateFoundationQuiz(payload: Record<string, unknown>) {
+  if (!payload.quiz || typeof payload.quiz !== 'object') return null;
+  const questionIds = (payload.quiz as { questionIds?: unknown }).questionIds;
+  if (!Array.isArray(questionIds) || questionIds.length === 0) return 'يجب اختيار أسئلة الاختبار';
+  const count = await Question.countDocuments({ _id: { $in: questionIds } });
+  return count === questionIds.length ? null : 'بعض الأسئلة المختارة لم تعد موجودة في بنك الأسئلة';
 }
 
 router.get('/foundation-content', requireAdminAuth, async (_req: Request, res: Response) => {
@@ -510,10 +547,37 @@ router.get('/foundation-content', requireAdminAuth, async (_req: Request, res: R
   }
 });
 
+router.get('/foundation-content/questions', requireAdminAuth, async (req: Request, res: Response) => {
+  try {
+    const search = String(req.query.search || '').trim();
+    const category = String(req.query.category || '').trim();
+    const query: Record<string, unknown> = {};
+    if (category && category !== 'all') query.category = category;
+    if (search) {
+      query.$or = [
+        { text: { $regex: search, $options: 'i' } },
+        { subcategory: { $regex: search, $options: 'i' } },
+        { topic: { $regex: search, $options: 'i' } },
+      ];
+    }
+    const questions = await Question.find(query)
+      .sort({ questionId: 1 })
+      .limit(100)
+      .select('_id questionId text category subcategory difficulty options correctOptionIndex explanation imageUrl imageUrls')
+      .lean();
+    res.json({ questions });
+  } catch (error) {
+    console.error('Get foundation quiz questions error:', error);
+    res.status(500).json({ error: 'فشل في جلب أسئلة الاختبار' });
+  }
+});
+
 router.post('/foundation-content', requireAdminAuth, async (req: Request, res: Response) => {
   const result = contentPayload(req.body || {}, true);
   if ('error' in result) return res.status(400).json({ error: result.error });
   try {
+    const quizError = await validateFoundationQuiz(result.payload);
+    if (quizError) return res.status(400).json({ error: quizError });
     const content = await FoundationContent.create(result.payload);
     res.status(201).json({ content });
   } catch (error) {
@@ -527,6 +591,8 @@ router.put('/foundation-content/:id', requireAdminAuth, async (req: Request, res
   if ('error' in result) return res.status(400).json({ error: result.error });
   if (!Object.keys(result.payload).length) return res.status(400).json({ error: 'لا توجد بيانات للتحديث' });
   try {
+    const quizError = await validateFoundationQuiz(result.payload);
+    if (quizError) return res.status(400).json({ error: quizError });
     const content = await FoundationContent.findByIdAndUpdate(req.params.id, { $set: result.payload }, { new: true, runValidators: true });
     if (!content) return res.status(404).json({ error: 'المحتوى غير موجود' });
     res.json({ content });

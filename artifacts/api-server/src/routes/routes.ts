@@ -11080,12 +11080,85 @@ app.post("/api/auth/register", async (req: Request, res: Response) => {
       const { FoundationContent } = await import('../mongodb/models');
       const content = await FoundationContent.find({ program, published: true })
         .sort({ order: 1, createdAt: 1 })
-        .select('program title description videoUrl thumbnailUrl order linkedQuizRoute durationMinutes createdAt updatedAt')
+        .select('program title description videoUrl thumbnailUrl order linkedQuizRoute durationMinutes quiz createdAt updatedAt')
+        .populate({
+          path: 'quiz.questionIds',
+          select: '_id questionId text options imageUrl imageUrls explanation',
+        })
         .lean();
       return res.json({ content });
     } catch (error) {
       console.error('Foundation content list error:', error);
       return res.status(500).json({ error: 'فشل في جلب المحتوى التأسيسي' });
+    }
+  });
+
+  app.post('/api/foundation-content/:id/quiz/submit', requireAuth, async (req: Request, res: Response) => {
+    const userId = studentOnly(req, res);
+    if (!userId) return;
+    if (!mongoose.Types.ObjectId.isValid(req.params.id)) return res.status(400).json({ error: 'معرف الدرس غير صالح' });
+    try {
+      const { FoundationContent, Question, TestResult } = await import('../mongodb/models');
+      const lesson = await FoundationContent.findOne({ _id: req.params.id, published: true }).select('program title quiz').lean() as any;
+      if (!lesson?.quiz?.questionIds?.length) return res.status(404).json({ error: 'لا يوجد اختبار مرتبط بهذا الدرس' });
+
+      const submitted = Array.isArray(req.body?.answers) ? req.body.answers : [];
+      const answerMap = new Map<string, number>();
+      for (const answer of submitted) {
+        const questionId = String(answer?.questionId || '');
+        const optionIndex = Number(answer?.selectedOptionIndex);
+        if (questionId && Number.isInteger(optionIndex) && optionIndex >= 0 && optionIndex <= 10) {
+          answerMap.set(questionId, optionIndex);
+        }
+      }
+      const questionIds = lesson.quiz.questionIds.map((id: unknown) => String(id));
+      const questions = await Question.find({ _id: { $in: questionIds } }).select('_id correctOptionIndex subcategory difficulty').lean();
+      const questionById = new Map(questions.map((question: any) => [String(question._id), question]));
+      let correctAnswers = 0;
+      let answeredQuestions = 0;
+      const questionDetails = questionIds.map((questionId: string) => {
+        const question = questionById.get(questionId);
+        const selectedOptionIndex = answerMap.get(questionId);
+        const answered = Number.isInteger(selectedOptionIndex) && !!question;
+        const isCorrect = answered && selectedOptionIndex === question.correctOptionIndex;
+        if (answered) answeredQuestions += 1;
+        if (isCorrect) correctAnswers += 1;
+        return { questionId, selectedOptionIndex: answered ? selectedOptionIndex : null, isCorrect };
+      });
+      const totalQuestions = questionIds.length;
+      const percentage = Math.round((correctAnswers / totalQuestions) * 100);
+      const skippedQuestions = totalQuestions - answeredQuestions;
+      const timeTaken = Math.max(0, Number(req.body?.timeTakenSeconds) || 0);
+      await TestResult.create({
+        userId,
+        program: lesson.program,
+        testType: 'custom',
+        testId: `foundation-${String(lesson._id)}`,
+        testName: lesson.quiz.title || lesson.title,
+        difficulty: 'mixed',
+        score: percentage,
+        totalQuestions,
+        correctAnswers,
+        wrongAnswers: answeredQuestions - correctAnswers,
+        skippedQuestions,
+        percentage,
+        timeTaken,
+        pointsEarned: correctAnswers,
+        isOfficial: false,
+        questionDetails,
+        completedAt: new Date(),
+      });
+      return res.json({
+        score: percentage,
+        correctAnswers,
+        totalQuestions,
+        skippedQuestions,
+        passed: percentage >= Number(lesson.quiz.passingScore || 60),
+        passingScore: Number(lesson.quiz.passingScore || 60),
+      });
+    } catch (error) {
+      console.error('Foundation quiz submission error:', error);
+      return res.status(500).json({ error: 'فشل في تصحيح الاختبار' });
     }
   });
 

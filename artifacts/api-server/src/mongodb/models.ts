@@ -1479,10 +1479,24 @@ export const WhatsAppQuizSession = mongoose.models['WhatsAppQuizSession']
 
 // ─── Student product content and reviews (additive collections) ─────────────
 export type StudentProgram = 'qudrat' | 'tahsili';
+export interface IFoundationQuiz {
+  title: string;
+  instructions?: string;
+  questionIds: mongoose.Types.ObjectId[];
+  passingScore: number;
+  timeLimitMinutes?: number;
+}
+const foundationQuizSchema = new Schema<IFoundationQuiz>({
+  title: { type: String, required: true, trim: true, maxlength: 160 },
+  instructions: { type: String, trim: true, maxlength: 500 },
+  questionIds: [{ type: Schema.Types.ObjectId, ref: 'Question', required: true }],
+  passingScore: { type: Number, min: 0, max: 100, default: 60 },
+  timeLimitMinutes: { type: Number, min: 1, max: 180 },
+}, { _id: false });
 export interface IFoundationContent extends Document {
   program: StudentProgram; title: string; description: string; videoUrl: string;
   thumbnailUrl?: string; order: number; published: boolean; linkedQuizRoute?: string;
-  durationMinutes?: number; createdAt: Date; updatedAt: Date;
+  durationMinutes?: number; quiz?: IFoundationQuiz; createdAt: Date; updatedAt: Date;
 }
 const foundationContentSchema = new Schema<IFoundationContent>({
   program: { type: String, enum: ['qudrat', 'tahsili'], required: true, index: true },
@@ -1494,6 +1508,7 @@ const foundationContentSchema = new Schema<IFoundationContent>({
   published: { type: Boolean, default: false, index: true },
   linkedQuizRoute: { type: String, trim: true },
   durationMinutes: { type: Number, min: 0 },
+  quiz: { type: foundationQuizSchema },
 }, { timestamps: true });
 foundationContentSchema.index({ program: 1, published: 1, order: 1 });
 
