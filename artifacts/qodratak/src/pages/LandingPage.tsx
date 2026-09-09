@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useState } from "react";
 import { Link } from "wouter";
 import {
   ArrowLeft,
@@ -21,116 +21,6 @@ import { ThemeToggle } from "@/components/ThemeToggle";
 const NAVY = "#171723";
 const SIGNAL = "#FF8A70";
 const MINT = "#91D7C5";
-const SAUDI_CERTIFICATE_TOKEN = "QVllTDdEcm91V0cxa25lTW1iRUJzQT09";
-const SAUDI_CERTIFICATE_FALLBACK_URL = "https://eauthenticate.saudibusiness.gov.sa/certificate-details/0000321867?vt=1.WGT.1788911379.hlwg8kpZR93H.SYkJa9I1EF-CZ2Mj1zFLtk60KmeDzcc83I8opT_-mFo";
-const SAUDI_CERTIFICATE_SEAL_SCRIPT = "https://eauthenticate.saudibusiness.gov.sa/EAuthSealApi/seal.js";
-
-function currentVerificationDate() {
-  const date = new Date();
-  return [
-    String(date.getDate()).padStart(2, "0"),
-    String(date.getMonth() + 1).padStart(2, "0"),
-    String(date.getFullYear()),
-  ].join("-");
-}
-
-function SaudiBusinessSeal() {
-  const [certificateOpen, setCertificateOpen] = useState(false);
-  const [verificationUrl, setVerificationUrl] = useState(SAUDI_CERTIFICATE_FALLBACK_URL);
-  const sealRef = useRef<HTMLDivElement>(null);
-  const verificationDate = currentVerificationDate();
-
-  useEffect(() => {
-    if (certificateOpen || !sealRef.current) return;
-
-    const seal = sealRef.current;
-    const readVerificationUrl = () => {
-      const generatedLink = seal.querySelector<HTMLAnchorElement>("a[href]");
-      const generatedUrl = generatedLink?.href;
-
-      if (generatedUrl && /^https?:\/\//i.test(generatedUrl)) {
-        setVerificationUrl(generatedUrl);
-      }
-    };
-
-    const observer = new MutationObserver(readVerificationUrl);
-    observer.observe(seal, {
-      childList: true,
-      subtree: true,
-      attributes: true,
-      attributeFilter: ["href", "data-href", "data-url"],
-    });
-
-    const script = document.createElement("script");
-    script.src = SAUDI_CERTIFICATE_SEAL_SCRIPT;
-    script.async = true;
-    script.addEventListener("load", readVerificationUrl);
-    document.body.appendChild(script);
-
-    const retryTimer = window.setTimeout(readVerificationUrl, 1500);
-
-    return () => {
-      observer.disconnect();
-      script.removeEventListener("load", readVerificationUrl);
-      script.remove();
-      window.clearTimeout(retryTimer);
-    };
-  }, [certificateOpen]);
-
-  return (
-    <>
-      {certificateOpen && (
-        <div
-          className="sbc-certificate-backdrop"
-          role="presentation"
-          onClick={() => setCertificateOpen(false)}
-        >
-          <section
-            className="sbc-certificate-dialog"
-            role="dialog"
-            aria-modal="true"
-            aria-label="شهادة توثيق متجر قدراتك"
-            onClick={(event) => event.stopPropagation()}
-          >
-            <div className="sbc-certificate-card">
-              <img
-                className="sbc-center-logo"
-                src="/saudi-center-logo.png"
-                alt="المركز السعودي للتنافسية والأعمال"
-              />
-              <h3>موثّق لدى المركز السعودي للتنافسية والأعمال</h3>
-              <p className="sbc-certificate-location">
-                الموقع: <a href="https://qodratak.sa" target="_blank" rel="noreferrer">https://qodratak.sa</a>
-              </p>
-              <p className="sbc-certificate-brand">منصة قدراتك</p>
-              <div className="sbc-qr-frame" aria-label="رمز التحقق">
-                <div className="sbc-qr-frame__inner">
-                  <img src="/saudi-certificate-qr.png" alt="رمز الاستجابة السريعة للتحقق" />
-                </div>
-              </div>
-              <div className="sbc-certificate-status">
-                <span>الحالة:</span>
-                <strong>سارية</strong>
-              </div>
-              <p className="sbc-certificate-date">
-                تاريخ التحقق: <b dir="ltr">{verificationDate}</b>
-              </p>
-              <a
-                className="sbc-certificate-link"
-                href={verificationUrl}
-                target="_blank"
-                rel="noreferrer"
-              >
-                <span aria-hidden="true">↗</span> عرض التحقق
-              </a>
-            </div>
-          </section>
-        </div>
-      )}
-    </>
-  );
-}
-
 function Header({ onSignup, onLogin }: { onSignup: () => void; onLogin: () => void }) {
   const [menuOpen, setMenuOpen] = useState(false);
 
@@ -459,7 +349,15 @@ export default function LandingPage({ initialModal }: { initialModal?: "signup" 
 
   return (
     <main className="min-h-screen overflow-hidden bg-[#F7F4EE] text-slate-900 dark:bg-[#0B1220] dark:text-slate-100" dir="rtl">
-      <SaudiBusinessSeal />
+      <div
+        className="sbc-verify-seal"
+        data-token="QVllTDdEcm91V0cxa25lTW1iRUJzQT09"
+        data-position="bottom-left"
+      />
+      <script
+        src="https://eauthenticate.saudibusiness.gov.sa/EAuthSealApi/seal.js"
+        async
+      />
       <AuthModal
         open={authMode !== null}
         mode={authMode || "login"}
