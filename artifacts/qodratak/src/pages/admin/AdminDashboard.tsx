@@ -44,6 +44,8 @@ interface DashboardStats {
 interface User { _id: string; username: string; fullName?: string; email?: string; phone?: string; points: number; level: number; lastVisit: string; totalVisits: number; totalTestsTaken: number; createdAt: string; isActive: boolean }
 interface Subscription { _id: string; userId: { _id: string; username: string; fullName?: string; email?: string; phone?: string }; type: string; status: string; startDate: string; endDate: string; price: number; paymentMethod?: string; transferReceiptUrl?: string; transferReceiptFilename?: string; createdAt: string; approvedBy?: { fullName: string }; approvedAt?: string; rejectionReason?: string }
 interface InstitutionRequest { _id: string; institutionName: string; responsibleName: string; phone: string; email: string; whatsapp: string; city: string; institutionType: string; studentsCount?: number; notes?: string; status: 'pending' | 'approved' | 'rejected'; createdAt: string }
+interface ActiveInstitutionMember { id: string; fullName: string; username: string; email: string; phone: string; lastVisit: string; createdAt: string; }
+interface ActiveInstitution { id: string; name: string; nameEn?: string; type: string; city: string; email: string; phone: string; subscriptionType: string; subscriptionEndDate: string; maxTeachers: number; maxStudents: number; teacherCount: number; studentCount: number; teachers?: ActiveInstitutionMember[]; students?: ActiveInstitutionMember[]; }
 
 const NAV_ITEMS = [
   { key: 'overview', icon: LayoutDashboard, label: 'نظرة عامة', color: 'text-[#625D69]' },
@@ -61,6 +63,7 @@ const NAV_ITEMS = [
   { key: 'email', icon: Mail, label: 'البريد الإلكتروني', color: 'text-[#B65D36]' },
   { key: 'exams', icon: CalendarCheck, label: 'الاختبارات المجدولة', color: 'text-[#625D69]' },
   { key: 'institutions', icon: Building2, label: 'طلبات المؤسسات', color: 'text-[#B65D36]' },
+  { key: 'active-institutions', icon: Building2, label: 'المؤسسات', color: 'text-[#2E8B70]' },
   { key: 'notifications', icon: BellRing, label: 'مركز الإشعارات', color: 'text-[#7964C1]' },
   { key: 'whatsapp', icon: MessageCircle, label: 'واتساب CRM', color: 'text-[#2E8B70]' },
   { key: 'question-reports', icon: AlertTriangle, label: 'بلاغات الأسئلة', color: 'text-[#B65D36]' },
@@ -78,6 +81,7 @@ const PRIMARY_ADMIN_NAV_KEYS = new Set([
   'announcements',
   'support',
   'settings',
+  'active-institutions',
 ]);
 
 const ADMIN_PAGE_TIPS: Record<string, { intro: string; steps: string[] }> = {
@@ -116,6 +120,10 @@ const ADMIN_PAGE_TIPS: Record<string, { intro: string; steps: string[] }> = {
   email: {
     intro: 'أدر صندوق info@qodratak.sa واستقبل الرسائل ورد عليها من داخل لوحة الإدارة.',
     steps: ['اقرأ الرسائل الجديدة من الوارد.', 'استخدم ردًا لإرسال الرسالة من نفس الصندوق.', 'الرسائل الواردة المهمة تُمرر إلى واتساب الأدمن بطابور آمن.'],
+  },
+  'active-institutions': {
+    intro: 'تابع المؤسسات النشطة وإحصائيات المعلمين والطلاب في كل مؤسسة.',
+    steps: ['استعرض قائمة المؤسسات النشطة.', 'افتح ملف المؤسسة لعرض المعلمين والطلاب.', 'تابع أعداد المعلمين والطلاب مقارنة بالحد الأقصى لكل مؤسسة.'],
   },
 };
 
@@ -240,6 +248,10 @@ export default function AdminDashboard({ initialTab = 'overview' }: { initialTab
   const [editingAdmin, setEditingAdmin] = useState<any | null>(null);
   const [adminForm, setAdminForm] = useState({ username: '', password: '', fullName: '', email: '', role: 'admin', permissions: [] as string[] });
 
+  // Active Institutions state
+  const [selectedActiveInstitution, setSelectedActiveInstitution] = useState<ActiveInstitution | null>(null);
+  const [activeInstitutionTab, setActiveInstitutionTab] = useState<'teachers' | 'students'>('teachers');
+
   const { data: session, isLoading: sessionLoading } = useQuery({ queryKey: ['/api/admin/session'], retry: false });
   const { data: stats, isLoading: statsLoading } = useQuery<DashboardStats>({ queryKey: ['/api/admin/dashboard/stats'], enabled: !!(session as any)?.authenticated });
   const { data: usersData, isLoading: usersLoading } = useQuery({
@@ -284,6 +296,15 @@ export default function AdminDashboard({ initialTab = 'overview' }: { initialTab
   const { data: walletsData, isLoading: walletsLoading, refetch: refetchWallets } = useQuery({ queryKey: ['/api/admin/wallets'], queryFn: () => fetch('/api/admin/wallets', { credentials: 'include' }).then(r => r.json()), enabled: !!(session as any)?.authenticated && activeTab === 'wallets' });
   const { data: monthlyTop3Data, isLoading: top3Loading, refetch: refetchTop3 } = useQuery({ queryKey: ['/api/admin/leaderboard/monthly-top3'], queryFn: () => fetch('/api/admin/leaderboard/monthly-top3', { credentials: 'include' }).then(r => r.json()), enabled: !!(session as any)?.authenticated && activeTab === 'wallets' });
   const { data: seasonalExamsData, isLoading: seasonalLoading, refetch: refetchSeasonal } = useQuery({ queryKey: ['/api/admin/seasonal-exams'], queryFn: () => fetch('/api/admin/seasonal-exams', { credentials: 'include' }).then(r => r.json()), enabled: !!(session as any)?.authenticated && activeTab === 'seasonal-exams' });
+  const { data: activeInstitutionsData, isLoading: activeInstitutionsLoading, error: activeInstitutionsError } = useQuery({
+    queryKey: ['/api/admin/institutions/active'],
+    queryFn: async () => {
+      const res = await fetch('/api/admin/institutions/active', { credentials: 'include' });
+      if (!res.ok) throw new Error('فشل في جلب المؤسسات النشطة');
+      return res.json();
+    },
+    enabled: !!(session as any)?.authenticated && activeTab === 'active-institutions'
+  });
 
   // Test template mutations
   const addTemplate = useMutation({
@@ -1412,6 +1433,79 @@ export default function AdminDashboard({ initialTab = 'overview' }: { initialTab
                       </div>
                     );
                   })}
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* ─── ACTIVE INSTITUTIONS TAB ─── */}
+          {activeTab === 'active-institutions' && (
+            <div className="space-y-5">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h2 className="text-white text-xl font-bold flex items-center gap-2">
+                    <Building2 className="w-5 h-5 text-emerald-400" /> المؤسسات
+                  </h2>
+                  <p className="text-slate-400 text-sm mt-1">إدارة المؤسسات النشطة ومتابعة إحصائيات المعلمين والطلاب</p>
+                </div>
+              </div>
+
+              {activeInstitutionsLoading ? (
+                <div className="text-center py-16 text-slate-400">جارٍ التحميل...</div>
+              ) : activeInstitutionsError ? (
+                <div className="bg-red-900/20 rounded-2xl border border-red-900/40 py-16 text-center text-red-400">
+                  <p className="font-medium">حدث خطأ أثناء تحميل المؤسسات</p>
+                </div>
+              ) : !activeInstitutionsData?.institutions?.length ? (
+                <div className="bg-slate-800/40 rounded-2xl border border-slate-700/50 py-16 text-center text-slate-400">
+                  <Building2 className="w-12 h-12 mx-auto mb-3 opacity-30" />
+                  <p className="font-medium">لا توجد مؤسسات نشطة</p>
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                  {activeInstitutionsData.institutions.map((inst: ActiveInstitution) => (
+                    <div key={inst.id} className="bg-slate-800/40 rounded-2xl border border-slate-700/50 p-5 hover:bg-slate-800/60 transition-colors">
+                      <div className="flex justify-between items-start mb-4">
+                        <div>
+                          <h3 className="text-lg font-bold text-white mb-1">{inst.name}</h3>
+                          <div className="flex items-center gap-2 text-sm text-slate-400">
+                            <span>{inst.city}</span>
+                            <span>•</span>
+                            <span className="text-emerald-400">{inst.subscriptionType}</span>
+                          </div>
+                        </div>
+                        <Button
+                          onClick={() => setSelectedActiveInstitution(inst)}
+                          variant="outline"
+                          className="bg-slate-800 border-slate-600 hover:bg-slate-700 h-8 text-xs"
+                        >
+                          <Eye className="w-3 h-3 ml-1" /> عرض التفاصيل
+                        </Button>
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-3 mb-4">
+                        <div className="bg-slate-900/50 rounded-lg p-3">
+                          <div className="text-xs text-slate-400 mb-1">الطلاب</div>
+                          <div className="flex items-end justify-between">
+                            <span className="text-xl font-bold text-white">{inst.studentCount}</span>
+                            <span className="text-xs text-slate-500 mb-1">/ {inst.maxStudents}</span>
+                          </div>
+                        </div>
+                        <div className="bg-slate-900/50 rounded-lg p-3">
+                          <div className="text-xs text-slate-400 mb-1">المعلمون</div>
+                          <div className="flex items-end justify-between">
+                            <span className="text-xl font-bold text-white">{inst.teacherCount}</span>
+                            <span className="text-xs text-slate-500 mb-1">/ {inst.maxTeachers}</span>
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="flex justify-between items-center text-xs">
+                        <span className="text-slate-400 text-left w-full" dir="ltr">{inst.email}</span>
+                        <span className="text-slate-400 text-left w-full" dir="ltr">{inst.phone}</span>
+                      </div>
+                    </div>
+                  ))}
                 </div>
               )}
             </div>
@@ -2598,6 +2692,97 @@ export default function AdminDashboard({ initialTab = 'overview' }: { initialTab
                   </Button>
                 </div>
               )}
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* ─── Active Institution Modal ─── */}
+      <Dialog open={!!selectedActiveInstitution} onOpenChange={(open) => { if (!open) setSelectedActiveInstitution(null); }}>
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto bg-slate-900 border-slate-700 text-white" dir="rtl">
+          <DialogHeader>
+            <DialogTitle className="text-white text-xl flex items-center gap-2">
+              <Building2 className="w-6 h-6 text-emerald-400" />
+              {selectedActiveInstitution?.name}
+            </DialogTitle>
+          </DialogHeader>
+
+          {selectedActiveInstitution && (
+            <div className="space-y-6 mt-4">
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                <div className="bg-slate-800/50 p-4 rounded-xl border border-slate-700/50">
+                  <p className="text-slate-400 text-xs mb-1">الطلاب</p>
+                  <p className="text-2xl font-bold text-white">
+                    {selectedActiveInstitution.studentCount}
+                    <span className="text-sm font-normal text-slate-500 mr-1">/ {selectedActiveInstitution.maxStudents}</span>
+                  </p>
+                </div>
+                <div className="bg-slate-800/50 p-4 rounded-xl border border-slate-700/50">
+                  <p className="text-slate-400 text-xs mb-1">المعلمون</p>
+                  <p className="text-2xl font-bold text-white">
+                    {selectedActiveInstitution.teacherCount}
+                    <span className="text-sm font-normal text-slate-500 mr-1">/ {selectedActiveInstitution.maxTeachers}</span>
+                  </p>
+                </div>
+                <div className="bg-slate-800/50 p-4 rounded-xl border border-slate-700/50">
+                  <p className="text-slate-400 text-xs mb-1">نوع الاشتراك</p>
+                  <p className="text-lg font-bold text-emerald-400 mt-1">{selectedActiveInstitution.subscriptionType}</p>
+                </div>
+                <div className="bg-slate-800/50 p-4 rounded-xl border border-slate-700/50">
+                  <p className="text-slate-400 text-xs mb-1">نهاية الاشتراك</p>
+                  <p className="text-lg font-bold text-white mt-1">{formatDate(selectedActiveInstitution.subscriptionEndDate)}</p>
+                </div>
+              </div>
+
+              <div className="flex gap-2 border-b border-slate-700 pb-2">
+                <button
+                  className={`px-4 py-2 text-sm font-medium rounded-lg transition-colors ${activeInstitutionTab === 'teachers' ? 'bg-emerald-500/20 text-emerald-300' : 'text-slate-400 hover:text-white'}`}
+                  onClick={() => setActiveInstitutionTab('teachers')}
+                >
+                  المعلمون ({selectedActiveInstitution.teachers?.length || 0})
+                </button>
+                <button
+                  className={`px-4 py-2 text-sm font-medium rounded-lg transition-colors ${activeInstitutionTab === 'students' ? 'bg-emerald-500/20 text-emerald-300' : 'text-slate-400 hover:text-white'}`}
+                  onClick={() => setActiveInstitutionTab('students')}
+                >
+                  الطلاب ({selectedActiveInstitution.students?.length || 0})
+                </button>
+              </div>
+
+              <div className="bg-slate-800/30 border border-slate-700 rounded-xl overflow-hidden">
+                <table className="w-full text-sm text-right">
+                  <thead className="bg-slate-800/50 text-slate-400 text-xs uppercase">
+                    <tr>
+                      <th className="px-4 py-3 font-medium">الاسم</th>
+                      <th className="px-4 py-3 font-medium">البريد الإلكتروني</th>
+                      <th className="px-4 py-3 font-medium">رقم الجوال</th>
+                      <th className="px-4 py-3 font-medium">آخر زيارة</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-700/50">
+                    {(activeInstitutionTab === 'teachers' ? selectedActiveInstitution.teachers : selectedActiveInstitution.students)?.map(member => (
+                      <tr key={member.id} className="hover:bg-slate-800/50 transition-colors">
+                        <td className="px-4 py-3">
+                          <div className="flex flex-col">
+                            <span className="font-medium text-white">{member.fullName}</span>
+                            <span className="text-xs text-slate-500">@{member.username}</span>
+                          </div>
+                        </td>
+                        <td className="px-4 py-3 text-slate-300">{member.email || '-'}</td>
+                        <td className="px-4 py-3 text-slate-300 text-left" dir="ltr">{member.phone || '-'}</td>
+                        <td className="px-4 py-3 text-slate-400 text-xs">{formatDateTime(member.lastVisit)}</td>
+                      </tr>
+                    ))}
+                    {!(activeInstitutionTab === 'teachers' ? selectedActiveInstitution.teachers : selectedActiveInstitution.students)?.length && (
+                      <tr>
+                        <td colSpan={4} className="px-4 py-8 text-center text-slate-500">
+                          لا يوجد {activeInstitutionTab === 'teachers' ? 'معلمين' : 'طلاب'} حالياً
+                        </td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
             </div>
           )}
         </DialogContent>

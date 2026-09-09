@@ -6,7 +6,7 @@ import fs from 'fs';
 import mongoose from 'mongoose';
 import { mongoStorage } from './mongodb/mongoStorage';
 import { storage } from './storage';
-import { Question, ChatMessage, Admin, WhatsAppMessage, FoundationContent, PlatformReview } from './mongodb/models';
+import { Question, ChatMessage, Admin, WhatsAppMessage, FoundationContent, PlatformReview, Institution, InstitutionRequest, User } from './mongodb/models';
 import { sendMailboxEmail, sendSubscriptionApprovalEmail } from './services/emailService';
 import {
   deleteInboxMessage,
@@ -253,6 +253,7 @@ function requiredAdminPermission(req: Request) {
   if (pathName.startsWith('/support-tickets') || pathName.startsWith('/whatsapp')) return 'manage_support';
   if (pathName.startsWith('/settings') || pathName.startsWith('/subscription-plan')) return 'manage_settings';
   if (pathName.startsWith('/scheduled-exams')) return 'manage_exams';
+  if (pathName.startsWith('/institutions')) return 'manage_institutions';
   if (pathName.startsWith('/institution-requests')) return 'manage_institutions';
   if (pathName.startsWith('/notifications')) return 'manage_notifications';
   if (pathName.startsWith('/seasonal-exams') || pathName.startsWith('/foundation-content') || pathName.startsWith('/platform-reviews')) return 'manage_content';
@@ -1222,6 +1223,102 @@ router.get('/chat/messages/:userId', requireAdminAuth, async (req: Request, res:
 
 // ── INSTITUTION REQUESTS ──────────────────────────────────────
 
+router.get('/institutions/active', requireAdminAuth, async (req: Request, res: Response) => {
+  try {
+    const [institutions, approvedRequests] = await Promise.all([
+      Institution.find({ isActive: { $ne: false } }).sort({ name: 1 }).lean(),
+      InstitutionRequest.find({ status: 'approved' }).sort({ institutionName: 1 }).lean(),
+    ]);
+    const institutionIds = institutions.map((institution: any) => institution._id);
+    const members = institutionIds.length
+      ? await User.find({
+          institutionId: { $in: institutionIds },
+          role: { $in: ['teacher', 'student'] },
+          isActive: { $ne: false },
+        })
+          .select('_id institutionId role fullName username email phone isActive lastVisit createdAt')
+          .sort({ role: 1, fullName: 1, username: 1 })
+          .lean()
+      : [];
+
+    const membersByInstitution = new Map<string, { teachers: any[]; students: any[] }>();
+    for (const member of members as any[]) {
+      const key = String(member.institutionId);
+      const group = membersByInstitution.get(key) || { teachers: [], students: [] };
+      const safeMember = {
+        id: String(member._id),
+        fullName: member.fullName || member.username || 'بدون اسم',
+        username: member.username || '',
+        email: member.email || '',
+        phone: member.phone || '',
+        lastVisit: member.lastVisit || null,
+        createdAt: member.createdAt || null,
+      };
+      if (member.role === 'teacher') group.teachers.push(safeMember);
+      if (member.role === 'student') group.students.push(safeMember);
+      membersByInstitution.set(key, group);
+    }
+
+    const result = institutions.map((institution: any) => {
+      const group = membersByInstitution.get(String(institution._id)) || { teachers: [], students: [] };
+      return {
+        id: String(institution._id),
+        name: institution.name,
+        nameEn: institution.nameEn || '',
+        type: institution.type,
+        city: institution.city || '',
+        email: institution.email || '',
+        phone: institution.phone || '',
+        subscriptionType: institution.subscriptionType || 'free',
+        subscriptionEndDate: institution.subscriptionEndDate || null,
+        maxTeachers: institution.maxTeachers || 0,
+        maxStudents: institution.maxStudents || 0,
+        teacherCount: group.teachers.length,
+        studentCount: group.students.length,
+        teachers: group.teachers,
+        students: group.students,
+      };
+    });
+
+    const canonicalEmails = new Set(
+      result.map((institution) => String(institution.email || '').trim().toLowerCase()).filter(Boolean),
+    );
+    for (const request of approvedRequests as any[]) {
+      const email = String(request.email || '').trim().toLowerCase();
+      if (email && canonicalEmails.has(email)) continue;
+      result.push({
+        id: `request-${String(request._id)}`,
+        name: request.institutionName,
+        nameEn: '',
+        type: request.institutionType === 'training_center' ? 'institute' : request.institutionType,
+        city: request.city || '',
+        email,
+        phone: request.phone || request.whatsapp || '',
+        subscriptionType: 'basic',
+        subscriptionEndDate: null,
+        maxTeachers: 10,
+        maxStudents: Number(request.studentsCount) || 100,
+        teacherCount: 0,
+        studentCount: 0,
+        teachers: [],
+        students: [],
+      });
+    }
+
+    res.json({
+      institutions: result,
+      totals: {
+        institutions: result.length,
+        teachers: result.reduce((sum, institution) => sum + institution.teacherCount, 0),
+        students: result.reduce((sum, institution) => sum + institution.studentCount, 0),
+      },
+    });
+  } catch (error) {
+    req.log?.error({ error }, 'Failed to load active institutions');
+    res.status(500).json({ error: 'فشل في جلب المؤسسات النشطة' });
+  }
+});
+
 router.get('/institution-requests', requireAdminAuth, async (req: Request, res: Response) => {
   try {
     const status = req.query.status as string;
@@ -1237,6 +1334,27 @@ router.post('/institution-requests/:id/approve', requireAdminAuth, async (req: R
     const adminSession = (req.session as any).admin;
     const result = await mongoStorage.approveInstitutionRequest(req.params.id, adminSession.adminId);
     if (!result) return res.status(404).json({ error: 'الطلب غير موجود' });
+    const request = result.toObject ? result.toObject() : result;
+    const institutionType = request.institutionType === 'training_center'
+      ? 'institute'
+      : request.institutionType;
+    await Institution.findOneAndUpdate(
+      { email: String(request.email || '').trim().toLowerCase() },
+      {
+        $setOnInsert: {
+          name: request.institutionName,
+          type: institutionType,
+          email: String(request.email || '').trim().toLowerCase(),
+          phone: request.phone || request.whatsapp || '',
+          city: request.city || '',
+          maxStudents: Number(request.studentsCount) || 100,
+          maxTeachers: 10,
+          subscriptionType: 'basic',
+          isActive: true,
+        },
+      },
+      { upsert: true, returnDocument: 'after', runValidators: true },
+    );
     res.json({ success: true, request: result });
   } catch (error) {
     res.status(500).json({ error: 'فشل في الموافقة على الطلب' });
