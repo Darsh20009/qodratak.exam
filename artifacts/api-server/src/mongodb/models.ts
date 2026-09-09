@@ -387,6 +387,7 @@ const subscriptionSchema = new Schema<ISubscription>({
 
 export interface ITestResult extends Document {
   userId: string;
+  program: 'qudrat' | 'tahsili' | 'general';
   testType: 'verbal' | 'quantitative' | 'qiyas' | 'custom' | 'paper_model' | 'standard';
   testId?: string;
   testName?: string;
@@ -410,6 +411,12 @@ export interface ITestResult extends Document {
 
 const testResultSchema = new Schema<ITestResult>({
   userId: { type: String, required: true, index: true },
+  program: {
+    type: String,
+    enum: ['qudrat', 'tahsili', 'general'],
+    default: 'general',
+    index: true,
+  },
   testType: { type: String, enum: ['verbal', 'quantitative', 'qiyas', 'custom', 'paper_model', 'standard'], required: true },
   testId: { type: String },
   testName: { type: String },
@@ -430,6 +437,10 @@ const testResultSchema = new Schema<ITestResult>({
   strongAreas: { type: [String], default: [] },
   completedAt: { type: Date, default: Date.now },
 });
+
+testResultSchema.index({ userId: 1, completedAt: -1 });
+testResultSchema.index({ userId: 1, testId: 1, completedAt: -1 });
+testResultSchema.index({ userId: 1, program: 1, completedAt: -1 });
 
 export interface IQuestion extends Document {
   questionId: number;

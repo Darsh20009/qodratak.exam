@@ -14,11 +14,10 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import {
   Users, BookOpen, Plus, MoreVertical, Trash, Edit,
-  LayoutDashboard, AlertCircle, LogOut, ArrowRight
+  LayoutDashboard, AlertCircle, LogOut, ArrowRight, BarChart3, Download, TrendingUp, Target
 } from "lucide-react";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { logout } from "@/utils/logout";
 
 // ─── Types ───────────────────────────────────────────────────────────
 
@@ -50,6 +49,23 @@ export interface TeacherStudent {
   totalTestsTaken: number;
   lastVisit?: string;
   joinedAt: string;
+}
+
+interface TeacherReport {
+  class: TeacherClass;
+  filters: { period: string; program: string; exam: string; availableExams: { value: string; name: string }[] };
+  summary: {
+    studentCount: number; studentsWithActivity: number; completedTests: number;
+    averageScore: number; completionRate: number;
+    trend: { date: string; averageScore: number; tests: number }[];
+  };
+  students: {
+    id: string; fullName: string; username: string; level: number; averageScore: number;
+    completedTests: number; completionRate: number; lastActivity?: string;
+    strengths: { name: string; count: number }[]; weaknesses: { name: string; count: number }[];
+    tests: { id: string; name: string; type: string; score: number; correctAnswers: number; totalQuestions: number; completedAt: string }[];
+  }[];
+  generatedAt: string;
 }
 
 // ─── API Client ──────────────────────────────────────────────────────
@@ -92,6 +108,15 @@ function useClassStudents(classId: string) {
   return useQuery<{ class: TeacherClass, students: TeacherStudent[] }, Error>({
     queryKey: ['teacher', 'classes', classId, 'students'],
     queryFn: () => fetcher(`/api/teacher/classes/${classId}/students`),
+    enabled: !!classId,
+  });
+}
+
+function useClassReport(classId: string, period: string, program: string, exam: string) {
+  const query = new URLSearchParams({ period, program, exam });
+  return useQuery<TeacherReport, Error>({
+    queryKey: ['teacher', 'classes', classId, 'report', period, program, exam],
+    queryFn: () => fetcher(`/api/teacher/classes/${classId}/report?${query}`),
     enabled: !!classId,
   });
 }
@@ -335,7 +360,7 @@ function DashboardOverview({ data, onSelectClass, onEditClass }: {
   };
 
   return (
-    <div className="p-4 sm:p-6 md:p-8 space-y-6 md:space-y-8 animate-fade-in">
+    <div className="p-6 md:p-8 space-y-8 animate-fade-in">
       <div>
         <h2 className="text-2xl font-bold text-slate-900 mb-1">مرحباً أ. {data.teacher.name.split(' ')[0]} 👋</h2>
         <p className="text-slate-500">إليك نظرة عامة على فصولك وطلابك اليوم.</p>
@@ -458,6 +483,7 @@ function ClassRoster({ classId, onBack }: { classId: string, onBack: () => void 
   const [studentId, setStudentId] = useState('');
   const addStudent = useAddStudent();
   const removeStudent = useRemoveStudent();
+  const [showReport, setShowReport] = useState(false);
 
   if (isLoading) {
     return (
@@ -524,7 +550,10 @@ function ClassRoster({ classId, onBack }: { classId: string, onBack: () => void 
           </div>
         </div>
 
-        <form onSubmit={handleAddStudent} className="flex w-full gap-2 md:w-auto">
+        <form onSubmit={handleAddStudent} className="flex w-full flex-wrap gap-2 md:w-auto">
+          <Button type="button" variant={showReport ? "default" : "outline"} onClick={() => setShowReport((value) => !value)} className="gap-2">
+            <BarChart3 className="w-4 h-4" /> {showReport ? 'قائمة الطلاب' : 'تقرير التقدم'}
+          </Button>
           <Input
             placeholder="يوزر، بريد، أو جوال الطالب..."
             value={studentId}
@@ -538,6 +567,9 @@ function ClassRoster({ classId, onBack }: { classId: string, onBack: () => void 
         </form>
       </div>
 
+      {showReport && <ClassProgressReport classId={classId} />}
+
+      {!showReport && (
       <Card className="shadow-sm border-slate-200">
         <div className="overflow-x-auto">
           <Table dir="rtl">
@@ -598,6 +630,105 @@ function ClassRoster({ classId, onBack }: { classId: string, onBack: () => void 
           </Table>
         </div>
       </Card>
+      )}
+    </div>
+  );
+}
+
+function ClassProgressReport({ classId }: { classId: string }) {
+  const [period, setPeriod] = useState('30');
+  const [program, setProgram] = useState('all');
+  const [exam, setExam] = useState('all');
+  const [selectedStudent, setSelectedStudent] = useState<string | null>(null);
+  const { data, isLoading, error } = useClassReport(classId, period, program, exam);
+
+  const exportCsv = () => {
+    if (!data) return;
+    const safeCell = (value: unknown) => {
+      const text = String(value ?? '');
+      const neutralized = /^[\s]*[=+\-@\t\r]/.test(text) ? `'${text}` : text;
+      return `"${neutralized.replace(/"/g, '""')}"`;
+    };
+    const rows = [
+      ['الطالب', 'اسم المستخدم', 'متوسط الدرجة', 'نسبة الإكمال', 'الاختبارات المكتملة', 'آخر نشاط', 'نقاط القوة', 'نقاط الضعف'],
+      ...data.students.map((student) => [
+        student.fullName, student.username, `${student.averageScore}%`, `${student.completionRate}%`, String(student.completedTests),
+        student.lastActivity ? new Date(student.lastActivity).toLocaleDateString('ar-SA') : 'لا يوجد',
+        student.strengths.map((item) => item.name).join('، '), student.weaknesses.map((item) => item.name).join('، '),
+      ]),
+    ];
+    const csv = '\ufeff' + rows.map((row) => row.map(safeCell).join(',')).join('\n');
+    const url = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8' }));
+    const anchor = document.createElement('a');
+    anchor.href = url;
+    anchor.download = `تقرير_${data.class.name}_${new Date().toISOString().slice(0, 10)}.csv`;
+    anchor.click();
+    URL.revokeObjectURL(url);
+  };
+
+  if (isLoading) return <Skeleton className="h-80 w-full rounded-xl" />;
+  if (error || !data) return <Card className="p-8 text-center text-red-600">تعذر تحميل بيانات التقرير الفعلية.</Card>;
+  const profile = data.students.find((student) => student.id === selectedStudent);
+  const maxTrend = Math.max(100, ...data.summary.trend.map((point) => point.averageScore));
+
+  return (
+    <div className="space-y-5">
+      <Card>
+        <CardContent className="p-4 flex flex-wrap gap-3 items-center">
+          <Select value={period} onValueChange={setPeriod}><SelectTrigger className="w-40"><SelectValue /></SelectTrigger><SelectContent>
+            <SelectItem value="7">آخر 7 أيام</SelectItem><SelectItem value="30">آخر 30 يومًا</SelectItem>
+            <SelectItem value="90">آخر 90 يومًا</SelectItem><SelectItem value="365">آخر سنة</SelectItem><SelectItem value="all">كل الفترات</SelectItem>
+          </SelectContent></Select>
+          <Select value={program} onValueChange={setProgram}><SelectTrigger className="w-40"><SelectValue placeholder="البرنامج" /></SelectTrigger><SelectContent>
+            <SelectItem value="all">كل البرامج</SelectItem><SelectItem value="qudrat">قدرات</SelectItem>
+            <SelectItem value="tahsili">تحصيلي</SelectItem><SelectItem value="general">عام</SelectItem>
+          </SelectContent></Select>
+          <Select value={exam} onValueChange={setExam}><SelectTrigger className="w-52"><SelectValue placeholder="الاختبار" /></SelectTrigger><SelectContent>
+            <SelectItem value="all">كل الاختبارات</SelectItem>
+            {data.filters.availableExams.map((item) => <SelectItem key={item.value} value={item.value}>{item.name}</SelectItem>)}
+          </SelectContent></Select>
+          <Button variant="outline" className="gap-2 me-auto" onClick={exportCsv}><Download className="w-4 h-4" /> تصدير CSV</Button>
+        </CardContent>
+      </Card>
+      <div className="grid sm:grid-cols-2 xl:grid-cols-4 gap-4">
+        {[
+          { label: 'متوسط الفصل', value: `${data.summary.averageScore}%`, icon: TrendingUp },
+          { label: 'نسبة الإكمال', value: `${data.summary.completionRate}%`, icon: Target },
+          { label: 'اختبارات مكتملة', value: data.summary.completedTests, icon: BookOpen },
+          { label: 'طلاب نشطون', value: `${data.summary.studentsWithActivity}/${data.summary.studentCount}`, icon: Users },
+        ].map((item) => <Card key={item.label}><CardContent className="p-5 flex items-center gap-3"><item.icon className="w-5 h-5 text-blue-600" /><div><p className="text-xs text-slate-500">{item.label}</p><p className="text-2xl font-black">{item.value}</p></div></CardContent></Card>)}
+      </div>
+      <Card>
+        <CardHeader><CardTitle className="text-base">اتجاه الدرجات</CardTitle></CardHeader>
+        <CardContent>
+          {data.summary.trend.length ? <div className="h-36 flex items-end gap-2">
+            {data.summary.trend.slice(-20).map((point) => <div key={point.date} className="flex-1 min-w-2 group" title={`${point.date}: ${point.averageScore}%`}>
+              <div className="bg-blue-500 rounded-t hover:bg-blue-600" style={{ height: `${Math.max(5, (point.averageScore / maxTrend) * 120)}px` }} />
+            </div>)}
+          </div> : <p className="text-center text-slate-500 py-8">لا توجد نتائج ضمن الفلاتر المحددة.</p>}
+        </CardContent>
+      </Card>
+      <Card>
+        <Table><TableHeader><TableRow><TableHead>الطالب</TableHead><TableHead>المتوسط</TableHead><TableHead>الإكمال</TableHead><TableHead>آخر نشاط</TableHead><TableHead>التفاصيل</TableHead></TableRow></TableHeader>
+          <TableBody>{data.students.map((student) => <TableRow key={student.id}>
+            <TableCell><div className="font-bold">{student.fullName}</div><div className="text-xs text-slate-500">{student.username}</div></TableCell>
+            <TableCell>{student.averageScore}%</TableCell><TableCell><div>{student.completionRate}%</div><div className="text-xs text-slate-500">{student.completedTests} اختبار</div></TableCell>
+            <TableCell>{student.lastActivity ? new Date(student.lastActivity).toLocaleDateString('ar-SA') : 'لا يوجد'}</TableCell>
+            <TableCell><Button size="sm" variant="outline" onClick={() => setSelectedStudent(student.id)}>فتح الملف</Button></TableCell>
+          </TableRow>)}</TableBody>
+        </Table>
+      </Card>
+      <Dialog open={!!profile} onOpenChange={(open) => !open && setSelectedStudent(null)}>
+        <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto" dir="rtl">
+          {profile && <><DialogHeader><DialogTitle>ملف الطالب: {profile.fullName}</DialogTitle><DialogDescription>نتائج فعلية ضمن الفترة والفلاتر المحددة</DialogDescription></DialogHeader>
+            <div className="grid grid-cols-3 gap-3"><Card className="p-3 text-center"><b>{profile.averageScore}%</b><p className="text-xs text-slate-500">المتوسط</p></Card><Card className="p-3 text-center"><b>{profile.completedTests}</b><p className="text-xs text-slate-500">اختبارات</p></Card><Card className="p-3 text-center"><b>{profile.level}</b><p className="text-xs text-slate-500">المستوى</p></Card></div>
+            <div className="grid md:grid-cols-2 gap-4"><div><h4 className="font-bold text-green-700 mb-2">نقاط القوة</h4><p className="text-sm">{profile.strengths.map((item) => item.name).join('، ') || 'لا توجد بيانات كافية'}</p></div><div><h4 className="font-bold text-amber-700 mb-2">نقاط الضعف</h4><p className="text-sm">{profile.weaknesses.map((item) => item.name).join('، ') || 'لا توجد بيانات كافية'}</p></div></div>
+            <Table><TableHeader><TableRow><TableHead>الاختبار</TableHead><TableHead>الدرجة</TableHead><TableHead>الإجابات</TableHead><TableHead>التاريخ</TableHead></TableRow></TableHeader><TableBody>
+              {profile.tests.map((test) => <TableRow key={test.id}><TableCell>{test.name}</TableCell><TableCell>{test.score}%</TableCell><TableCell>{test.correctAnswers}/{test.totalQuestions}</TableCell><TableCell>{new Date(test.completedAt).toLocaleDateString('ar-SA')}</TableCell></TableRow>)}
+            </TableBody></Table>
+          </>}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
@@ -609,7 +740,6 @@ export default function TeacherSystemPage() {
   const [selectedClassId, setSelectedClassId] = useState<string | null>(null);
   const [modalOpen, setModalOpen] = useState(false);
   const [editingClass, setEditingClass] = useState<TeacherClass | null>(null);
-  const [isLoggingOut, setIsLoggingOut] = useState(false);
 
   const openCreateModal = () => {
     setEditingClass(null);
@@ -619,12 +749,6 @@ export default function TeacherSystemPage() {
   const openEditModal = (c: TeacherClass) => {
     setEditingClass(c);
     setModalOpen(true);
-  };
-
-  const handleLogout = async () => {
-    if (isLoggingOut) return;
-    setIsLoggingOut(true);
-    await logout();
   };
 
   if (isLoading) {
@@ -672,17 +796,17 @@ export default function TeacherSystemPage() {
       <div className="min-h-screen bg-slate-50 flex flex-col font-sans" dir="rtl">
 
         {/* Header */}
-        <header className="bg-white border-b border-slate-200 h-16 flex items-center justify-between px-3 sm:px-6 sticky top-0 z-20">
-          <div className="flex min-w-0 items-center gap-2 sm:gap-4">
+        <header className="bg-white border-b border-slate-200 h-16 flex items-center justify-between px-6 sticky top-0 z-20">
+          <div className="flex items-center gap-4">
             <Link href="/">
               <div className="w-9 h-9 bg-slate-900 rounded-lg flex items-center justify-center text-white font-black cursor-pointer hover:bg-slate-800 transition">
                 ق
               </div>
             </Link>
             <div className="h-6 w-px bg-slate-200"></div>
-            <h1 className="truncate text-base font-bold tracking-tight text-slate-800 sm:text-lg">مساحة المعلم</h1>
+            <h1 className="text-lg font-bold text-slate-800 tracking-tight">مساحة المعلم</h1>
           </div>
-          <div className="flex items-center gap-2 sm:gap-4">
+          <div className="flex items-center gap-4">
             <div className="hidden md:block text-sm font-medium text-slate-700 text-left dir-ltr">
               {data.teacher.name}
               <div className="text-xs text-slate-400 font-normal">{data.teacher.email}</div>
@@ -692,20 +816,6 @@ export default function TeacherSystemPage() {
                 {data.teacher.name.substring(0, 2)}
               </AvatarFallback>
             </Avatar>
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              onClick={handleLogout}
-              disabled={isLoggingOut}
-              className="gap-1.5 border-red-200 px-2.5 text-red-600 hover:bg-red-50 hover:text-red-700 sm:px-3"
-              aria-label="تسجيل الخروج"
-              data-testid="button-teacher-logout"
-            >
-              <LogOut className="h-4 w-4" />
-              <span className="sm:hidden">{isLoggingOut ? 'جارٍ الخروج' : 'خروج'}</span>
-              <span className="hidden sm:inline">{isLoggingOut ? 'جارٍ تسجيل الخروج' : 'تسجيل الخروج'}</span>
-            </Button>
           </div>
         </header>
 

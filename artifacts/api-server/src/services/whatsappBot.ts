@@ -319,6 +319,7 @@ async function answerCurrentQuestion(phone: string, text: string) {
     if (mongoose.Types.ObjectId.isValid(String(session.userId))) {
       await mongoStorage.createTestResult({
         userId: String(session.userId),
+        program: "qudrat",
         testType: "custom",
         testName: "اختبار واتساب التدريبي",
         difficulty: "mixed",

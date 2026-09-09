@@ -1103,6 +1103,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (mongoose.Types.ObjectId.isValid(sessionUserId)) {
         savedResult = await mongoStorage.createTestResult({
           userId: sessionUserId,
+          program: 'qudrat',
           testType: attempt.category,
           difficulty: 'mixed',
           score,
@@ -1309,6 +1310,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (useMongoStorage) {
         result = await mongoStorage.createTestResult({
           userId: sessionUserId,
+          program: 'qudrat',
           testType,
           difficulty,
           score,
@@ -1624,6 +1626,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
               : 'intermediate';
           persistedResult = await TestResult.create({
             userId,
+            program: 'qudrat',
             testId: String(testId),
             testName,
             testType: normalizedTestType,
@@ -5650,6 +5653,7 @@ app.post("/api/auth/register", async (req: Request, res: Response) => {
           newResult = await PaperModelResult.create(resultData);
           await TestResult.create({
             userId: String(userId),
+            program: 'qudrat',
             testId: `paper-${modelId}`,
             testName: `النموذج الورقي ${modelNumber}`,
             testType: 'paper_model',
@@ -10751,6 +10755,165 @@ app.post("/api/auth/register", async (req: Request, res: Response) => {
     } catch (error) {
       console.error('Teacher class roster error:', error);
       return res.status(500).json({ error: 'تعذر تحميل طلاب الفصل' });
+    }
+  });
+
+  app.get('/api/teacher/classes/:classId/report', requireAuth, requireRole('teacher'), requireMongoForTeacher, async (req: Request, res: Response) => {
+    try {
+      const identity = teacherIdentity(req);
+      const classId = String(req.params.classId);
+      if (!mongoose.Types.ObjectId.isValid(classId)) return res.status(404).json({ error: 'الفصل غير موجود' });
+      const { TeacherClass, TeacherClassMembership, User, TestResult } = await import('../mongodb/models');
+      const teacherClass = await TeacherClass.findOne({
+        _id: classId,
+        teacherId: identity.id,
+        isActive: true,
+      }).lean();
+      if (!teacherClass) return res.status(404).json({ error: 'الفصل غير موجود' });
+      const teacherRecord = mongoose.Types.ObjectId.isValid(identity.id)
+        ? await User.findById(identity.id).select('role isActive').lean()
+        : identity.email
+          ? await User.findOne({ email: identity.email }).select('role isActive').lean()
+          : null;
+      if (!teacherRecord || teacherRecord.role !== 'teacher' || teacherRecord.isActive === false) {
+        return res.status(403).json({ error: 'حساب المعلم غير نشط', code: 'TEACHER_INACTIVE' });
+      }
+
+      const memberships = await TeacherClassMembership.find({
+        classId: teacherClass._id,
+        teacherId: identity.id,
+      }).select('studentId joinedAt').lean();
+      const studentIds = memberships.map((membership: any) => String(membership.studentId));
+      const requestedStudentId = String(req.query.studentId || '').trim();
+      if (requestedStudentId && !studentIds.includes(requestedStudentId)) {
+        return res.status(404).json({ error: 'الطالب غير موجود في هذا الفصل' });
+      }
+
+      const period = ['7', '30', '90', '365', 'all'].includes(String(req.query.period))
+        ? String(req.query.period)
+        : '30';
+      const since = period === 'all' ? null : new Date(Date.now() - Number(period) * 24 * 60 * 60 * 1000);
+      const exam = String(req.query.exam || 'all').trim().slice(0, 160);
+      const program = ['all', 'qudrat', 'tahsili', 'general'].includes(String(req.query.program))
+        ? String(req.query.program)
+        : String(teacherClass.program || 'all');
+      const selectedStudentIds = requestedStudentId ? [requestedStudentId] : studentIds;
+      const resultQuery: any = {
+        userId: { $in: selectedStudentIds },
+        ...(since ? { completedAt: { $gte: since } } : {}),
+      };
+      if (exam !== 'all') {
+        resultQuery.$or = [{ testId: exam }, { testType: exam }, { testName: exam }];
+      }
+      if (program !== 'all') {
+        const legacyProgramQuery = program === 'qudrat'
+          ? { program: { $exists: false }, testType: { $in: ['verbal', 'quantitative', 'qiyas'] } }
+          : program === 'tahsili'
+            ? { program: { $exists: false }, $or: [{ testName: /تحصيلي|tahsili/i }, { subcategory: /تحصيلي|tahsili/i }] }
+            : { program: { $exists: false }, testType: { $exists: false } };
+        resultQuery.$and = [{ $or: [{ program }, legacyProgramQuery] }];
+      }
+      const availableExamQuery: any = {
+        userId: { $in: studentIds },
+        ...(since ? { completedAt: { $gte: since } } : {}),
+        ...(resultQuery.$and ? { $and: resultQuery.$and } : {}),
+      };
+
+      const [students, results, availableExams] = await Promise.all([
+        User.find({ _id: { $in: selectedStudentIds }, role: 'student' })
+          .select('fullName username level lastVisit totalTestsTaken')
+          .lean(),
+        selectedStudentIds.length ? TestResult.find(resultQuery).sort({ completedAt: 1 }).lean() : [],
+        studentIds.length
+          ? TestResult.aggregate([
+              { $match: availableExamQuery },
+              { $group: { _id: { $ifNull: ['$testId', '$testType'] }, name: { $first: { $ifNull: ['$testName', '$testType'] } } } },
+              { $sort: { name: 1 } },
+              { $limit: 100 },
+            ])
+          : [],
+      ]);
+
+      const resultsByStudent = new Map<string, any[]>();
+      for (const result of results as any[]) {
+        const key = String(result.userId);
+        resultsByStudent.set(key, [...(resultsByStudent.get(key) || []), result]);
+      }
+      const percentage = (values: number[]) => values.length
+        ? Math.round(values.reduce((sum, value) => sum + Number(value || 0), 0) / values.length)
+        : 0;
+      const completionRate = (studentResults: any[]) => {
+        const totals = studentResults.reduce((summary, result) => ({
+          answered: summary.answered + Math.max(0, Number(result.correctAnswers || 0) + Number(result.wrongAnswers || 0)),
+          questions: summary.questions + Math.max(0, Number(result.totalQuestions || 0)),
+        }), { answered: 0, questions: 0 });
+        return totals.questions ? Math.round((totals.answered / totals.questions) * 100) : 0;
+      };
+      const areaSummary = (studentResults: any[], field: 'strongAreas' | 'weakAreas') => {
+        const counts = new Map<string, number>();
+        for (const result of studentResults) {
+          for (const area of Array.isArray(result[field]) ? result[field] : []) {
+            const label = String(area || '').trim();
+            if (label) counts.set(label, (counts.get(label) || 0) + 1);
+          }
+        }
+        return [...counts.entries()].sort((a, b) => b[1] - a[1]).slice(0, 5).map(([name, count]) => ({ name, count }));
+      };
+      const studentProfiles = (students as any[]).map((student) => {
+        const studentResults = resultsByStudent.get(String(student._id)) || [];
+        return {
+          id: String(student._id),
+          fullName: student.fullName || student.username,
+          username: student.username,
+          level: Number(student.level || 1),
+          averageScore: percentage(studentResults.map((result) => result.percentage)),
+          completedTests: studentResults.length,
+          completionRate: completionRate(studentResults),
+          lastActivity: studentResults.at(-1)?.completedAt || null,
+          strengths: areaSummary(studentResults, 'strongAreas'),
+          weaknesses: areaSummary(studentResults, 'weakAreas'),
+          tests: [...studentResults].reverse().map((result) => ({
+            id: String(result._id),
+            testId: result.testId || result.testType,
+            name: result.testName || result.testType,
+            type: result.testType,
+            score: Number(result.percentage || 0),
+            correctAnswers: Number(result.correctAnswers || 0),
+            totalQuestions: Number(result.totalQuestions || 0),
+            completedAt: result.completedAt,
+          })),
+        };
+      });
+      const allScores = (results as any[]).map((result) => Number(result.percentage || 0));
+      const overallCompletionRate = completionRate(results as any[]);
+      const trendMap = new Map<string, number[]>();
+      for (const result of results as any[]) {
+        const day = new Date(result.completedAt).toISOString().slice(0, 10);
+        trendMap.set(day, [...(trendMap.get(day) || []), Number(result.percentage || 0)]);
+      }
+
+      return res.json({
+        class: teacherClassResponse(teacherClass, memberships.length),
+        filters: {
+          period,
+          program,
+          exam,
+          availableExams: (availableExams as any[]).map((item) => ({ value: String(item._id), name: String(item.name) })),
+        },
+        summary: {
+          studentCount: memberships.length,
+          studentsWithActivity: new Set((results as any[]).map((result) => String(result.userId))).size,
+          completedTests: results.length,
+          averageScore: percentage(allScores),
+          completionRate: overallCompletionRate,
+          trend: [...trendMap.entries()].map(([date, scores]) => ({ date, averageScore: percentage(scores), tests: scores.length })),
+        },
+        students: studentProfiles,
+        generatedAt: new Date(),
+      });
+    } catch (error) {
+      console.error('Teacher class report error:', error);
+      return res.status(500).json({ error: 'تعذر تحميل تقرير الفصل' });
     }
   });
 
