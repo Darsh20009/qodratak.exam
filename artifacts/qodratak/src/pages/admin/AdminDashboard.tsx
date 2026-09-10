@@ -305,7 +305,16 @@ export default function AdminDashboard({ initialTab = 'overview' }: { initialTab
   const { data: notificationsData, isLoading: notificationsLoading, refetch: refetchNotifications } = useQuery({ queryKey: ['/api/notifications/in-app/global'], queryFn: () => fetch('/api/notifications/in-app/global?limit=50', { credentials: 'include' }).then(r => r.json()), enabled: !!(session as any)?.authenticated && activeTab === 'notifications' });
   const { data: pushStatsData } = useQuery({ queryKey: ['/api/notifications/push/stats'], queryFn: () => fetch('/api/notifications/push/stats', { credentials: 'include' }).then(r => r.json()), enabled: !!(session as any)?.authenticated && activeTab === 'notifications' });
   const { data: questionReportsData, isLoading: reportsLoading, refetch: refetchReports } = useQuery({ queryKey: ['/api/admin/question-reports', reportFilter], queryFn: () => fetch(`/api/admin/question-reports?status=${reportFilter}`, { credentials: 'include' }).then(r => r.json()), enabled: !!(session as any)?.authenticated && activeTab === 'question-reports' });
-  const { data: selectedUserStats } = useQuery({ queryKey: ['/api/admin/users', selectedUser?._id, 'stats'], queryFn: () => fetch(`/api/admin/users/${selectedUser?._id}/stats`, { credentials: 'include' }).then(r => r.json()), enabled: !!(session as any)?.authenticated && !!selectedUser?._id });
+  const { data: selectedUserStats } = useQuery({
+    queryKey: ['/api/admin/users', selectedUser?._id, 'stats'],
+    queryFn: async () => {
+      const response = await fetch(`/api/admin/users/${selectedUser?._id}/stats`, { credentials: 'include' });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error || 'تعذر تحميل إحصائيات الطالب');
+      return data;
+    },
+    enabled: !!(session as any)?.authenticated && !!selectedUser?._id,
+  });
   const { data: walletsData, isLoading: walletsLoading, refetch: refetchWallets } = useQuery({ queryKey: ['/api/admin/wallets'], queryFn: () => fetch('/api/admin/wallets', { credentials: 'include' }).then(r => r.json()), enabled: !!(session as any)?.authenticated && activeTab === 'wallets' });
   const { data: monthlyTop3Data, isLoading: top3Loading, refetch: refetchTop3 } = useQuery({ queryKey: ['/api/admin/leaderboard/monthly-top3'], queryFn: () => fetch('/api/admin/leaderboard/monthly-top3', { credentials: 'include' }).then(r => r.json()), enabled: !!(session as any)?.authenticated && activeTab === 'wallets' });
   const { data: seasonalExamsData, isLoading: seasonalLoading, refetch: refetchSeasonal } = useQuery({ queryKey: ['/api/admin/seasonal-exams'], queryFn: () => fetch('/api/admin/seasonal-exams', { credentials: 'include' }).then(r => r.json()), enabled: !!(session as any)?.authenticated && activeTab === 'seasonal-exams' });
@@ -2391,9 +2400,9 @@ export default function AdminDashboard({ initialTab = 'overview' }: { initialTab
                 <>
                   <div className="grid grid-cols-3 gap-3">
                     {[
-                      { label: 'متوسط الدرجة', value: `${selectedUserStats.avgScore}%`, color: 'text-yellow-400', bg: 'bg-yellow-500/10', icon: '🎯' },
-                      { label: 'لفظي', value: `${selectedUserStats.avgVerbal}%`, color: 'text-green-400', bg: 'bg-green-500/10', icon: '📖' },
-                      { label: 'كمي', value: `${selectedUserStats.avgQuant}%`, color: 'text-blue-400', bg: 'bg-blue-500/10', icon: '🔢' },
+                      { label: 'متوسط الدرجة', value: `${Number(selectedUserStats.avgScore ?? 0)}%`, color: 'text-yellow-400', bg: 'bg-yellow-500/10', icon: '🎯' },
+                      { label: 'لفظي', value: `${Number(selectedUserStats.avgVerbal ?? 0)}%`, color: 'text-green-400', bg: 'bg-green-500/10', icon: '📖' },
+                      { label: 'كمي', value: `${Number(selectedUserStats.avgQuant ?? 0)}%`, color: 'text-blue-400', bg: 'bg-blue-500/10', icon: '🔢' },
                     ].map(s => (
                       <div key={s.label} className={`${s.bg} rounded-xl p-4 text-center border border-white/10`}>
                         <div className="text-2xl mb-1">{s.icon}</div>
