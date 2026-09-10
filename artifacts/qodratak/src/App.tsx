@@ -99,7 +99,6 @@ import { FreeVerbalTestRunner } from "@/pages/FreeVerbalTestRunner";
 import { FreeQuantitativeTestRunner } from "@/pages/FreeQuantitativeTestRunner";
 import CoursesPage from "@/pages/CoursesPage";
 import TahsiliQuestionBank from "@/pages/TahsiliQuestionBank";
-const platformLogo = "/qodratak-icon.png";
 import FolderDetailPage from "@/pages/FolderDetailPage";
 import AdminLogin from "@/pages/admin/AdminLogin";
 import AdminDashboard from "@/pages/admin/AdminDashboard";
@@ -162,6 +161,7 @@ import ComputerizedPage from "@/pages/student/ComputerizedPage";
 import AccountPage from "@/pages/student/AccountPage";
 import { StudentShell } from "@/components/student/StudentShell";
 import { BrandLoadingScreen, PageTransition } from "@/components/PageTransition";
+import { BrandMark } from "@/components/BrandMark";
 
 
 installAdminFetchBridge();
@@ -469,13 +469,7 @@ function MainLayout({ children }: { children: React.ReactNode }) {
           {/* Logo */}
           <div className="p-4 border-b border-gray-100 dark:border-gray-800">
             <Link href="/" className="flex items-center gap-3">
-              <div className="w-9 h-9 rounded-xl overflow-hidden shadow-sm flex-shrink-0">
-                <img src={platformLogo} alt="قدراتك" className="w-full h-full object-cover" />
-              </div>
-              <div>
-                <h2 className="text-base font-black text-gray-900 dark:text-white leading-tight">قدراتك</h2>
-                <span className="text-[10px] text-gray-400">منصة اختبارات القدرات</span>
-              </div>
+              <BrandMark imageClassName="h-9 w-9" />
             </Link>
           </div>
 
@@ -678,10 +672,7 @@ function MainLayout({ children }: { children: React.ReactNode }) {
           <header className="bg-white dark:bg-gray-800 border-b dark:border-gray-700 md:hidden">
           <div className="flex items-center justify-between px-3 py-2.5">
             <Link href="/" className="flex items-center gap-2 flex-shrink-0">
-              <div className="w-8 h-8 rounded-xl overflow-hidden shadow-sm flex-shrink-0" style={{ boxShadow: '0 2px 8px rgba(26,124,62,0.25)' }}>
-                <img src={platformLogo} alt="قدراتك" className="w-full h-full object-cover" />
-              </div>
-              <span className="text-base font-black leading-none" style={{ color: '#1a7c3e' }}>قدراتك</span>
+              <BrandMark imageClassName="h-8 w-8" />
             </Link>
 
             <div className="flex items-center gap-1.5 flex-shrink-0">

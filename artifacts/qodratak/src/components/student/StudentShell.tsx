@@ -5,6 +5,7 @@ import NotificationBell from "@/components/NotificationBell";
 import { useUser } from "@/hooks/use-user";
 import { cn } from "@/lib/utils";
 import { HomeIcon, BookOpenIcon, BrainCircuitIcon, UserIcon, MenuIcon, XIcon, LogOut } from "lucide-react";
+import { BrandMark } from "@/components/BrandMark";
 
 const NAV_ITEMS = [
   { name: "لوحتي", href: "/", icon: HomeIcon },
@@ -12,8 +13,6 @@ const NAV_ITEMS = [
   { name: "المحوسب", href: "/computerized", icon: BrainCircuitIcon },
   { name: "حسابي", href: "/account", icon: UserIcon },
 ];
-
-const platformLogo = "/qodratak-icon.png";
 
 export function StudentShell({ children }: { children: React.ReactNode }) {
   const [location] = useLocation();
@@ -33,10 +32,7 @@ export function StudentShell({ children }: { children: React.ReactNode }) {
       <aside className="hidden md:flex w-64 flex-col border-l border-border bg-card">
         <div className="p-5 border-b border-border">
           <Link href="/" className="flex items-center gap-3 qodratak-focus-ring rounded-lg">
-            <img src={platformLogo} alt="قدراتك" className="h-10 w-10 object-contain" />
-            <div>
-              <h2 className="text-lg font-black text-foreground leading-tight">قدراتك</h2>
-            </div>
+            <BrandMark />
           </Link>
         </div>
 
@@ -85,8 +81,7 @@ export function StudentShell({ children }: { children: React.ReactNode }) {
       {/* Mobile Top Header */}
       <div className="md:hidden fixed top-0 left-0 right-0 h-16 bg-card border-b border-border z-40 flex items-center justify-between px-4">
         <Link href="/" className="flex items-center gap-2">
-          <img src={platformLogo} alt="قدراتك" className="h-8 w-8 object-contain" />
-          <span className="font-black text-foreground">قدراتك</span>
+          <BrandMark imageClassName="h-8 w-8" />
         </Link>
         <div className="flex items-center gap-3">
           <NotificationBell userId={user?.id ? String(user.id) : null} />

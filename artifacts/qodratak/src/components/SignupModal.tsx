@@ -6,6 +6,7 @@ import {
   CheckCircle2, GraduationCap, ChevronLeft, Loader2,
 } from "lucide-react";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
+import { BrandMark } from "@/components/BrandMark";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 
@@ -143,11 +144,8 @@ export function SignupModal({ open, onClose, onSwitchToLogin }: SignupModalProps
           <div className="border-b border-[#24202D]/10 px-6 py-5">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
-                <img src="/qodratak-icon.png" alt="قدراتك" className="h-11 w-11 object-contain" />
-                <div>
-                  <p className="text-sm font-black text-[#171723]">قدراتك</p>
-                  <p className="mt-0.5 text-xs font-bold text-[#8B8278]">إنشاء حساب جديد</p>
-                </div>
+                <BrandMark imageClassName="h-11 w-11" />
+                <p className="mt-0.5 text-xs font-bold text-[#8B8278]">إنشاء حساب جديد</p>
               </div>
               <div className="flex items-center gap-2">
                 {step === 2 && (

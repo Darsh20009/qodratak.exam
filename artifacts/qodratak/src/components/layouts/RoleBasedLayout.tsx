@@ -32,6 +32,7 @@ import {
   ClipboardList
 } from 'lucide-react';
 import type { UserRole } from '@shared/permissions';
+import { BrandMark } from '@/components/BrandMark';
 
 interface NavItem {
   title: string;
@@ -147,13 +148,8 @@ export function RoleBasedLayout({ children, role, user, onLogout }: RoleBasedLay
         <Sidebar>
           <SidebarHeader className="border-b border-sidebar-border p-4">
             <div className="flex items-center gap-3">
-              <div className="flex h-10 w-10 items-center justify-center rounded-md bg-primary text-primary-foreground font-bold">
-                ق
-              </div>
-              <div className="flex flex-col">
-                <span className="font-bold text-lg">قدراتك</span>
-                <span className="text-xs text-muted-foreground">{roleLabel}</span>
-              </div>
+              <BrandMark />
+              <span className="text-xs text-muted-foreground">{roleLabel}</span>
             </div>
           </SidebarHeader>
           
@@ -231,10 +227,7 @@ export function SimpleLayout({ children, showHeader = true }: SimpleLayoutProps)
         <header className="sticky top-0 z-50 border-b bg-background/95 backdrop-blur">
           <div className="container flex h-14 items-center justify-between">
             <div className="flex items-center gap-2">
-              <div className="flex h-8 w-8 items-center justify-center rounded-md bg-primary text-primary-foreground font-bold text-sm">
-                ق
-              </div>
-              <span className="font-bold">قدراتك</span>
+              <BrandMark imageClassName="h-8 w-8" />
             </div>
           </div>
         </header>

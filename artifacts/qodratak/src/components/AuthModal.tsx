@@ -6,6 +6,7 @@ import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
 import { getDeviceId } from "@/lib/device";
 import { setAdminAccessToken } from "@/lib/adminSession";
+import { BrandMark } from "@/components/BrandMark";
 
 type AuthMode = "login" | "signup";
 type LoginMethod = "phone" | "email";
@@ -490,11 +491,8 @@ export function AuthModal({ open, mode, onClose, onModeChange }: { open: boolean
         <div className="flex max-h-[calc(100vh-20px)] flex-col">
           <div className="flex items-center justify-between border-b border-[#24202D]/10 px-6 py-4">
             <div className="flex items-center gap-2.5">
-              <img src="/qodratak-icon.png" alt="قدراتك" className="h-10 w-10 object-contain" />
-              <div>
-                <p className="text-sm font-black text-[#171723]">قدراتك</p>
-                <p className="text-[11px] text-[#8B8278]">{mode === "login" ? "دخول سريع وآمن" : "حسابك في دقائق"}</p>
-              </div>
+              <BrandMark imageClassName="h-10 w-10" />
+              <p className="text-[11px] text-[#8B8278]">{mode === "login" ? "دخول سريع وآمن" : "حسابك في دقائق"}</p>
             </div>
             <button onClick={onClose} aria-label="إغلاق" className="rounded-lg p-2 text-[#8B8278] hover:bg-[#24202D]/5"><X className="h-4 w-4" /></button>
           </div>

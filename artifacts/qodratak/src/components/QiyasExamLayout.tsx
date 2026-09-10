@@ -3,6 +3,7 @@ import formulasImg from "@assets/Screenshot_2026-03-08_071500_1772943315708.png"
 import { X, BookmarkCheck, Bookmark, Flag, AlertTriangle, CheckCircle2, LayoutGrid, ChevronRight, ChevronLeft } from "lucide-react";
 import ImageZoom from "@/components/ImageZoom";
 import { getQuestionImageUrls } from "@/lib/questionImages";
+import { BrandMark } from "@/components/BrandMark";
 
 const OPTION_LABELS = ['أ', 'ب', 'ج', 'د'];
 
@@ -201,7 +202,7 @@ export function QiyasExamLayout({
       ════════════════════════════════════════ */}
       <div className="md:hidden bg-white border-b border-gray-200 px-3 py-2 flex items-center justify-between shadow-sm sticky top-0 z-30">
         {/* Logo */}
-        <img src="/qodratak-icon.png" alt="قدراتك" className="w-7 h-7 object-contain" />
+        <BrandMark imageClassName="h-7 w-7" />
 
         {/* Question number + section */}
         <div className="flex flex-col items-center">
@@ -230,8 +231,7 @@ export function QiyasExamLayout({
         {/* Desktop Top Bar (hidden on mobile) */}
         <div className="hidden md:flex bg-white border-b border-gray-200 px-5 py-3 items-center justify-between shadow-sm">
           <div className="flex items-center gap-2 mr-3 pr-3 border-r border-gray-200 order-last">
-            <span className="hidden sm:block text-xs font-bold text-gray-500">قدراتك</span>
-            <img src="/qodratak-icon.png" alt="قدراتك" className="w-8 h-8 object-contain" />
+            <BrandMark imageClassName="h-8 w-8" />
           </div>
           <div className="flex items-center gap-1">
             <button

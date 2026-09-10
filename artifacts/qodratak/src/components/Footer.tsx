@@ -1,5 +1,6 @@
 import { Clock3, ExternalLink, MapPin, MessageCircle, Phone, ShieldCheck } from "lucide-react";
 import { BRAND_NAME, LEGAL_ENTITY_NAME, SUPPORT_EMAIL, SUPPORT_PHONE, UNIFIED_NATIONAL_NUMBER } from "@/constants/legalIdentity";
+import { BrandMark } from "@/components/BrandMark";
 
 const learningLinks = [
   { label: "تدريب اختبار القدرات", href: "/qiyas-hub" },
@@ -24,18 +25,9 @@ export function Footer() {
         <div className="grid gap-10 lg:grid-cols-[1.35fr_1fr_1fr_1fr]">
           <div>
             <div className="flex items-center gap-3">
-              <img
-                src="/qodratak-icon.png"
-                alt={`شعار ${BRAND_NAME}`}
-                width="48"
-                height="48"
-                className="h-12 w-12 object-contain"
-              />
-              <div>
-                <h2 className="text-lg font-black">{LEGAL_ENTITY_NAME}</h2>
-                <p className="mt-0.5 text-xs font-bold text-muted-foreground">{BRAND_NAME} · Qodratak</p>
-              </div>
+              <BrandMark imageClassName="h-12 w-12" />
             </div>
+            <p className="mt-2 text-xs font-bold text-muted-foreground">{LEGAL_ENTITY_NAME}</p>
             <p className="mt-5 max-w-sm text-sm leading-7 text-muted-foreground">
               منصة تعليمية وتدريبية متكاملة لطلاب الثانوية بالمملكة العربية السعودية، تساعدك على الاستعداد بخطة واضحة ونتيجة تفهمها.
             </p>

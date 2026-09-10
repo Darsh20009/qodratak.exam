@@ -10,7 +10,7 @@ type RouteMetadata = {
 
 const PUBLIC_ROUTE_METADATA: Record<string, RouteMetadata> = {
   "/": {
-    title: "منصة قدراتك | القدرات والتحصيلي",
+    title: "منصة قدراتك التعليمية | القدرات والتحصيلي",
     description:
       "منصة قدرات تعليمية لطلاب السعودية: تأسيس ومحوسب للقدرات، تدريب التحصيلي، اختبارات يومية وتحليل واضح للتقدم.",
     structuredData: {
@@ -18,7 +18,7 @@ const PUBLIC_ROUTE_METADATA: Record<string, RouteMetadata> = {
       "@type": "EducationalOrganization",
        name: "قدراتك",
        legalName: LEGAL_ENTITY_NAME,
-      alternateName: ["Qodratak", "منصة قدراتك"],
+      alternateName: ["Qodratak", "منصة قدراتك التعليمية"],
       description: "منصة تعليمية وتدريبية متكاملة لطلاب الثانوية في السعودية للاستعداد للقدرات والتحصيلي.",
       url: "https://qodratak.sa/",
       areaServed: { "@type": "Country", name: "Saudi Arabia" },

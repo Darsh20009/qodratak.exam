@@ -14,11 +14,11 @@ interface SEOProps {
 }
 
 const DOMAIN = 'https://qodratak.sa';
-const DEFAULT_IMAGE = `${DOMAIN}/qodratak-app-icon.png`;
-export const PLATFORM_NAME = 'منصة قدراتك';
+const DEFAULT_IMAGE = `${DOMAIN}/qodratak-icon-light.png`;
+export const PLATFORM_NAME = 'منصة قدراتك التعليمية';
 export const PLATFORM_DESCRIPTION =
   'منصة قدراتك التعليمية للاستعداد لاختبارات القدرات والتحصيلي عبر تدريب منظم، محاكاة، بنك أسئلة وتحليل واضح للتقدم.';
-const DEFAULT_TITLE = 'منصة قدراتك | تدريب القدرات والتحصيلي بخطة واضحة';
+const DEFAULT_TITLE = 'منصة قدراتك التعليمية | تدريب القدرات والتحصيلي بخطة واضحة';
 
 export function SEO({
   title = DEFAULT_TITLE,
@@ -65,8 +65,8 @@ export function SEO({
       <meta property="og:title" content={title} />
       <meta property="og:description" content={description} />
       <meta property="og:image" content={fullImage} />
-      <meta property="og:image:width" content="512" />
-      <meta property="og:image:height" content="512" />
+      <meta property="og:image:width" content="256" />
+      <meta property="og:image:height" content="256" />
       <meta property="og:image:type" content="image/png" />
       <meta property="og:image:alt" content="شعار منصة قدراتك" />
       <meta property="og:url" content={fullUrl} />

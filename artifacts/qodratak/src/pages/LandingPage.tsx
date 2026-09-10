@@ -17,6 +17,7 @@ import {
 import { AuthModal } from "@/components/AuthModal";
 import { Footer } from "@/components/Footer";
 import { ThemeToggle } from "@/components/ThemeToggle";
+import { BrandMark } from "@/components/BrandMark";
 
 const NAVY = "#171723";
 const SIGNAL = "#FF8A70";
@@ -28,26 +29,7 @@ function Header({ onSignup, onLogin }: { onSignup: () => void; onLogin: () => vo
     <header className="relative z-30 border-b border-[#24202D]/[.09] bg-[#F7F4EE] dark:border-white/10 dark:bg-[#0B1220]">
       <div className="mx-auto flex max-w-6xl items-center justify-between px-5 py-4 sm:px-8">
         <Link href="/" className="qodratak-focus-ring flex items-center gap-2.5 rounded-lg">
-          <img
-            src="/qodratak-icon-light.png"
-            alt="قدراتك"
-            width="42"
-            height="42"
-            className="h-10 w-10 object-contain dark:hidden"
-          />
-          <img
-            src="/qodratak-icon-dark.png"
-            alt="قدراتك"
-            width="42"
-            height="42"
-            className="hidden h-10 w-10 object-contain dark:block"
-          />
-          <span className="flex flex-col justify-center leading-none">
-            <span className="text-base font-black tracking-tight text-[#171723] dark:text-white">قدراتك</span>
-            <span dir="ltr" className="mt-1 text-[10px] font-semibold tracking-[0.16em] text-[#7D746D] dark:text-slate-400">
-              Qodratak
-            </span>
-          </span>
+          <BrandMark />
         </Link>
 
         <nav className="hidden items-center gap-6 sm:flex">
