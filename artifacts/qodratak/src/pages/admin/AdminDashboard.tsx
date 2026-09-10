@@ -403,7 +403,17 @@ export default function AdminDashboard({ initialTab = 'overview' }: { initialTab
           features: subscriptionPlanForm.features.split('\n').map(item => item.trim()).filter(Boolean),
         }),
       });
-      const data = await response.json();
+      const responseText = await response.text();
+      let data: { error?: string } = {};
+      if (responseText.trim()) {
+        try {
+          data = JSON.parse(responseText);
+        } catch {
+          if (!response.ok) {
+            throw new Error(responseText.trim() || 'فشل في حفظ الخطة');
+          }
+        }
+      }
       if (!response.ok) throw new Error(data.error || 'فشل في حفظ الخطة');
       return data;
     },

@@ -2454,17 +2454,30 @@ router.patch('/question-reports/:id', requireAdminAuth, async (req: Request, res
 router.get('/users/:userId/stats', requireAdminAuth, async (req: Request, res: Response) => {
   try {
     const fs = await import('fs');
-    const users: any[] = JSON.parse(fs.default.readFileSync('attached_assets/user.json', 'utf8'));
-    const user = users.find((u: any) => String(u.id) === req.params.userId);
+    const { User } = await import('./mongodb/models');
+    let user: any = await User.findById(req.params.userId)
+      .select('-password -otpCode -otpExpiry -pinHash -totpSecret -recoveryPassphrase -resetPasswordToken -resetPasswordTokenExpiry -pushChallenge -pending2FAUserId -devices -webauthnCredentials')
+      .lean()
+      .catch(() => null);
+    if (!user) {
+      let users: any[] = [];
+      try {
+        users = JSON.parse(fs.default.readFileSync('attached_assets/user.json', 'utf8'));
+      } catch {
+        users = [];
+      }
+      user = users.find((candidate: any) => String(candidate.id) === req.params.userId);
+    }
     if (!user) return res.status(404).json({ error: 'المستخدم غير موجود' });
     const { TestResult } = await import('./mongodb/models');
     const results = await TestResult.find({ userId: req.params.userId }).sort({ createdAt: -1 }).limit(50);
-    const scores = results.map((r: any) => r.totalScoreOutOf100 || 0).filter((s: number) => s > 0);
+    const scoreOf = (result: any) => Number(result.totalScoreOutOf100 ?? result.percentage ?? result.score ?? 0);
+    const scores = results.map(scoreOf).filter((score: number) => Number.isFinite(score) && score > 0);
     const avg = scores.length ? Math.round(scores.reduce((a: number, b: number) => a + b, 0) / scores.length) : 0;
     const verbal = results.filter((r: any) => r.examType === 'verbal');
     const quant = results.filter((r: any) => r.examType === 'quantitative');
-    const avgVerbal = verbal.length ? Math.round(verbal.reduce((a: number, r: any) => a + (r.verbalPercent || 0), 0) / verbal.length) : 0;
-    const avgQuant = quant.length ? Math.round(quant.reduce((a: number, r: any) => a + (r.quantPercent || 0), 0) / quant.length) : 0;
+    const avgVerbal = verbal.length ? Math.round(verbal.reduce((total: number, r: any) => total + Number(r.verbalPercent ?? scoreOf(r) ?? 0), 0) / verbal.length) : 0;
+    const avgQuant = quant.length ? Math.round(quant.reduce((total: number, r: any) => total + Number(r.quantPercent ?? scoreOf(r) ?? 0), 0) / quant.length) : 0;
     res.json({ user, recentTests: results.slice(0, 10), avgScore: avg, avgVerbal, avgQuant, totalTests: results.length });
   } catch (e) {
     res.status(500).json({ error: 'فشل في جلب إحصائيات المستخدم' });
