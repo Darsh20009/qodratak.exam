@@ -576,6 +576,62 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // Load questions from JSON file
 
+  // Tahsili question bank (separate from the legacy Qudrat question bank).
+  app.get('/api/tahsili/question-bank', requireAuth, async (req: Request, res: Response) => {
+    try {
+      const { TahsiliQuestion } = await import('../mongodb/models');
+      const page = Math.max(1, Number.parseInt(String(req.query.page || '1'), 10) || 1);
+      const limit = Math.min(50, Math.max(1, Number.parseInt(String(req.query.limit || '12'), 10) || 12));
+      const subject = String(req.query.subject || '').trim();
+      const search = String(req.query.search || '').trim();
+      const subcategory = String(req.query.subcategory || '').trim();
+      const allowedSubjects = ['رياضيات', 'فيزياء', 'كيمياء', 'أحياء', 'علم الأرض'];
+      const query: Record<string, unknown> = {};
+
+      if (subject && subject !== 'الكل' && allowedSubjects.includes(subject)) query.subject = subject;
+      if (subcategory && subcategory !== 'الكل') query.subcategory = subcategory;
+      if (search) {
+        query.$or = [
+          { text: { $regex: search, $options: 'i' } },
+          { topic: { $regex: search, $options: 'i' } },
+          { subcategory: { $regex: search, $options: 'i' } },
+        ];
+      }
+
+      const [total, questions, subjectCounts] = await Promise.all([
+        TahsiliQuestion.countDocuments(query),
+        TahsiliQuestion.find(query)
+          .sort({ subject: 1, questionId: 1 })
+          .skip((page - 1) * limit)
+          .limit(limit)
+          .select('-__v')
+          .lean(),
+        TahsiliQuestion.aggregate([
+          { $group: { _id: '$subject', count: { $sum: 1 } } },
+          { $sort: { _id: 1 } },
+        ]),
+      ]);
+
+      const subcategoryQuery = subject && subject !== 'الكل' && allowedSubjects.includes(subject)
+        ? { subject }
+        : {};
+      const subcategories = await TahsiliQuestion.distinct('subcategory', subcategoryQuery);
+
+      res.json({
+        questions,
+        total,
+        page,
+        limit,
+        totalPages: Math.ceil(total / limit),
+        subjectCounts: Object.fromEntries(subjectCounts.map((item: { _id: string; count: number }) => [item._id, item.count])),
+        subcategories: subcategories.filter(Boolean).sort(),
+      });
+    } catch (error) {
+      console.error('Get Tahsili question bank error:', error);
+      res.status(500).json({ error: 'فشل في جلب بنك أسئلة التحصيلي' });
+    }
+  });
+
   // Tahsili exam endpoints (protected) - using device-based approach like subscription/status
   app.get('/api/tahsili/exams/:examId', async (req: Request, res: Response) => {
     try {

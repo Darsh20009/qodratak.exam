@@ -12,3 +12,4 @@
 - [Development admin fixture](development-admin-fixture.md) — keep the local admin demo identity independent from the removed legacy user export.
 - [Qodratak mailbox integration](mailbox-integration.md) — official mailbox settings must take precedence over legacy SMTP variables and remain secret-backed.
 - [Persistent media boundary](persistent-media-boundary.md) — production uploads must fail clearly without a persistent provider; local disk is development-only.
+- [Tahsili OCR review boundary](tahsili-ocr-review-boundary.md) — publish scanned-book questions as review-only until four options and the printed answer key are confidently matched.

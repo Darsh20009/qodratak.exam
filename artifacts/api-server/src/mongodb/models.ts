@@ -1117,6 +1117,53 @@ export const Admin = mongoose.model<IAdmin>('Admin', adminSchema);
 export const Subscription = mongoose.model<ISubscription>('Subscription', subscriptionSchema);
 export const TestResult = mongoose.model<ITestResult>('TestResult', testResultSchema);
 export const Question = mongoose.model<IQuestion>('Question', questionSchema);
+
+// ─── Tahsili scanned-book questions ─────────────────────────────────────────
+// Kept in a separate collection so the existing Qudrat question categories
+// (verbal/quantitative/general) remain backward compatible.
+export type TahsiliSubject = 'رياضيات' | 'فيزياء' | 'كيمياء' | 'أحياء' | 'علم الأرض';
+
+export interface ITahsiliQuestion extends Document {
+  questionId: number;
+  subject: TahsiliSubject;
+  subcategory: string;
+  text: string;
+  options: string[];
+  correctOptionIndex: number;
+  difficulty: 'beginner' | 'intermediate' | 'advanced';
+  topic?: string;
+  explanation?: string;
+  sourcePage: number;
+  sourceQuestionNumber?: number;
+  sourceBook: string;
+  answerConfidence: 'verified' | 'review';
+  createdAt: Date;
+  updatedAt?: Date;
+}
+
+const tahsiliQuestionSchema = new Schema<ITahsiliQuestion>({
+  questionId: { type: Number, required: true, unique: true, index: true },
+  subject: { type: String, enum: ['رياضيات', 'فيزياء', 'كيمياء', 'أحياء', 'علم الأرض'], required: true, index: true },
+  subcategory: { type: String, default: 'عام', index: true },
+  text: { type: String, required: true },
+  options: { type: [String], required: true },
+  correctOptionIndex: { type: Number, required: true, min: 0, max: 3 },
+  difficulty: { type: String, enum: ['beginner', 'intermediate', 'advanced'], default: 'intermediate' },
+  topic: { type: String, default: 'عام' },
+  explanation: { type: String },
+  sourcePage: { type: Number, required: true, index: true },
+  sourceQuestionNumber: { type: Number },
+  sourceBook: { type: String, required: true },
+  answerConfidence: { type: String, enum: ['verified', 'review'], default: 'review', index: true },
+  createdAt: { type: Date, default: Date.now },
+  updatedAt: { type: Date },
+});
+tahsiliQuestionSchema.index({ subject: 1, sourcePage: 1, sourceQuestionNumber: 1 }, { unique: true, sparse: true });
+
+export const TahsiliQuestion = mongoose.models['TahsiliQuestion']
+  ? mongoose.model<ITahsiliQuestion>('TahsiliQuestion')
+  : mongoose.model<ITahsiliQuestion>('TahsiliQuestion', tahsiliQuestionSchema);
+
 export const ChatMessage = mongoose.model<IChatMessage>('ChatMessage', chatMessageSchema);
 export const ActivityLog = mongoose.model<IActivityLog>('ActivityLog', activityLogSchema);
 export const LeaderboardEntry = mongoose.model<ILeaderboardEntry>('LeaderboardEntry', leaderboardEntrySchema);

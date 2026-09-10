@@ -881,6 +881,9 @@ function Router({ splashDone }: { splashDone: boolean }) {
       <Route path="/tahsilik/question-bank">
         {() => <StudentShell><ProtectedRoute requiresPremium={true}><TahsiliQuestionBank /></ProtectedRoute></StudentShell>}
       </Route>
+      <Route path="/tahsili/question-bank">
+        {() => <StudentShell><ProtectedRoute requiresPremium={true}><TahsiliQuestionBank /></ProtectedRoute></StudentShell>}
+      </Route>
       <Route path="/tahsilik/custom-test">
         {() => <StudentShell><ProtectedRoute requiresPremium={true}><TahsilikCustomTest /></ProtectedRoute></StudentShell>}
       </Route>

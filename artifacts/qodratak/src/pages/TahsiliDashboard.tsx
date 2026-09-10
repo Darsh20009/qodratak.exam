@@ -426,7 +426,7 @@ const TahsiliDashboard: React.FC = () => {
         {/* Quick Access: Question Bank */}
         <motion.div variants={itemVariants} className="mb-8">
           <div
-            onClick={() => setLocation('/tahsili-question-bank')}
+            onClick={() => setLocation('/tahsili/question-bank')}
             className="group cursor-pointer bg-gradient-to-l from-teal-600/20 to-emerald-600/20 border border-teal-400/30 rounded-2xl p-5 flex items-center gap-4 hover:from-teal-600/30 hover:to-emerald-600/30 hover:border-teal-400/50 transition-all duration-300"
             data-testid="btn-tahsili-question-bank"
           >
