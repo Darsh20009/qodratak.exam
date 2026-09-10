@@ -138,7 +138,7 @@ const TahsilikComprehensiveTest: React.FC = () => {
   const totalTime = questionDistribution.reduce((sum, subject) => sum + subject.timeAllocation, 0);
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-teal-500 dark:from-slate-900 dark:via-blue-900/50 dark:to-teal-500">
+    <div className="min-h-screen bg-background" dir="rtl">
       <div className="container mx-auto px-4 py-8">
         {/* Header */}
         <motion.div
@@ -154,7 +154,7 @@ const TahsilikComprehensiveTest: React.FC = () => {
               </div>
             </div>
             <div className="text-right">
-              <h1 className="text-5xl font-black bg-gradient-to-r from-amber-500 via-orange-500 to-red-500 bg-clip-text text-transparent">
+              <h1 className="text-3xl md:text-4xl font-black text-foreground">
                 110 سؤال شامل
               </h1>
               <p className="text-slate-600 dark:text-slate-300">الاختبار التحصيلي الكامل</p>
@@ -178,7 +178,7 @@ const TahsilikComprehensiveTest: React.FC = () => {
             className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8"
           >
             {stats.map((stat, index) => (
-              <Card key={index} className="bg-white/80 dark:bg-slate-800/80 backdrop-blur-sm border-0 shadow-lg">
+              <Card key={index} className="bg-card border-border shadow-sm">
                 <CardContent className="text-center py-4">
                   <stat.icon className="w-6 h-6 mx-auto mb-2 text-blue-600 dark:text-blue-400" />
                   <div className="text-2xl font-bold text-slate-800 dark:text-slate-200">{stat.value}</div>
@@ -196,7 +196,7 @@ const TahsilikComprehensiveTest: React.FC = () => {
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.6 }}
           >
-            <Card className="bg-white/80 dark:bg-slate-800/80 backdrop-blur-sm border-0 shadow-xl">
+            <Card className="bg-card border-border shadow-sm">
               <CardHeader>
                 <div className="flex items-center gap-3">
                   <BarChart3 className="w-6 h-6 text-green-700 dark:text-green-700" />
@@ -305,7 +305,7 @@ const TahsilikComprehensiveTest: React.FC = () => {
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 1.0 }}
           >
-            <Card className="bg-white/80 dark:bg-slate-800/80 backdrop-blur-sm border-0 shadow-xl">
+            <Card className="bg-card border-border shadow-sm">
               <CardHeader>
                 <div className="flex items-center gap-3">
                   <Target className="w-6 h-6 text-blue-600 dark:text-blue-400" />
@@ -428,7 +428,7 @@ const TahsilikComprehensiveTest: React.FC = () => {
             <Button
               data-testid="button-start-comprehensive-test"
               onClick={startComprehensiveTest}
-              className="bg-gradient-to-r from-amber-500 via-orange-500 to-red-500 hover:from-amber-600 hover:via-orange-600 hover:to-red-600 text-white shadow-lg hover:shadow-xl px-8 py-3 font-semibold transition-all"
+              className="bg-primary text-primary-foreground hover:bg-primary/90 shadow-sm px-8 py-3 font-semibold transition-colors"
             >
               <Play className="w-5 h-5 mr-2" />
               بدء الاختبار الشامل

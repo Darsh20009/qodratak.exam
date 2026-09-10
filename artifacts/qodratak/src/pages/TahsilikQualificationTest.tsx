@@ -70,7 +70,7 @@ export default function TahsilikQualificationTest() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-teal-500/30 dark:from-gray-950 dark:to-teal-500/20 py-6 px-4" dir="rtl">
+    <div className="min-h-screen bg-background py-6 px-4" dir="rtl">
       <div className="max-w-2xl mx-auto">
 
         {/* Header */}

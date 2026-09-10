@@ -294,10 +294,10 @@ const TahsilikSubjectTestRunner: React.FC = () => {
 
   if (!testConfig) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-100 dark:from-slate-900 dark:to-slate-800 flex items-center justify-center">
+      <div className="min-h-screen bg-background flex items-center justify-center" dir="rtl">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-blue-600 mx-auto mb-4"></div>
-          <p className="text-lg text-slate-600 dark:text-slate-300">جاري تحميل الاختبار...</p>
+          <div className="animate-spin rounded-full h-12 w-12 border-4 border-primary/20 border-t-primary mx-auto mb-4"></div>
+          <p className="text-lg text-muted-foreground">جاري تحميل الاختبار...</p>
         </div>
       </div>
     );
@@ -308,20 +308,20 @@ const TahsilikSubjectTestRunner: React.FC = () => {
     const SubjectIcon = getSubjectIcon(testConfig.subject.id);
     
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-100 dark:from-slate-900 dark:to-slate-800 py-8">
+      <div className="min-h-screen bg-background py-8" dir="rtl">
         <div className="container mx-auto px-4 max-w-2xl">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             className="text-center"
           >
-            <Card className={`bg-gradient-to-br ${testConfig.subject.color} text-white border-0 shadow-2xl mb-8`}>
+            <Card className="bg-card text-foreground border-border shadow-sm mb-8">
               <CardContent className="py-12">
-                <div className="w-20 h-20 bg-white/20 rounded-2xl flex items-center justify-center mx-auto mb-6">
-                  <SubjectIcon className="w-10 h-10 text-white" />
+                <div className="w-20 h-20 bg-primary/10 border border-primary/20 rounded-2xl flex items-center justify-center mx-auto mb-6">
+                  <SubjectIcon className="w-10 h-10 text-primary" />
                 </div>
                 <h1 className="text-3xl font-bold mb-4">{testConfig.subject.title}</h1>
-                <div className="flex justify-center gap-4 text-lg">
+                <div className="flex justify-center gap-4 text-lg text-muted-foreground">
                   <div className="flex items-center gap-2">
                     <Clock className="w-5 h-5" />
                     {testConfig.timeLimit} دقيقة
@@ -339,7 +339,7 @@ const TahsilikSubjectTestRunner: React.FC = () => {
                 data-testid="button-start-test"
                 onClick={startTest}
                 size="lg"
-                className={`bg-gradient-to-r ${testConfig.subject.color} hover:opacity-90 text-white shadow-lg hover:shadow-xl px-8 py-4 font-semibold text-lg`}
+                className="bg-primary text-primary-foreground hover:bg-primary/90 shadow-sm px-8 py-4 font-semibold text-lg"
               >
                 <CheckCircle className="w-6 h-6 mr-3" />
                 بدء الاختبار
@@ -381,7 +381,7 @@ const TahsilikSubjectTestRunner: React.FC = () => {
   // شاشة النتائج
   if (isFinished && results) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-100 dark:from-slate-900 dark:to-slate-800 py-8">
+      <div className="min-h-screen bg-background py-8" dir="rtl">
         <div className="container mx-auto px-4 max-w-3xl">
           <motion.div
             initial={{ opacity: 0, scale: 0.9 }}
@@ -396,17 +396,17 @@ const TahsilikSubjectTestRunner: React.FC = () => {
               <p className="text-slate-600 dark:text-slate-300">{results.subject}</p>
             </div>
 
-            <Card className="bg-white/80 dark:bg-slate-800/80 backdrop-blur shadow-2xl border-0 mb-8">
+            <Card className="bg-card border-border shadow-sm mb-8">
               <CardContent className="p-8">
-                <div className={`w-32 h-32 mx-auto mb-6 rounded-full flex items-center justify-center text-4xl font-bold text-white ${
-                  results.percentage >= 80 ? 'bg-gradient-to-br from-green-400 to-green-600' :
-                  results.percentage >= 60 ? 'bg-gradient-to-br from-blue-400 to-blue-600' :
-                  'bg-gradient-to-br from-amber-400 to-amber-600'
+                <div className={`w-32 h-32 mx-auto mb-6 rounded-full flex items-center justify-center text-4xl font-bold text-primary-foreground ${
+                  results.percentage >= 80 ? 'bg-emerald-600' :
+                  results.percentage >= 60 ? 'bg-primary' :
+                  'bg-amber-500'
                 }`}>
                   {Math.round(results.percentage)}%
                 </div>
                 
-                <h2 className="text-3xl font-bold text-slate-800 dark:text-slate-100 mb-4">
+                <h2 className="text-3xl font-bold text-foreground mb-4">
                   {results.grade}
                 </h2>
                 
@@ -421,8 +421,8 @@ const TahsilikSubjectTestRunner: React.FC = () => {
                   </div>
                 </div>
                 
-                <div className="mt-6 p-4 bg-slate-50 dark:bg-slate-700 rounded-lg">
-                  <p className="text-sm text-slate-600 dark:text-slate-300">
+                  <div className="mt-6 p-4 bg-muted rounded-lg">
+                  <p className="text-sm text-muted-foreground">
                     الوقت المستغرق: {Math.floor(results.timeUsed / 60)} دقيقة و {results.timeUsed % 60} ثانية
                   </p>
                 </div>
@@ -432,7 +432,7 @@ const TahsilikSubjectTestRunner: React.FC = () => {
             <div className="flex gap-4 justify-center">
               <Button
                 onClick={resetTest}
-                className="bg-gradient-to-r from-blue-600 to-emerald-600 hover:from-blue-700 hover:to-emerald-600 text-white"
+                className="bg-primary text-primary-foreground hover:bg-primary/90"
               >
                 <RotateCcw className="w-4 h-4 mr-2" />
                 إعادة الاختبار

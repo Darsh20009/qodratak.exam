@@ -169,7 +169,7 @@ const TahsilikCustomTest: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-teal-500 dark:from-slate-900 dark:via-blue-900/50 dark:to-teal-500">
+    <div className="min-h-screen bg-background" dir="rtl">
       <div className="container mx-auto px-4 py-8">
         {/* Header */}
         <motion.div
@@ -182,7 +182,7 @@ const TahsilikCustomTest: React.FC = () => {
               <PenTool className="w-8 h-8 text-white" />
             </div>
             <div className="text-right">
-              <h1 className="text-4xl font-black bg-gradient-to-r from-blue-500 to-emerald-600 bg-clip-text text-transparent">
+              <h1 className="text-3xl md:text-4xl font-black text-foreground">
                 اختبار مخصص
               </h1>
               <p className="text-slate-600 dark:text-slate-300">صمم اختبارك حسب احتياجاتك</p>
@@ -197,7 +197,7 @@ const TahsilikCustomTest: React.FC = () => {
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.2 }}
           >
-            <Card className="bg-white/80 dark:bg-slate-800/80 backdrop-blur-sm border-0 shadow-xl">
+            <Card className="bg-card border-border shadow-sm">
               <CardHeader>
                 <div className="flex items-center gap-3">
                   <Settings className="w-6 h-6 text-blue-600 dark:text-blue-400" />
@@ -293,7 +293,7 @@ const TahsilikCustomTest: React.FC = () => {
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.4 }}
           >
-            <Card className="bg-white/80 dark:bg-slate-800/80 backdrop-blur-sm border-0 shadow-xl">
+            <Card className="bg-card border-border shadow-sm">
               <CardHeader>
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-3">

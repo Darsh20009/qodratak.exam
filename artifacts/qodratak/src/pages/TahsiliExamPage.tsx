@@ -713,7 +713,7 @@ const TahsiliExamPage: React.FC = () => {
   if (currentView === 'selection') {
     return (
       <NewProtectedRoute requiresPremium={true}>
-        <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-teal-500 dark:from-slate-900 dark:via-slate-800 dark:to-slate-900 py-8">
+        <div className="min-h-screen bg-background py-8" dir="rtl">
           <div className="container mx-auto px-4 max-w-6xl">
             
             {/* العنوان الرئيسي */}
@@ -723,10 +723,10 @@ const TahsiliExamPage: React.FC = () => {
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.6 }}
             >
-              <h1 className="text-4xl md:text-5xl font-bold bg-gradient-to-r from-blue-600 to-emerald-600 bg-clip-text text-transparent mb-4">
+              <h1 className="text-3xl md:text-4xl font-black text-foreground mb-4">
                 🎓 اختبارات التحصيلي
               </h1>
-              <p className="text-xl text-slate-600 dark:text-slate-300 max-w-3xl mx-auto">
+              <p className="text-base md:text-lg text-muted-foreground max-w-3xl mx-auto">
                 اختبر مستواك في المواد الأساسية واستعد للاختبار التحصيلي بثقة
               </p>
             </motion.div>
@@ -742,11 +742,11 @@ const TahsiliExamPage: React.FC = () => {
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: index * 0.1, duration: 0.5 }}
                   >
-                    <Card className="group hover:shadow-2xl transition-all duration-300 hover:-translate-y-1 bg-white/80 dark:bg-slate-800/80 backdrop-blur border-0 shadow-lg">
+                    <Card className="group hover:shadow-lg transition-all duration-300 hover:-translate-y-1 bg-card border-border shadow-sm">
                       <CardHeader className="relative overflow-hidden">
-                        <div className={`absolute inset-0 bg-gradient-to-br ${exam.themeColor} opacity-10 group-hover:opacity-20 transition-opacity`} />
+                        <div className="absolute inset-0 bg-primary/5 group-hover:bg-primary/10 transition-colors" />
                         <div className="relative z-10 flex items-center gap-3">
-                          <div className={`w-12 h-12 rounded-xl bg-gradient-to-br ${exam.themeColor} flex items-center justify-center shadow-lg`}>
+                          <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center border border-primary/20">
                             <Icon className="w-6 h-6 text-white" />
                           </div>
                           <div className="flex-1">
@@ -755,7 +755,7 @@ const TahsiliExamPage: React.FC = () => {
                               {exam.difficulty === 'intermediate' && 'متوسط'} 
                               {exam.difficulty === 'advanced' && 'متقدم'}
                             </Badge>
-                            <CardTitle className="text-lg font-bold text-slate-800 dark:text-slate-100">
+                            <CardTitle className="text-lg font-bold text-foreground">
                               {exam.name}
                             </CardTitle>
                           </div>
@@ -763,16 +763,16 @@ const TahsiliExamPage: React.FC = () => {
                       </CardHeader>
                       
                       <CardContent className="space-y-4">
-                        <CardDescription className="text-slate-600 dark:text-slate-300 text-sm leading-relaxed">
+                        <CardDescription className="text-muted-foreground text-sm leading-relaxed">
                           {exam.description}
                         </CardDescription>
                         
                         <div className="grid grid-cols-2 gap-4 text-sm">
-                          <div className="flex items-center gap-2 text-slate-600 dark:text-slate-400">
+                          <div className="flex items-center gap-2 text-muted-foreground">
                             <Target className="w-4 h-4" />
                             <span>{exam.totalQuestions} سؤال</span>
                           </div>
-                          <div className="flex items-center gap-2 text-slate-600 dark:text-slate-400">
+                          <div className="flex items-center gap-2 text-muted-foreground">
                             <Clock className="w-4 h-4" />
                             <span>{exam.timeLimit} دقيقة</span>
                           </div>
@@ -793,7 +793,7 @@ const TahsiliExamPage: React.FC = () => {
 
                         <Button 
                           onClick={() => startExam(exam)}
-                          className={`w-full group bg-gradient-to-r ${exam.themeColor} hover:shadow-lg transition-all text-white font-semibold py-2.5`}
+                          className="w-full group bg-primary text-primary-foreground hover:bg-primary/90 transition-colors font-semibold py-2.5"
                           data-testid={`button-start-exam-${exam.id}`}
                         >
                           <Rocket className="w-4 h-4 mr-2 group-hover:animate-pulse" />
@@ -925,7 +925,7 @@ const TahsiliExamPage: React.FC = () => {
   // صفحة النتائج
   if (currentView === 'results' && examResults) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-teal-500 dark:from-slate-900 dark:via-slate-800 dark:to-slate-900 py-8">
+      <div className="min-h-screen bg-background py-8" dir="rtl">
         <div className="container mx-auto px-4 max-w-4xl">
           
           {/* العنوان والنتيجة الرئيسية */}
@@ -937,13 +937,13 @@ const TahsiliExamPage: React.FC = () => {
           >
             <div className="inline-flex items-center gap-3 mb-4">
               <Trophy className="w-8 h-8 text-yellow-500" />
-              <h1 className="text-4xl font-bold text-slate-800 dark:text-slate-100">
+              <h1 className="text-3xl font-black text-foreground">
                 نتائج الاختبار
               </h1>
               <Trophy className="w-8 h-8 text-yellow-500" />
             </div>
             
-            <Card className="bg-white/80 dark:bg-slate-800/80 backdrop-blur shadow-2xl border-0 max-w-md mx-auto">
+            <Card className="bg-card border-border shadow-sm max-w-md mx-auto">
               <CardContent className="p-8 text-center">
                 <motion.div
                   initial={{ scale: 0 }}
@@ -963,10 +963,10 @@ const TahsiliExamPage: React.FC = () => {
                   </div>
                 </motion.div>
                 
-                <h2 className="text-2xl font-bold text-slate-800 dark:text-slate-100 mb-2">
+                <h2 className="text-2xl font-bold text-foreground mb-2">
                   {examResults.grade}
                 </h2>
-                <p className="text-slate-600 dark:text-slate-300">
+                <p className="text-muted-foreground">
                   {examResults.correctAnswers} من {examResults.totalQuestions} إجابة صحيحة
                 </p>
               </CardContent>
@@ -982,7 +982,7 @@ const TahsiliExamPage: React.FC = () => {
               animate={{ opacity: 1, x: 0 }}
               transition={{ delay: 0.4 }}
             >
-              <Card className="bg-white/80 dark:bg-slate-800/80 backdrop-blur shadow-lg border-0">
+              <Card className="bg-card border-border shadow-sm">
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
                     <TrendingUp className="w-5 h-5 text-blue-500" />
@@ -1012,7 +1012,7 @@ const TahsiliExamPage: React.FC = () => {
               animate={{ opacity: 1, x: 0 }}
               transition={{ delay: 0.5 }}
             >
-              <Card className="bg-white/80 dark:bg-slate-800/80 backdrop-blur shadow-lg border-0">
+              <Card className="bg-card border-border shadow-sm">
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
                     <Award className="w-5 h-5 text-green-700" />
@@ -1068,7 +1068,7 @@ const TahsiliExamPage: React.FC = () => {
             <Button
               onClick={downloadMistakes}
               disabled={isDownloadingMistakes || examResults.mistakes === 0}
-              className="flex items-center gap-2 bg-gradient-to-r from-blue-500 to-blue-600 hover:shadow-lg transition-all text-white px-6 py-3"
+              className="flex items-center gap-2 bg-primary text-primary-foreground hover:bg-primary/90 transition-colors px-6 py-3"
               data-testid="button-download-mistakes"
             >
               <Download className="w-4 h-4" />

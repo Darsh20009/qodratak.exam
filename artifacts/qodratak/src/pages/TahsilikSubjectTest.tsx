@@ -159,7 +159,7 @@ const TahsilikSubjectTest: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-teal-500 dark:from-slate-900 dark:via-blue-900/50 dark:to-teal-500">
+    <div className="min-h-screen bg-background" dir="rtl">
       <div className="container mx-auto px-4 py-8">
         {/* Header */}
         <motion.div
@@ -168,7 +168,7 @@ const TahsilikSubjectTest: React.FC = () => {
           className="text-center mb-8"
         >
           <div className="inline-flex items-center gap-4 mb-4">
-            <div className="w-16 h-16 bg-gradient-to-br from-emerald-500 to-teal-600 rounded-2xl flex items-center justify-center shadow-2xl shadow-emerald-500/30">
+            <div className="w-16 h-16 bg-primary/10 border border-primary/20 rounded-2xl flex items-center justify-center">
               <Target className="w-8 h-8 text-white" />
             </div>
             <div className="text-right">
@@ -218,7 +218,7 @@ const TahsilikSubjectTest: React.FC = () => {
                       data-testid={`card-subject-${subject.id}`}
                       onClick={() => setSelectedSubject(subject.id)}
                     >
-                      <Card className={`h-full bg-gradient-to-br ${subject.bgColor} border-0 shadow-lg hover:shadow-xl transition-all duration-300 group overflow-hidden`}>
+                    <Card className="h-full bg-card border-border shadow-sm hover:shadow-lg transition-all duration-300 group overflow-hidden">
                         {/* Background gradient */}
                         <div className={`absolute inset-0 bg-gradient-to-r ${subject.color} opacity-0 group-hover:opacity-10 transition-opacity duration-300`} />
                         
@@ -303,7 +303,7 @@ const TahsilikSubjectTest: React.FC = () => {
                 {selectedSubjectData && (
                   <>
                     {/* Subject Header */}
-                    <Card className={`bg-gradient-to-br ${selectedSubjectData.color} text-white border-0 shadow-2xl overflow-hidden`}>
+                    <Card className="bg-card border-border shadow-sm overflow-hidden">
                       <div className="absolute inset-0 opacity-20">
                         <selectedSubjectData.icon className="w-64 h-64 absolute -bottom-16 -right-16" />
                       </div>
@@ -335,7 +335,7 @@ const TahsilikSubjectTest: React.FC = () => {
                     </Card>
 
                     {/* Skill Areas Breakdown */}
-                    <Card className="bg-white/80 dark:bg-slate-800/80 backdrop-blur-sm border-0 shadow-xl">
+                    <Card className="bg-card border-border shadow-sm">
                       <CardHeader>
                         <CardTitle className="text-xl text-slate-800 dark:text-slate-200">توزيع الأسئلة حسب المهارات</CardTitle>
                         <CardDescription>
