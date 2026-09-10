@@ -69,12 +69,12 @@ function formatDate(value?: string) {
   return Number.isNaN(date.getTime()) ? '-' : date.toLocaleDateString('ar-SA');
 }
 
-export default function AdminAccountManagementTab() {
+export default function AdminAccountManagementTab({ initialRole = 'all' }: { initialRole?: string }) {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [search, setSearch] = useState('');
   const [page, setPage] = useState(1);
-  const [roleFilter, setRoleFilter] = useState('all');
+  const [roleFilter, setRoleFilter] = useState(initialRole);
   const [editingAccount, setEditingAccount] = useState<ManagedAccount | null>(null);
   const [isCreating, setIsCreating] = useState(false);
   const [form, setForm] = useState(emptyForm);

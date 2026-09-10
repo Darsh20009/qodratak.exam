@@ -51,6 +51,7 @@ interface ActiveInstitution { id: string; name: string; nameEn?: string; type: s
 const NAV_ITEMS = [
   { key: 'overview', icon: LayoutDashboard, label: 'نظرة عامة', color: 'text-[#625D69]' },
   { key: 'users', icon: Users, label: 'الطلاب', color: 'text-[#B65D36]' },
+  { key: 'teachers', icon: UserCheck, label: 'المدرسون', color: 'text-cyan-300' },
   { key: 'accounts', icon: UserCog, label: 'إدارة الحسابات', color: 'text-cyan-300' },
   { key: 'subscriptions', icon: CreditCard, label: 'الاشتراكات', color: 'text-[#7964C1]' },
   { key: 'tests', icon: FileText, label: 'الاختبارات', color: 'text-[#B65D36]' },
@@ -77,6 +78,7 @@ const NAV_ITEMS = [
 const PRIMARY_ADMIN_NAV_KEYS = new Set([
   'overview',
   'users',
+  'teachers',
   'accounts',
   'subscriptions',
   'tests',
@@ -95,6 +97,10 @@ const ADMIN_PAGE_TIPS: Record<string, { intro: string; steps: string[] }> = {
   users: {
     intro: 'ابحث عن حسابات الطلاب وتابع نشاطهم وبياناتهم الأساسية.',
     steps: ['استخدم البحث بالبريد أو الاسم أو رقم الجوال.', 'افتح ملف الطالب لمراجعة التقدم والاختبارات.', 'نفّذ التعديلات الإدارية عند الحاجة فقط.'],
+  },
+  teachers: {
+    intro: 'أدر حسابات المدرسين من مكان مستقل وواضح.',
+    steps: ['ابحث باسم المدرس أو البريد أو الجوال.', 'عدّل بيانات الحساب أو كلمة المرور عند الحاجة.', 'عطّل الحساب بدل حذفه إذا كنت تحتاج إلى الاحتفاظ بإمكانية استعادته.'],
   },
   accounts: {
     intro: 'أدر حسابات الطلاب والمدرسين وأولياء الأمور ومسؤولي المؤسسات من مكان واحد.',
@@ -806,6 +812,7 @@ export default function AdminDashboard({ initialTab = 'overview' }: { initialTab
             </div>
           )}
 
+          {activeTab === 'teachers' && <AdminAccountManagementTab initialRole="teacher" />}
           {activeTab === 'accounts' && <AdminAccountManagementTab />}
 
           {/* ─── SUBSCRIPTIONS ─── */}
