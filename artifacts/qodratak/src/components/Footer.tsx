@@ -82,7 +82,7 @@ export function Footer() {
             <nav className="mt-4 space-y-3" aria-label="طريقة العمل والأسعار">
               <a href="/guide" className="block text-sm font-bold text-muted-foreground transition hover:text-foreground">دليل الخدمات وطريقة الاستخدام</a>
               <a href="/platform-guide" className="block text-sm font-bold text-muted-foreground transition hover:text-foreground">دليل التدريب المتقدم</a>
-              <a href="/pricing" className="block text-sm font-bold text-muted-foreground transition hover:text-foreground">الأسعار والاشتراكات</a>
+              <a href="/#plans" className="block text-sm font-bold text-muted-foreground transition hover:text-foreground">الباقات والاشتراكات</a>
               <a href="/faq" className="block text-sm font-bold text-muted-foreground transition hover:text-foreground">الأسئلة الشائعة</a>
             </nav>
 

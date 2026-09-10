@@ -189,7 +189,7 @@ export const FreeTrialManagerComponent: React.FC<FreeTrialManagerProps> = ({
                   ستنتهي تجربتك المجانية قريباً!
                 </p>
                 <Button
-                  onClick={() => window.location.href = '/pricing'}
+                  onClick={() => window.location.href = '/subscription'}
                   size="sm"
                   className="bg-gradient-to-r from-yellow-500 to-orange-500 hover:from-yellow-600 hover:to-orange-600 text-white"
                 >
@@ -230,7 +230,7 @@ export const FreeTrialManagerComponent: React.FC<FreeTrialManagerProps> = ({
           </div>
           
           <Button
-            onClick={() => window.location.href = '/pricing'}
+            onClick={() => window.location.href = '/subscription'}
             className="w-full bg-gradient-to-r from-green-600 to-amber-600 hover:from-green-600 hover:to-amber-600 text-white font-bold py-3"
           >
             <Crown className="h-5 w-5 mr-2" />

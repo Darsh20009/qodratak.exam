@@ -84,11 +84,6 @@ const PUBLIC_ROUTE_METADATA: Record<string, RouteMetadata> = {
     title: "سياسة الاسترجاع والاستبدال | منصة قدراتك",
     description: "تعرف على ضوابط استرجاع المبالغ وإلغاء الاشتراكات واستبدال الباقات في منصة قدراتك.",
   },
-  "/pricing": {
-    title: "أسعار وخطط منصة قدراتك للتدريب",
-    description:
-      "قارن خطط منصة قدراتك واختر ما يناسب استعدادك لاختبارات القدرات والتحصيلي مع معرفة المزايا المتاحة لكل خطة.",
-  },
 };
 
 export function RouteSEO({ isAuthenticated, isLoading }: { isAuthenticated?: boolean; isLoading?: boolean }) {

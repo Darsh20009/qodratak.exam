@@ -62,7 +62,6 @@ import { Redirect } from "wouter";
 import TestResultsPage from './pages/TestResultsPage';
 import ExamReviewPage from './pages/ExamReviewPage';
 import FAQPage from "@/pages/FAQ";
-import PricingPage from "@/pages/PricingPage";
 import AbilitiesTestPage from "@/pages/AbilitiesTestPage";
 import ProtectedRoute from "@/components/NewProtectedRoute";
 import QiyasExamPage from "@/pages/QiyasExamPage";
@@ -1203,7 +1202,7 @@ function Router({ splashDone }: { splashDone: boolean }) {
         {() => <StudentShell><FAQPage /></StudentShell>}
       </Route>
       <Route path="/pricing">
-        {() => <StudentShell><PricingPage /></StudentShell>}
+        {() => <Redirect to="/#plans" />}
       </Route>
       <Route path="/terms">
         {() => <StudentShell><FooterDocumentsPage documentKey="terms" /></StudentShell>}

@@ -26,3 +26,9 @@ New paid sales use the 3-month `Pro` plan and the 6-month `Pro Life Plus` plan; 
 **Why:** the product now has two paid durations while existing records and premium-access checks still depend on the established MongoDB type values.
 
 **How to apply:** map user-facing plan keys to stored types at the API boundary, and do not rewrite historical subscriptions when prices change.
+
+The public home page is the canonical place for plan presentation; do not reintroduce a standalone legacy pricing screen.
+
+**Why:** a separate pricing screen drifted from the current landing experience and exposed conflicting branding and plan content.
+
+**How to apply:** route old pricing links to the home page plan section or the existing subscription flow, and keep plan copy aligned with the home page.
