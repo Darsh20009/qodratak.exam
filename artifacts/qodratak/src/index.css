@@ -96,7 +96,7 @@
 }
 
 /* الشعار الأبيض المرفق مخصص للخلفيات الداكنة، مع إبقاء نسخة النهار كما هي. */
-.dark img[src="/qodratak-logo-transparent.png"],
+.dark img[src="/qodratak-icon.png"],
 .dark img[src="/qodratak-logo.png"] {
   content: url("/qodratak-logo-dark.png");
 }

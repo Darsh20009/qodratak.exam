@@ -25,7 +25,7 @@ export function Footer() {
           <div>
             <div className="flex items-center gap-3">
               <img
-                src="/qodratak-logo-transparent.png"
+                src="/qodratak-icon.png"
                 alt={`شعار ${BRAND_NAME}`}
                 width="48"
                 height="48"

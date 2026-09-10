@@ -94,7 +94,7 @@ export default function AdminLogin() {
           <section className="hidden bg-[#24202D] p-10 text-[#FFFCF7] md:flex md:flex-col md:justify-between">
             <div className="flex items-center gap-3">
               <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-[#FFFCF7]">
-                <img src="/qodratak-logo-transparent.png" alt="قدراتك" className="h-9 w-9 object-contain" />
+                <img src="/qodratak-icon.png" alt="قدراتك" className="h-9 w-9 object-contain" />
               </div>
               <div>
                 <p className="font-bold">قدراتك</p>

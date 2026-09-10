@@ -23,6 +23,15 @@ import {
 const CHECKOUT_URL = "https://www.paypal.com/ncp/payment/XZWPA8WLMNDGS";
 
 type PaymentMethod = "wallet" | "card";
+type SubscriptionPlan = {
+  key: string;
+  type: string;
+  name: string;
+  durationDays: number;
+  priceSar: number;
+  description?: string;
+  features?: string[];
+};
 
 interface SubscriptionRenewalDialogProps {
   open: boolean;
@@ -56,8 +65,9 @@ export default function SubscriptionRenewalDialog({
   const queryClient = useQueryClient();
   const [method, setMethod] = useState<PaymentMethod>("wallet");
   const [checkoutStarted, setCheckoutStarted] = useState(false);
+  const [selectedPlanKey, setSelectedPlanKey] = useState("pro");
 
-  const { data: plan, isLoading: planLoading } = useQuery<any>({
+  const { data: planData, isLoading: planLoading } = useQuery<{ plan?: SubscriptionPlan; plans?: SubscriptionPlan[] }>({
     queryKey: ["/api/subscription/plan"],
     enabled: open,
     staleTime: 60_000,
@@ -72,6 +82,10 @@ export default function SubscriptionRenewalDialog({
     enabled: open,
     staleTime: 30_000,
   });
+
+  const plans = (planData?.plans || (planData?.plan ? [planData.plan] : [])) as SubscriptionPlan[];
+  const paidPlans = plans.filter((item) => item.key !== "free");
+  const selectedPlan = paidPlans.find((item) => item.key === selectedPlanKey) || paidPlans[0];
 
   const activeSubscription = useMemo(() => {
     const active = subscriptions
@@ -89,8 +103,8 @@ export default function SubscriptionRenewalDialog({
       user?.subscription?.endDate ||
       user?.subscriptionExpiry,
   );
-  const durationDays = Number(plan?.durationDays) || 90;
-  const price = Number(plan?.priceSar) || 39;
+  const durationDays = Number(selectedPlan?.durationDays) || 90;
+  const price = Number(selectedPlan?.priceSar) || 39;
   const nextEndDate = useMemo(() => {
     const base = currentEndDate && currentEndDate.getTime() > Date.now()
       ? new Date(currentEndDate)
@@ -104,7 +118,7 @@ export default function SubscriptionRenewalDialog({
   const walletMutation = useMutation({
     mutationFn: async () => {
       const response = await apiRequest("POST", "/api/subscription/pay-with-wallet", {
-        planKey: "pro",
+        planKey: selectedPlan?.key || "pro",
       });
       return response.json();
     },
@@ -131,7 +145,7 @@ export default function SubscriptionRenewalDialog({
   const requestMutation = useMutation({
     mutationFn: async () => {
       const response = await apiRequest("POST", "/api/subscription/subscribe-request", {
-        planKey: "pro",
+        planKey: selectedPlan?.key || "pro",
         paymentMethod: method,
       });
       return response.json();
@@ -219,18 +233,33 @@ export default function SubscriptionRenewalDialog({
               </p>
             </div>
 
-            <div className="rounded-2xl border-2 border-[#0D1B2A] bg-white p-4">
-              <div className="flex items-center justify-between gap-4">
-                <div>
-                  <p className="text-xs font-bold text-[#398B79]">الباقة المتاحة</p>
-                  <h3 className="mt-1 text-lg font-black">باقة قدراتك</h3>
-                  <p className="mt-1 text-xs font-bold text-[#64748B]">وصول كامل لمدة 3 أشهر</p>
-                </div>
-                <div className="text-left">
-                  <p className="text-3xl font-black">{price}</p>
-                  <p className="text-xs font-bold text-[#64748B]">ريال / 3 أشهر</p>
-                </div>
-              </div>
+             <div className="space-y-2">
+               <p className="text-sm font-black">اختر الباقة</p>
+               <div className="grid gap-2 sm:grid-cols-2">
+                 {paidPlans.map((item) => (
+                   <button
+                     key={item.key}
+                     type="button"
+                     onClick={() => setSelectedPlanKey(item.key)}
+                     className={`rounded-2xl border-2 p-4 text-right transition ${
+                       selectedPlan?.key === item.key
+                         ? "border-[#0D1B2A] bg-white shadow-sm"
+                         : "border-[#E5E7EB] bg-white/70 hover:border-[#94A3B8]"
+                     }`}
+                   >
+                     <div className="flex items-center justify-between gap-3">
+                       <div>
+                         <p className="text-xs font-bold text-[#398B79]">{item.name}</p>
+                         <p className="mt-1 text-xs font-bold text-[#64748B]">وصول كامل لمدة {item.durationDays / 30} أشهر</p>
+                       </div>
+                       <div className="text-left">
+                         <p className="text-2xl font-black">{item.priceSar}</p>
+                         <p className="text-[11px] font-bold text-[#64748B]">ريال</p>
+                       </div>
+                     </div>
+                   </button>
+                 ))}
+               </div>
               {currentEndDate && (
                 <p className="mt-3 rounded-xl bg-[#F7F775]/35 p-3 text-xs font-bold">
                   بعد الشراء يصبح تاريخ الانتهاء: {formatDate(nextEndDate)}

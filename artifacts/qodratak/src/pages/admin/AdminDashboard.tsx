@@ -589,7 +589,7 @@ export default function AdminDashboard({ initialTab = 'overview' }: { initialTab
         <div className="border-b border-white/[0.08] p-5">
           <div className="flex items-center gap-3">
             <div className="h-11 w-11 overflow-hidden rounded-2xl border border-[#b8f36b]/20 bg-white/[0.06] p-1">
-              <img src="/qodratak-logo-transparent.png" alt="قدراتك" className="w-full h-full object-contain" />
+              <img src="/qodratak-icon.png" alt="قدراتك" className="w-full h-full object-contain" />
             </div>
             <div>
               <p className="text-sm font-bold text-white">لوحة التحكم</p>
@@ -2833,7 +2833,7 @@ export default function AdminDashboard({ initialTab = 'overview' }: { initialTab
                 customerName={selectedSubscription.userId?.fullName || selectedSubscription.userId?.username || 'عميل قدراتك'}
                 customerEmail={selectedSubscription.userId?.email}
                 customerPhone={selectedSubscription.userId?.phone}
-                planName={selectedSubscription.type === 'Pro' ? 'خطة قدراتك' : selectedSubscription.type}
+                 planName={selectedSubscription.type === 'Pro' ? 'باقة 3 أشهر' : selectedSubscription.type === 'Pro Life Plus' ? 'باقة 6 أشهر' : selectedSubscription.type}
                 amount={selectedSubscription.price ?? 39}
                 currency="SAR"
                 paymentMethod={selectedSubscription.paymentMethod}

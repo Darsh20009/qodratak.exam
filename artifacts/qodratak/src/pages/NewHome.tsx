@@ -480,7 +480,7 @@ function LoggedInDashboard({ user }: { user: any }) {
                 </div>
                 <div>
                   <p className="text-sm font-black text-foreground">اشترك في قدراتك</p>
-                  <p className="mt-0.5 text-xs font-medium text-muted-foreground">39 ريال لمدة 3 أشهر</p>
+                   <p className="mt-0.5 text-xs font-medium text-muted-foreground">الباقات تبدأ من 39 ريال لمدة 3 أشهر</p>
                 </div>
               </div>
               <ChevronLeft className="h-5 w-5 text-foreground" />
@@ -499,7 +499,7 @@ function LoggedInDashboard({ user }: { user: any }) {
                 customerName={user?.name || user?.username || 'عميل قدراتك'}
                 customerEmail={user?.email}
                 customerPhone={user?.phone}
-                planName={currentSubData.type === 'Pro' ? 'خطة قدراتك' : currentSubData.type}
+                 planName={currentSubData.type === 'Pro' ? 'باقة 3 أشهر' : currentSubData.type === 'Pro Life Plus' ? 'باقة 6 أشهر' : currentSubData.type}
                 amount={currentSubData.price ?? 39}
                 currency={currentSubData.currency || 'SAR'}
                 paymentMethod={currentSubData.paymentMethod}

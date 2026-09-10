@@ -2051,16 +2051,17 @@ router.delete('/announcements/:id', requireAdminAuth, async (req: Request, res: 
 
 // =========== PLATFORM SETTINGS ============
 const DEFAULT_SETTINGS = [
-  { key: 'platform_name', label: 'اسم المنصة', value: 'قدراتك', type: 'text', category: 'general', description: 'اسم المنصة الظاهر للمستخدمين' },
+  { key: 'platform_name', label: 'اسم المنصة', value: 'منصة قدراتك التعليمية', type: 'text', category: 'general', description: 'اسم المنصة الظاهر للمستخدمين' },
   { key: 'platform_tagline', label: 'شعار المنصة', value: 'استعد لقياس بشكل احترافي', type: 'text', category: 'general', description: 'الشعار الفرعي للمنصة' },
   { key: 'monthly_price', label: 'سعر الاشتراك الشهري (ر.س)', value: 49, type: 'number', category: 'pricing', description: 'سعر الاشتراك الشهري' },
-  { key: 'quarterly_price', label: 'سعر الاشتراك الربع سنوي (ر.س)', value: 129, type: 'number', category: 'pricing', description: 'سعر الاشتراك كل 3 أشهر' },
-  { key: 'semi_annual_price', label: 'سعر الاشتراك نصف سنوي (ر.س)', value: 199, type: 'number', category: 'pricing', description: 'سعر الاشتراك كل 6 أشهر' },
+  { key: 'quarterly_price', label: 'سعر الاشتراك الربع سنوي (ر.س)', value: 39, type: 'number', category: 'pricing', description: 'سعر الاشتراك كل 3 أشهر' },
+  { key: 'semi_annual_price', label: 'سعر الاشتراك نصف سنوي (ر.س)', value: 74, type: 'number', category: 'pricing', description: 'سعر الاشتراك كل 6 أشهر' },
   { key: 'annual_price', label: 'سعر الاشتراك السنوي (ر.س)', value: 299, type: 'number', category: 'pricing', description: 'سعر الاشتراك السنوي' },
   { key: 'free_questions_limit', label: 'حد أسئلة المجانيين', value: 10, type: 'number', category: 'limits', description: 'عدد الأسئلة المسموح بها للمستخدم المجاني في الاختبار' },
   { key: 'allow_new_registrations', label: 'السماح بالتسجيل الجديد', value: true, type: 'boolean', category: 'access', description: 'هل يمكن للمستخدمين الجدد إنشاء حسابات' },
   { key: 'maintenance_mode', label: 'وضع الصيانة', value: false, type: 'boolean', category: 'access', description: 'تفعيل وضع الصيانة يمنع دخول الطلاب' },
-  { key: 'bank_account_name', label: 'اسم صاحب الحساب البنكي', value: 'شركة قدراتك التعليمية', type: 'text', category: 'payment', description: 'اسم الحساب البنكي لتحويل الاشتراكات' },
+  { key: 'bank_account_name', label: 'اسم صاحب الحساب البنكي', value: 'مؤسسة قدراتك العالية', type: 'text', category: 'payment', description: 'اسم الحساب البنكي لتحويل الاشتراكات' },
+  { key: 'unified_number', label: 'الرقم الموحد', value: '', type: 'text', category: 'legal', description: 'الرقم الموحد الظاهر في الفاتورة' },
   { key: 'bank_iban', label: 'رقم الآيبان', value: 'SA0000000000000000000000', type: 'text', category: 'payment', description: 'رقم الآيبان للتحويل البنكي' },
   { key: 'bank_name', label: 'اسم البنك', value: 'بنك الراجحي', type: 'text', category: 'payment', description: 'اسم البنك' },
   { key: 'support_email', label: 'بريد الدعم الفني', value: 'info@qodratak.sa', type: 'text', category: 'contact', description: 'البريد الإلكتروني للدعم الفني والنظام' },
@@ -2117,10 +2118,10 @@ router.put('/settings/:key', requireAdminAuth, async (req: Request, res: Respons
 const DEFAULT_PRIMARY_SUBSCRIPTION_PLAN = {
   key: 'pro',
   type: 'Pro',
-  name: 'خطة قدراتك',
+  name: 'باقة 3 أشهر',
   durationDays: 90,
   priceSar: 39,
-  description: 'اشتراك كامل لمدة 3 أشهر يشمل مسارات قدراتك التعليمية.',
+  description: 'اشتراك كامل لمدة 3 أشهر في منصة قدراتك التعليمية.',
   features: [
     'وصول كامل للمحتوى والاختبارات',
     'حفظ التقدم والإحصائيات',

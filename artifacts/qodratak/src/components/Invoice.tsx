@@ -9,6 +9,7 @@ interface InvoiceProps {
   customerName: string;
   customerEmail?: string;
   customerPhone?: string;
+  unifiedNumber?: string;
   planName: string;
   amount: number;
   currency?: string;
@@ -26,6 +27,7 @@ export function Invoice({
   customerName,
   customerEmail,
   customerPhone,
+  unifiedNumber,
   planName,
   amount,
   currency = 'SAR',
@@ -106,10 +108,13 @@ export function Invoice({
           </div>
           
           <div className="flex flex-col items-end">
-            <img src="/qodratak-logo-transparent.png" alt="قدراتك" className="h-16 w-auto object-contain mb-3" />
+            <div className="mb-3 flex h-16 w-16 items-center justify-center overflow-hidden rounded-2xl bg-[#0D1B2A]">
+              <img src="/qodratak-icon.png" alt="شعار قدراتك" className="h-16 w-16 object-contain" />
+            </div>
             <div className="text-left text-sm text-gray-500 font-medium">
-              <p className="text-gray-900 font-bold text-base">منصة قدراتك التعليمية</p>
+              <p className="text-gray-900 font-bold text-base">مؤسسة قدراتك العالية</p>
               <p>المملكة العربية السعودية</p>
+              <p>الرقم الموحد: {unifiedNumber || '—'}</p>
               <p>qodratak.sa</p>
             </div>
           </div>
@@ -220,7 +225,7 @@ export function Invoice({
           </div>
           
           <div className="text-center sm:text-left">
-            <p className="font-bold text-gray-900 mb-1">شكراً لثقتكم بقدراتك</p>
+              <p className="font-bold text-gray-900 mb-1">شكراً لثقتكم بمؤسسة قدراتك العالية</p>
             <p className="text-xs">qodratak.sa</p>
           </div>
         </div>

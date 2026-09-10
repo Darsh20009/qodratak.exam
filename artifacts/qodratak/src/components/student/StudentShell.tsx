@@ -13,7 +13,7 @@ const NAV_ITEMS = [
   { name: "حسابي", href: "/account", icon: UserIcon },
 ];
 
-const platformLogo = "/qodratak-logo-transparent.png";
+const platformLogo = "/qodratak-icon.png";
 
 export function StudentShell({ children }: { children: React.ReactNode }) {
   const [location] = useLocation();

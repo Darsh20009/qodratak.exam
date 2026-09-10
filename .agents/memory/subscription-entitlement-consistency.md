@@ -20,3 +20,9 @@ Subscription documents must describe the stored transaction rather than current 
 **Why:** pending or rejected requests are not approved invoices, zero-price grants are valid, and plan duration may change later.
 
 **How to apply:** derive stable document numbers from immutable records, use stored prices and dates, and label each document according to its actual status.
+
+New paid sales use the 3-month `Pro` plan and the 6-month `Pro Life Plus` plan; legacy subscription types remain readable for historical access.
+
+**Why:** the product now has two paid durations while existing records and premium-access checks still depend on the established MongoDB type values.
+
+**How to apply:** map user-facing plan keys to stored types at the API boundary, and do not rewrite historical subscriptions when prices change.

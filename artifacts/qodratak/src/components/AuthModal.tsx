@@ -490,7 +490,7 @@ export function AuthModal({ open, mode, onClose, onModeChange }: { open: boolean
         <div className="flex max-h-[calc(100vh-20px)] flex-col">
           <div className="flex items-center justify-between border-b border-[#24202D]/10 px-6 py-4">
             <div className="flex items-center gap-2.5">
-              <img src="/qodratak-logo-transparent.png" alt="قدراتك" className="h-10 w-10 object-contain" />
+              <img src="/qodratak-icon.png" alt="قدراتك" className="h-10 w-10 object-contain" />
               <div>
                 <p className="text-sm font-black text-[#171723]">قدراتك</p>
                 <p className="text-[11px] text-[#8B8278]">{mode === "login" ? "دخول سريع وآمن" : "حسابك في دقائق"}</p>

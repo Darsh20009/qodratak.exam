@@ -58,16 +58,26 @@ const DEVICE_MANAGEMENT_TOKEN_TTL_MS = 15 * 60 * 1000;
 const DEFAULT_PRIMARY_SUBSCRIPTION_PLAN = {
   key: 'pro',
   type: 'Pro',
-  name: 'خطة قدراتك',
+  name: 'باقة 3 أشهر',
   durationDays: 90,
   priceSar: 39,
-  description: 'اشتراك كامل لمدة 3 أشهر يشمل مسارات قدراتك التعليمية.',
+  description: 'اشتراك كامل لمدة 3 أشهر في منصة قدراتك التعليمية.',
   features: [
     'وصول كامل للمحتوى والاختبارات',
     'حفظ التقدم والإحصائيات',
     'خطة يومية ومتابعة مستمرة',
     'دعم فني عبر واتساب',
   ],
+};
+
+const SIX_MONTH_SUBSCRIPTION_PLAN = {
+  key: 'proLifePlus',
+  type: 'Pro Life Plus',
+  name: 'باقة 6 أشهر',
+  durationDays: 180,
+  priceSar: 74,
+  description: 'اشتراك كامل لمدة 6 أشهر في منصة قدراتك التعليمية.',
+  features: DEFAULT_PRIMARY_SUBSCRIPTION_PLAN.features,
 };
 
 async function getPrimarySubscriptionPlan() {
@@ -84,6 +94,28 @@ async function getPrimarySubscriptionPlan() {
     type: 'Pro',
     key: 'pro',
   };
+}
+
+async function getSubscriptionPlanCatalog() {
+  const primaryPlan = await getPrimarySubscriptionPlan();
+  return [
+    {
+      key: 'free',
+      type: 'free',
+      name: 'الباقة المجانية',
+      durationDays: 0,
+      priceSar: 0,
+      description: 'ابدأ مجانًا مع وصول أساسي للتدريب.',
+      features: ['اختبار مجاني يوميًا', 'محتوى أساسي', 'تقارير مختصرة'],
+    },
+    primaryPlan,
+    SIX_MONTH_SUBSCRIPTION_PLAN,
+  ];
+}
+
+async function getSubscriptionPlanByKey(planKey: string) {
+  const plans = await getSubscriptionPlanCatalog();
+  return plans.find((plan) => plan.key === planKey && plan.key !== 'free') || null;
 }
 
 function subscriptionIdentityCandidates(userId: unknown, email?: unknown) {
@@ -503,7 +535,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get('/api/subscription/plan', async (_req: Request, res: Response) => {
     try {
       const plan = await getPrimarySubscriptionPlan();
-      res.json({ plan });
+      const plans = await getSubscriptionPlanCatalog();
+      res.json({ plan, plans });
     } catch (error) {
       console.error('Get public subscription plan error:', error);
       res.status(500).json({ error: 'فشل في جلب خطة الاشتراك' });
@@ -7003,13 +7036,14 @@ app.post("/api/auth/register", async (req: Request, res: Response) => {
         return res.status(400).json({ message: "يرجى إدخال جميع البيانات المطلوبة" });
       }
 
-      if (!['pro', 'proLife', 'proLifePlus'].includes(planKey)) {
+      if (!['pro', 'proLifePlus'].includes(planKey)) {
         return res.status(400).json({ message: "الخطة المطلوبة غير متاحة" });
       }
-      const primaryPlan = await getPrimarySubscriptionPlan();
-      const planType = primaryPlan.type;
-      const planPrice = primaryPlan.priceSar;
-      const planDuration = primaryPlan.durationDays;
+      const selectedPlan = await getSubscriptionPlanByKey(planKey);
+      if (!selectedPlan) return res.status(400).json({ message: "الخطة المطلوبة غير متاحة" });
+      const planType = selectedPlan.type;
+      const planPrice = selectedPlan.priceSar;
+      const planDuration = selectedPlan.durationDays;
 
       // Create or find user
       let users: any[] = [];
@@ -7165,12 +7199,13 @@ app.post("/api/auth/register", async (req: Request, res: Response) => {
         return res.status(400).json({ message: "نوع الخطة مطلوب" });
       }
 
-      if (!['pro', 'proLife', 'proLifePlus'].includes(planKey)) {
+      if (!['pro', 'proLifePlus'].includes(planKey)) {
         return res.status(400).json({ message: "نوع خطة غير صالح" });
       }
-      const primaryPlan = await getPrimarySubscriptionPlan();
-      const planType = primaryPlan.type;
-      const price = primaryPlan.priceSar;
+      const selectedPlan = await getSubscriptionPlanByKey(planKey);
+      if (!selectedPlan) return res.status(400).json({ message: "نوع خطة غير صالح" });
+      const planType = selectedPlan.type;
+      const price = selectedPlan.priceSar;
 
       const now = new Date();
       const mongoSession = await mongoose.startSession();
@@ -7210,7 +7245,7 @@ app.post("/api/auth/register", async (req: Request, res: Response) => {
             ? new Date(activeSubscription.endDate)
             : now;
           endDate = new Date(baseDate);
-          endDate.setDate(endDate.getDate() + primaryPlan.durationDays);
+           endDate.setDate(endDate.getDate() + selectedPlan.durationDays);
 
           const canonicalUserId = mongoose.Types.ObjectId.isValid(String(sessionUserId))
             ? new mongoose.Types.ObjectId(String(sessionUserId))

@@ -1,4 +1,4 @@
-const newLogoPath = "/qodratak-logo-transparent.png";
+const newLogoPath = "/qodratak-icon.png";
 
 interface LoadingScreenProps {
   message?: string;

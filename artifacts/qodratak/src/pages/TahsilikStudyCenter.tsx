@@ -26,7 +26,7 @@ import {
   Zap,
   Rocket
 } from 'lucide-react';
-const newLogoPath = "/qodratak-logo-transparent.png";
+const newLogoPath = "/qodratak-icon.png";
 
 const TahsilikStudyCenter: React.FC = () => {
   const [showBook, setShowBook] = useState(false);

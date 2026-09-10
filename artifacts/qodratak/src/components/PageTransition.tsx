@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from "react";
 import { useLocation } from "wouter";
 
-const platformLogo = "/qodratak-logo-transparent.png";
+const platformLogo = "/qodratak-icon.png";
 
 export function BrandLoadingScreen({ label = "جارٍ فتح الصفحة..." }: { label?: string }) {
   return (

@@ -21,7 +21,7 @@ export const TRIAL_CONFIG = {
 export const SUBSCRIPTION_PRICES: Record<SubscriptionType, { price: number; durationDays: number; originalPrice: number }> = {
   'Pro': { price: 39, durationDays: 90, originalPrice: 39 },
   'Pro Life': { price: 74, durationDays: 90, originalPrice: 149 },
-  'Pro Life Plus': { price: 134, durationDays: 180, originalPrice: 297 },
+  'Pro Life Plus': { price: 74, durationDays: 180, originalPrice: 74 },
   'Pro Quarterly': { price: 74, durationDays: 90, originalPrice: 149 },
 };
 

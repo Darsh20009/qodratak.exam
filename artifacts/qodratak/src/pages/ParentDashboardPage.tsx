@@ -188,7 +188,7 @@ export default function ParentDashboardPage() {
         <div className="mx-auto flex max-w-5xl items-center justify-between px-5 py-4 sm:px-8">
           <Link href="/" className="flex items-center gap-2.5 outline-none focus-visible:ring-2 focus-visible:ring-[#FF8A70] rounded-lg">
             <img
-              src="/qodratak-logo-transparent.png"
+              src="/qodratak-icon.png"
               alt="شعار منصة قدراتك"
               width="40"
               height="40"

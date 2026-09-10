@@ -29,9 +29,9 @@ const plans = [
     popular: false
   },
   {
-    name: 'Pro',
-    price: '29',
-    period: 'شهرياً',
+    name: '3 أشهر',
+    price: '39',
+    period: 'لكامل المدة',
     description: 'للطلاب الجادين في التحضير',
     color: 'from-blue-600 to-emerald-600',
     badge: 'الأكثر شعبية',
@@ -47,14 +47,14 @@ const plans = [
       '36 نموذج ورقي'
     ],
     limitations: [],
-    cta: 'اشترك الآن',
+    cta: 'اشترك لـ 3 أشهر',
     popular: true
   },
   {
-    name: 'Pro Life',
+    name: '6 أشهر',
     price: '74',
-    period: '3 أشهر',
-    description: 'الاشتراك الثلاثي الأفضل قيمة',
+    period: 'لكامل المدة',
+    description: 'أفضل قيمة للتحضير الطويل',
     color: 'from-green-600 to-amber-600',
     badge: 'أفضل قيمة',
     badgeColor: 'bg-green-100 text-green-700 dark:bg-green-100 dark:text-green-700',
@@ -68,31 +68,10 @@ const plans = [
       'خصومات على الدورات'
     ],
     limitations: [],
-    cta: 'اشترك لـ 3 أشهر',
-    popular: false,
-    savings: 'وفر مقارنة بالاشتراك الشهري'
-  },
-  {
-    name: 'Pro Life Plus',
-    price: '134',
-    period: '6 أشهر',
-    description: 'أقوى خطة للتحضير المكثف',
-    color: 'from-amber-500 to-orange-600',
-    badge: 'الأشمل',
-    badgeColor: 'bg-amber-100 text-amber-800 dark:bg-amber-800 dark:text-amber-100',
-    features: [
-      'جميع مميزات Pro Life',
-      'وصول مكثف لـ 6 أشهر كاملة',
-      'دعم فني على مدار الساعة',
-      'محتوى حصري ومتجدد',
-      'تقارير أداء متقدمة جداً',
-      'وصول مبكر للمميزات الجديدة'
-    ],
-    limitations: [],
     cta: 'اشترك لـ 6 أشهر',
     popular: false,
-    savings: 'الخيار الأمثل للتحضير الجاد'
-  }
+    savings: 'وصول كامل لمدة 6 أشهر'
+  },
 ];
 
 const PricingCard: React.FC<{ plan: typeof plans[0]; index: number }> = ({ plan, index }) => (
@@ -223,8 +202,8 @@ export const PricingPage: React.FC = () => {
                 <tr className="border-b">
                   <th className="text-right p-4 font-semibold">الميزة</th>
                   <th className="text-center p-4 font-semibold text-gray-600">مجاني</th>
-                  <th className="text-center p-4 font-semibold text-blue-600">Pro الشهري</th>
-                  <th className="text-center p-4 font-semibold text-green-700">Pro Life</th>
+          <th className="text-center p-4 font-semibold text-blue-600">3 أشهر</th>
+          <th className="text-center p-4 font-semibold text-green-700">6 أشهر</th>
                 </tr>
               </thead>
               <tbody>

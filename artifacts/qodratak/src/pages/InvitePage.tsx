@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 
-const platformLogo = "/qodratak-logo-transparent.png";
+const platformLogo = "/qodratak-icon.png";
 
 interface InviteInfo {
   valid: boolean;

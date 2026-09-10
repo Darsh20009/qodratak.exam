@@ -28,7 +28,7 @@ import {
   Heart,
   ExternalLink
 } from 'lucide-react';
-const newLogoPath = "/qodratak-logo-transparent.png";
+const newLogoPath = "/qodratak-icon.png";
 
 interface TestResult {
   examId: string;
