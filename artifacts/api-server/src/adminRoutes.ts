@@ -551,10 +551,14 @@ router.get('/foundation-content/questions', requireAdminAuth, async (req: Reques
   try {
     const search = String(req.query.search || '').trim();
     const category = String(req.query.category || '').trim();
+    const difficulty = String(req.query.difficulty || '').trim();
+    const subcategory = String(req.query.subcategory || '').trim();
     const page = Math.max(1, parseInt(String(req.query.page || '1'), 10) || 1);
     const limit = Math.min(100, Math.max(1, parseInt(String(req.query.limit || '50'), 10) || 50));
     const query: Record<string, unknown> = {};
     if (category && category !== 'all') query.category = category;
+    if (difficulty && difficulty !== 'all') query.difficulty = difficulty;
+    if (subcategory) query.subcategory = { $regex: subcategory, $options: 'i' };
     if (search) {
       query.$or = [
         { text: { $regex: search, $options: 'i' } },

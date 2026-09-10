@@ -100,6 +100,9 @@ export default function AdminFoundationManagementTab() {
   const [lessonForm, setLessonForm] = useState<FoundationContent>(emptyLesson);
   const [questionPickerOpen, setQuestionPickerOpen] = useState(false);
   const [questionSearch, setQuestionSearch] = useState('');
+  const [questionCategory, setQuestionCategory] = useState('all');
+  const [questionDifficulty, setQuestionDifficulty] = useState('all');
+  const [questionSubcategory, setQuestionSubcategory] = useState('');
   const [questionPage, setQuestionPage] = useState(1);
   const [reviewDialog, setReviewDialog] = useState<PlatformReview | null>(null);
   const [reply, setReply] = useState('');
@@ -115,8 +118,8 @@ export default function AdminFoundationManagementTab() {
     enabled: section === 'reviews',
   });
   const questionsQuery = useQuery({
-    queryKey: ['/api/admin/foundation-content/questions', questionSearch, questionPage],
-    queryFn: () => getJson(`/api/admin/foundation-content/questions?search=${encodeURIComponent(questionSearch)}&page=${questionPage}&limit=50`),
+    queryKey: ['/api/admin/foundation-content/questions', questionSearch, questionCategory, questionDifficulty, questionSubcategory, questionPage],
+    queryFn: () => getJson(`/api/admin/foundation-content/questions?search=${encodeURIComponent(questionSearch)}&category=${encodeURIComponent(questionCategory)}&difficulty=${encodeURIComponent(questionDifficulty)}&subcategory=${encodeURIComponent(questionSubcategory)}&page=${questionPage}&limit=50`),
     enabled: questionPickerOpen,
   });
   const lessons = useMemo(() => listFrom<FoundationContent>(lessonsQuery.data, ['content', 'foundationContent', 'items', 'data']), [lessonsQuery.data]);
@@ -273,7 +276,22 @@ export default function AdminFoundationManagementTab() {
             <DialogTitle>اختيار أسئلة الاختبار</DialogTitle>
             <DialogDescription className="text-sm text-slate-400">اختر الأسئلة التي ستظهر للطالب بعد الدرس. الإجابات الصحيحة لا تظهر للطالب.</DialogDescription>
           </DialogHeader>
-          <Input value={questionSearch} onChange={e => { setQuestionSearch(e.target.value); setQuestionPage(1); }} placeholder="ابحث في نص السؤال أو التصنيف..." className="border-slate-700 bg-slate-900" />
+          <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
+            <Input value={questionSearch} onChange={e => { setQuestionSearch(e.target.value); setQuestionPage(1); }} placeholder="بحث في نص السؤال..." className="border-slate-700 bg-slate-900" />
+            <select value={questionCategory} onChange={e => { setQuestionCategory(e.target.value); setQuestionPage(1); }} aria-label="فلترة حسب المسار" className="h-10 rounded-md border border-slate-700 bg-slate-900 px-3 text-sm text-white">
+              <option value="all">كل المسارات</option>
+              <option value="verbal">لفظي</option>
+              <option value="quantitative">كمي</option>
+              <option value="general">عام</option>
+            </select>
+            <select value={questionDifficulty} onChange={e => { setQuestionDifficulty(e.target.value); setQuestionPage(1); }} aria-label="فلترة حسب الصعوبة" className="h-10 rounded-md border border-slate-700 bg-slate-900 px-3 text-sm text-white">
+              <option value="all">كل مستويات الصعوبة</option>
+              <option value="beginner">مبتدئ</option>
+              <option value="intermediate">متوسط</option>
+              <option value="advanced">متقدم</option>
+            </select>
+            <Input value={questionSubcategory} onChange={e => { setQuestionSubcategory(e.target.value); setQuestionPage(1); }} placeholder="التصنيف الفرعي..." className="border-slate-700 bg-slate-900" />
+          </div>
           <div className="max-h-[55vh] space-y-2 overflow-y-auto pr-1">
             {questionsQuery.isLoading ? <Loading /> : availableQuestions.length === 0 ? <EmptyState label="لا توجد أسئلة مطابقة." /> : availableQuestions.map(question => {
               const selected = selectedQuestionIds.includes(question._id);
