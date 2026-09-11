@@ -491,7 +491,7 @@ export function AuthModal({ open, mode, onClose, onModeChange }: { open: boolean
         <div className="flex max-h-[calc(100vh-20px)] flex-col">
           <div className="flex items-center justify-between border-b border-[#24202D]/10 px-6 py-4">
             <div className="flex items-center gap-2.5">
-              <BrandMark imageClassName="h-10 w-10" />
+              <BrandMark imageClassName="h-10 w-10" tone="light" />
               <p className="text-[11px] text-[#8B8278]">{mode === "login" ? "دخول سريع وآمن" : "حسابك في دقائق"}</p>
             </div>
             <button onClick={onClose} aria-label="إغلاق" className="rounded-lg p-2 text-[#8B8278] hover:bg-[#24202D]/5"><X className="h-4 w-4" /></button>

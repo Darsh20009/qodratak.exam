@@ -144,7 +144,7 @@ export function SignupModal({ open, onClose, onSwitchToLogin }: SignupModalProps
           <div className="border-b border-[#24202D]/10 px-6 py-5">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
-                <BrandMark imageClassName="h-11 w-11" />
+                <BrandMark imageClassName="h-11 w-11" tone="light" />
                 <p className="mt-0.5 text-xs font-bold text-[#8B8278]">إنشاء حساب جديد</p>
               </div>
               <div className="flex items-center gap-2">
