@@ -8,6 +8,7 @@
     "prebuild": "pnpm run validate:verbal-bank",
     "build": "vite build --config vite.config.ts",
     "serve": "vite preview --config vite.config.ts --host 0.0.0.0",
+    "test": "node --test scripts/validate-verbal-bank.test.mjs",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "validate:verbal-bank": "node scripts/validate-verbal-bank.mjs"
   },

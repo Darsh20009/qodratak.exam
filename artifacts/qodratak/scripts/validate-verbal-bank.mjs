@@ -1,13 +1,14 @@
 import { readFile } from "node:fs/promises";
+import { pathToFileURL } from "node:url";
 
-const EXPECTED_VIDEO_COUNT = 200;
-const VIDEO_ID_PATTERN = /^[A-Za-z0-9_-]{11}$/;
-const SOURCE_PATH = new URL("../src/data/verbalBankVideos.ts", import.meta.url);
-const REQUEST_TIMEOUT_MS = 15_000;
-const MAX_REQUEST_ATTEMPTS = 3;
-const RETRY_BACKOFF_MS = 500;
-const TOTAL_REQUEST_TIMEOUT_MS = 45_000;
-const MAX_CONCURRENT_REQUESTS = 8;
+export const EXPECTED_VIDEO_COUNT = 200;
+export const VIDEO_ID_PATTERN = /^[A-Za-z0-9_-]{11}$/;
+export const SOURCE_PATH = new URL("../src/data/verbalBankVideos.ts", import.meta.url);
+export const REQUEST_TIMEOUT_MS = 15_000;
+export const MAX_REQUEST_ATTEMPTS = 3;
+export const RETRY_BACKOFF_MS = 500;
+export const TOTAL_REQUEST_TIMEOUT_MS = 45_000;
+export const MAX_CONCURRENT_REQUESTS = 8;
 
 function printErrors(errors) {
   console.error("Verbal bank validation failed:");
@@ -16,7 +17,7 @@ function printErrors(errors) {
   }
 }
 
-function getVideoIds(source) {
+export function getVideoIds(source) {
   const listMatch = source.match(
     /const verbalBankVideoIds = \[\n(?<entries>[\s\S]*?)\n\] as const;/,
   );
@@ -47,7 +48,7 @@ function getVideoIds(source) {
   return { ids, errors };
 }
 
-function validateVideoData(source, ids) {
+export function validateVideoData(source, ids) {
   const errors = [];
 
   if (ids.length !== EXPECTED_VIDEO_COUNT) {
@@ -118,26 +119,36 @@ function wait(milliseconds) {
   return new Promise((resolve) => setTimeout(resolve, milliseconds));
 }
 
-async function checkVideoLink(id, index) {
+export async function checkVideoLink(
+  id,
+  index,
+  {
+    fetchImpl = fetch,
+    requestTimeoutMs = REQUEST_TIMEOUT_MS,
+    maxRequestAttempts = MAX_REQUEST_ATTEMPTS,
+    retryBackoffMs = RETRY_BACKOFF_MS,
+    totalTimeoutMs = TOTAL_REQUEST_TIMEOUT_MS,
+  } = {},
+) {
   const videoUrl = `https://www.youtube.com/watch?v=${id}`;
   const oembedUrl = `https://www.youtube.com/oembed?url=${encodeURIComponent(videoUrl)}&format=json`;
-  const deadline = Date.now() + TOTAL_REQUEST_TIMEOUT_MS;
+  const deadline = Date.now() + totalTimeoutMs;
   let attempts = 0;
   let lastNetworkError;
 
-  while (attempts < MAX_REQUEST_ATTEMPTS) {
+  while (attempts < maxRequestAttempts) {
     const remainingTime = deadline - Date.now();
     if (remainingTime <= 0) {
       break;
     }
 
     attempts += 1;
-    const attemptTimeoutMs = Math.min(REQUEST_TIMEOUT_MS, remainingTime);
+    const attemptTimeoutMs = Math.min(requestTimeoutMs, remainingTime);
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), attemptTimeoutMs);
 
     try {
-      const response = await fetch(oembedUrl, {
+      const response = await fetchImpl(oembedUrl, {
         headers: { "user-agent": "Qodratak-verbal-bank-validator/1.0" },
         signal: controller.signal,
       });
@@ -163,11 +174,11 @@ async function checkVideoLink(id, index) {
       clearTimeout(timeout);
     }
 
-    if (attempts >= MAX_REQUEST_ATTEMPTS) {
+    if (attempts >= maxRequestAttempts) {
       break;
     }
 
-    const backoffMs = RETRY_BACKOFF_MS * 2 ** (attempts - 1);
+    const backoffMs = retryBackoffMs * 2 ** (attempts - 1);
     const remainingAfterAttempt = deadline - Date.now();
     if (remainingAfterAttempt <= backoffMs) {
       break;
@@ -177,19 +188,19 @@ async function checkVideoLink(id, index) {
 
   const timeoutMessage =
     Date.now() >= deadline
-      ? `within the total timeout of ${TOTAL_REQUEST_TIMEOUT_MS}ms`
+      ? `within the total timeout of ${totalTimeoutMs}ms`
       : `after ${attempts} attempts`;
   return `Video ${index + 1} (${id}) could not be checked ${timeoutMessage}: ${lastNetworkError ?? "temporary network failure"} (${videoUrl}).`;
 }
 
-async function checkLinks(ids) {
+export async function checkLinks(ids, options = {}) {
   const errors = [];
   let nextIndex = 0;
 
   async function worker() {
     while (nextIndex < ids.length) {
       const index = nextIndex++;
-      const error = await checkVideoLink(ids[index], index);
+      const error = await checkVideoLink(ids[index], index, options);
       if (error) {
         errors.push(error);
       }
@@ -206,24 +217,31 @@ async function checkLinks(ids) {
   return errors.sort((left, right) => left.localeCompare(right));
 }
 
-const source = await readFile(SOURCE_PATH, "utf8");
-const { ids, errors: extractionErrors } = getVideoIds(source);
-const dataErrors = validateVideoData(source, ids);
-const structuralErrors = [...extractionErrors, ...dataErrors];
+export async function main() {
+  const source = await readFile(SOURCE_PATH, "utf8");
+  const { ids, errors: extractionErrors } = getVideoIds(source);
+  const dataErrors = validateVideoData(source, ids);
+  const structuralErrors = [...extractionErrors, ...dataErrors];
 
-if (structuralErrors.length > 0) {
-  printErrors(structuralErrors);
-  process.exitCode = 1;
-} else {
-  console.log(
-    `Validated ${ids.length} unique verbal bank video IDs and YouTube URL formats.`,
-  );
-  const linkErrors = await checkLinks(ids);
-
-  if (linkErrors.length > 0) {
-    printErrors(linkErrors);
-    process.exitCode = 1;
+  if (structuralErrors.length > 0) {
+    printErrors(structuralErrors);
+    return 1;
   } else {
-    console.log(`Verified that all ${ids.length} YouTube video links are reachable.`);
+    console.log(
+      `Validated ${ids.length} unique verbal bank video IDs and YouTube URL formats.`,
+    );
+    const linkErrors = await checkLinks(ids);
+
+    if (linkErrors.length > 0) {
+      printErrors(linkErrors);
+      return 1;
+    } else {
+      console.log(`Verified that all ${ids.length} YouTube video links are reachable.`);
+      return 0;
+    }
   }
+}
+
+if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
+  process.exitCode = await main();
 }
