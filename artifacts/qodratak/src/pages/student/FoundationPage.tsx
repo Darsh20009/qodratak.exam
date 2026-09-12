@@ -4,7 +4,7 @@ import { verbalBankVideos } from "@/data/verbalBankVideos";
 import { foundationSections, getFoundationSection, type FoundationProgram, type FoundationSection } from "@/data/foundationSections";
 import { foundationCurriculum } from "@/data/foundationCurriculum";
 import { Link, useLocation } from "wouter";
-import { ArrowLeft, BarChart3, BookOpen, CheckCircle2, Clock, GraduationCap, ListChecks, Loader2, PlayCircle, Route, ShieldCheck, Sparkles, Target, Trophy } from "lucide-react";
+import { ArrowLeft, BarChart3, BookOpen, Clock, GraduationCap, ListChecks, Loader2, PlayCircle, Route, ShieldCheck, Sparkles, Target, Trophy } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Progress } from "@/components/ui/progress";
@@ -67,13 +67,6 @@ function getEmbedUrl(value: string) {
 function ProgressBar({ value, className = "" }: { value: number; className?: string }) {
   return <Progress value={Math.max(0, Math.min(100, value))} className={`h-2.5 ${className}`} />;
 }
-
-const COURSE_STAGES = [
-  { title: "من الصفر", description: "نفهم الأساسيات والمصطلحات بطريقة سهلة قبل ما نبدأ الحل." },
-  { title: "نبني المهارة", description: "نأخذ كل نوع سؤال خطوة خطوة مع أمثلة من بنك المنصة." },
-  { title: "نطبّق", description: "تدريب متدرج يثبت الفكرة ويكشف الأخطاء المتكررة." },
-  { title: "نحترف", description: "اختبارات قصيرة وتحديات بوقت قريب من الاختبار الحقيقي." },
-];
 
 function DashboardProgressCard({
   label,
