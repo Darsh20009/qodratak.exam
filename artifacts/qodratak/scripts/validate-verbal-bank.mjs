@@ -4,6 +4,9 @@ const EXPECTED_VIDEO_COUNT = 200;
 const VIDEO_ID_PATTERN = /^[A-Za-z0-9_-]{11}$/;
 const SOURCE_PATH = new URL("../src/data/verbalBankVideos.ts", import.meta.url);
 const REQUEST_TIMEOUT_MS = 15_000;
+const MAX_REQUEST_ATTEMPTS = 3;
+const RETRY_BACKOFF_MS = 500;
+const TOTAL_REQUEST_TIMEOUT_MS = 45_000;
 const MAX_CONCURRENT_REQUESTS = 8;
 
 function printErrors(errors) {
@@ -92,35 +95,91 @@ function validateVideoData(source, ids) {
   return errors;
 }
 
+function isRetryableNetworkError(error) {
+  if (error?.name === "AbortError" || error?.name === "TypeError") {
+    return true;
+  }
+
+  const errorCode = error?.code ?? error?.cause?.code;
+  return ["ECONNRESET", "ECONNREFUSED", "ETIMEDOUT", "EAI_AGAIN", "ENOTFOUND"].includes(
+    errorCode,
+  );
+}
+
+function formatNetworkError(error, timeoutMs) {
+  if (error?.name === "AbortError") {
+    return `timed out after ${timeoutMs}ms`;
+  }
+
+  return `network error: ${error?.message || String(error)}`;
+}
+
+function wait(milliseconds) {
+  return new Promise((resolve) => setTimeout(resolve, milliseconds));
+}
+
 async function checkVideoLink(id, index) {
   const videoUrl = `https://www.youtube.com/watch?v=${id}`;
   const oembedUrl = `https://www.youtube.com/oembed?url=${encodeURIComponent(videoUrl)}&format=json`;
-  const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
+  const deadline = Date.now() + TOTAL_REQUEST_TIMEOUT_MS;
+  let attempts = 0;
+  let lastNetworkError;
 
-  try {
-    const response = await fetch(oembedUrl, {
-      headers: { "user-agent": "Qodratak-verbal-bank-validator/1.0" },
-      signal: controller.signal,
-    });
-
-    if (!response.ok) {
-      return `Video ${index + 1} (${id}) is not reachable: YouTube returned HTTP ${response.status} for ${videoUrl}.`;
+  while (attempts < MAX_REQUEST_ATTEMPTS) {
+    const remainingTime = deadline - Date.now();
+    if (remainingTime <= 0) {
+      break;
     }
+
+    attempts += 1;
+    const attemptTimeoutMs = Math.min(REQUEST_TIMEOUT_MS, remainingTime);
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), attemptTimeoutMs);
 
     try {
-      await response.json();
-    } catch {
-      return `Video ${index + 1} (${id}) is not reachable: YouTube returned an invalid response for ${videoUrl}.`;
+      const response = await fetch(oembedUrl, {
+        headers: { "user-agent": "Qodratak-verbal-bank-validator/1.0" },
+        signal: controller.signal,
+      });
+
+      if (!response.ok) {
+        return `Video ${index + 1} (${id}) is not reachable: YouTube returned HTTP ${response.status} for ${videoUrl}.`;
+      }
+
+      try {
+        await response.json();
+      } catch {
+        return `Video ${index + 1} (${id}) is not reachable: YouTube returned an invalid response for ${videoUrl}.`;
+      }
+
+      return null;
+    } catch (error) {
+      if (!isRetryableNetworkError(error)) {
+        return `Video ${index + 1} (${id}) could not be checked: ${formatNetworkError(error, attemptTimeoutMs)} (${videoUrl}).`;
+      }
+
+      lastNetworkError = formatNetworkError(error, attemptTimeoutMs);
+    } finally {
+      clearTimeout(timeout);
     }
 
-    return null;
-  } catch (error) {
-    const reason = error.name === "AbortError" ? `timed out after ${REQUEST_TIMEOUT_MS}ms` : error.message;
-    return `Video ${index + 1} (${id}) could not be checked: ${reason} (${videoUrl}).`;
-  } finally {
-    clearTimeout(timeout);
+    if (attempts >= MAX_REQUEST_ATTEMPTS) {
+      break;
+    }
+
+    const backoffMs = RETRY_BACKOFF_MS * 2 ** (attempts - 1);
+    const remainingAfterAttempt = deadline - Date.now();
+    if (remainingAfterAttempt <= backoffMs) {
+      break;
+    }
+    await wait(backoffMs);
   }
+
+  const timeoutMessage =
+    Date.now() >= deadline
+      ? `within the total timeout of ${TOTAL_REQUEST_TIMEOUT_MS}ms`
+      : `after ${attempts} attempts`;
+  return `Video ${index + 1} (${id}) could not be checked ${timeoutMessage}: ${lastNetworkError ?? "temporary network failure"} (${videoUrl}).`;
 }
 
 async function checkLinks(ids) {
