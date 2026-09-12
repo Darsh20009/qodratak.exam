@@ -754,7 +754,9 @@ export interface IExamBooking extends Document {
   resultVisibleAt?: Date;
   resultSentByEmail: boolean;
   confirmationEmailSent: boolean;
+  confirmationWhatsAppSent: boolean;
   reminderEmailSent: boolean;
+  reminderWhatsAppSent: boolean;
   telegramReminderSent: boolean;
   pushReminder1hSent?: boolean;
   pushReminder24hSent?: boolean;
@@ -806,7 +808,9 @@ const examBookingSchema = new Schema<IExamBooking>({
   resultVisibleAt: { type: Date },
   resultSentByEmail: { type: Boolean, default: false },
   confirmationEmailSent: { type: Boolean, default: false },
+  confirmationWhatsAppSent: { type: Boolean, default: false },
   reminderEmailSent: { type: Boolean, default: false },
+  reminderWhatsAppSent: { type: Boolean, default: false },
   telegramReminderSent: { type: Boolean, default: false },
   pushReminder1hSent: { type: Boolean, default: false },
   pushReminder24hSent: { type: Boolean, default: false },

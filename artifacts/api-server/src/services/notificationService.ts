@@ -28,8 +28,11 @@ export async function checkTelegramExamReminders(): Promise<void> {
 
     const bookings = await ExamBooking.find({
       status: 'pending',
-      telegramReminderSent: { $ne: true },
       scheduledAt: { $gte: windowStart, $lte: windowEnd },
+      $or: [
+        { telegramReminderSent: { $ne: true } },
+        { reminderWhatsAppSent: { $ne: true } },
+      ],
     });
 
     for (const booking of bookings) {
@@ -55,18 +58,33 @@ export async function checkTelegramExamReminders(): Promise<void> {
           `بالتوفيق! 🌟\n` +
           `<i>منصة قدراتك</i>`;
 
-        const sent = chatId ? await sendTelegramMessage(chatId, msg) : false;
-        const whatsappResult = await sendStudentWhatsAppNotification(String(user._id), {
-          title: 'تذكير بالاختبار',
-          body: msg.replace(/<[^>]+>/g, ''),
-          link: '/book-exam',
-          type: 'exam',
-        }).catch((error) => {
-          console.error('WhatsApp exam reminder failed:', error);
-          return { sent: false };
-        });
-        if (sent || whatsappResult.sent) {
-          await ExamBooking.updateOne({ _id: booking._id }, { telegramReminderSent: true });
+        let telegramSent = false;
+        if (chatId && booking.telegramReminderSent !== true) {
+          telegramSent = await sendTelegramMessage(chatId, msg);
+          if (telegramSent) {
+            await ExamBooking.updateOne({ _id: booking._id }, { telegramReminderSent: true });
+          }
+        }
+
+        let whatsappSent = false;
+        if (booking.reminderWhatsAppSent !== true) {
+          const whatsappResult = await sendStudentWhatsAppNotification(String(user._id), {
+            title: 'تذكير بالاختبار',
+            body: msg.replace(/<[^>]+>/g, ''),
+            link: '/book-exam',
+            type: 'exam',
+            whatsappKind: 'customer_booking',
+          }).catch((error) => {
+            console.error('WhatsApp exam reminder failed:', error);
+            return { sent: false };
+          });
+          whatsappSent = whatsappResult.sent;
+          if (whatsappSent) {
+            await ExamBooking.updateOne({ _id: booking._id }, { reminderWhatsAppSent: true });
+          }
+        }
+
+        if (telegramSent || whatsappSent) {
           console.log(`📱 Exam reminder sent to user ${user._id} for exam at ${timeStr}`);
         }
       } catch (err) {
@@ -182,5 +200,5 @@ export function startNotificationScheduler(): void {
   // Run once immediately on boot
   setTimeout(checkTelegramExamReminders, 30 * 1000);
 
-  console.log('Notification scheduler started (Telegram reminders only; bulk WhatsApp disabled)');
+  console.log('Notification scheduler started (Telegram and transactional WhatsApp exam reminders enabled)');
 }

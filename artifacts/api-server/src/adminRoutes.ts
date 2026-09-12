@@ -45,6 +45,7 @@ import {
   getWhatsAppStatus,
   sendWhatsAppText,
 } from './services/whatsappService';
+import { getClientIp } from './middleware/sessionIp';
 
 const router = Router();
 
@@ -373,6 +374,7 @@ router.post('/login', async (req: Request, res: Response) => {
       (req.session as any).adminRole = adminIdentity.role;
       (req.session as any).adminUsername = adminIdentity.username;
       (req.session as any).adminPermissions = adminIdentity.permissions;
+      (req.session as any).clientIp = getClientIp(req);
 
       return req.session.save((err) => {
         if (err) {
@@ -431,6 +433,7 @@ router.post('/login', async (req: Request, res: Response) => {
     (req.session as any).adminRole = adminIdentity.role;
     (req.session as any).adminUsername = adminIdentity.username;
     (req.session as any).adminPermissions = adminIdentity.permissions;
+    (req.session as any).clientIp = getClientIp(req);
 
     req.session.save((err) => {
       if (err) {

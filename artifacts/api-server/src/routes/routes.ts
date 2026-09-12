@@ -29,6 +29,7 @@ import {
   verifyPhoneVerificationToken,
 } from '../services/phoneOtpService';
 import { sendWhatsAppText } from '../services/whatsappService';
+import { getClientIp } from '../middleware/sessionIp';
 import { sendStudentExamResult } from '../services/whatsappBot';
 import {
   getDeviceKey,
@@ -52,6 +53,12 @@ function getQuestionImageUrls(question: { imageUrl?: unknown; imageUrls?: unknow
 }
 
 async function saveLoginSession(req: Request, context: string) {
+  const clientIp = getClientIp(req);
+  if (!clientIp) {
+    throw new Error("SESSION_IP_UNAVAILABLE");
+  }
+  (req.session as any).clientIp = clientIp;
+
   let lastError: unknown;
 
   for (let attempt = 0; attempt < 2; attempt += 1) {
@@ -8213,6 +8220,7 @@ app.post("/api/auth/register", async (req: Request, res: Response) => {
       (req.session as any).userId = String(user._id);
       (req.session as any).userEmail = user.email;
       (req.session as any).userRole = user.role || 'student';
+      (req.session as any).clientIp = getClientIp(req);
       await new Promise<void>((resolve, reject) =>
         req.session.save((err) => err ? reject(err) : resolve())
       );
@@ -8498,6 +8506,7 @@ app.post("/api/auth/register", async (req: Request, res: Response) => {
       (req.session as any).userId = loginUser.id;
       (req.session as any).userEmail = loginUser.email;
       (req.session as any).userRole = loginUser.role || 'student';
+      (req.session as any).clientIp = getClientIp(req);
 
       await new Promise<void>((resolve, reject) => {
         req.session.save((err) => { if (err) reject(err); else resolve(); });
@@ -8587,6 +8596,7 @@ app.post("/api/auth/register", async (req: Request, res: Response) => {
       (req.session as any).userId = loginUser.id;
       (req.session as any).userEmail = loginUser.email;
       (req.session as any).userRole = loginUser.role || 'student';
+      (req.session as any).clientIp = getClientIp(req);
 
       req.session.save((err) => {
         if (err) return res.status(500).json({ error: 'خطأ في حفظ الجلسة' });
@@ -8674,6 +8684,7 @@ app.post("/api/auth/register", async (req: Request, res: Response) => {
       (req.session as any).userId = newUser.id;
       (req.session as any).userEmail = newUser.email;
       (req.session as any).userRole = 'student';
+      (req.session as any).clientIp = getClientIp(req);
 
       req.session.save((err) => {
         if (err) return res.status(500).json({ error: 'خطأ في حفظ الجلسة' });
@@ -8740,6 +8751,33 @@ app.post("/api/auth/register", async (req: Request, res: Response) => {
         }
       } catch (emailErr) {
         console.error('خطأ في إرسال بريد تأكيد الحجز:', emailErr);
+      }
+
+      // Send transactional WhatsApp confirmation through the central 3-second queue.
+      try {
+        const { sendStudentWhatsAppNotification } = await import('./services/studentWhatsAppNotifications');
+        const formattedDate = date.toLocaleString('ar-SA', {
+          timeZone: 'Asia/Riyadh',
+          dateStyle: 'full',
+          timeStyle: 'short',
+        });
+        const whatsappResult = await sendStudentWhatsAppNotification(String(sessionUserId), {
+          title: 'تم تأكيد حجز الاختبار',
+          body: [
+            'تم تسجيل حجزك بنجاح في منصة قدراتك.',
+            `موعد الاختبار: ${formattedDate}`,
+            'سنرسل لك تذكيراً قبل الموعد بساعة.',
+            'بالتوفيق 🌟',
+          ].join('\n'),
+          link: '/book-exam',
+          type: 'exam',
+          whatsappKind: 'customer_booking',
+        });
+        if (whatsappResult.sent) {
+          await (booking as any).updateOne({ confirmationWhatsAppSent: true });
+        }
+      } catch (whatsappError) {
+        console.error('خطأ في إرسال تأكيد الحجز عبر WhatsApp:', whatsappError);
       }
 
       res.json({ success: true, booking });

@@ -9,6 +9,7 @@ import adminRouter from "./adminRoutes";
 import multiplayerRouter from "./multiplayerRoutes";
 import notificationRouter from "./notificationRoutes";
 import { logger } from "./lib/logger";
+import { enforceSessionIp } from "./middleware/sessionIp";
 
 const app: Express = express();
 const sessionSecret = process.env.SESSION_SECRET;
@@ -85,6 +86,7 @@ app.use(
     },
   }),
 );
+app.use(enforceSessionIp);
 
 app.use("/api/uploads", express.static("uploads"));
 app.use("/api/admin", adminRouter);

@@ -42,7 +42,7 @@ export async function sendStudentWhatsAppNotification(
     link?: string;
     type?: string;
     createInApp?: boolean;
-    whatsappKind?: Extract<WhatsAppOutboundKind, "customer_purchase">;
+    whatsappKind?: Extract<WhatsAppOutboundKind, "customer_purchase" | "customer_booking">;
   },
 ) {
   let user: any = null;
