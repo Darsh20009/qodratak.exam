@@ -1,5 +1,6 @@
 import React, { useMemo, useState } from "react";
 import { FoundationContent, useFoundationContent } from "@/hooks/use-student";
+import { verbalBankVideos } from "@/data/verbalBankVideos";
 import { Link } from "wouter";
 import { PlayCircle, Clock, CheckCircle2, Loader2, BookOpen, ShieldCheck } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -12,13 +13,16 @@ function getEmbedUrl(value: string) {
 
     if (url.hostname === "youtu.be") {
       const id = url.pathname.slice(1).split("/")[0];
-      return id ? `https://www.youtube.com/embed/${id}?rel=0` : null;
+      return id ? `https://www.youtube-nocookie.com/embed/${id}?controls=0&disablekb=1&fs=0&modestbranding=1&playsinline=1&rel=0` : null;
     }
 
     if (url.hostname.endsWith("youtube.com")) {
-      if (url.pathname.startsWith("/embed/")) return url.toString();
+      if (url.pathname.startsWith("/embed/")) {
+        const id = url.pathname.split("/").filter(Boolean)[1];
+        return id ? `https://www.youtube-nocookie.com/embed/${id}?controls=0&disablekb=1&fs=0&modestbranding=1&playsinline=1&rel=0` : null;
+      }
       const id = url.searchParams.get("v");
-      return id ? `https://www.youtube.com/embed/${id}?rel=0` : url.toString();
+      return id ? `https://www.youtube-nocookie.com/embed/${id}?controls=0&disablekb=1&fs=0&modestbranding=1&playsinline=1&rel=0` : null;
     }
 
     if (url.hostname === "vimeo.com") {
@@ -37,14 +41,17 @@ function getEmbedUrl(value: string) {
 }
 
 export default function FoundationPage() {
-  const [activeTab, setActiveTab] = useState<'qudrat' | 'tahsili'>('qudrat');
+  const [activeTab, setActiveTab] = useState<'qudrat' | 'tahsili' | 'verbal-banks'>('qudrat');
   const [selectedLesson, setSelectedLesson] = useState<FoundationContent | null>(null);
   const [quizLesson, setQuizLesson] = useState<FoundationContent | null>(null);
   const [quizAnswers, setQuizAnswers] = useState<Record<string, number>>({});
   const [quizResult, setQuizResult] = useState<{ score: number; correctAnswers: number; totalQuestions: number; skippedQuestions: number; passed: boolean; passingScore: number } | null>(null);
   const [quizSubmitting, setQuizSubmitting] = useState(false);
   const [quizError, setQuizError] = useState('');
-  const { data: content, isLoading } = useFoundationContent(activeTab);
+  const contentProgram = activeTab === 'tahsili' ? 'tahsili' : 'qudrat';
+  const { data: foundationContent, isLoading: isFoundationLoading } = useFoundationContent(contentProgram);
+  const content = activeTab === 'verbal-banks' ? verbalBankVideos : foundationContent;
+  const isLoading = activeTab === 'verbal-banks' ? false : isFoundationLoading;
   const selectedEmbedUrl = useMemo(
     () => (selectedLesson ? getEmbedUrl(selectedLesson.videoUrl) : null),
     [selectedLesson],
@@ -117,6 +124,16 @@ export default function FoundationPage() {
         >
           تحصيلي
         </button>
+        <button
+          onClick={() => setActiveTab('verbal-banks')}
+          className={`px-6 py-2.5 rounded-lg text-sm font-black transition-colors ${
+            activeTab === 'verbal-banks'
+              ? 'bg-[#0D1B2A] text-white dark:bg-primary dark:text-primary-foreground'
+              : 'text-muted-foreground hover:bg-slate-50 dark:hover:bg-slate-800'
+          }`}
+        >
+          بنوك اللفظي
+        </button>
       </div>
 
       {/* Content List */}
@@ -157,7 +174,9 @@ export default function FoundationPage() {
               <div className="p-5">
                 <div className="flex items-start justify-between mb-2">
                   <h3 className="text-lg font-black text-foreground">{item.title}</h3>
-                  <span className="text-xs font-bold text-muted-foreground bg-muted px-2 py-1 rounded-md">الدرس {idx + 1}</span>
+                   <span className="text-xs font-bold text-muted-foreground bg-muted px-2 py-1 rounded-md">
+                     {activeTab === 'verbal-banks' ? `الفيديو ${idx + 1}` : `الدرس ${idx + 1}`}
+                   </span>
                 </div>
                 <p className="text-sm text-muted-foreground leading-relaxed mb-5 line-clamp-2">
                   {item.description}
@@ -209,9 +228,10 @@ export default function FoundationPage() {
                   src={selectedEmbedUrl}
                   title={selectedLesson?.title || 'درس تأسيسي'}
                   className="h-full w-full"
-                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-                  allowFullScreen
+                   allow="accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture"
+                   sandbox="allow-scripts allow-same-origin allow-presentation"
                   referrerPolicy="strict-origin-when-cross-origin"
+                   onContextMenu={(event) => event.preventDefault()}
                 />
               </div>
             ) : (
@@ -222,7 +242,7 @@ export default function FoundationPage() {
           </div>
           <div className="flex items-center gap-2 px-1 text-xs text-slate-400 sm:px-2">
             <ShieldCheck className="h-4 w-4 text-emerald-400" />
-            يشاهد الطالب الدرس داخل المنصة دون مغادرة صفحة التأسيس.
+             يشاهد الطالب الدرس داخل المنصة دون مغادرة صفحة التأسيس. لا يمكن للمنصة منع تصوير الشاشة أو أدوات المتصفح بشكل كامل.
           </div>
         </DialogContent>
       </Dialog>
