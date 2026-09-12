@@ -34,6 +34,7 @@ export interface WhatsAppMessageEvent {
 
 export type WhatsAppOutboundKind =
   | "otp"
+  | "customer_security"
   | "customer_purchase"
   | "customer_booking"
   | "admin_new_student"
@@ -43,6 +44,7 @@ export type WhatsAppOutboundKind =
 
 const outboundPriorities: Record<WhatsAppOutboundKind, number> = {
   otp: 0,
+  customer_security: 0,
   customer_purchase: 1,
   customer_booking: 1,
   admin_new_student: 2,

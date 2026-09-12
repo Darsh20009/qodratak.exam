@@ -197,9 +197,11 @@ function notifyDeviceLimitReached(user: any): void {
     'إذا لم تكن منك، غيّر كلمة المرور فوراً.',
   ].join('\n');
 
-  void sendWhatsAppText(phone, message).catch((error) => {
-    console.error('Failed to send device-limit WhatsApp alert:', error);
-  });
+  void Promise.resolve()
+    .then(() => sendWhatsAppText(phone, message, "customer_security"))
+    .catch((error) => {
+      console.error('Failed to send device-limit WhatsApp alert:', error);
+    });
 }
 
 function sendDeviceLimitResponse(req: Request, res: Response, user: any, devices: unknown) {
