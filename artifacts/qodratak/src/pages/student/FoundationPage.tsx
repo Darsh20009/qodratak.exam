@@ -178,7 +178,7 @@ function FoundationHome({
           <p className="mt-1 text-sm text-muted-foreground">اختر المسار الذي تريد أن تبدأه اليوم.</p>
         </div>
         <div className="grid gap-4 md:grid-cols-2">
-          <Link href="/foundation?program=qudrat" className="group rounded-3xl border border-border bg-card p-5 shadow-sm transition hover:-translate-y-1 hover:border-primary/40 hover:shadow-lg">
+          <Link href="/foundation?program=qudrat" className="foundation-card group rounded-3xl border border-border bg-card p-5">
             <div className="flex items-start justify-between gap-4">
               <span className="flex h-12 w-12 items-center justify-center rounded-2xl bg-blue-500/10 text-blue-600"><Target className="h-6 w-6" /></span>
               <span className="rounded-full bg-emerald-500/10 px-3 py-1 text-xs font-black text-emerald-700 dark:text-emerald-300">ابدأ</span>
@@ -191,7 +191,7 @@ function FoundationHome({
             </div>
             <span className="mt-4 inline-flex items-center gap-2 text-sm font-black text-primary">دخول دورة القدرات <ArrowLeft className="h-4 w-4 transition-transform group-hover:-translate-x-1" /></span>
           </Link>
-          <Link href="/foundation?program=tahsili" className="group rounded-3xl border border-border bg-card p-5 shadow-sm transition hover:-translate-y-1 hover:border-primary/40 hover:shadow-lg">
+          <Link href="/foundation?program=tahsili" className="foundation-card group rounded-3xl border border-border bg-card p-5">
             <div className="flex items-start justify-between gap-4">
               <span className="flex h-12 w-12 items-center justify-center rounded-2xl bg-amber-500/10 text-amber-600"><GraduationCap className="h-6 w-6" /></span>
               <span className="rounded-full bg-emerald-500/10 px-3 py-1 text-xs font-black text-emerald-700 dark:text-emerald-300">ابدأ</span>
@@ -232,7 +232,7 @@ function FoundationTrackOverview({
       </header>
       <div className={`grid gap-4 ${program === "qudrat" ? "md:grid-cols-2" : "md:grid-cols-2 lg:grid-cols-4"}`}>
         {foundationSections[program].map((section) => (
-          <Link key={section.key} href={`/foundation?program=${program}&subject=${section.key}`} className="group rounded-3xl border border-border bg-card p-5 shadow-sm transition hover:-translate-y-1 hover:border-primary/40 hover:shadow-lg">
+          <Link key={section.key} href={`/foundation?program=${program}&subject=${section.key}`} className="foundation-card group rounded-3xl border border-border bg-card p-5">
             <div className="flex items-start justify-between gap-3">
               <span className="flex h-11 w-11 items-center justify-center rounded-2xl bg-primary/10 text-primary"><BookOpen className="h-5 w-5" /></span>
               <ArrowLeft className="h-5 w-5 text-muted-foreground transition-transform group-hover:-translate-x-1" />
@@ -269,12 +269,6 @@ export default function FoundationPage() {
   const { data: dashboard, isLoading: isDashboardLoading } = useStudentDashboard();
   const content = program === "qudrat" && activeSection.key === "verbal" ? verbalBankVideos : foundationContent;
   const trackProgress = program === "qudrat" ? dashboard?.progress.qudrat : dashboard?.progress.tahsili;
-  const progressItems = program === "qudrat"
-    ? [
-        { label: "اللفظي", value: dashboard?.progress.verbal.percentage || 0, questions: dashboard?.progress.verbal.questions || 0 },
-        { label: "الكمي", value: dashboard?.progress.quantitative.percentage || 0, questions: dashboard?.progress.quantitative.questions || 0 },
-      ]
-    : [];
   const selectedEmbedUrl = useMemo(
     () => (selectedLesson ? getEmbedUrl(selectedLesson.videoUrl) : null),
     [selectedLesson],
@@ -426,37 +420,13 @@ export default function FoundationPage() {
         </div>
       </section>
 
-      {program === "qudrat" && (
-        <section className="mb-8 rounded-2xl border border-border bg-card p-5 shadow-sm">
-          <div className="mb-4 flex items-center justify-between gap-3">
-            <div>
-              <h2 className="text-lg font-black text-foreground">تقدمك داخل القدرات</h2>
-              <p className="mt-1 text-xs text-muted-foreground">تابع ما أنجزته في كل قسم من خلال اختباراتك السابقة.</p>
-            </div>
-            <span className="rounded-full bg-muted px-3 py-1 text-xs font-bold text-muted-foreground">قسمان</span>
-          </div>
-          <div className="grid gap-4 sm:grid-cols-2">
-            {progressItems.map((item) => (
-              <div key={item.label} className="rounded-xl border border-border bg-background p-4">
-                <div className="mb-2 flex items-center justify-between gap-3">
-                  <span className="font-black text-foreground">{item.label}</span>
-                  <span className="text-lg font-black text-primary">{item.value}%</span>
-                </div>
-                <ProgressBar value={item.value} />
-                <p className="mt-2 text-xs text-muted-foreground">{item.questions} سؤالًا ضمن اختبارات هذا القسم</p>
-              </div>
-            ))}
-          </div>
-        </section>
-      )}
-
       <div className={`mb-8 grid gap-3 ${program === "qudrat" ? "sm:grid-cols-2" : "sm:grid-cols-2 lg:grid-cols-4"}`}>
         {foundationSections[program].map((section) => (
           <button
             key={section.key}
             type="button"
             onClick={() => selectSection(section)}
-            className={`rounded-2xl border p-4 text-right transition hover:-translate-y-0.5 hover:shadow-md ${
+            className={`foundation-section-button rounded-2xl border p-4 text-right ${
               activeSection.key === section.key
                 ? "border-primary bg-primary/10 shadow-sm"
                 : "border-border bg-card"
@@ -467,32 +437,6 @@ export default function FoundationPage() {
           </button>
         ))}
       </div>
-
-      <section className="mb-8 rounded-2xl border border-primary/20 bg-primary/5 p-5">
-        <div className="flex items-start gap-3">
-          <BookOpen className="mt-1 h-5 w-5 shrink-0 text-primary" />
-          <div>
-            <h2 className="text-lg font-black text-foreground">شرح القسم</h2>
-            <p className="mt-2 text-sm leading-7 text-muted-foreground">{activeSection.explanation}</p>
-            <Button type="button" onClick={startSectionQuiz} className="mt-4 rounded-xl font-bold">
-              <CheckCircle2 className="ml-2 h-4 w-4" />
-              اختبار القسم — 10 أسئلة
-            </Button>
-          </div>
-        </div>
-      </section>
-
-      <section className="mb-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-        {COURSE_STAGES.map((stage, index) => (
-          <div key={stage.title} className={`rounded-2xl border p-4 ${index === 0 ? "border-primary/30 bg-primary/5" : "border-border bg-card"}`}>
-            <div className="flex items-center gap-2">
-              <span className="flex h-7 w-7 items-center justify-center rounded-full bg-primary/10 text-xs font-black text-primary">{index + 1}</span>
-              <h2 className="text-sm font-black text-foreground">{stage.title}</h2>
-            </div>
-            <p className="mt-2 text-xs leading-5 text-muted-foreground">{stage.description}</p>
-          </div>
-        ))}
-      </section>
 
       <section className="mb-6 rounded-3xl border border-border bg-card p-5 shadow-sm">
         <div className="flex flex-wrap items-start justify-between gap-4 border-b border-border pb-4">

@@ -2159,6 +2159,15 @@ svg.lucide-sparkles-icon {
   box-shadow: 0 14px 30px rgba(13, 27, 42, 0.12) !important;
 }
 
+.foundation-section-button {
+  transition: border-color 0.18s ease, background-color 0.18s ease, box-shadow 0.18s ease;
+}
+
+.foundation-section-button:hover {
+  border-color: hsl(var(--primary) / 0.4);
+  box-shadow: 0 8px 18px rgba(13, 27, 42, 0.08) !important;
+}
+
 @media (max-width: 767px) {
   /* Blurs, long transitions, and ornamental backgrounds are expensive on phones. */
   [class*="backdrop-blur"],
