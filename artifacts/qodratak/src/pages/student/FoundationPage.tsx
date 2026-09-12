@@ -1,10 +1,32 @@
 import React, { useMemo, useState } from "react";
 import { FoundationContent, useFoundationContent } from "@/hooks/use-student";
 import { verbalBankVideos } from "@/data/verbalBankVideos";
-import { Link } from "wouter";
+import { foundationSections, getFoundationSection, type FoundationProgram, type FoundationSection } from "@/data/foundationSections";
+import { useLocation } from "wouter";
 import { PlayCircle, Clock, CheckCircle2, Loader2, BookOpen, ShieldCheck } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+
+type QuizQuestion = {
+  _id?: string;
+  id?: string | number;
+  questionId?: number;
+  text: string;
+  options: string[];
+  correctOptionIndex: number;
+  explanation?: string;
+  imageUrl?: string;
+  imageUrls?: string[];
+};
+
+type QuizResult = {
+  score: number;
+  correctAnswers: number;
+  totalQuestions: number;
+  skippedQuestions: number;
+  passed: boolean;
+  passingScore: number;
+};
 
 function getEmbedUrl(value: string) {
   try {
@@ -41,52 +63,110 @@ function getEmbedUrl(value: string) {
 }
 
 export default function FoundationPage() {
-  const [activeTab, setActiveTab] = useState<'qudrat' | 'tahsili' | 'verbal-banks'>('qudrat');
+  const [location, setLocation] = useLocation();
+  const params = new URLSearchParams(location.split("?")[1] || "");
+  const program: FoundationProgram = params.get("program") === "tahsili" ? "tahsili" : "qudrat";
+  const requestedSection = getFoundationSection(program, params.get("subject"));
+  const [activeSectionKey, setActiveSectionKey] = useState(requestedSection.key);
   const [selectedLesson, setSelectedLesson] = useState<FoundationContent | null>(null);
   const [quizLesson, setQuizLesson] = useState<FoundationContent | null>(null);
+  const [quizQuestions, setQuizQuestions] = useState<QuizQuestion[]>([]);
   const [quizAnswers, setQuizAnswers] = useState<Record<string, number>>({});
-  const [quizResult, setQuizResult] = useState<{ score: number; correctAnswers: number; totalQuestions: number; skippedQuestions: number; passed: boolean; passingScore: number } | null>(null);
+  const [quizResult, setQuizResult] = useState<QuizResult | null>(null);
+  const [quizLoading, setQuizLoading] = useState(false);
   const [quizSubmitting, setQuizSubmitting] = useState(false);
   const [quizError, setQuizError] = useState('');
-  const contentProgram = activeTab === 'tahsili' ? 'tahsili' : 'qudrat';
-  const { data: foundationContent, isLoading: isFoundationLoading } = useFoundationContent(contentProgram);
-  const content = activeTab === 'verbal-banks' ? verbalBankVideos : foundationContent;
-  const isLoading = activeTab === 'verbal-banks' ? false : isFoundationLoading;
+  const activeSection = foundationSections[program].find((item) => item.key === activeSectionKey) || requestedSection;
+  const { data: foundationContent, isLoading } = useFoundationContent(program);
+  const content = program === "qudrat" && activeSection.key === "verbal" ? verbalBankVideos : foundationContent;
   const selectedEmbedUrl = useMemo(
     () => (selectedLesson ? getEmbedUrl(selectedLesson.videoUrl) : null),
     [selectedLesson],
   );
-  const quizQuestions = quizLesson?.quiz?.questionIds || [];
-  const openQuiz = (lesson: FoundationContent) => {
+
+  const selectSection = (section: FoundationSection) => {
+    setActiveSectionKey(section.key);
     setSelectedLesson(null);
+    setLocation(`/foundation?program=${program}&subject=${section.key}`);
+  };
+
+  const startSectionQuiz = () => {
+    void openQuiz({
+      _id: `section-quiz-${program}-${activeSection.key}`,
+      program,
+      title: `اختبار ${activeSection.title}`,
+      description: `اختبار قصير من 10 أسئلة في ${activeSection.shortTitle}.`,
+      videoUrl: "",
+      order: 1,
+    });
+  };
+
+  const openQuiz = async (lesson: FoundationContent) => {
     setQuizLesson(lesson);
     setQuizAnswers({});
     setQuizResult(null);
     setQuizError('');
+    setQuizQuestions([]);
+    setQuizLoading(true);
+    try {
+      let questions: QuizQuestion[] = [];
+      if (activeSection.tahsiliSubject) {
+        const response = await fetch(`/api/tahsili/question-bank?subject=${encodeURIComponent(activeSection.tahsiliSubject)}&page=1&limit=50`, {
+          credentials: "include",
+        });
+        const data = await response.json();
+        questions = Array.isArray(data.questions) ? data.questions : [];
+      } else if (activeSection.questionCategory) {
+        const response = await fetch(`/api/questions?category=${activeSection.questionCategory}`, { credentials: "include" });
+        const data = await response.json();
+        const source = Array.isArray(data) ? data : [];
+        const allowed = new Set(activeSection.questionSubcategories || []);
+        questions = source.filter((question: QuizQuestion & { subcategory?: string }) => allowed.has(String(question.subcategory)));
+        if (questions.length < 10) questions = source;
+      }
+
+      if (questions.length < 10) {
+        throw new Error("لا توجد عشرة أسئلة معتمدة كافية لهذا القسم حاليًا.");
+      }
+
+      const start = ((Math.max(1, Number(lesson.order) || 1) - 1) * 10) % questions.length;
+      const rotated = [...questions.slice(start), ...questions.slice(0, start)];
+      setQuizQuestions(rotated.slice(0, 10));
+    } catch (error) {
+      setQuizError(error instanceof Error ? error.message : "تعذر تجهيز اختبار الدرس");
+    } finally {
+      setQuizLoading(false);
+    }
   };
   const closeQuiz = () => {
     setQuizLesson(null);
+    setQuizQuestions([]);
     setQuizAnswers({});
     setQuizResult(null);
     setQuizError('');
   };
   const submitQuiz = async () => {
-    if (!quizLesson) return;
+    if (!quizLesson || quizQuestions.length === 0) return;
     setQuizSubmitting(true);
     setQuizError('');
     try {
-      const response = await fetch(`/api/foundation-content/${quizLesson._id}/quiz/submit`, {
-        method: 'POST',
-        credentials: 'include',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          answers: Object.entries(quizAnswers).map(([questionId, selectedOptionIndex]) => ({ questionId, selectedOptionIndex })),
-          timeTakenSeconds: 0,
-        }),
+      const answered = quizQuestions.filter((question) => {
+        const key = String(question._id || question.id || question.questionId);
+        return Number.isInteger(quizAnswers[key]);
       });
-      const data = await response.json().catch(() => ({}));
-      if (!response.ok) throw new Error(data.error || 'تعذر تصحيح الاختبار');
-      setQuizResult(data);
+      const correctAnswers = answered.filter((question) => {
+        const key = String(question._id || question.id || question.questionId);
+        return quizAnswers[key] === question.correctOptionIndex;
+      }).length;
+      const score = Math.round((correctAnswers / quizQuestions.length) * 100);
+      setQuizResult({
+        score,
+        correctAnswers,
+        totalQuestions: quizQuestions.length,
+        skippedQuestions: quizQuestions.length - answered.length,
+        passed: score >= 60,
+        passingScore: 60,
+      });
     } catch (error) {
       setQuizError(error instanceof Error ? error.message : 'تعذر تصحيح الاختبار');
     } finally {
@@ -98,43 +178,79 @@ export default function FoundationPage() {
     <div className="mx-auto max-w-5xl p-5 md:p-8 animate-fade-in">
       {/* Header */}
       <header className="mb-8">
-        <h1 className="text-3xl font-black text-[#0D1B2A] dark:text-white mb-2">التأسيس</h1>
-        <p className="text-sm text-muted-foreground">فهم الأساسيات هو مفتاحك للدرجة العالية.</p>
+        <h1 className="text-3xl font-black text-[#0D1B2A] dark:text-white mb-2">{activeSection.title}</h1>
+        <p className="text-sm text-muted-foreground">{activeSection.description}</p>
       </header>
 
-      {/* Tabs */}
-      <div className="flex gap-2 p-1 bg-white dark:bg-card border border-border rounded-xl w-fit mb-8 shadow-sm">
-        <button
-          onClick={() => setActiveTab('qudrat')}
-          className={`px-6 py-2.5 rounded-lg text-sm font-black transition-colors ${
-            activeTab === 'qudrat' 
-              ? 'bg-[#0D1B2A] text-white dark:bg-primary dark:text-primary-foreground' 
-              : 'text-muted-foreground hover:bg-slate-50 dark:hover:bg-slate-800'
-          }`}
-        >
-          قدرات
-        </button>
-        <button
-          onClick={() => setActiveTab('tahsili')}
-          className={`px-6 py-2.5 rounded-lg text-sm font-black transition-colors ${
-            activeTab === 'tahsili' 
-              ? 'bg-[#0D1B2A] text-white dark:bg-primary dark:text-primary-foreground' 
-              : 'text-muted-foreground hover:bg-slate-50 dark:hover:bg-slate-800'
-          }`}
-        >
-          تحصيلي
-        </button>
-        <button
-          onClick={() => setActiveTab('verbal-banks')}
-          className={`px-6 py-2.5 rounded-lg text-sm font-black transition-colors ${
-            activeTab === 'verbal-banks'
-              ? 'bg-[#0D1B2A] text-white dark:bg-primary dark:text-primary-foreground'
-              : 'text-muted-foreground hover:bg-slate-50 dark:hover:bg-slate-800'
-          }`}
-        >
-          بنوك اللفظي
-        </button>
+      <div className="mb-8 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+        {foundationSections[program].map((section) => (
+          <button
+            key={section.key}
+            type="button"
+            onClick={() => selectSection(section)}
+            className={`rounded-2xl border p-4 text-right transition hover:-translate-y-0.5 hover:shadow-md ${
+              activeSection.key === section.key
+                ? "border-primary bg-primary/10 shadow-sm"
+                : "border-border bg-card"
+            }`}
+          >
+            <span className="block text-sm font-black text-foreground">{section.shortTitle}</span>
+            <span className="mt-1 block text-xs leading-5 text-muted-foreground">{section.description}</span>
+          </button>
+        ))}
       </div>
+
+      <section className="mb-8 rounded-2xl border border-primary/20 bg-primary/5 p-5">
+        <div className="flex items-start gap-3">
+          <BookOpen className="mt-1 h-5 w-5 shrink-0 text-primary" />
+          <div>
+            <h2 className="text-lg font-black text-foreground">شرح القسم</h2>
+            <p className="mt-2 text-sm leading-7 text-muted-foreground">{activeSection.explanation}</p>
+            <Button type="button" onClick={startSectionQuiz} className="mt-4 rounded-xl font-bold">
+              <CheckCircle2 className="ml-2 h-4 w-4" />
+              اختبار القسم — 10 أسئلة
+            </Button>
+          </div>
+        </div>
+      </section>
+
+      {selectedLesson && (
+        <section className="mb-8 rounded-2xl border border-slate-800 bg-[#07111f] p-3 text-white shadow-xl sm:p-5">
+          <div className="mb-4 flex flex-wrap items-start justify-between gap-3">
+            <div>
+              <h2 className="text-xl font-black">{selectedLesson.title}</h2>
+              <p className="mt-1 text-sm leading-6 text-slate-300">{selectedLesson.description}</p>
+            </div>
+            <Button type="button" variant="outline" onClick={() => setSelectedLesson(null)} className="border-white/20 text-white hover:bg-white/10">
+              إغلاق الفيديو
+            </Button>
+          </div>
+          <div className="overflow-hidden rounded-xl border border-slate-700 bg-black shadow-2xl">
+            {selectedEmbedUrl ? (
+              <div className="aspect-video w-full">
+                <iframe
+                  key={selectedEmbedUrl}
+                  src={selectedEmbedUrl}
+                  title={selectedLesson.title}
+                  className="h-full w-full"
+                  allow="accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture"
+                  sandbox="allow-scripts allow-same-origin allow-presentation"
+                  referrerPolicy="strict-origin-when-cross-origin"
+                  onContextMenu={(event) => event.preventDefault()}
+                />
+              </div>
+            ) : (
+              <div className="flex aspect-video items-center justify-center p-8 text-center text-sm text-slate-300">
+                تعذر تشغيل رابط الفيديو داخل المنصة.
+              </div>
+            )}
+          </div>
+          <div className="mt-3 flex items-center gap-2 text-xs text-slate-400">
+            <ShieldCheck className="h-4 w-4 text-emerald-400" />
+            الفيديو داخل صفحة {activeSection.shortTitle}، ولا يفتح مسارًا عامًا خارج المنصة.
+          </div>
+        </section>
+      )}
 
       {/* Content List */}
       {isLoading ? (
@@ -175,7 +291,7 @@ export default function FoundationPage() {
                 <div className="flex items-start justify-between mb-2">
                   <h3 className="text-lg font-black text-foreground">{item.title}</h3>
                    <span className="text-xs font-bold text-muted-foreground bg-muted px-2 py-1 rounded-md">
-                     {activeTab === 'verbal-banks' ? `الفيديو ${idx + 1}` : `الدرس ${idx + 1}`}
+                     {program === "qudrat" && activeSection.key === "verbal" ? `الفيديو ${idx + 1}` : `الدرس ${idx + 1}`}
                    </span>
                 </div>
                 <p className="text-sm text-muted-foreground leading-relaxed mb-5 line-clamp-2">
@@ -190,17 +306,9 @@ export default function FoundationPage() {
                   >
                     <PlayCircle className="ml-2 h-4 w-4" /> شاهد الدرس
                   </Button>
-                  {item.quiz?.questionIds?.length ? (
-                    <Button type="button" variant="outline" onClick={() => openQuiz(item)} className="flex-1 rounded-xl border-emerald-500/40 font-bold text-foreground hover:bg-emerald-50 dark:hover:bg-emerald-950/30">
-                      <CheckCircle2 className="ml-2 h-4 w-4 text-emerald-600" /> اختبار الدرس
-                    </Button>
-                  ) : item.linkedQuizRoute && (
-                    <Link href="/computerized" className="flex-1">
-                      <Button variant="outline" className="w-full rounded-xl font-bold border-border text-foreground hover:bg-muted">
-                        <CheckCircle2 className="ml-2 h-4 w-4" /> اختبر فهمك
-                      </Button>
-                    </Link>
-                  )}
+                   <Button type="button" variant="outline" onClick={() => openQuiz(item)} className="flex-1 rounded-xl border-emerald-500/40 font-bold text-foreground hover:bg-emerald-50 dark:hover:bg-emerald-950/30">
+                     <CheckCircle2 className="ml-2 h-4 w-4 text-emerald-600" /> اختبار 10 أسئلة
+                   </Button>
                 </div>
               </div>
             </div>
@@ -214,48 +322,20 @@ export default function FoundationPage() {
         </div>
       )}
 
-      <Dialog open={!!selectedLesson} onOpenChange={open => !open && setSelectedLesson(null)}>
-        <DialogContent className="max-h-[94vh] w-[calc(100%-1rem)] max-w-5xl overflow-y-auto border-slate-800 bg-[#07111f] p-3 text-white sm:p-5">
-          <DialogHeader className="px-1 text-right sm:px-2">
-            <DialogTitle className="text-xl font-black">{selectedLesson?.title}</DialogTitle>
-            <p className="mt-1 text-sm leading-6 text-slate-300">{selectedLesson?.description}</p>
-          </DialogHeader>
-          <div className="overflow-hidden rounded-xl border border-slate-700 bg-black shadow-2xl">
-            {selectedEmbedUrl ? (
-              <div className="aspect-video w-full">
-                <iframe
-                  key={selectedEmbedUrl}
-                  src={selectedEmbedUrl}
-                  title={selectedLesson?.title || 'درس تأسيسي'}
-                  className="h-full w-full"
-                   allow="accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture"
-                   sandbox="allow-scripts allow-same-origin allow-presentation"
-                  referrerPolicy="strict-origin-when-cross-origin"
-                   onContextMenu={(event) => event.preventDefault()}
-                />
-              </div>
-            ) : (
-              <div className="flex aspect-video items-center justify-center p-8 text-center text-sm text-slate-300">
-                تعذر تشغيل رابط الفيديو داخل المنصة. اطلب من الإدارة استخدام رابط تضمين صحيح.
-              </div>
-            )}
-          </div>
-          <div className="flex items-center gap-2 px-1 text-xs text-slate-400 sm:px-2">
-            <ShieldCheck className="h-4 w-4 text-emerald-400" />
-             يشاهد الطالب الدرس داخل المنصة دون مغادرة صفحة التأسيس. لا يمكن للمنصة منع تصوير الشاشة أو أدوات المتصفح بشكل كامل.
-          </div>
-        </DialogContent>
-      </Dialog>
       <Dialog open={!!quizLesson} onOpenChange={open => !open && closeQuiz()}>
         <DialogContent className="max-h-[94vh] w-[calc(100%-1rem)] max-w-3xl overflow-y-auto bg-background p-4 sm:p-6">
           <DialogHeader className="text-right">
             <DialogTitle className="text-2xl font-black">{quizLesson?.quiz?.title || 'اختبار الدرس'}</DialogTitle>
             {quizLesson?.quiz?.instructions && <p className="text-sm leading-6 text-muted-foreground">{quizLesson.quiz.instructions}</p>}
           </DialogHeader>
-          {!quizResult ? (
+          {quizLoading ? (
+            <div className="flex items-center justify-center gap-3 py-12 text-muted-foreground">
+              <Loader2 className="h-5 w-5 animate-spin" /> جارٍ تجهيز 10 أسئلة مناسبة للقسم...
+            </div>
+          ) : !quizResult ? (
             <div className="space-y-5">
               {quizQuestions.map((question, index) => (
-                <div key={question._id} className="rounded-2xl border border-border bg-card p-4 shadow-sm">
+                <div key={String(question._id || question.id || question.questionId)} className="rounded-2xl border border-border bg-card p-4 shadow-sm">
                   <div className="mb-3 flex items-start gap-3">
                     <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-primary/10 text-sm font-black text-primary">{index + 1}</span>
                     <p className="whitespace-pre-wrap text-sm font-bold leading-7 text-foreground">{question.text}</p>
@@ -263,8 +343,9 @@ export default function FoundationPage() {
                   {(question.imageUrl || question.imageUrls?.[0]) && <img src={question.imageUrl || question.imageUrls?.[0]} alt="" className="mb-4 max-h-56 w-full rounded-xl object-contain" />}
                   <div className="grid gap-2 sm:grid-cols-2">
                     {question.options.map((option, optionIndex) => {
-                      const selected = quizAnswers[question._id] === optionIndex;
-                      return <button type="button" key={`${question._id}-${optionIndex}`} onClick={() => setQuizAnswers(current => ({ ...current, [question._id]: optionIndex }))} className={`rounded-xl border p-3 text-right text-sm transition-colors ${selected ? 'border-primary bg-primary/10 font-bold text-primary' : 'border-border bg-background hover:bg-muted'}`}><span className="ml-2 font-black">{String.fromCharCode(1575 + optionIndex)}.</span>{option}</button>;
+                      const questionKey = String(question._id || question.id || question.questionId);
+                      const selected = quizAnswers[questionKey] === optionIndex;
+                      return <button type="button" key={`${questionKey}-${optionIndex}`} onClick={() => setQuizAnswers(current => ({ ...current, [questionKey]: optionIndex }))} className={`rounded-xl border p-3 text-right text-sm transition-colors ${selected ? 'border-primary bg-primary/10 font-bold text-primary' : 'border-border bg-background hover:bg-muted'}`}><span className="ml-2 font-black">{String.fromCharCode(1575 + optionIndex)}.</span>{option}</button>;
                     })}
                   </div>
                 </div>

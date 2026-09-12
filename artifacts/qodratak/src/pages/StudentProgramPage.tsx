@@ -24,8 +24,8 @@ const PROGRAMS: Record<ProgramKey, ProgramConfig> = {
     english: "Qudrat",
     description: "مسار القدرات العامة من التأسيس إلى المحاكاة.",
     foundation: [
-      { title: "التأسيس الكمي", description: "أساسيات الجبر والهندسة والمهارات الكمية.", href: "/quantitative-tests", icon: Brain },
-      { title: "التأسيس اللفظي", description: "فهم المقروء والتناظر وإكمال الجمل.", href: "/verbal-tests", icon: BookOpen },
+      { title: "التأسيس الكمي", description: "أساسيات الجبر والهندسة والمهارات الكمية.", href: "/foundation?program=qudrat&subject=quantitative", icon: Brain },
+      { title: "التأسيس اللفظي", description: "فهم المقروء والتناظر وإكمال الجمل، مع بنوك الفيديو والاختبارات.", href: "/foundation?program=qudrat&subject=verbal", icon: BookOpen },
       { title: "كتب القدرات", description: "كتب وملفات الشرح والمراجعة.", href: "/books", icon: FileText },
     ],
     computer: [
@@ -40,9 +40,10 @@ const PROGRAMS: Record<ProgramKey, ProgramConfig> = {
     english: "Tahsili",
     description: "مسار التحصيلي بترتيب واضح للدراسة والاختبار.",
     foundation: [
-      { title: "مركز الدراسة", description: "خطة ومحتوى تأسيسي حسب المادة.", href: "/tahsilik/study", icon: BookOpen },
-      { title: "كتب التحصيلي", description: "الكتب والمواد المتاحة للتحصيلي.", href: "/books", icon: FileText },
-      { title: "مكتبة التحصيلي", description: "ملفات ومواد المراجعة.", href: "/library", icon: Library },
+      { title: "الرياضيات", description: "شرح تأسيسي واختبار من بنك أسئلة الرياضيات.", href: "/foundation?program=tahsili&subject=math", icon: Brain },
+      { title: "الفيزياء", description: "شرح تأسيسي واختبار من بنك أسئلة الفيزياء.", href: "/foundation?program=tahsili&subject=physics", icon: Target },
+      { title: "الكيمياء", description: "شرح تأسيسي واختبار من بنك أسئلة الكيمياء.", href: "/foundation?program=tahsili&subject=chemistry", icon: BookOpen },
+      { title: "الأحياء", description: "شرح تأسيسي واختبار من بنك أسئلة الأحياء.", href: "/foundation?program=tahsili&subject=biology", icon: GraduationCap },
     ],
     computer: [
       { title: "الاختبارات المحاكية", description: "اختبارات تدريبية ومتكاملة للتحصيلي.", href: "/tahsilik/tests", icon: GraduationCap },
