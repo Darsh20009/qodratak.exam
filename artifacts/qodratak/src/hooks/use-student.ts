@@ -4,6 +4,13 @@ import { useToast } from "@/hooks/use-toast";
 // Types
 export interface StudentDashboard {
   stats: { totalTests: number; averageScore: number; points: number };
+  progress: {
+    overall: { percentage: number; tests: number; questions: number };
+    qudrat: { percentage: number; tests: number; questions: number };
+    verbal: { percentage: number; tests: number; questions: number };
+    quantitative: { percentage: number; tests: number; questions: number };
+    tahsili: { percentage: number; tests: number; questions: number };
+  };
   recentTests: Array<{ id: string; title: string; score: number; date: string; type: string }>;
   weaknesses: Array<{ subject: string; topic: string; errorRate: number }>;
   upcomingExam: { date: string | null; targetScore?: number };
@@ -80,6 +87,13 @@ export function useStudentDashboard(enabled = true) {
           totalTests: Number(data.totals?.tests || 0),
           averageScore: Math.round(Number(data.totals?.averagePercentage || 0)),
           points: Number(data.totals?.correct || 0),
+        },
+        progress: {
+          overall: data.progress?.overall || { percentage: 0, tests: 0, questions: 0 },
+          qudrat: data.progress?.qudrat || { percentage: 0, tests: 0, questions: 0 },
+          verbal: data.progress?.verbal || { percentage: 0, tests: 0, questions: 0 },
+          quantitative: data.progress?.quantitative || { percentage: 0, tests: 0, questions: 0 },
+          tahsili: data.progress?.tahsili || { percentage: 0, tests: 0, questions: 0 },
         },
         recentTests: recentTests.map((test: any) => ({
           id: String(test._id),

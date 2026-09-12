@@ -1,11 +1,12 @@
 import React, { useMemo, useState } from "react";
-import { FoundationContent, useFoundationContent } from "@/hooks/use-student";
+import { FoundationContent, useFoundationContent, useStudentDashboard } from "@/hooks/use-student";
 import { verbalBankVideos } from "@/data/verbalBankVideos";
 import { foundationSections, getFoundationSection, type FoundationProgram, type FoundationSection } from "@/data/foundationSections";
-import { useLocation } from "wouter";
-import { PlayCircle, Clock, CheckCircle2, Loader2, BookOpen, ShieldCheck } from "lucide-react";
+import { Link, useLocation } from "wouter";
+import { PlayCircle, Clock, CheckCircle2, Loader2, BookOpen, ShieldCheck, Target, Route } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Progress } from "@/components/ui/progress";
 
 type QuizQuestion = {
   _id?: string;
@@ -62,6 +63,10 @@ function getEmbedUrl(value: string) {
   }
 }
 
+function ProgressBar({ value, className = "" }: { value: number; className?: string }) {
+  return <Progress value={Math.max(0, Math.min(100, value))} className={`h-2.5 ${className}`} />;
+}
+
 export default function FoundationPage() {
   const [location, setLocation] = useLocation();
   const params = new URLSearchParams(location.split("?")[1] || "");
@@ -78,7 +83,15 @@ export default function FoundationPage() {
   const [quizError, setQuizError] = useState('');
   const activeSection = foundationSections[program].find((item) => item.key === activeSectionKey) || requestedSection;
   const { data: foundationContent, isLoading } = useFoundationContent(program);
+  const { data: dashboard, isLoading: isDashboardLoading } = useStudentDashboard();
   const content = program === "qudrat" && activeSection.key === "verbal" ? verbalBankVideos : foundationContent;
+  const trackProgress = program === "qudrat" ? dashboard?.progress.qudrat : dashboard?.progress.tahsili;
+  const progressItems = program === "qudrat"
+    ? [
+        { label: "اللفظي", value: dashboard?.progress.verbal.percentage || 0, questions: dashboard?.progress.verbal.questions || 0 },
+        { label: "الكمي", value: dashboard?.progress.quantitative.percentage || 0, questions: dashboard?.progress.quantitative.questions || 0 },
+      ]
+    : [];
   const selectedEmbedUrl = useMemo(
     () => (selectedLesson ? getEmbedUrl(selectedLesson.videoUrl) : null),
     [selectedLesson],
@@ -178,11 +191,75 @@ export default function FoundationPage() {
     <div className="mx-auto max-w-5xl p-5 md:p-8 animate-fade-in">
       {/* Header */}
       <header className="mb-8">
+        <div className="mb-2 flex flex-wrap items-center gap-2 text-xs font-bold text-muted-foreground">
+          <span className="rounded-full bg-primary/10 px-3 py-1 text-primary">{program === "qudrat" ? "القدرات" : "التحصيلي"}</span>
+          <span>التأسيس</span>
+        </div>
         <h1 className="text-3xl font-black text-[#0D1B2A] dark:text-white mb-2">{activeSection.title}</h1>
         <p className="text-sm text-muted-foreground">{activeSection.description}</p>
       </header>
 
-      <div className="mb-8 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+      <section className="mb-8 grid gap-4 lg:grid-cols-[1.15fr_1fr]">
+        <div className="rounded-2xl bg-[#0D1B2A] p-5 text-white shadow-sm">
+          <div className="flex items-start justify-between gap-4">
+            <div>
+              <p className="text-sm font-bold text-[#CBD5E1]">تقدمك في مسار {program === "qudrat" ? "القدرات" : "التحصيلي"}</p>
+              <p className="mt-2 text-4xl font-black">
+                {isDashboardLoading ? "—" : `${trackProgress?.percentage || 0}%`}
+              </p>
+              <p className="mt-1 text-xs text-[#CBD5E1]">
+                {trackProgress?.questions || 0} سؤالًا تمت الإجابة عنه ضمن اختباراتك
+              </p>
+            </div>
+            <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-white/10">
+              <Target className="h-5 w-5 text-[#F7F775]" />
+            </div>
+          </div>
+          <ProgressBar value={trackProgress?.percentage || 0} className="mt-5 bg-white/20 [&>div]:bg-[#F7F775]" />
+        </div>
+
+        <div className="rounded-2xl border border-border bg-card p-5 shadow-sm">
+          <div className="flex items-start gap-3">
+            <Route className="mt-0.5 h-5 w-5 text-primary" />
+            <div className="min-w-0">
+              <p className="text-sm font-bold text-muted-foreground">خطتك المحددة لك</p>
+              <h2 className="mt-1 text-lg font-black text-foreground">{dashboard?.recommendedPlan?.title || "ابدأ بالتأسيس"}</h2>
+              <p className="mt-1 text-sm leading-6 text-muted-foreground">
+                {dashboard?.recommendedPlan?.description || "ابدأ بالشرح ثم حل اختبار قصير، وبعدها انتقل للتدريب."}
+              </p>
+              <Link href={dashboard?.recommendedPlan?.nextAction.href || `/foundation?program=${program}&subject=${activeSection.key}`} className="mt-3 inline-flex text-sm font-bold text-primary hover:underline">
+                {dashboard?.recommendedPlan?.nextAction.label || "ابدأ الآن"}
+              </Link>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {program === "qudrat" && (
+        <section className="mb-8 rounded-2xl border border-border bg-card p-5 shadow-sm">
+          <div className="mb-4 flex items-center justify-between gap-3">
+            <div>
+              <h2 className="text-lg font-black text-foreground">تقدمك داخل القدرات</h2>
+              <p className="mt-1 text-xs text-muted-foreground">تابع ما أنجزته في كل قسم من خلال اختباراتك السابقة.</p>
+            </div>
+            <span className="rounded-full bg-muted px-3 py-1 text-xs font-bold text-muted-foreground">قسمان</span>
+          </div>
+          <div className="grid gap-4 sm:grid-cols-2">
+            {progressItems.map((item) => (
+              <div key={item.label} className="rounded-xl border border-border bg-background p-4">
+                <div className="mb-2 flex items-center justify-between gap-3">
+                  <span className="font-black text-foreground">{item.label}</span>
+                  <span className="text-lg font-black text-primary">{item.value}%</span>
+                </div>
+                <ProgressBar value={item.value} />
+                <p className="mt-2 text-xs text-muted-foreground">{item.questions} سؤالًا ضمن اختبارات هذا القسم</p>
+              </div>
+            ))}
+          </div>
+        </section>
+      )}
+
+      <div className={`mb-8 grid gap-3 ${program === "qudrat" ? "sm:grid-cols-2" : "sm:grid-cols-2 lg:grid-cols-4"}`}>
         {foundationSections[program].map((section) => (
           <button
             key={section.key}

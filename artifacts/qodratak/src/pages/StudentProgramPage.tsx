@@ -1,5 +1,7 @@
 import { BookOpen, Brain, ChevronLeft, FileText, GraduationCap, Library, Target } from "lucide-react";
 import { Link, useLocation, useRoute } from "wouter";
+import { useStudentDashboard } from "@/hooks/use-student";
+import { Progress } from "@/components/ui/progress";
 
 type ProgramKey = "qudrat" | "tahsili";
 
@@ -78,6 +80,9 @@ export default function StudentProgramPage() {
   const section = new URLSearchParams(location.split("?")[1] || "").get("section");
   const showFoundation = !section || section === "foundation";
   const showComputer = !section || section === "computer";
+  const { data: dashboard } = useStudentDashboard();
+  const qudratProgress = dashboard?.progress.qudrat.percentage || 0;
+  const tahsiliProgress = dashboard?.progress.tahsili.percentage || 0;
   const practiceSectionTitle = "المحوسب";
   const practiceSectionDescription = "اختبارات وتدريب عملي يحاكي تجربة الاختبار.";
 
@@ -100,6 +105,22 @@ export default function StudentProgramPage() {
             <div className="rounded-xl border border-white/10 bg-white/5 px-3 py-3"><span className="text-[#F7F775]">3</span> اختبر جاهزيتك</div>
           </div>
         </header>
+
+        <section className="grid gap-3 sm:grid-cols-2">
+          {[
+            { label: "تقدم القدرات", value: qudratProgress, detail: `${dashboard?.progress.qudrat.questions || 0} سؤالًا` },
+            { label: "تقدم التحصيلي", value: tahsiliProgress, detail: `${dashboard?.progress.tahsili.questions || 0} سؤالًا` },
+          ].map((item) => (
+            <div key={item.label} className="rounded-2xl border border-[#E5E7EB] bg-white p-4 shadow-sm">
+              <div className="mb-2 flex items-center justify-between gap-3">
+                <span className="text-sm font-black text-[#0D1B2A]">{item.label}</span>
+                <span className="text-lg font-black text-[#0D1B2A]">{item.value}%</span>
+              </div>
+              <Progress value={item.value} className="h-2 bg-[#E5E7EB] [&>div]:bg-[#0D1B2A]" />
+              <p className="mt-2 text-xs text-[#64748B]">{item.detail} في الاختبارات السابقة</p>
+            </div>
+          ))}
+        </section>
 
         {showFoundation && <section id="foundation">
           <div className="mb-3">

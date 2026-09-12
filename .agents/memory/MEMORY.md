@@ -13,3 +13,4 @@
 - [Qodratak mailbox integration](mailbox-integration.md) — official mailbox settings must take precedence over legacy SMTP variables and remain secret-backed.
 - [Persistent media boundary](persistent-media-boundary.md) — production uploads must fail clearly without a persistent provider; local disk is development-only.
 - [Tahsili OCR review boundary](tahsili-ocr-review-boundary.md) — publish scanned-book questions as review-only until four options and the printed answer key are confidently matched.
+- [Foundation progress metrics](foundation-progress-metrics.md) — current percentages reflect saved test performance; lesson completion needs separate persistence.

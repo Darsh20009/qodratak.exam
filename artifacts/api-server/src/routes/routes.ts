@@ -11450,6 +11450,13 @@ app.post("/api/auth/register", async (req: Request, res: Response) => {
     if (process.env.NODE_ENV !== 'production' && (mongoose.connection.readyState !== 1 || isDevelopmentDemo)) {
       return res.json({
         totals: { tests: 0, questions: 0, correct: 0, wrong: 0, skipped: 0, averagePercentage: 0 },
+        progress: {
+          overall: { percentage: 0, tests: 0, questions: 0 },
+          qudrat: { percentage: 0, tests: 0, questions: 0 },
+          verbal: { percentage: 0, tests: 0, questions: 0 },
+          quantitative: { percentage: 0, tests: 0, questions: 0 },
+          tahsili: { percentage: 0, tests: 0, questions: 0 },
+        },
         recentTests: [],
         weaknesses: [],
         upcomingExam: null,
@@ -11461,7 +11468,7 @@ app.post("/api/auth/register", async (req: Request, res: Response) => {
     try {
       const { User, TestResult, ErrorLog, ExamBooking, Subscription, Folder, FolderQuestion } = await import('../mongodb/models');
       const now = new Date();
-      const [user, testAggregate, recentTests, weakAreas, upcomingBooking, activeSubscription, folderCount, savedQuestionCount] = await Promise.all([
+      const [user, testAggregate, recentTests, weakAreas, upcomingBooking, activeSubscription, folderCount, savedQuestionCount, progressAggregates] = await Promise.all([
         User.findById(userId).select('level targetExamDate trialUsed trialStartDate trialEndDate subscription').lean(),
         TestResult.aggregate([{ $match: { userId } }, { $group: { _id: null, total: { $sum: 1 }, averagePercentage: { $avg: '$percentage' }, correct: { $sum: '$correctAnswers' }, wrong: { $sum: '$wrongAnswers' }, skipped: { $sum: '$skippedQuestions' }, questions: { $sum: '$totalQuestions' } } }]),
         TestResult.find({ userId }).sort({ completedAt: -1 }).limit(5).select('testName testType percentage score totalQuestions completedAt weakAreas').lean(),
@@ -11470,6 +11477,17 @@ app.post("/api/auth/register", async (req: Request, res: Response) => {
         Subscription.findOne({ userId: { $in: subscriptionIdentityCandidates(userId) }, status: 'active', startDate: { $lte: now }, endDate: { $gt: now } }).sort({ endDate: -1 }).lean(),
         Folder.countDocuments({ userId }),
         FolderQuestion.countDocuments({ folderId: { $in: (await Folder.find({ userId }).select('_id').lean()).map(folder => String(folder._id)) } }),
+        TestResult.aggregate([
+          { $match: { userId } },
+          {
+            $group: {
+              _id: { program: '$program', testType: '$testType' },
+              tests: { $sum: 1 },
+              questions: { $sum: '$totalQuestions' },
+              correct: { $sum: '$correctAnswers' },
+            },
+          },
+        ]),
       ]);
       if (!user) return res.status(404).json({ error: 'المستخدم غير موجود' });
       const totals = testAggregate[0] || { total: 0, averagePercentage: 0, correct: 0, wrong: 0, skipped: 0, questions: 0 };
@@ -11480,8 +11498,48 @@ app.post("/api/auth/register", async (req: Request, res: Response) => {
           ? { level: 'practice', sessionsPerWeek: 5, focus: 'التدريب المركز على نقاط الضعف' }
           : { level: 'mastery', sessionsPerWeek: 6, focus: 'محاكاة الاختبارات ومراجعة الأخطاء' };
       const trialActive = Boolean(user.trialEndDate && new Date(user.trialEndDate) > now);
+      const emptyProgress = () => ({ percentage: 0, tests: 0, questions: 0 });
+      const progressBuckets: Record<string, { tests: number; questions: number; correct: number }> = {
+        overall: { tests: 0, questions: 0, correct: 0 },
+        qudrat: { tests: 0, questions: 0, correct: 0 },
+        verbal: { tests: 0, questions: 0, correct: 0 },
+        quantitative: { tests: 0, questions: 0, correct: 0 },
+        tahsili: { tests: 0, questions: 0, correct: 0 },
+      };
+      for (const aggregate of progressAggregates as Array<any>) {
+        const program = String(aggregate._id?.program || '');
+        const testType = String(aggregate._id?.testType || '');
+        const bucket = program === 'tahsili'
+          ? 'tahsili'
+          : testType === 'verbal'
+            ? 'verbal'
+            : testType === 'quantitative'
+              ? 'quantitative'
+              : 'qudrat';
+        const values = {
+          tests: Number(aggregate.tests || 0),
+          questions: Number(aggregate.questions || 0),
+          correct: Number(aggregate.correct || 0),
+        };
+        for (const key of ['overall', bucket] as const) {
+          progressBuckets[key].tests += values.tests;
+          progressBuckets[key].questions += values.questions;
+          progressBuckets[key].correct += values.correct;
+        }
+        if (bucket === 'verbal' || bucket === 'quantitative') {
+          progressBuckets.qudrat.tests += values.tests;
+          progressBuckets.qudrat.questions += values.questions;
+          progressBuckets.qudrat.correct += values.correct;
+        }
+      }
+      const toProgress = (bucket: { tests: number; questions: number; correct: number }) => ({
+        percentage: bucket.questions > 0 ? Math.round((bucket.correct / bucket.questions) * 100) : 0,
+        tests: bucket.tests,
+        questions: bucket.questions,
+      });
       return res.json({
         totals: { tests: totals.total, questions: totals.questions, correct: totals.correct, wrong: totals.wrong, skipped: totals.skipped, averagePercentage: Number((totals.averagePercentage || 0).toFixed(2)) },
+        progress: Object.fromEntries(Object.entries(progressBuckets).map(([key, value]) => [key, toProgress(value)])),
         recentTests,
         weaknesses: weakAreas.filter((area: any) => area._id).map((area: any) => ({ name: area._id, errorCount: area.count })),
         upcomingExam: upcomingBooking || (user.targetExamDate && new Date(user.targetExamDate) >= now ? { targetExamDate: user.targetExamDate } : null),
