@@ -203,11 +203,22 @@ const verbalBankVideoIds = [
   "PdBHJW7QDLs",
 ] as const;
 
+// Titles captured from the source videos. The source skips section 78 and
+// includes a spelling variation in section 56, so these must not be inferred
+// from the display order alone.
+const verbalBankVideoTitles = verbalBankVideoIds.map((_, index) => {
+  const sourceSectionNumber = index < 77 ? index + 1 : index + 2;
+  const sectionLabel = index === 55 ? "اقسم" : "اقسام";
+  return `${sectionLabel} اللفظي ايهاب القسم ${sourceSectionNumber}`;
+});
+
 export const verbalBankVideos: FoundationContent[] = verbalBankVideoIds.map((videoId, index) => ({
   _id: `verbal-bank-${index + 1}`,
   program: "qudrat",
-  title: `بنوك اللفظي — الفيديو ${index + 1}`,
-  description: "فيديو من قائمة بنوك تأسيس اللفظي، مرتب حسب ترتيب قائمة التشغيل.",
+  title: verbalBankVideoTitles[index]?.trim() || `بنوك اللفظي — الفيديو ${index + 1}`,
+  description: verbalBankVideoTitles[index]?.trim()
+    ? `شرح ${verbalBankVideoTitles[index]} من قائمة بنوك تأسيس اللفظي.`
+    : "فيديو من قائمة بنوك تأسيس اللفظي، مرتب حسب ترتيب قائمة التشغيل.",
   videoUrl: `https://www.youtube.com/watch?v=${videoId}`,
   thumbnailUrl: `https://i.ytimg.com/vi/${videoId}/hqdefault.jpg`,
   order: index + 1,
