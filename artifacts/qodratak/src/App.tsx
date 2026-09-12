@@ -436,6 +436,12 @@ function MainLayout({ children }: { children: React.ReactNode }) {
       return true;
     }
 
+    // الاختبار المحجوز يملك غلافاً كاملاً خاصاً به؛ لا تضعه داخل
+    // الشريط الجانبي والهيدر والتنقل السفلي للتطبيق.
+    if (location.startsWith('/book-exam/')) {
+      return true;
+    }
+
     // التحقق من مسارات بنك الأسئلة التي تحتوي على معاملات
     if (location.match(/^\/question-bank\/[^\/]+\/\d+$/)) {
       return true;
@@ -461,7 +467,10 @@ function MainLayout({ children }: { children: React.ReactNode }) {
 
 
   return (
-    <div className="qodratak-app-shell flex min-h-screen bg-background text-foreground">
+    <div className={cn(
+      "qodratak-app-shell flex min-h-screen bg-background text-foreground",
+      isInTestMode && "h-[100dvh] max-h-[100dvh] overflow-hidden"
+    )}>
       {/* Sidebar - مخفي في وضع الاختبار */}
       {!isInTestMode && (
         <div className="hidden md:flex w-64 flex-col bg-white dark:bg-gray-900 border-l dark:border-gray-800" dir="rtl">
@@ -666,7 +675,7 @@ function MainLayout({ children }: { children: React.ReactNode }) {
       )}
 
       {/* Main content */}
-      <div className="flex-1 flex flex-col overflow-hidden">
+      <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
         {/* Header - مخفي في وضع الاختبار على الجوال */}
         {!isInTestMode && (
           <header className="bg-white dark:bg-gray-800 border-b dark:border-gray-700 md:hidden">
@@ -737,7 +746,10 @@ function MainLayout({ children }: { children: React.ReactNode }) {
         )}
 
         {/* Content */}
-        <main className="flex-1 overflow-y-auto pb-16 md:pb-0">
+        <main className={cn(
+          "min-h-0 flex-1",
+          isInTestMode ? "overflow-hidden" : "overflow-y-auto pb-16 md:pb-0"
+        )}>
           <div key={location} className="qodratak-page-surface page-enter min-h-full">
             <ErrorBoundary>
               {children}

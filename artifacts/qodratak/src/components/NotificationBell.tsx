@@ -70,6 +70,51 @@ export default function NotificationBell({ userId }: Props) {
 
   // Real-time WS listener
   useEffect(() => {
+    if (!userId) return;
+
+    let socket: WebSocket | null = null;
+    let reconnectTimer: ReturnType<typeof setTimeout> | null = null;
+    let disposed = false;
+
+    const connect = () => {
+      if (disposed) return;
+      const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+      socket = new WebSocket(`${protocol}//${window.location.host}/api/ws/chat`);
+
+      socket.addEventListener('open', () => {
+        socket?.send(JSON.stringify({
+          type: 'auth',
+          userId,
+          role: 'student',
+        }));
+      });
+
+      socket.addEventListener('message', (event) => {
+        try {
+          const message = JSON.parse(event.data);
+          if (message?.type === 'new_notification') {
+            window.dispatchEvent(new CustomEvent('ws_notification', { detail: message }));
+          }
+        } catch {
+          // Ignore non-JSON WebSocket frames.
+        }
+      });
+
+      socket.addEventListener('close', () => {
+        if (!disposed) reconnectTimer = setTimeout(connect, 3000);
+      });
+    };
+
+    connect();
+
+    return () => {
+      disposed = true;
+      if (reconnectTimer) clearTimeout(reconnectTimer);
+      socket?.close();
+    };
+  }, [userId]);
+
+  useEffect(() => {
     const onMessage = (e: CustomEvent) => {
       if (e.detail?.type === 'new_notification') {
         qc.invalidateQueries({ queryKey: ['/api/notifications/in-app', userId] });

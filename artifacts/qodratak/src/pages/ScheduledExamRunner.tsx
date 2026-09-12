@@ -792,7 +792,7 @@ export default function ScheduledExamRunner() {
   }));
 
   return (
-    <div className="relative">
+      <div className="relative min-h-[100dvh] w-full overflow-hidden">
       {/* Violation warning overlay */}
       <AntiCheatWarning
         violations={violations}
