@@ -51,6 +51,27 @@ function getQuestionImageUrls(question: { imageUrl?: unknown; imageUrls?: unknow
   return Array.from(new Set(urls));
 }
 
+async function saveLoginSession(req: Request, context: string) {
+  let lastError: unknown;
+
+  for (let attempt = 0; attempt < 2; attempt += 1) {
+    try {
+      await new Promise<void>((resolve, reject) => {
+        req.session.save((error) => error ? reject(error) : resolve());
+      });
+      return;
+    } catch (error) {
+      lastError = error;
+      if (attempt === 0) {
+        await new Promise((resolve) => setTimeout(resolve, 75));
+      }
+    }
+  }
+
+  console.error(`[Auth] session save failed after retry (${context}):`, lastError);
+  throw lastError instanceof Error ? lastError : new Error(String(lastError || "SESSION_SAVE_FAILED"));
+}
+
 const deviceLimitAlertCooldowns = new Map<string, number>();
 const DEVICE_LIMIT_ALERT_COOLDOWN_MS = 10 * 60 * 1000;
 const DEVICE_MANAGEMENT_TOKEN_TTL_MS = 15 * 60 * 1000;
@@ -2578,18 +2599,20 @@ function developmentDemoUsers() {
           (req.session as any).isAdmin = true;
           (req.session as any).adminId = String(adminDoc._id);
           (req.session as any).admin = adminIdentity;
-          return req.session.save((sessionError) => {
-            if (sessionError) return res.status(500).json({ error: 'تعذر حفظ جلسة الدخول' });
-            consumePhoneOtp(verification.phone, 'login');
-            return res.json({
-              isAdmin: true,
-              admin: {
-                username: adminDoc.username,
-                fullName: adminDoc.fullName,
-                role: adminDoc.role,
-              },
-              adminAccessToken: createAdminAccessToken(adminIdentity),
-            });
+          try {
+            await saveLoginSession(req, "phone-otp-admin");
+          } catch {
+            return res.status(500).json({ error: 'تعذر حفظ جلسة الدخول. حاول مرة أخرى.' });
+          }
+          consumePhoneOtp(verification.phone, 'login');
+          return res.json({
+            isAdmin: true,
+            admin: {
+              username: adminDoc.username,
+              fullName: adminDoc.fullName,
+              role: adminDoc.role,
+            },
+            adminAccessToken: createAdminAccessToken(adminIdentity),
           });
         }
       }
@@ -2649,27 +2672,31 @@ function developmentDemoUsers() {
           phone: verification.phone,
           expiresAt: Date.now() + 15 * 60 * 1000,
         };
-        return req.session.save((sessionError) => {
-          if (sessionError) return res.status(500).json({ error: 'تعذر حفظ جلسة إعداد كلمة المرور' });
-          consumePhoneOtp(verification.phone, 'login');
-          return res.json({
-            requiresPasswordSetup: true,
-            passwordSetupRequired: true,
-            name: loginUser.fullName || loginUser.name || loginUser.username,
-            phone: verification.phone,
-          });
+        try {
+          await saveLoginSession(req, "phone-otp-password-setup");
+        } catch {
+          return res.status(500).json({ error: 'تعذر حفظ جلسة إعداد كلمة المرور. حاول مرة أخرى.' });
+        }
+        consumePhoneOtp(verification.phone, 'login');
+        return res.json({
+          requiresPasswordSetup: true,
+          passwordSetupRequired: true,
+          name: loginUser.fullName || loginUser.name || loginUser.username,
+          phone: verification.phone,
         });
       }
 
       (req.session as any).userId = loginUser.id;
       (req.session as any).userEmail = loginUser.email;
       (req.session as any).userRole = loginUser.role || 'student';
-      return req.session.save((sessionError) => {
-        if (sessionError) return res.status(500).json({ error: 'تعذر حفظ جلسة الدخول' });
-        consumePhoneOtp(verification.phone, 'login');
-        const { password: _password, ...safeUser } = loginUser;
-        return res.json(safeUser);
-      });
+      try {
+        await saveLoginSession(req, "phone-otp-user");
+      } catch {
+        return res.status(500).json({ error: 'تعذر حفظ جلسة الدخول. حاول مرة أخرى.' });
+      }
+      consumePhoneOtp(verification.phone, 'login');
+      const { password: _password, ...safeUser } = loginUser;
+      return res.json(safeUser);
     } catch (error: any) {
       const messages: Record<string, string> = {
         INVALID_PHONE: 'أدخل رقم جوال سعودي صحيحاً',
@@ -2774,11 +2801,13 @@ function developmentDemoUsers() {
       (req.session as any).userEmail = savedUser.email;
       (req.session as any).userRole = savedUser.role || 'student';
       delete (req.session as any).pendingPasswordSetup;
-      return req.session.save((sessionError) => {
-        if (sessionError) return res.status(500).json({ error: 'تعذر حفظ جلسة الدخول' });
-        const { password: _password, ...safeUser } = savedUser;
-        return res.json(safeUser);
-      });
+      try {
+        await saveLoginSession(req, "complete-password-setup");
+      } catch {
+        return res.status(500).json({ error: 'تعذر حفظ جلسة الدخول. حاول مرة أخرى.' });
+      }
+      const { password: _password, ...safeUser } = savedUser;
+      return res.json(safeUser);
     } catch (error) {
       console.error('Complete password setup error:', error);
       return res.status(500).json({ error: 'تعذر حفظ كلمة المرور الجديدة' });
