@@ -57,9 +57,9 @@ export function SplashScreen({ onDone }: { onDone: () => void }) {
           transition: "opacity 0.5s ease, transform 0.5s cubic-bezier(0.34,1.3,0.64,1)",
         }}
       >
-        {/* Icon */}
-        <div className="mb-6 overflow-hidden rounded-[22px] shadow-[0_0_0_1px_rgba(247,247,117,0.18),0_16px_48px_rgba(0,0,0,0.45)]" style={{ width: 80, height: 80 }}>
-          <img src="/qodratak-icon.png" alt="قدراتك" className="h-full w-full object-contain" />
+        {/* Icon — transparent asset, without the white image panel */}
+        <div className="mb-6" style={{ width: 80, height: 80 }}>
+          <img src="/qodratak-icon-dark.png" alt="قدراتك" className="h-full w-full object-contain" />
         </div>
 
         {/* Word mark */}

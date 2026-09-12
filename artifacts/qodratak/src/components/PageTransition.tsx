@@ -1,7 +1,8 @@
 import React, { useEffect, useRef, useState } from "react";
 import { useLocation } from "wouter";
 
-const platformLogo = "/qodratak-icon.png";
+const lightPlatformLogo = "/qodratak-icon-light.png";
+const darkPlatformLogo = "/qodratak-icon-dark.png";
 
 export function BrandLoadingScreen({ label = "جارٍ فتح الصفحة..." }: { label?: string }) {
   return (
@@ -14,7 +15,8 @@ export function BrandLoadingScreen({ label = "جارٍ فتح الصفحة..." }
       <div className="flex flex-col items-center gap-4">
         <div className="qodratak-brand-loading-mark" aria-hidden="true">
           <span className="qodratak-brand-loading-ring" />
-          <img src={platformLogo} alt="" className="qodratak-brand-loading-logo" />
+           <img src={lightPlatformLogo} alt="" className="qodratak-brand-loading-logo dark:hidden" />
+           <img src={darkPlatformLogo} alt="" className="qodratak-brand-loading-logo hidden dark:block" />
         </div>
         <p className="text-sm font-bold text-muted-foreground">{label}</p>
       </div>
@@ -53,7 +55,8 @@ export function PageTransition({ children }: { children: React.ReactNode }) {
         >
           <div className="qodratak-page-transition-mark" aria-hidden="true">
             <span className="qodratak-page-transition-ring" />
-            <img src={platformLogo} alt="" className="qodratak-page-transition-logo" />
+             <img src={lightPlatformLogo} alt="" className="qodratak-page-transition-logo dark:hidden" />
+             <img src={darkPlatformLogo} alt="" className="qodratak-page-transition-logo hidden dark:block" />
           </div>
           <span className="qodratak-page-transition-label">قدراتك</span>
         </div>
