@@ -2,6 +2,7 @@ import React, { useMemo, useState } from "react";
 import { FoundationContent, StudentDashboard, useFoundationContent, useStudentDashboard } from "@/hooks/use-student";
 import { verbalBankVideos } from "@/data/verbalBankVideos";
 import { foundationSections, getFoundationSection, type FoundationProgram, type FoundationSection } from "@/data/foundationSections";
+import { foundationCurriculum } from "@/data/foundationCurriculum";
 import { Link, useLocation } from "wouter";
 import { ArrowLeft, BarChart3, BookOpen, CheckCircle2, Clock, GraduationCap, ListChecks, Loader2, PlayCircle, Route, ShieldCheck, Sparkles, Target, Trophy } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -270,6 +271,7 @@ export default function FoundationPage() {
   const [quizSubmitting, setQuizSubmitting] = useState(false);
   const [quizError, setQuizError] = useState('');
   const activeSection = foundationSections[program].find((item) => item.key === activeSectionKey) || requestedSection;
+  const curriculum = foundationCurriculum[activeSection.key];
   const { data: foundationContent, isLoading } = useFoundationContent(program);
   const { data: dashboard, isLoading: isDashboardLoading } = useStudentDashboard();
   const content = program === "qudrat" && activeSection.key === "verbal" ? verbalBankVideos : foundationContent;
@@ -497,6 +499,33 @@ export default function FoundationPage() {
             <p className="mt-2 text-xs leading-5 text-muted-foreground">{stage.description}</p>
           </div>
         ))}
+      </section>
+
+      <section className="mb-6 rounded-3xl border border-border bg-card p-5 shadow-sm">
+        <div className="flex flex-wrap items-start justify-between gap-4 border-b border-border pb-4">
+          <div>
+            <div className="flex items-center gap-2">
+              <BookOpen className="h-5 w-5 text-primary" />
+              <h2 className="text-xl font-black text-foreground">خطة تأسيس {activeSection.shortTitle}</h2>
+            </div>
+            <p className="mt-2 max-w-3xl text-sm leading-7 text-muted-foreground">{curriculum.intro}</p>
+          </div>
+          <span className="rounded-full bg-emerald-500/10 px-3 py-1 text-xs font-black text-emerald-700 dark:text-emerald-300">شرح + تطبيق + اختبار</span>
+        </div>
+        <div className="mt-4 grid gap-3 md:grid-cols-2">
+          {curriculum.lessons.map((lesson, index) => (
+            <div key={lesson.title} className="rounded-2xl border border-border bg-background p-4">
+              <div className="flex items-start gap-3">
+                <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-sm font-black text-primary">{index + 1}</span>
+                <div>
+                  <h3 className="font-black text-foreground">{lesson.title}</h3>
+                  <p className="mt-1 text-sm leading-6 text-muted-foreground">{lesson.summary}</p>
+                  <p className="mt-2 text-xs leading-5 text-primary">نصيحة: {lesson.coaching}</p>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
       </section>
 
       {isLoading ? (
