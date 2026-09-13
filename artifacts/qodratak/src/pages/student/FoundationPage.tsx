@@ -268,7 +268,6 @@ export default function FoundationPage() {
   const { data: foundationContent, isLoading } = useFoundationContent(program);
   const { data: dashboard, isLoading: isDashboardLoading } = useStudentDashboard();
   const content = program === "qudrat" && activeSection.key === "verbal" ? verbalBankVideos : foundationContent;
-  const trackProgress = program === "qudrat" ? dashboard?.progress.qudrat : dashboard?.progress.tahsili;
   const selectedEmbedUrl = useMemo(
     () => (selectedLesson ? getEmbedUrl(selectedLesson.videoUrl) : null),
     [selectedLesson],
@@ -505,6 +504,32 @@ export default function FoundationPage() {
                 );
               })}
             </div>
+            <div className="mt-5 border-t border-border pt-4">
+              <div className="mb-3 flex items-center justify-between gap-2">
+                <div>
+                  <h3 className="text-sm font-black text-foreground">اختبارات التأسيس</h3>
+                  <p className="mt-1 text-xs text-muted-foreground">اختبر فهمك بعد كل موضوع.</p>
+                </div>
+                <ListChecks className="h-4 w-4 text-primary" />
+              </div>
+              <div className="space-y-2">
+                {curriculum.lessons.map((lesson, index) => (
+                  <button
+                    key={lesson.title}
+                    type="button"
+                    onClick={() => startCurriculumQuiz(lesson.title, index + 1)}
+                    className="flex w-full items-center gap-3 rounded-2xl border border-border bg-background p-3 text-right transition-colors hover:border-primary/40 hover:bg-primary/5"
+                  >
+                    <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-emerald-500/10 text-xs font-black text-emerald-700 dark:text-emerald-300">{index + 1}</span>
+                    <span className="min-w-0 flex-1">
+                      <span className="block truncate text-sm font-bold text-foreground">{lesson.title}</span>
+                      <span className="mt-1 block truncate text-xs text-muted-foreground">اختبار من بنك {activeSection.shortTitle}</span>
+                    </span>
+                    <ArrowLeft className="h-4 w-4 shrink-0 text-muted-foreground" />
+                  </button>
+                ))}
+              </div>
+            </div>
           </aside>
         </section>
       ) : (
@@ -515,6 +540,33 @@ export default function FoundationPage() {
           <Button type="button" onClick={startSectionQuiz} className="mt-5 rounded-xl">ابدأ اختبار القسم</Button>
         </div>
       )}
+
+      <section className="mt-6 rounded-3xl border border-border bg-card p-5 shadow-sm">
+        <div className="flex flex-wrap items-start justify-between gap-4 border-b border-border pb-4">
+          <div>
+            <div className="flex items-center gap-2">
+              <BookOpen className="h-5 w-5 text-primary" />
+              <h2 className="text-xl font-black text-foreground">كتاب تأسيس {activeSection.shortTitle}</h2>
+            </div>
+            <p className="mt-2 max-w-3xl text-sm leading-7 text-muted-foreground">{curriculum.intro}</p>
+          </div>
+          <span className="rounded-full bg-emerald-500/10 px-3 py-1 text-xs font-black text-emerald-700 dark:text-emerald-300">من الصفر إلى الاحتراف</span>
+        </div>
+        <div className="mt-4 grid gap-3 md:grid-cols-2">
+          {curriculum.lessons.map((lesson, index) => (
+            <div key={lesson.title} className="rounded-2xl border border-border bg-background p-4">
+              <div className="flex items-start gap-3">
+                <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-sm font-black text-primary">{index + 1}</span>
+                <div>
+                  <h3 className="font-black text-foreground">{lesson.title}</h3>
+                  <p className="mt-1 text-sm leading-6 text-muted-foreground">{lesson.summary}</p>
+                  <p className="mt-2 text-xs leading-5 text-primary">نصيحة: {lesson.coaching}</p>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      </section>
 
       <Dialog open={!!quizLesson} onOpenChange={open => !open && closeQuiz()}>
         <DialogContent className="max-h-[94vh] w-[calc(100%-1rem)] max-w-3xl overflow-y-auto bg-background p-4 sm:p-6">
