@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { FoundationContent, StudentDashboard, useFoundationContent, useStudentDashboard } from "@/hooks/use-student";
 import { verbalBankVideos } from "@/data/verbalBankVideos";
 import { foundationSections, getFoundationSection, type FoundationProgram, type FoundationSection } from "@/data/foundationSections";
@@ -249,7 +249,12 @@ function FoundationTrackOverview({
 
 export default function FoundationPage() {
   const [location, setLocation] = useLocation();
-  const params = new URLSearchParams(location.split("?")[1] || "");
+  const queryString = typeof window !== "undefined" && window.location.search
+    ? window.location.search
+    : location.includes("?")
+      ? `?${location.split("?")[1]}`
+      : "";
+  const params = new URLSearchParams(queryString);
   const hasProgram = params.get("program") === "qudrat" || params.get("program") === "tahsili";
   const hasSubject = Boolean(params.get("subject"));
   const program: FoundationProgram = params.get("program") === "tahsili" ? "tahsili" : "qudrat";
@@ -268,6 +273,12 @@ export default function FoundationPage() {
   const { data: foundationContent, isLoading } = useFoundationContent(program);
   const { data: dashboard, isLoading: isDashboardLoading } = useStudentDashboard();
   const content = program === "qudrat" && activeSection.key === "verbal" ? verbalBankVideos : foundationContent;
+
+  useEffect(() => {
+    setActiveSectionKey(requestedSection.key);
+    setSelectedLesson(null);
+  }, [program, requestedSection.key]);
+
   const selectedEmbedUrl = useMemo(
     () => (selectedLesson ? getEmbedUrl(selectedLesson.videoUrl) : null),
     [selectedLesson],
