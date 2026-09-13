@@ -118,7 +118,7 @@ export function AuthModal({ open, mode, onClose, onModeChange }: { open: boolean
   const queryClient = useQueryClient();
   const { toast } = useToast();
   const [method, setMethod] = useState<LoginMethod>("phone");
-  const [phoneLoginMode, setPhoneLoginMode] = useState<"otp" | "password">("otp");
+  const [phoneLoginMode, setPhoneLoginMode] = useState<"otp" | "password">("password");
   const [accountType, setAccountType] = useState<AccountType>(null);
 
   // Student & General Login state
@@ -165,7 +165,7 @@ export function AuthModal({ open, mode, onClose, onModeChange }: { open: boolean
   const [verifiedChildren, setVerifiedChildren] = useState<{phone: string, verificationToken: string}[]>([]);
 
   const resetFlow = (nextMode?: AuthMode) => {
-    setOtp(""); setOtpSent(false); setResendAfter(0); setPhoneToken(""); setFullName(""); setUsername(""); setEmail(""); setPassword(""); setConfirmPassword(""); setPasswordSetup(""); setPasswordSetupConfirm(""); setPasswordSetupRequired(false); setPhoneLoginMode("otp"); setLoading(false);
+    setOtp(""); setOtpSent(false); setResendAfter(0); setPhoneToken(""); setFullName(""); setUsername(""); setEmail(""); setPassword(""); setConfirmPassword(""); setPasswordSetup(""); setPasswordSetupConfirm(""); setPasswordSetupRequired(false); setPhoneLoginMode(nextMode === "login" ? "password" : "otp"); setLoading(false);
     setAccountType(null);
     setParentName(""); setParentPhone(""); setParentOtp(""); setParentOtpSent(false); setParentToken("");
     setChildPhone(""); setChildOtp(""); setChildOtpSent(false); setVerifiedChildren([]);
@@ -253,6 +253,12 @@ export function AuthModal({ open, mode, onClose, onModeChange }: { open: boolean
     if (!response.ok) {
       if (Number(result.retryAfter) > 0) setResendAfter(Number(result.retryAfter));
       if (showDeviceLimit(result)) return;
+      if (response.status === 503) {
+        setPhoneLoginMode("password");
+        setOtp("");
+        setOtpSent(false);
+        throw new Error("تعذر إرسال رمز واتساب حاليًا. يمكنك الدخول برقم الجوال وكلمة المرور.");
+      }
       throw new Error(result.error || result.message || "تعذر التحقق من رقم الجوال");
     }
     if (!otpSent) {
@@ -681,12 +687,12 @@ export function AuthModal({ open, mode, onClose, onModeChange }: { open: boolean
             {(mode === "login" || (mode === "signup" && accountType)) && (
               <button
                 type="submit"
-                disabled={loading || (passwordSetupRequired && (passwordSetup.length !== 8 || passwordSetupConfirm.length !== 8)) || (mode === "signup" && accountType === "parent" && parentToken && verifiedChildren.length === 0)}
+                disabled={Boolean(loading || (passwordSetupRequired && (passwordSetup.length !== 8 || passwordSetupConfirm.length !== 8)) || (mode === "signup" && accountType === "parent" && parentToken && verifiedChildren.length === 0))}
                 className="mt-4 flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-[#171723] text-sm font-black text-white disabled:opacity-50"
               >
                 {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : passwordSetupRequired ? <Lock className="h-4 w-4" /> : mode === "login" && method === "email" ? <Mail className="h-4 w-4" /> : <MessageCircle className="h-4 w-4" />}
                 {passwordSetupRequired ? "حفظ كلمة المرور والدخول" : mode === "login"
-                  ? (method === "email" ? "الدخول بالبريد" : otpSent ? "تأكيد الرمز والدخول" : "إرسال رمز واتساب")
+                  ? (method === "email" ? "الدخول بالبريد" : phoneLoginMode === "password" ? "الدخول برقم الجوال" : otpSent ? "تأكيد الرمز والدخول" : "إرسال رمز واتساب")
                   : (accountType === "student"
                       ? (!phoneToken ? (otpSent ? "تأكيد رمز واتساب" : "إرسال رمز واتساب") : "إنشاء الحساب")
                       : (!parentToken ? (parentOtpSent ? "تأكيد رمز ولي الأمر" : "إرسال رمز لولي الأمر") : "إنشاء حساب ولي الأمر"))}

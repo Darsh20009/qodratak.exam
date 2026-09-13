@@ -103,7 +103,7 @@ const SIX_MONTH_SUBSCRIPTION_PLAN = {
   type: 'Pro Life Plus',
   name: 'باقة 6 أشهر',
   durationDays: 180,
-  priceSar: 74,
+  priceSar: 69,
   description: 'اشتراك كامل لمدة 6 أشهر في منصة قدراتك التعليمية.',
   features: DEFAULT_PRIMARY_SUBSCRIPTION_PLAN.features,
 };

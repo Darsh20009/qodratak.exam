@@ -23,6 +23,7 @@ import { SEO } from "@/components/SEO";
 const NAVY = "#171723";
 const SIGNAL = "#FF8A70";
 const MINT = "#91D7C5";
+const SUPPORT_WHATSAPP_URL = `https://wa.me/966510510140?text=${encodeURIComponent("أحتاج اشتراك لعذر مادي")}`;
 function Header({ onSignup, onLogin }: { onSignup: () => void; onLogin: () => void }) {
   const [menuOpen, setMenuOpen] = useState(false);
 
@@ -281,6 +282,7 @@ function ParentFollowUp({ onSignup }: { onSignup: () => void }) {
 function PlanCard({
   title,
   price,
+  durationLabel,
   description,
   items,
   featured,
@@ -288,6 +290,7 @@ function PlanCard({
 }: {
   title: string;
   price: string;
+  durationLabel?: string;
   description: string;
   items: string[];
   featured?: boolean;
@@ -303,7 +306,7 @@ function PlanCard({
       <p className="text-sm font-black text-slate-500">{title}</p>
       <div className="mt-4 flex items-end gap-2">
         <span className="text-4xl font-black text-[#171723] dark:text-white">{price}</span>
-        {price === "٣٩" && <span className="pb-1 text-sm font-bold text-slate-500">ريال / ٣ أشهر</span>}
+        {durationLabel && <span className="pb-1 text-sm font-bold text-slate-500">{durationLabel}</span>}
       </div>
       <p className="mt-3 text-sm leading-6 text-slate-500">{description}</p>
       <div className="mt-6 space-y-3 border-t border-slate-200 pt-5 dark:border-slate-700">
@@ -457,7 +460,7 @@ export default function LandingPage({ initialModal }: { initialModal?: "signup" 
               خيارات بسيطة، وبدون التزام طويل.
             </h2>
           </div>
-          <div className="mx-auto mt-10 grid max-w-3xl gap-4 md:grid-cols-2">
+          <div className="mx-auto mt-10 grid max-w-5xl gap-4 md:grid-cols-3">
             <PlanCard
               title="تجربة مجانية"
               price="٣ أيام"
@@ -468,11 +471,26 @@ export default function LandingPage({ initialModal }: { initialModal?: "signup" 
             <PlanCard
               title="الاشتراك الربع سنوي"
               price="٣٩"
+              durationLabel="ريال / ٣ أشهر"
               description="ثلاثة أشهر من التدريب المنظم بسعر بسيط."
               items={["تدريب يومي مستمر", "اختبارات ومحاكاة", "تحليل ومتابعة التقدم"]}
               featured
               onSignup={openSignup}
             />
+            <PlanCard
+              title="الاشتراك نصف السنوي"
+              price="٦٩"
+              durationLabel="ريال / ٦ أشهر"
+              description="ستة أشهر من التدريب المنظم بسعر أوفر."
+              items={["وصول كامل للمحتوى والاختبارات", "خطة يومية ومتابعة التقدم", "دعم فني عبر واتساب"]}
+              onSignup={openSignup}
+            />
+          </div>
+          <div className="mx-auto mt-6 max-w-5xl rounded-2xl border border-[#398B79]/20 bg-[#EFF8F4] px-5 py-4 text-center dark:bg-[#132B2A]">
+            <p className="text-sm font-black text-[#286B5C] dark:text-[#91D7C5]">عندك عذر مادي؟ تواصل معنا وما يصير لك إلا الخير.</p>
+            <a href={SUPPORT_WHATSAPP_URL} target="_blank" rel="noopener noreferrer" className="mt-2 inline-flex items-center gap-2 text-sm font-black text-[#17354A] underline underline-offset-4 dark:text-white">
+              أحتاج اشتراك لعذر مادي <MessageCircle size={16} />
+            </a>
           </div>
         </div>
       </section>

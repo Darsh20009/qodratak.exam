@@ -2058,7 +2058,7 @@ const DEFAULT_SETTINGS = [
   { key: 'platform_tagline', label: 'شعار المنصة', value: 'استعد لقياس بشكل احترافي', type: 'text', category: 'general', description: 'الشعار الفرعي للمنصة' },
   { key: 'monthly_price', label: 'سعر الاشتراك الشهري (ر.س)', value: 49, type: 'number', category: 'pricing', description: 'سعر الاشتراك الشهري' },
   { key: 'quarterly_price', label: 'سعر الاشتراك الربع سنوي (ر.س)', value: 39, type: 'number', category: 'pricing', description: 'سعر الاشتراك كل 3 أشهر' },
-  { key: 'semi_annual_price', label: 'سعر الاشتراك نصف سنوي (ر.س)', value: 74, type: 'number', category: 'pricing', description: 'سعر الاشتراك كل 6 أشهر' },
+  { key: 'semi_annual_price', label: 'سعر الاشتراك نصف سنوي (ر.س)', value: 69, type: 'number', category: 'pricing', description: 'سعر الاشتراك كل 6 أشهر' },
   { key: 'annual_price', label: 'سعر الاشتراك السنوي (ر.س)', value: 299, type: 'number', category: 'pricing', description: 'سعر الاشتراك السنوي' },
   { key: 'free_questions_limit', label: 'حد أسئلة المجانيين', value: 10, type: 'number', category: 'limits', description: 'عدد الأسئلة المسموح بها للمستخدم المجاني في الاختبار' },
   { key: 'allow_new_registrations', label: 'السماح بالتسجيل الجديد', value: true, type: 'boolean', category: 'access', description: 'هل يمكن للمستخدمين الجدد إنشاء حسابات' },
@@ -2093,6 +2093,20 @@ router.get('/settings', requireAdminAuth, async (req: Request, res: Response) =>
       settings = settings.map(setting =>
         setting._id.equals(legacySupportEmail._id)
           ? { ...setting, value: 'info@qodratak.sa' }
+          : setting,
+      );
+    }
+    const legacySemiAnnualPrice = settings.find(setting =>
+      setting.key === 'semi_annual_price' && Number(setting.value) === 74,
+    );
+    if (legacySemiAnnualPrice) {
+      await PlatformSetting.updateOne(
+        { _id: legacySemiAnnualPrice._id },
+        { $set: { value: 69, updatedAt: new Date() } },
+      );
+      settings = settings.map(setting =>
+        setting._id.equals(legacySemiAnnualPrice._id)
+          ? { ...setting, value: 69 }
           : setting,
       );
     }

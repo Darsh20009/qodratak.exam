@@ -6,6 +6,7 @@ import {
   CreditCard,
   Crown,
   Loader2,
+  MessageCircle,
   WalletCards,
   X,
 } from "lucide-react";
@@ -21,6 +22,7 @@ import {
 } from "@/components/ui/dialog";
 
 const CHECKOUT_URL = "https://www.paypal.com/ncp/payment/XZWPA8WLMNDGS";
+const SUPPORT_WHATSAPP_URL = `https://wa.me/966510510140?text=${encodeURIComponent("أحتاج اشتراك لعذر مادي")}`;
 
 type PaymentMethod = "wallet" | "card";
 type SubscriptionPlan = {
@@ -231,6 +233,18 @@ export default function SubscriptionRenewalDialog({
               <p className="mt-2 text-xs font-bold text-[#64748B]">
                 {currentEndDate ? `ينتهي في ${formatDate(currentEndDate)}` : "يمكنك استخدام الحساب المجاني باختبار واحد يوميًا"}
               </p>
+            </div>
+
+            <div className="rounded-2xl border border-[#398B79]/20 bg-[#EFF8F4] p-4">
+              <p className="text-sm font-black text-[#286B5C]">عندك عذر مادي؟ تواصل معنا وما يصير لك إلا الخير.</p>
+              <a
+                href={SUPPORT_WHATSAPP_URL}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="mt-2 inline-flex items-center gap-2 text-xs font-black text-[#17354A] underline underline-offset-4"
+              >
+                أحتاج اشتراك لعذر مادي <MessageCircle className="h-4 w-4" />
+              </a>
             </div>
 
              <div className="space-y-2">

@@ -103,6 +103,7 @@ function FoundationHome({
   dashboard?: StudentDashboard;
   isLoading: boolean;
 }) {
+  const [, setLocation] = useLocation();
   const progress = dashboard?.progress;
   const latestTests = dashboard?.recentTests?.slice(0, 3) || [];
   const plan = dashboard?.recommendedPlan;
@@ -164,7 +165,14 @@ function FoundationHome({
               <p className="text-sm font-bold text-muted-foreground">خطتك المحددة لك</p>
               <h2 className="mt-1 text-xl font-black text-foreground">{plan?.title || "ابدأ بالتأسيس"}</h2>
               <p className="mt-2 text-sm leading-7 text-muted-foreground">{plan?.description || "ابدأ بالشرح، ثم طبّق، ثم اختبر نفسك."}</p>
-              <Link href={plan?.nextAction.href || "/foundation?program=qudrat"} className="mt-4 inline-flex items-center gap-2 text-sm font-black text-primary hover:underline">
+              <Link
+                href={plan?.nextAction.href || "/foundation?program=qudrat"}
+                onClick={(event) => {
+                  event.preventDefault();
+                  setLocation(plan?.nextAction.href || "/foundation?program=qudrat");
+                }}
+                className="mt-4 inline-flex items-center gap-2 text-sm font-black text-primary hover:underline"
+              >
                 {plan?.nextAction.label || "ابدأ الآن"} <ArrowLeft className="h-4 w-4" />
               </Link>
             </div>
@@ -178,7 +186,7 @@ function FoundationHome({
           <p className="mt-1 text-sm text-muted-foreground">اختر المسار الذي تريد أن تبدأه اليوم.</p>
         </div>
         <div className="grid gap-4 md:grid-cols-2">
-          <Link href="/foundation?program=qudrat" className="foundation-card group rounded-3xl border border-border bg-card p-5">
+           <Link href="/foundation?program=qudrat" onClick={(event) => { event.preventDefault(); setLocation("/foundation?program=qudrat"); }} className="foundation-card group rounded-3xl border border-border bg-card p-5">
             <div className="flex items-start justify-between gap-4">
               <span className="flex h-12 w-12 items-center justify-center rounded-2xl bg-blue-500/10 text-blue-600"><Target className="h-6 w-6" /></span>
               <span className="rounded-full bg-emerald-500/10 px-3 py-1 text-xs font-black text-emerald-700 dark:text-emerald-300">ابدأ</span>
@@ -191,7 +199,7 @@ function FoundationHome({
             </div>
             <span className="mt-4 inline-flex items-center gap-2 text-sm font-black text-primary">دخول دورة القدرات <ArrowLeft className="h-4 w-4 transition-transform group-hover:-translate-x-1" /></span>
           </Link>
-          <Link href="/foundation?program=tahsili" className="foundation-card group rounded-3xl border border-border bg-card p-5">
+           <Link href="/foundation?program=tahsili" onClick={(event) => { event.preventDefault(); setLocation("/foundation?program=tahsili"); }} className="foundation-card group rounded-3xl border border-border bg-card p-5">
             <div className="flex items-start justify-between gap-4">
               <span className="flex h-12 w-12 items-center justify-center rounded-2xl bg-amber-500/10 text-amber-600"><GraduationCap className="h-6 w-6" /></span>
               <span className="rounded-full bg-emerald-500/10 px-3 py-1 text-xs font-black text-emerald-700 dark:text-emerald-300">ابدأ</span>
@@ -217,6 +225,7 @@ function FoundationTrackOverview({
   program: FoundationProgram;
   dashboard?: StudentDashboard;
 }) {
+  const [, setLocation] = useLocation();
   const progress = program === "qudrat" ? dashboard?.progress.qudrat : dashboard?.progress.tahsili;
   return (
     <div className="mx-auto max-w-6xl space-y-6 p-5 md:p-8" dir="rtl">
@@ -232,7 +241,15 @@ function FoundationTrackOverview({
       </header>
       <div className={`grid gap-4 ${program === "qudrat" ? "md:grid-cols-2" : "md:grid-cols-2 lg:grid-cols-4"}`}>
         {foundationSections[program].map((section) => (
-          <Link key={section.key} href={`/foundation?program=${program}&subject=${section.key}`} className="foundation-card group rounded-3xl border border-border bg-card p-5">
+           <Link
+             key={section.key}
+             href={`/foundation?program=${program}&subject=${section.key}`}
+             onClick={(event) => {
+               event.preventDefault();
+               setLocation(`/foundation?program=${program}&subject=${section.key}`);
+             }}
+             className="foundation-card group rounded-3xl border border-border bg-card p-5"
+           >
             <div className="flex items-start justify-between gap-3">
               <span className="flex h-11 w-11 items-center justify-center rounded-2xl bg-primary/10 text-primary"><BookOpen className="h-5 w-5" /></span>
               <ArrowLeft className="h-5 w-5 text-muted-foreground transition-transform group-hover:-translate-x-1" />
