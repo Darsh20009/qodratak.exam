@@ -383,7 +383,7 @@ export default function FoundationPage() {
   };
 
   return (
-    <div className="mx-auto max-w-5xl p-5 md:p-8 animate-fade-in">
+    <div className="mx-auto max-w-7xl p-5 md:p-8 animate-fade-in">
       {/* Header */}
       <header className="mb-8">
         <div className="mb-2 flex flex-wrap items-center gap-2 text-xs font-bold text-muted-foreground">
@@ -410,6 +410,14 @@ export default function FoundationPage() {
             <span className="mt-1 block text-xs leading-5 text-muted-foreground">{section.description}</span>
           </button>
         ))}
+      </div>
+
+      <div className="mb-4 flex flex-wrap items-end justify-between gap-3">
+        <div>
+          <h2 className="text-xl font-black text-foreground">فيديوهات واختبارات التأسيس</h2>
+          <p className="mt-1 text-sm text-muted-foreground">شاهد الدرس، ثم اختبر فهمك من بنك {activeSection.shortTitle}.</p>
+        </div>
+        <span className="rounded-full bg-primary/10 px-3 py-1 text-xs font-black text-primary">من الصفر إلى الاحتراف</span>
       </div>
 
       {isLoading ? (
@@ -479,7 +487,7 @@ export default function FoundationPage() {
           <aside className="rounded-3xl border border-border bg-card p-4 shadow-sm">
             <div className="mb-3 flex items-center justify-between gap-3 border-b border-border pb-4">
               <div>
-                <h2 className="text-lg font-black text-foreground">دروس القسم</h2>
+                <h2 className="text-lg font-black text-foreground">فيديوهات الدروس</h2>
                 <p className="mt-1 text-xs text-muted-foreground">{content.length} درسًا مرتبة من البداية إلى الاحتراف</p>
               </div>
               <span className="rounded-full bg-primary/10 px-3 py-1 text-xs font-black text-primary">{activeSection.shortTitle}</span>
