@@ -53,7 +53,8 @@ export default function NotificationBell({ userId }: Props) {
       return res.ok ? res.json() : [];
     },
     enabled: !!userId,
-    refetchInterval: 15000,
+    // Keep the bell reasonably fresh without competing with lesson/content requests.
+    refetchInterval: 30000,
   });
 
   const unread = notifications.filter(n => !n.isRead).length;

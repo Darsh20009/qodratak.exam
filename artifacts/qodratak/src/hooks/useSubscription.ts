@@ -92,7 +92,9 @@ export const useSubscription = () => {
       
       return response.json();
     },
-    refetchInterval: 10000,
+    // Subscription changes are pushed through explicit invalidation after
+    // mutations; polling every few seconds only adds load while studying.
+    refetchInterval: 60000,
     refetchOnWindowFocus: true,
     refetchOnMount: 'always',
   });

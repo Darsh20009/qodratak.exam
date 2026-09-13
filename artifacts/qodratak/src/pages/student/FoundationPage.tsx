@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useMemo, useState } from "react";
 import { FoundationContent, StudentDashboard, useFoundationContent, useStudentDashboard } from "@/hooks/use-student";
 import { verbalBankVideos } from "@/data/verbalBankVideos";
 import { foundationSections, getFoundationSection, type FoundationProgram, type FoundationSection } from "@/data/foundationSections";
@@ -259,8 +259,9 @@ export default function FoundationPage() {
   const hasSubject = Boolean(params.get("subject"));
   const program: FoundationProgram = params.get("program") === "tahsili" ? "tahsili" : "qudrat";
   const requestedSection = getFoundationSection(program, params.get("subject"));
-  const [activeSectionKey, setActiveSectionKey] = useState(requestedSection.key);
   const [selectedLesson, setSelectedLesson] = useState<FoundationContent | null>(null);
+  const [visibleLessonCount, setVisibleLessonCount] = useState(40);
+  const [quizBankCache, setQuizBankCache] = useState<Record<string, QuizQuestion[]>>({});
   const [quizLesson, setQuizLesson] = useState<FoundationContent | null>(null);
   const [quizQuestions, setQuizQuestions] = useState<QuizQuestion[]>([]);
   const [quizAnswers, setQuizAnswers] = useState<Record<string, number>>({});
@@ -268,16 +269,14 @@ export default function FoundationPage() {
   const [quizLoading, setQuizLoading] = useState(false);
   const [quizSubmitting, setQuizSubmitting] = useState(false);
   const [quizError, setQuizError] = useState('');
-  const activeSection = foundationSections[program].find((item) => item.key === activeSectionKey) || requestedSection;
+  const activeSection = requestedSection;
   const curriculum = foundationCurriculum[activeSection.key];
-  const { data: foundationContent, isLoading } = useFoundationContent(program);
-  const { data: dashboard, isLoading: isDashboardLoading } = useStudentDashboard();
-  const content = program === "qudrat" && activeSection.key === "verbal" ? verbalBankVideos : foundationContent;
-
-  useEffect(() => {
-    setActiveSectionKey(requestedSection.key);
-    setSelectedLesson(null);
-  }, [program, requestedSection.key]);
+  const shouldLoadFoundationContent = hasSubject && !(program === "qudrat" && activeSection.key === "verbal");
+  const { data: foundationContent, isLoading } = useFoundationContent(program, shouldLoadFoundationContent);
+  const { data: dashboard, isLoading: isDashboardLoading } = useStudentDashboard(!hasSubject);
+  const content = program === "qudrat" && activeSection.key === "verbal" ? verbalBankVideos : foundationContent || [];
+  const selectedLessonIndex = selectedLesson ? content.findIndex((item) => item._id === selectedLesson._id) : -1;
+  const currentGuide = curriculum.lessons[Math.max(0, selectedLessonIndex) % curriculum.lessons.length];
 
   const selectedEmbedUrl = useMemo(
     () => (selectedLesson ? getEmbedUrl(selectedLesson.videoUrl) : null),
@@ -293,8 +292,8 @@ export default function FoundationPage() {
   }
 
   const selectSection = (section: FoundationSection) => {
-    setActiveSectionKey(section.key);
     setSelectedLesson(null);
+    setVisibleLessonCount(40);
     setLocation(`/foundation?program=${program}&subject=${section.key}`);
   };
 
@@ -328,20 +327,26 @@ export default function FoundationPage() {
     setQuizQuestions([]);
     setQuizLoading(true);
     try {
+      const cacheKey = `${program}:${activeSection.key}`;
       let questions: QuizQuestion[] = [];
-      if (activeSection.tahsiliSubject) {
-        const response = await fetch(`/api/tahsili/question-bank?subject=${encodeURIComponent(activeSection.tahsiliSubject)}&page=1&limit=50`, {
-          credentials: "include",
-        });
-        const data = await response.json();
-        questions = Array.isArray(data.questions) ? data.questions : [];
-      } else if (activeSection.questionCategory) {
-        const response = await fetch(`/api/questions?category=${activeSection.questionCategory}`, { credentials: "include" });
-        const data = await response.json();
-        const source = Array.isArray(data) ? data : [];
-        const allowed = new Set(activeSection.questionSubcategories || []);
-        questions = source.filter((question: QuizQuestion & { subcategory?: string }) => allowed.has(String(question.subcategory)));
-        if (questions.length < 10) questions = source;
+      if (quizBankCache[cacheKey]) {
+        questions = quizBankCache[cacheKey];
+      } else {
+        if (activeSection.tahsiliSubject) {
+          const response = await fetch(`/api/tahsili/question-bank?subject=${encodeURIComponent(activeSection.tahsiliSubject)}&page=1&limit=50`, {
+            credentials: "include",
+          });
+          const data = await response.json();
+          questions = Array.isArray(data.questions) ? data.questions : [];
+        } else if (activeSection.questionCategory) {
+          const response = await fetch(`/api/questions?category=${activeSection.questionCategory}`, { credentials: "include" });
+          const data = await response.json();
+          const source = Array.isArray(data) ? data : [];
+          const allowed = new Set(activeSection.questionSubcategories || []);
+          questions = source.filter((question: QuizQuestion & { subcategory?: string }) => allowed.has(String(question.subcategory)));
+          if (questions.length < 10) questions = source;
+        }
+        setQuizBankCache((current) => ({ ...current, [cacheKey]: questions }));
       }
 
       if (questions.length < 10) {
@@ -488,8 +493,18 @@ export default function FoundationPage() {
               <div className="flex items-start gap-3">
                 <BookOpen className="mt-1 h-5 w-5 text-primary" />
                 <div>
-                  <h2 className="font-black text-foreground">كيف تذاكر هذا القسم؟</h2>
-                  <p className="mt-2 text-sm leading-7 text-muted-foreground">{activeSection.explanation} لا تحفظ القاعدة لحالها؛ شوف المثال، حل مثله، ثم راجع سبب الإجابة.</p>
+                  <p className="text-xs font-black text-primary">الشرح الكتابي للدرس</p>
+                  <h2 className="mt-1 text-lg font-black text-foreground">{currentGuide.title}</h2>
+                  <p className="mt-2 text-sm leading-7 text-muted-foreground">{currentGuide.summary} {activeSection.explanation}</p>
+                  <div className="mt-4 rounded-2xl bg-primary/5 p-4">
+                    <p className="text-sm font-black text-foreground">طريقة الحل</p>
+                    <ol className="mt-2 list-decimal space-y-2 pr-5 text-sm leading-6 text-muted-foreground">
+                      <li>اقرأ المطلوب وحدد الكلمات أو القيم المهمة في السؤال.</li>
+                      <li>طبّق الفكرة على مثال بسيط، ثم انتقل لمسألة من بنك المنصة.</li>
+                      <li>راجع سبب الإجابة، وليس الإجابة وحدها، قبل الانتقال للدرس التالي.</li>
+                    </ol>
+                  </div>
+                  <p className="mt-3 text-xs leading-5 text-primary">نصيحة سعودية: {currentGuide.coaching}</p>
                 </div>
               </div>
             </div>
@@ -504,7 +519,7 @@ export default function FoundationPage() {
               <span className="rounded-full bg-primary/10 px-3 py-1 text-xs font-black text-primary">{activeSection.shortTitle}</span>
             </div>
             <div className="max-h-[680px] space-y-2 overflow-y-auto pl-1">
-              {content.map((item, idx) => {
+              {content.slice(0, visibleLessonCount).map((item, idx) => {
                 const active = selectedLesson?._id === item._id;
                 return (
                   <button
@@ -523,6 +538,16 @@ export default function FoundationPage() {
                 );
               })}
             </div>
+            {content.length > visibleLessonCount && (
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setVisibleLessonCount((count) => Math.min(count + 40, content.length))}
+                className="mt-3 w-full rounded-xl font-bold"
+              >
+                عرض المزيد من الدروس ({content.length - visibleLessonCount} متبقي)
+              </Button>
+            )}
             <div className="mt-5 border-t border-border pt-4">
               <div className="mb-3 flex items-center justify-between gap-2">
                 <div>

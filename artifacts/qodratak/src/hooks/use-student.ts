@@ -160,10 +160,12 @@ export function useUpdateExamDate() {
   });
 }
 
-export function useFoundationContent(program: 'qudrat' | 'tahsili') {
+export function useFoundationContent(program: 'qudrat' | 'tahsili', enabled = true) {
   return useQuery<FoundationContent[]>({
     queryKey: ["/api/foundation-content", program],
     queryFn: async () => (await fetchJson<{ content: FoundationContent[] }>(`/api/foundation-content?program=${program}`)).content,
+    enabled,
+    staleTime: 5 * 60 * 1000,
   });
 }
 
