@@ -18,6 +18,7 @@ import { AuthModal } from "@/components/AuthModal";
 import { Footer } from "@/components/Footer";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { BrandMark } from "@/components/BrandMark";
+import { SEO } from "@/components/SEO";
 
 const NAVY = "#171723";
 const SIGNAL = "#FF8A70";
@@ -331,6 +332,11 @@ export default function LandingPage({ initialModal }: { initialModal?: "signup" 
 
   return (
     <main className="min-h-screen overflow-hidden bg-[#F7F4EE] text-slate-900 dark:bg-[#0B1220] dark:text-slate-100" dir="rtl">
+      <SEO
+        title="قدراتك | منصة القدرات والتحصيلي في السعودية"
+        description="قدراتك (Qodratak) منصة تعليمية للتأسيس اللفظي والكمي، بنك أسئلة، اختبارات محاكية وخطة تدريب للقدرات والتحصيلي."
+        url="/"
+      />
       <div
         className="sbc-verify-seal"
         data-token="QVllTDdEcm91V0cxa25lTW1iRUJzQT09"
@@ -360,12 +366,14 @@ export default function LandingPage({ initialModal }: { initialModal?: "signup" 
               منصة التدريب الأولى في المملكة
             </p>
             <h1 className="mt-6 text-[2.7rem] font-black leading-[1.12] tracking-tight text-[#171723] dark:text-white sm:text-6xl">
+              <span style={{ color: SIGNAL }}>قدراتك</span>
+              <br />
               خطتك أوضح لـ
               <br />
               <span style={{ color: SIGNAL }}>القدرات والتحصيلي.</span>
             </h1>
             <p className="mt-6 max-w-xl text-base leading-8 text-[#6B625B] dark:text-slate-300 sm:text-lg">
-              تأسيس ومحوسب، تدريب يومي، ونتيجة تعرفك خطوتك التالية في كل مسار تحتاجه.
+              قدراتك (Qodratak) تجمع التأسيس والمحوسب والتدريب اليومي في مسار واضح يخبرك بخطوتك التالية.
             </p>
             <div className="mt-8 flex flex-wrap gap-3">
               <button
@@ -490,6 +498,45 @@ export default function LandingPage({ initialModal }: { initialModal?: "signup" 
             >
               ابدأ الآن مجانًا <ArrowLeft size={17} />
             </button>
+          </div>
+        </div>
+      </section>
+
+      <section id="home-faq" className="border-y border-slate-200 bg-white dark:border-slate-800 dark:bg-[#0F1928]" aria-labelledby="home-faq-title">
+        <div className="mx-auto max-w-3xl px-5 py-16 sm:px-8 lg:py-20">
+          <div className="text-center">
+            <p className="text-sm font-black text-[#398B79]">إجابات سريعة</p>
+            <h2 id="home-faq-title" className="mt-3 text-3xl font-black text-[#171723] dark:text-white sm:text-4xl">
+              أسئلة شائعة عن منصة قدراتك
+            </h2>
+            <p className="mt-3 text-sm leading-7 text-slate-500 dark:text-slate-300">
+              إجابات مباشرة تساعدك على اختيار مسار القدرات أو التحصيلي والبدء بثقة.
+            </p>
+          </div>
+          <div className="mt-8 space-y-3">
+            {[
+              {
+                question: "ما هي قدراتك؟",
+                answer: "قدراتك (Qodratak) منصة تعليمية سعودية تساعد الطلاب على الاستعداد لاختبارات القدرات والتحصيلي من خلال التأسيس، بنك الأسئلة، الاختبارات المحاكية وتحليل النتائج.",
+              },
+              {
+                question: "هل منصة قدراتك مناسبة للتدريب على القدرات والتحصيلي؟",
+                answer: "نعم. توفر المنصة مسارات للقدرات اللفظية والكمية، وللتحصيلي في الرياضيات والفيزياء والكيمياء والأحياء، مع شرح وتطبيق واختبار.",
+              },
+              {
+                question: "كيف أبدأ التدريب في منصة قدراتك؟",
+                answer: "أنشئ حسابًا أو ابدأ بالتجربة المجانية، ثم اختر مسار القدرات أو التحصيلي وحدد مستوى التدريب المناسب لك.",
+              },
+            ].map((item) => (
+              <details key={item.question} className="group rounded-2xl border border-slate-200 bg-[#F7F4EE] p-5 dark:border-slate-700 dark:bg-[#162235]">
+                <summary className="cursor-pointer list-none font-black text-[#171723] dark:text-white marker:hidden">
+                  {item.question}
+                </summary>
+                <p className="mt-3 border-t border-slate-200 pt-3 text-sm leading-7 text-slate-500 dark:border-slate-700 dark:text-slate-300">
+                  {item.answer}
+                </p>
+              </details>
+            ))}
           </div>
         </div>
       </section>

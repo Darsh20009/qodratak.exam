@@ -10,26 +10,80 @@ type RouteMetadata = {
 
 const PUBLIC_ROUTE_METADATA: Record<string, RouteMetadata> = {
   "/": {
-    title: "منصة قدراتك التعليمية | القدرات والتحصيلي",
+    title: "قدراتك | منصة القدرات والتحصيلي في السعودية",
     description:
-      "منصة قدرات تعليمية لطلاب السعودية: تأسيس ومحوسب للقدرات، تدريب التحصيلي، اختبارات يومية وتحليل واضح للتقدم.",
+      "قدراتك (Qodratak) هي منصة القدرات والتحصيلي في السعودية: تأسيس لفظي وكمي، بنك أسئلة، اختبارات محاكية وخطة تدريب واضحة.",
     structuredData: {
       "@context": "https://schema.org",
-      "@type": "EducationalOrganization",
-       name: "قدراتك",
-       legalName: LEGAL_ENTITY_NAME,
-      alternateName: ["Qodratak", "منصة قدراتك التعليمية"],
-      description: "منصة تعليمية وتدريبية متكاملة لطلاب الثانوية في السعودية للاستعداد للقدرات والتحصيلي.",
-      url: "https://qodratak.sa/",
-      areaServed: { "@type": "Country", name: "Saudi Arabia" },
-      hasOfferCatalog: {
-        "@type": "OfferCatalog",
-        name: "مسارات الاختبارات",
-        itemListElement: [
-          { "@type": "Course", name: "تدريب اختبار القدرات العامة" },
-          { "@type": "Course", name: "تدريب اختبار التحصيلي" },
-        ],
-      },
+      "@graph": [
+        {
+          "@type": ["Organization", "EducationalOrganization"],
+          "@id": "https://qodratak.sa/#organization",
+          name: "قدراتك",
+          legalName: LEGAL_ENTITY_NAME,
+          alternateName: ["منصة قدراتك", "منصة قدراتك التعليمية", "Qodratak"],
+          description: "منصة تعليمية وتدريبية متكاملة لطلاب الثانوية في السعودية للاستعداد للقدرات والتحصيلي.",
+          url: "https://qodratak.sa/",
+          areaServed: { "@type": "Country", name: "Saudi Arabia" },
+          knowsAbout: ["اختبار القدرات العامة", "اختبار التحصيلي", "القدرات اللفظية", "القدرات الكمية"],
+          hasOfferCatalog: {
+            "@type": "OfferCatalog",
+            name: "مسارات الاختبارات",
+            itemListElement: [
+              { "@type": "Course", name: "تدريب اختبار القدرات العامة" },
+              { "@type": "Course", name: "تدريب اختبار التحصيلي" },
+            ],
+          },
+        },
+        {
+          "@type": "WebSite",
+          "@id": "https://qodratak.sa/#website",
+          name: "قدراتك",
+          alternateName: ["منصة قدراتك", "Qodratak"],
+          url: "https://qodratak.sa/",
+          inLanguage: "ar-SA",
+          publisher: { "@id": "https://qodratak.sa/#organization" },
+        },
+        {
+          "@type": "WebPage",
+          "@id": "https://qodratak.sa/#webpage",
+          name: "قدراتك | منصة القدرات والتحصيلي في السعودية",
+          url: "https://qodratak.sa/",
+          inLanguage: "ar-SA",
+          isPartOf: { "@id": "https://qodratak.sa/#website" },
+          about: { "@id": "https://qodratak.sa/#organization" },
+        },
+        {
+          "@type": "FAQPage",
+          "@id": "https://qodratak.sa/#faq",
+          mainEntity: [
+            {
+              "@type": "Question",
+              name: "ما هي قدراتك؟",
+              acceptedAnswer: {
+                "@type": "Answer",
+                text: "قدراتك (Qodratak) منصة تعليمية سعودية تساعد الطلاب على الاستعداد لاختبارات القدرات والتحصيلي من خلال التأسيس وبنك الأسئلة والاختبارات المحاكية وتحليل النتائج.",
+              },
+            },
+            {
+              "@type": "Question",
+              name: "هل منصة قدراتك مناسبة للتدريب على القدرات والتحصيلي؟",
+              acceptedAnswer: {
+                "@type": "Answer",
+                text: "نعم، تقدم منصة قدراتك مسارات منفصلة للقدرات اللفظية والكمية وللتحصيلي، مع شروحات وتدريب واختبارات محاكية وخطة تقدم.",
+              },
+            },
+            {
+              "@type": "Question",
+              name: "كيف أبدأ في قدراتك؟",
+              acceptedAnswer: {
+                "@type": "Answer",
+                text: "ابدأ من الصفحة الرئيسية، اختر مسار القدرات أو التحصيلي، ثم حدد مستوى التدريب وابدأ بالدرس أو الاختبار المناسب لك.",
+              },
+            },
+          ],
+        },
+      ],
     },
   },
   "/qiyas-hub": {
@@ -71,6 +125,11 @@ const PUBLIC_ROUTE_METADATA: Record<string, RouteMetadata> = {
     title: "دليل الخدمات وطريقة الاستخدام | منصة قدراتك",
     description:
       "تعرف على رحلة الطالب وخدمات منصة قدراتك وبنك الأسئلة والمدرب الذكي والاختبارات المحاكية والأسعار ووسائل الدفع.",
+  },
+  "/pricing": {
+    title: "أسعار قدراتك وباقات التدريب | منصة القدرات والتحصيلي",
+    description:
+      "تعرف على باقات قدراتك للتدريب على القدرات والتحصيلي، وماذا يتضمن كل اشتراك من بنك أسئلة واختبارات وتحليل للتقدم.",
   },
   "/terms": {
     title: "الشروط والأحكام | منصة قدراتك",

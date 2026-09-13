@@ -15,10 +15,10 @@ interface SEOProps {
 
 const DOMAIN = 'https://qodratak.sa';
 const DEFAULT_IMAGE = `${DOMAIN}/qodratak-icon-light.png`;
-export const PLATFORM_NAME = 'منصة قدراتك التعليمية';
+export const PLATFORM_NAME = 'قدراتك | منصة القدرات والتحصيلي';
 export const PLATFORM_DESCRIPTION =
-  'منصة قدراتك التعليمية للاستعداد لاختبارات القدرات والتحصيلي عبر تدريب منظم، محاكاة، بنك أسئلة وتحليل واضح للتقدم.';
-const DEFAULT_TITLE = 'منصة قدراتك التعليمية | تدريب القدرات والتحصيلي بخطة واضحة';
+  'قدراتك (Qodratak) منصة تعليمية سعودية للتأسيس اللفظي والكمي، بنك أسئلة، اختبارات محاكية وخطة تدريب للقدرات والتحصيلي.';
+const DEFAULT_TITLE = 'قدراتك | منصة القدرات والتحصيلي في السعودية';
 
 export function SEO({
   title = DEFAULT_TITLE,

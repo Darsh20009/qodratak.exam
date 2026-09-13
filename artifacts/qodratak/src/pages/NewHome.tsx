@@ -6,7 +6,7 @@ import {
   BookOpenIcon, GraduationCapIcon, Sparkles, UserIcon, CrownIcon,
   Target, Trophy, ArrowRight, Brain, FileText, Zap, Star,
   CheckCircle2, BarChart2, Clock, Flame, Medal, TrendingUp,
-  Layers, BookMarked, ChevronLeft, Rocket, Award, ChevronRight,
+  Layers, BookMarked, ChevronLeft, ChevronDown, Rocket, Award, ChevronRight,
   MessageSquare, Search, CalendarDays,
   Timer, Dna, Users, BarChart3, BookOpen, Swords
 } from "lucide-react";
@@ -550,8 +550,8 @@ export default function NewHome() {
   return (
     <>
       <SEO
-        title="منصة قدراتك - رحلتك نحو التميز"
-        description="منصة قدراتك التعليمية - اختبارات تفاعلية لتطوير مهاراتك في اختبارات القدرات والقياس"
+        title="قدراتك | منصة القدرات والتحصيلي في السعودية"
+        description="قدراتك (Qodratak) منصة تعليمية للتأسيس اللفظي والكمي، بنك أسئلة، اختبارات محاكية وخطة تدريب للقدرات والتحصيلي."
         url="/"
       />
 
@@ -574,6 +574,10 @@ export default function NewHome() {
 
               <div className="animate-fade-in-up" style={{ animationDelay: "0.1s" }}>
                 <h1 className="text-5xl md:text-7xl font-black leading-tight tracking-tight">
+                  <span className="gradient-text-primary animate-gradient-shift" style={{ backgroundSize: "200%" }}>
+                    قدراتك
+                  </span>
+                  <br />
                   <span className="text-foreground">رحلتك نحو </span>
                   <span className="gradient-text-ocean animate-gradient-shift" style={{ backgroundSize: "200%" }}>
                     التميز
@@ -587,7 +591,7 @@ export default function NewHome() {
               </div>
 
               <p className="text-lg md:text-xl text-muted-foreground max-w-2xl mx-auto leading-relaxed animate-fade-in-up delay-200">
-                منصة تعليمية متكاملة لاختبارات القدرات والقياس
+                منصة قدراتك التعليمية — Qodratak — لاختبارات القدرات والتحصيلي
                 <br />
                 <span className="font-semibold text-foreground">أكثر من 4,500 سؤال · شروحات تفصيلية · تحليل ذكي</span>
               </p>
@@ -1123,6 +1127,51 @@ export default function NewHome() {
                   <h3 className="font-bold text-foreground text-sm mb-1.5">{item.title}</h3>
                   <p className="text-xs text-muted-foreground leading-relaxed">{item.desc}</p>
                 </div>
+              ))}
+            </div>
+          </div>
+        </section>
+
+        {/* ═══════════════════════════════════════
+            ANSWERS FOR STUDENTS AND SEARCH
+        ═══════════════════════════════════════ */}
+        <section className="container mx-auto px-4 py-16" aria-labelledby="home-faq-title">
+          <div className="mx-auto max-w-3xl">
+            <div className="mb-8 text-center">
+              <span className="text-sm font-bold text-primary">إجابات سريعة</span>
+              <h2 id="home-faq-title" className="mt-2 text-3xl font-black text-foreground">
+                أسئلة شائعة عن قدراتك
+              </h2>
+              <p className="mt-3 text-muted-foreground">
+                تعرف على منصة قدراتك وطريقة التدريب على القدرات والتحصيلي قبل أن تبدأ.
+              </p>
+            </div>
+            <div className="space-y-3">
+              {[
+                {
+                  question: "ما هي قدراتك؟",
+                  answer: "قدراتك (Qodratak) منصة تعليمية سعودية تساعد الطلاب على الاستعداد لاختبارات القدرات والتحصيلي من خلال التأسيس، بنك الأسئلة، الاختبارات المحاكية وتحليل النتائج.",
+                },
+                {
+                  question: "هل منصة قدراتك مناسبة للتدريب على القدرات والتحصيلي؟",
+                  answer: "نعم. توفر المنصة مسارات منفصلة للقدرات اللفظية والكمية، وللتحصيلي في الرياضيات والفيزياء والكيمياء والأحياء، مع شرح وتطبيق واختبار.",
+                },
+                {
+                  question: "كيف أبدأ التدريب في منصة قدراتك؟",
+                  answer: "أنشئ حسابًا أو ابدأ من الاختبار المتاح، ثم اختر مسار القدرات أو التحصيلي وحدد مستوى التدريب المناسب لك.",
+                },
+              ].map((item) => (
+                <details key={item.question} className="group rounded-2xl border border-border bg-card p-5">
+                  <summary className="cursor-pointer list-none font-black text-foreground marker:hidden">
+                    <span className="flex items-center justify-between gap-4">
+                      {item.question}
+                      <ChevronDown className="h-5 w-5 shrink-0 text-primary transition-transform group-open:rotate-180" />
+                    </span>
+                  </summary>
+                  <p className="mt-3 border-t border-border pt-3 text-sm leading-7 text-muted-foreground">
+                    {item.answer}
+                  </p>
+                </details>
               ))}
             </div>
           </div>
