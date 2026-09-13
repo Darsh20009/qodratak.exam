@@ -299,6 +299,17 @@ export default function FoundationPage() {
     });
   };
 
+  const startCurriculumQuiz = (title: string, order: number) => {
+    void openQuiz({
+      _id: `curriculum-quiz-${program}-${activeSection.key}-${order}`,
+      program,
+      title: `اختبار تأسيس ${title}`,
+      description: `اختبار تدريبي من بنك ${activeSection.shortTitle} بعد شرح ${title}.`,
+      videoUrl: "",
+      order,
+    });
+  };
+
   const openQuiz = async (lesson: FoundationContent) => {
     setQuizLesson(lesson);
     setQuizAnswers({});
@@ -384,42 +395,6 @@ export default function FoundationPage() {
         <p className="text-sm text-muted-foreground">{activeSection.description}</p>
       </header>
 
-      <section className="mb-8 grid gap-4 lg:grid-cols-[1.15fr_1fr]">
-        <div className="rounded-2xl bg-[#0D1B2A] p-5 text-white shadow-sm">
-          <div className="flex items-start justify-between gap-4">
-            <div>
-              <p className="text-sm font-bold text-[#CBD5E1]">تقدمك في مسار {program === "qudrat" ? "القدرات" : "التحصيلي"}</p>
-              <p className="mt-2 text-4xl font-black">
-                {isDashboardLoading ? "—" : `${trackProgress?.percentage || 0}%`}
-              </p>
-              <p className="mt-1 text-xs text-[#CBD5E1]">
-                {trackProgress?.questions || 0} سؤالًا تمت الإجابة عنه ضمن اختباراتك
-              </p>
-            </div>
-            <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-white/10">
-              <Target className="h-5 w-5 text-[#F7F775]" />
-            </div>
-          </div>
-          <ProgressBar value={trackProgress?.percentage || 0} className="mt-5 bg-white/20 [&>div]:bg-[#F7F775]" />
-        </div>
-
-        <div className="rounded-2xl border border-border bg-card p-5 shadow-sm">
-          <div className="flex items-start gap-3">
-            <Route className="mt-0.5 h-5 w-5 text-primary" />
-            <div className="min-w-0">
-              <p className="text-sm font-bold text-muted-foreground">خطتك المحددة لك</p>
-              <h2 className="mt-1 text-lg font-black text-foreground">{dashboard?.recommendedPlan?.title || "ابدأ بالتأسيس"}</h2>
-              <p className="mt-1 text-sm leading-6 text-muted-foreground">
-                {dashboard?.recommendedPlan?.description || "ابدأ بالشرح ثم حل اختبار قصير، وبعدها انتقل للتدريب."}
-              </p>
-              <Link href={dashboard?.recommendedPlan?.nextAction.href || `/foundation?program=${program}&subject=${activeSection.key}`} className="mt-3 inline-flex text-sm font-bold text-primary hover:underline">
-                {dashboard?.recommendedPlan?.nextAction.label || "ابدأ الآن"}
-              </Link>
-            </div>
-          </div>
-        </div>
-      </section>
-
       <div className={`mb-8 grid gap-3 ${program === "qudrat" ? "sm:grid-cols-2" : "sm:grid-cols-2 lg:grid-cols-4"}`}>
         {foundationSections[program].map((section) => (
           <button
@@ -437,33 +412,6 @@ export default function FoundationPage() {
           </button>
         ))}
       </div>
-
-      <section className="mb-6 rounded-3xl border border-border bg-card p-5 shadow-sm">
-        <div className="flex flex-wrap items-start justify-between gap-4 border-b border-border pb-4">
-          <div>
-            <div className="flex items-center gap-2">
-              <BookOpen className="h-5 w-5 text-primary" />
-              <h2 className="text-xl font-black text-foreground">خطة تأسيس {activeSection.shortTitle}</h2>
-            </div>
-            <p className="mt-2 max-w-3xl text-sm leading-7 text-muted-foreground">{curriculum.intro}</p>
-          </div>
-          <span className="rounded-full bg-emerald-500/10 px-3 py-1 text-xs font-black text-emerald-700 dark:text-emerald-300">شرح + تطبيق + اختبار</span>
-        </div>
-        <div className="mt-4 grid gap-3 md:grid-cols-2">
-          {curriculum.lessons.map((lesson, index) => (
-            <div key={lesson.title} className="rounded-2xl border border-border bg-background p-4">
-              <div className="flex items-start gap-3">
-                <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-sm font-black text-primary">{index + 1}</span>
-                <div>
-                  <h3 className="font-black text-foreground">{lesson.title}</h3>
-                  <p className="mt-1 text-sm leading-6 text-muted-foreground">{lesson.summary}</p>
-                  <p className="mt-2 text-xs leading-5 text-primary">نصيحة: {lesson.coaching}</p>
-                </div>
-              </div>
-            </div>
-          ))}
-        </div>
-      </section>
 
       {isLoading ? (
         <div className="flex items-center justify-center rounded-2xl border border-border bg-card py-20">
