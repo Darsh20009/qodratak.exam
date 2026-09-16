@@ -1,0 +1,219 @@
+نفّذ الآن **Phase 05 فقط: UNIFIED LEARNING ATTEMPTS**.
+
+الهدف:
+التأكد أن كل محاولة سؤال تعليمية حقيقية داخل النظام يتم تسجيلها عبر `LearningAttempt` و`Learning Profile Service`، بدل وجود مسارات مختلفة تسجل النتائج بطرق مختلفة.
+
+### 1. Audit أولًا
+
+افحص جميع التدفقات الحالية التي تعرض سؤالًا وتستقبل إجابة، خصوصًا:
+
+* Qudrat practice
+* Qudrat tests
+* Tahsili practice
+* Tahsili tests
+* question retry / إعادة السؤال
+* submit answer
+* finish test
+* أي تدفق آخر يسجل correct/wrong/unanswered
+
+لا تفترض أسماء الملفات. ابحث في الكود أولًا.
+
+### 2. Unified Attempt Recording
+
+اجعل `LearningAttempt Service` هو المسار الموحد لتسجيل المحاولة.
+
+كل محاولة يجب أن تحفظ قدر الإمكان:
+
+* studentId
+* questionId
+* sourceType
+* sourceKey
+* programId
+* subjectId
+* sessionId إن وجدت
+* selectedAnswer
+* isAnswered
+* isCorrect
+* responseTime
+* attemptNumber
+* idempotencyKey
+* metadata
+
+### 3. Correctness
+
+لا تثق أبدًا في `isCorrect` القادم من frontend.
+
+الصواب/الخطأ يجب حسابه من السؤال والإجابة الصحيحة الموجودة في الخادم.
+
+### 4. Source Identity
+
+انتبه إلى أن نفس `questionId` قد يظهر من أكثر من مصدر.
+
+استخدم:
+
+`sourceType + sourceKey + questionId`
+
+كهوية للمصدر عندما يكون ذلك ضروريًا، ولا تفترض أن `questionId` وحده عالمي.
+
+### 5. Duplicate Requests
+
+تعامل مع:
+
+* double click
+* network retry
+* browser retry
+* duplicate submit
+* refresh/re-submit
+
+باستخدام `idempotencyKey`.
+
+نفس المحاولة المعاد إرسالها يجب ألا تؤدي إلى تسجيل محاولة ثانية.
+
+### 6. Real Retries
+
+إذا كان الطالب قد حل السؤال فعلًا مرة أخرى كمحاولة جديدة، فلا تعتبرها duplicate.
+
+يجب تسجيلها كمحاولة حقيقية جديدة مع:
+
+`attemptNumber`
+
+مناسب.
+
+### 7. Existing Systems
+
+لا تحذف أو تكسر:
+
+* `TestResult`
+* `ErrorLog`
+* `DailyProgress`
+* `ActivityLog`
+
+لكن اجعل العلاقة واضحة:
+
+* `LearningAttempt` = سجل المحاولة التعليمية الأساسي.
+* `TestResult` = aggregate/result للاختبار.
+* `ErrorLog` = compatibility/legacy error record، وليس مصدر الحقيقة لكل المحاولات.
+* `ActivityLog` = event/audit activity.
+
+إذا كانت المسارات القديمة تحتاج Adapter للانتقال إلى الخدمة الموحدة، استخدم Adapter بدل إعادة كتابة النظام كله.
+
+### 8. Observed Performance
+
+بعد تسجيل المحاولة، حدّث `StudentLearningProfile` وObserved Performance بالطريقة الموجودة في Phase 04.
+
+لا تضف:
+
+* Mastery
+* Diagnosis
+* Recommendations
+* Adaptive decisions
+
+في هذه المرحلة.
+
+### 9. Test Coverage
+
+أضف اختبارات تغطي على الأقل:
+
+1. Qudrat correct answer
+2. Qudrat wrong answer
+3. Tahsili correct answer
+4. Tahsili wrong answer
+5. unanswered question
+6. retry = new attempt
+7. duplicate network request = no duplicate attempt
+8. same questionId from different source
+9. invalid question
+10. invalid answer
+11. server-side correctness
+12. responseTime validation
+13. session-linked attempt
+14. Observed Performance update
+
+إذا كان Mongo-backed integration testing متاحًا بسهولة داخل المشروع، أضف اختبارات حقيقية عليه لمسار التسجيل والتحديث.
+
+### 10. Logging
+
+أضف logging واضحًا للحالات غير الطبيعية فقط، مثل:
+
+* invalid question
+* source collision
+* rejected attempt
+* duplicate idempotencyKey
+* failed profile update
+
+لا تضف logging مفرطًا لكل request عادي.
+
+### 11. Indexes
+
+راجع indexes اللازمة للاستعلامات الفعلية، خصوصًا:
+
+* studentId
+* question identity
+* sessionId
+* createdAt
+* idempotencyKey
+
+ولا تضف indexes عشوائية.
+
+### 12. Frontend
+
+لا تعيد تصميم الواجهة.
+
+لا تضف:
+
+* Dashboard
+* chatbot
+* assistant
+* AI UI
+* badges
+* floating buttons
+
+المطلوب فقط ربط التدفقات الحالية بالخدمة الموحدة إذا كان ذلك ضروريًا.
+
+### 13. Documentation
+
+أنشئ:
+
+`docs/unified-learning-attempts.md`
+
+ويشرح:
+
+* أين يتم تسجيل المحاولة
+* كيف يتم حساب correctness
+* كيف تعمل idempotency
+* كيف تعمل attemptNumber
+* كيف يتم التعامل مع multi-source questions
+* علاقة LearningAttempt بـ TestResult
+* علاقة LearningAttempt بـ ErrorLog
+* علاقة LearningAttempt بـ StudentLearningProfile
+
+### 14. Important Scope Rule
+
+لا تبدأ أي شيء من:
+
+* Error Detection
+* Error Taxonomy
+* Mastery Engine
+* Recommendation Engine
+* Diagnostic Engine
+* Adaptive Learning
+* Spaced Repetition
+
+هذه كلها مراحل لاحقة.
+
+**Phase 05 = Record the student correctly.**
+
+في النهاية توقف تمامًا وأعطني تقريرًا يحتوي على:
+
+1. كل question flows التي وجدتها.
+2. أي flows تم ربطها بـ LearningAttempt.
+3. كيف تم منع duplicate submissions.
+4. كيف تم التعامل مع retries.
+5. كيف تم تحديد source identity.
+6. كيف يتعامل النظام مع TestResult.
+7. كيف يتعامل النظام مع ErrorLog.
+8. الاختبارات وعددها ونتائجها.
+9. Build status.
+10. أي regressions أو مشاكل موجودة مسبقًا.
+
+لا تنتقل إلى Phase 06.
