@@ -14,7 +14,19 @@ export interface StudentDashboard {
   recentTests: Array<{ id: string; title: string; score: number; date: string; type: string }>;
   weaknesses: Array<{ subject: string; topic: string; errorRate: number }>;
   upcomingExam: { date: string | null; targetScore?: number };
-  recommendedPlan: { title: string; description: string; nextAction: { label: string; href: string } };
+  recommendedPlan: {
+    title: string;
+    description: string;
+    nextAction: { label: string; href: string };
+    focusSubject?: "verbal" | "quantitative";
+    program?: "qudrat" | "tahsili";
+  };
+  officialScores: {
+    verbal?: number;
+    quantitative?: number;
+    program?: "qudrat" | "tahsili";
+    updatedAt?: string;
+  } | null;
   subscription: { type: string; status: string; daysLeft: number };
   trial: { isActive: boolean; daysLeft: number } | null;
   booksCount: number;
@@ -141,13 +153,27 @@ export function useStudentDashboard(enabled = true) {
         })),
         upcomingExam: { date: examDate },
         recommendedPlan: {
-          title: levelLabels[data.recommendedPlan?.level] || "خطتك التالية",
+          title: data.recommendedPlan?.focusSubject === "verbal"
+            ? "ابدأ بخطة اللفظي"
+            : data.recommendedPlan?.focusSubject === "quantitative"
+              ? "ابدأ بخطة الكمي"
+              : levelLabels[data.recommendedPlan?.level] || "خطتك التالية",
           description: data.recommendedPlan?.focus || "ابدأ بالتأسيس ثم انتقل إلى التدريب المحوسب.",
           nextAction: {
             label: data.recommendedPlan?.level === "mastery" ? "ابدأ اختبارًا محاكيًا" : "افتح خطتك",
-            href: data.recommendedPlan?.level === "mastery" ? "/book-exam" : "/foundation",
+            href: data.recommendedPlan?.focusSubject
+              ? `/foundation?program=${data.recommendedPlan?.program || "qudrat"}&subject=${data.recommendedPlan.focusSubject}`
+              : data.recommendedPlan?.level === "mastery" ? "/book-exam" : "/foundation",
           },
         },
+        officialScores: data.officialScores
+          ? {
+              verbal: data.officialScores.verbal !== undefined ? Number(data.officialScores.verbal) : undefined,
+              quantitative: data.officialScores.quantitative !== undefined ? Number(data.officialScores.quantitative) : undefined,
+              program: data.officialScores.program === "tahsili" ? "tahsili" : data.officialScores.program === "qudrat" ? "qudrat" : undefined,
+              updatedAt: data.officialScores.updatedAt,
+            }
+          : null,
         subscription: {
           type: data.subscription?.type || (data.subscription?.state === "trial" ? "التجربة المجانية" : "الحساب المجاني"),
           status: data.subscription?.state || "none",
@@ -161,6 +187,29 @@ export function useStudentDashboard(enabled = true) {
     staleTime: 15000,
     refetchOnWindowFocus: true,
     enabled,
+  });
+}
+
+export function useUpdateOfficialScores() {
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
+  return useMutation({
+    mutationFn: (scores: {
+      verbal?: number;
+      quantitative?: number;
+      program: "qudrat" | "tahsili";
+    }) => fetchJson<{ officialScores: StudentDashboard["officialScores"] }>("/api/student/official-scores", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(scores),
+    }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/student/dashboard"] });
+      toast({
+        title: "تم حفظ النتيجة",
+        description: "حدّثنا الخطة لتبدأ من القسم الذي يحتاج دعمًا أكبر.",
+      });
+    },
   });
 }
 

@@ -11637,6 +11637,54 @@ app.post("/api/auth/register", async (req: Request, res: Response) => {
     }
   });
 
+  app.get('/api/student/official-scores', requireAuth, async (req: Request, res: Response) => {
+    const userId = studentOnly(req, res);
+    if (!userId) return;
+    try {
+      const { User } = await import('../mongodb/models');
+      const user = await User.findById(userId).select('officialScores').lean() as any;
+      if (!user) return res.status(404).json({ error: 'المستخدم غير موجود' });
+      return res.json({ officialScores: user.officialScores || null });
+    } catch (error) {
+      console.error('Official scores read error:', error);
+      return res.status(500).json({ error: 'تعذر تحميل الدرجات الرسمية' });
+    }
+  });
+
+  app.patch('/api/student/official-scores', requireAuth, async (req: Request, res: Response) => {
+    const userId = studentOnly(req, res);
+    if (!userId) return;
+    const { verbal, quantitative, program } = req.body || {};
+    const hasVerbal = verbal !== undefined && verbal !== null && verbal !== '';
+    const hasQuantitative = quantitative !== undefined && quantitative !== null && quantitative !== '';
+    if (!hasVerbal && !hasQuantitative) {
+      return res.status(400).json({ error: 'أدخل درجة لفظي أو كمي واحدة على الأقل' });
+    }
+    const normalized = {
+      ...(hasVerbal ? { verbal: Number(verbal) } : {}),
+      ...(hasQuantitative ? { quantitative: Number(quantitative) } : {}),
+      ...(program === 'qudrat' || program === 'tahsili' ? { program } : {}),
+      updatedAt: new Date(),
+    };
+    const values = [normalized.verbal, normalized.quantitative].filter((value) => value !== undefined);
+    if (values.some((value) => !Number.isFinite(value) || value < 0 || value > 100)) {
+      return res.status(400).json({ error: 'الدرجات يجب أن تكون بين 0 و100' });
+    }
+    try {
+      const { User } = await import('../mongodb/models');
+      const user = await User.findByIdAndUpdate(
+        userId,
+        { $set: { officialScores: normalized } },
+        { new: true, projection: { officialScores: 1 } },
+      ).lean() as any;
+      if (!user) return res.status(404).json({ error: 'المستخدم غير موجود' });
+      return res.json({ officialScores: user.officialScores });
+    } catch (error) {
+      console.error('Official scores update error:', error);
+      return res.status(500).json({ error: 'تعذر حفظ الدرجات الرسمية' });
+    }
+  });
+
   app.get('/api/user/guardian', requireAuth, async (req: Request, res: Response) => {
     const userId = studentOnly(req, res);
     if (!userId) return;
@@ -11713,7 +11761,7 @@ app.post("/api/auth/register", async (req: Request, res: Response) => {
       const { User, TestResult, ErrorLog, ExamBooking, Subscription, Folder, FolderQuestion } = await import('../mongodb/models');
       const now = new Date();
       const [user, testAggregate, recentTests, weakAreas, upcomingBooking, activeSubscription, folderCount, savedQuestionCount, progressAggregates] = await Promise.all([
-        User.findById(userId).select('level targetExamDate trialUsed trialStartDate trialEndDate subscription').lean(),
+        User.findById(userId).select('level targetExamDate trialUsed trialStartDate trialEndDate subscription officialScores academicTrack').lean(),
         TestResult.aggregate([{ $match: { userId } }, { $group: { _id: null, total: { $sum: 1 }, averagePercentage: { $avg: '$percentage' }, correct: { $sum: '$correctAnswers' }, wrong: { $sum: '$wrongAnswers' }, skipped: { $sum: '$skippedQuestions' }, questions: { $sum: '$totalQuestions' } } }]),
         TestResult.find({ userId }).sort({ completedAt: -1 }).limit(5).select('testName testType percentage score totalQuestions completedAt weakAreas').lean(),
         ErrorLog.aggregate([{ $match: { userId } }, { $group: { _id: '$subcategory', count: { $sum: 1 } } }, { $sort: { count: -1, _id: 1 } }, { $limit: 5 }]),
@@ -11736,7 +11784,22 @@ app.post("/api/auth/register", async (req: Request, res: Response) => {
       if (!user) return res.status(404).json({ error: 'المستخدم غير موجود' });
       const totals = testAggregate[0] || { total: 0, averagePercentage: 0, correct: 0, wrong: 0, skipped: 0, questions: 0 };
       const level = Math.max(1, Number(user.level || 1));
-      const recommendedPlan = level <= 2
+      const officialScores = (user as any).officialScores || null;
+      const weakestOfficialArea = officialScores?.verbal !== undefined && officialScores?.quantitative !== undefined
+        ? (Number(officialScores.verbal) <= Number(officialScores.quantitative) ? 'verbal' : 'quantitative')
+        : officialScores?.verbal !== undefined ? 'verbal'
+          : officialScores?.quantitative !== undefined ? 'quantitative' : null;
+      const recommendedPlan = weakestOfficialArea
+        ? {
+            level: 'practice',
+            sessionsPerWeek: 5,
+            focus: weakestOfficialArea === 'verbal'
+              ? 'خطتك موجهة لتحسين اللفظي أولًا، ثم مراجعة الكمي أسبوعيًا.'
+              : 'خطتك موجهة لتحسين الكمي أولًا، ثم مراجعة اللفظي أسبوعيًا.',
+            focusSubject: weakestOfficialArea,
+            program: officialScores.program || ((user as any).academicTrack === 'tahsili' ? 'tahsili' : 'qudrat'),
+          }
+        : level <= 2
         ? { level: 'foundation', sessionsPerWeek: 4, focus: 'إتقان الأساسيات وحل اختبارات قصيرة' }
         : level <= 5
           ? { level: 'practice', sessionsPerWeek: 5, focus: 'التدريب المركز على نقاط الضعف' }
@@ -11788,6 +11851,7 @@ app.post("/api/auth/register", async (req: Request, res: Response) => {
         weaknesses: weakAreas.filter((area: any) => area._id).map((area: any) => ({ name: area._id, errorCount: area.count })),
         upcomingExam: upcomingBooking || (user.targetExamDate && new Date(user.targetExamDate) >= now ? { targetExamDate: user.targetExamDate } : null),
         recommendedPlan,
+        officialScores,
         subscription: activeSubscription ? { state: 'active', type: activeSubscription.type, endDate: activeSubscription.endDate } : { state: trialActive ? 'trial' : 'none', trialUsed: Boolean(user.trialUsed), endDate: user.trialEndDate || null },
         library: { folders: folderCount, savedQuestions: savedQuestionCount, books: 0 },
       });

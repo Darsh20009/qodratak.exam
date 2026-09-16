@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { Link } from "wouter";
 import { usePlatformReviews, useStudentDashboard, useSubmitReview, useUpdateExamDate } from "@/hooks/use-student";
+import OfficialScoreCard from "@/components/student/OfficialScoreCard";
 import { useUser } from "@/hooks/use-user";
 import {
   Brain,
@@ -172,6 +173,7 @@ export default function DashboardPage() {
       <div className="grid md:grid-cols-3 gap-6">
         {/* Main Column */}
         <div className="md:col-span-2 space-y-6">
+          <OfficialScoreCard scores={dashboard.officialScores} />
           {/* Recommended Plan */}
           <section>
             <div className="flex items-center justify-between mb-4">

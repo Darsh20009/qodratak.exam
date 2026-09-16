@@ -66,6 +66,12 @@ export interface IUser extends Document {
   gradeLevel?: string;
   studyGoal?: string;
   targetScore?: number;
+  officialScores?: {
+    verbal?: number;
+    quantitative?: number;
+    program?: 'qudrat' | 'tahsili';
+    updatedAt?: Date;
+  };
   guardianPhone?: string;
   targetExamDate?: Date;
   securitySetupDone?: boolean;
@@ -263,6 +269,12 @@ const userSchema = new Schema<IUser>({
   gradeLevel: { type: String },
   studyGoal: { type: String },
   targetScore: { type: Number },
+  officialScores: {
+    verbal: { type: Number, min: 0, max: 100 },
+    quantitative: { type: Number, min: 0, max: 100 },
+    program: { type: String, enum: ['qudrat', 'tahsili'] },
+    updatedAt: { type: Date },
+  },
   // Student-product fields. Kept separate from legacy parent account links.
   guardianPhone: { type: String },
   targetExamDate: { type: Date },

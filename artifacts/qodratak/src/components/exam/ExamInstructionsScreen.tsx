@@ -1,6 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { getQueryFn } from "@/lib/queryClient";
-import { Loader2 } from "lucide-react";
+import { useState } from "react";
+import ExamModeSettings, { enterExamDisplayMode, type ExamModeSettingsValue } from "@/components/exam/ExamModeSettings";
 
 interface PastAttempt {
   id: number | string;
@@ -32,7 +33,7 @@ interface Exam {
 interface Props {
   exam: Exam;
   userId?: number | string;
-  onStart: () => void;
+  onStart: (settings: ExamModeSettingsValue) => void | Promise<void>;
   isLoading?: boolean;
   onBack: () => void;
 }
@@ -70,6 +71,7 @@ function calcBestAttempt(attempts: PastAttempt[]) {
 }
 
 export default function ExamInstructionsScreen({ exam, userId, onStart, isLoading = false, onBack }: Props) {
+  const [settings, setSettings] = useState<ExamModeSettingsValue>({ monitored: true, fullscreen: false });
   const { data: pastAttempts = [] } = useQuery<PastAttempt[]>({
     queryKey: ["/api/test-results/user", userId],
     queryFn: getQueryFn({ on401: "returnNull" }),
@@ -116,18 +118,18 @@ export default function ExamInstructionsScreen({ exam, userId, onStart, isLoadin
               </li>
             </ol>
             <p className="mt-5 text-gray-600 text-sm">مع خالص دعواتنا بالتوفيق…</p>
-            <button
-              onClick={onStart}
-              disabled={isLoading}
-              className="mt-6 bg-[#02a89f] hover:bg-[#028a82] text-white font-semibold py-2 px-8 rounded transition-colors text-sm"
-            >
-              {isLoading ? (
-                <span className="inline-flex items-center gap-2">
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                  جارٍ تجهيز الأسئلة...
-                </span>
-              ) : "أوافق"}
-            </button>
+            <div className="mt-6">
+              <ExamModeSettings
+                value={settings}
+                onChange={setSettings}
+                isLoading={isLoading}
+                startLabel={isLoading ? "جارٍ تجهيز الأسئلة..." : "أوافق وابدأ"}
+                onStart={async () => {
+                  await enterExamDisplayMode(settings.fullscreen);
+                  await onStart(settings);
+                }}
+              />
+            </div>
           </div>
 
           {/* Exam Details Card */}

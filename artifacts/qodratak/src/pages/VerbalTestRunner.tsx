@@ -24,6 +24,7 @@ import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { EndTestButton } from '@/components/ui/EndTestButton';
 import { QiyasExamLayout } from '@/components/QiyasExamLayout';
+import ExamModeSettings, { enterExamDisplayMode, type ExamModeSettingsValue } from '@/components/exam/ExamModeSettings';
 import { apiRequest } from '@/lib/queryClient';
 import { useToast } from '@/hooks/use-toast';
 import { useUser } from '@/hooks/use-user';
@@ -63,6 +64,7 @@ export function VerbalTestRunner() {
   const [showConfirmFinish, setShowConfirmFinish] = useState(false);
   const [testConfig, setTestConfig] = useState<TestConfig | null>(null);
   const [hasStarted, setHasStarted] = useState(false);
+  const [examSettings, setExamSettings] = useState<ExamModeSettingsValue>({ monitored: true, fullscreen: false });
   const [bookmarkedQuestions, setBookmarkedQuestions] = useState<Set<number>>(new Set());
   const [showAiReview, setShowAiReview] = useState(false);
   const [wrongQuestionsForAI, setWrongQuestionsForAI] = useState<WrongQuestion[]>([]);
@@ -72,7 +74,7 @@ export function VerbalTestRunner() {
   const shownSectionIntros = React.useRef<Set<string>>(new Set());
 
   const { violations, lastViolationType, isWarningVisible, dismissWarning } = useAntiCheat({
-    enabled: hasStarted,
+    enabled: hasStarted && examSettings.monitored,
     maxViolations: 5,
     onViolation: () => { setIsPaused(true); setTimeout(() => setIsPaused(false), 3000); },
     onMaxViolations: () => {
@@ -190,6 +192,7 @@ export function VerbalTestRunner() {
 
       return () => clearInterval(timer);
     }
+    return undefined;
   }, [hasStarted, isPaused, timeRemaining]);
 
   const startTest = () => {
@@ -226,6 +229,11 @@ export function VerbalTestRunner() {
   const finishTest = () => {
     setShowConfirmFinish(false);
     handleFinishTest();
+  };
+
+  const startTestWithSettings = async () => {
+    await enterExamDisplayMode(examSettings.fullscreen);
+    startTest();
   };
 
   const handleFinishTest = async () => {
@@ -415,24 +423,11 @@ export function VerbalTestRunner() {
                 </div>
               </div>
               
-              <div className="bg-yellow-50 dark:bg-yellow-900/20 p-3 rounded-xl text-right">
-                <h3 className="font-semibold text-yellow-800 dark:text-yellow-200 mb-2 text-sm">تعليمات مهمة:</h3>
-                <ul className="text-xs text-yellow-700 dark:text-yellow-300 space-y-1">
-                  <li>• يمكنك التنقل بين الأسئلة بحرية</li>
-                  <li>• يمكنك إيقاف المؤقت مؤقتاً إذا احتجت</li>
-                  <li>• تأكد من إجابتك قبل الانتهاء</li>
-                  <li>• سيتم حفظ النتيجة تلقائياً</li>
-                </ul>
-              </div>
-              
-              <Button 
-                onClick={startTest}
-                size="lg"
-                className="w-full bg-gradient-to-r from-blue-600 to-emerald-600 hover:from-blue-700 hover:to-emerald-600"
-              >
-                <Play className="w-5 h-5 mr-2" />
-                ابدأ الاختبار الآن
-              </Button>
+              <ExamModeSettings
+                value={examSettings}
+                onChange={setExamSettings}
+                onStart={startTestWithSettings}
+              />
             </CardContent>
           </Card>
         </motion.div>

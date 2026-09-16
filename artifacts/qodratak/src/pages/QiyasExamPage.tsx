@@ -12,6 +12,7 @@ import { apiRequest } from "@/lib/queryClient";
 import { SEO } from "@/components/SEO";
 import { QiyasExamLayout } from "@/components/QiyasExamLayout";
 import ExamInstructionsScreen from "@/components/exam/ExamInstructionsScreen";
+import type { ExamModeSettingsValue } from "@/components/exam/ExamModeSettings";
 import ExamSectionIntro from "@/components/exam/ExamSectionIntro";
 import SubSectionIntroOverlay, { normalizeSubcategory } from "@/components/exam/SubSectionIntroOverlay";
 import {
@@ -333,9 +334,10 @@ const QiyasExamPage: React.FC = () => {
   const [showEarlySubmitConfirm, setShowEarlySubmitConfirm] = useState(false);
   const [unansweredCount, setUnansweredCount] = useState(0);
   const [pendingSectionAdvance, setPendingSectionAdvance] = useState(false);
+  const [examSettings, setExamSettings] = useState<ExamModeSettingsValue>({ monitored: true, fullscreen: false });
 
   const { violations: antiCheatViolations, lastViolationType: antiCheatType, isWarningVisible: antiCheatWarning, dismissWarning: dismissAntiCheatWarning } = useAntiCheat({
-    enabled: currentView === 'inProgress',
+    enabled: currentView === 'inProgress' && examSettings.monitored,
     maxViolations: 3,
     onMaxViolations: () => { setTimeout(() => finishExamRef.current?.(), 2000); },
   });
@@ -824,8 +826,9 @@ const QiyasExamPage: React.FC = () => {
     }
   };
 
-  const startExam = async () => {
+  const startExam = async (settings?: ExamModeSettingsValue) => {
     if (!selectedExam || isLoadingExam) return;
+    if (settings) setExamSettings(settings);
     setIsLoadingExam(true);
 
     setCurrentSectionIdx(0);
@@ -1525,7 +1528,7 @@ const QiyasExamPage: React.FC = () => {
       <ExamInstructionsScreen
         exam={selectedExam}
         userId={user?.id}
-        onStart={startExam}
+        onStart={(settings) => startExam(settings)}
         isLoading={isLoadingExam}
         onBack={() => setCurrentView("selection")}
       />

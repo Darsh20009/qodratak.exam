@@ -11,6 +11,7 @@ import { Progress } from '@/components/ui/progress';
 import { Badge } from '@/components/ui/badge';
 import { EndTestButton } from '@/components/ui/EndTestButton';
 import { QiyasExamLayout } from '@/components/QiyasExamLayout';
+import ExamModeSettings, { enterExamDisplayMode, type ExamModeSettingsValue } from '@/components/exam/ExamModeSettings';
 import { 
   Clock, 
   CheckCircle2, 
@@ -60,6 +61,7 @@ export function QuantitativeTestRunner() {
   const [timeRemaining, setTimeRemaining] = useState(0);
   const [isPaused, setIsPaused] = useState(false);
   const [testStarted, setTestStarted] = useState(false);
+  const [examSettings, setExamSettings] = useState<ExamModeSettingsValue>({ monitored: true, fullscreen: false });
   const [testCompleted, setTestCompleted] = useState(false);
   const [showConfirmFinish, setShowConfirmFinish] = useState(false);
   const [bookmarkedQuestions, setBookmarkedQuestions] = useState<Set<number>>(new Set());
@@ -72,7 +74,7 @@ export function QuantitativeTestRunner() {
   const shownSectionIntros = React.useRef<Set<string>>(new Set());
 
   const { violations, lastViolationType, isWarningVisible, dismissWarning } = useAntiCheat({
-    enabled: testStarted && !testCompleted,
+    enabled: testStarted && !testCompleted && examSettings.monitored,
     maxViolations: 5,
     onViolation: (type, count) => {
       setIsPaused(true);
@@ -91,6 +93,11 @@ export function QuantitativeTestRunner() {
       else next.add(index);
       return next;
     });
+  };
+
+  const startTestWithSettings = async () => {
+    await enterExamDisplayMode(examSettings.fullscreen);
+    startTest();
   };
 
   // بيانات الاختبار من localStorage
@@ -399,24 +406,11 @@ export function QuantitativeTestRunner() {
                 </div>
               </div>
               
-              <div className="bg-yellow-50 dark:bg-yellow-900/20 p-3 rounded-xl text-right">
-                <h3 className="font-semibold text-yellow-800 dark:text-yellow-200 mb-2 text-sm">تعليمات مهمة:</h3>
-                <ul className="text-xs text-yellow-700 dark:text-yellow-300 space-y-1">
-                  <li>• يمكنك التنقل بين الأسئلة بحرية</li>
-                  <li>• يمكنك إيقاف المؤقت مؤقتاً إذا احتجت</li>
-                  <li>• تأكد من إجابتك قبل الانتهاء</li>
-                  <li>• سيتم حفظ النتيجة تلقائياً</li>
-                </ul>
-              </div>
-              
-              <Button 
-                onClick={startTest}
-                size="lg"
-                className="w-full bg-gradient-to-r from-blue-600 to-emerald-600 hover:from-blue-700 hover:to-emerald-600"
-              >
-                <Play className="w-5 h-5 mr-2" />
-                ابدأ الاختبار الآن
-              </Button>
+              <ExamModeSettings
+                value={examSettings}
+                onChange={setExamSettings}
+                onStart={startTestWithSettings}
+              />
             </CardContent>
           </Card>
         </motion.div>

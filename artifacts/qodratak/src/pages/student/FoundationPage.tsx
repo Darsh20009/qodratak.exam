@@ -19,6 +19,7 @@ import { ArrowLeft, BarChart3, BookOpen, Clock, GraduationCap, ListChecks, Loade
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Progress } from "@/components/ui/progress";
+import OfficialScoreCard from "@/components/student/OfficialScoreCard";
 
 type QuizQuestion = {
   _id?: string;
@@ -350,6 +351,8 @@ function FoundationHome({
           </div>
         </section>
 
+      <OfficialScoreCard scores={dashboard?.officialScores || null} />
+
       <section className="grid gap-4 lg:grid-cols-[1.15fr_1fr]">
         <div className="rounded-2xl border border-border bg-card p-5 shadow-sm">
           <div className="mb-4 flex items-center justify-between gap-3">
@@ -488,11 +491,11 @@ function FoundationTrackOverview({
 
 export default function FoundationPage() {
   const [location, setLocation] = useLocation();
-  const queryString = typeof window !== "undefined" && window.location.search
-    ? window.location.search
-    : location.includes("?")
-      ? `?${location.split("?")[1]}`
-      : "";
+  // wouter is the source of truth for SPA navigation. Reading window.location
+  // here leaves the old query in place until a full browser refresh.
+  const queryString = location.includes("?")
+    ? location.slice(location.indexOf("?"))
+    : "";
   const params = new URLSearchParams(queryString);
   const hasProgram = params.get("program") === "qudrat" || params.get("program") === "tahsili";
   const hasSubject = Boolean(params.get("subject"));
