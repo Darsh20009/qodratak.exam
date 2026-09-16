@@ -22,3 +22,4 @@
 - [Content taxonomy review boundary](content-taxonomy-review-boundary.md) — source labels can seed safe program/subject candidates, but deep Skill/Concept mappings require review evidence.
 - [Student learning profile foundation](student-learning-profile-foundation.md) — keep observed counters compact, attempts/sessions separate, and legacy diagnostic fields backward-compatible.
 - [Unified learning attempts](unified-learning-attempts.md) — server-owned answer keys and source identity are mandatory before recording trusted per-question learning data.
+- [Error evidence boundary](error-evidence-boundary.md) — wrong answers are evidence, not concept-gap judgments; keep inferred error types traceable and separate from legacy ErrorLog.

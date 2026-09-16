@@ -8,6 +8,15 @@ import {
   observedAccuracy,
   verifyServerAnswer,
 } from '../src/services/learningProfileService.ts';
+import { ErrorLog } from '../src/mongodb/models.ts';
+import {
+  LEARNING_ERROR_TYPES,
+  LearningErrorEvidence,
+} from '../src/mongodb/learningProfileModels.ts';
+import {
+  inferLearningError,
+  normalizeLearningErrorSelfReport,
+} from '../src/services/learningErrorService.ts';
 
 test('normalizes a valid observed attempt without inventing deep taxonomy', () => {
   const result = normalizeLearningAttemptInput({
@@ -141,4 +150,125 @@ test('observed profile counters exclude unanswered questions from wrong counts',
   assert.equal(observedAccuracy(1, 1), 50);
   assert.equal(observedAccuracy(1, 0), 100);
   assert.equal(observedAccuracy(0, 0), 0);
+});
+
+test('wrong answer without cause evidence stays UNKNOWN with low confidence', () => {
+  const result = inferLearningError({
+    isAnswered: true,
+    isCorrect: false,
+    responseTime: 20,
+  });
+
+  assert.equal(result.errorType, 'UNKNOWN');
+  assert.equal(result.confidence, 'LOW');
+  assert.equal(result.inferenceRule, 'wrong-answer-only');
+  assert.equal(result.evidence.some((item) => item.type === 'wrong_answer'), true);
+});
+
+test('very low response time is only a low-confidence rushed signal', () => {
+  const result = inferLearningError({
+    isAnswered: true,
+    isCorrect: false,
+    responseTime: 2,
+  });
+
+  assert.equal(result.errorType, 'RUSHED');
+  assert.equal(result.confidence, 'LOW');
+  assert.equal(result.inferenceRule, 'low-response-time');
+  assert.equal(result.evidence.some((item) => item.type === 'response_time'), true);
+});
+
+test('explicit guessing self-report maps to GUESS with traceable evidence', () => {
+  const result = inferLearningError({
+    isAnswered: true,
+    isCorrect: false,
+    responseTime: 18,
+  }, 'guessing');
+
+  assert.equal(result.errorType, 'GUESS');
+  assert.equal(result.confidence, 'HIGH');
+  assert.equal(result.inferenceRule, 'explicit-self-report');
+  assert.equal(result.evidence.some((item) => item.type === 'self_report' && item.value === 'guessing'), true);
+});
+
+test('explicit calculation and concept reports map to their controlled categories', () => {
+  const context = { isAnswered: true, isCorrect: false, responseTime: 18 };
+  assert.equal(inferLearningError(context, 'calculation_mistake').errorType, 'CALCULATION_ERROR');
+  assert.equal(inferLearningError(context, 'did_not_understand_concept').errorType, 'CONCEPT_GAP');
+});
+
+test('insufficient evidence and correct attempts do not become error judgments', () => {
+  const unanswered = inferLearningError({
+    isAnswered: false,
+    isCorrect: false,
+    responseTime: 0,
+  });
+  const correct = inferLearningError({
+    isAnswered: true,
+    isCorrect: true,
+    responseTime: 18,
+  });
+
+  assert.deepEqual(
+    { errorType: unanswered.errorType, confidence: unanswered.confidence },
+    { errorType: 'UNKNOWN', confidence: 'LOW' },
+  );
+  assert.equal(correct.errorType, 'UNKNOWN');
+  assert.equal(correct.evidence.some((item) => item.type === 'wrong_answer'), false);
+  assert.equal(correct.evidence.some((item) => item.type === 'attempt_outcome' && item.value === true), true);
+});
+
+test('question metadata is evidence only and never invents a skill or concept', () => {
+  const result = inferLearningError({
+    isAnswered: true,
+    isCorrect: false,
+    responseTime: 18,
+    questionMetadata: {
+      category: 'quantitative',
+      subcategory: 'الهندسة',
+      topic: 'المثلثات',
+      difficulty: 'intermediate',
+      hasExplanation: true,
+    },
+  });
+
+  assert.equal(result.errorType, 'UNKNOWN');
+  assert.equal(result.evidence.some((item) => item.type === 'question_metadata' && item.value === 'الهندسة'), true);
+  assert.equal(result.evidence.some((item) => String(item.value).includes('skill')), false);
+});
+
+test('self-report input is allowlisted and final confidence is server-derived', () => {
+  assert.equal(normalizeLearningErrorSelfReport('guessing'), 'guessing');
+  assert.equal(normalizeLearningErrorSelfReport('CONCEPT_GAP'), null);
+  assert.equal(inferLearningError({
+    isAnswered: true,
+    isCorrect: false,
+    responseTime: 20,
+  }, 'not_sure').confidence, 'HIGH');
+});
+
+test('error taxonomy is finite and includes UNKNOWN', () => {
+  assert.deepEqual(LEARNING_ERROR_TYPES, [
+    'CONCEPT_GAP',
+    'CALCULATION_ERROR',
+    'READING_ERROR',
+    'MISUNDERSTANDING',
+    'WRONG_STRATEGY',
+    'RUSHED',
+    'GUESS',
+    'CONFUSED_OPTIONS',
+    'FAILED_TO_IDENTIFY_RELATION',
+    'MEMORY_GAP',
+    'PARTIAL_UNDERSTANDING',
+    'TIME_PRESSURE',
+    'UNKNOWN',
+  ]);
+  assert.deepEqual(LearningErrorEvidence.schema.path('attemptId')?.options.ref, 'LearningAttempt');
+});
+
+test('legacy ErrorLog remains a separate compatibility model', () => {
+  assert.equal(ErrorLog.modelName, 'ErrorLog');
+  assert.equal(ErrorLog.schema.path('questionId')?.options.required, true);
+  assert.equal(ErrorLog.schema.path('subcategory')?.options.required, true);
+  assert.equal(ErrorLog.schema.path('timestamp')?.options.index, true);
 });

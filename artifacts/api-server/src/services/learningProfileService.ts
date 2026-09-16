@@ -10,6 +10,7 @@ import {
   CONTROLLED_TAXONOMY_NODES,
   type MappingConfidence,
 } from '../learning/taxonomyRegistry';
+import { recordAutomaticLearningErrorEvidence } from './learningErrorService';
 
 const approvedPrograms = new Set(
   CONTROLLED_TAXONOMY_NODES
@@ -398,7 +399,7 @@ export async function recordVerifiedLearningAttempt(
   }
 
   const { isAnswered, isCorrect } = verified;
-  return recordLearningAttempt(studentId, {
+  const result = await recordLearningAttempt(studentId, {
     questionId,
     sourceType,
     sourceKey,
@@ -413,6 +414,24 @@ export async function recordVerifiedLearningAttempt(
     idempotencyKey: input.idempotencyKey,
     metadata: input.metadata,
   });
+
+  if (!result.duplicate && result.attempt) {
+    const questionMetadata = serverQuestion ? undefined : {
+      category: typeof (question as any).category === 'string' ? (question as any).category : undefined,
+      subcategory: typeof (question as any).subcategory === 'string' ? (question as any).subcategory : undefined,
+      difficulty: typeof (question as any).difficulty === 'string' ? (question as any).difficulty : undefined,
+      topic: typeof (question as any).topic === 'string' ? (question as any).topic : undefined,
+      hasExplanation: typeof (question as any).explanation === 'string' &&
+        (question as any).explanation.trim().length > 0,
+    };
+    await recordAutomaticLearningErrorEvidence(
+      studentId,
+      result.attempt as any,
+      questionMetadata,
+    );
+  }
+
+  return result;
 }
 
 export function verifyServerAnswer(

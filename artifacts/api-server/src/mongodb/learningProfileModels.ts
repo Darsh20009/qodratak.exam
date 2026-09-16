@@ -7,6 +7,37 @@ export type LearningAttemptSourceType =
   | 'legacy_json'
   | 'unknown';
 
+export const LEARNING_ERROR_TYPES = [
+  'CONCEPT_GAP',
+  'CALCULATION_ERROR',
+  'READING_ERROR',
+  'MISUNDERSTANDING',
+  'WRONG_STRATEGY',
+  'RUSHED',
+  'GUESS',
+  'CONFUSED_OPTIONS',
+  'FAILED_TO_IDENTIFY_RELATION',
+  'MEMORY_GAP',
+  'PARTIAL_UNDERSTANDING',
+  'TIME_PRESSURE',
+  'UNKNOWN',
+] as const;
+
+export type LearningErrorType = typeof LEARNING_ERROR_TYPES[number];
+export type LearningErrorConfidence = 'LOW' | 'MEDIUM' | 'HIGH';
+export type LearningErrorEvidenceSignal =
+  | 'wrong_answer'
+  | 'response_time'
+  | 'question_metadata'
+  | 'self_report'
+  | 'attempt_outcome';
+
+export interface ILearningErrorEvidenceSignal {
+  type: LearningErrorEvidenceSignal;
+  value?: string | number | boolean | null;
+  detail?: string;
+}
+
 export interface ILearningAttempt extends Document {
   studentId: string;
   questionId: string;
@@ -113,3 +144,82 @@ export const LearningSession = mongoose.models['LearningSession']
 export const LearningAttemptSequence = mongoose.models['LearningAttemptSequence']
   ? mongoose.model<ILearningAttemptSequence>('LearningAttemptSequence')
   : mongoose.model<ILearningAttemptSequence>('LearningAttemptSequence', learningAttemptSequenceSchema);
+
+export interface ILearningErrorEvidence extends Document {
+  studentId: string;
+  attemptId: mongoose.Types.ObjectId;
+  questionId: string;
+  sourceType: LearningAttemptSourceType;
+  sourceKey?: string;
+  sourceIdentity: string;
+  programId: string;
+  subjectId?: string;
+  errorType: LearningErrorType;
+  confidence: LearningErrorConfidence;
+  evidence: ILearningErrorEvidenceSignal[];
+  inferenceRule: string;
+  selfReport?: string;
+  observed: {
+    isAnswered: boolean;
+    isCorrect: boolean;
+    responseTime: number;
+    selectedAnswer?: string | number | null;
+    questionMetadata?: {
+      category?: string;
+      subcategory?: string;
+      difficulty?: string;
+      topic?: string;
+      hasExplanation?: boolean;
+    };
+  };
+  detectedAt: Date;
+  idempotencyKey?: string;
+}
+
+const learningErrorEvidenceSignalSchema = new Schema<ILearningErrorEvidenceSignal>({
+  type: {
+    type: String,
+    enum: ['wrong_answer', 'response_time', 'question_metadata', 'self_report', 'attempt_outcome'],
+    required: true,
+  },
+  value: { type: Schema.Types.Mixed },
+  detail: { type: String, trim: true, maxlength: 500 },
+}, { _id: false });
+
+const learningErrorEvidenceSchema = new Schema<ILearningErrorEvidence>({
+  studentId: { type: String, required: true, index: true },
+  attemptId: { type: Schema.Types.ObjectId, ref: 'LearningAttempt', required: true, index: true },
+  questionId: { type: String, required: true, trim: true, index: true },
+  sourceType: {
+    type: String,
+    enum: ['mongo_question', 'mongo_tahsili_question', 'postgres_question', 'legacy_json', 'unknown'],
+    required: true,
+    index: true,
+  },
+  sourceKey: { type: String, trim: true },
+  sourceIdentity: { type: String, required: true, index: true },
+  programId: { type: String, required: true, trim: true, index: true },
+  subjectId: { type: String, trim: true, index: true },
+  errorType: { type: String, enum: LEARNING_ERROR_TYPES, required: true, index: true },
+  confidence: { type: String, enum: ['LOW', 'MEDIUM', 'HIGH'], required: true },
+  evidence: { type: [learningErrorEvidenceSignalSchema], required: true, default: [] },
+  inferenceRule: { type: String, required: true, trim: true, maxlength: 120 },
+  selfReport: { type: String, trim: true, maxlength: 80 },
+  observed: {
+    isAnswered: { type: Boolean, required: true },
+    isCorrect: { type: Boolean, required: true },
+    responseTime: { type: Number, required: true, min: 0, max: 86400 },
+    selectedAnswer: { type: Schema.Types.Mixed },
+    questionMetadata: { type: Schema.Types.Mixed },
+  },
+  detectedAt: { type: Date, default: Date.now, index: true },
+  idempotencyKey: { type: String, trim: true, maxlength: 160 },
+});
+
+learningErrorEvidenceSchema.index({ studentId: 1, detectedAt: -1 });
+learningErrorEvidenceSchema.index({ studentId: 1, attemptId: 1, detectedAt: -1 });
+learningErrorEvidenceSchema.index({ studentId: 1, idempotencyKey: 1 }, { unique: true, sparse: true });
+
+export const LearningErrorEvidence = mongoose.models['LearningErrorEvidence']
+  ? mongoose.model<ILearningErrorEvidence>('LearningErrorEvidence')
+  : mongoose.model<ILearningErrorEvidence>('LearningErrorEvidence', learningErrorEvidenceSchema);

@@ -48,7 +48,16 @@ import {
   LearningAttemptError,
   recordVerifiedLearningAttempt,
 } from '../services/learningProfileService';
-import { LearningAttempt, LearningSession } from '../mongodb/learningProfileModels';
+import {
+  LearningErrorEvidence,
+  LearningAttempt,
+  LearningSession,
+} from '../mongodb/learningProfileModels';
+import {
+  LearningErrorEvidenceError,
+  publicLearningErrorEvidence,
+  recordSelfReportedLearningErrorEvidence,
+} from '../services/learningErrorService';
 
 function getQuestionImageUrls(question: { imageUrl?: unknown; imageUrls?: unknown }): string[] {
   const urls = [
@@ -11688,6 +11697,61 @@ app.post("/api/auth/register", async (req: Request, res: Response) => {
       if (error?.code === 11000) return res.status(409).json({ error: 'المحاولة مكررة' });
       const message = error instanceof Error ? error.message : 'تعذر تسجيل المحاولة';
       return res.status(500).json({ error: message });
+    }
+  });
+
+  app.post('/api/learning/error-evidence', requireAuth, async (req: Request, res: Response) => {
+    const studentId = studentOnly(req, res);
+    if (!studentId) return;
+    try {
+      const result = await recordSelfReportedLearningErrorEvidence(studentId, {
+        attemptId: String(req.body?.attemptId || ''),
+        selfReport: req.body?.selfReport,
+        idempotencyKey: req.body?.idempotencyKey
+          ? String(req.body.idempotencyKey)
+          : undefined,
+      });
+      return res.status(result.duplicate ? 200 : 201).json({
+        duplicate: result.duplicate,
+        evidence: publicLearningErrorEvidence(result.evidence),
+      });
+    } catch (error: any) {
+      if (error instanceof LearningErrorEvidenceError) {
+        const status = error.code === 'IDEMPOTENCY_CONFLICT' ? 409 : 400;
+        return res.status(status).json({ error: error.message, code: error.code });
+      }
+      if (error?.code === 11000) {
+        return res.status(409).json({ error: 'evidence مكررة' });
+      }
+      console.error('Learning error evidence creation error:', error);
+      return res.status(500).json({ error: 'تعذر تسجيل دليل الخطأ' });
+    }
+  });
+
+  app.get('/api/learning/error-evidence', requireAuth, async (req: Request, res: Response) => {
+    const studentId = studentOnly(req, res);
+    if (!studentId) return;
+    try {
+      const limit = Math.min(100, Math.max(1, Number(req.query.limit) || 30));
+      const query: Record<string, unknown> = { studentId };
+      if (req.query.attemptId) {
+        const attemptId = String(req.query.attemptId);
+        if (!mongoose.Types.ObjectId.isValid(attemptId)) {
+          return res.status(400).json({ error: 'attemptId غير صالح', code: 'INVALID_ATTEMPT' });
+        }
+        query.attemptId = attemptId;
+      }
+      const evidence = await LearningErrorEvidence.find(query)
+        .sort({ detectedAt: -1 })
+        .limit(limit)
+        .lean();
+      return res.json({
+        evidence: evidence.map(publicLearningErrorEvidence),
+        total: evidence.length,
+      });
+    } catch (error) {
+      console.error('Learning error evidence retrieval error:', error);
+      return res.status(500).json({ error: 'تعذر جلب أدلة الأخطاء' });
     }
   });
 
