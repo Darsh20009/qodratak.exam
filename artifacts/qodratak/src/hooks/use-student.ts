@@ -48,6 +48,38 @@ export interface FoundationContent {
   };
 }
 
+export interface FoundationLearningState {
+  status: "needs_diagnostic" | "diagnostic_completed";
+  program: "qudrat" | "tahsili";
+  baseline: { overall: number; verbal: number; quantitative: number } | null;
+  focus: { category: "verbal" | "quantitative"; skill: string; label: string } | null;
+  recommendation: { title: string; reason: string; href: string };
+  skillSummaries?: Array<{
+    key: string;
+    label: string;
+    category: "verbal" | "quantitative";
+    totalQuestions: number;
+    correctAnswers: number;
+    percentage: number;
+  }>;
+}
+
+export interface FoundationDiagnosticQuestion {
+  _id: string;
+  text: string;
+  options: string[];
+  category: "verbal" | "quantitative";
+  subcategory: string;
+  imageUrl?: string;
+  imageUrls?: string[];
+}
+
+export interface FoundationDiagnostic {
+  attemptId: string;
+  expiresAt: string;
+  questions: FoundationDiagnosticQuestion[];
+}
+
 export interface PlatformReview {
   _id: string;
   studentName: string;
@@ -166,6 +198,41 @@ export function useFoundationContent(program: 'qudrat' | 'tahsili', enabled = tr
     queryFn: async () => (await fetchJson<{ content: FoundationContent[] }>(`/api/foundation-content?program=${program}`)).content,
     enabled,
     staleTime: 5 * 60 * 1000,
+  });
+}
+
+export function useFoundationLearningState(program: 'qudrat' | 'tahsili' = 'qudrat', enabled = true) {
+  return useQuery<FoundationLearningState>({
+    queryKey: ["/api/foundation/learning-state", program],
+    queryFn: () => fetchJson<FoundationLearningState>(`/api/foundation/learning-state?program=${program}`),
+    enabled,
+    staleTime: 15000,
+    refetchOnWindowFocus: true,
+  });
+}
+
+export function useStartFoundationDiagnostic() {
+  return useMutation<FoundationDiagnostic, Error, 'qudrat'>({
+    mutationFn: (program) => fetchJson<FoundationDiagnostic>(`/api/foundation/diagnostic?program=${program}`),
+  });
+}
+
+export function useSubmitFoundationDiagnostic() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (payload: {
+      attemptId: string;
+      answers: Array<{ questionId: string; selectedOptionIndex: number }>;
+      timeTakenSeconds?: number;
+    }) => fetchJson<any>("/api/foundation/diagnostic/submit", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/foundation/learning-state", "qudrat"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/student/dashboard"] });
+    },
   });
 }
 

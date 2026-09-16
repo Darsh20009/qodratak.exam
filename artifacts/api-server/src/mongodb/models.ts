@@ -1584,3 +1584,104 @@ export const FoundationContent = mongoose.models['FoundationContent']
 export const PlatformReview = mongoose.models['PlatformReview']
   ? mongoose.model<IPlatformReview>('PlatformReview')
   : mongoose.model<IPlatformReview>('PlatformReview', platformReviewSchema);
+
+// ─── Adaptive learning foundation (additive collections) ────────────────────
+export interface IDiagnosticAttempt extends Document {
+  userId: string;
+  program: StudentProgram;
+  questionIds: mongoose.Types.ObjectId[];
+  status: 'active' | 'completed' | 'expired';
+  expiresAt: Date;
+  startedAt: Date;
+  completedAt?: Date;
+}
+
+const diagnosticAttemptSchema = new Schema<IDiagnosticAttempt>({
+  userId: { type: String, required: true, index: true },
+  program: { type: String, enum: ['qudrat', 'tahsili'], required: true, index: true },
+  questionIds: [{ type: Schema.Types.ObjectId, ref: 'Question', required: true }],
+  status: { type: String, enum: ['active', 'completed', 'expired'], default: 'active', index: true },
+  expiresAt: { type: Date, required: true },
+  startedAt: { type: Date, default: Date.now },
+  completedAt: { type: Date },
+});
+
+diagnosticAttemptSchema.index({ expiresAt: 1 }, { expireAfterSeconds: 0 });
+diagnosticAttemptSchema.index({ userId: 1, program: 1, startedAt: -1 });
+
+export interface ILearningSkillSummary {
+  key: string;
+  label: string;
+  category: 'verbal' | 'quantitative';
+  totalQuestions: number;
+  correctAnswers: number;
+  percentage: number;
+}
+
+export interface IStudentLearningProfile extends Document {
+  userId: string;
+  program: StudentProgram;
+  status: 'needs_diagnostic' | 'diagnostic_completed';
+  diagnosticAttemptId?: mongoose.Types.ObjectId;
+  baseline: {
+    overall: number;
+    verbal: number;
+    quantitative: number;
+  };
+  skillSummaries: ILearningSkillSummary[];
+  focus: {
+    category: 'verbal' | 'quantitative';
+    skill: string;
+    label: string;
+  };
+  recommendation: {
+    title: string;
+    reason: string;
+    href: string;
+  };
+  lastDiagnosticAt?: Date;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+const learningSkillSummarySchema = new Schema<ILearningSkillSummary>({
+  key: { type: String, required: true },
+  label: { type: String, required: true },
+  category: { type: String, enum: ['verbal', 'quantitative'], required: true },
+  totalQuestions: { type: Number, required: true, min: 0 },
+  correctAnswers: { type: Number, required: true, min: 0 },
+  percentage: { type: Number, required: true, min: 0, max: 100 },
+}, { _id: false });
+
+const studentLearningProfileSchema = new Schema<IStudentLearningProfile>({
+  userId: { type: String, required: true, index: true },
+  program: { type: String, enum: ['qudrat', 'tahsili'], required: true, index: true },
+  status: { type: String, enum: ['needs_diagnostic', 'diagnostic_completed'], default: 'needs_diagnostic', index: true },
+  diagnosticAttemptId: { type: Schema.Types.ObjectId, ref: 'DiagnosticAttempt' },
+  baseline: {
+    overall: { type: Number, default: 0, min: 0, max: 100 },
+    verbal: { type: Number, default: 0, min: 0, max: 100 },
+    quantitative: { type: Number, default: 0, min: 0, max: 100 },
+  },
+  skillSummaries: { type: [learningSkillSummarySchema], default: [] },
+  focus: {
+    category: { type: String, enum: ['verbal', 'quantitative'], default: 'verbal' },
+    skill: { type: String, default: 'general' },
+    label: { type: String, default: 'المهارات الأساسية' },
+  },
+  recommendation: {
+    title: { type: String, default: 'ابدأ بالتأسيس' },
+    reason: { type: String, default: 'أكمل التقييم التشخيصي لنحدد نقطة البداية.' },
+    href: { type: String, default: '/foundation?program=qudrat&subject=verbal' },
+  },
+  lastDiagnosticAt: { type: Date },
+}, { timestamps: true });
+
+studentLearningProfileSchema.index({ userId: 1, program: 1 }, { unique: true });
+
+export const DiagnosticAttempt = mongoose.models['DiagnosticAttempt']
+  ? mongoose.model<IDiagnosticAttempt>('DiagnosticAttempt')
+  : mongoose.model<IDiagnosticAttempt>('DiagnosticAttempt', diagnosticAttemptSchema);
+export const StudentLearningProfile = mongoose.models['StudentLearningProfile']
+  ? mongoose.model<IStudentLearningProfile>('StudentLearningProfile')
+  : mongoose.model<IStudentLearningProfile>('StudentLearningProfile', studentLearningProfileSchema);

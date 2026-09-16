@@ -1,5 +1,16 @@
-import React, { useMemo, useState } from "react";
-import { FoundationContent, StudentDashboard, useFoundationContent, useStudentDashboard } from "@/hooks/use-student";
+import React, { useEffect, useMemo, useState } from "react";
+import {
+  FoundationContent,
+  FoundationDiagnostic,
+  FoundationDiagnosticQuestion,
+  FoundationLearningState,
+  StudentDashboard,
+  useFoundationContent,
+  useFoundationLearningState,
+  useStartFoundationDiagnostic,
+  useStudentDashboard,
+  useSubmitFoundationDiagnostic,
+} from "@/hooks/use-student";
 import { verbalBankVideos } from "@/data/verbalBankVideos";
 import { foundationSections, getFoundationSection, type FoundationProgram, type FoundationSection } from "@/data/foundationSections";
 import { foundationCurriculum } from "@/data/foundationCurriculum";
@@ -96,6 +107,146 @@ function DashboardProgressCard({
   );
 }
 
+function FoundationDiagnosticDialog({
+  open,
+  onOpenChange,
+}: {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+}) {
+  const [diagnostic, setDiagnostic] = useState<FoundationDiagnostic | null>(null);
+  const [answers, setAnswers] = useState<Record<string, number>>({});
+  const [result, setResult] = useState<{ percentage: number; correctAnswers: number; totalQuestions: number; skippedQuestions: number } | null>(null);
+  const startDiagnostic = useStartFoundationDiagnostic();
+  const submitDiagnostic = useSubmitFoundationDiagnostic();
+
+  useEffect(() => {
+    if (open && !diagnostic && !startDiagnostic.isPending && !startDiagnostic.isSuccess && !startDiagnostic.isError) {
+      startDiagnostic.mutate("qudrat", {
+        onSuccess: (data) => setDiagnostic(data),
+      });
+    }
+  }, [open, diagnostic, startDiagnostic.isPending, startDiagnostic.isSuccess, startDiagnostic.isError, startDiagnostic.mutate]);
+
+  const handleOpenChange = (nextOpen: boolean) => {
+    onOpenChange(nextOpen);
+    if (!nextOpen) {
+      setDiagnostic(null);
+      setAnswers({});
+      setResult(null);
+      startDiagnostic.reset();
+      submitDiagnostic.reset();
+    }
+  };
+
+  const chooseAnswer = (questionId: string, optionIndex: number) => {
+    setAnswers((current) => ({ ...current, [questionId]: optionIndex }));
+  };
+
+  const submit = () => {
+    if (!diagnostic) return;
+    submitDiagnostic.mutate({
+      attemptId: diagnostic.attemptId,
+      answers: Object.entries(answers).map(([questionId, selectedOptionIndex]) => ({ questionId, selectedOptionIndex })),
+    }, {
+      onSuccess: (data) => setResult(data.result),
+    });
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={handleOpenChange}>
+      <DialogContent className="max-h-[90vh] max-w-3xl overflow-y-auto" dir="rtl">
+        <DialogHeader>
+          <DialogTitle className="text-xl font-black">تقييم البداية — ٨ أسئلة قصيرة</DialogTitle>
+        </DialogHeader>
+        {startDiagnostic.isPending ? (
+          <div className="flex items-center justify-center py-16">
+            <Loader2 className="h-8 w-8 animate-spin text-primary" />
+          </div>
+        ) : startDiagnostic.isError ? (
+          <div className="rounded-2xl border border-dashed border-destructive/40 bg-destructive/5 p-6 text-center">
+            <p className="font-bold text-foreground">{startDiagnostic.error.message}</p>
+            <Button type="button" variant="outline" className="mt-4 rounded-xl" onClick={() => startDiagnostic.mutate("qudrat", { onSuccess: setDiagnostic })}>
+              حاول مرة أخرى
+            </Button>
+          </div>
+        ) : result ? (
+          <div className="rounded-2xl bg-primary/5 p-6 text-center">
+            <Trophy className="mx-auto h-10 w-10 text-primary" />
+            <p className="mt-3 text-3xl font-black text-foreground">{result.percentage}%</p>
+            <p className="mt-2 text-sm text-muted-foreground">
+              أجبت عن {result.correctAnswers} من {result.totalQuestions} بشكل صحيح
+              {result.skippedQuestions ? `، وتركت ${result.skippedQuestions} دون إجابة.` : "."}
+            </p>
+            <p className="mt-4 text-sm leading-7 text-muted-foreground">تم بناء ملفك الأولي. ستجد مهمة اليوم وسبب التوصية في صفحة التأسيس.</p>
+            <Button type="button" className="mt-5 rounded-xl" onClick={() => onOpenChange(false)}>عرض مهمتي اليوم</Button>
+          </div>
+        ) : diagnostic ? (
+          <div className="space-y-4">
+            <p className="rounded-xl bg-muted/60 px-4 py-3 text-sm leading-6 text-muted-foreground">
+              لا نبحث عن درجة نهائية هنا. نستخدم إجاباتك لمعرفة المهارة التي تستحق أن تبدأ بها.
+            </p>
+            {diagnostic.questions.map((question, index) => (
+              <DiagnosticQuestionCard
+                key={question._id}
+                question={question}
+                index={index}
+                selected={answers[question._id]}
+                onSelect={chooseAnswer}
+              />
+            ))}
+            <div className="sticky bottom-0 flex items-center justify-between gap-3 border-t border-border bg-background pt-4">
+              <span className="text-xs text-muted-foreground">{Object.keys(answers).length} من {diagnostic.questions.length} مجاب</span>
+              <Button type="button" className="rounded-xl font-black" disabled={submitDiagnostic.isPending} onClick={submit}>
+                {submitDiagnostic.isPending ? <Loader2 className="ml-2 h-4 w-4 animate-spin" /> : null}
+                حفظ النتيجة وبناء المهمة
+              </Button>
+            </div>
+            {submitDiagnostic.isError && <p className="text-sm font-bold text-destructive">{submitDiagnostic.error.message}</p>}
+          </div>
+        ) : null}
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+function DiagnosticQuestionCard({
+  question,
+  index,
+  selected,
+  onSelect,
+}: {
+  question: FoundationDiagnosticQuestion;
+  index: number;
+  selected?: number;
+  onSelect: (questionId: string, optionIndex: number) => void;
+}) {
+  return (
+    <fieldset className="rounded-2xl border border-border bg-card p-4">
+      <legend className="px-1 text-sm font-black text-foreground">السؤال {index + 1} · {question.category === "verbal" ? "لفظي" : "كمي"}</legend>
+      <p className="mt-2 text-sm font-bold leading-7 text-foreground">{question.text}</p>
+      <p className="mt-1 text-xs text-muted-foreground">{question.subcategory}</p>
+      <div className="mt-3 grid gap-2 sm:grid-cols-2">
+        {question.options.map((option, optionIndex) => (
+          <button
+            key={`${question._id}-${optionIndex}`}
+            type="button"
+            onClick={() => onSelect(question._id, optionIndex)}
+            className={`rounded-xl border px-3 py-3 text-right text-sm transition ${
+              selected === optionIndex
+                ? "border-primary bg-primary/10 font-black text-primary"
+                : "border-border bg-background text-foreground hover:border-primary/50"
+            }`}
+          >
+            <span className="ml-2 inline-flex h-6 w-6 items-center justify-center rounded-lg bg-muted text-xs font-black">{optionIndex + 1}</span>
+            {option}
+          </button>
+        ))}
+      </div>
+    </fieldset>
+  );
+}
+
 function FoundationHome({
   dashboard,
   isLoading,
@@ -107,10 +258,14 @@ function FoundationHome({
   const progress = dashboard?.progress;
   const latestTests = dashboard?.recentTests?.slice(0, 3) || [];
   const plan = dashboard?.recommendedPlan;
+  const { data: learningState, isLoading: isLearningStateLoading } = useFoundationLearningState("qudrat");
+  const [diagnosticOpen, setDiagnosticOpen] = useState(false);
+  const recommendation = learningState?.recommendation;
 
   return (
-    <div className="mx-auto max-w-6xl space-y-6 p-5 md:p-8" dir="rtl">
-      <header className="rounded-[28px] bg-[#0D1B2A] p-6 text-white shadow-sm sm:p-8">
+    <>
+      <div className="mx-auto max-w-6xl space-y-6 p-5 md:p-8" dir="rtl">
+        <header className="rounded-[28px] bg-[#0D1B2A] p-6 text-white shadow-sm sm:p-8">
         <div className="flex flex-wrap items-start justify-between gap-5">
           <div>
             <div className="mb-3 inline-flex items-center gap-2 rounded-full bg-white/10 px-3 py-1 text-xs font-bold text-[#F7F775]">
@@ -128,7 +283,39 @@ function FoundationHome({
             <p className="mt-1 text-3xl font-black">{isLoading ? "—" : `${progress?.overall.percentage || 0}%`}</p>
           </div>
         </div>
-      </header>
+        </header>
+
+        <section className="rounded-3xl border border-primary/20 bg-primary/5 p-5 shadow-sm">
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+            <div className="flex items-start gap-3">
+              <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-primary/10 text-primary">
+                <Target className="h-5 w-5" />
+              </span>
+              <div>
+                <p className="text-xs font-black text-primary">مسارك الشخصي</p>
+                {isLearningStateLoading ? (
+                  <p className="mt-2 text-sm text-muted-foreground">نجهز نقطة البداية...</p>
+                ) : (
+                  <>
+                    <h2 className="mt-1 text-lg font-black text-foreground">{recommendation?.title || "حدد نقطة بدايتك"}</h2>
+                    <p className="mt-1 max-w-2xl text-sm leading-6 text-muted-foreground">{recommendation?.reason}</p>
+                  </>
+                )}
+              </div>
+            </div>
+            {learningState?.status === "diagnostic_completed" ? (
+              <Button type="button" className="shrink-0 rounded-xl font-black" onClick={() => setLocation(recommendation?.href || "/foundation?program=qudrat&subject=verbal")}>
+                ابدأ مهمة اليوم
+                <ArrowLeft className="mr-2 h-4 w-4" />
+              </Button>
+            ) : (
+              <Button type="button" className="shrink-0 rounded-xl font-black" onClick={() => setDiagnosticOpen(true)}>
+                ابدأ التقييم
+                <ListChecks className="mr-2 h-4 w-4" />
+              </Button>
+            )}
+          </div>
+        </section>
 
       <section className="grid gap-4 lg:grid-cols-[1.15fr_1fr]">
         <div className="rounded-2xl border border-border bg-card p-5 shadow-sm">
@@ -214,7 +401,9 @@ function FoundationHome({
           </Link>
         </div>
       </section>
-    </div>
+      </div>
+      <FoundationDiagnosticDialog open={diagnosticOpen} onOpenChange={setDiagnosticOpen} />
+    </>
   );
 }
 

@@ -11322,6 +11322,246 @@ app.post("/api/auth/register", async (req: Request, res: Response) => {
     }
   });
 
+  app.get('/api/foundation/learning-state', requireAuth, async (req: Request, res: Response) => {
+    const userId = studentOnly(req, res);
+    if (!userId) return;
+    const program = String(req.query.program || 'qudrat');
+    if (!supportedPrograms.has(program)) {
+      return res.status(400).json({ error: 'البرنامج المدعوم هو qudrat أو tahsili فقط' });
+    }
+    try {
+      const { StudentLearningProfile } = await import('../mongodb/models');
+      const profile = await StudentLearningProfile.findOne({ userId, program }).lean() as any;
+      if (!profile) {
+        return res.json({
+          status: 'needs_diagnostic',
+          program,
+          baseline: null,
+          focus: null,
+          recommendation: {
+            title: 'حدد نقطة بدايتك',
+            reason: 'أجب عن تقييم قصير من أسئلة معتمدة لنقترح عليك أول مهمة مناسبة.',
+            href: '/foundation?program=qudrat',
+          },
+        });
+      }
+      return res.json({
+        status: profile.status,
+        program: profile.program,
+        baseline: profile.baseline,
+        skillSummaries: profile.skillSummaries,
+        focus: profile.focus,
+        recommendation: profile.recommendation,
+        lastDiagnosticAt: profile.lastDiagnosticAt,
+      });
+    } catch (error) {
+      console.error('Foundation learning state error:', error);
+      return res.status(500).json({ error: 'فشل في جلب حالة التعلم' });
+    }
+  });
+
+  app.get('/api/foundation/diagnostic', requireAuth, async (req: Request, res: Response) => {
+    const userId = studentOnly(req, res);
+    if (!userId) return;
+    const program = String(req.query.program || 'qudrat');
+    if (program !== 'qudrat') {
+      return res.status(400).json({ error: 'التقييم التشخيصي متاح حاليًا لمسار القدرات فقط' });
+    }
+    try {
+      const { DiagnosticAttempt, Question } = await import('../mongodb/models');
+      const [verbalQuestions, quantitativeQuestions] = await Promise.all([
+        Question.aggregate([
+          { $match: { category: 'verbal' } },
+          { $sample: { size: 4 } },
+          { $project: { text: 1, options: 1, category: 1, subcategory: 1, topic: 1, imageUrl: 1, imageUrls: 1 } },
+        ]),
+        Question.aggregate([
+          { $match: { category: 'quantitative' } },
+          { $sample: { size: 4 } },
+          { $project: { text: 1, options: 1, category: 1, subcategory: 1, topic: 1, imageUrl: 1, imageUrls: 1 } },
+        ]),
+      ]);
+      const questions = [...verbalQuestions, ...quantitativeQuestions];
+      if (questions.length < 8) {
+        return res.status(503).json({ error: 'لا توجد أسئلة تشخيصية معتمدة كافية حاليًا' });
+      }
+      const attempt = await DiagnosticAttempt.create({
+        userId,
+        program,
+        questionIds: questions.map((question: any) => question._id),
+        expiresAt: new Date(Date.now() + 60 * 60 * 1000),
+      });
+      return res.json({
+        attemptId: String(attempt._id),
+        expiresAt: attempt.expiresAt,
+        questions: questions.map((question: any) => ({
+          _id: String(question._id),
+          text: question.text,
+          options: question.options,
+          category: question.category,
+          subcategory: question.subcategory || question.topic || 'المهارات الأساسية',
+          imageUrl: question.imageUrl,
+          imageUrls: question.imageUrls || [],
+        })),
+      });
+    } catch (error) {
+      console.error('Foundation diagnostic start error:', error);
+      return res.status(500).json({ error: 'فشل في تجهيز التقييم التشخيصي' });
+    }
+  });
+
+  app.post('/api/foundation/diagnostic/submit', requireAuth, async (req: Request, res: Response) => {
+    const userId = studentOnly(req, res);
+    if (!userId) return;
+    const attemptId = String(req.body?.attemptId || '');
+    if (!mongoose.Types.ObjectId.isValid(attemptId)) {
+      return res.status(400).json({ error: 'معرف التقييم غير صالح' });
+    }
+    try {
+      const { DiagnosticAttempt, Question, TestResult, StudentLearningProfile } = await import('../mongodb/models');
+      const attempt = await DiagnosticAttempt.findOne({
+        _id: attemptId,
+        userId,
+        program: 'qudrat',
+        status: 'active',
+        expiresAt: { $gt: new Date() },
+      }).lean() as any;
+      if (!attempt) {
+        return res.status(410).json({ error: 'انتهت صلاحية التقييم. ابدأ تقييمًا جديدًا.' });
+      }
+
+      const allowedQuestionIds = attempt.questionIds.map((id: unknown) => String(id));
+      const submitted = Array.isArray(req.body?.answers) ? req.body.answers : [];
+      const answerMap = new Map<string, number>();
+      for (const answer of submitted) {
+        const questionId = String(answer?.questionId || '');
+        const optionIndex = Number(answer?.selectedOptionIndex);
+        if (allowedQuestionIds.includes(questionId) && Number.isInteger(optionIndex) && optionIndex >= 0 && optionIndex <= 10) {
+          answerMap.set(questionId, optionIndex);
+        }
+      }
+      const questions = await Question.find({ _id: { $in: attempt.questionIds } })
+        .select('_id correctOptionIndex category subcategory topic')
+        .lean() as any[];
+      const questionById = new Map(questions.map((question: any) => [String(question._id), question]));
+      const skillTotals = new Map<string, { key: string; label: string; category: 'verbal' | 'quantitative'; totalQuestions: number; correctAnswers: number }>();
+      let correctAnswers = 0;
+      let answeredQuestions = 0;
+      const questionDetails = allowedQuestionIds.map((questionId) => {
+        const question = questionById.get(questionId);
+        const selectedOptionIndex = answerMap.get(questionId);
+        const answered = !!question && Number.isInteger(selectedOptionIndex);
+        const isCorrect = answered && selectedOptionIndex === question.correctOptionIndex;
+        if (answered) answeredQuestions += 1;
+        if (isCorrect) correctAnswers += 1;
+        if (question) {
+          const key = String(question.subcategory || question.topic || 'المهارات الأساسية');
+          const current = skillTotals.get(`${question.category}:${key}`) || {
+            key,
+            label: key,
+            category: question.category,
+            totalQuestions: 0,
+            correctAnswers: 0,
+          };
+          current.totalQuestions += 1;
+          if (isCorrect) current.correctAnswers += 1;
+          skillTotals.set(`${question.category}:${key}`, current);
+        }
+        return {
+          questionId,
+          selectedOptionIndex: answered ? selectedOptionIndex : null,
+          isCorrect: Boolean(isCorrect),
+          category: question?.category,
+          subcategory: question?.subcategory || question?.topic || 'المهارات الأساسية',
+        };
+      });
+      const totalQuestions = allowedQuestionIds.length;
+      const percentage = Math.round((correctAnswers / totalQuestions) * 100);
+      const summaries = Array.from(skillTotals.values()).map((skill) => ({
+        ...skill,
+        percentage: Math.round((skill.correctAnswers / skill.totalQuestions) * 100),
+      }));
+      const focus = [...summaries].sort((a, b) =>
+        a.percentage - b.percentage || b.totalQuestions - a.totalQuestions || a.label.localeCompare(b.label, 'ar')
+      )[0] || {
+        key: 'general',
+        label: 'المهارات الأساسية',
+        category: 'verbal' as const,
+        totalQuestions: 0,
+        correctAnswers: 0,
+        percentage: 0,
+      };
+      const recommendation = {
+        title: `مهمة اليوم: ابدأ بـ ${focus.label}`,
+        reason: `نتيجتك الأولية ${percentage}%. سنبدأ بأضعف مهارة ظهرت في التقييم (${focus.label}) ثم نعيد القياس بعد التدريب.`,
+        href: `/foundation?program=qudrat&subject=${focus.category}`,
+      };
+
+      const diagnosticResult = {
+        userId,
+        program: 'qudrat',
+        testType: 'custom',
+        testId: `diagnostic-${attemptId}`,
+        testName: 'التقييم التشخيصي الأولي',
+        difficulty: 'mixed',
+        score: percentage,
+        totalQuestions,
+        correctAnswers,
+        wrongAnswers: answeredQuestions - correctAnswers,
+        skippedQuestions: totalQuestions - answeredQuestions,
+        percentage,
+        timeTaken: Math.max(0, Number(req.body?.timeTakenSeconds) || 0),
+        pointsEarned: correctAnswers,
+        isOfficial: false,
+        questionDetails,
+        weakAreas: summaries.filter((skill) => skill.percentage < 60).map((skill) => skill.label),
+        strongAreas: summaries.filter((skill) => skill.percentage >= 75).map((skill) => skill.label),
+      } as any;
+      if (mongoose.Types.ObjectId.isValid(userId)) {
+        await mongoStorage.createTestResult(diagnosticResult);
+      } else {
+        await TestResult.create(diagnosticResult);
+      }
+      await DiagnosticAttempt.updateOne(
+        { _id: attemptId, userId, status: 'active' },
+        { $set: { status: 'completed', completedAt: new Date() } },
+      );
+      const profile = await StudentLearningProfile.findOneAndUpdate(
+        { userId, program: 'qudrat' },
+        {
+          $set: {
+            status: 'diagnostic_completed',
+            diagnosticAttemptId: attemptId,
+            baseline: {
+              overall: percentage,
+              verbal: Math.round((summaries.filter((skill) => skill.category === 'verbal').reduce((sum, skill) => sum + skill.correctAnswers, 0) /
+                Math.max(1, summaries.filter((skill) => skill.category === 'verbal').reduce((sum, skill) => sum + skill.totalQuestions, 0))) * 100),
+              quantitative: Math.round((summaries.filter((skill) => skill.category === 'quantitative').reduce((sum, skill) => sum + skill.correctAnswers, 0) /
+                Math.max(1, summaries.filter((skill) => skill.category === 'quantitative').reduce((sum, skill) => sum + skill.totalQuestions, 0))) * 100),
+            },
+            skillSummaries: summaries,
+            focus: { category: focus.category, skill: focus.key, label: focus.label },
+            recommendation,
+            lastDiagnosticAt: new Date(),
+          },
+        },
+        { upsert: true, new: true, setDefaultsOnInsert: true },
+      ).lean();
+      return res.status(201).json({
+        result: { percentage, correctAnswers, totalQuestions, skippedQuestions: totalQuestions - answeredQuestions },
+        profile: {
+          status: profile?.status,
+          baseline: profile?.baseline,
+          focus: profile?.focus,
+          recommendation: profile?.recommendation,
+        },
+      });
+    } catch (error) {
+      console.error('Foundation diagnostic submission error:', error);
+      return res.status(500).json({ error: 'فشل في حفظ نتيجة التقييم التشخيصي' });
+    }
+  });
+
   app.get('/api/platform-reviews/approved', async (_req: Request, res: Response) => {
     try {
       const { PlatformReview } = await import('../mongodb/models');
