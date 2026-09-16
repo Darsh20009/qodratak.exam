@@ -6,6 +6,7 @@ export type LearningSubject =
   | 'فيزياء'
   | 'كيمياء'
   | 'أحياء'
+  | 'علم الأرض'
   | 'علم البيئة';
 
 export type LearningMappingStatus = 'mapped' | 'needs_review' | 'unmapped';
@@ -159,10 +160,11 @@ export function classifyQuestion(
 
     taxonomy.program = 'tahsili';
     taxonomy.subject = subject;
-    evidence.push({ field: 'subject', value: sourceSubject!, confidence: 'explicit' });
-    if (nonEmpty(question.topic)) {
-      taxonomy.topic = nonEmpty(question.topic);
-      evidence.push({ field: 'topic', value: taxonomy.topic, confidence: 'explicit' });
+    evidence.push({ field: 'subject', value: sourceSubject ?? subject, confidence: 'explicit' });
+    const topic = nonEmpty(question.topic);
+    if (topic) {
+      taxonomy.topic = topic;
+      evidence.push({ field: 'topic', value: topic, confidence: 'explicit' });
     } else {
       pushReason(reasons, 'topic_not_present_in_source');
     }
