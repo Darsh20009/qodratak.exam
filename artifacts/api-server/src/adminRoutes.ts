@@ -7,6 +7,12 @@ import mongoose from 'mongoose';
 import { mongoStorage } from './mongodb/mongoStorage';
 import { storage } from './storage';
 import { Question, ChatMessage, Admin, WhatsAppMessage, FoundationContent, PlatformReview, Institution, InstitutionRequest, User } from './mongodb/models';
+import { LearningContentNode, QuestionLearningMap } from './mongodb/learningContentModels';
+import {
+  buildControlledSampleMappings,
+  CONTROLLED_TAXONOMY_NODES,
+  CONTROLLED_TAXONOMY_VERSION,
+} from './learning/taxonomyRegistry';
 import { sendMailboxEmail, sendSubscriptionApprovalEmail } from './services/emailService';
 import {
   deleteInboxMessage,
@@ -245,6 +251,7 @@ function requiredAdminPermission(req: Request) {
   const pathName = req.path;
   const readOnly = req.method === 'GET';
   if (pathName === '/session' || pathName === '/logout') return null;
+  if (pathName.startsWith('/learning-taxonomy')) return 'manage_content';
   if (pathName.startsWith('/dashboard')) return 'view_dashboard';
   if (pathName.startsWith('/users')) return readOnly ? 'view_students' : 'manage_students';
   if (pathName.startsWith('/subscriptions')) return readOnly ? 'view_subscriptions' : 'manage_subscriptions';
@@ -475,6 +482,239 @@ router.get('/session', requireAdminAuth, (req: Request, res: Response) => {
     authenticated: true,
     admin: (req.session as any).admin,
   });
+});
+
+// ── LEARNING TAXONOMY: CONTROLLED REVIEW FOUNDATION ───────────────────────
+const taxonomyNodeTypes = new Set(['PROGRAM', 'SUBJECT', 'TOPIC', 'SKILL', 'SUBSKILL', 'CONCEPT']);
+const taxonomyNodeStatuses = new Set(['DRAFT', 'REVIEW', 'APPROVED', 'REJECTED']);
+const mappingConfidences = new Set(['HIGH', 'MEDIUM', 'LOW']);
+
+function normalizeTaxonomyEvidence(value: unknown) {
+  if (!Array.isArray(value)) return [];
+  return value
+    .map((item) => {
+      const record = item && typeof item === 'object' ? item as Record<string, unknown> : {};
+      const source = String(record.source ?? '').trim();
+      const detail = String(record.evidence ?? '').trim();
+      const confidence = String(record.confidence ?? '').trim().toUpperCase();
+      if (!source || !detail || !mappingConfidences.has(confidence)) return null;
+      return { source, evidence: detail, confidence };
+    })
+    .filter((item): item is { source: string; evidence: string; confidence: string } => item !== null);
+}
+
+function taxonomyNodePayload(body: Record<string, unknown>, creating: boolean) {
+  const code = String(body.code ?? '').trim();
+  const name = String(body.name ?? '').trim();
+  const nameAr = String(body.nameAr ?? '').trim();
+  const type = String(body.type ?? '').trim().toUpperCase();
+  const program = String(body.program ?? '').trim();
+  const source = String(body.source ?? '').trim();
+  const evidence = normalizeTaxonomyEvidence(body.evidence);
+  const status = String(body.status ?? (creating ? 'REVIEW' : '')).trim().toUpperCase();
+
+  if (creating && (!code || !name || !nameAr || !type || !program || !source)) {
+    return { error: 'code وname وnameAr وtype وprogram وsource مطلوبة' };
+  }
+  if (type && !taxonomyNodeTypes.has(type)) return { error: 'نوع عقدة taxonomy غير صالح' };
+  if (program && !['qudrat', 'tahsili'].includes(program)) return { error: 'البرنامج يجب أن يكون qudrat أو tahsili' };
+  if (status && !taxonomyNodeStatuses.has(status)) return { error: 'حالة taxonomy غير صالحة' };
+  if (creating && status === 'APPROVED') return { error: 'لا يمكن إنشاء عقدة معتمدة مباشرة؛ أنشئها للمراجعة أولاً' };
+  if (evidence.length === 0) return { error: 'دليل واحد على الأقل مطلوب لكل عقدة' };
+
+  return {
+    payload: {
+      ...(code ? { code } : {}),
+      ...(name ? { name } : {}),
+      ...(nameAr ? { nameAr } : {}),
+      ...(type ? { type } : {}),
+      ...(program ? { program } : {}),
+      ...(body.subject !== undefined ? { subject: String(body.subject).trim() } : {}),
+      ...(body.parentId !== undefined ? { parentId: String(body.parentId).trim() } : {}),
+      ...(body.source !== undefined ? { source } : {}),
+      ...(body.aliases !== undefined && Array.isArray(body.aliases)
+        ? { aliases: Array.from(new Set(body.aliases.map(String).map((alias) => alias.trim()).filter(Boolean))) }
+        : {}),
+      evidence,
+      ...(status ? { status } : {}),
+    },
+  };
+}
+
+router.get('/learning-taxonomy/controlled-set', requireAdminAuth, (_req: Request, res: Response) => {
+  const mappings = buildControlledSampleMappings();
+  res.json({
+    version: CONTROLLED_TAXONOMY_VERSION,
+    persisted: false,
+    nodes: CONTROLLED_TAXONOMY_NODES,
+    sample: mappings,
+    counts: {
+      proposed: CONTROLLED_TAXONOMY_NODES.length,
+      approved: CONTROLLED_TAXONOMY_NODES.filter((node) => node.status === 'APPROVED').length,
+      review: CONTROLLED_TAXONOMY_NODES.filter((node) => node.status === 'REVIEW').length,
+      sampleQuestions: mappings.length,
+      mappedQuestions: mappings.filter((mapping) => mapping.mappingStatus !== 'unmapped').length,
+      needsReviewQuestions: mappings.filter((mapping) => mapping.reviewStatus === 'REVIEW').length,
+    },
+  });
+});
+
+router.get('/learning-taxonomy/nodes', requireAdminAuth, async (req: Request, res: Response): Promise<void> => {
+  try {
+    const status = req.query.status ? String(req.query.status).trim().toUpperCase() : undefined;
+    const query = status && taxonomyNodeStatuses.has(status) ? { status } : {};
+    const nodes = await LearningContentNode.find(query as any).sort({ code: 1 }).limit(500).lean();
+    res.json({ nodes });
+  } catch (error) {
+    console.error('[Learning Taxonomy] list nodes error:', error);
+    res.status(500).json({ error: 'تعذر تحميل عقد taxonomy' });
+  }
+});
+
+router.post('/learning-taxonomy/nodes', requireAdminAuth, async (req: Request, res: Response): Promise<void> => {
+  try {
+    const result = taxonomyNodePayload(req.body ?? {}, true);
+    if ('error' in result) {
+      res.status(400).json(result);
+      return;
+    }
+    const node = await LearningContentNode.create(result.payload as any);
+    res.status(201).json({ node });
+  } catch (error: any) {
+    if (error?.code === 11000) {
+      res.status(409).json({ error: 'code مستخدم مسبقًا' });
+      return;
+    }
+    console.error('[Learning Taxonomy] create node error:', error);
+    res.status(500).json({ error: 'تعذر إنشاء عقدة taxonomy' });
+  }
+});
+
+router.patch('/learning-taxonomy/nodes/:id/review', requireAdminAuth, async (req: Request, res: Response): Promise<void> => {
+  try {
+    const nodeId = String(req.params.id);
+    if (!mongoose.Types.ObjectId.isValid(nodeId)) {
+      res.status(400).json({ error: 'معرّف عقدة taxonomy غير صالح' });
+      return;
+    }
+    const result = taxonomyNodePayload(req.body ?? {}, false);
+    if ('error' in result) {
+      res.status(400).json(result);
+      return;
+    }
+    const update = {
+      ...result.payload,
+      reviewedBy: String((req as any).session?.admin?.adminId ?? (req as any).session?.adminId ?? 'admin'),
+      reviewedAt: new Date(),
+    };
+    const node = await LearningContentNode.findByIdAndUpdate(nodeId, update as any, {
+      new: true,
+      runValidators: true,
+    }).lean();
+    if (!node) {
+      res.status(404).json({ error: 'عقدة taxonomy غير موجودة' });
+      return;
+    }
+    res.json({ node });
+  } catch (error) {
+    console.error('[Learning Taxonomy] review node error:', error);
+    res.status(500).json({ error: 'تعذر تحديث مراجعة عقدة taxonomy' });
+  }
+});
+
+router.get('/learning-taxonomy/mappings', requireAdminAuth, async (req: Request, res: Response): Promise<void> => {
+  try {
+    const reviewStatus = req.query.reviewStatus
+      ? String(req.query.reviewStatus).trim().toUpperCase()
+      : undefined;
+    const query = reviewStatus && taxonomyNodeStatuses.has(reviewStatus) ? { reviewStatus } : {};
+    const mappings = await QuestionLearningMap.find(query as any).sort({ createdAt: -1 }).limit(500).lean();
+    res.json({ mappings });
+  } catch (error) {
+    console.error('[Learning Taxonomy] list mappings error:', error);
+    res.status(500).json({ error: 'تعذر تحميل مراجعات الأسئلة' });
+  }
+});
+
+router.post('/learning-taxonomy/mappings', requireAdminAuth, async (req: Request, res: Response): Promise<void> => {
+  try {
+    const body = req.body ?? {};
+    const sourceType = String(body.sourceType ?? '').trim();
+    const sourceKey = String(body.sourceKey ?? '').trim();
+    const source = String(body.source ?? '').trim();
+    const confidence = String(body.confidence ?? '').trim().toUpperCase();
+    if (!['mongo_question', 'mongo_tahsili_question', 'postgres_question', 'legacy_json'].includes(sourceType)
+      || !sourceKey || !source || !mappingConfidences.has(confidence)) {
+      res.status(400).json({ error: 'sourceType وsourceKey وsource وconfidence مطلوبة وصحيحة' });
+      return;
+    }
+    const mapping = await QuestionLearningMap.create({
+      sourceType,
+      sourceKey,
+      questionId: body.questionId,
+      taxonomy: body.taxonomy && typeof body.taxonomy === 'object' ? body.taxonomy : {},
+      difficulty: body.difficulty,
+      prerequisites: [],
+      status: 'needs_review',
+      reviewStatus: 'REVIEW',
+      confidence,
+      reviewReasons: Array.isArray(body.reviewReasons) ? body.reviewReasons.map(String) : ['created_for_review'],
+      evidence: normalizeTaxonomyEvidence(body.evidence),
+      mappingVersion: String(body.mappingVersion ?? CONTROLLED_TAXONOMY_VERSION),
+    } as any);
+    res.status(201).json({ mapping });
+  } catch (error: any) {
+    if (error?.code === 11000) {
+      res.status(409).json({ error: 'هذا السؤال لديه mapping مسجل مسبقًا' });
+      return;
+    }
+    console.error('[Learning Taxonomy] create mapping error:', error);
+    res.status(500).json({ error: 'تعذر إنشاء mapping للمراجعة' });
+  }
+});
+
+router.patch('/learning-taxonomy/mappings/:id/review', requireAdminAuth, async (req: Request, res: Response): Promise<void> => {
+  try {
+    const mappingId = String(req.params.id);
+    if (!mongoose.Types.ObjectId.isValid(mappingId)) {
+      res.status(400).json({ error: 'معرّف mapping غير صالح' });
+      return;
+    }
+    const reviewStatus = String(req.body?.reviewStatus ?? '').trim().toUpperCase();
+    if (!taxonomyNodeStatuses.has(reviewStatus)) {
+      res.status(400).json({ error: 'حالة المراجعة غير صالحة' });
+      return;
+    }
+    const confidence = req.body?.confidence === undefined
+      ? undefined
+      : String(req.body.confidence).trim().toUpperCase();
+    if (confidence !== undefined && !mappingConfidences.has(confidence)) {
+      res.status(400).json({ error: 'درجة الثقة غير صالحة' });
+      return;
+    }
+    const update = {
+      reviewStatus,
+      ...(confidence ? { confidence } : {}),
+      ...(req.body?.taxonomy && typeof req.body.taxonomy === 'object' ? { taxonomy: req.body.taxonomy } : {}),
+      ...(req.body?.evidence !== undefined ? { evidence: normalizeTaxonomyEvidence(req.body.evidence) } : {}),
+      ...(reviewStatus === 'APPROVED' ? { status: 'mapped' } : {}),
+      ...(reviewStatus === 'REJECTED' ? { status: 'unmapped' } : {}),
+      reviewedBy: String((req as any).session?.admin?.adminId ?? (req as any).session?.adminId ?? 'admin'),
+      reviewedAt: new Date(),
+    };
+    const mapping = await QuestionLearningMap.findByIdAndUpdate(mappingId, update as any, {
+      new: true,
+      runValidators: true,
+    }).lean();
+    if (!mapping) {
+      res.status(404).json({ error: 'mapping غير موجود' });
+      return;
+    }
+    res.json({ mapping });
+  } catch (error) {
+    console.error('[Learning Taxonomy] review mapping error:', error);
+    res.status(500).json({ error: 'تعذر تحديث مراجعة mapping' });
+  }
 });
 
 // ── STUDENT PRODUCT: FOUNDATION CONTENT & REVIEW MODERATION ───────────────

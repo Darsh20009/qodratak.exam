@@ -130,20 +130,19 @@ Program
                     └── Question
 ```
 
-The implementation stores taxonomy nodes in one extensible `LearningContentNode` collection rather than creating six almost-identical collections. The `nodeType` field identifies the level, and `parentCode` expresses the hierarchy.
+The implementation stores taxonomy nodes in one extensible `LearningContentNode` collection rather than creating six almost-identical collections. The canonical `type` field identifies the level, and `parentId` expresses the hierarchy. Phase 02 aliases remain optional for safe migration of callers.
 
 ### Stable node requirements
 
 Every node should have:
 
 - Stable `code`.
-- `nodeType`.
+- Canonical `type` (`PROGRAM`, `SUBJECT`, `TOPIC`, `SKILL`, `SUBSKILL`, `CONCEPT`).
 - `program`.
-- `parentCode` where applicable.
-- Arabic `title`.
-- URL-safe `slug`.
-- Publication/review `status`.
-- Original `sourceLabels`.
+- `parentId` where applicable.
+- English `name` and Arabic `nameAr`.
+- Canonical review `status` (`DRAFT`, `REVIEW`, `APPROVED`, `REJECTED`).
+- Original `source` and structured `evidence`.
 - Explicit `prerequisiteCodes`.
 - Optional future metadata such as estimated time.
 
@@ -374,8 +373,8 @@ File: `artifacts/api-server/src/mongodb/learningContentModels.ts`
 Purpose:
 
 - Store Program, Subject, Topic, Skill, SubSkill, and Concept nodes in one extensible collection.
-- Preserve source labels.
-- Support review/publication status.
+- Preserve canonical names, aliases, source, and evidence.
+- Support controlled review status.
 - Store explicit prerequisite codes.
 - Leave room for estimated time without pretending to have student-derived statistics.
 
@@ -389,6 +388,7 @@ Purpose:
 - Support Mongo Qudrat, Mongo Tahsili, PostgreSQL, and legacy JSON source types.
 - Preserve source keys and optional Mongo question references.
 - Store taxonomy path, difficulty, evidence, review reasons, status, and mapping version.
+- Store `confidence` and `reviewStatus` for the Phase 03 admin review flow.
 - Allow admin review fields without changing answer keys or question delivery.
 
 ### Existing schemas not modified

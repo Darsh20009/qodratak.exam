@@ -4,26 +4,36 @@ import type {
   LearningProgram,
   LearningSourceType,
 } from '../learning/contentMap';
+import type {
+  MappingConfidence,
+  TaxonomyEvidence,
+  TaxonomyNodeStatus,
+  TaxonomyNodeType,
+} from '../learning/taxonomyRegistry';
 
-export type LearningNodeType =
-  | 'program'
-  | 'subject'
-  | 'topic'
-  | 'skill'
-  | 'subSkill'
-  | 'concept';
-
-export type LearningNodeStatus = 'draft' | 'active' | 'needs_review' | 'archived';
+export type LearningNodeType = TaxonomyNodeType;
+export type LearningNodeStatus = TaxonomyNodeStatus;
 
 export interface ILearningContentNode extends Document {
   code: string;
-  nodeType: LearningNodeType;
+  name: string;
+  nameAr: string;
+  type: LearningNodeType;
   program: LearningProgram;
-  parentCode?: string;
-  title: string;
-  slug: string;
+  subject?: string;
+  parentId?: string;
   status: LearningNodeStatus;
-  sourceLabels: string[];
+  source: string;
+  evidence: TaxonomyEvidence[];
+  aliases: string[];
+  reviewedBy?: string;
+  reviewedAt?: Date;
+  // Legacy aliases remain optional so Phase 02 callers can be migrated safely.
+  nodeType?: string;
+  parentCode?: string;
+  title?: string;
+  slug?: string;
+  sourceLabels?: string[];
   prerequisiteCodes: string[];
   metadata?: {
     estimatedTimeMinutes?: number;
@@ -36,22 +46,42 @@ export interface ILearningContentNode extends Document {
 const learningContentNodeSchema = new Schema<ILearningContentNode>(
   {
     code: { type: String, required: true, unique: true, trim: true, index: true },
-    nodeType: {
+    name: { type: String, required: true, trim: true, maxlength: 200 },
+    nameAr: { type: String, required: true, trim: true, maxlength: 200 },
+    type: {
       type: String,
-      enum: ['program', 'subject', 'topic', 'skill', 'subSkill', 'concept'],
+      enum: ['PROGRAM', 'SUBJECT', 'TOPIC', 'SKILL', 'SUBSKILL', 'CONCEPT'],
       required: true,
       index: true,
     },
     program: { type: String, enum: ['qudrat', 'tahsili'], required: true, index: true },
-    parentCode: { type: String, trim: true, index: true },
-    title: { type: String, required: true, trim: true, maxlength: 200 },
-    slug: { type: String, required: true, trim: true, maxlength: 200 },
+    parentId: { type: String, trim: true, index: true },
     status: {
       type: String,
-      enum: ['draft', 'active', 'needs_review', 'archived'],
-      default: 'draft',
+      enum: ['DRAFT', 'REVIEW', 'APPROVED', 'REJECTED'],
+      default: 'REVIEW',
       index: true,
     },
+    subject: { type: String, trim: true, index: true },
+    source: { type: String, required: true, trim: true },
+    evidence: {
+      type: [
+        {
+          source: { type: String, required: true, trim: true },
+          evidence: { type: String, required: true, trim: true },
+          confidence: { type: String, enum: ['HIGH', 'MEDIUM', 'LOW'], required: true },
+        },
+      ],
+      default: [],
+    },
+    aliases: { type: [String], default: [] },
+    reviewedBy: { type: String },
+    reviewedAt: { type: Date },
+    // Deprecated Phase 02 aliases. New writes should use the canonical fields above.
+    nodeType: { type: String },
+    parentCode: { type: String, trim: true, index: true },
+    title: { type: String, trim: true, maxlength: 200 },
+    slug: { type: String, trim: true, maxlength: 200 },
     sourceLabels: { type: [String], default: [] },
     prerequisiteCodes: { type: [String], default: [] },
     metadata: {
@@ -62,12 +92,14 @@ const learningContentNodeSchema = new Schema<ILearningContentNode>(
   { timestamps: true },
 );
 
-learningContentNodeSchema.index({ program: 1, nodeType: 1, parentCode: 1, status: 1 });
+learningContentNodeSchema.index({ program: 1, type: 1, parentId: 1, status: 1 });
+learningContentNodeSchema.index({ program: 1, subject: 1, status: 1 });
 
 export interface IQuestionLearningMap extends Document {
   sourceType: LearningSourceType;
   sourceKey: string;
   questionObjectId?: mongoose.Types.ObjectId;
+  questionId?: number | string;
   taxonomy: {
     program?: LearningProgram;
     subject?: string;
@@ -79,12 +111,10 @@ export interface IQuestionLearningMap extends Document {
   difficulty?: 'beginner' | 'intermediate' | 'advanced';
   prerequisites: string[];
   status: LearningMappingStatus;
+  reviewStatus: TaxonomyNodeStatus;
+  confidence: MappingConfidence;
   reviewReasons: string[];
-  evidence: Array<{
-    field: string;
-    value: string;
-    confidence: 'explicit' | 'controlled' | 'candidate';
-  }>;
+  evidence: TaxonomyEvidence[];
   mappingVersion: string;
   reviewedBy?: string;
   reviewedAt?: Date;
@@ -102,6 +132,7 @@ const questionLearningMapSchema = new Schema<IQuestionLearningMap>(
     },
     sourceKey: { type: String, required: true, trim: true },
     questionObjectId: { type: Schema.Types.ObjectId, ref: 'Question', index: true },
+    questionId: { type: Schema.Types.Mixed, index: true },
     taxonomy: {
       program: { type: String, enum: ['qudrat', 'tahsili'] },
       subject: { type: String, trim: true },
@@ -118,6 +149,19 @@ const questionLearningMapSchema = new Schema<IQuestionLearningMap>(
       required: true,
       default: 'unmapped',
       index: true,
+    },
+    reviewStatus: {
+      type: String,
+      enum: ['DRAFT', 'REVIEW', 'APPROVED', 'REJECTED'],
+      required: true,
+      default: 'REVIEW',
+      index: true,
+    },
+    confidence: {
+      type: String,
+      enum: ['HIGH', 'MEDIUM', 'LOW'],
+      required: true,
+      default: 'LOW',
     },
     reviewReasons: { type: [String], default: [] },
     evidence: {

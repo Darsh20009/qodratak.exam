@@ -109,6 +109,11 @@ function nonEmpty(value: unknown): string | undefined {
   return typeof value === 'string' && value.trim() ? value.trim() : undefined;
 }
 
+function sourceIdentifier(value: unknown): string | undefined {
+  if (typeof value === 'number' && Number.isFinite(value)) return String(value);
+  return nonEmpty(value);
+}
+
 function pushReason(reasons: string[], reason: string): void {
   if (!reasons.includes(reason)) reasons.push(reason);
 }
@@ -135,7 +140,7 @@ export function classifyQuestion(
   question: SourceQuestion,
   sourceType: LearningSourceType,
 ): QuestionMappingCandidate {
-  const sourceId = nonEmpty(question.questionId ?? question.id);
+  const sourceId = sourceIdentifier(question.questionId ?? question.id);
   const sourceNamespace = nonEmpty(question.sourceNamespace);
   const sourceKey = sourceId
     ? `${sourceType}:${sourceNamespace ? `${sourceNamespace}:` : ''}${sourceId}`
