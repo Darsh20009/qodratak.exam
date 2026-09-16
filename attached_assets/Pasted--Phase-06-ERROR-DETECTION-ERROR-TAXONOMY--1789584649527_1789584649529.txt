@@ -1,0 +1,394 @@
+نفّذ الآن **Phase 06 فقط: ERROR DETECTION & ERROR TAXONOMY**.
+
+الهدف من هذه المرحلة:
+
+نريد أن يتحول النظام من مجرد معرفة أن الطالب أخطأ إلى جمع **Evidence منظم عن نوع الخطأ**.
+
+لا نريد في هذه المرحلة:
+
+* Mastery Engine
+* Recommendation Engine
+* Diagnostic Engine جديد
+* Adaptive Learning
+* Spaced Repetition
+* AI Tutor
+* إعادة تصميم الواجهة
+
+---
+
+## 1. Audit أولًا
+
+افحص النظام الحالي لمعرفة:
+
+* كيف يتم حفظ السؤال وإجابته الصحيحة.
+* كيف يتم حفظ `LearningAttempt`.
+* ما البيانات المتاحة عن السؤال.
+* ما الحل/الشرح الموجود حاليًا.
+* ما البيانات المتاحة عن وقت الإجابة.
+* كيف يعمل `ErrorLog`.
+* هل توجد أي آلية حالية لتصنيف الأخطاء.
+
+لا تفترض وجود بيانات غير موجودة.
+
+---
+
+## 2. Important Principle
+
+لا تعتبر:
+
+`wrong answer = concept gap`
+
+هذا غير صحيح.
+
+المحاولة الخاطئة يجب أن تكون **evidence** فقط.
+
+لا نريد إصدار حكم نهائي على مستوى الطالب من محاولة واحدة.
+
+---
+
+## 3. Error Taxonomy
+
+أنشئ taxonomy أولية ومحدودة، ولا توسعها بلا دليل.
+
+ابدأ بالفئات التالية:
+
+* `CONCEPT_GAP`
+* `CALCULATION_ERROR`
+* `READING_ERROR`
+* `MISUNDERSTANDING`
+* `WRONG_STRATEGY`
+* `RUSHED`
+* `GUESS`
+* `CONFUSED_OPTIONS`
+* `FAILED_TO_IDENTIFY_RELATION`
+* `MEMORY_GAP`
+* `PARTIAL_UNDERSTANDING`
+* `TIME_PRESSURE`
+* `UNKNOWN`
+
+يجب أن يكون `UNKNOWN` صالحًا عندما لا توجد أدلة كافية.
+
+---
+
+## 4. Evidence vs Inference
+
+افصل بوضوح بين:
+
+### Observed Evidence
+
+مثل:
+
+* الطالب اختار إجابة خاطئة.
+* responseTime منخفض جدًا.
+* السؤال له metadata معينة.
+* الطالب اختار option معينة.
+* الطالب أعاد السؤال.
+* الطالب قال صراحة سبب الخطأ إن كان النظام يملك هذه المعلومة.
+
+وبين:
+
+### Inferred Error Type
+
+مثل:
+
+`CONCEPT_GAP`
+
+أو:
+
+`CALCULATION_ERROR`
+
+أي inference يجب أن يكون:
+
+* قابلًا للتتبع.
+* مرتبطًا بالأدلة التي أدت إليه.
+* قابلًا للتعديل لاحقًا.
+* لا يتحول إلى حقيقة دائمة عن الطالب من محاولة واحدة.
+
+---
+
+## 5. Student Self-Report
+
+إذا كان من السهل إضافة mechanism بسيط بعد الإجابة الخاطئة، يمكن دعم اختيارات مثل:
+
+* لم أفهم الفكرة
+* أخطأت في الحساب
+* لم أفهم السؤال
+* استعجلت
+* لم أعرف من أين أبدأ
+* كنت أخمن
+* خلطت بين الخيارات
+* غير متأكد
+
+لكن:
+
+**لا تجعل هذه الخطوة إجبارية بعد كل سؤال.**
+
+ولا تضف modal مزعجًا بعد كل إجابة.
+
+إذا كان إدخالها يحتاج تغيير UI كبير، اترك الـ UI لهذه المرحلة ولا توسع النطاق.
+
+---
+
+## 6. Error Record
+
+أنشئ نموذجًا مناسبًا مثل:
+
+`LearningErrorEvidence`
+
+أو استخدم بنية موجودة إذا كانت أفضل.
+
+يجب أن يرتبط على الأقل بـ:
+
+* studentId
+* attemptId
+* questionId
+* sourceType
+* sourceKey
+* programId
+* subjectId
+* errorType
+* confidence
+* evidence
+* detectedAt
+
+ولا تحفظ معلومات غير ضرورية.
+
+---
+
+## 7. Confidence
+
+استخدم confidence واضحًا، مثل:
+
+`LOW | MEDIUM | HIGH`
+
+لكن لا تجعل confidence مساويًا لمستوى الطالب.
+
+مثال:
+
+محاولة خاطئة فقط:
+
+`errorType = UNKNOWN`
+
+أو inference منخفض الثقة.
+
+إذا قال الطالب صراحة:
+
+"كنت أخمن"
+
+يمكن أن تكون الأدلة أقوى بكثير.
+
+---
+
+## 8. Multiple Evidence
+
+يجب أن يسمح التصميم بأن تظهر أكثر من إشارة للخطأ عبر الزمن.
+
+مثال:
+
+السؤال 1:
+`CALCULATION_ERROR`
+
+السؤال 2:
+`CONCEPT_GAP`
+
+السؤال 3:
+`CONCEPT_GAP`
+
+هذه ليست ثلاثة أحكام منفصلة على الطالب، بل **evidence history** يمكن للمراحل اللاحقة تحليلها.
+
+لا تقم بإنشاء Mastery الآن.
+
+---
+
+## 9. Existing ErrorLog
+
+راجع `ErrorLog`.
+
+لا تحذفه.
+
+لا تجعله مصدر الحقيقة للمحاولات.
+
+إذا كان مناسبًا، استخدم Adapter أو compatibility mapping.
+
+يجب أن تكون العلاقة واضحة:
+
+`LearningAttempt`
+→ ماذا حدث؟
+
+`LearningErrorEvidence`
+→ ما الأدلة على سبب الخطأ؟
+
+`ErrorLog`
+→ legacy/compatibility record
+
+---
+
+## 10. Detection Rules
+
+إذا كانت هناك قواعد يمكن تنفيذها بأمان من البيانات الموجودة، استخدمها فقط.
+
+أمثلة:
+
+* wrong answer وحدها لا تكفي لإثبات `CONCEPT_GAP`.
+* وقت شديد الانخفاض قد يكون evidence لـ `RUSHED`، وليس حكمًا نهائيًا.
+* self-report صريح يمكن أن يكون evidence قويًا.
+* repeated errors في نفس approved Skill/Concept يمكن الاستفادة منها لاحقًا، لكن لا تبدأ Mastery الآن.
+* لا تخترع Skill أو Concept غير معتمد من taxonomy.
+
+إذا لم توجد أدلة كافية:
+
+`UNKNOWN`
+
+أفضل من التخمين.
+
+---
+
+## 11. Question Metadata
+
+استخدم فقط metadata الموثوقة الموجودة حاليًا.
+
+لا تخترع:
+
+* Skill
+* SubSkill
+* Concept
+* prerequisite
+
+ولا تحول category قديمة إلى concept من تلقاء نفسك.
+
+---
+
+## 12. APIs
+
+إذا احتاج النظام API، أضف أقل عدد ممكن من المسارات اللازمة.
+
+مثل:
+
+* تسجيل evidence
+* قراءة error evidence للطالب
+* قراءة evidence المرتبطة بمحاولة معينة
+
+ويجب أن تكون محمية بجلسة الطالب.
+
+لا تسمح للـ client بتحديد:
+
+* studentId
+* correctness
+* mastery
+* confidence النهائي
+
+بشكل موثوق من نفسه.
+
+---
+
+## 13. Backend Intelligence
+
+يمكن تجهيز abstraction يسمح لاحقًا باستخدام rule-based detection أو نموذج/LLM داخلي.
+
+لكن لا تربط Phase 06 بخدمة خارجية إذا لم تكن ضرورية.
+
+ولا تضف أي UI يظهر للطالب كلمة:
+
+`AI`
+
+أو:
+
+`ذكاء اصطناعي`
+
+أو أي badge أو chatbot أو floating assistant.
+
+الذكاء يجب أن يبقى داخل النظام.
+
+---
+
+## 14. Tests
+
+أضف اختبارات تغطي على الأقل:
+
+1. wrong answer without evidence → `UNKNOWN`
+2. explicit self-report "guess" → `GUESS`
+3. explicit calculation mistake → `CALCULATION_ERROR`
+4. explicit concept misunderstanding → `CONCEPT_GAP` أو الفئة المناسبة
+5. insufficient evidence → low/unknown
+6. evidence linked to correct attempt
+7. evidence linked to wrong attempt
+8. duplicate evidence submission
+9. invalid attemptId
+10. unauthorized student access
+11. source identity preserved
+12. existing ErrorLog compatibility
+13. no invented taxonomy
+14. multiple evidence records over time
+
+---
+
+## 15. Data Safety
+
+لا تعدّل historical student data.
+
+لا تعمل bulk classification لكل الأخطاء القديمة.
+
+لا تعمل migration واسعة.
+
+هذه المرحلة تبني البنية الجديدة للاستخدام الطبيعي.
+
+---
+
+## 16. Documentation
+
+أنشئ:
+
+`docs/error-detection-taxonomy.md`
+
+ويشرح:
+
+* taxonomy
+* evidence model
+* confidence
+* detection rules
+* self-report
+* relation to LearningAttempt
+* relation to ErrorLog
+* ما الذي يعتبر observation وما الذي يعتبر inference
+* ما الذي لن يتم استنتاجه في هذه المرحلة
+
+---
+
+## 17. Scope Lock
+
+**لا تبدأ Mastery Engine.**
+
+**لا تبدأ Recommendations.**
+
+**لا تبدأ Diagnostic Engine.**
+
+**لا تبدأ Adaptive Learning.**
+
+**لا تبدأ Spaced Repetition.**
+
+Phase 06 فقط.
+
+---
+
+## 18. Final Verification
+
+في النهاية أوقف التنفيذ وأعطني:
+
+1. taxonomy النهائية التي تم اعتمادها.
+2. schema الجديدة.
+3. كيف يتم جمع evidence.
+4. كيف يتم حساب confidence.
+5. ما الذي يعتبر observed وما الذي يعتبر inferred.
+6. كيف تم الحفاظ على ErrorLog.
+7. APIs الجديدة إن وجدت.
+8. الاختبارات وعددها.
+9. Build status.
+10. TypeScript status.
+11. أي مشاكل قديمة.
+12. أي شيء لم يمكن تنفيذه بسبب نقص البيانات.
+
+القاعدة الأساسية:
+
+**Phase 06 = Understand the mistake, without judging the student.**
+
+لا تنتقل إلى Phase 07.
