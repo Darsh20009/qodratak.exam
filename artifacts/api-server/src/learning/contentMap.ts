@@ -76,6 +76,20 @@ const TAHSILI_SUBJECTS = new Set<LearningSubject>([
 
 const DIFFICULTIES = new Set(['beginner', 'intermediate', 'advanced']);
 
+const TAHSILI_SUBJECT_ALIASES: Record<string, LearningSubject> = {
+  'الرياضيات': 'رياضيات',
+  'رياضيات': 'رياضيات',
+  'الفيزياء': 'فيزياء',
+  'فيزياء': 'فيزياء',
+  'الكيمياء': 'كيمياء',
+  'كيمياء': 'كيمياء',
+  'الأحياء': 'أحياء',
+  'أحياء': 'أحياء',
+  'علم البيئة': 'علم البيئة',
+  'البيئة': 'علم البيئة',
+  'علم الأرض': 'علم الأرض',
+};
+
 type SourceQuestion = {
   id?: number | string;
   questionId?: number | string;
@@ -128,8 +142,9 @@ export function classifyQuestion(
   const taxonomy: LearningTaxonomyPath = {};
 
   if (sourceType === 'mongo_tahsili_question' || question.systemCategory === 'tahsili') {
-    const subject = nonEmpty(question.subject ?? question.subcategory ?? question.category);
-    if (!subject || !TAHSILI_SUBJECTS.has(subject as LearningSubject)) {
+    const sourceSubject = nonEmpty(question.subject ?? question.subcategory ?? question.category);
+    const subject = sourceSubject ? TAHSILI_SUBJECT_ALIASES[sourceSubject] : undefined;
+    if (!subject || !TAHSILI_SUBJECTS.has(subject)) {
       return {
         sourceType,
         sourceKey,
@@ -143,8 +158,8 @@ export function classifyQuestion(
     }
 
     taxonomy.program = 'tahsili';
-    taxonomy.subject = subject as LearningSubject;
-    evidence.push({ field: 'subject', value: subject, confidence: 'explicit' });
+    taxonomy.subject = subject;
+    evidence.push({ field: 'subject', value: sourceSubject!, confidence: 'explicit' });
     if (nonEmpty(question.topic)) {
       taxonomy.topic = nonEmpty(question.topic);
       evidence.push({ field: 'topic', value: taxonomy.topic, confidence: 'explicit' });
