@@ -1621,6 +1621,20 @@ const diagnosticAttemptSchema = new Schema<IDiagnosticAttempt>({
 diagnosticAttemptSchema.index({ expiresAt: 1 }, { expireAfterSeconds: 0 });
 diagnosticAttemptSchema.index({ userId: 1, program: 1, startedAt: -1 });
 
+export type LearningDataConfidence = 'LOW' | 'MEDIUM' | 'HIGH';
+
+export interface IObservedPerformance {
+  attempts: number;
+  correctAttempts: number;
+  wrongAttempts: number;
+  accuracy: number;
+  averageResponseTime: number;
+  responseTimeTotalSeconds: number;
+  lastAttemptAt?: Date;
+  lastCorrectAt?: Date;
+  lastWrongAt?: Date;
+}
+
 export interface ILearningSkillSummary {
   key: string;
   label: string;
@@ -1632,6 +1646,13 @@ export interface ILearningSkillSummary {
 
 export interface IStudentLearningProfile extends Document {
   userId: string;
+  studentId?: string;
+  profileVersion?: string;
+  dataConfidence: LearningDataConfidence;
+  overall: IObservedPerformance;
+  programs: Map<string, IObservedPerformance>;
+  subjects: Map<string, IObservedPerformance>;
+  lastActivityAt?: Date;
   program: StudentProgram;
   status: 'needs_diagnostic' | 'diagnostic_completed';
   diagnosticAttemptId?: mongoose.Types.ObjectId;
@@ -1665,8 +1686,27 @@ const learningSkillSummarySchema = new Schema<ILearningSkillSummary>({
   percentage: { type: Number, required: true, min: 0, max: 100 },
 }, { _id: false });
 
+const observedPerformanceSchema = new Schema<IObservedPerformance>({
+  attempts: { type: Number, default: 0, min: 0 },
+  correctAttempts: { type: Number, default: 0, min: 0 },
+  wrongAttempts: { type: Number, default: 0, min: 0 },
+  accuracy: { type: Number, default: 0, min: 0, max: 100 },
+  averageResponseTime: { type: Number, default: 0, min: 0 },
+  responseTimeTotalSeconds: { type: Number, default: 0, min: 0 },
+  lastAttemptAt: { type: Date },
+  lastCorrectAt: { type: Date },
+  lastWrongAt: { type: Date },
+}, { _id: false });
+
 const studentLearningProfileSchema = new Schema<IStudentLearningProfile>({
   userId: { type: String, required: true, index: true },
+  studentId: { type: String },
+  profileVersion: { type: String, default: 'phase-04-v1' },
+  dataConfidence: { type: String, enum: ['LOW', 'MEDIUM', 'HIGH'], default: 'LOW', index: true },
+  overall: { type: observedPerformanceSchema, default: () => ({}) },
+  programs: { type: Map, of: observedPerformanceSchema, default: () => new Map() },
+  subjects: { type: Map, of: observedPerformanceSchema, default: () => new Map() },
+  lastActivityAt: { type: Date, index: true },
   program: { type: String, enum: ['qudrat', 'tahsili'], required: true, index: true },
   status: { type: String, enum: ['needs_diagnostic', 'diagnostic_completed'], default: 'needs_diagnostic', index: true },
   diagnosticAttemptId: { type: Schema.Types.ObjectId, ref: 'DiagnosticAttempt' },
@@ -1690,6 +1730,7 @@ const studentLearningProfileSchema = new Schema<IStudentLearningProfile>({
 }, { timestamps: true });
 
 studentLearningProfileSchema.index({ userId: 1, program: 1 }, { unique: true });
+studentLearningProfileSchema.index({ studentId: 1 }, { unique: true, sparse: true });
 
 export const DiagnosticAttempt = mongoose.models['DiagnosticAttempt']
   ? mongoose.model<IDiagnosticAttempt>('DiagnosticAttempt')

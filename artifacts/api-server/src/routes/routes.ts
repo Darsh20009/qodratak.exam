@@ -42,6 +42,14 @@ import {
   PersistentMediaStorageUnavailableError,
   storeMediaBuffer,
 } from '../services/mediaStorage';
+import {
+  completeLearningSession,
+  createLearningSession,
+  findQuestionForLearningAttempt,
+  normalizeLearningAttemptInput,
+  recordLearningAttempt,
+} from '../services/learningProfileService';
+import { LearningAttempt, LearningSession } from '../mongodb/learningProfileModels';
 
 function getQuestionImageUrls(question: { imageUrl?: unknown; imageUrls?: unknown }): string[] {
   const urls = [
@@ -11233,6 +11241,204 @@ app.post("/api/auth/register", async (req: Request, res: Response) => {
     return String(user.id);
   };
   const supportedPrograms = new Set(['qudrat', 'tahsili']);
+
+  const publicLearningAttempt = (attempt: any) => ({
+    id: String(attempt?._id),
+    studentId: attempt?.studentId,
+    questionId: attempt?.questionId,
+    sourceType: attempt?.sourceType,
+    sourceKey: attempt?.sourceKey,
+    programId: attempt?.programId,
+    subjectId: attempt?.subjectId,
+    sessionId: attempt?.sessionId ? String(attempt.sessionId) : undefined,
+    selectedAnswer: attempt?.selectedAnswer,
+    isAnswered: attempt?.isAnswered,
+    isCorrect: attempt?.isCorrect,
+    responseTime: attempt?.responseTime,
+    attemptNumber: attempt?.attemptNumber,
+    createdAt: attempt?.createdAt,
+  });
+
+  // Phase 04 data foundation. These APIs collect observed activity only; they
+  // do not calculate mastery, diagnose gaps, or generate recommendations.
+  app.get('/api/learning-profile', requireAuth, async (req: Request, res: Response) => {
+    const studentId = studentOnly(req, res);
+    if (!studentId) return;
+    try {
+      const { StudentLearningProfile } = await import('../mongodb/models');
+      const profile = await StudentLearningProfile.findOne({ userId: studentId }).lean() as any;
+      return res.json({
+        studentId,
+        profileVersion: profile?.profileVersion || 'phase-04-v1',
+        dataConfidence: profile?.dataConfidence || 'LOW',
+        overall: profile?.overall || null,
+        programs: profile?.programs || {},
+        subjects: profile?.subjects || {},
+        lastActivityAt: profile?.lastActivityAt || null,
+        createdAt: profile?.createdAt || null,
+        updatedAt: profile?.updatedAt || null,
+      });
+    } catch (error) {
+      console.error('Learning profile retrieval error:', error);
+      return res.status(500).json({ error: 'فشل في جلب ملف التعلم' });
+    }
+  });
+
+  app.get('/api/learning-profile/subjects', requireAuth, async (req: Request, res: Response) => {
+    const studentId = studentOnly(req, res);
+    if (!studentId) return;
+    try {
+      const { StudentLearningProfile } = await import('../mongodb/models');
+      const profile = await StudentLearningProfile.findOne({ userId: studentId }).lean() as any;
+      const subjects = profile?.subjects || {};
+      const requestedProgram = req.query.programId ? String(req.query.programId) : undefined;
+      const filtered = requestedProgram
+        ? Object.fromEntries(Object.entries(subjects).filter(([key]) => key.startsWith(`${requestedProgram.replace(/^program\./, '').replace(/[^a-zA-Z0-9_-]/g, '_')}_`)))
+        : subjects;
+      return res.json({ subjects: filtered, dataConfidence: profile?.dataConfidence || 'LOW' });
+    } catch (error) {
+      console.error('Learning subject performance error:', error);
+      return res.status(500).json({ error: 'فشل في جلب أداء المواد' });
+    }
+  });
+
+  app.get('/api/learning-profile/attempts', requireAuth, async (req: Request, res: Response) => {
+    const studentId = studentOnly(req, res);
+    if (!studentId) return;
+    try {
+      const limit = Math.min(100, Math.max(1, Number(req.query.limit) || 20));
+      const query: Record<string, unknown> = { studentId };
+      if (req.query.programId) query.programId = String(req.query.programId);
+      if (req.query.sessionId && mongoose.Types.ObjectId.isValid(String(req.query.sessionId))) {
+        query.sessionId = String(req.query.sessionId);
+      }
+      const attempts = await LearningAttempt.find(query)
+        .select('-correctAnswer -metadata')
+        .sort({ createdAt: -1 })
+        .limit(limit)
+        .lean();
+      return res.json({ attempts: attempts.map(publicLearningAttempt) });
+    } catch (error) {
+      console.error('Learning attempts retrieval error:', error);
+      return res.status(500).json({ error: 'فشل في جلب المحاولات الأخيرة' });
+    }
+  });
+
+  app.get('/api/learning-profile/sessions', requireAuth, async (req: Request, res: Response) => {
+    const studentId = studentOnly(req, res);
+    if (!studentId) return;
+    try {
+      const limit = Math.min(100, Math.max(1, Number(req.query.limit) || 20));
+      const sessions = await LearningSession.find({ studentId })
+        .sort({ startedAt: -1 })
+        .limit(limit)
+        .lean();
+      return res.json({ sessions });
+    } catch (error) {
+      console.error('Learning sessions retrieval error:', error);
+      return res.status(500).json({ error: 'فشل في جلب الجلسات الأخيرة' });
+    }
+  });
+
+  app.get('/api/learning-profile/activity', requireAuth, async (req: Request, res: Response) => {
+    const studentId = studentOnly(req, res);
+    if (!studentId) return;
+    if (!mongoose.Types.ObjectId.isValid(studentId)) return res.json({ events: [] });
+    try {
+      const { ActivityLog } = await import('../mongodb/models');
+      const limit = Math.min(100, Math.max(1, Number(req.query.limit) || 30));
+      const events = await ActivityLog.find({
+        userId: studentId,
+        action: { $regex: /^learning\./ },
+      }).sort({ createdAt: -1 }).limit(limit).lean();
+      return res.json({ events });
+    } catch (error) {
+      console.error('Learning activity retrieval error:', error);
+      return res.status(500).json({ error: 'فشل في جلب سجل النشاط التعليمي' });
+    }
+  });
+
+  app.post('/api/learning/sessions', requireAuth, async (req: Request, res: Response) => {
+    const studentId = studentOnly(req, res);
+    if (!studentId) return;
+    try {
+      const result = await createLearningSession(studentId, {
+        programId: String(req.body?.programId || ''),
+        subjectId: req.body?.subjectId ? String(req.body.subjectId) : undefined,
+        idempotencyKey: req.body?.idempotencyKey ? String(req.body.idempotencyKey) : undefined,
+      });
+      return res.status(result.duplicate ? 200 : 201).json(result);
+    } catch (error: any) {
+      const message = error instanceof Error ? error.message : 'تعذر إنشاء جلسة التعلم';
+      return res.status(message.includes('معتمد') || message.includes('صالح') ? 400 : 500).json({ error: message });
+    }
+  });
+
+  app.post('/api/learning/sessions/:id/complete', requireAuth, async (req: Request, res: Response) => {
+    const studentId = studentOnly(req, res);
+    if (!studentId) return;
+    try {
+      const status = req.body?.status === 'abandoned' ? 'abandoned' : 'completed';
+      const session = await completeLearningSession(studentId, String(req.params.id), status);
+      if (!session) return res.status(404).json({ error: 'جلسة التعلم غير موجودة أو مكتملة مسبقًا' });
+      return res.json({ session });
+    } catch (error: any) {
+      const message = error instanceof Error ? error.message : 'تعذر إنهاء جلسة التعلم';
+      return res.status(400).json({ error: message });
+    }
+  });
+
+  app.post('/api/learning/attempts', requireAuth, async (req: Request, res: Response) => {
+    const studentId = studentOnly(req, res);
+    if (!studentId) return;
+    try {
+      const sourceType = String(req.body?.sourceType || 'mongo_question') as any;
+      const questionId = String(req.body?.questionId || '');
+      const selectedAnswer = req.body?.selectedAnswer ?? req.body?.selectedOptionIndex ?? null;
+      const validation = normalizeLearningAttemptInput({
+        questionId,
+        sourceType,
+        programId: String(req.body?.programId || ''),
+        subjectId: req.body?.subjectId ? String(req.body.subjectId) : undefined,
+        selectedAnswer,
+        isAnswered: selectedAnswer !== null && selectedAnswer !== undefined,
+        isCorrect: false,
+        responseTime: req.body?.responseTime,
+        sessionId: req.body?.sessionId ? String(req.body.sessionId) : undefined,
+        idempotencyKey: req.body?.idempotencyKey ? String(req.body.idempotencyKey) : undefined,
+        metadata: req.body?.metadata,
+      });
+      if (!validation.ok) return res.status(400).json({ error: validation.error });
+
+      const question = await findQuestionForLearningAttempt(questionId, sourceType);
+      if (!question) return res.status(404).json({ error: 'السؤال غير موجود', code: 'UNKNOWN_QUESTION' });
+      const isAnswered = selectedAnswer !== null && selectedAnswer !== undefined && selectedAnswer !== '';
+      const isCorrect = isAnswered && String(selectedAnswer) === String((question as any).correctOptionIndex);
+      const result = await recordLearningAttempt(studentId, {
+        questionId,
+        sourceType,
+        sourceKey: req.body?.sourceKey ? String(req.body.sourceKey) : undefined,
+        programId: validation.value.programId,
+        subjectId: validation.value.subjectId,
+        selectedAnswer,
+        correctAnswer: (question as any).correctOptionIndex,
+        isAnswered,
+        isCorrect,
+        responseTime: validation.value.responseTime,
+        sessionId: req.body?.sessionId ? String(req.body.sessionId) : undefined,
+        idempotencyKey: validation.value.idempotencyKey,
+        metadata: req.body?.metadata,
+      });
+      return res.status(result.duplicate ? 200 : 201).json({
+        duplicate: result.duplicate,
+        attempt: result.attempt ? publicLearningAttempt(result.attempt) : null,
+      });
+    } catch (error: any) {
+      if (error?.code === 11000) return res.status(409).json({ error: 'المحاولة مكررة' });
+      const message = error instanceof Error ? error.message : 'تعذر تسجيل المحاولة';
+      return res.status(500).json({ error: message });
+    }
+  });
 
   app.get('/api/foundation-content', requireAuth, async (req: Request, res: Response) => {
     if (!studentOnly(req, res)) return;
