@@ -15,3 +15,4 @@
 - [Persistent media boundary](persistent-media-boundary.md) — production uploads must fail clearly without a persistent provider; local disk is development-only.
 - [Tahsili OCR review boundary](tahsili-ocr-review-boundary.md) — publish scanned-book questions as review-only until four options and the printed answer key are confidently matched.
 - [Foundation progress metrics](foundation-progress-metrics.md) — current percentages reflect saved test performance; lesson completion needs separate persistence.
+- [Authenticated preview checks](authenticated-preview-checks.md) — a public preview can show an expected 401 for session-only APIs; validate protected flows with an authenticated browser session.

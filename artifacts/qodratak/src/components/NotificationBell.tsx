@@ -44,6 +44,7 @@ export default function NotificationBell({ userId }: Props) {
   const [animating, setAnimating] = useState(false);
   const panelRef = useRef<HTMLDivElement>(null);
   const qc = useQueryClient();
+  const [, navigate] = useLocation();
 
   const { data: notifications = [] } = useQuery<Notification[]>({
     queryKey: ['/api/notifications/in-app', userId],
@@ -134,6 +135,7 @@ export default function NotificationBell({ userId }: Props) {
       const t = setTimeout(() => setAnimating(false), 800);
       return () => clearTimeout(t);
     }
+    return undefined;
   }, [unread]);
 
   // Close on outside click
@@ -170,7 +172,8 @@ export default function NotificationBell({ userId }: Props) {
 
       {open && (
         <div className={cn(
-          "absolute top-12 right-0 w-96 max-h-[520px] rounded-2xl shadow-2xl z-50",
+           "fixed left-3 right-3 top-[4.5rem] max-h-[min(520px,calc(100dvh-6rem))] rounded-2xl shadow-2xl z-[70]",
+           "sm:absolute sm:left-auto sm:right-0 sm:top-12 sm:w-96 sm:max-h-[520px]",
           "bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700",
           "flex flex-col overflow-hidden",
           "animate-in slide-in-from-top-2 duration-200"
@@ -223,7 +226,7 @@ export default function NotificationBell({ userId }: Props) {
                       )}
                       onClick={() => {
                         if (!notif.isRead) markRead.mutate(notif._id);
-                        if (notif.link) { window.location.href = notif.link; setOpen(false); }
+                         if (notif.link) { navigate(notif.link); setOpen(false); }
                       }}
                     >
                       <div className={cn("w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 mt-0.5", cfg.bg, cfg.border, "border")}>
@@ -253,7 +256,7 @@ export default function NotificationBell({ userId }: Props) {
           <div className="p-3 border-t border-gray-100 dark:border-gray-800 bg-gray-50 dark:bg-gray-900/60">
             <button
               data-testid="link-all-notifications"
-              onClick={() => { setOpen(false); window.location.href = '/notifications'; }}
+               onClick={() => { setOpen(false); navigate('/notifications'); }}
               className="w-full text-center text-sm text-teal-700 dark:text-teal-700 hover:underline font-medium py-1"
             >
               عرض جميع الإشعارات

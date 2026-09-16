@@ -84,10 +84,16 @@ export function StudentShell({ children }: { children: React.ReactNode }) {
           <BrandMark imageClassName="h-8 w-8" />
         </Link>
         <div className="flex items-center gap-3">
+          <ThemeToggle />
           <NotificationBell userId={user?.id ? String(user.id) : null} />
-          <div className="h-8 w-8 rounded-full bg-muted flex items-center justify-center font-black text-sm">
+          <Link
+            href="/account"
+            aria-label="فتح الحساب"
+            data-testid="link-mobile-account"
+            className="h-8 w-8 rounded-full bg-muted flex items-center justify-center font-black text-sm qodratak-focus-ring"
+          >
             {userInitial}
-          </div>
+          </Link>
         </div>
       </div>
 

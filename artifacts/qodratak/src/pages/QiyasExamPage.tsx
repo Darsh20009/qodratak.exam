@@ -79,6 +79,7 @@ import {
   FolderPlus, // For save to folder
   Bookmark, // For save icon
   Zap,
+  Loader2,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useIsMobile } from "@/hooks/use-mobile";
@@ -323,6 +324,8 @@ const QiyasExamPage: React.FC = () => {
 
   const [selectedExam, setSelectedExam] = useState<QiyasExam | null>(null);
   const [currentView, setCurrentView] = useState<"selection" | "instructions" | "section-intro" | "inProgress" | "results">("selection");
+  const [isCheckingExam, setIsCheckingExam] = useState(false);
+  const [isLoadingExam, setIsLoadingExam] = useState(false);
   const [showAiReview, setShowAiReview] = useState(false);
   const [wrongQuestionsForAI, setWrongQuestionsForAI] = useState<WrongQuestion[]>([]);
   const [showSubSectionIntro, setShowSubSectionIntro] = useState(false);
@@ -822,7 +825,8 @@ const QiyasExamPage: React.FC = () => {
   };
 
   const startExam = async () => {
-    if (!selectedExam) return;
+    if (!selectedExam || isLoadingExam) return;
+    setIsLoadingExam(true);
 
     setCurrentSectionIdx(0);
     setCurrentQuestionIdx(0);
@@ -964,6 +968,8 @@ const QiyasExamPage: React.FC = () => {
         variant: "destructive",
       });
        setCurrentView("selection");
+    } finally {
+      setIsLoadingExam(false);
     }
   };
 
@@ -1261,9 +1267,11 @@ const QiyasExamPage: React.FC = () => {
       setLocation("/login");
       return;
     }
+    if (isCheckingExam) return;
+    setIsCheckingExam(true);
 
-    // التحقق من توفر الأسئلة قبل بدء الاختبار (باستخدام stats بدلاً من جلب كل الأسئلة)
     try {
+      // التحقق من توفر الأسئلة قبل بدء الاختبار (باستخدام stats بدلاً من جلب كل الأسئلة)
       const response = await fetch('/api/questions/stats', { credentials: 'include' });
       if (!response.ok) {
         toast({
@@ -1302,12 +1310,14 @@ const QiyasExamPage: React.FC = () => {
 
     } catch (error) {
       // إذا فشل التحقق، نكمل بدون توقف
+    } finally {
+      setIsCheckingExam(false);
     }
 
     const isUserSubscribed = user?.subscription?.type === 'Pro Live' || user?.subscription?.type === 'Pro Life Plus' || user?.subscription?.type === 'Pro Life' || user?.subscription?.type === 'Pro';
 
     // Default behavior for all other exams
-    if (exam.requiresSubscription && !isUserSubscribed) {
+     if (exam.requiresSubscription && !isUserSubscribed) {
         setLocation("/subscription");
     } else {
         loadExam(exam);
@@ -1325,7 +1335,7 @@ const QiyasExamPage: React.FC = () => {
     const examNamer   = qiyasExams.find(e => e.id === 7)!; // نمر كامل
     const examNamer1  = qiyasExams.find(e => e.id === 8)!; // قسم نمر واحد
 
-    const canStart = !!user;
+    const canStart = !!user && !isCheckingExam;
 
     const ExamTile = ({
       exam, label, sublabel, icon: Icon, accent, locked
@@ -1426,7 +1436,7 @@ const QiyasExamPage: React.FC = () => {
                     sublabel="7 أقسام مختلطة"
                     icon={Brain}
                     accent="bg-[#1a7c3e]"
-                    locked={!canStart}
+                     locked={!canStart}
                   />
                   <ExamTile
                     exam={examVerbal}
@@ -1434,7 +1444,7 @@ const QiyasExamPage: React.FC = () => {
                     sublabel="5 أقسام لفظية"
                     icon={Palette}
                     accent="bg-gradient-to-br from-emerald-500 to-green-600"
-                    locked={!canStart}
+                     locked={!canStart}
                   />
                   <ExamTile
                     exam={examQuant}
@@ -1442,7 +1452,7 @@ const QiyasExamPage: React.FC = () => {
                     sublabel="5 أقسام كمية"
                     icon={Atom}
                     accent="bg-gradient-to-br from-orange-500 to-red-500"
-                    locked={!canStart}
+                     locked={!canStart}
                   />
                 </div>
               </div>
@@ -1475,7 +1485,7 @@ const QiyasExamPage: React.FC = () => {
                     sublabel="5 أقسام · استراحة بين كل قسم"
                     icon={Target}
                     accent="bg-gradient-to-br from-rose-500 to-red-600"
-                    locked={!canStart}
+                     locked={!canStart}
                   />
                   <ExamTile
                     exam={examNamer1}
@@ -1483,9 +1493,15 @@ const QiyasExamPage: React.FC = () => {
                     sublabel="13 لفظي + 12 كمي"
                     icon={Zap}
                     accent="bg-gradient-to-br from-amber-500 to-rose-600"
-                    locked={!canStart}
+                     locked={!canStart}
                   />
                 </div>
+               {isCheckingExam && (
+                 <div className="flex items-center justify-center gap-2 rounded-xl bg-primary/5 px-4 py-3 text-sm font-bold text-primary">
+                   <Loader2 className="h-4 w-4 animate-spin" />
+                   جارٍ التحقق من جاهزية الاختبار...
+                 </div>
+               )}
               </div>
 
               {/* ── Bottom hint ── */}
@@ -1510,6 +1526,7 @@ const QiyasExamPage: React.FC = () => {
         exam={selectedExam}
         userId={user?.id}
         onStart={startExam}
+        isLoading={isLoadingExam}
         onBack={() => setCurrentView("selection")}
       />
     );

@@ -67,23 +67,13 @@ export const useSubscription = () => {
   const subscriptionQuery = useQuery({
     queryKey: ['/api/subscription/status', deviceId],
     queryFn: async (): Promise<SubscriptionStatus> => {
-      // Get user data from localStorage
-      let userId = null;
-      try {
-        const storedUser = localStorage.getItem('user');
-        if (storedUser) {
-          const user = JSON.parse(storedUser);
-          userId = user.id || user._id;
-        }
-      } catch (error) {
-        console.error('Error parsing user from localStorage:', error);
-      }
-
       const response = await fetch('/api/subscription/status', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
-        body: JSON.stringify({ deviceId, userId })
+        // The server derives the account from the authenticated session.
+        // Browser-stored identity must never affect access decisions.
+        body: JSON.stringify({ deviceId })
       });
       
       if (!response.ok) {

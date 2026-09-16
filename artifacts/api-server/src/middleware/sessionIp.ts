@@ -1,6 +1,11 @@
 import type { NextFunction, Request, Response } from "express";
 
 const SESSION_IP_FIELD = "clientIp";
+// Mobile networks and reverse proxies can legitimately change the apparent
+// client IP during one browser session. Keep the stricter binding available
+// for deployments that explicitly require it, but do not make it a surprise
+// logout condition for the normal web app.
+const enforceIpBinding = process.env.ENFORCE_SESSION_IP === "true";
 
 function normalizeIp(value: string | undefined | null) {
   const raw = String(value || "").trim();
@@ -36,6 +41,11 @@ export async function enforceSessionIp(
   }
 
   const currentIp = getClientIp(req);
+  if (!enforceIpBinding) {
+    next();
+    return;
+  }
+
   if (!currentIp) {
     res.status(401).json({
       error: "تعذر التحقق من عنوان اتصال الجلسة",

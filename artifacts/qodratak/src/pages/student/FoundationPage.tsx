@@ -250,17 +250,50 @@ function DiagnosticQuestionCard({
 function FoundationHome({
   dashboard,
   isLoading,
+  isError,
+  error,
+  onRetry,
 }: {
   dashboard?: StudentDashboard;
   isLoading: boolean;
+  isError: boolean;
+  error?: Error | null;
+  onRetry: () => void;
 }) {
   const [, setLocation] = useLocation();
   const progress = dashboard?.progress;
   const latestTests = dashboard?.recentTests?.slice(0, 3) || [];
   const plan = dashboard?.recommendedPlan;
-  const { data: learningState, isLoading: isLearningStateLoading } = useFoundationLearningState("qudrat");
+  const {
+    data: learningState,
+    isLoading: isLearningStateLoading,
+    isError: isLearningStateError,
+    error: learningStateError,
+    refetch: refetchLearningState,
+  } = useFoundationLearningState("qudrat");
   const [diagnosticOpen, setDiagnosticOpen] = useState(false);
   const recommendation = learningState?.recommendation;
+
+  if (isError || isLearningStateError) {
+    return (
+      <div className="mx-auto flex min-h-[60vh] max-w-xl flex-col items-center justify-center gap-4 p-6 text-center" dir="rtl">
+        <p className="text-sm font-bold text-destructive">
+          {error?.message || learningStateError?.message || "تعذر تحميل بيانات التأسيس حاليًا."}
+        </p>
+        <Button
+          type="button"
+          variant="outline"
+          className="rounded-xl"
+          onClick={() => {
+            onRetry();
+            void refetchLearningState();
+          }}
+        >
+          إعادة المحاولة
+        </Button>
+      </div>
+    );
+  }
 
   return (
     <>
@@ -478,8 +511,20 @@ export default function FoundationPage() {
   const activeSection = requestedSection;
   const curriculum = foundationCurriculum[activeSection.key];
   const shouldLoadFoundationContent = hasSubject && !(program === "qudrat" && activeSection.key === "verbal");
-  const { data: foundationContent, isLoading } = useFoundationContent(program, shouldLoadFoundationContent);
-  const { data: dashboard, isLoading: isDashboardLoading } = useStudentDashboard(!hasSubject);
+  const {
+    data: foundationContent,
+    isLoading,
+    isError: isContentError,
+    error: contentError,
+    refetch: refetchContent,
+  } = useFoundationContent(program, shouldLoadFoundationContent);
+  const {
+    data: dashboard,
+    isLoading: isDashboardLoading,
+    isError: isDashboardError,
+    error: dashboardError,
+    refetch: refetchDashboard,
+  } = useStudentDashboard(!hasSubject);
   const content = program === "qudrat" && activeSection.key === "verbal" ? verbalBankVideos : foundationContent || [];
   const selectedLessonIndex = selectedLesson ? content.findIndex((item) => item._id === selectedLesson._id) : -1;
   const currentGuide = curriculum.lessons[Math.max(0, selectedLessonIndex) % curriculum.lessons.length];
@@ -490,7 +535,15 @@ export default function FoundationPage() {
   );
 
   if (!hasProgram) {
-    return <FoundationHome dashboard={dashboard} isLoading={isDashboardLoading} />;
+    return (
+      <FoundationHome
+        dashboard={dashboard}
+        isLoading={isDashboardLoading}
+        isError={isDashboardError}
+        error={dashboardError}
+        onRetry={() => void refetchDashboard()}
+      />
+    );
   }
 
   if (!hasSubject) {
@@ -645,6 +698,15 @@ export default function FoundationPage() {
       {isLoading ? (
         <div className="flex items-center justify-center rounded-2xl border border-border bg-card py-20">
           <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+        </div>
+      ) : isContentError ? (
+        <div className="flex flex-col items-center justify-center gap-4 rounded-2xl border border-dashed border-destructive/40 bg-destructive/5 px-5 py-16 text-center">
+          <p className="text-sm font-bold text-destructive">
+            {contentError?.message || "تعذر تحميل محتوى هذا القسم حاليًا."}
+          </p>
+          <Button type="button" variant="outline" className="rounded-xl" onClick={() => void refetchContent()}>
+            إعادة المحاولة
+          </Button>
         </div>
       ) : content && content.length > 0 ? (
         <section className="grid items-start gap-5 lg:grid-cols-[minmax(0,1fr)_360px]">

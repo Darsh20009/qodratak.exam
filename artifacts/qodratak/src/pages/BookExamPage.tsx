@@ -128,18 +128,39 @@ export default function BookExamPage() {
 
   const { data: user } = useQuery<any>({ queryKey: ['/api/user'] });
 
-  const { data: activeData, isLoading: loadingActive } = useQuery<{ booking: Booking | null }>({
+  const {
+    data: activeData,
+    isLoading: loadingActive,
+    isError: activeError,
+    refetch: refetchActive,
+  } = useQuery<{ booking: Booking | null }>({
     queryKey: ['/api/exam-bookings/active'],
   });
 
-  const { data: historyData, isLoading: loadingHistory } = useQuery<{ bookings: Booking[] }>({
+  const {
+    data: historyData,
+    isLoading: loadingHistory,
+    isError: historyError,
+    refetch: refetchHistory,
+  } = useQuery<{ bookings: Booking[] }>({
     queryKey: ['/api/exam-bookings/history'],
     enabled: view === 'history',
   });
 
-  const { data: slotsData, isLoading: loadingSlots } = useQuery<{ bookedSlots: string[] }>({
+  const {
+    data: slotsData,
+    isLoading: loadingSlots,
+    isError: slotsError,
+    refetch: refetchSlots,
+  } = useQuery<{ bookedSlots: string[] }>({
     queryKey: ['/api/exam-bookings/slots', toLocalDateStr(selectedDate)],
-    queryFn: () => fetch(`/api/exam-bookings/slots?date=${toLocalDateStr(selectedDate)}`).then(r => r.json()),
+    queryFn: async () => {
+      const response = await fetch(`/api/exam-bookings/slots?date=${toLocalDateStr(selectedDate)}`, {
+        credentials: 'include',
+      });
+      if (!response.ok) throw new Error(`تعذر تحميل المواعيد (${response.status})`);
+      return response.json();
+    },
   });
 
   const createBooking = useMutation({
@@ -404,6 +425,17 @@ export default function BookExamPage() {
             <Loader2 className="h-5 w-5 animate-spin text-teal-700" />
             <span className="text-gray-400 text-sm">جاري التحقق من حجوزاتك...</span>
           </div>
+        ) : activeError ? (
+          <div className="bg-rose-50 dark:bg-rose-950/20 border border-rose-200 dark:border-rose-900 rounded-3xl p-6 text-center">
+            <p className="text-rose-700 dark:text-rose-300 text-sm font-bold">تعذر تحميل حالة الحجز.</p>
+            <button
+              type="button"
+              onClick={() => refetchActive()}
+              className="mt-3 rounded-xl bg-rose-600 px-4 py-2 text-xs font-bold text-white"
+            >
+              إعادة المحاولة
+            </button>
+          </div>
         ) : activeBooking ? (
           <div className={`rounded-3xl overflow-hidden shadow-lg ${
             canStartExam(activeBooking)
@@ -595,12 +627,25 @@ export default function BookExamPage() {
                 </h3>
                 {loadingSlots && <Loader2 className="h-4 w-4 animate-spin text-gray-400" />}
               </div>
-              <div className="space-y-6">
-                {renderTimeGroup('الصباح (6 — 11)', Sun, HOURS_MORNING, 'bg-amber-400')}
-                {renderTimeGroup('بعد الظهر (12 — 17)', Sunset, HOURS_AFTERNOON, 'bg-orange-500')}
-                {renderTimeGroup('المساء (18 — 23)', Moon, HOURS_EVENING, 'bg-teal-100')}
-                {renderTimeGroup('الليل (12 ص — 5 ص)', Star, HOURS_NIGHT, 'bg-teal-100')}
-              </div>
+              {slotsError ? (
+                <div className="rounded-2xl border border-rose-200 bg-rose-50 p-5 text-center dark:border-rose-900 dark:bg-rose-950/20">
+                  <p className="text-sm font-bold text-rose-700 dark:text-rose-300">تعذر تحميل المواعيد المتاحة.</p>
+                  <button
+                    type="button"
+                    onClick={() => refetchSlots()}
+                    className="mt-3 rounded-xl bg-rose-600 px-4 py-2 text-xs font-bold text-white"
+                  >
+                    إعادة المحاولة
+                  </button>
+                </div>
+              ) : (
+                <div className="space-y-6">
+                  {renderTimeGroup('الصباح (6 — 11)', Sun, HOURS_MORNING, 'bg-amber-400')}
+                  {renderTimeGroup('بعد الظهر (12 — 17)', Sunset, HOURS_AFTERNOON, 'bg-orange-500')}
+                  {renderTimeGroup('المساء (18 — 23)', Moon, HOURS_EVENING, 'bg-teal-100')}
+                  {renderTimeGroup('الليل (12 ص — 5 ص)', Star, HOURS_NIGHT, 'bg-teal-100')}
+                </div>
+              )}
               <div className="flex gap-5 mt-5 pt-4 border-t border-gray-100 dark:border-gray-800 text-xs">
                 <div className="flex items-center gap-1.5 text-gray-500"><div className="w-3 h-3 rounded bg-white border border-gray-200 dark:bg-gray-800 dark:border-gray-700" /><span>متاح</span></div>
                 <div className="flex items-center gap-1.5 text-gray-500"><div className="w-3 h-3 rounded bg-gray-100 dark:bg-gray-700" /><span>غير متاح</span></div>
@@ -676,6 +721,17 @@ export default function BookExamPage() {
               <div className="text-center py-16">
                 <Loader2 className="h-8 w-8 animate-spin text-primary mx-auto mb-3" />
                 <p className="text-gray-400 text-sm">جاري تحميل السجل...</p>
+              </div>
+            ) : historyError ? (
+              <div className="bg-rose-50 border border-rose-200 rounded-2xl p-8 text-center">
+                <p className="text-rose-700 text-sm font-bold">تعذر تحميل سجل الاختبارات.</p>
+                <button
+                  type="button"
+                  onClick={() => refetchHistory()}
+                  className="mt-3 rounded-xl bg-rose-600 px-4 py-2 text-xs font-bold text-white"
+                >
+                  إعادة المحاولة
+                </button>
               </div>
             ) : !historyData?.bookings?.length ? (
               <div className="bg-white rounded-2xl border border-gray-200 p-12 text-center shadow-sm">

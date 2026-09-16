@@ -1,5 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { getQueryFn } from "@/lib/queryClient";
+import { Loader2 } from "lucide-react";
 
 interface PastAttempt {
   id: number | string;
@@ -32,6 +33,7 @@ interface Props {
   exam: Exam;
   userId?: number | string;
   onStart: () => void;
+  isLoading?: boolean;
   onBack: () => void;
 }
 
@@ -67,7 +69,7 @@ function calcBestAttempt(attempts: PastAttempt[]) {
   return { avg, best, predicted };
 }
 
-export default function ExamInstructionsScreen({ exam, userId, onStart, onBack }: Props) {
+export default function ExamInstructionsScreen({ exam, userId, onStart, isLoading = false, onBack }: Props) {
   const { data: pastAttempts = [] } = useQuery<PastAttempt[]>({
     queryKey: ["/api/test-results/user", userId],
     queryFn: getQueryFn({ on401: "returnNull" }),
@@ -116,9 +118,15 @@ export default function ExamInstructionsScreen({ exam, userId, onStart, onBack }
             <p className="mt-5 text-gray-600 text-sm">مع خالص دعواتنا بالتوفيق…</p>
             <button
               onClick={onStart}
+              disabled={isLoading}
               className="mt-6 bg-[#02a89f] hover:bg-[#028a82] text-white font-semibold py-2 px-8 rounded transition-colors text-sm"
             >
-              أوافق
+              {isLoading ? (
+                <span className="inline-flex items-center gap-2">
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  جارٍ تجهيز الأسئلة...
+                </span>
+              ) : "أوافق"}
             </button>
           </div>
 

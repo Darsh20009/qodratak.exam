@@ -4326,7 +4326,11 @@ app.post("/api/auth/register", async (req: Request, res: Response) => {
           console.error("Error destroying session:", err);
           return res.status(500).json({ message: "Failed to logout" });
         }
-        res.clearCookie('connect.sid');
+        // Keep these names in sync with the session configuration. Clearing
+        // only connect.sid left the real persistent cookie in the browser.
+        res.clearCookie("__Host-qodratak.sid", { path: "/" });
+        res.clearCookie("qodratak.sid", { path: "/" });
+        res.clearCookie("connect.sid", { path: "/" });
         res.json({ message: "تم تسجيل الخروج بنجاح" });
       });
     } catch (error) {

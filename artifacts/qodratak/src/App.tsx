@@ -205,16 +205,37 @@ function isPublicPath(pathname: string) {
 
 function AuthenticatedRouteBoundary({ children }: { children: React.ReactNode }) {
   const [location, navigate] = useLocation();
-  const { user, isLoading } = useUser();
+  const { user, isLoading, error, refetch } = useUser();
   const needsAuthentication = !isPublicPath(location);
 
   useEffect(() => {
-    if (needsAuthentication && !isLoading && !user) {
+    if (needsAuthentication && !isLoading && !error && !user) {
       navigate(`/login?return=${encodeURIComponent(location)}`);
     }
-  }, [location, navigate, needsAuthentication, isLoading, user]);
+  }, [location, navigate, needsAuthentication, isLoading, error, user]);
 
-  if (needsAuthentication && (isLoading || !user)) {
+  if (needsAuthentication && isLoading) {
+    return <RouteLoadingFallback />;
+  }
+
+  if (needsAuthentication && error) {
+    return (
+      <div className="flex min-h-screen flex-col items-center justify-center gap-4 bg-background p-6 text-center" dir="rtl">
+        <p className="text-sm font-medium text-muted-foreground">
+          تعذر الاتصال بالخادم مؤقتًا، ولم يتم تسجيل خروجك.
+        </p>
+        <button
+          type="button"
+          onClick={() => refetch()}
+          className="rounded-xl bg-primary px-5 py-2.5 text-sm font-bold text-primary-foreground"
+        >
+          إعادة المحاولة
+        </button>
+      </div>
+    );
+  }
+
+  if (needsAuthentication && !user) {
     return <RouteLoadingFallback />;
   }
 
@@ -701,6 +722,9 @@ function MainLayout({ children }: { children: React.ReactNode }) {
 
               {/* زر الإشعارات */}
               <NotificationBell userId={userId ? String(userId) : null} />
+
+               {/* تبديل الوضع الليلي/النهاري */}
+               <ThemeToggle />
 
               {/* النقاط - للمشتركين فقط — أيقونة فقط على الشاشات الصغيرة */}
               {userSubscription && userSubscription !== 'free' && userSubscription !== 'تجريبي' && (

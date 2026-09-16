@@ -1,9 +1,8 @@
 import { useEffect } from "react";
 import { useLocation } from "wouter";
-import { useQuery } from "@tanstack/react-query";
-import { getQueryFn } from "@/lib/queryClient";
 import { Loader2 } from "lucide-react";
 import useSubscription from "@/hooks/useSubscription";
+import { useUser } from "@/hooks/use-user";
 
 interface ProtectedRouteProps {
   children: React.ReactNode;
@@ -17,20 +16,15 @@ export default function NewProtectedRoute({
 }: ProtectedRouteProps) {
   const [location, navigate] = useLocation();
 
-  const { data: serverUser, isLoading } = useQuery({
-    queryKey: ['/api/user'],
-    queryFn: getQueryFn({ on401: "returnNull" }),
-    retry: false,
-    staleTime: 0,
-  });
+  const { user: serverUser, isLoading, error: userError, refetch: refetchUser } = useUser();
   const { subscription, isLoading: subscriptionLoading } = useSubscription();
 
   useEffect(() => {
-    if (!isLoading && !serverUser) {
+    if (!isLoading && !userError && !serverUser) {
       const returnPath = encodeURIComponent(location);
       navigate(`/login?return=${returnPath}`);
     }
-  }, [isLoading, serverUser, location, navigate]);
+  }, [isLoading, userError, serverUser, location, navigate]);
 
   if (isLoading || subscriptionLoading) {
     return (
@@ -41,6 +35,23 @@ export default function NewProtectedRoute({
           </div>
         </div>
         <p className="text-gray-500 dark:text-gray-400 text-sm font-medium">جاري التحقق من بياناتك...</p>
+      </div>
+    );
+  }
+
+  if (userError) {
+    return (
+      <div className="min-h-[60vh] flex flex-col items-center justify-center gap-4 p-6 text-center" dir="rtl">
+        <p className="text-gray-600 dark:text-gray-300 text-sm font-medium">
+          تعذر التحقق من الجلسة بسبب اتصال مؤقت.
+        </p>
+        <button
+          type="button"
+          onClick={() => refetchUser()}
+          className="rounded-xl bg-teal-700 px-5 py-2.5 text-sm font-bold text-white hover:bg-teal-800"
+        >
+          إعادة المحاولة
+        </button>
       </div>
     );
   }
