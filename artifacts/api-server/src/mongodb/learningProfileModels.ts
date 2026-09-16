@@ -12,6 +12,7 @@ export interface ILearningAttempt extends Document {
   questionId: string;
   sourceType: LearningAttemptSourceType;
   sourceKey?: string;
+  sourceIdentity: string;
   programId: string;
   subjectId?: string;
   sessionId?: mongoose.Types.ObjectId;
@@ -36,6 +37,7 @@ const learningAttemptSchema = new Schema<ILearningAttempt>({
     index: true,
   },
   sourceKey: { type: String, trim: true },
+  sourceIdentity: { type: String, required: true, index: true },
   programId: { type: String, required: true, trim: true, index: true },
   subjectId: { type: String, trim: true, index: true },
   sessionId: { type: Schema.Types.ObjectId, ref: 'LearningSession', index: true },
@@ -50,8 +52,22 @@ const learningAttemptSchema = new Schema<ILearningAttempt>({
 }, { timestamps: { createdAt: true, updatedAt: false } });
 
 learningAttemptSchema.index({ studentId: 1, createdAt: -1 });
-learningAttemptSchema.index({ studentId: 1, questionId: 1, createdAt: -1 });
+learningAttemptSchema.index({ studentId: 1, sourceIdentity: 1, createdAt: -1 });
 learningAttemptSchema.index({ studentId: 1, idempotencyKey: 1 }, { unique: true, sparse: true });
+
+export interface ILearningAttemptSequence extends Document {
+  studentId: string;
+  sourceIdentity: string;
+  nextAttemptNumber: number;
+}
+
+const learningAttemptSequenceSchema = new Schema<ILearningAttemptSequence>({
+  studentId: { type: String, required: true },
+  sourceIdentity: { type: String, required: true },
+  nextAttemptNumber: { type: Number, required: true, min: 0, default: 0 },
+});
+
+learningAttemptSequenceSchema.index({ studentId: 1, sourceIdentity: 1 }, { unique: true });
 
 export interface ILearningSession extends Document {
   studentId: string;
@@ -93,3 +109,7 @@ export const LearningAttempt = mongoose.models['LearningAttempt']
 export const LearningSession = mongoose.models['LearningSession']
   ? mongoose.model<ILearningSession>('LearningSession')
   : mongoose.model<ILearningSession>('LearningSession', learningSessionSchema);
+
+export const LearningAttemptSequence = mongoose.models['LearningAttemptSequence']
+  ? mongoose.model<ILearningAttemptSequence>('LearningAttemptSequence')
+  : mongoose.model<ILearningAttemptSequence>('LearningAttemptSequence', learningAttemptSequenceSchema);

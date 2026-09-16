@@ -2,8 +2,11 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import {
   confidenceForAttemptCount,
+  isSameIdempotentAttempt,
+  learningAttemptSourceIdentity,
   normalizeLearningAttemptInput,
   observedAccuracy,
+  verifyServerAnswer,
 } from '../src/services/learningProfileService.ts';
 
 test('normalizes a valid observed attempt without inventing deep taxonomy', () => {
@@ -60,4 +63,82 @@ test('confidence measures data volume, not student ability', () => {
   assert.equal(confidenceForAttemptCount(1), 'LOW');
   assert.equal(confidenceForAttemptCount(5), 'MEDIUM');
   assert.equal(confidenceForAttemptCount(20), 'HIGH');
+});
+
+test('server answer verification calculates correctness from the answer key', () => {
+  assert.deepEqual(verifyServerAnswer(2, 2, 4), {
+    ok: true,
+    isAnswered: true,
+    isCorrect: true,
+  });
+  assert.deepEqual(verifyServerAnswer(1, 2, 4), {
+    ok: true,
+    isAnswered: true,
+    isCorrect: false,
+  });
+});
+
+test('unanswered questions are observations, not wrong answers', () => {
+  assert.deepEqual(verifyServerAnswer(null, 2, 4), {
+    ok: true,
+    isAnswered: false,
+    isCorrect: false,
+  });
+});
+
+test('invalid answer indexes and malformed answer keys are rejected', () => {
+  assert.deepEqual(verifyServerAnswer(4, 2, 4), { ok: false });
+  assert.deepEqual(verifyServerAnswer(1, 4, 4), { ok: false });
+  assert.deepEqual(verifyServerAnswer(1, 2, 0), { ok: false });
+});
+
+test('source identity keeps the same question distinct across sources', () => {
+  const first = learningAttemptSourceIdentity('mongo_question', 'test-a', '42');
+  const second = learningAttemptSourceIdentity('mongo_question', 'test-b', '42');
+  const retry = learningAttemptSourceIdentity('mongo_question', 'test-a', '42');
+  assert.notEqual(first, second);
+  assert.equal(first, retry);
+});
+
+test('idempotency accepts the same payload and detects a source collision', () => {
+  const sourceIdentity = learningAttemptSourceIdentity('mongo_question', 'test-a', '42');
+  const existing = {
+    sourceIdentity,
+    selectedAnswer: 2,
+    sessionId: 'session-a',
+  };
+  assert.equal(isSameIdempotentAttempt(existing, sourceIdentity, 2, 'session-a'), true);
+  assert.equal(isSameIdempotentAttempt(existing, sourceIdentity, 1, 'session-a'), false);
+  assert.equal(isSameIdempotentAttempt(existing, learningAttemptSourceIdentity('mongo_question', 'test-b', '42'), 2, 'session-a'), false);
+});
+
+test('retry identity is stable while a new attempt can be numbered separately', () => {
+  const sourceIdentity = learningAttemptSourceIdentity('legacy_json', 'tahsili:exam-10:run-1', '7');
+  const retryIdentity = learningAttemptSourceIdentity('legacy_json', 'tahsili:exam-10:run-1', '7');
+  const secondRunIdentity = learningAttemptSourceIdentity('legacy_json', 'tahsili:exam-10:run-2', '7');
+  assert.equal(sourceIdentity, retryIdentity);
+  assert.notEqual(sourceIdentity, secondRunIdentity);
+});
+
+test('response time and learning-session linkage are validated at the boundary', () => {
+  const invalidTime = normalizeLearningAttemptInput({
+    questionId: 'question-1',
+    programId: 'program.qudrat',
+    isCorrect: false,
+    responseTime: -1,
+  });
+  const invalidSession = normalizeLearningAttemptInput({
+    questionId: 'question-1',
+    programId: 'program.qudrat',
+    isCorrect: false,
+    sessionId: 'not-an-object-id',
+  });
+  assert.equal(invalidTime.ok, false);
+  assert.equal(invalidSession.ok, false);
+});
+
+test('observed profile counters exclude unanswered questions from wrong counts', () => {
+  assert.equal(observedAccuracy(1, 1), 50);
+  assert.equal(observedAccuracy(1, 0), 100);
+  assert.equal(observedAccuracy(0, 0), 0);
 });

@@ -142,6 +142,7 @@ export interface IWhatsAppQuizSession extends Document {
     selectedIndex: number;
     correctIndex: number;
     isCorrect: boolean;
+    messageId?: string;
   }[];
   status: 'active' | 'completed' | 'cancelled';
   startedAt: Date;
@@ -207,6 +208,7 @@ const whatsAppQuizSessionSchema = new Schema<IWhatsAppQuizSession>({
     selectedIndex: { type: Number, required: true },
     correctIndex: { type: Number, required: true },
     isCorrect: { type: Boolean, required: true },
+    messageId: { type: String, trim: true },
   }],
   status: { type: String, enum: ['active', 'completed', 'cancelled'], default: 'active', index: true },
   startedAt: { type: Date, default: Date.now },

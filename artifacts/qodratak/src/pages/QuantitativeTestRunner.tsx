@@ -72,6 +72,9 @@ export function QuantitativeTestRunner() {
   const [showSectionIntro, setShowSectionIntro] = useState(false);
   const [currentSectionIntro, setCurrentSectionIntro] = useState<{ title: string; description: string; icon: string; color: string } | null>(null);
   const shownSectionIntros = React.useRef<Set<string>>(new Set());
+  const idempotencyKeyRef = React.useRef(
+    `quantitative-${Date.now()}-${typeof crypto !== 'undefined' && crypto.randomUUID ? crypto.randomUUID() : Math.random().toString(36).slice(2)}`
+  );
 
   const { violations, lastViolationType, isWarningVisible, dismissWarning } = useAntiCheat({
     enabled: testStarted && !testCompleted && examSettings.monitored,
@@ -271,6 +274,11 @@ export function QuantitativeTestRunner() {
         const skippedQuestions = totalQuestions - answeredQuestions;
         
         const questionIds = (questions as any[]).map((q: any) => q._id || q.id || q.questionId).filter(Boolean);
+        const answers = (questions as any[]).map((question: any, index) => ({
+          questionId: question._id || question.id || question.questionId,
+          selectedAnswer: selectedAnswers[index] ?? null,
+          sourceType: 'mongo_question',
+        }));
         const response = await apiRequest('POST', '/api/test-results', {
           testType: 'quantitative',
           difficulty: testData?.difficulty || 'intermediate',
@@ -279,6 +287,8 @@ export function QuantitativeTestRunner() {
           timeTaken: timeSpent,
           skippedQuestions,
           questionIds,
+          answers,
+          idempotencyKey: idempotencyKeyRef.current,
         }) as any;
 
         // حفظ النقاط المكتسبة للعرض في صفحة النتائج

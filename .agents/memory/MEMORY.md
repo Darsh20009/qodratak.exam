@@ -21,3 +21,4 @@
 - [Exam display mode](exam-display-mode.md) — fullscreen exam views hide platform chrome and keep the legacy exam layout on a controlled light palette.
 - [Content taxonomy review boundary](content-taxonomy-review-boundary.md) — source labels can seed safe program/subject candidates, but deep Skill/Concept mappings require review evidence.
 - [Student learning profile foundation](student-learning-profile-foundation.md) — keep observed counters compact, attempts/sessions separate, and legacy diagnostic fields backward-compatible.
+- [Unified learning attempts](unified-learning-attempts.md) — server-owned answer keys and source identity are mandatory before recording trusted per-question learning data.

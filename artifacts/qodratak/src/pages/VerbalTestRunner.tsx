@@ -72,6 +72,9 @@ export function VerbalTestRunner() {
   const [showSectionIntro, setShowSectionIntro] = useState(false);
   const [currentSectionIntro, setCurrentSectionIntro] = useState<{ title: string; description: string; icon: string; color: string } | null>(null);
   const shownSectionIntros = React.useRef<Set<string>>(new Set());
+  const idempotencyKeyRef = React.useRef(
+    `verbal-${Date.now()}-${typeof crypto !== 'undefined' && crypto.randomUUID ? crypto.randomUUID() : Math.random().toString(36).slice(2)}`
+  );
 
   const { violations, lastViolationType, isWarningVisible, dismissWarning } = useAntiCheat({
     enabled: hasStarted && examSettings.monitored,
@@ -280,6 +283,11 @@ export function VerbalTestRunner() {
         const skippedQuestions = totalQuestions - answeredQuestions;
         
         const questionIds = questions.map((q: any) => q._id || q.id || q.questionId).filter(Boolean);
+        const answers = questions.map((question: any, index) => ({
+          questionId: question._id || question.id || question.questionId,
+          selectedAnswer: selectedAnswers[index] ?? null,
+          sourceType: 'mongo_question',
+        }));
         const response = await apiRequest('POST', '/api/test-results', {
           testType: 'verbal',
           difficulty: testConfig.difficulty || 'intermediate',
@@ -288,6 +296,8 @@ export function VerbalTestRunner() {
           timeTaken: testConfig.timeLimit * 60 - timeRemaining,
           skippedQuestions,
           questionIds,
+          answers,
+          idempotencyKey: idempotencyKeyRef.current,
         }) as any;
 
         // حفظ النقاط المكتسبة للعرض في صفحة النتائج

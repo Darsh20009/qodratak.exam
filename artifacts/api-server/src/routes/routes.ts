@@ -45,9 +45,8 @@ import {
 import {
   completeLearningSession,
   createLearningSession,
-  findQuestionForLearningAttempt,
-  normalizeLearningAttemptInput,
-  recordLearningAttempt,
+  LearningAttemptError,
+  recordVerifiedLearningAttempt,
 } from '../services/learningProfileService';
 import { LearningAttempt, LearningSession } from '../mongodb/learningProfileModels';
 
@@ -808,10 +807,154 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const fileContent = fs.readFileSync(filePath, 'utf-8');
       const examData = JSON.parse(fileContent);
 
-      res.json(examData);
+      const learningAttemptId = crypto.randomUUID();
+      const session = (req as any).session;
+      const tahsiliAttempts = session.tahsiliLearningAttempts || {};
+      tahsiliAttempts[learningAttemptId] = {
+        userId: String(session?.userId || ''),
+        examId,
+        sourceKey: `tahsili:${examId}:${learningAttemptId}`,
+        createdAt: Date.now(),
+        questions: (examData.questions || []).map((question: any, index: number) => ({
+          questionId: String(index + 1),
+          correctOptionIndex: Number(
+            (question.answerOptions || []).findIndex((option: any) => option?.isCorrect === true),
+          ),
+          optionsCount: Array.isArray(question.answerOptions) ? question.answerOptions.length : 0,
+        })),
+      };
+      session.tahsiliLearningAttempts = tahsiliAttempts;
+      await new Promise<void>((resolve, reject) =>
+        session.save((error: any) => error ? reject(error) : resolve())
+      );
+      const clientExamData = {
+        ...examData,
+        questions: (examData.questions || []).map((question: any) => ({
+          ...question,
+          answerOptions: (question.answerOptions || []).map(({ isCorrect: _isCorrect, ...option }: any) => option),
+        })),
+      };
+      res.json({ ...clientExamData, learningAttemptId });
     } catch (error) {
       console.error('Error loading Tahsili exam:', error);
       res.status(500).json({ error: 'Internal server error' });
+    }
+  });
+
+  app.post('/api/tahsili/exams/:examId/submit', requireAuth, async (req: Request, res: Response) => {
+    const session = (req as any).session;
+    const userId = String(session?.userId || '');
+    if (!userId) return res.status(401).json({ error: 'يجب تسجيل الدخول أولاً' });
+    const attemptId = String(req.body?.learningAttemptId || '');
+    const attempts = session.tahsiliLearningAttempts || {};
+    const attempt = attempts[attemptId];
+    if (!attempt || attempt.examId !== req.params.examId || attempt.userId !== userId) {
+      return res.status(400).json({ error: 'جلسة اختبار التحصيلي غير موجودة أو انتهت' });
+    }
+    if (attempt.status === 'completed' && attempt.result) {
+      return res.status(200).json({ ...attempt.result, duplicate: true });
+    }
+    if (Date.now() - Number(attempt.createdAt) > 2 * 60 * 60 * 1000) {
+      delete attempts[attemptId];
+      session.tahsiliLearningAttempts = attempts;
+      await new Promise<void>((resolve) => session.save(() => resolve()));
+      return res.status(410).json({ error: 'انتهت صلاحية الاختبار. ابدأ اختبارًا جديدًا.' });
+    }
+
+    try {
+      const submitted = Array.isArray(req.body?.answers) ? req.body.answers : [];
+      const answerMap = new Map<string, number | null>();
+      for (const answer of submitted) {
+        const questionId = String(answer?.questionId || '');
+        const rawIndex = answer?.selectedOptionIndex;
+        const selectedIndex = rawIndex === null || rawIndex === undefined || rawIndex === '' || rawIndex === -1
+          ? null
+          : Number(rawIndex);
+        if (!questionId || (selectedIndex !== null && !Number.isInteger(selectedIndex))) {
+          return res.status(400).json({ error: 'إجابة التحصيلي غير صالحة' });
+        }
+        if (answerMap.has(questionId)) {
+          return res.status(409).json({ error: 'تم إرسال سؤال التحصيلي أكثر من مرة' });
+        }
+        answerMap.set(questionId, selectedIndex);
+      }
+      const allowedIds = new Set(attempt.questions.map((question: any) => question.questionId));
+      if ([...answerMap.keys()].some((questionId) => !allowedIds.has(questionId))) {
+        return res.status(400).json({ error: 'الإجابة لا تنتمي إلى جلسة الاختبار' });
+      }
+
+      const recorded = [];
+      for (const question of attempt.questions) {
+        recorded.push(await recordVerifiedLearningAttempt(userId, {
+          questionId: question.questionId,
+          sourceType: 'legacy_json',
+          sourceKey: attempt.sourceKey,
+          programId: 'program.tahsili',
+          selectedAnswer: answerMap.get(question.questionId) ?? null,
+          responseTime: 0,
+          idempotencyKey: `${String(req.body?.idempotencyKey || attemptId)}:${question.questionId}`,
+          metadata: { flow: 'tahsili-file-exam', examId: req.params.examId },
+        }, {
+          correctOptionIndex: question.correctOptionIndex,
+          optionsCount: question.optionsCount,
+        }));
+      }
+      const totalQuestions = recorded.length;
+      const answeredQuestions = recorded.filter((result: any) => result.attempt?.isAnswered).length;
+      const correctAnswers = recorded.filter((result: any) => result.attempt?.isCorrect).length;
+      const wrongAnswers = answeredQuestions - correctAnswers;
+      const skippedQuestions = totalQuestions - answeredQuestions;
+      const percentage = totalQuestions > 0 ? (correctAnswers / totalQuestions) * 100 : 0;
+      let savedResult: any;
+      if (mongoose.connection.readyState === 1 && mongoose.Types.ObjectId.isValid(userId)) {
+        savedResult = await mongoStorage.createTestResult({
+          userId,
+          program: 'tahsili',
+          testType: 'custom',
+          testName: `اختبار التحصيلي ${req.params.examId}`,
+          difficulty: 'mixed',
+          score: correctAnswers,
+          totalQuestions,
+          correctAnswers,
+          wrongAnswers,
+          skippedQuestions,
+          percentage,
+          timeTaken: Math.max(0, Number(req.body?.timeTakenSeconds) || 0),
+          pointsEarned: correctAnswers * 10 - wrongAnswers - skippedQuestions * 0.5,
+          isOfficial: false,
+        } as any);
+      }
+      const result = {
+        score: correctAnswers,
+        totalQuestions,
+        correctAnswers,
+        wrongAnswers,
+        skippedQuestions,
+        percentage,
+        questionResults: recorded.map((record: any, index: number) => ({
+          questionId: attempt.questions[index].questionId,
+          selectedOptionIndex: answerMap.get(attempt.questions[index].questionId) ?? null,
+          correctOptionIndex: attempt.questions[index].correctOptionIndex,
+          isAnswered: Boolean(record.attempt?.isAnswered),
+          isCorrect: Boolean(record.attempt?.isCorrect),
+        })),
+        savedResultId: savedResult?._id ? String(savedResult._id) : undefined,
+      };
+      attempt.status = 'completed';
+      attempt.result = result;
+      attempts[attemptId] = attempt;
+      session.tahsiliLearningAttempts = attempts;
+      await new Promise<void>((resolve, reject) =>
+        session.save((error: any) => error ? reject(error) : resolve())
+      );
+      return res.status(201).json(result);
+    } catch (error: any) {
+      if (error instanceof LearningAttemptError) {
+        const status = error.code === 'UNKNOWN_QUESTION' ? 404 : error.code === 'IDEMPOTENCY_CONFLICT' ? 409 : 400;
+        return res.status(status).json({ error: error.message, code: error.code });
+      }
+      console.error('Tahsili exam submission error:', error);
+      return res.status(500).json({ error: 'فشل في حفظ محاولة التحصيلي' });
     }
   });
 
@@ -1163,12 +1306,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
       for (const [id, attempt] of Object.entries(attempts) as [string, any][]) {
         if (!attempt?.createdAt || now - Number(attempt.createdAt) > 2 * 60 * 60 * 1000) delete attempts[id];
       }
+      let learningSessionId: string | undefined;
+      if (mongoose.connection.readyState === 1 && mongoose.Types.ObjectId.isValid(sessionUserId)) {
+        try {
+          const learningSession = await createLearningSession(sessionUserId, {
+            programId: 'program.qudrat',
+            subjectId: category === 'verbal'
+              ? 'subject.qudrat.verbal'
+              : 'subject.qudrat.quantitative',
+            idempotencyKey: `mobile-free:${attemptId}`,
+          });
+          learningSessionId = String(learningSession.session._id);
+        } catch (error) {
+          console.error('[LearningAttempt] mobile session creation failed', error);
+        }
+      }
       const questions = selectedQuestions.map((question: any) => {
         const id = String(question._id || question.id || question.questionId);
         attempts[attemptId] ??= {
           userId: sessionUserId,
           category,
           createdAt: now,
+          learningSessionId,
           questions: [],
         };
         attempts[attemptId].questions.push({
@@ -1205,6 +1364,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (!attempt || attempt.userId !== sessionUserId) {
         return res.status(400).json({ message: 'انتهت جلسة الاختبار أو تم إرسالها مسبقاً' });
       }
+      if (attempt.status === 'completed' && attempt.result) {
+        return res.status(200).json({ ...attempt.result, duplicate: true });
+      }
       if (Date.now() - Number(attempt.createdAt) > 2 * 60 * 60 * 1000) {
         delete attempts[attemptId];
         return res.status(410).json({ message: 'انتهت صلاحية الاختبار. ابدأ اختباراً جديداً.' });
@@ -1225,6 +1387,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const pointsEarned = score * 10 - wrongAnswers - skippedQuestions * 0.5;
       const percentage = totalQuestions > 0 ? score / totalQuestions * 100 : 0;
       const timeTaken = Math.max(0, Math.min(Number(req.body?.timeTaken) || 0, 2 * 60 * 60));
+
+      if (mongoose.connection.readyState === 1 && mongoose.Types.ObjectId.isValid(sessionUserId)) {
+        for (const question of attempt.questions) {
+          await recordVerifiedLearningAttempt(sessionUserId, {
+            questionId: String(question.id),
+            sourceType: 'mongo_question',
+            sourceKey: `mobile-free:${attemptId}`,
+            programId: 'program.qudrat',
+            subjectId: attempt.category === 'verbal'
+              ? 'subject.qudrat.verbal'
+              : 'subject.qudrat.quantitative',
+            selectedAnswer: answerMap.has(question.id) ? answerMap.get(question.id) : null,
+            responseTime: 0,
+            sessionId: attempt.learningSessionId,
+            idempotencyKey: `mobile-free:${attemptId}:${question.id}`,
+            metadata: { flow: 'mobile-free-test' },
+          });
+        }
+      }
 
       let savedResult: any;
       if (mongoose.Types.ObjectId.isValid(sessionUserId)) {
@@ -1258,11 +1439,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
 
-      delete attempts[attemptId];
-      (req.session as any).mobileExamAttempts = attempts;
-      await new Promise<void>((resolve, reject) =>
-        req.session.save((error) => error ? reject(error) : resolve())
-      );
       try {
         await mongoStorage.markQuestionsAsSeen(
           sessionUserId,
@@ -1276,7 +1452,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         totalQuestions,
         percentage,
       });
-      return res.status(201).json({
+      const responsePayload = {
         ...(typeof savedResult?.toObject === 'function' ? savedResult.toObject() : savedResult),
         score,
         totalQuestions,
@@ -1286,7 +1462,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
         percentage,
         pointsEarned,
         parentNotification,
-      });
+      };
+      attempt.status = 'completed';
+      attempt.result = responsePayload;
+      attempts[attemptId] = attempt;
+      (req.session as any).mobileExamAttempts = attempts;
+      await new Promise<void>((resolve, reject) =>
+        req.session.save((error) => error ? reject(error) : resolve())
+      );
+      return res.status(201).json(responsePayload);
     } catch (error) {
       console.error('Mobile test result error:', error);
       return res.status(500).json({ message: 'تعذر حفظ نتيجة الاختبار' });
@@ -1406,20 +1590,91 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Save test result - نظام النقاط الموحد: +10 صح، -1 خطأ، -0.5 متروك - Protected by RBAC
   app.post("/api/test-results", requireAuth, async (req: Request, res: Response) => {
     try {
-      const { userId, testType, difficulty, score, totalQuestions, timeTaken, skippedQuestions, questionIds } = req.body;
+      const {
+        userId,
+        testType,
+        difficulty,
+        score,
+        totalQuestions,
+        timeTaken,
+        skippedQuestions,
+        questionIds,
+        answers,
+        idempotencyKey,
+        sourceKey,
+        programId = 'program.qudrat',
+        subjectId,
+        sessionId,
+      } = req.body;
       const sessionUserId = String((req as any).session?.userId || '');
+      const effectiveUserId = userId || sessionUserId;
 
-      if (!userId || !testType || !difficulty || score === undefined || !totalQuestions) {
+      if (!testType || !difficulty || score === undefined || !totalQuestions) {
         return res.status(400).json({ message: "Missing required fields" });
       }
-      if (!sessionUserId || String(userId) !== sessionUserId) {
+      if (!sessionUserId || (userId && String(userId) !== sessionUserId)) {
         return res.status(403).json({ message: "لا يمكنك حفظ نتيجة لحساب آخر" });
       }
 
+      let resolvedScore = Number(score);
+      let resolvedTotalQuestions = Number(totalQuestions);
+      let resolvedSkippedQuestions = Number(skippedQuestions || 0);
+      let resolvedWrongAnswers = resolvedTotalQuestions - resolvedScore - resolvedSkippedQuestions;
+      let resolvedQuestionIds = Array.isArray(questionIds) ? questionIds.map(String) : [];
+      if (Array.isArray(answers)) {
+        const answerQuestionIds = answers.map((answer: any) => String(answer?.questionId || answer?.id || ''));
+        if (
+          answerQuestionIds.some((questionId: string) => !questionId) ||
+          new Set(answerQuestionIds).size !== answerQuestionIds.length
+        ) {
+          return res.status(400).json({ message: "قائمة الإجابات تحتوي على أسئلة غير صالحة أو مكررة" });
+        }
+        const inferredSubjectId =
+          String(testType).toLowerCase().includes('verbal') || String(testType).includes('لفظ')
+            ? 'subject.qudrat.verbal'
+            : String(testType).toLowerCase().includes('quant') || String(testType).includes('كم')
+              ? 'subject.qudrat.quantitative'
+              : undefined;
+        const resolvedAttempts = [];
+        const submissionSourceKey = String(
+          sourceKey || `test-result:${idempotencyKey || crypto.randomUUID()}`,
+        );
+        for (const answer of answers) {
+          const rawSelectedAnswer = answer?.selectedAnswer ?? answer?.selectedOptionIndex ?? null;
+          const selectedAnswer = rawSelectedAnswer === -1 || rawSelectedAnswer === '-1'
+            ? null
+            : rawSelectedAnswer;
+          resolvedAttempts.push(await recordVerifiedLearningAttempt(sessionUserId, {
+            questionId: String(answer.questionId || answer.id),
+            sourceType: answer.sourceType || 'mongo_question',
+            sourceKey: String(answer.sourceKey || submissionSourceKey),
+            programId: String(answer.programId || programId),
+            subjectId: answer.subjectId || subjectId || inferredSubjectId,
+            selectedAnswer,
+            responseTime: answer.responseTime ?? answer.timeSpent ?? 0,
+            sessionId: answer.sessionId || sessionId,
+            idempotencyKey: idempotencyKey
+              ? `${String(idempotencyKey)}:${String(answer.questionId || answer.id)}`
+              : undefined,
+            metadata: {
+              flow: 'test-results',
+              testType,
+              ...(answer.metadata || {}),
+            },
+          }));
+        }
+        resolvedScore = resolvedAttempts.filter((result: any) => result.attempt?.isCorrect).length;
+        const answeredCount = resolvedAttempts.filter((result: any) => result.attempt?.isAnswered).length;
+        resolvedTotalQuestions = Number(totalQuestions) || answers.length;
+        resolvedSkippedQuestions = Math.max(0, resolvedTotalQuestions - answeredCount);
+        resolvedWrongAnswers = answeredCount - resolvedScore;
+        resolvedQuestionIds = answerQuestionIds;
+      }
+
       // نظام النقاط الموحد: +10 صح، -1 خطأ، -0.5 متروك (يمكن أن تكون سالبة)
-      const correctAnswers = score;
-      const skipped = skippedQuestions || 0;
-      const wrongAnswers = totalQuestions - score - skipped;
+      const correctAnswers = resolvedScore;
+      const skipped = resolvedSkippedQuestions;
+      const wrongAnswers = resolvedWrongAnswers;
 
       const correctPoints = correctAnswers * 10;
       const wrongPenalty = wrongAnswers * 1;
@@ -1428,7 +1683,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // إزالة Math.max للسماح بالنقاط السالبة
       const totalPoints = correctPoints - wrongPenalty - skippedPenalty;
 
-      const percentage = (score / totalQuestions) * 100;
+      const percentage = (resolvedScore / resolvedTotalQuestions) * 100;
 
       const useMongoStorage =
         mongoose.connection.readyState === 1 &&
@@ -1440,8 +1695,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
           program: 'qudrat',
           testType,
           difficulty,
-          score,
-          totalQuestions,
+          score: resolvedScore,
+          totalQuestions: resolvedTotalQuestions,
           correctAnswers,
           wrongAnswers,
           skippedQuestions: skipped,
@@ -1459,8 +1714,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
           userId: numericUserId,
           testType,
           difficulty,
-          score,
-          totalQuestions,
+          score: resolvedScore,
+          totalQuestions: resolvedTotalQuestions,
           pointsEarned: totalPoints
         });
       }
@@ -1469,15 +1724,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const parentNotification = await notifyLinkedParentsOfResult(sessionUserId, {
         ...serializedResult,
         testType,
-        score,
-        totalQuestions,
+        score: resolvedScore,
+        totalQuestions: resolvedTotalQuestions,
         percentage,
       });
 
       // تسجيل الأسئلة المشاهدة لمنع التكرار في الاختبارات القادمة
-      if (questionIds?.length && sessionUserId) {
+      if (resolvedQuestionIds?.length && sessionUserId) {
         try {
-          await mongoStorage.markQuestionsAsSeen(String(sessionUserId), questionIds.map(String));
+          await mongoStorage.markQuestionsAsSeen(String(sessionUserId), resolvedQuestionIds);
         } catch {}
       }
 
@@ -1505,17 +1760,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // تحديث لوحة المتصدرين
       try {
-        await storage.updateLeaderboardEntry(userId, totalPoints);
+        await storage.updateLeaderboardEntry(effectiveUserId, totalPoints);
       } catch (error) {
         console.error("Error updating leaderboard:", error);
       }
 
       // التحقق من الشارات
       try {
-        const badges = await storage.checkAndAwardBadges(userId, {
+        const badges = await storage.checkAndAwardBadges(effectiveUserId, {
           percentage,
-          score,
-          totalQuestions,
+          score: resolvedScore,
+          totalQuestions: resolvedTotalQuestions,
           testType,
           difficulty,
           timeTaken
@@ -1536,6 +1791,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
     } catch (error) {
+      if (error instanceof LearningAttemptError) {
+        console.warn('[LearningAttempt] test-results submission rejected', {
+          code: error.code,
+          userId: String((req as any).session?.userId || ''),
+        });
+        const status = error.code === 'UNKNOWN_QUESTION' ? 404
+          : error.code === 'IDEMPOTENCY_CONFLICT' ? 409
+            : error.code === 'INVALID_SESSION' ? 400
+              : 400;
+        return res.status(status).json({ message: error.message, code: error.code });
+      }
       console.error("Error saving test result:", error);
       return res.status(500).json({ message: "Error saving test result" });
     }
@@ -11395,38 +11661,16 @@ app.post("/api/auth/register", async (req: Request, res: Response) => {
       const sourceType = String(req.body?.sourceType || 'mongo_question') as any;
       const questionId = String(req.body?.questionId || '');
       const selectedAnswer = req.body?.selectedAnswer ?? req.body?.selectedOptionIndex ?? null;
-      const validation = normalizeLearningAttemptInput({
-        questionId,
-        sourceType,
-        programId: String(req.body?.programId || ''),
-        subjectId: req.body?.subjectId ? String(req.body.subjectId) : undefined,
-        selectedAnswer,
-        isAnswered: selectedAnswer !== null && selectedAnswer !== undefined,
-        isCorrect: false,
-        responseTime: req.body?.responseTime,
-        sessionId: req.body?.sessionId ? String(req.body.sessionId) : undefined,
-        idempotencyKey: req.body?.idempotencyKey ? String(req.body.idempotencyKey) : undefined,
-        metadata: req.body?.metadata,
-      });
-      if (!validation.ok) return res.status(400).json({ error: validation.error });
-
-      const question = await findQuestionForLearningAttempt(questionId, sourceType);
-      if (!question) return res.status(404).json({ error: 'السؤال غير موجود', code: 'UNKNOWN_QUESTION' });
-      const isAnswered = selectedAnswer !== null && selectedAnswer !== undefined && selectedAnswer !== '';
-      const isCorrect = isAnswered && String(selectedAnswer) === String((question as any).correctOptionIndex);
-      const result = await recordLearningAttempt(studentId, {
+      const result = await recordVerifiedLearningAttempt(studentId, {
         questionId,
         sourceType,
         sourceKey: req.body?.sourceKey ? String(req.body.sourceKey) : undefined,
-        programId: validation.value.programId,
-        subjectId: validation.value.subjectId,
+        programId: String(req.body?.programId || ''),
+        subjectId: req.body?.subjectId ? String(req.body.subjectId) : undefined,
         selectedAnswer,
-        correctAnswer: (question as any).correctOptionIndex,
-        isAnswered,
-        isCorrect,
-        responseTime: validation.value.responseTime,
+        responseTime: req.body?.responseTime,
         sessionId: req.body?.sessionId ? String(req.body.sessionId) : undefined,
-        idempotencyKey: validation.value.idempotencyKey,
+        idempotencyKey: req.body?.idempotencyKey ? String(req.body.idempotencyKey) : undefined,
         metadata: req.body?.metadata,
       });
       return res.status(result.duplicate ? 200 : 201).json({
@@ -11434,6 +11678,13 @@ app.post("/api/auth/register", async (req: Request, res: Response) => {
         attempt: result.attempt ? publicLearningAttempt(result.attempt) : null,
       });
     } catch (error: any) {
+      if (error instanceof LearningAttemptError) {
+        const status =
+          error.code === 'UNKNOWN_QUESTION' ? 404 :
+          error.code === 'IDEMPOTENCY_CONFLICT' ? 409 :
+          400;
+        return res.status(status).json({ error: error.message, code: error.code });
+      }
       if (error?.code === 11000) return res.status(409).json({ error: 'المحاولة مكررة' });
       const message = error instanceof Error ? error.message : 'تعذر تسجيل المحاولة';
       return res.status(500).json({ error: message });
@@ -11468,7 +11719,7 @@ app.post("/api/auth/register", async (req: Request, res: Response) => {
     if (!userId) return;
     if (!mongoose.Types.ObjectId.isValid(req.params.id)) return res.status(400).json({ error: 'معرف الدرس غير صالح' });
     try {
-      const { FoundationContent, Question, TestResult } = await import('../mongodb/models');
+       const { FoundationContent, Question, TestResult } = await import('../mongodb/models');
       const lesson = await FoundationContent.findOne({ _id: req.params.id, published: true }).select('program title quiz').lean() as any;
       if (!lesson?.quiz?.questionIds?.length) return res.status(404).json({ error: 'لا يوجد اختبار مرتبط بهذا الدرس' });
 
@@ -11477,13 +11728,32 @@ app.post("/api/auth/register", async (req: Request, res: Response) => {
       for (const answer of submitted) {
         const questionId = String(answer?.questionId || '');
         const optionIndex = Number(answer?.selectedOptionIndex);
-        if (questionId && Number.isInteger(optionIndex) && optionIndex >= 0 && optionIndex <= 10) {
-          answerMap.set(questionId, optionIndex);
-        }
+         if (!questionId || !Number.isInteger(optionIndex) || optionIndex < 0) {
+           return res.status(400).json({ error: 'إجابة السؤال غير صالحة' });
+         }
+         if (answerMap.has(questionId)) {
+           return res.status(409).json({ error: 'تم إرسال السؤال أكثر من مرة' });
+         }
+         answerMap.set(questionId, optionIndex);
       }
       const questionIds = lesson.quiz.questionIds.map((id: unknown) => String(id));
-      const questions = await Question.find({ _id: { $in: questionIds } }).select('_id correctOptionIndex subcategory difficulty').lean();
+       const questionIdSet = new Set(questionIds);
+       if ([...answerMap.keys()].some((questionId) => !questionIdSet.has(questionId))) {
+         return res.status(400).json({ error: 'الإجابة لا تنتمي إلى اختبار الدرس' });
+       }
+       const questions = await Question.find({ _id: { $in: questionIds } })
+         .select('_id correctOptionIndex options subcategory difficulty')
+         .lean();
       const questionById = new Map(questions.map((question: any) => [String(question._id), question]));
+       if (questions.length !== questionIds.length) {
+         return res.status(409).json({ error: 'يوجد سؤال غير متاح في اختبار الدرس' });
+       }
+       for (const [questionId, optionIndex] of answerMap) {
+         const question = questionById.get(questionId);
+         if (!question || optionIndex >= question.options.length) {
+           return res.status(400).json({ error: 'الإجابة خارج خيارات السؤال' });
+         }
+       }
       let correctAnswers = 0;
       let answeredQuestions = 0;
       const questionDetails = questionIds.map((questionId: string) => {
@@ -11499,6 +11769,26 @@ app.post("/api/auth/register", async (req: Request, res: Response) => {
       const percentage = Math.round((correctAnswers / totalQuestions) * 100);
       const skippedQuestions = totalQuestions - answeredQuestions;
       const timeTaken = Math.max(0, Number(req.body?.timeTakenSeconds) || 0);
+       const baseIdempotencyKey = req.body?.idempotencyKey
+         ? String(req.body.idempotencyKey).trim()
+         : undefined;
+       for (const detail of questionDetails) {
+         await recordVerifiedLearningAttempt(userId, {
+           questionId: detail.questionId,
+           sourceType: 'mongo_question',
+           sourceKey: `foundation-lesson:${String(lesson._id)}`,
+           programId: `program.${lesson.program}`,
+           selectedAnswer: detail.selectedOptionIndex,
+           responseTime: 0,
+           idempotencyKey: baseIdempotencyKey
+             ? `${baseIdempotencyKey}:${detail.questionId}`
+             : undefined,
+           metadata: {
+             flow: 'foundation-lesson-quiz',
+             lessonId: String(lesson._id),
+           },
+         });
+       }
       await TestResult.create({
         userId,
         program: lesson.program,
@@ -11685,6 +11975,24 @@ app.post("/api/auth/register", async (req: Request, res: Response) => {
           subcategory: question?.subcategory || question?.topic || 'المهارات الأساسية',
         };
       });
+      for (const detail of questionDetails) {
+        const category = detail.category === 'quantitative' ? 'quantitative' : 'verbal';
+        await recordVerifiedLearningAttempt(userId, {
+          questionId: detail.questionId,
+          sourceType: 'mongo_question',
+          sourceKey: `diagnostic:${attemptId}`,
+          programId: 'program.qudrat',
+          subjectId: `subject.qudrat.${category}`,
+          selectedAnswer: detail.selectedOptionIndex,
+          responseTime: 0,
+          idempotencyKey: `diagnostic:${attemptId}:${detail.questionId}`,
+          metadata: {
+            flow: 'foundation-diagnostic',
+            diagnosticAttemptId: attemptId,
+            subcategory: detail.subcategory,
+          },
+        });
+      }
       const totalQuestions = allowedQuestionIds.length;
       const percentage = Math.round((correctAnswers / totalQuestions) * 100);
       const summaries = Array.from(skillTotals.values()).map((skill) => ({

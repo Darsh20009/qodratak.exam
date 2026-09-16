@@ -80,7 +80,6 @@ interface TahsiliQuestion {
 interface TahsiliOption {
   text: string;
   rationale: string;
-  isCorrect: boolean;
 }
 
 // البيانات الأساسية للاختبارات التحصيلية
@@ -143,6 +142,7 @@ const TahsiliExamPage: React.FC = () => {
   // حالات الصفحة الرئيسية
   const [currentView, setCurrentView] = useState<'selection' | 'exam' | 'results'>('selection');
   const [selectedExam, setSelectedExam] = useState<TahsiliExam | null>(null);
+  const learningAttemptIdRef = React.useRef<string | null>(null);
   const { user } = useUser();
 
   // حالات الاختبار
@@ -155,6 +155,12 @@ const TahsiliExamPage: React.FC = () => {
   const [isExamFinished, setIsExamFinished] = useState(false);
   const [showAiReview, setShowAiReview] = useState(false);
   const [wrongQuestionsForAI, setWrongQuestionsForAI] = useState<WrongQuestion[]>([]);
+  const [serverQuestionResults, setServerQuestionResults] = useState<Record<number, {
+    selectedOptionIndex: number | null;
+    correctOptionIndex: number;
+    isAnswered: boolean;
+    isCorrect: boolean;
+  }>>({});
 
   // حالات النتائج
   const [examResults, setExamResults] = useState<any>(null);
@@ -198,6 +204,7 @@ const TahsiliExamPage: React.FC = () => {
       
       return () => clearInterval(timer);
     }
+    return undefined;
   }, [currentView, timeLeft]);
 
   // بدء الاختبار
@@ -220,6 +227,7 @@ const TahsiliExamPage: React.FC = () => {
       setCurrentQuestionIndex(0);
       setAnswers({});
       setSelectedAnswer(null);
+      setServerQuestionResults({});
       setTimeLeft(exam.timeLimit * 60);
       setExamStartTime(new Date());
       setIsExamFinished(false);
@@ -303,6 +311,7 @@ const TahsiliExamPage: React.FC = () => {
       });
       
       if (response.status === 403) {
+        learningAttemptIdRef.current = null;
         toast({
           title: "🔒 اشتراك مطلوب",
           description: "يلزم اشتراك Pro للوصول إلى اختبارات التحصيلي",
@@ -315,6 +324,7 @@ const TahsiliExamPage: React.FC = () => {
       
       const text = await response.text();
       const data = JSON.parse(text);
+      learningAttemptIdRef.current = data.learningAttemptId || null;
       
       return data.questions.map((q: any, index: number) => ({
         id: index + 1,
@@ -323,7 +333,7 @@ const TahsiliExamPage: React.FC = () => {
         question: q.question,
         answerOptions: q.answerOptions,
         hint: q.hint,
-        explanation: q.answerOptions.find((opt: any) => opt.isCorrect)?.rationale || ""
+        explanation: q.explanation || ""
       }));
 
     } catch (error) {
@@ -338,19 +348,124 @@ const TahsiliExamPage: React.FC = () => {
   };
 
   // إنهاء الاختبار وحساب النتائج
-  const finishExam = () => {
+  const finishExam = async () => {
     if (!selectedExam || !examStartTime) return;
 
     const endTime = new Date();
     const timeTaken = Math.round((endTime.getTime() - examStartTime.getTime()) / 1000 / 60);
+    const timeTakenSeconds = Math.max(0, Math.round((endTime.getTime() - examStartTime.getTime()) / 1000));
+    const answerSnapshot = {
+      ...answers,
+      ...(selectedAnswer !== null && selectedExam.questions[currentQuestionIndex]
+        ? { [selectedExam.questions[currentQuestionIndex].id]: selectedAnswer }
+        : {}),
+    };
 
+    const learningAttemptId = learningAttemptIdRef.current;
+    if (!learningAttemptId) {
+      toast({
+        title: "تعذر حفظ المحاولات",
+        description: "لم تصل جلسة الاختبار الآمنة من الخادم. لم يتم عرض نتيجة محسوبة محليًا.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    const apiExamId = selectedExam.id === 1
+      ? 'exam-50'
+      : selectedExam.id === 2
+        ? 'exam-10'
+        : selectedExam.id === 3
+          ? 'exam-100'
+          : 'exam-110';
+    let serverResult: {
+      correctAnswers: number;
+      totalQuestions: number;
+      percentage: number;
+      questionResults: Array<{
+        questionId: string;
+        selectedOptionIndex: number | null;
+        correctOptionIndex: number;
+        isAnswered: boolean;
+        isCorrect: boolean;
+      }>;
+    };
+    try {
+      const response = await fetch(`/api/tahsili/exams/${apiExamId}/submit`, {
+        method: 'POST',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          learningAttemptId,
+          answers: selectedExam.questions.map((question) => ({
+            questionId: String(question.id),
+            selectedOptionIndex: answerSnapshot[question.id] ?? null,
+          })),
+          timeTakenSeconds,
+          idempotencyKey: `tahsili:${learningAttemptId}`,
+        }),
+      });
+      if (!response.ok) {
+        let message = 'تعذر حفظ محاولات التحصيلي على الخادم';
+        try {
+          const data = await response.json();
+          if (typeof data?.error === 'string' && data.error.trim()) message = data.error;
+        } catch {
+          // Keep the user-facing fallback when the server does not return JSON.
+        }
+        throw new Error(message);
+      }
+      serverResult = await response.json();
+    } catch (error) {
+      console.error('Error recording Tahsili learning attempts:', error);
+      toast({
+        title: "تعذر حفظ المحاولات",
+        description: error instanceof Error ? error.message : "لم يتم عرض نتيجة محسوبة محليًا.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (
+      !Number.isFinite(serverResult.correctAnswers) ||
+      !Number.isFinite(serverResult.totalQuestions) ||
+      !Number.isFinite(serverResult.percentage) ||
+      !Array.isArray(serverResult.questionResults) ||
+      serverResult.questionResults.length !== selectedExam.questions.length
+    ) {
+      toast({
+        title: "تعذر قراءة النتيجة",
+        description: "لم يعُد الخادم نتيجة مكتملة. لم يتم عرض نتيجة محلية.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    const questionResultsById = new Map(
+      serverResult.questionResults.map((result) => [String(result.questionId), result]),
+    );
+    if (selectedExam.questions.some((question) => !questionResultsById.has(String(question.id)))) {
+      toast({
+        title: "تعذر قراءة النتيجة",
+        description: "لم يعُد الخادم نتيجة لكل أسئلة الاختبار. لم يتم عرض نتيجة محلية.",
+        variant: "destructive",
+      });
+      return;
+    }
+    const nextServerQuestionResults: Record<number, {
+      selectedOptionIndex: number | null;
+      correctOptionIndex: number;
+      isAnswered: boolean;
+      isCorrect: boolean;
+    }> = {};
     let correctAnswers = 0;
     let mistakes: TahsiliQuestion[] = [];
     const categoryStats: { [category: string]: { correct: number; total: number } } = {};
 
     selectedExam.questions.forEach((question) => {
-      const userAnswer = answers[question.id];
-      const correctOptionIndex = question.answerOptions.findIndex(opt => opt.isCorrect);
+      const questionResult = questionResultsById.get(String(question.id));
+      if (!questionResult) return;
+      nextServerQuestionResults[question.id] = questionResult;
       
       const category = question.category;
       if (!categoryStats[category]) {
@@ -358,19 +473,19 @@ const TahsiliExamPage: React.FC = () => {
       }
       categoryStats[category].total++;
 
-      if (userAnswer === correctOptionIndex) {
-        correctAnswers++;
+      if (questionResult.isCorrect) {
         categoryStats[category].correct++;
       } else {
         mistakes.push(question);
       }
     });
+    correctAnswers = serverResult.correctAnswers;
 
-    const percentage = (correctAnswers / selectedExam.questions.length) * 100;
+    const percentage = serverResult.percentage;
     
     const results = {
       examName: selectedExam.name,
-      totalQuestions: selectedExam.questions.length,
+      totalQuestions: serverResult.totalQuestions,
       correctAnswers,
       percentage: Math.round(percentage * 100) / 100,
       timeTaken,
@@ -381,16 +496,17 @@ const TahsiliExamPage: React.FC = () => {
 
     setExamResults(results);
     setMistakeQuestions(mistakes);
+    setServerQuestionResults(nextServerQuestionResults);
     setIsExamFinished(true);
 
     // Build wrong questions for AI review
     const wrongs: WrongQuestion[] = mistakes.map(question => {
-      const correctOptionIndex = question.answerOptions.findIndex(opt => opt.isCorrect);
+      const questionResult = nextServerQuestionResults[question.id];
       return {
         questionText: question.question,
         options: question.answerOptions.map(opt => opt.text),
-        studentAnswerIndex: answers[question.id] ?? null,
-        correctAnswerIndex: correctOptionIndex,
+        studentAnswerIndex: questionResult?.selectedOptionIndex ?? null,
+        correctAnswerIndex: questionResult?.correctOptionIndex ?? -1,
         category: question.category,
         subcategory: (question as any).subcategory,
       };
@@ -537,7 +653,10 @@ const TahsiliExamPage: React.FC = () => {
 `;
 
       mistakeQuestions.forEach((question, index) => {
-        const correctOption = question.answerOptions.find(opt => opt.isCorrect);
+        const correctOptionIndex = serverQuestionResults[question.id]?.correctOptionIndex ?? -1;
+        const correctOption = correctOptionIndex >= 0
+          ? question.answerOptions[correctOptionIndex]
+          : undefined;
         
         htmlContent += `
         <div class="question">
@@ -552,7 +671,7 @@ const TahsiliExamPage: React.FC = () => {
 `;
         
         question.answerOptions.forEach((option, optIndex) => {
-          const isCorrect = option.isCorrect;
+          const isCorrect = optIndex === correctOptionIndex;
           htmlContent += `
                 <div class="option ${isCorrect ? 'correct' : ''}">
                     ${String.fromCharCode(65 + optIndex)}) ${option.text}
@@ -626,29 +745,13 @@ const TahsiliExamPage: React.FC = () => {
       return;
     }
 
-    const challengeExam: TahsiliExam = {
-      ...selectedExam!,
-      name: `تحدي الأخطاء - ${selectedExam!.name}`,
-      description: "اختبر نفسك مرة أخرى في الأسئلة التي أخطأت فيها",
-      totalQuestions: mistakeQuestions.length,
-      timeLimit: Math.max(10, mistakeQuestions.length * 2), // دقيقتان لكل سؤال كحد أدنى 10 دقائق
-      questions: mistakeQuestions,
-      themeColor: "from-red-500 to-orange-600"
-    };
-
-    setSelectedExam(challengeExam);
-    setCurrentView('exam');
-    setCurrentQuestionIndex(0);
-    setAnswers({});
-    setSelectedAnswer(null);
-    setTimeLeft(challengeExam.timeLimit * 60);
-    setExamStartTime(new Date());
-    setIsExamFinished(false);
-
     toast({
-      title: "🔥 تحدي الأخطاء",
-      description: `${mistakeQuestions.length} سؤال في ${challengeExam.timeLimit} دقيقة`,
+      title: "يلزم بدء اختبار جديد",
+      description: "تحدي الأخطاء يحتاج جلسة أسئلة جديدة من الخادم حتى يتم تصحيحه بأمان.",
+      variant: "destructive",
     });
+    return;
+
   };
 
   // الانتقال للسؤال التالي

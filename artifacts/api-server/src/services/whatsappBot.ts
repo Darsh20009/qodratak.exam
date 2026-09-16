@@ -10,6 +10,7 @@ import {
 } from "../mongodb/models";
 import { mongoStorage } from "../mongodb/mongoStorage";
 import { onWhatsAppMessage, sendWhatsAppText, type WhatsAppMessageEvent } from "./whatsappService";
+import { recordVerifiedLearningAttempt } from "./learningProfileService";
 
 const QUIZ_LENGTH = 5;
 const phoneLocks = new Map<string, Promise<void>>();
@@ -116,7 +117,7 @@ async function loadSessionQuestions(session: any) {
   const ids = (session.questionIds || []).map((id: string) => Number(id)).filter(Number.isFinite);
   const questions = await Question.find({ questionId: { $in: ids } }).lean();
   const byId = new Map(questions.map((question: IQuestion) => [String(question.questionId), question]));
-  return ids.map((id) => byId.get(String(id))).filter(Boolean) as IQuestion[];
+  return ids.map((id: number) => byId.get(String(id))).filter(Boolean) as IQuestion[];
 }
 
 async function startQuiz(phone: string, user: any) {
@@ -273,9 +274,12 @@ async function removeDeviceByIndex(user: any, index: number) {
   ].join("\n");
 }
 
-async function answerCurrentQuestion(phone: string, text: string) {
+async function answerCurrentQuestion(phone: string, text: string, messageId: string) {
   const session = await WhatsAppQuizSession.findOne({ phone, status: "active" });
   if (!session) return null;
+  if (session.answers.some((answer) => answer.messageId === messageId)) {
+    return "تمت معالجة هذه الإجابة مسبقًا. أرسل إجابة السؤال الظاهر حاليًا فقط.";
+  }
   const selectedIndex = answerIndex(text);
   if (selectedIndex === null) {
     return "أرسل رقم الإجابة فقط: 1 أو 2 أو 3 أو 4، أو أرسل «إلغاء».";
@@ -294,11 +298,28 @@ async function answerCurrentQuestion(phone: string, text: string) {
   }
 
   const isCorrect = selectedIndex === question.correctOptionIndex;
+  await recordVerifiedLearningAttempt(String(session.userId), {
+    questionId: String(question.questionId),
+    sourceType: "mongo_question",
+    sourceKey: `whatsapp:${String(session._id)}`,
+    programId: "program.qudrat",
+    subjectId: question.category === "quantitative"
+      ? "subject.qudrat.quantitative"
+      : "subject.qudrat.verbal",
+    selectedAnswer: selectedIndex,
+    responseTime: 0,
+    idempotencyKey: `whatsapp:${String(session._id)}:${messageId}`,
+    metadata: {
+      flow: "whatsapp-quiz",
+      whatsappMessageId: messageId,
+    },
+  });
   session.answers.push({
     questionId: String(question.questionId),
     selectedIndex,
     correctIndex: question.correctOptionIndex,
     isCorrect,
+    messageId,
   });
   session.currentIndex += 1;
 
@@ -381,7 +402,7 @@ async function processInboundMessage(message: WhatsAppMessageEvent) {
     await session.save();
     reply = "تم إلغاء الاختبار التدريبي. أرسل «ابدأ اختبار» في أي وقت للبدء من جديد.";
   } else if (session && answerIndex(message.content) !== null) {
-    reply = await answerCurrentQuestion(digits, message.content);
+    reply = await answerCurrentQuestion(digits, message.content, message.messageId);
   } else if (command === "مساعدة" || command === "help" || command === "قائمة" || command === "مرحبا" || command === "اهلا" || command === "أهلا") {
     reply = helpMessage(displayName(user));
   } else if (command.includes("نتائج") || command.includes("نتيجة") || command === "درجاتي") {

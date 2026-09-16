@@ -81,6 +81,9 @@ export default function QuestionBankTestRunner() {
   const [testAnswers, setTestAnswers] = useState<TestAnswer[]>([]);
   const [questionStartTime, setQuestionStartTime] = useState(Date.now());
   const [loading, setLoading] = useState(true);
+  const idempotencyKeyRef = React.useRef(
+    `question-bank-${Date.now()}-${typeof crypto !== 'undefined' && crypto.randomUUID ? crypto.randomUUID() : Math.random().toString(36).slice(2)}`
+  );
   const { user } = useUser();
 
   const { violations, lastViolationType, isWarningVisible, dismissWarning } = useAntiCheat({
@@ -331,7 +334,13 @@ export default function QuestionBankTestRunner() {
             score: correctAnswers.length,
             totalQuestions: questions.length,
             timeTaken: 50 * 60 - timeLeft,
-            skippedQuestions: questions.length - answeredQuestions.length
+            skippedQuestions: questions.length - answeredQuestions.length,
+            answers: answers.map(answer => ({
+              questionId: (answer.question as any)._id || answer.question.id || (answer.question as any).questionId,
+              selectedAnswer: answer.selectedAnswer >= 0 ? answer.selectedAnswer : null,
+              sourceType: 'mongo_question',
+            })),
+            idempotencyKey: idempotencyKeyRef.current,
           })
         }).then(res => res.json()).then(response => {
           if (response?.pointsEarned !== undefined) {

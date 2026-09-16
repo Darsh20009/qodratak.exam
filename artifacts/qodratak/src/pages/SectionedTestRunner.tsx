@@ -96,6 +96,9 @@ export default function SectionedTestRunner() {
   const [questionStartTime, setQuestionStartTime] = useState(Date.now());
   const questionTimesRef = useRef<{[key: string]: number}>({});
   const timeLeftRef = useRef(50 * 60);
+  const idempotencyKeyRef = useRef(
+    `sectioned-${Date.now()}-${typeof crypto !== 'undefined' && crypto.randomUUID ? crypto.randomUUID() : Math.random().toString(36).slice(2)}`
+  );
   const [loading, setLoading] = useState(true);
   const [isPausedByAntiCheat, setIsPausedByAntiCheat] = useState(false);
   const { user } = useUser();
@@ -368,7 +371,14 @@ export default function SectionedTestRunner() {
             score: correctAnswers,
             totalQuestions,
             timeTaken: Math.round(((50 * 60) - timeLeftRef.current) / 60),
-            skippedQuestions
+            skippedQuestions,
+            answers: answers.map(answer => ({
+              questionId: (answer.question as any)._id || answer.question.id || (answer.question as any).questionId,
+              selectedAnswer: answer.selectedAnswer >= 0 ? answer.selectedAnswer : null,
+              sourceType: 'mongo_question',
+              timeSpent: answer.timeSpent,
+            })),
+            idempotencyKey: idempotencyKeyRef.current,
           })
         }).then(r => r.json()) as any;
 
