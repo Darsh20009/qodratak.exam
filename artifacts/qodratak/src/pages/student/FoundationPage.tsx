@@ -14,7 +14,7 @@ import {
 import { verbalBankVideos } from "@/data/verbalBankVideos";
 import { foundationSections, getFoundationSection, type FoundationProgram, type FoundationSection } from "@/data/foundationSections";
 import { foundationCurriculum } from "@/data/foundationCurriculum";
-import { Link, useLocation } from "wouter";
+import { Link, useLocation, useSearch } from "wouter";
 import { ArrowLeft, BarChart3, BookOpen, Clock, GraduationCap, ListChecks, Loader2, PlayCircle, Route, ShieldCheck, Sparkles, Target, Trophy } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -490,12 +490,8 @@ function FoundationTrackOverview({
 }
 
 export default function FoundationPage() {
-  const [location, setLocation] = useLocation();
-  // wouter is the source of truth for SPA navigation. Reading window.location
-  // here leaves the old query in place until a full browser refresh.
-  const queryString = location.includes("?")
-    ? location.slice(location.indexOf("?"))
-    : "";
+  const [, setLocation] = useLocation();
+  const queryString = useSearch();
   const params = new URLSearchParams(queryString);
   const hasProgram = params.get("program") === "qudrat" || params.get("program") === "tahsili";
   const hasSubject = Boolean(params.get("subject"));

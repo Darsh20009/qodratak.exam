@@ -17,3 +17,4 @@
 - [Foundation progress metrics](foundation-progress-metrics.md) — current percentages reflect saved test performance; lesson completion needs separate persistence.
 - [Authenticated preview checks](authenticated-preview-checks.md) — a public preview can show an expected 401 for session-only APIs; validate protected flows with an authenticated browser session.
 - [Official score planning](official-score-planning.md) — keep externally reported verbal/quantitative scores separate from training results and use them to focus the next plan.
+- [Wouter query navigation](wouter-query-navigation.md) — use `useSearch()` for query state; `useLocation()` returns pathname only in the installed wouter version.
