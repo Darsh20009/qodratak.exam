@@ -1,0 +1,488 @@
+ابدأ الآن Phase 04 فقط:
+
+# STUDENT LEARNING PROFILE FOUNDATION
+
+هذه المرحلة هدفها إنشاء "ملف تعلم" للطالب يمكن للنظام تحديثه تدريجيًا مع الدراسة.
+
+مهم جدًا:
+
+لا تبدأ Recommendation Engine.
+
+لا تبدأ Mastery Engine.
+
+لا تبدأ Diagnostic Test.
+
+لا تبدأ Adaptive Learning.
+
+لا تبدأ AI Tutor.
+
+لا تغير واجهة الطالب بشكل جوهري.
+
+لا تضف Floating Assistant.
+
+لا تضف Chatbot.
+
+لا تظهر أي تقنية للطالب.
+
+نحن الآن نبني DATA FOUNDATION فقط.
+
+━━━━━━━━━━━━━━━━━━━━
+1 — الفكرة الأساسية
+━━━━━━━━━━━━━━━━━━━━
+
+كل طالب في قدراتك يجب أن يكون له Learning Profile مستقل.
+
+الـProfile لا يعني:
+
+درجة الاختبار فقط.
+
+بل يمثل:
+
+ماذا درس الطالب؟
+ماذا حاول؟
+أين نجح؟
+أين أخطأ؟
+ما المهارات التي تم قياسها؟
+متى درسها؟
+كم استغرق؟
+وما مستوى الثقة الحالي في معرفة النظام لمستواه؟
+
+━━━━━━━━━━━━━━━━━━━━
+2 — لا تستخدم Skill غير معتمدة
+━━━━━━━━━━━━━━━━━━━━
+
+بسبب Phase 02 و03:
+
+لا تبنِ Student Profile على Skills أو Concepts غير APPROVED.
+
+حاليًا لدينا Program وSubject معتمدان.
+
+أما Topic/Skill/SubSkill/Concept التي حالتها REVIEW:
+
+لا تعاملها كحقيقة نهائية.
+
+يجب أن يكون النظام قادرًا على إضافة هذه المستويات لاحقًا بدون Migration مؤلم.
+
+━━━━━━━━━━━━━━━━━━━━
+3 — Student Learning Profile
+━━━━━━━━━━━━━━━━━━━━
+
+أنشئ Schema واضحة مثل:
+
+StudentLearningProfile
+
+تحتوي على:
+
+studentId
+
+overall
+
+programs
+
+subjects
+
+lastActivityAt
+
+createdAt
+
+updatedAt
+
+ولا تجعل كل شيء داخل Document ضخم إذا كان ذلك سيؤدي إلى مشاكل scalability.
+
+صممها بحيث نستطيع لاحقًا إضافة:
+
+StudentSubjectProfile
+
+StudentSkillProfile
+
+StudentConceptProfile
+
+حسب الحاجة.
+
+━━━━━━━━━━━━━━━━━━━━
+4 — Subject Profile
+━━━━━━━━━━━━━━━━━━━━
+
+لكل Subject يعرف النظام:
+
+attempts
+correctAttempts
+wrongAttempts
+accuracy
+averageResponseTime
+lastAttemptAt
+lastCorrectAt
+lastWrongAt
+
+لكن لا تعتبر هذه البيانات "Mastery".
+
+هي فقط:
+
+Observed Performance
+
+لأن Mastery Engine سيأتي لاحقًا.
+
+━━━━━━━━━━━━━━━━━━━━
+5 — Attempt History
+━━━━━━━━━━━━━━━━━━━━
+
+إذا كان المشروع لديه QuestionAttempt أو نظام مشابه:
+
+استخدمه بدل إنشاء نظام مكرر.
+
+إذا كان غير كافٍ:
+
+طوره بشكل backward-compatible.
+
+كل محاولة يجب أن نستطيع معرفة:
+
+studentId
+questionId
+programId
+subjectId
+timestamp
+selectedAnswer
+correctAnswer
+isCorrect
+responseTime
+attemptNumber
+sessionId
+
+وأي metadata موجودة أصلًا.
+
+لا تحفظ بيانات حساسة غير ضرورية.
+
+━━━━━━━━━━━━━━━━━━━━
+6 — لا تسجل "طريقة التفكير" من التخمين
+━━━━━━━━━━━━━━━━━━━━
+
+مهم جدًا:
+
+لا تفترض لماذا أخطأ الطالب بمجرد أنه اختار إجابة خاطئة.
+
+مثال:
+
+Wrong Answer ≠ Concept Gap
+
+في هذه المرحلة:
+
+سجل:
+
+Observed Error
+
+ولا تحولها تلقائيًا إلى:
+
+Concept Gap
+Wrong Strategy
+Reading Error
+Calculation Error
+
+هذه ستأتي لاحقًا بعد بناء Error Detection.
+
+━━━━━━━━━━━━━━━━━━━━
+7 — Confidence
+━━━━━━━━━━━━━━━━━━━━
+
+يمكن للنظام الاحتفاظ بـ:
+
+dataConfidence
+
+لكن لا تستخدمها لإعطاء الطالب تقييمًا نهائيًا.
+
+مثال:
+
+LOW
+MEDIUM
+HIGH
+
+والمقصود:
+
+كم لدينا من بيانات موثوقة عن الطالب؟
+
+ليس:
+
+"مستوى ذكاء الطالب."
+
+ولا:
+
+"قدرة الطالب العقلية."
+
+━━━━━━━━━━━━━━━━━━━━
+8 — Activity Timeline
+━━━━━━━━━━━━━━━━━━━━
+
+أنشئ أو استفد من نظام موجود لتسجيل الأحداث التعليمية المهمة:
+
+lesson_started
+lesson_completed
+question_started
+question_answered
+question_correct
+question_wrong
+review_started
+review_completed
+
+إذا كانت Event/Analytics infrastructure موجودة بالفعل:
+
+استخدمها.
+
+لا تنشئ نظام Tracking مكررًا بدون سبب.
+
+━━━━━━━━━━━━━━━━━━━━
+9 — Session
+━━━━━━━━━━━━━━━━━━━━
+
+يجب أن نستطيع تجميع محاولات الطالب داخل Learning Session.
+
+مثال:
+
+Session:
+
+studentId
+programId
+subjectId
+startedAt
+endedAt
+duration
+questionsAttempted
+questionsCorrect
+questionsWrong
+
+لكن لا تحاول الآن تحديد:
+
+"هل الجلسة ناجحة؟"
+
+أو:
+
+"هل الطالب أتقن؟"
+
+هذا يأتي لاحقًا.
+
+━━━━━━━━━━━━━━━━━━━━
+10 — Privacy
+━━━━━━━━━━━━━━━━━━━━
+
+اجمع فقط البيانات الضرورية للتعلم والتحليل.
+
+لا تخزن:
+
+محتوى شخصي غير ضروري.
+
+ولا تسجل:
+
+screen recording
+camera
+microphone
+
+ولا أي بيانات لا تحتاجها المنصة للتعلم.
+
+━━━━━━━━━━━━━━━━━━━━
+11 — APIs
+━━━━━━━━━━━━━━━━━━━━
+
+أنشئ APIs داخلية واضحة لاسترجاع:
+
+Student Learning Profile
+
+Subject Performance
+
+Recent Attempts
+
+Recent Sessions
+
+لكن:
+
+لا تعرض هذه البيانات التقنية للطالب الآن.
+
+يمكن أن يستخدمها Backend لاحقًا.
+
+━━━━━━━━━━━━━━━━━━━━
+12 — Existing Data
+━━━━━━━━━━━━━━━━━━━━
+
+قبل إنشاء أي Schema:
+
+راجع:
+
+QuestionAttempt
+TestResult
+ErrorLog
+Progress
+User/Student models
+
+إذا كانت البيانات الحالية تؤدي جزءًا من الوظيفة:
+
+اعمل Adapter/Service فوقها بدل إنشاء مصدر حقيقة ثاني.
+
+الهدف:
+
+ONE SOURCE OF TRUTH
+
+━━━━━━━━━━━━━━━━━━━━
+13 — Database Safety
+━━━━━━━━━━━━━━━━━━━━
+
+لا تعمل Migration ضخمة الآن.
+
+لا تعدل بيانات الطلاب الحالية بطريقة destructive.
+
+إذا احتجت Migration:
+
+أنشئ migration plan أولًا.
+
+ويجب أن تكون:
+
+backward compatible
+idempotent
+reversible
+
+━━━━━━━━━━━━━━━━━━━━
+14 — Testing
+━━━━━━━━━━━━━━━━━━━━
+
+أضف tests لـ:
+
+Profile creation
+Profile retrieval
+Attempt recording
+Subject aggregation
+Session creation
+Session completion
+Duplicate handling
+Invalid student handling
+
+واختبر:
+
+Correct answer
+
+Wrong answer
+
+Repeated attempt
+
+Unknown question
+
+Missing subject
+
+━━━━━━━━━━━━━━━━━━━━
+15 — Performance
+━━━━━━━━━━━━━━━━━━━━
+
+لا تقم بحساب Profile كامل من Question Bank في كل request.
+
+استخدم aggregation/update strategy مناسبة.
+
+ضع indexes للحقول التي ستستخدم بكثرة، مثل:
+
+studentId
+questionId
+subjectId
+createdAt
+
+لكن لا تضف indexes عشوائية.
+
+━━━━━━━━━━━━━━━━━━━━
+16 — UI
+━━━━━━━━━━━━━━━━━━━━
+
+لا تعيد تصميم Dashboard.
+
+لا تضف Charts كثيرة.
+
+لا تعرض:
+
+Mastery
+AI Score
+AI Analysis
+AI Recommendations
+
+لأنها غير موجودة بعد.
+
+هذه مرحلة Backend/Data فقط.
+
+━━━━━━━━━━━━━━━━━━━━
+17 — Documentation
+━━━━━━━━━━━━━━━━━━━━
+
+أنشئ:
+
+docs/student-learning-profile.md
+
+ويحتوي على:
+
+Purpose
+Data Model
+Relationships
+Attempt Model
+Session Model
+Observed Performance
+Confidence Model
+Privacy
+Indexes
+APIs
+Migration Strategy
+Future Extensions
+
+━━━━━━━━━━━━━━━━━━━━
+18 — Validation
+━━━━━━━━━━━━━━━━━━━━
+
+بعد التنفيذ شغّل:
+
+Relevant API tests
+Frontend tests
+Build
+git diff --check
+
+وإذا ظهر خطأ قديم معروف في TypeScript:
+
+افصل بوضوح بين:
+
+Existing Errors
+
+و:
+
+New Errors Introduced by Phase 04
+
+لا تدّعي أن المشروع سليم بالكامل إذا كانت هناك أخطاء قديمة.
+
+━━━━━━━━━━━━━━━━━━━━
+19 — STOP CONDITION
+━━━━━━━━━━━━━━━━━━━━
+
+لا تنتقل إلى Phase 05.
+
+لا تبدأ Mastery.
+
+لا تبدأ Error Detection.
+
+لا تبدأ Recommendations.
+
+لا تبدأ Diagnostic.
+
+بعد الانتهاء أعطني:
+
+1. ما الذي كان موجودًا قبل Phase 04؟
+2. ما الذي أعدت استخدامه؟
+3. ما الذي أضفته؟
+4. Student Profile Schema.
+5. Attempt Schema أو التعديلات عليها.
+6. Session Schema.
+7. APIs الجديدة.
+8. عدد الاختبارات.
+9. نتائج الاختبارات.
+10. هل حدث Migration؟
+11. هل تم تعديل بيانات الطلاب؟
+12. ما الأخطاء القديمة وما الأخطاء الجديدة؟
+13. ما المقترح لـPhase 05؟
+
+ثم توقف.
+
+القاعدة الأهم:
+
+Phase 04 = Remember the student.
+
+وليس:
+
+Judge the student.
+
+نريد أولًا جمع بيانات صحيحة ونظيفة، ثم في مراحل لاحقة نبدأ استنتاج مستوى الطالب.
