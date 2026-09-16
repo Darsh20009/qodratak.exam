@@ -1,0 +1,260 @@
+ابدأ الآن Phase 03 فقط:
+
+# TAXONOMY APPROVAL — FIRST CONTROLLED SET
+
+هذه المرحلة هدفها اعتماد أول طبقة حقيقية من خريطة المعرفة قبل بناء Student Model.
+
+لا تبدأ الآن:
+
+* Student Model
+* Mastery Engine
+* Diagnostic Engine
+* Recommendation Engine
+* AI Tutor
+* iPad UI
+* Apple Pencil UI
+
+ولا تغير واجهة الطالب.
+
+━━━━━━━━━━━━━━━━━━━━
+1 — القاعدة الأساسية
+━━━━━━━━━━━━━━━━━━━━
+
+التصنيفات المصدرية الموجودة حاليًا هي:
+
+Evidence
+
+وليست:
+
+Approved Skill / Concept
+
+لا تحول أي تصنيف تلقائيًا إلى Skill أو Concept معتمد بدون مراجعة.
+
+━━━━━━━━━━━━━━━━━━━━
+2 — اعمل Taxonomy Registry
+━━━━━━━━━━━━━━━━━━━━
+
+أنشئ نظامًا مركزيًا للـtaxonomy بحيث تكون كل عقدة لها:
+
+id
+code
+name
+nameAr
+type
+parentId
+program
+subject
+status
+source
+evidence
+createdAt
+updatedAt
+
+والـtype يكون:
+
+PROGRAM
+SUBJECT
+TOPIC
+SKILL
+SUBSKILL
+CONCEPT
+
+والـstatus:
+
+DRAFT
+REVIEW
+APPROVED
+REJECTED
+
+لا تستخدم أسماء نصية عشوائية في أجزاء مختلفة من النظام.
+
+يجب أن يكون لكل Skill/Concept Code ثابت.
+
+━━━━━━━━━━━━━━━━━━━━
+3 — لا تعتمد أسماء مكررة
+━━━━━━━━━━━━━━━━━━━━
+
+افحص أمثلة مثل:
+
+"عمليات حسابية"
+"العمليات الحسابية"
+
+وأي اختلافات مشابهة.
+
+لا تفترض أنها نفس الشيء.
+
+أنشئ:
+
+Canonical Name
+Aliases
+
+لكن لا تعتمد الدمج إلا إذا كان واضحًا من الأدلة.
+
+━━━━━━━━━━━━━━━━━━━━
+4 — أول Taxonomy Set
+━━━━━━━━━━━━━━━━━━━━
+
+بدل محاولة تصنيف كل الـ2,533 سؤال الآن:
+
+اختر عينة ممثلة وصغيرة من الأسئلة الموجودة.
+
+يجب أن تشمل:
+
+* قدرات لفظي
+* قدرات كمي
+* تحصيلي رياضيات
+* تحصيلي فيزياء
+* تحصيلي كيمياء
+* تحصيلي أحياء
+
+استخدم العينة لاختبار جودة الـtaxonomy وليس لإكمال كل البنك.
+
+━━━━━━━━━━━━━━━━━━━━
+5 — بناء Mapping Review
+━━━━━━━━━━━━━━━━━━━━
+
+لكل سؤال في العينة:
+
+Question
+→ Program
+→ Subject
+→ Topic
+→ Skill
+→ SubSkill
+→ Concept
+
+إذا لم نستطع تحديد مستوى معين بشكل موثوق:
+
+اتركه:
+
+NEEDS_REVIEW
+
+ولا تخترع التصنيف.
+
+━━━━━━━━━━━━━━━━━━━━
+6 — Evidence
+━━━━━━━━━━━━━━━━━━━━
+
+كل Mapping مقترح يجب أن يحتوي على:
+
+source
+evidence
+confidence
+reviewStatus
+
+مثال:
+
+confidence:
+
+HIGH
+MEDIUM
+LOW
+
+لكن:
+
+confidence لا يعني APPROVED.
+
+الاعتماد يحتاج مراجعة.
+
+━━━━━━━━━━━━━━━━━━━━
+7 — لا تستخدم AI لتقرير الحقيقة
+━━━━━━━━━━━━━━━━━━━━
+
+إذا استخدمت أي نموذج أو خوارزمية للمساعدة في اقتراح التصنيف:
+
+اعتبر الناتج:
+
+SUGGESTION
+
+فقط.
+
+لا تحفظه كـ APPROVED بدون مراجعة.
+
+━━━━━━━━━━━━━━━━━━━━
+8 — Admin Review Architecture
+━━━━━━━━━━━━━━━━━━━━
+
+جهز Backend/API structure يسمح لاحقًا للإدارة بمراجعة:
+
+Question
+→ Suggested Mapping
+→ Evidence
+→ Approve
+→ Reject
+→ Edit
+
+لكن لا تبنِ Admin UI كاملة الآن إذا لم تكن ضرورية.
+
+━━━━━━━━━━━━━━━━━━━━
+9 — لا تنشئ Duplicate Database
+━━━━━━━━━━━━━━━━━━━━
+
+راجع الـMongoDB والـPostgreSQL الحالية.
+
+إذا هناك structure تؤدي نفس الوظيفة:
+
+لا تنشئ نسخة جديدة بدون سبب.
+
+أي Schema جديدة يجب أن تكون مبررة.
+
+━━━━━━━━━━━━━━━━━━━━
+10 — Documentation
+━━━━━━━━━━━━━━━━━━━━
+
+أنشئ:
+
+docs/learning-taxonomy.md
+
+ويحتوي على:
+
+* Taxonomy Principles
+* Naming Rules
+* Coding Rules
+* Status Model
+* Evidence Model
+* Review Model
+* Duplicate Handling
+* Mapping Rules
+* Approved Sample
+* Unresolved Cases
+
+━━━━━━━━━━━━━━━━━━━━
+11 — Validation
+━━━━━━━━━━━━━━━━━━━━
+
+بعد التنفيذ:
+
+شغّل الاختبارات المتعلقة بهذه المرحلة.
+
+لا تعدل Question Bank الأصلي.
+
+لا تعمل Migration للـ2,533 سؤال.
+
+لا تنشئ Collections ضخمة.
+
+لا تغير بيانات الإنتاج.
+
+━━━━━━━━━━━━━━━━━━━━
+12 — النتيجة المطلوبة
+━━━━━━━━━━━━━━━━━━━━
+
+في نهاية Phase 03 أعطني:
+
+1. عدد عناصر Taxonomy التي تم اقتراحها.
+2. عدد العناصر APPROVED.
+3. عدد العناصر REVIEW.
+4. عدد الأسئلة في العينة.
+5. عدد الأسئلة التي تم Mapping لها.
+6. عدد الأسئلة التي بقيت Needs Review.
+7. أمثلة على 5 mappings كاملة.
+8. أمثلة على الحالات التي رفض النظام تخمينها.
+9. الملفات التي تم تعديلها.
+10. نتائج الاختبارات.
+
+ثم توقف.
+
+لا تنتقل إلى Phase 04.
+
+مهم جدًا:
+
+Phase 04 ستكون Student Learning Profile فقط بعد أن نتأكد أن الـTaxonomy Foundation سليمة.

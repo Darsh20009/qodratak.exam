@@ -94,6 +94,7 @@ const TAHSILI_SUBJECT_ALIASES: Record<string, LearningSubject> = {
 type SourceQuestion = {
   id?: number | string;
   questionId?: number | string;
+  sourceNamespace?: string;
   category?: string;
   subcategory?: string;
   topic?: string;
@@ -135,8 +136,9 @@ export function classifyQuestion(
   sourceType: LearningSourceType,
 ): QuestionMappingCandidate {
   const sourceId = nonEmpty(question.questionId ?? question.id);
+  const sourceNamespace = nonEmpty(question.sourceNamespace);
   const sourceKey = sourceId
-    ? `${sourceType}:${sourceId}`
+    ? `${sourceType}:${sourceNamespace ? `${sourceNamespace}:` : ''}${sourceId}`
     : `${sourceType}:text:${(question.text ?? question.question ?? '').slice(0, 80)}`;
   const reasons: string[] = [];
   const evidence: LearningMappingEvidence[] = [];
