@@ -108,6 +108,7 @@ export function QiyasExamLayout({
   const [showSectionInstructions, setShowSectionInstructions] = useState(false);
   const [showFormulas, setShowFormulas] = useState(false);
   const [showMobilePanel, setShowMobilePanel] = useState(false);
+  const [isDisplayFullscreen, setIsDisplayFullscreen] = useState(false);
 
   const [showReportDialog, setShowReportDialog] = useState(false);
   const [reportType, setReportType] = useState('');
@@ -118,6 +119,21 @@ export function QiyasExamLayout({
     imageUrl: questionImageUrl,
     imageUrls: questionImageUrls,
   });
+
+  useEffect(() => {
+    const syncFullscreenState = () => {
+      setIsDisplayFullscreen(typeof document !== "undefined" && Boolean(document.fullscreenElement));
+    };
+
+    syncFullscreenState();
+    document.addEventListener("fullscreenchange", syncFullscreenState);
+    return () => {
+      document.removeEventListener("fullscreenchange", syncFullscreenState);
+      if (document.fullscreenElement && document.exitFullscreen) {
+        void document.exitFullscreen().catch(() => undefined);
+      }
+    };
+  }, []);
 
   const handleSubmitReport = async () => {
     if (!reportType) return;
@@ -195,14 +211,14 @@ export function QiyasExamLayout({
   );
 
   return (
-    <div className="min-h-[100dvh] overflow-x-hidden bg-gray-100 flex flex-col md:flex-row" dir="rtl">
+    <div className={`min-h-[100dvh] overflow-x-hidden bg-gray-100 flex flex-col md:flex-row ${isDisplayFullscreen ? "bg-white" : ""}`} dir="rtl">
 
       {/* ════════════════════════════════════════
           MOBILE TOP BAR (hidden on md+)
       ════════════════════════════════════════ */}
-      <div className="md:hidden bg-white border-b border-gray-200 px-3 py-2 flex items-center justify-between shadow-sm sticky top-0 z-30">
+      <div className={`md:hidden bg-white border-b border-gray-200 px-3 py-2 flex items-center justify-between shadow-sm sticky top-0 z-30 ${isDisplayFullscreen ? "hidden" : ""}`}>
         {/* Logo */}
-        <BrandMark imageClassName="h-7 w-7" />
+        <BrandMark tone="light" imageClassName="h-7 w-7" />
 
         {/* Question number + section */}
         <div className="flex flex-col items-center">
@@ -226,12 +242,12 @@ export function QiyasExamLayout({
       {/* ════════════════════════════════════════
           MAIN CONTENT AREA
       ════════════════════════════════════════ */}
-      <div className="flex-1 flex min-h-0 min-w-0 flex-col pb-[calc(4.5rem+env(safe-area-inset-bottom))] md:pb-0">
+      <div className={`flex-1 flex min-h-0 min-w-0 flex-col pb-[calc(4.5rem+env(safe-area-inset-bottom))] md:pb-0 ${isDisplayFullscreen ? "pb-0" : ""}`}>
 
         {/* Desktop Top Bar (hidden on mobile) */}
-        <div className="hidden md:flex bg-white border-b border-gray-200 px-5 py-3 items-center justify-between shadow-sm">
+        <div className={`hidden md:flex bg-white border-b border-gray-200 px-5 py-3 items-center justify-between shadow-sm ${isDisplayFullscreen ? "!hidden" : ""}`}>
           <div className="flex items-center gap-2 mr-3 pr-3 border-r border-gray-200 order-last">
-            <BrandMark imageClassName="h-8 w-8" />
+            <BrandMark tone="light" imageClassName="h-8 w-8" />
           </div>
           <div className="flex items-center gap-1">
             <button
@@ -278,7 +294,7 @@ export function QiyasExamLayout({
         </div>
 
         {/* Question content */}
-        <div className="flex min-h-0 flex-1 flex-col overflow-hidden bg-white md:m-3 md:rounded-lg md:border md:border-gray-200 md:shadow-sm">
+        <div className={`flex min-h-0 flex-1 flex-col overflow-hidden bg-white md:m-3 md:rounded-lg md:border md:border-gray-200 md:shadow-sm ${isDisplayFullscreen ? "md:m-0 md:rounded-none md:border-0 md:shadow-none" : ""}`}>
           <div className="min-h-0 flex-1 overflow-y-auto p-3 sm:p-4 md:p-6">
 
             {/* Mobile font controls */}
@@ -436,7 +452,7 @@ export function QiyasExamLayout({
       {/* ════════════════════════════════════════
           MOBILE BOTTOM NAVIGATION BAR (fixed)
       ════════════════════════════════════════ */}
-      <div className="md:hidden fixed bottom-0 inset-x-0 z-30 bg-white border-t border-gray-200 shadow-lg pb-[env(safe-area-inset-bottom)]" dir="rtl">
+      <div className={`md:hidden fixed bottom-0 inset-x-0 z-30 bg-white border-t border-gray-200 shadow-lg pb-[env(safe-area-inset-bottom)] ${isDisplayFullscreen ? "hidden" : ""}`} dir="rtl">
         <div className="flex h-14 items-center gap-1 px-2">
           {/* Previous */}
           <button
@@ -682,7 +698,7 @@ export function QiyasExamLayout({
       {/* ════════════════════════════════════════
           DESKTOP SIDEBAR (hidden on mobile)
       ════════════════════════════════════════ */}
-      <div className="hidden md:flex w-56 flex-shrink-0 bg-white border-r border-gray-200 flex-col overflow-y-auto shadow-sm">
+      <div className={`hidden md:flex w-56 flex-shrink-0 bg-white border-r border-gray-200 flex-col overflow-y-auto shadow-sm ${isDisplayFullscreen ? "!hidden" : ""}`}>
         {/* Timer */}
         <div className={`p-3 border-b text-center ${isTimeUrgent ? 'bg-red-50 border-red-200' : 'border-gray-200'}`}>
           <p className="text-xs text-gray-500 mb-1">الوقت المتبقي</p>
