@@ -1,5 +1,6 @@
 import {
   StudentLearningProfile,
+  TestResult,
   type LearningDataConfidence,
 } from '../mongodb/models';
 import {
@@ -106,12 +107,18 @@ export interface DiagnosticProfileRecord {
   lastDiagnosticAt?: Date | string;
 }
 
+export interface DiagnosticLegacyTestRecord {
+  program: string;
+  completedAt: Date | string;
+}
+
 export interface BuildDiagnosticDecisionInput {
   attempts: DiagnosticAttemptRecord[];
   errorEvidence?: DiagnosticErrorEvidenceRecord[];
   mastery?: DiagnosticMasteryRecord[];
   sessions?: DiagnosticSessionRecord[];
   legacyProfiles?: DiagnosticProfileRecord[];
+  legacyTests?: DiagnosticLegacyTestRecord[];
   requestedProgramId?: string;
   now?: Date;
 }
@@ -320,24 +327,32 @@ export function buildDiagnosticDecision(
     throw new StudentDiagnosticError('studentId غير صالح', 'INVALID_STUDENT');
   }
   const now = input.now || new Date();
-  const requestedProgramId = input.requestedProgramId;
-  if (requestedProgramId && !normalizeProgramId(requestedProgramId)) {
+  const requestedProgramId = input.requestedProgramId
+    ? normalizeProgramId(input.requestedProgramId)
+    : undefined;
+  if (input.requestedProgramId && !requestedProgramId) {
     throw new StudentDiagnosticError('البرنامج غير صالح', 'INVALID_PROGRAM');
   }
 
   const nodes = approvedNodes(requestedProgramId);
   const relevantSubjects = nodes.filter((node) => node.type === 'SUBJECT');
-  const attempts = deduplicateAttempts(input.attempts);
+  const attempts = deduplicateAttempts(input.attempts)
+    .filter((attempt) => !requestedProgramId || attempt.programId === requestedProgramId);
   const answeredAttempts = attempts.filter((attempt) => attempt.isAnswered);
   const recentCutoff = now.getTime() - RECENT_ACTIVITY_DAYS * 86400000;
   const recentAnsweredAttempts = answeredAttempts.filter((attempt) =>
     (asDate(attempt.createdAt)?.getTime() || 0) >= recentCutoff
   );
-  const errorEvidence = input.errorEvidence || [];
+  const attemptIds = new Set(attempts.map((attempt) => attempt.id).filter(Boolean));
+  const errorEvidence = (input.errorEvidence || []).filter((evidence) =>
+    !requestedProgramId || !evidence.attemptId || attemptIds.has(evidence.attemptId)
+  );
   const recentErrorEvidence = errorEvidence.filter((evidence) =>
     (asDate(evidence.detectedAt)?.getTime() || 0) >= recentCutoff
   );
-  const mastery = input.mastery || [];
+  const mastery = (input.mastery || []).filter((record) =>
+    !requestedProgramId || record.programId === requestedProgramId
+  );
   const subjectsCovered = new Set(
     answeredAttempts
       .map((attempt) => attempt.subjectId)
@@ -360,7 +375,12 @@ export function buildDiagnosticDecision(
     };
   });
   const masteryConfidence = aggregateMasteryConfidence(mastery, nodes);
-  const legacyProfiles = input.legacyProfiles || [];
+  const legacyProfiles = (input.legacyProfiles || []).filter((profile) =>
+    !requestedProgramId || normalizeProgramId(profile.program) === requestedProgramId
+  );
+  const legacyTests = (input.legacyTests || []).filter((test) =>
+    !requestedProgramId || normalizeProgramId(test.program) === requestedProgramId
+  );
   const lastActivityAt = latestDate([
     ...attempts.map((attempt) => attempt.createdAt),
     ...errorEvidence.map((evidence) => evidence.detectedAt),
@@ -374,6 +394,7 @@ export function buildDiagnosticDecision(
       profile.lastActivityAt,
       profile.lastDiagnosticAt,
     ]),
+    ...legacyTests.map((test) => test.completedAt),
   ]);
   const lastEvidenceAt = latestDate([
     ...answeredAttempts.map((attempt) => attempt.createdAt),
@@ -388,11 +409,14 @@ export function buildDiagnosticDecision(
     errorEvidence.length > 0 ||
     mastery.length > 0 ||
     legacyDiagnosticPresent ||
+    legacyTests.length > 0 ||
     (input.sessions || []).length > 0;
   const stale = Boolean(inactivityDays !== undefined && inactivityDays > RECENT_ACTIVITY_DAYS);
   const enoughRecentEvidence = recentAnsweredAttempts.length >= MIN_ACTIVE_RECENT_EVIDENCE;
   const enoughEvidence = answeredAttempts.length >= MIN_ACTIVE_ANSWERED_EVIDENCE;
-  const sufficientCoverage = subjectsCovered > 0 && approvedTaxonomyCoverage > 0;
+  const sufficientCoverage = relevantSubjects.length > 0
+    ? subjectsCovered >= relevantSubjects.length
+    : approvedTaxonomyCoverage > 0;
   const sufficientlyTrusted = masteryConfidence !== 'LOW';
   const active = enoughEvidence &&
     enoughRecentEvidence &&
@@ -497,7 +521,7 @@ export async function getStudentDiagnosticDecision(
     throw new StudentDiagnosticError('البرنامج غير صالح', 'INVALID_PROGRAM');
   }
 
-  const [attempts, errorEvidence, mastery, sessions, profiles] = await Promise.all([
+  const [attempts, errorEvidence, mastery, sessions, profiles, legacyResults] = await Promise.all([
     LearningAttempt.find({ studentId }).select('_id programId subjectId isAnswered createdAt').lean(),
     LearningErrorEvidence.find({ studentId }).select('attemptId detectedAt').lean(),
     StudentMastery.find({ studentId }).select('taxonomyNodeId programId subjectId confidence evidenceCount lastAttemptAt lastEvidenceAt').lean(),
@@ -505,6 +529,7 @@ export async function getStudentDiagnosticDecision(
     StudentLearningProfile.find({
       $or: [{ userId: studentId }, { studentId }],
     }).select('program status lastActivityAt lastDiagnosticAt').lean(),
+    TestResult.find({ userId: studentId }).select('program completedAt').lean(),
   ]);
 
   return buildDiagnosticDecision(studentId, {
@@ -534,6 +559,10 @@ export async function getStudentDiagnosticDecision(
       status: profile.status,
       lastActivityAt: profile.lastActivityAt,
       lastDiagnosticAt: profile.lastDiagnosticAt,
+    })),
+    legacyTests: legacyResults.map((result: any) => ({
+      program: String(result.program || 'general'),
+      completedAt: result.completedAt,
     })),
     requestedProgramId: normalizedProgramId,
   });
