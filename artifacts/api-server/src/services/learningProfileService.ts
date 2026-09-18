@@ -11,6 +11,7 @@ import {
   type MappingConfidence,
 } from '../learning/taxonomyRegistry';
 import { recordAutomaticLearningErrorEvidence } from './learningErrorService';
+import { recalculateMasteryForAttempt } from './masteryService';
 
 const approvedPrograms = new Set(
   CONTROLLED_TAXONOMY_NODES
@@ -429,6 +430,7 @@ export async function recordVerifiedLearningAttempt(
       result.attempt as any,
       questionMetadata,
     );
+    await recalculateMasteryForAttempt(studentId, String((result.attempt as any)._id));
   }
 
   return result;

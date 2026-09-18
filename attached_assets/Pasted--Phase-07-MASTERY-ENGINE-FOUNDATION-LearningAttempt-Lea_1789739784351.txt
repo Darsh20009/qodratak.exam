@@ -1,0 +1,490 @@
+نفّذ الآن **Phase 07 فقط: MASTERY ENGINE FOUNDATION**.
+
+لدينا الآن:
+
+* `LearningAttempt`
+* `LearningSession`
+* `StudentLearningProfile`
+* `LearningErrorEvidence`
+* approved Program/Subject taxonomy
+* taxonomy review workflow
+
+الهدف الآن هو بناء **Mastery Engine Foundation** فقط.
+
+---
+
+## 1. Audit أولًا
+
+قبل تعديل الكود، افحص:
+
+* `LearningAttempt`
+* `LearningErrorEvidence`
+* `StudentLearningProfile`
+* approved taxonomy
+* existing legacy mastery/progress fields إن وجدت
+* question mappings
+* existing learning/profile services
+
+لا تنشئ نظامًا موازيًا إذا كان هناك structure يمكن توسيعه بأمان.
+
+---
+
+## 2. Important Principle
+
+**Mastery ≠ Accuracy**
+
+لا تستخدم:
+
+`correctAttempts / attempts`
+
+كمقياس Mastery وحيد.
+
+Mastery يجب أن يمثل **درجة ثقة في إتقان الطالب لمهارة/مفهوم معتمد** بناءً على evidence متكرر.
+
+---
+
+## 3. Scope
+
+في هذه المرحلة نريد Mastery فقط على المستويات التي تمت الموافقة عليها فعليًا في taxonomy.
+
+إذا لم يكن:
+
+`Skill`
+
+أو:
+
+`SubSkill`
+
+أو:
+
+`Concept`
+
+معتمدًا رسميًا:
+
+**لا تحسب له Mastery.**
+
+لا تخمن taxonomy.
+
+---
+
+## 4. Mastery Record
+
+أنشئ model مناسب مثل:
+
+`StudentMastery`
+
+أو استخدم structure موجود إذا كان أنسب.
+
+يجب أن يرتبط بـ:
+
+* studentId
+* programId
+* subjectId
+* approved taxonomy node
+* masteryScore
+* masteryLevel
+* evidenceCount
+* correctCount
+* wrongCount
+* lastAttemptAt
+* lastEvidenceAt
+* confidence
+* updatedAt
+
+يمكن أن تكون مستويات Mastery مثل:
+
+* `UNKNOWN`
+* `EMERGING`
+* `DEVELOPING`
+* `PROFICIENT`
+* `MASTERED`
+
+لكن لا تعتبر الأسماء أكثر أهمية من المنطق.
+
+---
+
+## 5. Do Not Overclaim
+
+ابدأ بدرجة محافظة.
+
+مثال:
+
+محاولة واحدة صحيحة:
+
+لا تجعل الطالب `MASTERED`.
+
+محاولات متعددة صحيحة ومتسقة:
+
+يمكن أن يرتفع المستوى تدريجيًا.
+
+أخطاء متكررة:
+
+تخفض الثقة في الإتقان.
+
+لكن:
+
+`wrong answer ≠ automatic zero mastery`
+
+لأن Phase 06 قد تكون سجلت مثلًا:
+
+`CALCULATION_ERROR`
+
+بدل:
+
+`CONCEPT_GAP`
+
+وهذا فرق مهم.
+
+---
+
+## 6. Error Evidence Integration
+
+استخدم `LearningErrorEvidence` كدليل إضافي.
+
+بشكل عام:
+
+### Concept-related evidence
+
+مثل:
+
+* `CONCEPT_GAP`
+* `MISUNDERSTANDING`
+* `MEMORY_GAP`
+* `PARTIAL_UNDERSTANDING`
+
+يمكن أن يخفض الثقة في mastery أكثر من خطأ حسابي عابر.
+
+### Procedural/contextual evidence
+
+مثل:
+
+* `CALCULATION_ERROR`
+* `RUSHED`
+* `TIME_PRESSURE`
+* `READING_ERROR`
+* `CONFUSED_OPTIONS`
+
+لا تعاملها تلقائيًا كدليل على أن الطالب لا يفهم المفهوم.
+
+لا تحتاج إلى بناء نموذج رياضي معقد في هذه المرحلة، لكن يجب أن يكون التصميم قابلًا للتوسع.
+
+---
+
+## 7. Recency
+
+Mastery يجب أن يتأثر بحداثة الأدلة.
+
+لا تجعل:
+
+سؤال حُل قبل أشهر
+
+يساوي:
+
+سؤال حُل اليوم.
+
+لكن لا تنفذ Spaced Repetition في هذه المرحلة.
+
+فقط اجعل mastery calculation قادرًا على استخدام `lastAttemptAt` وrecency.
+
+---
+
+## 8. Response Time
+
+يمكن استخدام response time كإشارة مساعدة فقط.
+
+لا تفترض:
+
+بطء = ضعف
+
+ولا:
+
+سرعة = mastery
+
+خصوصًا لأن زمن الإجابة يعتمد على طبيعة السؤال.
+
+---
+
+## 9. Unanswered
+
+لا تعتبر:
+
+`unanswered`
+
+صحيحًا أو خطأ.
+
+يمكن احتسابه كـ exposure/evidence إن كان مناسبًا، لكن لا تخفض mastery تلقائيًا بنفس طريقة wrong answer.
+
+---
+
+## 10. Confidence
+
+افصل بين:
+
+### masteryScore
+
+تقدير الإتقان.
+
+و:
+
+### confidence
+
+مدى ثقة النظام في أن هذا التقدير موثوق.
+
+مثال:
+
+محاولتان فقط:
+
+`masteryScore` قد يكون موجودًا،
+
+لكن:
+
+`confidence = LOW`
+
+عدد أكبر من الأدلة المتنوعة والمتكررة:
+
+confidence أعلى.
+
+---
+
+## 11. Avoid Single-question Mastery
+
+لا تسمح لمحاولة واحدة بأن تجعل الطالب:
+
+`MASTERED`
+
+ولا تجعل محاولة واحدة خاطئة كافية لتصنيف الطالب على أنه:
+
+`NOT_MASTERED`
+
+نريد progression تدريجيًا.
+
+---
+
+## 12. Aggregation
+
+إذا كان الطالب حل عدة أسئلة مرتبطة بنفس approved taxonomy node:
+
+اجمع الأدلة بدل إنشاء Mastery منفصل لكل سؤال.
+
+لكن لا تدمج nodes مختلفة لمجرد تشابه أسمائها.
+
+استخدم taxonomy IDs المعتمدة فقط.
+
+---
+
+## 13. Existing StudentLearningProfile
+
+لا تكسر Phase 04.
+
+احتفظ بـ:
+
+`Observed Performance`
+
+منفصلًا عن:
+
+`Mastery`
+
+لا تستبدل observed accuracy بـ mastery.
+
+إذا كان من الأنسب وضع mastery references داخل profile، استخدم بنية واضحة دون خلط المفهومين.
+
+---
+
+## 14. Historical Data
+
+لا تعمل:
+
+* bulk backfill
+* إعادة تصنيف كل تاريخ الطالب
+* migration كبيرة
+
+إلا إذا كانت هناك ضرورة واضحة.
+
+الأفضل أن يبدأ Mastery من المحاولات الموثوقة الجديدة، أو من data يمكن إثبات أنها تحتوي على taxonomy approved + attempt evidence موثوق.
+
+---
+
+## 15. APIs
+
+أضف أقل عدد ممكن من APIs.
+
+مثلاً:
+
+`GET /api/learning/mastery`
+
+وإذا احتجت:
+
+`GET /api/learning/mastery/:taxonomyNodeId`
+
+يجب أن تكون محمية بجلسة الطالب.
+
+لا تسمح للعميل بإرسال:
+
+* masteryScore
+* masteryLevel
+* confidence
+
+كمصدر حقيقة.
+
+كل الحسابات يجب أن تتم على الخادم.
+
+---
+
+## 16. Recalculation
+
+أنشئ service واضحة مثل:
+
+`masteryService`
+
+تكون مسؤولة عن:
+
+* جمع attempts
+* جمع error evidence
+* تطبيق قواعد mastery
+* تحديث StudentMastery
+* الحفاظ على confidence
+* التعامل مع recency
+
+اجعلها قابلة لإعادة الحساب deterministic قدر الإمكان.
+
+إذا أعدنا حساب نفس evidence، يجب ألا نحصل على نتيجة مختلفة بشكل عشوائي.
+
+---
+
+## 17. Explainability
+
+احفظ سببًا مختصرًا أو metadata تسمح لاحقًا بمعرفة:
+
+لماذا تغير mastery؟
+
+مثلاً:
+
+* evidence count
+* recent correct streak
+* concept error evidence
+* procedural error evidence
+* recency factor
+
+لكن لا تحتاج UI لعرض هذا الآن.
+
+---
+
+## 18. No Recommendations Yet
+
+Mastery في هذه المرحلة **لا يقرر ماذا يدرس الطالب بعد ذلك**.
+
+لا تنشئ:
+
+* next lesson
+* recommended question
+* daily plan
+* adaptive path
+
+هذه Phase لاحقة.
+
+---
+
+## 19. No Student-facing AI
+
+ممنوع إضافة:
+
+* AI label
+* ذكاء اصطناعي
+* chatbot
+* AI assistant
+* floating assistant
+* robot
+* sparkle/magic UI
+
+هذه المرحلة Backend learning logic فقط.
+
+---
+
+## 20. Tests
+
+أضف اختبارات تغطي على الأقل:
+
+1. one correct attempt ≠ MASTERED
+2. repeated correct attempts increase mastery
+3. repeated conceptual errors reduce mastery
+4. calculation error does not equal concept gap
+5. unanswered does not behave like wrong
+6. recent evidence affects calculation
+7. old evidence does not disappear blindly
+8. confidence increases with sufficient evidence
+9. unapproved taxonomy cannot receive mastery
+10. different taxonomy nodes remain separate
+11. same question repeated does not corrupt aggregation
+12. duplicate attempt does not double-count mastery
+13. student A cannot read student B mastery
+14. server owns mastery calculation
+15. deterministic recalculation
+16. legacy StudentLearningProfile remains compatible
+17. Observed Performance remains separate from Mastery
+
+إذا كان Mongo integration test infrastructure موجودًا، استخدمه للحالات الحرجة التي تتعلق بالـownership والduplicates.
+
+---
+
+## 21. Documentation
+
+أنشئ:
+
+`docs/mastery-engine.md`
+
+اشرح فيه:
+
+* ما هو Mastery
+* الفرق بين Accuracy وMastery
+* الفرق بين Observed Performance وMastery
+* taxonomy requirements
+* evidence
+* error evidence
+* recency
+* confidence
+* aggregation
+* deterministic recalculation
+* limitations
+* ما لم يتم تنفيذه بعد
+
+---
+
+## 22. Scope Lock
+
+لا تبدأ:
+
+* Recommendation Engine
+* Diagnostic Engine
+* Adaptive Learning
+* Daily Session Engine
+* Spaced Repetition
+* Textbook
+* Apple Pencil
+* AI Tutor
+
+هذه مراحل لاحقة.
+
+---
+
+## 23. Final Report
+
+في النهاية توقف تمامًا وأرسل:
+
+1. schema الجديدة.
+2. mastery levels.
+3. كيف يتم حساب mastery.
+4. كيف تستخدم error evidence.
+5. كيف تستخدم recency.
+6. كيف يتم حساب confidence.
+7. كيف يتم منع single-question mastery.
+8. كيف يتم فصل Mastery عن Observed Performance.
+9. APIs.
+10. الاختبارات وعددها.
+11. Build status.
+12. TypeScript status.
+13. أي مشاكل baseline.
+14. أي شيء لم يتم تنفيذه بسبب نقص taxonomy approved data.
+
+**Phase 07 = Measure mastery carefully.**
+
+لا تنتقل إلى Phase 08.

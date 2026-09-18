@@ -58,6 +58,12 @@ import {
   publicLearningErrorEvidence,
   recordSelfReportedLearningErrorEvidence,
 } from '../services/learningErrorService';
+import {
+  MasteryError,
+  listApprovedMasteryNodes,
+  publicStudentMastery,
+  recalculateStudentMastery,
+} from '../services/masteryService';
 
 function getQuestionImageUrls(question: { imageUrl?: unknown; imageUrls?: unknown }): string[] {
   const urls = [
@@ -11752,6 +11758,28 @@ app.post("/api/auth/register", async (req: Request, res: Response) => {
     } catch (error) {
       console.error('Learning error evidence retrieval error:', error);
       return res.status(500).json({ error: 'تعذر جلب أدلة الأخطاء' });
+    }
+  });
+
+  app.get('/api/learning/mastery', requireAuth, async (req: Request, res: Response) => {
+    const studentId = studentOnly(req, res);
+    if (!studentId) return;
+    try {
+      const taxonomyNodeId = req.query.taxonomyNodeId
+        ? String(req.query.taxonomyNodeId)
+        : undefined;
+      const mastery = await recalculateStudentMastery(studentId, taxonomyNodeId);
+      return res.json({
+        mastery: mastery.map(publicStudentMastery),
+        approvedNodes: listApprovedMasteryNodes(),
+        calculationVersion: 'phase-07-v1',
+      });
+    } catch (error: any) {
+      if (error instanceof MasteryError) {
+        return res.status(400).json({ error: error.message, code: error.code });
+      }
+      console.error('Student mastery retrieval error:', error);
+      return res.status(500).json({ error: 'تعذر جلب مستوى الإتقان' });
     }
   });
 

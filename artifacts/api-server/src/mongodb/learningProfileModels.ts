@@ -223,3 +223,83 @@ learningErrorEvidenceSchema.index({ studentId: 1, idempotencyKey: 1 }, { unique:
 export const LearningErrorEvidence = mongoose.models['LearningErrorEvidence']
   ? mongoose.model<ILearningErrorEvidence>('LearningErrorEvidence')
   : mongoose.model<ILearningErrorEvidence>('LearningErrorEvidence', learningErrorEvidenceSchema);
+
+export type MasteryLevel = 'UNKNOWN' | 'EMERGING' | 'DEVELOPING' | 'PROFICIENT' | 'MASTERED';
+
+export interface IMasteryCalculation {
+  answeredEvidenceCount: number;
+  distinctSourceCount: number;
+  recentCorrectStreak: number;
+  correctWeight: number;
+  negativeWeight: number;
+  conceptErrorCount: number;
+  proceduralErrorCount: number;
+  unknownErrorCount: number;
+  recencyFactor: number;
+}
+
+export interface IStudentMastery extends Document {
+  studentId: string;
+  programId: string;
+  subjectId?: string;
+  taxonomyNodeId: string;
+  taxonomyNodeType: 'PROGRAM' | 'SUBJECT' | 'TOPIC' | 'SKILL' | 'SUBSKILL' | 'CONCEPT';
+  masteryScore: number;
+  masteryLevel: MasteryLevel;
+  evidenceCount: number;
+  correctCount: number;
+  wrongCount: number;
+  lastAttemptAt?: Date;
+  lastEvidenceAt?: Date;
+  confidence: LearningErrorConfidence;
+  calculation: IMasteryCalculation;
+  calculationVersion: string;
+  updatedAt: Date;
+  createdAt: Date;
+}
+
+const masteryCalculationSchema = new Schema<IMasteryCalculation>({
+  answeredEvidenceCount: { type: Number, required: true, min: 0 },
+  distinctSourceCount: { type: Number, required: true, min: 0 },
+  recentCorrectStreak: { type: Number, required: true, min: 0 },
+  correctWeight: { type: Number, required: true, min: 0 },
+  negativeWeight: { type: Number, required: true, min: 0 },
+  conceptErrorCount: { type: Number, required: true, min: 0 },
+  proceduralErrorCount: { type: Number, required: true, min: 0 },
+  unknownErrorCount: { type: Number, required: true, min: 0 },
+  recencyFactor: { type: Number, required: true, min: 0, max: 1 },
+}, { _id: false });
+
+const studentMasterySchema = new Schema<IStudentMastery>({
+  studentId: { type: String, required: true, index: true },
+  programId: { type: String, required: true, trim: true, index: true },
+  subjectId: { type: String, trim: true, index: true },
+  taxonomyNodeId: { type: String, required: true, trim: true, index: true },
+  taxonomyNodeType: {
+    type: String,
+    enum: ['PROGRAM', 'SUBJECT', 'TOPIC', 'SKILL', 'SUBSKILL', 'CONCEPT'],
+    required: true,
+  },
+  masteryScore: { type: Number, required: true, min: 0, max: 100 },
+  masteryLevel: {
+    type: String,
+    enum: ['UNKNOWN', 'EMERGING', 'DEVELOPING', 'PROFICIENT', 'MASTERED'],
+    required: true,
+    index: true,
+  },
+  evidenceCount: { type: Number, required: true, min: 0 },
+  correctCount: { type: Number, required: true, min: 0 },
+  wrongCount: { type: Number, required: true, min: 0 },
+  lastAttemptAt: { type: Date },
+  lastEvidenceAt: { type: Date },
+  confidence: { type: String, enum: ['LOW', 'MEDIUM', 'HIGH'], required: true },
+  calculation: { type: masteryCalculationSchema, required: true },
+  calculationVersion: { type: String, required: true, default: 'phase-07-v1' },
+}, { timestamps: true });
+
+studentMasterySchema.index({ studentId: 1, taxonomyNodeId: 1 }, { unique: true });
+studentMasterySchema.index({ studentId: 1, programId: 1, subjectId: 1 });
+
+export const StudentMastery = mongoose.models['StudentMastery']
+  ? mongoose.model<IStudentMastery>('StudentMastery')
+  : mongoose.model<IStudentMastery>('StudentMastery', studentMasterySchema);
