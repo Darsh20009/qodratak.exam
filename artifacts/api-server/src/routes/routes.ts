@@ -62,6 +62,7 @@ import {
   MasteryError,
   listApprovedMasteryNodes,
   publicStudentMastery,
+  recalculateMasteryForAttempt,
   recalculateStudentMastery,
 } from '../services/masteryService';
 
@@ -11717,6 +11718,7 @@ app.post("/api/auth/register", async (req: Request, res: Response) => {
           ? String(req.body.idempotencyKey)
           : undefined,
       });
+      await recalculateMasteryForAttempt(studentId, String(req.body?.attemptId || ''));
       return res.status(result.duplicate ? 200 : 201).json({
         duplicate: result.duplicate,
         evidence: publicLearningErrorEvidence(result.evidence),

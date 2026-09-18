@@ -13,7 +13,6 @@ import {
 import {
   CONTROLLED_TAXONOMY_NODES,
   type TaxonomyNodeType,
-  type TaxonomyRegistryNode,
 } from '../learning/taxonomyRegistry';
 
 export const MASTERY_CALCULATION_VERSION = 'phase-07-v1';
@@ -134,8 +133,10 @@ export function listApprovedMasteryNodes(): ApprovedMasteryNode[] {
 export function resolveMasteryNodeForAttempt(
   attempt: Pick<MasteryAttemptInput, 'programId' | 'subjectId'>,
 ): ApprovedMasteryNode | null {
-  const subject = attempt.subjectId ? approvedMasteryNode(attempt.subjectId) : null;
-  if (subject && subject.programId === attempt.programId) return subject;
+  if (attempt.subjectId) {
+    const subject = approvedMasteryNode(attempt.subjectId);
+    return subject && subject.programId === attempt.programId ? subject : null;
+  }
   return approvedMasteryNode(attempt.programId);
 }
 
@@ -220,7 +221,14 @@ export function calculateMasterySnapshot(
   errorEvidence: MasteryErrorEvidenceInput[],
   now: Date = new Date(),
 ): MasterySnapshot | null {
-  if (node.status !== 'APPROVED' || !approvedMasteryNode(node.code)) return null;
+  const registeredNode = approvedMasteryNode(node.code);
+  if (
+    node.status !== 'APPROVED' ||
+    !registeredNode ||
+    registeredNode.type !== node.type ||
+    registeredNode.programId !== node.programId ||
+    registeredNode.subjectId !== node.subjectId
+  ) return null;
 
   const nodeAttempts = uniqueAttempts(attempts).filter((attempt) =>
     resolveMasteryNodeForAttempt(attempt)?.code === node.code
