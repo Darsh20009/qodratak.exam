@@ -288,7 +288,7 @@ export function buildLearningSessionPlan(
   if (!recommendation) return null;
 
   const now = options.now || new Date();
-  const daily = options.dailyKey || dailyKey(now);
+  const daily = options.dailyKey || dayKey(now);
   const planId = `learning-plan-${planHash([
     SESSION_PLAN_VERSION,
     studentId,
@@ -547,7 +547,7 @@ export async function startTodayLearningSession(
       sessionReason: plan.sessionReason,
       planConfidence: plan.confidence,
       planStatus: plan.planStatus,
-      planSnapshot: plan,
+      planSnapshot: plan as unknown as Record<string, unknown>,
       currentStepIndex: 0,
       progress: 0,
       stepProgress,
@@ -672,7 +672,7 @@ export async function updateTodayLearningStep(
     error.confidence !== 'LOW'
   ).length;
   const adapted = adaptLearningSessionPlan(snapshot, { conceptErrorCount });
-  session.planSnapshot = adapted;
+  session.planSnapshot = adapted as unknown as Record<string, unknown>;
   session.estimatedMinutes = adapted.estimatedMinutes;
   await session.save();
   return {
@@ -711,7 +711,6 @@ export async function completeTodayLearningSession(
   session.sessionState = state === 'abandoned' ? 'ABANDONED' : 'COMPLETED';
   session.endedAt = endedAt;
   session.duration = Math.max(0, Math.round((endedAt.getTime() - session.startedAt.getTime()) / 1000));
-  if (state === 'completed') session.progress = 100;
   await session.save();
   return {
     sessionId: String(session._id),

@@ -268,6 +268,10 @@ export async function recordLearningAttempt(studentId: string, input: LearningAt
       _id: normalized.value.sessionId,
       studentId,
       status: 'active',
+      $or: [
+        { sessionState: { $in: ['IN_PROGRESS'] } },
+        { sessionState: { $exists: false } },
+      ],
     }).lean();
     if (!session) {
       throw new LearningAttemptError('جلسة التعلم غير موجودة أو غير نشطة', 'INVALID_SESSION');
@@ -487,6 +491,7 @@ export async function completeLearningSession(studentId: string, sessionId: stri
   if (!session) return null;
   const endedAt = new Date();
   session.status = status;
+  session.sessionState = status === 'completed' ? 'COMPLETED' : 'ABANDONED';
   session.endedAt = endedAt;
   session.duration = Math.max(0, Math.round((endedAt.getTime() - session.startedAt.getTime()) / 1000));
   await session.save();

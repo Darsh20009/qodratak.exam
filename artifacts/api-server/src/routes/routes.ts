@@ -75,6 +75,14 @@ import {
   getStudentRecommendations,
   publicStudentRecommendations,
 } from '../services/studentRecommendationService';
+import {
+  DailyLearningSessionError,
+  completeTodayLearningSession,
+  getTodayLearningSession,
+  publicTodayLearningSession,
+  startTodayLearningSession,
+  updateTodayLearningStep,
+} from '../services/dailyLearningSessionService';
 
 function getQuestionImageUrls(question: { imageUrl?: unknown; imageUrls?: unknown }): string[] {
   const urls = [
@@ -11842,6 +11850,97 @@ app.post("/api/auth/register", async (req: Request, res: Response) => {
       }
       console.error('Student recommendations retrieval error:', error);
       return res.status(500).json({ error: 'تعذر تحديد ما يحتاجه الطالب الآن' });
+    }
+  });
+
+  app.get('/api/learning/today', requireAuth, async (req: Request, res: Response) => {
+    const studentId = studentOnly(req, res);
+    if (!studentId) return;
+    const requestedProgram = req.query.programId ?? req.query.program;
+    try {
+      const result = await getTodayLearningSession(
+        studentId,
+        requestedProgram ? String(requestedProgram) : undefined,
+      );
+      return res.json(publicTodayLearningSession(result));
+    } catch (error: any) {
+      if (error instanceof DailyLearningSessionError) {
+        return res.status(error.code === 'INVALID_STUDENT' ? 401 : 400).json({
+          error: error.message,
+          code: error.code,
+        });
+      }
+      console.error('Today learning session retrieval error:', error);
+      return res.status(500).json({ error: 'تعذر جلب جلسة التعلم الحالية' });
+    }
+  });
+
+  app.post('/api/learning/today/start', requireAuth, async (req: Request, res: Response) => {
+    const studentId = studentOnly(req, res);
+    if (!studentId) return;
+    try {
+      const result = await startTodayLearningSession(
+        studentId,
+        req.body?.programId ? String(req.body.programId) : undefined,
+      );
+      return res.status(result.duplicate ? 200 : result.started ? 201 : 200)
+        .json(publicTodayLearningSession(result));
+    } catch (error: any) {
+      if (error instanceof DailyLearningSessionError) {
+        const status = error.code === 'ACTIVE_SESSION_EXISTS' ? 409 :
+          error.code === 'INVALID_STUDENT' ? 401 : 400;
+        return res.status(status).json({ error: error.message, code: error.code });
+      }
+      console.error('Today learning session start error:', error);
+      return res.status(500).json({ error: 'تعذر بدء جلسة التعلم الحالية' });
+    }
+  });
+
+  app.post('/api/learning/today/step', requireAuth, async (req: Request, res: Response) => {
+    const studentId = studentOnly(req, res);
+    if (!studentId) return;
+    try {
+      const result = await updateTodayLearningStep(studentId, {
+        sessionId: String(req.body?.sessionId || ''),
+        stepId: req.body?.stepId ? String(req.body.stepId) : undefined,
+        action: ['complete', 'pause', 'resume', 'skip'].includes(String(req.body?.action))
+          ? String(req.body.action) as 'complete' | 'pause' | 'resume' | 'skip'
+          : 'complete',
+        durationSeconds: req.body?.durationSeconds,
+        attemptIds: Array.isArray(req.body?.attemptIds)
+          ? req.body.attemptIds.map(String)
+          : undefined,
+      });
+      return res.json(publicTodayLearningSession(result));
+    } catch (error: any) {
+      if (error instanceof DailyLearningSessionError) {
+        const status = error.code === 'INVALID_SESSION' ? 404 :
+          error.code === 'SESSION_NOT_ACTIVE' ? 409 : 400;
+        return res.status(status).json({ error: error.message, code: error.code });
+      }
+      console.error('Today learning session step error:', error);
+      return res.status(500).json({ error: 'تعذر تحديث خطوة جلسة التعلم' });
+    }
+  });
+
+  app.post('/api/learning/today/complete', requireAuth, async (req: Request, res: Response) => {
+    const studentId = studentOnly(req, res);
+    if (!studentId) return;
+    try {
+      const requestedState = req.body?.state === 'abandoned' ? 'abandoned' : 'completed';
+      const result = await completeTodayLearningSession(
+        studentId,
+        req.body?.sessionId ? String(req.body.sessionId) : undefined,
+        requestedState,
+      );
+      if (!result) return res.status(404).json({ error: 'جلسة التعلم غير موجودة' });
+      return res.json(publicTodayLearningSession(result));
+    } catch (error: any) {
+      if (error instanceof DailyLearningSessionError) {
+        return res.status(400).json({ error: error.message, code: error.code });
+      }
+      console.error('Today learning session completion error:', error);
+      return res.status(500).json({ error: 'تعذر إنهاء جلسة التعلم' });
     }
   });
 
