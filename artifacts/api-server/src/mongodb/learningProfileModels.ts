@@ -105,6 +105,7 @@ export interface ILearningSession extends Document {
   programId: string;
   subjectId?: string;
   status: 'active' | 'completed' | 'abandoned';
+  sessionState: 'NOT_STARTED' | 'IN_PROGRESS' | 'PAUSED' | 'COMPLETED' | 'ABANDONED';
   startedAt: Date;
   endedAt?: Date;
   duration: number;
@@ -112,6 +113,25 @@ export interface ILearningSession extends Document {
   questionsCorrect: number;
   questionsWrong: number;
   idempotencyKey?: string;
+  dailyKey?: string;
+  planId?: string;
+  recommendationId?: string;
+  recommendationType?: string;
+  title?: string;
+  estimatedMinutes?: number;
+  sessionReason?: string;
+  planConfidence?: 'LOW' | 'MEDIUM' | 'HIGH';
+  planStatus?: 'READY' | 'CONTENT_UNAVAILABLE' | 'DIAGNOSTIC_REQUIRED' | 'NO_RECOMMENDATION';
+  planSnapshot?: Record<string, unknown>;
+  currentStepIndex: number;
+  progress: number;
+  stepProgress?: Array<{
+    stepId: string;
+    status: 'NOT_STARTED' | 'IN_PROGRESS' | 'COMPLETED' | 'SKIPPED' | 'UNAVAILABLE';
+    completedAt?: Date;
+    durationSeconds?: number;
+    attemptIds?: string[];
+  }>;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -121,6 +141,12 @@ const learningSessionSchema = new Schema<ILearningSession>({
   programId: { type: String, required: true, trim: true, index: true },
   subjectId: { type: String, trim: true, index: true },
   status: { type: String, enum: ['active', 'completed', 'abandoned'], default: 'active', index: true },
+  sessionState: {
+    type: String,
+    enum: ['NOT_STARTED', 'IN_PROGRESS', 'PAUSED', 'COMPLETED', 'ABANDONED'],
+    default: 'IN_PROGRESS',
+    index: true,
+  },
   startedAt: { type: Date, default: Date.now, index: true },
   endedAt: { type: Date },
   duration: { type: Number, default: 0, min: 0 },
@@ -128,10 +154,37 @@ const learningSessionSchema = new Schema<ILearningSession>({
   questionsCorrect: { type: Number, default: 0, min: 0 },
   questionsWrong: { type: Number, default: 0, min: 0 },
   idempotencyKey: { type: String, trim: true, maxlength: 160 },
+  dailyKey: { type: String, trim: true, maxlength: 160, index: true },
+  planId: { type: String, trim: true, maxlength: 160 },
+  recommendationId: { type: String, trim: true, maxlength: 160 },
+  recommendationType: { type: String, trim: true, maxlength: 40 },
+  title: { type: String, trim: true, maxlength: 200 },
+  estimatedMinutes: { type: Number, min: 1, max: 60 },
+  sessionReason: { type: String, trim: true, maxlength: 500 },
+  planConfidence: { type: String, enum: ['LOW', 'MEDIUM', 'HIGH'] },
+  planStatus: {
+    type: String,
+    enum: ['READY', 'CONTENT_UNAVAILABLE', 'DIAGNOSTIC_REQUIRED', 'NO_RECOMMENDATION'],
+  },
+  planSnapshot: { type: Schema.Types.Mixed },
+  currentStepIndex: { type: Number, min: 0, default: 0 },
+  progress: { type: Number, min: 0, max: 100, default: 0 },
+  stepProgress: [{
+    stepId: { type: String, required: true },
+    status: {
+      type: String,
+      enum: ['NOT_STARTED', 'IN_PROGRESS', 'COMPLETED', 'SKIPPED', 'UNAVAILABLE'],
+      required: true,
+    },
+    completedAt: { type: Date },
+    durationSeconds: { type: Number, min: 0 },
+    attemptIds: [{ type: String }],
+  }],
 }, { timestamps: true });
 
 learningSessionSchema.index({ studentId: 1, startedAt: -1 });
 learningSessionSchema.index({ studentId: 1, idempotencyKey: 1 }, { unique: true, sparse: true });
+learningSessionSchema.index({ studentId: 1, dailyKey: 1 });
 
 export const LearningAttempt = mongoose.models['LearningAttempt']
   ? mongoose.model<ILearningAttempt>('LearningAttempt')

@@ -1,0 +1,559 @@
+نفّذ الآن **Phase 10 فقط: TODAY'S LEARNING SESSION ENGINE**.
+
+لدينا الآن:
+
+* `LearningAttempt`
+* `LearningSession`
+* `LearningErrorEvidence`
+* `StudentLearningProfile`
+* `StudentMastery`
+* `Student Diagnostic & Recovery`
+* `Student Recommendation Engine`
+
+الهدف الآن:
+
+تحويل recommendation إلى **جلسة تعلم قصيرة قابلة للتنفيذ**.
+
+---
+
+# 1. Core Experience
+
+النظام يجب أن يجيب داخليًا عن:
+
+> ما الذي ينبغي أن يفعله الطالب الآن؟
+
+والجلسة يجب أن تكون قصيرة ومركزة.
+
+المبدأ:
+
+`Understand → Example → Solve → Analyze → Correct → Similar → Check → Done`
+
+لكن لا تفترض أن كل جلسة تحتاج كل الخطوات.
+
+---
+
+# 2. Important Separation
+
+لا تجعل Recommendation نفسها هي Session.
+
+Recommendation تقول:
+
+**ماذا يحتاج الطالب؟**
+
+Session تقول:
+
+**كيف سننفذ ذلك الآن؟**
+
+---
+
+# 3. Session Contract
+
+أنشئ service مثل:
+
+`dailyLearningSessionService`
+
+أو استخدم abstraction مناسبة.
+
+يجب أن ينتج contract واضحًا مثل:
+
+```text
+LearningSessionPlan
+  studentId
+  programId
+  subjectId
+  recommendationType
+  title
+  estimatedMinutes
+  steps[]
+  sessionReason
+  confidence
+  generatedAt
+```
+
+كل step يجب أن يملك:
+
+```text
+stepType
+estimatedMinutes
+status
+contentReference
+```
+
+لكن لا تجعل `contentReference` يعتمد على سؤال عشوائي.
+
+---
+
+# 4. Step Types
+
+ابدأ بمجموعة صغيرة:
+
+* `READ`
+* `EXAMPLE`
+* `PRACTICE`
+* `REFLECT`
+* `CORRECT`
+* `SIMILAR`
+* `MASTERY_CHECK`
+
+ولا تستخدمها كلها دائمًا.
+
+مثال:
+
+### LEARN
+
+```text
+READ
+EXAMPLE
+PRACTICE
+MASTERY_CHECK
+```
+
+### PRACTICE
+
+```text
+PRACTICE
+CORRECT
+SIMILAR
+MASTERY_CHECK
+```
+
+### REVIEW
+
+```text
+READ
+PRACTICE
+MASTERY_CHECK
+```
+
+### RECOVERY_CHECK
+
+```text
+PRACTICE
+PRACTICE
+MASTERY_CHECK
+```
+
+هذه أمثلة فقط.
+
+---
+
+# 5. Session Length
+
+الجلسة يجب أن تكون قصيرة.
+
+استهدف نطاقًا مثل:
+
+`10–25 minutes`
+
+ولا تجعل الرقم ثابتًا دائمًا.
+
+يمكن أن يتأثر بـ:
+
+* recommendation
+* student data confidence
+* session history
+* available content
+* recent performance
+
+لكن لا تبنِ scheduling system الآن.
+
+---
+
+# 6. One Next Action
+
+من أهم قواعد هذه المرحلة:
+
+الطالب لا يحتاج أن يرى كل الخطة دفعة واحدة.
+
+يجب أن يكون هناك مفهوم:
+
+`nextStep`
+
+حتى يستطيع frontend لاحقًا عرض:
+
+**خطوتك التالية**
+
+بدون كشف كل تعقيدات المحرك.
+
+---
+
+# 7. Session States
+
+أضف حالات واضحة:
+
+* `NOT_STARTED`
+* `IN_PROGRESS`
+* `PAUSED`
+* `COMPLETED`
+* `ABANDONED`
+
+لا تفترض أن الطالب سيكمل الجلسة.
+
+---
+
+# 8. Resume
+
+إذا بدأ الطالب جلسة ثم خرج:
+
+عند العودة يجب أن يستطيع النظام معرفة:
+
+* آخر step
+* progress
+* session state
+
+لكن لا تعيد تشغيل الجلسة من البداية.
+
+---
+
+# 9. Returning Student
+
+إذا كان Recommendation Engine أعطى:
+
+`RECOVERY_CHECK`
+
+يجب أن تكون الجلسة recovery-oriented.
+
+لا ترسل الطالب تلقائيًا إلى أول درس في المنهج.
+
+---
+
+# 10. New Student
+
+إذا كان:
+
+`DIAGNOSTIC`
+
+فالجلسة لا تخترع أسئلة.
+
+يجب أن تشير إلى أن المحتوى التشخيصي مطلوب، وتترك Question Selection Engine لمرحلة لاحقة.
+
+---
+
+# 11. Content Availability
+
+مهم جدًا:
+
+لا تنشئ step يشير إلى محتوى غير موجود.
+
+إذا كان recommendation يحتاج:
+
+`LEARN`
+
+لكن لا يوجد content موثوق للمجال:
+
+لا تخترع lesson.
+
+أعد حالة واضحة مثل:
+
+`CONTENT_UNAVAILABLE`
+
+أو equivalent مناسب.
+
+---
+
+# 12. Exact Question Selection
+
+**لا تبنِ Question Selection Engine كاملًا في Phase 10.**
+
+لكن صمّم abstraction:
+
+`contentReference`
+
+حتى Phase لاحقة تستطيع ربط step بمحتوى فعلي.
+
+لا تستخدم random question selection كحل مؤقت.
+
+---
+
+# 13. LearningSession Compatibility
+
+لدينا بالفعل:
+
+`LearningSession`
+
+من Phase 04.
+
+لا تنشئ model مكررًا للجلسة إذا كان بالإمكان توسيع النموذج الحالي بأمان.
+
+فرق واضح بين:
+
+### LearningSession
+
+سجل التنفيذ الفعلي.
+
+### LearningSessionPlan
+
+الخطة التي تم توليدها للجلسة.
+
+لا تخلط الاثنين.
+
+---
+
+# 14. Completion Feedback
+
+عند انتهاء step أو session، اجمع فقط البيانات الضرورية:
+
+* completed
+* duration
+* attempt references
+* current state
+
+ولا تنشئ mastery جديدًا هنا.
+
+Mastery يبقى مسؤولية Phase 07.
+
+---
+
+# 15. Adaptation During Session
+
+اسمح بتغيير الخطوة التالية بناءً على evidence الجديدة.
+
+مثال:
+
+النظام بدأ بـ`PRACTICE`.
+
+الطالب أخطأ عدة مرات وظهر evidence قوي على:
+
+`CONCEPT_GAP`.
+
+يمكن أن تصبح الخطوة التالية:
+
+`READ`
+
+أو:
+
+`EXAMPLE`
+
+لكن لا تحول هذا إلى Adaptive Learning Engine كامل.
+
+هذه مجرد orchestration بسيطة داخل session.
+
+---
+
+# 16. Session Stability
+
+لا تجعل خطأ واحدًا يغير الجلسة بالكامل.
+
+استخدم نفس مبدأ Phase 09:
+
+**avoid overreaction.**
+
+---
+
+# 17. APIs
+
+أضف أقل APIs ضرورية، مثل:
+
+`GET /api/learning/today`
+
+للحصول على جلسة اليوم/الخطة الحالية.
+
+وإذا احتجت:
+
+`POST /api/learning/today/start`
+
+`POST /api/learning/today/step`
+
+`POST /api/learning/today/complete`
+
+لكن لا تضف APIs غير ضرورية.
+
+كلها:
+
+* session protected
+* studentId من session
+* server-side state
+* لا يقبل client recommendation أو mastery أو priority
+
+---
+
+# 18. Idempotency
+
+تعامل مع:
+
+* double start
+* refresh
+* duplicate completion
+* network retry
+
+بنفس الصرامة الموجودة في Phase 05.
+
+لا تنشئ جلستين يوميتين متطابقتين بسبب refresh.
+
+---
+
+# 19. One Active Session
+
+لا تسمح بوجود عدة جلسات daily متضاربة لنفس الطالب في نفس الوقت إلا إذا كانت architecture الحالية تتطلب ذلك.
+
+إذا توجد جلسة:
+
+`IN_PROGRESS`
+
+يجب أن يعرف النظام أنها الجلسة الحالية.
+
+---
+
+# 20. Student-facing Output
+
+الـAPI يجب أن يكون قادرًا لاحقًا على إعطاء frontend معلومات بسيطة مثل:
+
+```text
+title
+estimatedMinutes
+nextStep
+progress
+```
+
+لا تعرض:
+
+* masteryScore
+* error confidence
+* internal reason codes
+* recommendation priority
+* model internals
+
+إلا إذا احتاجها admin/internal APIs.
+
+---
+
+# 21. No Dashboard Redesign
+
+لا تعيد تصميم الواجهة بالكامل.
+
+لا تضف الآن:
+
+* giant dashboard
+* charts
+* gamification
+* streaks
+* leaderboards
+* floating assistant
+* chatbot
+
+هذه المرحلة Backend/session foundation.
+
+---
+
+# 22. No Student-facing AI
+
+ممنوع:
+
+* AI
+* ذكاء اصطناعي
+* AI Assistant
+* chatbot
+* robot
+* magic/sparkle UI
+* AI badges
+
+النظام الذكي يجب أن يشعر به الطالب من خلال السلوك فقط.
+
+---
+
+# 23. Tests
+
+أضف اختبارات تغطي:
+
+1. recommendation → session plan
+2. LEARN session
+3. PRACTICE session
+4. REVIEW session
+5. RECOVERY session
+6. DIAGNOSTIC without inventing questions
+7. content unavailable
+8. session length bounds
+9. nextStep
+10. session resume
+11. paused session
+12. completed session
+13. abandoned session
+14. duplicate start
+15. duplicate completion
+16. network retry
+17. student ownership
+18. server-side recommendation
+19. deterministic session generation
+20. simple adaptation after new evidence
+21. no mastery mutation outside mastery service
+22. existing LearningSession compatibility
+
+---
+
+# 24. Historical Safety
+
+لا:
+
+* bulk-create daily sessions
+* rewrite old sessions
+* modify historical attempts
+* modify historical mastery
+* migrate all students
+
+الجلسة تتولد عند الحاجة.
+
+---
+
+# 25. Documentation
+
+أنشئ:
+
+`docs/todays-learning-session.md`
+
+اشرح:
+
+* Recommendation vs Session
+* SessionPlan vs LearningSession
+* session states
+* nextStep
+* session length
+* resume
+* content availability
+* simple adaptation
+* idempotency
+* ownership
+* limitations
+
+---
+
+# 26. Scope Lock
+
+لا تبدأ:
+
+* Question Selection Engine
+* Full Adaptive Learning Engine
+* Spaced Repetition
+* Digital Textbook
+* Apple Pencil
+* AI Tutor
+* Gamification
+* Notifications
+* Calendar
+
+Phase 10 فقط.
+
+---
+
+# 27. Final Report
+
+في النهاية توقف وأرسل:
+
+1. session architecture.
+2. session plan schema.
+3. step types.
+4. session states.
+5. nextStep behavior.
+6. resume behavior.
+7. recommendation integration.
+8. content availability handling.
+9. idempotency.
+10. APIs.
+11. tests count/results.
+12. build status.
+13. TypeScript status.
+14. baseline issues.
+15. أي limitations بسبب نقص المحتوى.
+
+**Phase 10 = Turn the decision into one clear next learning action.**
+
+لا تنتقل إلى Phase 11.
