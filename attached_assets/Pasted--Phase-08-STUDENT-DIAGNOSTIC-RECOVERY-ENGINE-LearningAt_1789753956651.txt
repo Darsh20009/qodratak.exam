@@ -1,0 +1,460 @@
+نفّذ الآن **Phase 08 فقط: STUDENT DIAGNOSTIC & RECOVERY ENGINE**.
+
+لدينا الآن:
+
+* LearningAttempt
+* LearningSession
+* StudentLearningProfile
+* LearningErrorEvidence
+* StudentMastery
+* approved Program/Subject taxonomy
+* unified attempt recording
+* error evidence
+
+الهدف:
+
+بناء محرك يحدد **ما الذي نعرفه عن الطالب وما الذي نحتاج إلى معرفته بعد**.
+
+هذه المرحلة ليست Recommendation Engine.
+
+---
+
+# 1. Core Principle
+
+لا تفترض أن كل طالب يحتاج Diagnostic Test كامل.
+
+قسّم الطلاب إلى حالات:
+
+### NEW
+
+لا توجد بيانات تعليمية موثوقة كافية.
+
+### RETURNING
+
+لديه بيانات سابقة، لكنه انقطع أو عاد بعد فترة.
+
+### ACTIVE
+
+لديه بيانات حديثة وكافية.
+
+### INSUFFICIENT_DATA
+
+لديه بعض البيانات، لكنها غير كافية لاتخاذ قرار موثوق.
+
+لا تجعل هذه الحالات أحكامًا على قدرة الطالب؛ هي حالات **data availability** فقط.
+
+---
+
+# 2. Audit First
+
+افحص النظام الحالي بحثًا عن:
+
+* diagnostic
+* placement
+* onboarding assessment
+* test history
+* previous attempts
+* mastery
+* student profile
+* existing recommendation logic
+
+إذا كان هناك diagnostic قديم، لا تحذفه.
+
+افهمه أولًا، ثم استخدم Adapter إذا كان ذلك أفضل.
+
+---
+
+# 3. Diagnostic Decision
+
+أنشئ service واضحة مثل:
+
+`studentDiagnosticService`
+
+مسؤولة عن تحديد:
+
+* هل نحتاج diagnostic؟
+* هل نحتاج diagnostic كامل؟
+* هل نحتاج recovery check قصير؟
+* هل البيانات الحالية كافية؟
+* ما المجالات التي تحتاج evidence إضافي؟
+
+لكنها **لا تختار الدروس أو الأسئلة التعليمية النهائية بعد**.
+
+---
+
+# 4. New Student
+
+إذا لم توجد بيانات موثوقة:
+
+يجب أن يستطيع النظام تحديد:
+
+`diagnosticRequired = true`
+
+لكن لا تبدأ تلقائيًا في إنشاء اختبار عشوائي كبير.
+
+يجب أن يكون التصميم جاهزًا لأن يختار لاحقًا مجموعة أسئلة تشخيصية ممثلة للمجالات المختلفة.
+
+---
+
+# 5. Returning Student
+
+إذا كان الطالب لديه تاريخ سابق ثم انقطع:
+
+لا ترسله مباشرة إلى البداية.
+
+ابحث عن:
+
+* آخر activity
+* آخر attempts
+* mastery
+* error evidence
+* آخر subject/program
+* الوقت منذ آخر evidence
+
+ثم حدد:
+
+`RECOVERY_CHECK`
+
+إذا كانت البيانات قديمة أو غير كافية.
+
+Recovery check يجب أن يكون قصيرًا ومركّزًا، وليس إعادة بناء كل تاريخ الطالب.
+
+---
+
+# 6. Active Student
+
+إذا كان الطالب لديه evidence حديث وكافٍ:
+
+لا تطلب Diagnostic كامل.
+
+الحالة:
+
+`diagnosticRequired = false`
+
+أو equivalent واضح.
+
+---
+
+# 7. Data Sufficiency
+
+لا تستخدم رقمًا سحريًا واحدًا فقط.
+
+ضع service قابلة للتوسع تحسب:
+
+* evidence count
+* recent evidence
+* subjects covered
+* approved taxonomy coverage
+* mastery confidence
+* error evidence coverage
+* last activity
+
+ثم تنتج:
+
+`dataConfidence`
+
+مثل:
+
+* LOW
+* MEDIUM
+* HIGH
+
+ولا تخلطها مع:
+
+`mastery confidence`.
+
+---
+
+# 8. Diagnostic Scope
+
+عندما تكون البيانات غير كافية، حدد **scope** فقط.
+
+مثلاً:
+
+```text
+PROGRAM
+SUBJECT
+TAXONOMY NODE
+```
+
+ولا تختَر الأسئلة النهائية في هذه المرحلة.
+
+مثال:
+
+طالب لديه بيانات كثيرة في Qudrat Quantitative لكن لا توجد بيانات كافية في Verbal.
+
+يمكن أن يكون diagnostic scope:
+
+`Qudrat Verbal`
+
+بدل:
+
+`Entire Qudrat`
+
+---
+
+# 9. Avoid Redundant Testing
+
+إذا كان لدينا evidence موثوق وحديث لمجال معين:
+
+لا تطلب diagnostic لنفس المجال بدون سبب.
+
+الهدف:
+
+**Measure uncertainty, not repeat what we already know.**
+
+---
+
+# 10. Diagnostic Need
+
+أنشئ output واضحًا وقابلًا للاستهلاك لاحقًا، مثل:
+
+```text
+diagnosticState
+dataConfidence
+diagnosticRequired
+diagnosticMode
+scopes[]
+reasonCodes[]
+generatedAt
+```
+
+يمكن أن تكون:
+
+`diagnosticMode`:
+
+* `NONE`
+* `FULL`
+* `RECOVERY`
+* `TARGETED`
+
+---
+
+# 11. Reason Codes
+
+استخدم reason codes machine-readable، مثل:
+
+* `NO_LEARNING_DATA`
+* `INSUFFICIENT_EVIDENCE`
+* `STALE_EVIDENCE`
+* `LOW_TAXONOMY_COVERAGE`
+* `LOW_MASTERY_CONFIDENCE`
+* `RETURNED_AFTER_GAP`
+* `SUFFICIENT_RECENT_DATA`
+
+لا تجعل reason code حكمًا على الطالب.
+
+---
+
+# 12. Taxonomy Constraint
+
+مهم جدًا:
+
+العقد التي لم تعتمد رسميًا لا تدخل في diagnostic scope كـSkill/Concept.
+
+حاليًا:
+
+`Program` و`Subject`
+
+هما المستوى الموثوق.
+
+لا تخترع:
+
+* Skill
+* SubSkill
+* Concept
+* prerequisite
+
+---
+
+# 13. Diagnostic Questions
+
+لا تنشئ Question Selection Engine كاملًا الآن.
+
+لكن أنشئ abstraction واضحة مثل:
+
+`DiagnosticScope`
+
+بحيث Phase لاحقة تستطيع اختيار الأسئلة بناءً عليها.
+
+لا تجعل Phase 08 تعتمد على random questions.
+
+---
+
+# 14. Recovery
+
+يجب أن يدعم النظام فكرة:
+
+طالب كان لديه:
+
+`PROFICIENT`
+
+ثم اختفى لمدة طويلة.
+
+لا نرجع mastery إلى صفر.
+
+لكن:
+
+`confidence` يمكن أن ينخفض بسبب stale evidence.
+
+وهنا:
+
+`RECOVERY`
+
+يمكن أن يعيد بناء الثقة من evidence حديث.
+
+لا تعدّل Mastery history نفسها بشكل تدميري.
+
+---
+
+# 15. No Recommendations
+
+ممنوع في هذه المرحلة:
+
+* اختيار الدرس التالي
+* اختيار سؤال التدريب التالي
+* إنشاء Daily Plan
+* ترتيب الأولويات التعليمية
+* Recommendation Engine
+
+Diagnostic يقول:
+
+**ما الذي نحتاج إلى معرفته؟**
+
+ولا يقول:
+
+**ماذا يجب أن يدرس الطالب؟**
+
+---
+
+# 16. APIs
+
+أضف API بسيطة مثل:
+
+`GET /api/learning/diagnostic`
+
+بحيث:
+
+* studentId يأتي من session.
+* لا يقبل studentId من client.
+* لا يقبل mastery أو confidence من client.
+* الحساب server-side.
+
+إذا كان هناك endpoint diagnostic قديم، استخدم Adapter بدل كسر API الحالية.
+
+---
+
+# 17. Tests
+
+أضف اختبارات تغطي:
+
+1. brand-new student
+2. student with insufficient data
+3. active student with sufficient recent data
+4. returning student after inactivity
+5. stale evidence
+6. low taxonomy coverage
+7. high taxonomy coverage
+8. low mastery confidence
+9. targeted diagnostic scope
+10. no unnecessary full diagnostic
+11. program/subject scope only when deeper taxonomy is unapproved
+12. student ownership
+13. deterministic output
+14. existing legacy diagnostic compatibility
+
+إذا توفر Mongo integration infrastructure، استخدمه لاحقًا لاختبار ownership، لكن لا تنشئ بنية testing ضخمة فقط لهذه المرحلة.
+
+---
+
+# 18. No Historical Mutation
+
+لا:
+
+* reset mastery
+* delete attempts
+* rewrite old evidence
+* bulk reclassify students
+* bulk run diagnostics
+
+المحرك يقرأ البيانات الحالية ويحدد الحاجة المستقبلية.
+
+---
+
+# 19. No Student-facing AI
+
+ممنوع إضافة:
+
+* AI
+* ذكاء اصطناعي
+* AI Assistant
+* chatbot
+* robot
+* floating assistant
+* AI badge
+
+أي intelligence هنا Backend فقط.
+
+---
+
+# 20. Documentation
+
+أنشئ:
+
+`docs/student-diagnostic-recovery.md`
+
+ويشرح:
+
+* NEW
+* RETURNING
+* ACTIVE
+* INSUFFICIENT_DATA
+* data sufficiency
+* diagnostic modes
+* recovery logic
+* scope
+* reason codes
+* taxonomy restrictions
+* relationship with Mastery
+* relationship with future Recommendation Engine
+
+---
+
+# 21. Scope Lock
+
+لا تبدأ:
+
+* Recommendation Engine
+* Adaptive Learning
+* Daily Session
+* Question Recommendation
+* Spaced Repetition
+* Textbook
+* Apple Pencil
+* AI Tutor
+
+Phase 08 فقط.
+
+---
+
+# 22. Final Report
+
+في النهاية توقف وأرسل:
+
+1. diagnostic states.
+2. diagnostic modes.
+3. data sufficiency logic.
+4. recovery logic.
+5. scope model.
+6. reason codes.
+7. APIs.
+8. legacy diagnostic compatibility.
+9. tests count/results.
+10. build status.
+11. TypeScript status.
+12. baseline issues.
+13. أي شيء لم يتم تنفيذه بسبب نقص taxonomy أو data.
+
+**Phase 08 = Measure what we still need to know.**
+
+لا تنتقل إلى Phase 09.
