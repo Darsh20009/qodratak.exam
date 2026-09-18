@@ -1,0 +1,565 @@
+نفّذ الآن **Phase 11 فقط: CONTENT & QUESTION SELECTION ENGINE**.
+
+لدينا الآن:
+
+* `LearningAttempt`
+* `LearningErrorEvidence`
+* `StudentMastery`
+* `Student Diagnostic & Recovery`
+* `Student Recommendation Engine`
+* `Today's Learning Session Engine`
+* approved Program/Subject taxonomy
+* question bank
+* Foundation Content
+
+الهدف:
+
+تحويل:
+
+`Recommendation + Session Step`
+
+إلى:
+
+**اختيار محتوى/سؤال مناسب فعليًا للطالب**
+
+بدون random selection وبدون اختراع taxonomy.
+
+---
+
+# 1. Audit First
+
+افحص كل مصادر الأسئلة الحالية:
+
+* Qudrat
+* Tahsili
+* Foundation questions
+* Question Bank
+* test runners
+* practice runners
+* retry flows
+
+حدد:
+
+* question identity
+* sourceType
+* sourceKey
+* answer key
+* subject
+* program
+* category
+* difficulty إن وجدت
+* metadata الموثوقة
+* explanation/solution إن وجدت
+* taxonomy mapping
+
+لا تفترض أن كل سؤال لديه Skill أو Concept.
+
+---
+
+# 2. Core Principle
+
+لا تستخدم:
+
+`random question`
+
+كـQuestion Selection Strategy.
+
+كل اختيار سؤال يجب أن يكون نتيجة rules واضحة وقابلة للاختبار.
+
+---
+
+# 3. Separate Selection from Recommendation
+
+لا تخلط:
+
+### Recommendation
+
+تقول:
+
+`PRACTICE`
+
+### Question Selection
+
+تقول:
+
+`أي سؤال نستخدم لتنفيذ PRACTICE؟`
+
+أنشئ service مستقلة مثل:
+
+`questionSelectionService`
+
+---
+
+# 4. Selection Context
+
+أنشئ contract واضحًا مثل:
+
+```text id="c0r4mx"
+QuestionSelectionContext
+
+studentId
+programId
+subjectId
+taxonomyNodeId?
+activityType
+sessionId?
+attemptHistory
+mastery
+errorEvidence
+```
+
+لا تسمح للـfrontend بتحديد السؤال النهائي إذا كان server-side selection مطلوبًا.
+
+---
+
+# 5. Candidate Pool
+
+ابدأ ببناء candidate pool من الأسئلة الموثوقة فقط.
+
+يجب أن تتطابق مع:
+
+* Program
+* Subject
+* approved taxonomy عندما تكون موجودة
+* activity type
+* availability
+
+إذا لم يوجد تطابق عميق:
+
+استخدم Program/Subject فقط.
+
+لا تخترع Skill/Concept.
+
+---
+
+# 6. Candidate Exclusions
+
+استبعد أو خفّض أولوية:
+
+### Recently solved
+
+السؤال الذي حُل منذ وقت قصير.
+
+### Repeated exact question
+
+لا تعطه مرة أخرى بلا سبب تعليمي.
+
+### Invalid question
+
+سؤال بلا answer key موثوق.
+
+### Wrong source
+
+سؤال من Program/Subject مختلف.
+
+### Already mastered content
+
+إذا كانت هناك أدلة قوية جدًا على إتقان المجال، لا تجعله الاختيار الأول إلا إذا كان Review مطلوبًا.
+
+---
+
+# 7. Error-driven Selection
+
+إذا كانت هناك أخطاء موثوقة:
+
+مثال:
+
+`CALCULATION_ERROR`
+
+لا يعني تلقائيًا اختيار نفس السؤال.
+
+ابحث عن سؤال يسمح بتدريب نفس المجال بطريقة مختلفة.
+
+إذا كانت:
+
+`CONCEPT_GAP`
+
+وكانت taxonomy العميقة معتمدة وموجودة:
+
+يمكن اختيار سؤال من نفس node.
+
+أما حاليًا، مع غياب deep approved taxonomy:
+
+لا تدّعي تطابق Concept غير موجود.
+
+---
+
+# 8. Difficulty
+
+إذا كانت difficulty موثوقة في question metadata:
+
+يمكن استخدامها.
+
+لكن لا تفترض أن:
+
+* رقم السؤال = difficulty
+* ترتيب الملف = difficulty
+* نسبة الإجابات الصحيحة عالميًا = difficulty
+
+إذا لم توجد difficulty موثوقة:
+
+لا تخترعها.
+
+---
+
+# 9. Adaptive Difficulty
+
+صمّم abstraction تسمح لاحقًا بتدرج:
+
+* EASY
+* MEDIUM
+* HARD
+
+لكن لا تجعلها شرطًا إذا لم توجد بيانات موثوقة.
+
+الهدف:
+
+الطالب الضعيف لا يبدأ بسؤال غير مناسب.
+
+والطالب القوي لا يبقى في أسئلة سهلة بلا سبب.
+
+---
+
+# 10. Selection Strategies
+
+ابدأ باستراتيجيات محدودة:
+
+### LEARN
+
+إذا content موجود:
+
+اختيار Foundation Content.
+
+لا تختار سؤالًا بدل الدرس.
+
+### PRACTICE
+
+اختيار سؤال مناسب من candidate pool.
+
+### REVIEW
+
+اختيار سؤال مرتبط بمحتوى سبق للطالب التعامل معه.
+
+### RECOVERY_CHECK
+
+اختيار أسئلة قليلة وممثلة للمجال، إذا كانت metadata كافية.
+
+### MASTERY_CHECK
+
+اختيار سؤال لم يُستخدم مؤخرًا ويقيس نفس المجال.
+
+### DIAGNOSTIC
+
+لا تنفذ Diagnostic Question Selection Engine كاملًا إذا لم تتوفر taxonomy/content coverage كافية.
+
+استخدم `selection pending` بدل التخمين.
+
+---
+
+# 11. Diversity
+
+لا تجعل الجلسة تعطي:
+
+نفس السؤال → نفس الصيغة → نفس الفكرة
+
+بشكل متكرر.
+
+عندما تتوفر metadata مناسبة، حاول التنويع في:
+
+* questionId
+* source
+* category
+* difficulty
+* structure
+
+لكن لا تستخدم randomness غير deterministic.
+
+---
+
+# 12. Deterministic Selection
+
+مهم جدًا:
+
+نفس:
+
+`student + context + candidate pool + evidence`
+
+يجب أن ينتج نفس الاختيار.
+
+لا تستخدم `Math.random()`.
+
+إذا احتجت tie-breaking:
+
+استخدم deterministic ordering.
+
+---
+
+# 13. No Fake Content
+
+إذا لم يوجد سؤال مناسب:
+
+لا:
+
+* تخترع سؤالًا.
+* تنسخ سؤالًا وتغير أرقامه.
+* تستخدم سؤالًا من Subject آخر.
+* تدعي أنه مشابه بدون evidence.
+
+أعد:
+
+`NO_SUITABLE_CONTENT`
+
+أو حالة equivalent.
+
+---
+
+# 14. Content Reference
+
+حدّث `contentReference` في Session Step بطريقة واضحة.
+
+مثل:
+
+```text id="1l1uvh"
+type
+sourceType
+sourceKey
+questionId
+```
+
+لكن لا تضع answer key في response للطالب.
+
+---
+
+# 15. Security
+
+لا ترسل:
+
+* correctAnswer
+* internal scoring
+* selection score
+* private evidence
+* mastery internals
+
+في student-facing response.
+
+---
+
+# 16. Selection Score
+
+يمكن أن يكون هناك internal score للمرشحين يعتمد على:
+
+* relevance
+* mastery
+* recency
+* error alignment
+* repetition penalty
+* difficulty fit
+* diversity
+
+لكن:
+
+هذا score داخلي فقط.
+
+لا تعرضه للطالب.
+
+واجعله deterministic.
+
+---
+
+# 17. Exact Question Retry
+
+إذا كان الهدف هو:
+
+`RETRY`
+
+يجب التفريق بين:
+
+### intentional retry
+
+الطالب يعيد السؤال لغرض التعلم.
+
+### accidental duplicate
+
+network retry أو duplicate submit.
+
+لا تجعل Question Selection Engine يخلط الاثنين.
+
+---
+
+# 18. Session Integration
+
+حدّث Phase 10 abstraction فقط إذا كان ضروريًا.
+
+لا تعيد بناء Session Engine.
+
+الهدف:
+
+```text id="5p4rdp"
+Recommendation
+    ↓
+Session Step
+    ↓
+Question Selection
+    ↓
+Question
+    ↓
+LearningAttempt
+    ↓
+Error Evidence
+    ↓
+Mastery
+```
+
+هذه هي الدورة الأساسية.
+
+---
+
+# 19. Tests
+
+أضف اختبارات تغطي:
+
+1. candidate filtering by program
+2. candidate filtering by subject
+3. approved taxonomy matching
+4. unapproved taxonomy ignored
+5. invalid questions excluded
+6. missing answer key excluded
+7. recently answered penalty/exclusion
+8. repeated exact question handling
+9. error-aligned selection
+10. mastery-aware selection
+11. difficulty-aware selection when metadata exists
+12. no difficulty guessing
+13. deterministic selection
+14. no suitable content
+15. student ownership
+16. correctAnswer never exposed
+17. Session integration
+18. diagnostic selection pending when insufficient data
+19. retry vs duplicate distinction
+20. legacy question flows remain compatible
+
+---
+
+# 20. Mongo Tests
+
+إذا كانت Mongo integration infrastructure أصبحت متاحة:
+
+استخدمها خصوصًا لاختبار:
+
+* student isolation
+* candidate retrieval
+* duplicate handling
+* source identity
+
+لكن لا تنشئ testing infrastructure ضخمة إذا لم تكن موجودة.
+
+---
+
+# 21. Performance
+
+لا تجلب بنك الأسئلة كاملًا لكل request إذا كان بالإمكان عمل query/filter مناسب.
+
+استخدم indexes مناسبة.
+
+لكن لا تضف indexes عشوائية.
+
+راجع query patterns أولًا.
+
+---
+
+# 22. Historical Safety
+
+لا:
+
+* تغير الأسئلة القديمة.
+* تعدل attempts.
+* تعدل mastery history.
+* bulk-select أسئلة لكل الطلاب.
+
+المحرك يعمل عند الحاجة.
+
+---
+
+# 23. Documentation
+
+أنشئ:
+
+`docs/question-selection-engine.md`
+
+ويشرح:
+
+* candidate pool
+* filtering
+* exclusions
+* selection strategies
+* difficulty
+* diversity
+* deterministic selection
+* error alignment
+* mastery alignment
+* no suitable content
+* security
+* session integration
+* limitations بسبب taxonomy الحالية
+
+---
+
+# 24. No Student-facing AI
+
+ممنوع إضافة:
+
+* AI
+* ذكاء اصطناعي
+* AI Assistant
+* chatbot
+* robot
+* AI badge
+
+كل الذكاء يبقى خلف الكواليس.
+
+---
+
+# 25. Scope Lock
+
+لا تبدأ:
+
+* Digital Textbook
+* Apple Pencil
+* Spaced Repetition
+* Full Adaptive Learning
+* Gamification
+* Notifications
+* Calendar
+* AI Tutor
+
+Phase 11 فقط.
+
+---
+
+# 26. Final Report
+
+في النهاية توقف وأرسل:
+
+1. مصادر الأسئلة التي تم ربطها.
+2. candidate pool logic.
+3. filtering.
+4. exclusions.
+5. selection strategies.
+6. error alignment.
+7. mastery alignment.
+8. difficulty handling.
+9. deterministic behavior.
+10. no-content behavior.
+11. Session integration.
+12. APIs/changes.
+13. tests count/results.
+14. Mongo integration status.
+15. Build status.
+16. TypeScript status.
+17. baseline errors.
+18. limitations بسبب عدم اعتماد deep taxonomy.
+
+**Phase 11 = Choose the right content, not just any content.**
+
+لا تنتقل إلى Phase 12.
