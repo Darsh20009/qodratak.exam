@@ -1,0 +1,550 @@
+نفّذ الآن **Phase 09 فقط: RECOMMENDATION ENGINE FOUNDATION**.
+
+لدينا الآن:
+
+* `LearningAttempt`
+* `LearningSession`
+* `StudentLearningProfile`
+* `LearningErrorEvidence`
+* `StudentMastery`
+* `Student Diagnostic & Recovery`
+* approved taxonomy
+* unified attempt recording
+
+الهدف:
+
+بناء محرك يحدد **ما يحتاجه الطالب الآن** بناءً على الأدلة الموجودة.
+
+لا تبدأ Daily Session أو Adaptive Learning UI في هذه المرحلة.
+
+---
+
+# 1. Core Principle
+
+Recommendation يجب أن تكون نتيجة **evidence-based decision**.
+
+لا تستخدم قاعدة بسيطة مثل:
+
+`mastery < X → recommend`
+
+فقط.
+
+يجب أن تجمع عدة إشارات.
+
+---
+
+# 2. Audit First
+
+افحص النظام الحالي بحثًا عن:
+
+* existing recommendation service
+* legacy recommendations
+* foundation recommendations
+* student progress
+* curriculum ordering
+* lesson ordering
+* question recommendations
+
+لا تحذف أي نظام قديم.
+
+إذا كان هناك نظام مناسب، استخدم Adapter أو طبقة جديدة فوقه بدل كسر المسارات الحالية.
+
+---
+
+# 3. Recommendation Object
+
+أنشئ model/contract واضحًا مثل:
+
+`LearningRecommendation`
+
+يحتوي على الأقل على:
+
+* studentId
+* programId
+* subjectId
+* taxonomyNodeId إن كان معتمدًا
+* recommendationType
+* priority
+* reasonCodes
+* evidence
+* confidence
+* generatedAt
+* expiresAt إن كان مناسبًا
+
+لا تسمح للـclient بتحديد recommendation أو priority.
+
+---
+
+# 4. Recommendation Types
+
+ابدأ بعدد محدود:
+
+* `LEARN`
+* `PRACTICE`
+* `REVIEW`
+* `RECOVERY_CHECK`
+* `DIAGNOSTIC`
+* `MASTERY_CHECK`
+
+لا تضف أنواعًا كثيرة بلا حاجة.
+
+المعنى:
+
+### LEARN
+
+الأدلة تشير إلى أن الطالب يحتاج فهم المادة قبل كثرة التدريب.
+
+### PRACTICE
+
+الفهم موجود لكن يحتاج تطبيقًا.
+
+### REVIEW
+
+هناك معرفة سابقة تحتاج إعادة تنشيط.
+
+### RECOVERY_CHECK
+
+البيانات قديمة أو الثقة انخفضت وتحتاج evidence حديث.
+
+### DIAGNOSTIC
+
+المعلومات غير كافية لاتخاذ قرار موثوق.
+
+### MASTERY_CHECK
+
+الأدلة تشير إلى أن الطالب قريب من الإتقان ويحتاج تحققًا إضافيًا.
+
+---
+
+# 5. Important Separation
+
+لا تخلط:
+
+`Diagnostic`
+
+مع:
+
+`Recommendation`
+
+Diagnostic يقول:
+
+**ما الذي لا نعرفه؟**
+
+Recommendation يقول:
+
+**ما نوع النشاط الذي يمكن أن يقلل هذا uncertainty أو يحسن الأداء؟**
+
+---
+
+# 6. Evidence Inputs
+
+المحرك يمكن أن يستخدم:
+
+### LearningAttempt
+
+* correctness
+* responseTime
+* recency
+* repetition
+* unanswered
+
+### LearningErrorEvidence
+
+خصوصًا:
+
+* CONCEPT_GAP
+* MISUNDERSTANDING
+* MEMORY_GAP
+* PARTIAL_UNDERSTANDING
+* CALCULATION_ERROR
+* RUSHED
+* TIME_PRESSURE
+* READING_ERROR
+* GUESS
+* UNKNOWN
+
+### StudentMastery
+
+* masteryScore
+* masteryLevel
+* confidence
+* evidenceCount
+* recent evidence
+
+### Diagnostic
+
+* dataConfidence
+* diagnosticRequired
+* diagnosticMode
+* scopes
+* reasonCodes
+
+### Profile
+
+* program
+* subject
+* recent activity
+
+---
+
+# 7. Decision Logic
+
+أنشئ decision layer واضحة وقابلة للاختبار.
+
+أمثلة فقط لتوضيح الاتجاه:
+
+### No reliable data
+
+إذا:
+
+`diagnosticRequired = true`
+
+يمكن أن تكون recommendation:
+
+`DIAGNOSTIC`
+
+وليس درسًا عشوائيًا.
+
+### Conceptual weakness
+
+إذا توجد أدلة موثوقة ومتكررة على:
+
+`CONCEPT_GAP`
+
+أو:
+
+`MISUNDERSTANDING`
+
+يمكن أن تكون:
+
+`LEARN`
+
+### Understanding but weak application
+
+إذا mastery مناسب لكن توجد أخطاء إجرائية متكررة:
+
+`PRACTICE`
+
+### Previously learned + stale evidence
+
+إذا evidence قديم:
+
+`REVIEW`
+
+أو:
+
+`RECOVERY_CHECK`
+
+حسب data confidence.
+
+### Near mastery
+
+إذا الطالب قريب من mastery لكن confidence غير كافٍ:
+
+`MASTERY_CHECK`
+
+هذه أمثلة، وليست thresholds نهائية.
+
+---
+
+# 8. Do Not Overreact
+
+محاولة واحدة خاطئة لا يجب أن تغير recommendation بالكامل.
+
+مثال:
+
+طالب لديه evidence جيد في موضوع معين ثم أخطأ سؤالًا واحدًا بسبب:
+
+`CALCULATION_ERROR`
+
+لا تحوله مباشرة إلى:
+
+`LEARN`.
+
+نريد stability.
+
+---
+
+# 9. Confidence
+
+كل recommendation يجب أن يكون لها confidence.
+
+افصل:
+
+* recommendation priority
+* recommendation confidence
+
+الأولوية لا تعني أن النظام متأكد 100%.
+
+---
+
+# 10. Priority
+
+أنشئ priority قابلة للحساب، لكن لا تستخدم رقمًا عشوائيًا بلا تفسير.
+
+الأولوية يمكن أن تتأثر بـ:
+
+* mastery weakness
+* error evidence
+* recency
+* diagnostic uncertainty
+* repeated errors
+* importance/coverage إذا كانت هناك بيانات موثوقة
+
+احفظ reason codes التي تفسر سبب ارتفاع الأولوية.
+
+---
+
+# 11. Taxonomy Constraint
+
+حاليًا taxonomy الموثوقة هي:
+
+* Program
+* Subject
+
+لا تنشئ recommendation لـ:
+
+* Skill
+* SubSkill
+* Concept
+
+إلا إذا كانت node معتمدة رسميًا.
+
+لا تخترع prerequisites.
+
+---
+
+# 12. Avoid Duplicate Recommendations
+
+إذا كان نفس recommendation ما زال صالحًا:
+
+لا تنشئ عشرات السجلات المتطابقة.
+
+استخدم deterministic identity أو deduplication strategy.
+
+لكن إذا تغيرت الأدلة بشكل حقيقي، يجب أن يستطيع النظام إنتاج recommendation جديدة.
+
+---
+
+# 13. Recommendation Lifecycle
+
+فكر في:
+
+* active
+* completed
+* dismissed
+* expired
+
+لكن لا تجعل الطالب يرى هذه الحالات في UI الآن إذا لم تكن هناك واجهة.
+
+---
+
+# 14. Recommendation vs Curriculum
+
+لا تعيد ترتيب المنهج كاملًا.
+
+Recommendation Engine يحدد:
+
+**الأولوية الحالية**
+
+ولا يحذف أو يغير curriculum structure.
+
+---
+
+# 15. APIs
+
+أضف API بسيطة مثل:
+
+`GET /api/learning/recommendations`
+
+اختياريًا:
+
+`?programId=...`
+
+يجب:
+
+* أخذ studentId من session.
+* حساب/قراءة recommendations server-side.
+* عدم قبول priority أو recommendationType من client.
+* حماية student ownership.
+
+---
+
+# 16. Deterministic
+
+إذا كانت مدخلات الطالب نفسها لم تتغير:
+
+يجب أن تكون النتيجة نفسها.
+
+لا تستخدم randomness.
+
+لا تجعل recommendation تختلف في كل request بلا سبب.
+
+---
+
+# 17. Recommendation Evidence
+
+يجب أن يستطيع النظام لاحقًا تفسير:
+
+لماذا تم اختيار هذا النشاط؟
+
+مثلاً:
+
+```text
+reasonCodes:
+- LOW_MASTERY
+- REPEATED_CONCEPT_ERRORS
+- RECENT_EVIDENCE
+```
+
+لكن لا تحتاج UI الآن.
+
+---
+
+# 18. No Question Selection Yet
+
+لا تبنِ Question Recommendation Engine كاملًا.
+
+لا تختر السؤال رقم X من البنك في هذه المرحلة.
+
+Recommendation يحدد:
+
+`WHAT TYPE OF LEARNING ACTION`
+
+وليس:
+
+`WHICH EXACT QUESTION`
+
+هذا سيأتي لاحقًا بعد تجهيز المحتوى والتغطية بشكل أفضل.
+
+---
+
+# 19. No Daily Plan
+
+لا تبنِ:
+
+* Today's Session
+* daily schedule
+* calendar
+* study plan
+* streak
+* notifications
+
+هذه مرحلة لاحقة.
+
+---
+
+# 20. No Student-facing AI
+
+ممنوع إضافة:
+
+* AI
+* ذكاء اصطناعي
+* AI Assistant
+* chatbot
+* robot
+* floating assistant
+* AI badge
+* AI recommendation label
+
+الذكاء يجب أن يكون invisible في backend.
+
+---
+
+# 21. Tests
+
+أضف اختبارات تغطي:
+
+1. no data → diagnostic recommendation
+2. repeated conceptual evidence → learn
+3. procedural errors → practice
+4. stale evidence → review/recovery
+5. near mastery → mastery check
+6. one isolated wrong answer does not radically change recommendation
+7. unknown evidence does not create aggressive recommendation
+8. recommendation confidence
+9. priority calculation
+10. reason codes
+11. duplicate recommendation prevention
+12. changed evidence can create updated recommendation
+13. unapproved taxonomy cannot produce deep recommendation
+14. student A cannot access student B recommendations
+15. deterministic output
+16. legacy recommendation compatibility
+
+---
+
+# 22. Historical Data
+
+لا:
+
+* bulk generate recommendations لكل الطلاب
+* تعديل التاريخ القديم
+* إعادة تصنيف كل الطلاب
+* migration ضخمة
+
+ابدأ بالحساب عند الطلب أو عند تغير evidence، حسب architecture الموجودة.
+
+---
+
+# 23. Documentation
+
+أنشئ:
+
+`docs/recommendation-engine.md`
+
+ويشرح:
+
+* recommendation types
+* inputs
+* decision logic
+* confidence
+* priority
+* reason codes
+* deduplication
+* lifecycle
+* taxonomy constraints
+* Diagnostic vs Recommendation
+* Mastery vs Recommendation
+* limitations
+
+---
+
+# 24. Scope Lock
+
+لا تبدأ:
+
+* Daily Session Engine
+* Question Selection Engine
+* Adaptive Learning UI
+* Spaced Repetition
+* Digital Textbook
+* Apple Pencil
+* AI Tutor
+
+Phase 09 فقط.
+
+---
+
+# 25. Final Report
+
+في النهاية توقف وأرسل:
+
+1. recommendation types.
+2. decision architecture.
+3. inputs.
+4. priority logic.
+5. confidence logic.
+6. reason codes.
+7. deduplication.
+8. lifecycle.
+9. API.
+10. tests count/results.
+11. build status.
+12. TypeScript status.
+13. baseline issues.
+14. أي limitation بسبب نقص taxonomy/content data.
+
+**Phase 09 = Decide what the student needs next, without choosing the exact question yet.**
+
+لا تنتقل إلى Phase 10.
