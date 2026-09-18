@@ -433,7 +433,7 @@ function diagnosticCandidate(
   );
 }
 
-function buildIdentity(candidate: RecommendationCandidate, studentId: string, generatedAt: Date): string {
+function buildIdentity(candidate: RecommendationCandidate, studentId: string): string {
   const fingerprint = JSON.stringify({
     version: RECOMMENDATION_CALCULATION_VERSION,
     studentId,
@@ -443,7 +443,6 @@ function buildIdentity(candidate: RecommendationCandidate, studentId: string, ge
     taxonomyNodeId: candidate.scope.code,
     reasonCodes: candidate.reasonCodes,
     evidence: candidate.evidence,
-    generatedAt: generatedAt.toISOString(),
   });
   return `learning-rec-${createHash('sha256').update(fingerprint).digest('hex').slice(0, 24)}`;
 }
@@ -457,7 +456,7 @@ function materializeCandidate(
     generatedAt.getTime() + candidate.expiresInDays * 86400000,
   );
   return {
-    recommendationId: buildIdentity(candidate, studentId, generatedAt),
+    recommendationId: buildIdentity(candidate, studentId),
     studentId,
     programId: candidate.scope.programId,
     subjectId: candidate.scope.subjectId,

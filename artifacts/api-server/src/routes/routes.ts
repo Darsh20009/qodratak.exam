@@ -71,6 +71,10 @@ import {
   normalizeDiagnosticProgram,
   publicStudentDiagnosticDecision,
 } from '../services/studentDiagnosticService';
+import {
+  getStudentRecommendations,
+  publicStudentRecommendations,
+} from '../services/studentRecommendationService';
 
 function getQuestionImageUrls(question: { imageUrl?: unknown; imageUrls?: unknown }): string[] {
   const urls = [
@@ -11813,6 +11817,31 @@ app.post("/api/auth/register", async (req: Request, res: Response) => {
       }
       console.error('Student diagnostic decision error:', error);
       return res.status(500).json({ error: 'تعذر تحديد الحاجة إلى التقييم التشخيصي' });
+    }
+  });
+
+  app.get('/api/learning/recommendations', requireAuth, async (req: Request, res: Response) => {
+    const studentId = studentOnly(req, res);
+    if (!studentId) return;
+    const requestedProgram = req.query.programId ?? req.query.program;
+    const programId = requestedProgram
+      ? normalizeDiagnosticProgram(String(requestedProgram))
+      : undefined;
+    if (requestedProgram && !programId) {
+      return res.status(400).json({
+        error: 'البرنامج غير صالح',
+        code: 'INVALID_PROGRAM',
+      });
+    }
+    try {
+      const result = await getStudentRecommendations(studentId, programId);
+      return res.json(publicStudentRecommendations(result));
+    } catch (error: any) {
+      if (error?.message === 'البرنامج غير صالح') {
+        return res.status(400).json({ error: error.message, code: 'INVALID_PROGRAM' });
+      }
+      console.error('Student recommendations retrieval error:', error);
+      return res.status(500).json({ error: 'تعذر تحديد ما يحتاجه الطالب الآن' });
     }
   });
 
