@@ -40,11 +40,14 @@ export type LearningSessionPlanStatus =
   | 'NO_RECOMMENDATION';
 
 export interface LearningContentReference {
-  kind: 'foundation_content' | 'approved_scope' | 'diagnostic_scope' | 'question_selection_pending';
+  kind: 'foundation_content' | 'approved_scope' | 'diagnostic_scope' | 'question_selection_pending' | 'question';
   id: string;
   programId: string;
   subjectId?: string;
-  availability: 'available' | 'deferred' | 'required';
+  availability: 'available' | 'deferred' | 'required' | 'unavailable';
+  sourceType?: string;
+  sourceKey?: string;
+  questionId?: string;
 }
 
 export interface LearningSessionStep {
@@ -61,6 +64,7 @@ export interface LearningSessionPlan {
   studentId: string;
   programId: string;
   subjectId?: string;
+  taxonomyNodeId?: string;
   recommendationId?: string;
   recommendationType?: LearningRecommendation['recommendationType'];
   title: string;
@@ -327,6 +331,7 @@ export function buildLearningSessionPlan(
     studentId,
     programId: recommendation.programId,
     subjectId: recommendation.subjectId,
+    taxonomyNodeId: recommendation.taxonomyNodeId,
     recommendationId: recommendation.recommendationId,
     recommendationType: recommendation.recommendationType,
     title,

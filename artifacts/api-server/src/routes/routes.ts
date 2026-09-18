@@ -83,6 +83,11 @@ import {
   startTodayLearningSession,
   updateTodayLearningStep,
 } from '../services/dailyLearningSessionService';
+import {
+  QuestionSelectionError,
+  publicQuestionSelection,
+  selectAndPersistContentForSessionStep,
+} from '../services/questionSelectionService';
 
 function getQuestionImageUrls(question: { imageUrl?: unknown; imageUrls?: unknown }): string[] {
   const urls = [
@@ -11941,6 +11946,43 @@ app.post("/api/auth/register", async (req: Request, res: Response) => {
       }
       console.error('Today learning session completion error:', error);
       return res.status(500).json({ error: 'تعذر إنهاء جلسة التعلم' });
+    }
+  });
+
+  app.post('/api/learning/today/select', requireAuth, async (req: Request, res: Response) => {
+    const studentId = studentOnly(req, res);
+    if (!studentId) return;
+    const sessionId = String(req.body?.sessionId || '');
+    const stepId = String(req.body?.stepId || '');
+    if (!mongoose.Types.ObjectId.isValid(sessionId)) {
+      return res.status(400).json({ error: 'sessionId غير صالح', code: 'INVALID_SESSION' });
+    }
+    if (!stepId.trim()) {
+      return res.status(400).json({ error: 'stepId مطلوب', code: 'INVALID_STEP' });
+    }
+    try {
+      const session = await LearningSession.findOne({ _id: sessionId, studentId });
+      if (!session) {
+        return res.status(404).json({ error: 'جلسة التعلم غير موجودة', code: 'INVALID_SESSION' });
+      }
+      const result = await selectAndPersistContentForSessionStep(
+        studentId,
+        session,
+        stepId,
+        req.body?.retry === true,
+      );
+      return res.status(result.selectionStatus === 'SELECTED' ? 200 : 422)
+        .json(publicQuestionSelection(result));
+    } catch (error: any) {
+      if (error instanceof QuestionSelectionError) {
+        const status = error.code === 'INVALID_SESSION' ? 404 :
+          error.code === 'INVALID_STEP' ? 400 :
+            error.code === 'SELECTION_PENDING' ? 409 :
+              error.code === 'NO_SUITABLE_CONTENT' ? 422 : 400;
+        return res.status(status).json({ error: error.message, code: error.code });
+      }
+      console.error('Today learning content selection error:', error);
+      return res.status(500).json({ error: 'تعذر اختيار محتوى جلسة التعلم' });
     }
   });
 
