@@ -98,6 +98,13 @@ import {
   submitFoundationPractice,
   updateLearningContentProgress,
 } from '../services/learningContentService';
+import {
+  LearningContentAnnotationError,
+  createLearningContentAnnotation,
+  deleteLearningContentAnnotation,
+  listLearningContentAnnotations,
+  updateLearningContentAnnotation,
+} from '../services/learningContentAnnotationService';
 
 function getQuestionImageUrls(question: { imageUrl?: unknown; imageUrls?: unknown }): string[] {
   const urls = [
@@ -12002,6 +12009,13 @@ app.post("/api/auth/register", async (req: Request, res: Response) => {
         error.code === 'STUDENT_REQUIRED' ? 401 : 400;
     return res.status(status).json({ error: error.message, code: error.code });
   };
+  const learningContentAnnotationErrorResponse = (error: LearningContentAnnotationError, res: Response) => {
+    const status = error.code === 'CONTENT_UNAVAILABLE' || error.code === 'ANNOTATION_NOT_FOUND' ? 404 :
+      error.code === 'VERSION_MISMATCH' ? 409 :
+        error.code === 'PAYLOAD_TOO_LARGE' ? 413 :
+          error.code === 'STUDENT_REQUIRED' ? 401 : 400;
+    return res.status(status).json({ error: error.message, code: error.code });
+  };
 
   app.get('/api/learning/content/:contentId', requireAuth, async (req: Request, res: Response) => {
     const studentId = studentOnly(req, res);
@@ -12061,6 +12075,77 @@ app.post("/api/auth/register", async (req: Request, res: Response) => {
       if (error instanceof LearningContentError) return learningContentErrorResponse(error, res);
       console.error('Learning content completion error:', error);
       return res.status(500).json({ error: 'تعذر تسجيل إتمام المحتوى' });
+    }
+  });
+
+  app.get('/api/learning/content/:contentId/annotations', requireAuth, async (req: Request, res: Response) => {
+    const studentId = studentOnly(req, res);
+    if (!studentId) return;
+    try {
+      return res.json(await listLearningContentAnnotations(studentId, String(req.params.contentId || '')));
+    } catch (error: any) {
+      if (error instanceof LearningContentAnnotationError) return learningContentAnnotationErrorResponse(error, res);
+      console.error('Learning content annotation list error:', error);
+      return res.status(500).json({ error: 'تعذر تحميل annotations المحتوى' });
+    }
+  });
+
+  app.post('/api/learning/content/:contentId/annotations', requireAuth, async (req: Request, res: Response) => {
+    const studentId = studentOnly(req, res);
+    if (!studentId) return;
+    try {
+      return res.status(201).json(await createLearningContentAnnotation(
+        studentId,
+        String(req.params.contentId || ''),
+        {
+          contentVersion: Number(req.body?.contentVersion),
+          sectionId: req.body?.sectionId ? String(req.body.sectionId) : undefined,
+          type: req.body?.type,
+          data: req.body?.data,
+        },
+      ));
+    } catch (error: any) {
+      if (error instanceof LearningContentAnnotationError) return learningContentAnnotationErrorResponse(error, res);
+      console.error('Learning content annotation create error:', error);
+      return res.status(500).json({ error: 'تعذر حفظ annotation المحتوى' });
+    }
+  });
+
+  app.patch('/api/learning/content/:contentId/annotations/:annotationId', requireAuth, async (req: Request, res: Response) => {
+    const studentId = studentOnly(req, res);
+    if (!studentId) return;
+    try {
+      return res.json(await updateLearningContentAnnotation(
+        studentId,
+        String(req.params.contentId || ''),
+        String(req.params.annotationId || ''),
+        {
+          contentVersion: Number(req.body?.contentVersion),
+          sectionId: req.body?.sectionId === undefined ? undefined : String(req.body.sectionId || ''),
+          data: req.body?.data,
+        },
+      ));
+    } catch (error: any) {
+      if (error instanceof LearningContentAnnotationError) return learningContentAnnotationErrorResponse(error, res);
+      console.error('Learning content annotation update error:', error);
+      return res.status(500).json({ error: 'تعذر تحديث annotation المحتوى' });
+    }
+  });
+
+  app.delete('/api/learning/content/:contentId/annotations/:annotationId', requireAuth, async (req: Request, res: Response) => {
+    const studentId = studentOnly(req, res);
+    if (!studentId) return;
+    try {
+      await deleteLearningContentAnnotation(
+        studentId,
+        String(req.params.contentId || ''),
+        String(req.params.annotationId || ''),
+      );
+      return res.status(204).send();
+    } catch (error: any) {
+      if (error instanceof LearningContentAnnotationError) return learningContentAnnotationErrorResponse(error, res);
+      console.error('Learning content annotation delete error:', error);
+      return res.status(500).json({ error: 'تعذر حذف annotation المحتوى' });
     }
   });
 

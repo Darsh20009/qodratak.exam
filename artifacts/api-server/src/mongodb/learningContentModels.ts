@@ -20,11 +20,28 @@ export type LearningContentProgressState =
   | 'COMPLETED'
   | 'PRACTICE_COMPLETED';
 
+export type LearningContentAnnotationType =
+  | 'HIGHLIGHT'
+  | 'UNDERLINE'
+  | 'DRAWING'
+  | 'NOTE';
+
 export interface ILearningContentPracticeReference {
   questionId: string;
   sourceType: 'mongo_question' | 'mongo_tahsili_question';
   sourceKey: string;
   answeredAt?: Date;
+}
+
+export interface ILearningContentAnnotation extends Document {
+  studentId: string;
+  contentId: mongoose.Types.ObjectId;
+  contentVersion: number;
+  sectionId?: string;
+  type: LearningContentAnnotationType;
+  data: Record<string, unknown>;
+  createdAt: Date;
+  updatedAt: Date;
 }
 
 export interface ILearningContentProgress extends Document {
@@ -131,6 +148,23 @@ const learningContentPracticeReferenceSchema = new Schema<ILearningContentPracti
   sourceKey: { type: String, required: true, trim: true },
   answeredAt: { type: Date },
 }, { _id: false });
+
+const learningContentAnnotationSchema = new Schema<ILearningContentAnnotation>({
+  studentId: { type: String, required: true, index: true },
+  contentId: { type: Schema.Types.ObjectId, ref: 'FoundationContent', required: true, index: true },
+  contentVersion: { type: Number, required: true, min: 1, index: true },
+  sectionId: { type: String, trim: true, maxlength: 200 },
+  type: {
+    type: String,
+    enum: ['HIGHLIGHT', 'UNDERLINE', 'DRAWING', 'NOTE'],
+    required: true,
+    index: true,
+  },
+  data: { type: Schema.Types.Mixed, required: true },
+}, { timestamps: true });
+
+learningContentAnnotationSchema.index({ studentId: 1, contentId: 1, contentVersion: 1, updatedAt: -1 });
+learningContentAnnotationSchema.index({ studentId: 1, contentId: 1, type: 1 });
 
 const learningContentProgressSchema = new Schema<ILearningContentProgress>({
   studentId: { type: String, required: true, index: true },
@@ -257,3 +291,7 @@ export const QuestionLearningMap = mongoose.models['QuestionLearningMap']
 export const LearningContentProgress = mongoose.models['LearningContentProgress']
   ? mongoose.model<ILearningContentProgress>('LearningContentProgress')
   : mongoose.model<ILearningContentProgress>('LearningContentProgress', learningContentProgressSchema);
+
+export const LearningContentAnnotation = mongoose.models['LearningContentAnnotation']
+  ? mongoose.model<ILearningContentAnnotation>('LearningContentAnnotation')
+  : mongoose.model<ILearningContentAnnotation>('LearningContentAnnotation', learningContentAnnotationSchema);

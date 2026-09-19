@@ -1,0 +1,580 @@
+نفّذ الآن **Phase 13 فقط: APPLE PENCIL / DIGITAL ANNOTATION ENGINE**.
+
+ممنوع البدء في Phase 14 أو Spaced Repetition أو Full Adaptive Learning.
+
+الهدف:
+إضافة طبقة annotations حقيقية فوق Digital Textbook الحالي، بحيث يصبح قارئ Qodratak مناسبًا للاستخدام على iPad مع Apple Pencil، مع الحفاظ على تجربة القراءة النظيفة.
+
+هذه المرحلة ليست handwriting recognition ولا AI.
+
+---
+
+# 1. Audit أولًا
+
+افحص قبل التعديل:
+
+* `FoundationReaderPage`
+* `LearningContentProgress`
+* `FoundationContent`
+* content sections
+* routing
+* frontend input handling
+* أي existing canvas/annotation implementation
+* أي existing drawing libraries
+
+لا تنشئ نظامًا موازيًا إذا كان هناك foundation صالح يمكن البناء عليه.
+
+---
+
+# 2. Annotation Model
+
+أنشئ model/service واضحًا باسم مناسب مثل:
+
+`LearningContentAnnotation`
+
+ويجب أن يدعم على الأقل:
+
+* `id`
+* `studentId`
+* `contentId`
+* `contentVersion`
+* `sectionId`
+* `type`
+* `data`
+* `createdAt`
+* `updatedAt`
+
+الأنواع الأولية:
+
+* `HIGHLIGHT`
+* `UNDERLINE`
+* `DRAWING`
+* `NOTE`
+
+إذا كان تصميم أفضل موجودًا في المشروع، استخدمه بدلًا من نسخ هذه الأسماء حرفيًا.
+
+---
+
+# 3. Ownership
+
+كل annotation يجب أن تكون مملوكة لطالب واحد.
+
+`studentId` يجب أن يأتي من authenticated session فقط.
+
+ممنوع قبول:
+
+* studentId من body
+* studentId من query
+* ownerId من frontend
+
+يجب منع طالب من قراءة أو تعديل أو حذف annotations الخاصة بطالب آخر.
+
+---
+
+# 4. Content Binding
+
+كل annotation يجب أن ترتبط بـ:
+
+`contentId`
+
+و:
+
+`contentVersion`
+
+ويمكن ربطها بـ:
+
+`sectionId`
+
+حتى لا تصبح annotation عائمة بلا سياق.
+
+إذا تغير إصدار المحتوى، لا تفترض أن الإحداثيات القديمة ما زالت صحيحة.
+
+لا تحذف annotations التاريخية تلقائيًا بسبب version change.
+
+---
+
+# 5. Read Mode / Pen Mode
+
+أضف مفهومًا واضحًا للواجهة:
+
+### Read Mode
+
+القراءة والتصفح الطبيعي.
+
+### Pen Mode
+
+Apple Pencil يستخدم للرسم/الكتابة.
+
+يجب عدم جعل كل لمس على iPad يرسم تلقائيًا.
+
+الهدف:
+
+* finger = scroll / navigate
+* Apple Pencil = annotate عندما يكون Pen Mode فعالًا
+
+مع fallback مناسب للأجهزة التي لا تدعم Pencil.
+
+---
+
+# 6. Apple Pencil / Pointer Handling
+
+اعتمد على browser pointer events بشكل صحيح:
+
+* `pointerType`
+* `pointerdown`
+* `pointermove`
+* `pointerup`
+
+فرّق بين:
+
+* `pen`
+* `touch`
+* `mouse`
+
+لا تعتمد على user-agent فقط لمعرفة نوع الإدخال.
+
+يجب أن يعمل النظام أيضًا على iPad Safari حيثما كانت Pointer Events متاحة.
+
+---
+
+# 7. Drawing
+
+نفّذ foundation للرسم الحر:
+
+* stroke points
+* pressure إذا كان متاحًا
+* line width
+* minimal color configuration
+* start/end stroke
+* undo
+* redo
+* delete annotation
+
+لا تحفظ كل pointer event كـdatabase record.
+
+اجمع stroke كاملًا ثم احفظ annotation واحدة.
+
+---
+
+# 8. Highlight
+
+نفّذ text highlight بشكل عملي.
+
+يجب أن يدعم:
+
+* تحديد النص
+* إنشاء highlight
+* حفظه
+* استعادته عند فتح الدرس مرة أخرى
+
+لا تحفظ HTML كامل للصفحة كـannotation.
+
+احفظ representation قابلًا لإعادة البناء.
+
+مثل:
+
+* sectionId
+* selected text
+* range/anchor information
+* annotation metadata
+
+لكن لا تفترض أن browser Range وحده سيظل صالحًا بعد تغيير المحتوى.
+
+صمم contract version-aware.
+
+---
+
+# 9. Underline
+
+أضف underline كنمط منفصل عن highlight.
+
+يجب أن يكون:
+
+* مرتبطًا بالمحتوى
+* مرتبطًا بالsection
+* قابلًا للحذف
+* قابلًا للاستعادة
+
+---
+
+# 10. Notes
+
+جهّز annotation من نوع:
+
+`NOTE`
+
+تحتوي على نص كتبه الطالب.
+
+لا تجعل Notes تغير محتوى الكتاب الأصلي.
+
+لا تجعلها public.
+
+لا تجعلها جزءًا من FoundationContent نفسه.
+
+---
+
+# 11. Annotation Toolbar
+
+صمم toolbar صغيرة جدًا وغير مزعجة.
+
+الأدوات الأساسية:
+
+* Pen
+* Highlight
+* Underline
+* Note
+* Undo
+* Redo
+* Erase
+
+لا تستخدم:
+
+* floating AI button
+* sparkle
+* chatbot
+* gaming controls
+* toolbar ضخمة
+
+الـtoolbar لا يجب أن تغطي النص الذي يقرأه الطالب.
+
+على iPad يمكن أن تكون contextual ومتحركة مع مساحة آمنة.
+
+---
+
+# 12. Persistence
+
+أنشئ APIs واضحة، مثل:
+
+`GET /api/learning/content/:contentId/annotations`
+
+`POST /api/learning/content/:contentId/annotations`
+
+`PATCH /api/learning/content/:contentId/annotations/:annotationId`
+
+`DELETE /api/learning/content/:contentId/annotations/:annotationId`
+
+إذا كان هناك route structure أفضل في المشروع، استخدمه.
+
+كل endpoint يجب أن يكون:
+
+* authenticated
+* student scoped
+* content scoped
+
+---
+
+# 13. Batch / Save Strategy
+
+لا ترسل request لكل pointer movement.
+
+للرسم:
+
+`pointer events`
+→ local stroke
+→ completed stroke
+→ save annotation
+
+يمكن استخدام debounce أو explicit save حيث يلزم.
+
+إذا فشل الحفظ:
+
+* لا تفقد annotation الموجودة محليًا مباشرة.
+* أظهر حالة بسيطة مثل pending/save failed.
+* لا تجعل UI ينهار.
+
+---
+
+# 14. Undo / Redo
+
+يجب أن يكون هناك foundation حقيقي لـ:
+
+`Undo`
+
+و:
+
+`Redo`
+
+ويجب ألا يؤدي undo إلى حذف البيانات من database بطريقة غير قابلة للاسترجاع قبل أن تكون العملية مقصودة.
+
+صمم state management واضحًا بين:
+
+* local editing state
+* persisted annotations
+
+---
+
+# 15. Eraser
+
+أضف erase بطريقة بسيطة.
+
+يمكن أن يكون:
+
+* delete selected annotation
+
+أو eraser منطقي للـdrawing strokes.
+
+لا تبنِ vector editor كامل.
+
+الأولوية هي تجربة مستقرة وبسيطة.
+
+---
+
+# 16. Section / Scroll Behavior
+
+الـannotations يجب أن تتحرك مع المحتوى الصحيح.
+
+لا تستخدم:
+
+`position: fixed`
+
+بطريقة تجعل الرسم منفصلًا عن النص عند scroll.
+
+إذا استخدمت overlay/canvas:
+
+يجب أن يكون مربوطًا بالـcontent coordinate system.
+
+اختبر:
+
+* scroll
+* resize
+* orientation change
+* iPad portrait
+* iPad landscape
+
+---
+
+# 17. Responsive Behavior
+
+اختبر:
+
+* mobile
+* tablet
+* iPad portrait
+* iPad landscape
+* desktop
+
+على الهاتف الذي لا يدعم Pencil:
+
+لا تجعل annotation UI تكسر تجربة القراءة.
+
+يمكن إخفاء Pen Mode أو جعله مناسبًا للمس إذا كان ذلك آمنًا.
+
+---
+
+# 18. Performance
+
+ممنوع:
+
+* rerender كامل للكتاب مع كل stroke point
+* request لكل pointer event
+* database write لكل point
+
+استخدم local state/canvas strategy مناسبة.
+
+الـreader يجب أن يظل smooth أثناء الرسم.
+
+---
+
+# 19. Security
+
+لا ترسل للعميل:
+
+* annotations الخاصة بطلاب آخرين
+* internal database IDs غير الضرورية
+* أي mastery internals
+* error evidence
+
+Validate server-side:
+
+* content ownership/scope
+* section existence
+* content version
+* annotation type
+* payload size
+* coordinates/points limits
+* note length
+
+ضع limits واضحة لمنع annotation payload ضخم.
+
+---
+
+# 20. Version Safety
+
+إذا أصبح:
+
+`contentVersion = 2`
+
+والannotation محفوظة على:
+
+`contentVersion = 1`
+
+لا تعيد إسقاطها عشوائيًا على المحتوى الجديد.
+
+اعمل behavior واضحًا مثل:
+
+`LEGACY_VERSION`
+
+أو عدم عرضها تلقائيًا مع الاحتفاظ بها.
+
+لا تحذف البيانات.
+
+---
+
+# 21. Student UX
+
+التجربة يجب أن تشعر كأن الطالب لديه:
+
+**كتاب + قلم**
+
+وليس:
+
+**Canvas app داخل كتاب.**
+
+القراءة هي الأساس.
+
+Annotations طبقة إضافية.
+
+لا تجعل toolbar تظهر طوال الوقت إذا كانت ستقلل مساحة القراءة.
+
+---
+
+# 22. Accessibility
+
+حتى مع Pencil يجب الحفاظ على:
+
+* keyboard accessibility
+* focus states
+* buttons labels
+* accessible toolbar
+* touch targets
+* reduced motion
+
+---
+
+# 23. No Student-Facing AI
+
+ممنوع تمامًا إضافة:
+
+`AI`
+
+`Artificial Intelligence`
+
+`ذكاء اصطناعي`
+
+`AI Tutor`
+
+`AI Assistant`
+
+`Powered by AI`
+
+ولا تضف chatbot أو AI-generated annotation features.
+
+---
+
+# 24. Tests
+
+أضف tests تغطي على الأقل:
+
+### Backend
+
+* authenticated access
+* unauthenticated 401
+* student ownership
+* cross-student isolation
+* content ownership
+* invalid content
+* invalid section
+* invalid annotation type
+* payload limits
+* version handling
+* create
+* update
+* delete
+* list
+* persistence
+
+### Frontend
+
+* Read Mode
+* Pen Mode
+* pointer type handling
+* drawing lifecycle
+* undo
+* redo
+* highlight
+* underline
+* note
+* toolbar
+* scroll behavior
+* responsive layout
+
+اختبر ألا يتم إرسال request لكل pointer movement.
+
+---
+
+# 25. Documentation
+
+أضف:
+
+`docs/apple-pencil-annotation-engine.md`
+
+وثّق:
+
+* architecture
+* annotation model
+* input handling
+* pointer events
+* persistence
+* versioning
+* security
+* limits
+* UX
+* performance
+* limitations
+
+---
+
+# 26. Scope Lock
+
+ممنوع تنفيذ:
+
+* Phase 14
+* Spaced Repetition
+* Full Adaptive Learning
+* handwriting recognition
+* OCR
+* AI handwriting interpretation
+* AI chatbot
+* Gamification
+* Notifications
+* Calendar
+* تغيير historical attempts
+* تغيير historical mastery
+* إعادة تصنيف taxonomy
+
+---
+
+# 27. Final Verification
+
+في النهاية أعطني تقريرًا دقيقًا:
+
+1. الملفات التي تغيرت
+2. annotation model
+3. APIs
+4. frontend architecture
+5. Pencil/touch handling
+6. persistence strategy
+7. version strategy
+8. security
+9. performance strategy
+10. backend tests
+11. frontend tests
+12. total tests
+13. build status
+14. TypeScript baseline status
+15. runtime status
+16. limitations الحقيقية
+17. تأكيد صريح أن Phase 14 لم تبدأ
+
+نفّذ **Phase 13 فقط**.
+لا تنتقل للمرحلة التالية تلقائيًا.
