@@ -1,0 +1,150 @@
+نفّذ الآن **Phase 13.1 فقط: AUTHENTICATED ANNOTATION CRUD INTEGRATION TEST**.
+
+هذه ليست Phase 14.
+
+الهدف الوحيد هو إغلاق الـgap الذي ظهر في Phase 13:
+
+> لا يوجد حاليًا اختبار CRUD كامل باستخدام authenticated student session مع Mongo/database حقيقية أو أقرب integration path متاح في architecture الحالية.
+
+لا تغيّر architecture الخاصة بالAnnotations.
+
+## المطلوب
+
+أنشئ integration test مخصصًا لـApple Pencil Annotation APIs باستخدام طالب مصادق عليه.
+
+اختبر دورة كاملة:
+
+`Login / authenticated session`
+→ `Create annotation`
+→ `Get annotations`
+→ `Update annotation`
+→ `Delete annotation`
+→ `Get annotations again`
+
+ويجب تغطية الأنواع الأساسية:
+
+* HIGHLIGHT
+* UNDERLINE
+* DRAWING
+* NOTE
+
+## Security
+
+اختبر أيضًا:
+
+### Student A
+
+يستطيع:
+
+* إنشاء annotation
+* قراءتها
+* تعديلها
+* حذفها
+
+### Student B
+
+لا يستطيع:
+
+* قراءة annotation الخاصة بـA
+* تعديل annotation الخاصة بـA
+* حذف annotation الخاصة بـA
+
+يجب أن تعود النتيجة المناسبة حسب architecture الحالية، مثل `404` أو `403`.
+
+لا تقبل:
+
+`studentId`
+
+من body أو query.
+
+## Content Scope
+
+اختبر أن annotation مرتبطة بـ:
+
+* contentId
+* contentVersion
+* sectionId
+
+وأن section غير موجود يتم رفضه.
+
+اختبر أيضًا version safety:
+
+* annotation على current version تعمل.
+* محاولة mutation على old version يتم رفضها.
+* annotation القديمة لا يتم حذفها تلقائيًا.
+
+## Validation
+
+اختبر:
+
+* invalid annotation type
+* invalid coordinates
+* oversized drawing
+* oversized note
+* invalid section
+* invalid content
+* unauthenticated request → `401`
+
+## Persistence
+
+إذا كانت architecture الحالية تسمح باستخدام Mongo test database مباشرة، استخدمها.
+
+إذا كان المشروع يستخدم test database/mock repository بطريقة معتمدة، استخدم نفس infrastructure الموجودة.
+
+**ممنوع إنشاء database architecture جديدة فقط من أجل هذا الاختبار.**
+
+## Frontend
+
+لا تضف features جديدة.
+
+فقط إذا كان هناك integration test infrastructure مناسب، تأكد أن المسار الأساسي للـannotation لا يكسر existing reader.
+
+## Scope Lock
+
+ممنوع:
+
+* Phase 14
+* Spaced Repetition
+* Adaptive Learning
+* تعديل Annotation UX
+* تعديل Reader architecture
+* OCR
+* handwriting recognition
+* AI
+* Chatbot
+* Gamification
+* Notifications
+* Calendar
+* تعديل historical attempts/mastery
+* taxonomy changes
+
+## Verification
+
+شغّل:
+
+1. Phase 13.1 tests
+2. Phase 13 regression tests
+3. Phase 12 regression tests
+4. full server test suite
+5. frontend tests
+6. API build
+7. Web production build
+8. `git diff --check`
+9. API startup
+10. annotation endpoints بدون session → `401`
+
+وفي النهاية أعطني:
+
+* الملفات التي تغيرت
+* عدد اختبارات Phase 13.1
+* نتيجة authenticated CRUD
+* نتيجة student isolation
+* نتيجة version safety
+* نتيجة validation
+* total server tests
+* frontend tests
+* build status
+* runtime status
+* أي limitation متبقية
+
+**نفّذ Phase 13.1 فقط ولا تبدأ Phase 14 تلقائيًا.**
