@@ -1,0 +1,577 @@
+نفّذ الآن **Phase 12 فقط: DIGITAL TEXTBOOK / LEARNING CONTENT EXPERIENCE**.
+
+ممنوع البدء في Phase 13 أو أي Phase لاحقة.
+
+الهدف:
+تحويل `FoundationContent` الحالي من مجرد content record إلى تجربة تعلم فعلية تشبه **كتابًا رقميًا تعليميًا تفاعليًا**، وتعمل بشكل ممتاز على Mobile وiPad.
+
+## 1. Audit أولًا
+
+افحص قبل التعديل:
+
+* `FoundationContent`
+* أي models مرتبطة بالمحتوى
+* content APIs الحالية
+* Question Selection Engine
+* LearningSession / Session Plan
+* LearningAttempt
+* taxonomy
+* أي frontend موجود لعرض FoundationContent
+
+لا تفترض وجود fields غير موجودة.
+
+إذا كان هناك جزء موجود بالفعل، حسّنه بدل إنشاء نظام موازٍ.
+
+---
+
+## 2. Learning Content Experience
+
+ابنِ التدفق الأساسي:
+
+`READ`
+→ `UNDERSTAND`
+→ `EXAMPLE`
+→ `TRY`
+→ `FEEDBACK`
+→ `CORRECT`
+→ `SIMILAR`
+→ `MASTERY CHECK`
+
+لكن لا تجعل كل درس إجباريًا يحتوي على كل الخطوات إذا لم تتوفر البيانات.
+
+يجب أن يكون النظام قادرًا على معرفة:
+
+* أين بدأ الطالب؟
+* أين وصل؟
+* ماذا قرأ؟
+* ماذا أكمل؟
+* هل أنهى المحتوى؟
+* هل أنهى التدريب المرتبط به؟
+
+---
+
+## 3. LearningContentDocument
+
+أنشئ contract واضحًا للمحتوى التعليمي.
+
+يجب أن يدعم على الأقل:
+
+* `id`
+* `programId`
+* `subjectId`
+* `taxonomyNodeId` عند وجود mapping معتمد
+* `title`
+* `description`
+* `estimatedMinutes`
+* `sections`
+* `status`
+* `version`
+* `publishedAt`
+
+ولا تخترع taxonomy غير معتمدة.
+
+---
+
+## 4. Sections
+
+صمّم sections قابلة للتوسع، مثل:
+
+* `INTRO`
+* `CONCEPT`
+* `RULE`
+* `EXAMPLE`
+* `NOTE`
+* `WARNING`
+* `SUMMARY`
+* `PRACTICE`
+
+كل section يجب أن تكون مستقلة ويمكن تتبع تقدم الطالب داخلها.
+
+لا تجعل المحتوى كله HTML/نصًا واحدًا غير قابل للتحليل.
+
+---
+
+## 5. Reading Experience
+
+ابنِ تجربة قراءة Premium وهادئة.
+
+المبدأ:
+
+**الطالب يشعر أنه يقرأ كتابًا، وليس Dashboard.**
+
+اهتم بـ:
+
+* typography
+* spacing
+* readable line length
+* RTL للعربية
+* mathematical content عند الحاجة
+* headings واضحة
+* examples واضحة
+* progress بسيط
+* navigation بين sections
+
+ممنوع:
+
+* dashboard مزدحم
+* gradients مبالغ فيها
+* neon
+* cards كثيرة بلا داعٍ
+* floating buttons
+* sparkle/magic icons
+* chatbot bubble
+* أي UI باسم AI
+
+---
+
+## 6. Mobile + iPad First
+
+يجب أن يعمل المحتوى بشكل ممتاز على:
+
+* mobile
+* tablet
+* iPad portrait
+* iPad landscape
+
+صمّم layout يسمح بالقراءة الطويلة بدون إرهاق.
+
+لا تجعل toolbar أو controls تغطي النص.
+
+---
+
+## 7. Reading Progress
+
+أنشئ model/service واضحًا لتقدم الطالب داخل المحتوى:
+
+`LearningContentProgress`
+
+يجب أن يدعم:
+
+* `studentId`
+* `contentId`
+* `contentVersion`
+* `currentSectionId`
+* `progress`
+* `state`
+* `startedAt`
+* `lastReadAt`
+* `completedAt`
+* `practiceCompletedAt`
+
+States مبدئيًا:
+
+* `NOT_STARTED`
+* `READING`
+* `COMPLETED`
+* `PRACTICE_COMPLETED`
+
+لا تعتمد على frontend فقط في تحديد completion.
+
+---
+
+## 8. Resume Reading
+
+إذا خرج الطالب من الدرس ثم عاد:
+
+يجب أن يعود إلى:
+
+`currentSectionId`
+
+ويستمر من آخر موضع محفوظ.
+
+احفظ التقدم بطريقة idempotent.
+
+لا تنشئ duplicate progress records.
+
+---
+
+## 9. Completion Semantics
+
+فرّق بين:
+
+### Content completed
+
+الطالب أنهى القراءة/المحتوى.
+
+### Practice completed
+
+الطالب أنهى التدريب المرتبط.
+
+لا تجعل:
+
+`content completed = mastery`
+
+ولا تجعل قراءة الدرس وحدها تعدل mastery مباشرة.
+
+---
+
+## 10. Examples
+
+إذا كان هناك `EXAMPLE`:
+
+اعرضه كجزء واضح من الكتاب:
+
+`Problem`
+→ `Thinking`
+→ `Solution`
+→ `Why`
+
+لكن إذا كانت البيانات الحالية لا تحتوي هذا التفصيل، لا تخترع محتوى تعليمي.
+
+اعمل contract يسمح بإضافته لاحقًا.
+
+---
+
+## 11. Practice Integration
+
+اربط `PRACTICE` مع Phase 11:
+
+`Foundation Content`
+→ `Learning Session`
+→ `Question Selection`
+→ `Question`
+→ `LearningAttempt`
+
+عند طلب practice:
+
+لا يسمح للclient باختيار السؤال عشوائيًا.
+
+استخدم Question Selection Engine الحالي.
+
+لا تكرر السؤال الذي تم اختياره سابقًا إلا إذا كان retry صريحًا.
+
+---
+
+## 12. Feedback
+
+بعد الإجابة:
+
+يجب أن يكون لدينا foundation لتجربة:
+
+`Correct`
+أو
+`Incorrect`
+
+مع إمكانية عرض:
+
+* explanation
+* correction
+* next step
+
+لكن لا تعرض:
+
+* correct answer داخل payload قبل محاولة الطالب
+* mastery internals
+* error evidence الداخلية
+
+استعمل LearningAttempt الحالي لتسجيل النتيجة.
+
+---
+
+## 13. Error Correction
+
+إذا أخطأ الطالب:
+
+التجربة يجب أن تسمح لاحقًا بـ:
+
+`Understand the mistake`
+→ `Correct`
+→ `Similar Question`
+
+لا تنفذ نظام Adaptive Learning كامل الآن.
+
+فقط جهّز الـcontracts والربط الصحيح مع:
+
+* LearningAttempt
+* LearningErrorEvidence
+* Question Selection
+
+---
+
+## 14. Similar Question
+
+بعد الخطأ، يجب أن يكون هناك foundation لاختيار سؤال مشابه باستخدام Question Selection Engine.
+
+لا تعِد نفس السؤال تلقائيًا.
+
+استخدم السؤال السابق كمصدر context فقط.
+
+---
+
+## 15. Content Availability
+
+إذا كان المحتوى:
+
+* unpublished
+* غير متاح
+* taxonomy غير معتمدة
+* program/subject mismatch
+
+لا تعرضه للطالب.
+
+استخدم حالة واضحة مثل:
+
+`CONTENT_UNAVAILABLE`
+
+ولا تعمل fallback لمحتوى من مادة أخرى.
+
+---
+
+## 16. Taxonomy Rules
+
+التزم بالقواعد السابقة:
+
+* Program
+* Subject
+* approved deep taxonomy فقط
+
+لا تستنتج:
+
+`Skill`
+أو
+`SubSkill`
+أو
+`Concept`
+
+من النص أو category أو ترتيب السؤال.
+
+---
+
+## 17. Security
+
+كل progress/content APIs يجب أن تكون student-scoped.
+
+الـstudentId يؤخذ من session.
+
+لا تثق في:
+
+* studentId من body
+* mastery
+* completion
+* score
+* question correctness
+
+كلها server-side.
+
+ولا تسمح لطالب بقراءة أو تعديل progress لطالب آخر.
+
+---
+
+## 18. APIs
+
+أنشئ APIs واضحة، حسب architecture الحالية، مثل:
+
+`GET /api/learning/content/:contentId`
+
+`GET /api/learning/content/:contentId/progress`
+
+`POST /api/learning/content/:contentId/progress`
+
+`POST /api/learning/content/:contentId/complete`
+
+`POST /api/learning/content/:contentId/practice`
+
+إذا كان هناك route أفضل موجود بالفعل، استخدمه بدل duplicate route.
+
+---
+
+## 19. Frontend
+
+نفّذ تجربة القراءة الأساسية في الواجهة الحالية إن كانت موجودة.
+
+يجب أن تشمل:
+
+* content header
+* sections
+* reading progress
+* continue/resume
+* example blocks
+* practice entry
+* completion state
+
+لا تحول الصفحة إلى dashboard.
+
+---
+
+## 20. iPad Interaction Foundation
+
+جهّز الـUI ليكون مناسبًا لاحقًا لـApple Pencil:
+
+* comfortable touch targets
+* text selection
+* clean reading area
+* no controls covering content
+* stable scrolling
+* responsive layout
+
+لكن:
+
+**لا تنفذ Apple Pencil annotation engine الآن.**
+
+لا handwriting recognition.
+
+لا drawing canvas.
+
+لا annotation persistence.
+
+هذا سيكون Phase لاحقة.
+
+---
+
+## 21. Accessibility
+
+اهتم بـ:
+
+* keyboard navigation
+* semantic headings
+* readable contrast
+* focus states
+* accessible buttons
+* RTL
+* reduced motion إن كان المشروع يدعم ذلك
+
+---
+
+## 22. Performance
+
+لا تحمل كل المحتوى الثقيل بلا حاجة.
+
+استخدم:
+
+* efficient content loading
+* lazy loading عند الحاجة
+* bounded queries
+* عدم إرسال answer keys في content APIs
+* عدم إرسال internal mastery/error data
+
+---
+
+## 23. Student-facing language
+
+ممنوع تمامًا ظهور:
+
+`AI`
+
+`Artificial Intelligence`
+
+`ذكاء اصطناعي`
+
+`AI Tutor`
+
+`AI Assistant`
+
+`Powered by AI`
+
+أو أي branding مشابه.
+
+الذكاء يجب أن يكون خلف النظام.
+
+يمكن استخدام:
+
+* `اشرح لي`
+* `خلينا نفهم الخطأ`
+* `تلميح`
+* `ساعدني أفهم`
+
+لكن لا تربطها بالـAI.
+
+---
+
+## 24. Tests
+
+أضف tests تغطي على الأقل:
+
+* content ownership
+* unpublished content
+* unavailable content
+* program mismatch
+* subject mismatch
+* approved taxonomy
+* unapproved taxonomy
+* progress creation
+* progress idempotency
+* resume reading
+* section progress
+* content completion
+* practice completion
+* student isolation
+* security
+* practice integration
+* question selection integration
+* no correct answer leakage
+* no mastery leakage
+* no duplicate progress
+
+شغّل:
+
+* Phase 12 tests
+* full server tests
+* build
+* git diff --check
+* API startup
+* unauthenticated endpoint checks
+
+---
+
+## 25. Documentation
+
+أضف:
+
+`docs/digital-textbook-experience.md`
+
+وثّق:
+
+* content contract
+* section model
+* progress model
+* completion semantics
+* resume behavior
+* practice integration
+* security
+* taxonomy rules
+* APIs
+* limitations
+
+---
+
+## 26. Scope Lock
+
+ممنوع تنفيذ:
+
+* Phase 13
+* Apple Pencil annotation engine
+* handwriting recognition
+* Spaced Repetition
+* Full Adaptive Learning
+* Gamification
+* Notifications
+* Calendar
+* Chatbot
+* AI UI
+* تغيير historical attempts
+* تغيير historical mastery
+* إعادة تصنيف taxonomy غير معتمدة
+
+---
+
+## 27. Final Verification
+
+في النهاية أعطني تقريرًا دقيقًا يحتوي على:
+
+1. الملفات التي تغيرت
+2. models/services/routes الجديدة
+3. content contract
+4. progress model
+5. completion semantics
+6. practice integration
+7. security
+8. tests الجديدة وعددها
+9. total tests
+10. build status
+11. TypeScript baseline status
+12. runtime/API status
+13. أي limitations حقيقية
+14. تأكيد صريح أن Phase 13 لم تبدأ
+
+نفّذ Phase 12 فقط.
+لا تنتقل للمرحلة التالية تلقائيًا.
