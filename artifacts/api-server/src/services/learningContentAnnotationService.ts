@@ -146,6 +146,8 @@ function normalizeAnnotationData(type: LearningContentAnnotationType, raw: unkno
   return normalized;
 }
 
+export const normalizeLearningContentAnnotationData = normalizeAnnotationData;
+
 function assertSection(content: LearningContentDocument, sectionId?: string): void {
   if (!sectionId) return;
   if (!content.sections.some((section) => section.id === sectionId)) {
@@ -161,6 +163,8 @@ function normalizeType(value: unknown): LearningContentAnnotationType {
   return type;
 }
 
+export const normalizeLearningContentAnnotationType = normalizeType;
+
 function publicAnnotation(annotation: ILearningContentAnnotation): PublicLearningContentAnnotation {
   return {
     id: String(annotation._id),
@@ -173,6 +177,8 @@ function publicAnnotation(annotation: ILearningContentAnnotation): PublicLearnin
     updatedAt: annotation.updatedAt,
   };
 }
+
+export const publicLearningContentAnnotation = publicAnnotation;
 
 async function loadContent(studentId: string, contentId: string): Promise<LearningContentDocument> {
   assertStudent(studentId);

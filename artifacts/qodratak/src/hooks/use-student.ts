@@ -103,6 +103,35 @@ export interface LearningContentProgress {
   practiceCompletedAt?: string;
 }
 
+export type LearningContentAnnotationType = "HIGHLIGHT" | "UNDERLINE" | "DRAWING" | "NOTE";
+
+export interface LearningContentAnnotationData {
+  selectedText?: string;
+  anchor?: { start: number; end: number };
+  text?: string;
+  points?: Array<{ x: number; y: number; pressure?: number }>;
+  color?: string;
+  lineWidth?: number;
+}
+
+export interface LearningContentAnnotation {
+  id: string;
+  contentId: string;
+  contentVersion: number;
+  sectionId?: string;
+  type: LearningContentAnnotationType;
+  data: LearningContentAnnotationData;
+  createdAt: string;
+  updatedAt: string;
+  syncState?: "pending" | "failed";
+}
+
+export interface LearningContentAnnotationsResponse {
+  contentVersion: number;
+  annotations: LearningContentAnnotation[];
+  legacyCount: number;
+}
+
 export interface FoundationPracticeQuestion {
   questionId: string;
   sourceType: string;
@@ -368,6 +397,72 @@ export function useCompleteLearningContent(contentId: string) {
     }),
     onSuccess: (data) => {
       queryClient.setQueryData(["/api/learning/content", contentId, "progress"], data);
+    },
+  });
+}
+
+const annotationQueryKey = (contentId: string) => ["/api/learning/content", contentId, "annotations"];
+
+export function useLearningContentAnnotations(contentId: string, enabled = true) {
+  return useQuery<LearningContentAnnotationsResponse>({
+    queryKey: annotationQueryKey(contentId),
+    queryFn: () => fetchJson<LearningContentAnnotationsResponse>(`/api/learning/content/${encodeURIComponent(contentId)}/annotations`),
+    enabled: enabled && Boolean(contentId),
+    staleTime: 30 * 1000,
+    refetchOnWindowFocus: true,
+  });
+}
+
+export function useCreateLearningContentAnnotation(contentId: string) {
+  const queryClient = useQueryClient();
+  return useMutation<LearningContentAnnotation, Error, {
+    contentVersion: number;
+    sectionId?: string;
+    type: LearningContentAnnotationType;
+    data: LearningContentAnnotationData;
+  }>({
+    mutationFn: (payload) => fetchJson<LearningContentAnnotation>(`/api/learning/content/${encodeURIComponent(contentId)}/annotations`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: annotationQueryKey(contentId) });
+    },
+  });
+}
+
+export function useUpdateLearningContentAnnotation(contentId: string) {
+  const queryClient = useQueryClient();
+  return useMutation<LearningContentAnnotation, Error, {
+    annotationId: string;
+    contentVersion: number;
+    sectionId?: string;
+    data?: LearningContentAnnotationData;
+  }>({
+    mutationFn: ({ annotationId, ...payload }) => fetchJson<LearningContentAnnotation>(
+      `/api/learning/content/${encodeURIComponent(contentId)}/annotations/${encodeURIComponent(annotationId)}`,
+      {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      },
+    ),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: annotationQueryKey(contentId) });
+    },
+  });
+}
+
+export function useDeleteLearningContentAnnotation(contentId: string) {
+  const queryClient = useQueryClient();
+  return useMutation<void, Error, string>({
+    mutationFn: (annotationId) => fetchJson<void>(
+      `/api/learning/content/${encodeURIComponent(contentId)}/annotations/${encodeURIComponent(annotationId)}`,
+      { method: "DELETE" },
+    ),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: annotationQueryKey(contentId) });
     },
   });
 }

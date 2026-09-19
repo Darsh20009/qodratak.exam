@@ -19,11 +19,36 @@ import {
   RotateCcw,
   Send,
   Target,
+  Eraser,
+  Highlighter,
+  MessageSquareText,
+  PenLine,
+  Redo2,
+  Underline,
+  Undo2,
 } from "lucide-react";
-import { useFoundationPractice, useLearningContent, useLearningContentProgress, useUpdateLearningContentProgress, useCompleteLearningContent, useSubmitFoundationPractice } from "@/hooks/use-student";
+import {
+  useFoundationPractice,
+  useLearningContent,
+  useLearningContentProgress,
+  useUpdateLearningContentProgress,
+  useCompleteLearningContent,
+  useSubmitFoundationPractice,
+  useLearningContentAnnotations,
+  useCreateLearningContentAnnotation,
+  useDeleteLearningContentAnnotation,
+  type LearningContentAnnotation,
+  type LearningContentAnnotationData,
+  type LearningContentAnnotationType,
+} from "@/hooks/use-student";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { cn } from "@/lib/utils";
+import {
+  FoundationAnnotationSurface,
+  type FoundationAnnotationTool,
+} from "@/components/student/FoundationAnnotationSurface";
+import { getCurrentTextSelection } from "@/lib/foundationAnnotations";
 
 type ContentStatus = "draft" | "published" | "archived" | string;
 type ProgressState = "NOT_STARTED" | "READING" | "COMPLETED" | "PRACTICE_COMPLETED";
@@ -227,12 +252,22 @@ function SectionCard({
   index,
   isCurrent,
   sectionRef,
+  annotationRootRef,
+  annotations,
+  activeTool,
+  onDrawingComplete,
+  onDeleteAnnotation,
   onSelect,
 }: {
   section: ReaderSection;
   index: number;
   isCurrent: boolean;
   sectionRef: (node: HTMLDivElement | null) => void;
+  annotationRootRef: (node: HTMLDivElement | null) => void;
+  annotations: LearningContentAnnotation[];
+  activeTool: FoundationAnnotationTool;
+  onDrawingComplete: (data: LearningContentAnnotationData) => void;
+  onDeleteAnnotation: (annotationId: string) => void;
   onSelect: () => void;
 }) {
   const contentParts = [
@@ -254,41 +289,50 @@ function SectionCard({
           : "border-[hsl(var(--reader-line))]",
       )}
     >
-      <div className="flex items-start gap-4">
-        <button
-          type="button"
-          onClick={onSelect}
-          aria-label={`تحديد ${getSectionLabel(section)}`}
-          aria-pressed={isCurrent}
-          className={cn(
-            "mt-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border text-sm font-black transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[hsl(var(--reader-accent))] focus-visible:ring-offset-2",
-            isCurrent
-              ? "border-[hsl(var(--reader-accent))] bg-[hsl(var(--reader-accent))] text-[hsl(var(--reader-ink))]"
-              : "border-[hsl(var(--reader-line))] bg-[hsl(var(--reader-paper))] text-[hsl(var(--reader-muted))] hover:border-[hsl(var(--reader-accent)/0.6)]",
-          )}
-        >
-          {index + 1}
-        </button>
-        <div className="min-w-0 flex-1">
-          <p className="text-xs font-bold tracking-wide text-[hsl(var(--reader-muted))]">{sectionTypeLabels[section.type.toLowerCase()] || section.type}</p>
-          <h2 className="mt-1 text-xl font-black leading-9 text-[hsl(var(--reader-ink))] sm:text-2xl">{getSectionLabel(section)}</h2>
+      <FoundationAnnotationSurface
+        sectionId={section.id}
+        annotations={annotations}
+        activeTool={activeTool}
+        onSurfaceRef={annotationRootRef}
+        onDrawingComplete={onDrawingComplete}
+        onDeleteAnnotation={onDeleteAnnotation}
+      >
+        <div className="flex items-start gap-4">
+          <button
+            type="button"
+            onClick={onSelect}
+            aria-label={`تحديد ${getSectionLabel(section)}`}
+            aria-pressed={isCurrent}
+            className={cn(
+              "mt-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border text-sm font-black transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[hsl(var(--reader-accent))] focus-visible:ring-offset-2",
+              isCurrent
+                ? "border-[hsl(var(--reader-accent))] bg-[hsl(var(--reader-accent))] text-[hsl(var(--reader-ink))]"
+                : "border-[hsl(var(--reader-line))] bg-[hsl(var(--reader-paper))] text-[hsl(var(--reader-muted))] hover:border-[hsl(var(--reader-accent)/0.6)]",
+            )}
+          >
+            {index + 1}
+          </button>
+          <div className="min-w-0 flex-1">
+            <p className="text-xs font-bold tracking-wide text-[hsl(var(--reader-muted))]">{sectionTypeLabels[section.type.toLowerCase()] || section.type}</p>
+            <h2 className="mt-1 text-xl font-black leading-9 text-[hsl(var(--reader-ink))] sm:text-2xl">{getSectionLabel(section)}</h2>
+          </div>
         </div>
-      </div>
 
-      <div className="mr-14 mt-5 space-y-5">
-        <TextBlock>{section.body}</TextBlock>
-        {contentParts.map(({ label, value, icon: Icon }) =>
-          value?.trim() ? (
-            <div key={label} className="rounded-2xl border border-[hsl(var(--reader-line))] bg-[hsl(var(--reader-paper)/0.75)] p-4 sm:p-5">
-              <h3 className="flex items-center gap-2 text-sm font-black text-[hsl(var(--reader-ink))]">
-                <Icon className="h-4 w-4 text-[hsl(var(--reader-accent-dark))]" aria-hidden="true" />
-                {label}
-              </h3>
-              <TextBlock className="mt-2 text-[0.98rem]">{value}</TextBlock>
-            </div>
-          ) : null,
-        )}
-      </div>
+        <div className="mr-14 mt-5 space-y-5">
+          <TextBlock>{section.body}</TextBlock>
+          {contentParts.map(({ label, value, icon: Icon }) =>
+            value?.trim() ? (
+              <div key={label} className="rounded-2xl border border-[hsl(var(--reader-line))] bg-[hsl(var(--reader-paper)/0.75)] p-4 sm:p-5">
+                <h3 className="flex items-center gap-2 text-sm font-black text-[hsl(var(--reader-ink))]">
+                  <Icon className="h-4 w-4 text-[hsl(var(--reader-accent-dark))]" aria-hidden="true" />
+                  {label}
+                </h3>
+                <TextBlock className="mt-2 text-[0.98rem]">{value}</TextBlock>
+              </div>
+            ) : null,
+          )}
+        </div>
+      </FoundationAnnotationSurface>
     </article>
   );
 }
@@ -426,6 +470,115 @@ function PracticePanel({
   );
 }
 
+type AnnotationPayload = {
+  contentVersion: number;
+  sectionId?: string;
+  type: LearningContentAnnotationType;
+  data: LearningContentAnnotationData;
+};
+
+type AnnotationAction = {
+  id: string;
+  payload: AnnotationPayload;
+};
+
+function AnnotationToolbar({
+  activeTool,
+  onToolChange,
+  onHighlight,
+  onUnderline,
+  onNote,
+  onUndo,
+  onRedo,
+  onErase,
+  onRetryFailed,
+  canUndo,
+  canRedo,
+  pendingCount,
+  failedCount,
+}: {
+  activeTool: FoundationAnnotationTool;
+  onToolChange: (tool: FoundationAnnotationTool) => void;
+  onHighlight: () => void;
+  onUnderline: () => void;
+  onNote: () => void;
+  onUndo: () => void;
+  onRedo: () => void;
+  onErase: () => void;
+  onRetryFailed: () => void;
+  canUndo: boolean;
+  canRedo: boolean;
+  pendingCount: number;
+  failedCount: number;
+}) {
+  const toolButton = (
+    tool: FoundationAnnotationTool,
+    label: string,
+    Icon: React.ComponentType<{ className?: string }>,
+    onClick?: () => void,
+  ) => (
+    <button
+      type="button"
+      aria-label={label}
+      aria-pressed={activeTool === tool}
+      title={label}
+      onClick={onClick || (() => onToolChange(tool))}
+      className={cn(
+        "inline-flex min-h-10 shrink-0 items-center gap-1.5 rounded-lg px-2.5 text-xs font-black transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[hsl(var(--reader-accent))]",
+        activeTool === tool
+          ? "bg-[hsl(var(--reader-ink))] text-white"
+          : "text-[hsl(var(--reader-muted))] hover:bg-[hsl(var(--reader-paper))] hover:text-[hsl(var(--reader-ink))]",
+      )}
+    >
+      <Icon className="h-4 w-4" aria-hidden="true" />
+      <span className="hidden sm:inline">{label}</span>
+    </button>
+  );
+
+  return (
+    <div className="border-b border-[hsl(var(--reader-line)/0.9)] bg-[hsl(var(--reader-surface)/0.96)] px-4 py-2 backdrop-blur-md sm:px-8 lg:px-12">
+      <div className="mx-auto flex max-w-6xl items-center gap-1.5 overflow-x-auto" dir="rtl" aria-label="أدوات annotations">
+        <span className="ml-1 shrink-0 text-[0.68rem] font-black text-[hsl(var(--reader-muted))]">أدوات الكتاب</span>
+        {toolButton("READ", "قراءة", BookOpen)}
+        {toolButton("PEN", "قلم", PenLine)}
+        {toolButton("HIGHLIGHT", "تمييز", Highlighter, onHighlight)}
+        {toolButton("UNDERLINE", "تسطير", Underline, onUnderline)}
+        {toolButton("NOTE", "ملاحظة", MessageSquareText, onNote)}
+        <span className="mx-1 h-5 w-px shrink-0 bg-[hsl(var(--reader-line))]" aria-hidden="true" />
+        <button
+          type="button"
+          aria-label="تراجع"
+          title="تراجع"
+          disabled={!canUndo}
+          onClick={onUndo}
+          className="inline-flex min-h-10 shrink-0 items-center gap-1.5 rounded-lg px-2.5 text-xs font-black text-[hsl(var(--reader-muted))] hover:bg-[hsl(var(--reader-paper))] disabled:cursor-not-allowed disabled:opacity-35"
+        >
+          <Undo2 className="h-4 w-4" aria-hidden="true" />
+          <span className="hidden sm:inline">تراجع</span>
+        </button>
+        <button
+          type="button"
+          aria-label="إعادة"
+          title="إعادة"
+          disabled={!canRedo}
+          onClick={onRedo}
+          className="inline-flex min-h-10 shrink-0 items-center gap-1.5 rounded-lg px-2.5 text-xs font-black text-[hsl(var(--reader-muted))] hover:bg-[hsl(var(--reader-paper))] disabled:cursor-not-allowed disabled:opacity-35"
+        >
+          <Redo2 className="h-4 w-4" aria-hidden="true" />
+          <span className="hidden sm:inline">إعادة</span>
+        </button>
+        {toolButton("ERASE", "مسح", Eraser, onErase)}
+        {pendingCount ? <span className="mr-auto shrink-0 text-[0.68rem] font-bold text-[hsl(var(--reader-accent-dark))]">جارٍ الحفظ: {pendingCount}</span> : null}
+        {failedCount ? (
+          <button type="button" onClick={onRetryFailed} className="mr-auto shrink-0 rounded-md px-1 text-[0.68rem] font-bold text-destructive underline-offset-2 hover:underline">
+            تعذر الحفظ: {failedCount} — أعد المحاولة
+          </button>
+        ) : null}
+      </div>
+    </div>
+  );
+}
+
 export default function FoundationReaderPage() {
   const params = useParams<{ contentId?: string }>();
   const contentId = params.contentId || "";
@@ -433,10 +586,22 @@ export default function FoundationReaderPage() {
   const progressQuery = useLearningContentProgress(contentId);
   const updateProgress = useUpdateLearningContentProgress(contentId);
   const completeContent = useCompleteLearningContent(contentId);
+  const annotationQuery = useLearningContentAnnotations(contentId);
+  const createAnnotation = useCreateLearningContentAnnotation(contentId);
+  const deleteAnnotation = useDeleteLearningContentAnnotation(contentId);
   const [currentSectionId, setCurrentSectionId] = useState<string | undefined>();
   const [localProgress, setLocalProgress] = useState<number | null>(null);
   const [practiceOpen, setPracticeOpen] = useState(false);
+  const [activeTool, setActiveTool] = useState<FoundationAnnotationTool>("READ");
+  const [noteOpen, setNoteOpen] = useState(false);
+  const [noteDraft, setNoteDraft] = useState("");
+  const [annotationMessage, setAnnotationMessage] = useState<string | null>(null);
+  const [pendingAnnotations, setPendingAnnotations] = useState<Record<string, { annotation: LearningContentAnnotation; payload: AnnotationPayload }>>({});
+  const [undoStack, setUndoStack] = useState<AnnotationAction[]>([]);
+  const [redoStack, setRedoStack] = useState<AnnotationAction[]>([]);
   const sectionRefs = useRef<Record<string, HTMLDivElement | null>>({});
+  const annotationSectionRefs = useRef<Record<string, HTMLDivElement | null>>({});
+  const cancelledPendingIds = useRef(new Set<string>());
 
   const content = contentQuery.data as unknown as LearningContent | undefined;
   const savedProgress = progressQuery.data as unknown as LearningProgress | undefined;
@@ -447,6 +612,11 @@ export default function FoundationReaderPage() {
   const progressPercent = localProgress ?? savedPercent;
   const isContentCompleted = completeContent.isSuccess || savedProgress?.state === "COMPLETED" || savedProgress?.state === "PRACTICE_COMPLETED";
   const isPracticeCompleted = savedProgress?.state === "PRACTICE_COMPLETED" || Boolean(savedProgress?.practiceCompletedAt);
+  const serverAnnotations = annotationQuery.data?.annotations || [];
+  const annotations = useMemo(
+    () => [...serverAnnotations, ...Object.values(pendingAnnotations).map((item) => item.annotation)],
+    [pendingAnnotations, serverAnnotations],
+  );
   const update = updateProgress.mutate as unknown as (payload: UpdateProgressPayload) => void;
   const complete = completeContent.mutate as unknown as (
     variables?: undefined,
@@ -457,6 +627,12 @@ export default function FoundationReaderPage() {
     if (savedProgress?.currentSectionId && !currentSectionId) setCurrentSectionId(savedProgress.currentSectionId);
     if (savedProgress && localProgress === null) setLocalProgress(savedPercent);
   }, [currentSectionId, localProgress, savedPercent, savedProgress]);
+
+  useEffect(() => {
+    if (annotationQuery.isError) {
+      setAnnotationMessage("تعذر تحميل annotations المحفوظة؛ ستبقى التعديلات المحلية ظاهرة.");
+    }
+  }, [annotationQuery.isError]);
 
   if (!contentId) return <ReaderUnavailable message="رابط المحتوى غير مكتمل." />;
   if (contentQuery.isLoading || progressQuery.isLoading) return <ReaderSkeleton />;
@@ -475,6 +651,155 @@ export default function FoundationReaderPage() {
   if (content.status && !["published", "PUBLISHED", "active"].includes(content.status)) {
     return <ReaderUnavailable message="هذا المحتوى غير متاح للقراءة الآن." />;
   }
+
+  const createLocalId = () => `local-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+
+  const persistAnnotation = (
+    payload: AnnotationPayload,
+    onSaved?: () => void,
+    historyId?: string,
+  ) => {
+    const localId = historyId || createLocalId();
+    const optimistic: LearningContentAnnotation = {
+      id: localId,
+      contentId,
+      contentVersion: payload.contentVersion,
+      sectionId: payload.sectionId,
+      type: payload.type,
+      data: payload.data,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+      syncState: "pending",
+    };
+    setPendingAnnotations((current) => ({ ...current, [localId]: { annotation: optimistic, payload } }));
+    createAnnotation.mutate(payload, {
+      onSuccess: (saved) => {
+        setPendingAnnotations((current) => {
+          const next = { ...current };
+          delete next[localId];
+          return next;
+        });
+        setUndoStack((current) => current.map((action) => action.id === localId ? { ...action, id: saved.id } : action));
+        if (cancelledPendingIds.current.has(localId)) {
+          cancelledPendingIds.current.delete(localId);
+          deleteAnnotation.mutate(saved.id);
+        }
+        onSaved?.();
+      },
+      onError: (error) => {
+        setPendingAnnotations((current) => {
+          const item = current[localId];
+          if (!item) return current;
+          return {
+            ...current,
+            [localId]: {
+              ...item,
+              annotation: { ...item.annotation, syncState: "failed" },
+            },
+          };
+        });
+        setAnnotationMessage(error.message || "تعذر حفظ annotation؛ ما زالت محفوظة محليًا.");
+      },
+    });
+    return localId;
+  };
+
+  const pushAnnotationAction = (payload: AnnotationPayload) => {
+    const id = persistAnnotation(payload);
+    setUndoStack((current) => [...current, { id, payload }]);
+    setRedoStack([]);
+  };
+
+  const sectionFromSelection = () => {
+    const selection = window.getSelection();
+    if (!selection || selection.rangeCount === 0) return null;
+    const commonAncestor = selection.getRangeAt(0).commonAncestorContainer;
+    return Object.entries(annotationSectionRefs.current).find(([, root]) => root?.contains(commonAncestor))?.[0] || null;
+  };
+
+  const createTextAnnotation = (type: "HIGHLIGHT" | "UNDERLINE") => {
+    const sectionId = sectionFromSelection();
+    const root = sectionId ? annotationSectionRefs.current[sectionId] : null;
+    const selection = getCurrentTextSelection(root);
+    if (!sectionId || !selection) {
+      setAnnotationMessage("حدد نصًا داخل قسم واحد أولًا.");
+      return;
+    }
+    if (selection.selectedText.length > 600) {
+      setAnnotationMessage("حدد مقطعًا أقصر من النص حتى يبقى annotation خفيفًا.");
+      return;
+    }
+    pushAnnotationAction({
+      contentVersion: content.version,
+      sectionId,
+      type,
+      data: selection,
+    });
+    window.getSelection()?.removeAllRanges();
+    setActiveTool("READ");
+    setAnnotationMessage(type === "HIGHLIGHT" ? "تم حفظ التمييز." : "تم حفظ التسطير.");
+  };
+
+  const createNote = () => {
+    const text = noteDraft.trim();
+    if (!text) {
+      setAnnotationMessage("اكتب الملاحظة قبل حفظها.");
+      return;
+    }
+    const sectionId = sectionFromSelection() || currentId || sections[0]?.id;
+    const root = sectionId ? annotationSectionRefs.current[sectionId] : null;
+    const selection = getCurrentTextSelection(root);
+    const data: LearningContentAnnotationData = {
+      text,
+      ...(selection && selection.selectedText.length <= 600 ? selection : {}),
+    };
+    pushAnnotationAction({ contentVersion: content.version, sectionId, type: "NOTE", data });
+    setNoteDraft("");
+    setNoteOpen(false);
+    setActiveTool("READ");
+    window.getSelection()?.removeAllRanges();
+    setAnnotationMessage("تم حفظ الملاحظة.");
+  };
+
+  const deleteOneAnnotation = (annotationId: string) => {
+    if (annotationId.startsWith("local-")) {
+      cancelledPendingIds.current.add(annotationId);
+      setPendingAnnotations((current) => {
+        const next = { ...current };
+        delete next[annotationId];
+        return next;
+      });
+      return;
+    }
+    deleteAnnotation.mutate(annotationId, {
+      onError: (error) => setAnnotationMessage(error.message || "تعذر حذف annotation."),
+    });
+  };
+
+  const undo = () => {
+    const action = undoStack.at(-1);
+    if (!action) return;
+    setUndoStack((current) => current.slice(0, -1));
+    setRedoStack((current) => [...current, action]);
+    deleteOneAnnotation(action.id);
+    setAnnotationMessage("تم التراجع عن آخر annotation.");
+  };
+
+  const redo = () => {
+    const action = redoStack.at(-1);
+    if (!action) return;
+    setRedoStack((current) => current.slice(0, -1));
+    const newId = persistAnnotation(action.payload);
+    setUndoStack((current) => [...current, { ...action, id: newId }]);
+    setAnnotationMessage("تمت إعادة annotation.");
+  };
+
+  const retryFailedAnnotations = () => {
+    Object.entries(pendingAnnotations)
+      .filter(([, item]) => item.annotation.syncState === "failed")
+      .forEach(([id, item]) => persistAnnotation(item.payload, undefined, id));
+    setAnnotationMessage("تجري إعادة حفظ annotations الفاشلة.");
+  };
 
   const selectSection = (sectionId: string) => {
     const nextIndex = sections.findIndex((section) => section.id === sectionId);
@@ -525,6 +850,48 @@ export default function FoundationReaderPage() {
         </div>
         <Progress value={progressPercent} className="h-1 rounded-none bg-[hsl(var(--reader-line))] [&>div]:bg-[hsl(var(--reader-accent-dark))]" aria-label="نسبة قراءة المحتوى" />
       </div>
+      <AnnotationToolbar
+        activeTool={activeTool}
+        onToolChange={setActiveTool}
+        onHighlight={() => { setActiveTool("HIGHLIGHT"); createTextAnnotation("HIGHLIGHT"); }}
+        onUnderline={() => { setActiveTool("UNDERLINE"); createTextAnnotation("UNDERLINE"); }}
+        onNote={() => { setActiveTool("NOTE"); setNoteOpen(true); }}
+        onUndo={undo}
+        onRedo={redo}
+        onErase={() => setActiveTool("ERASE")}
+        onRetryFailed={retryFailedAnnotations}
+        canUndo={undoStack.length > 0}
+        canRedo={redoStack.length > 0}
+        pendingCount={Object.values(pendingAnnotations).filter(({ annotation }) => annotation.syncState === "pending").length}
+        failedCount={Object.values(pendingAnnotations).filter(({ annotation }) => annotation.syncState === "failed").length}
+      />
+      {noteOpen ? (
+        <div className="border-b border-[hsl(var(--reader-line))] bg-[hsl(var(--reader-accent-soft)/0.45)] px-4 py-3 sm:px-8 lg:px-12">
+          <div className="mx-auto flex max-w-6xl flex-col gap-2 sm:flex-row sm:items-end" dir="rtl">
+            <label className="min-w-0 flex-1">
+              <span className="mb-1 block text-xs font-black text-[hsl(var(--reader-ink))]">ملاحظة شخصية</span>
+              <textarea
+                value={noteDraft}
+                onChange={(event) => setNoteDraft(event.target.value.slice(0, 2000))}
+                maxLength={2000}
+                rows={2}
+                autoFocus
+                placeholder="اكتب ملاحظة مرتبطة بهذا القسم..."
+                className="w-full resize-y rounded-xl border border-[hsl(var(--reader-line))] bg-[hsl(var(--reader-surface))] px-3 py-2 text-sm leading-7 outline-none focus:border-[hsl(var(--reader-accent-dark))] focus:ring-2 focus:ring-[hsl(var(--reader-accent)/0.25)]"
+              />
+            </label>
+            <div className="flex shrink-0 gap-2">
+              <Button type="button" onClick={createNote} className="min-h-10 rounded-xl bg-[hsl(var(--reader-ink))]">حفظ الملاحظة</Button>
+              <Button type="button" variant="outline" onClick={() => { setNoteOpen(false); setActiveTool("READ"); }} className="min-h-10 rounded-xl">إلغاء</Button>
+            </div>
+          </div>
+        </div>
+      ) : null}
+      {annotationMessage ? (
+        <div className="mx-auto max-w-6xl px-4 pt-3 sm:px-8 lg:px-12" dir="rtl">
+          <p className="text-xs font-bold text-[hsl(var(--reader-muted))]" aria-live="polite">{annotationMessage}</p>
+        </div>
+      ) : null}
 
       <div className="mx-auto max-w-6xl px-4 pb-16 pt-8 sm:px-8 sm:pt-12 lg:px-12">
         <header className="max-w-3xl">
@@ -578,6 +945,16 @@ export default function FoundationReaderPage() {
                 index={index}
                 isCurrent={currentId === section.id}
                 sectionRef={(node) => { sectionRefs.current[section.id] = node; }}
+                annotationRootRef={(node) => { annotationSectionRefs.current[section.id] = node; }}
+                annotations={annotations.filter((annotation) => annotation.sectionId === section.id)}
+                activeTool={activeTool}
+                onDrawingComplete={(data) => pushAnnotationAction({
+                  contentVersion: content.version,
+                  sectionId: section.id,
+                  type: "DRAWING",
+                  data,
+                })}
+                onDeleteAnnotation={deleteOneAnnotation}
                 onSelect={() => selectSection(section.id)}
               />
             ))}
