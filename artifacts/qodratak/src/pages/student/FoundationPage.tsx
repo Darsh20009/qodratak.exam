@@ -15,32 +15,11 @@ import { verbalBankVideos } from "@/data/verbalBankVideos";
 import { foundationSections, getFoundationSection, type FoundationProgram, type FoundationSection } from "@/data/foundationSections";
 import { foundationCurriculum } from "@/data/foundationCurriculum";
 import { Link, useLocation, useSearch } from "wouter";
-import { ArrowLeft, BarChart3, BookOpen, Clock, GraduationCap, ListChecks, Loader2, PlayCircle, Route, ShieldCheck, Sparkles, Target, Trophy } from "lucide-react";
+import { ArrowLeft, BarChart3, BookOpen, Clock, GraduationCap, Info, ListChecks, Loader2, PlayCircle, Route, ShieldCheck, Target, Trophy } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Progress } from "@/components/ui/progress";
 import OfficialScoreCard from "@/components/student/OfficialScoreCard";
-
-type QuizQuestion = {
-  _id?: string;
-  id?: string | number;
-  questionId?: number;
-  text: string;
-  options: string[];
-  correctOptionIndex: number;
-  explanation?: string;
-  imageUrl?: string;
-  imageUrls?: string[];
-};
-
-type QuizResult = {
-  score: number;
-  correctAnswers: number;
-  totalQuestions: number;
-  skippedQuestions: number;
-  passed: boolean;
-  passingScore: number;
-};
 
 function getEmbedUrl(value: string) {
   try {
@@ -303,7 +282,7 @@ function FoundationHome({
         <div className="flex flex-wrap items-start justify-between gap-5">
           <div>
             <div className="mb-3 inline-flex items-center gap-2 rounded-full bg-white/10 px-3 py-1 text-xs font-bold text-[#F7F775]">
-              <Sparkles className="h-3.5 w-3.5" />
+              <Info className="h-3.5 w-3.5" />
               مساحة التأسيس
             </div>
             <h1 className="text-3xl font-black sm:text-4xl">ابدأ من المكان المناسب لك</h1>
@@ -499,24 +478,17 @@ export default function FoundationPage() {
   const requestedSection = getFoundationSection(program, params.get("subject"));
   const [selectedLesson, setSelectedLesson] = useState<FoundationContent | null>(null);
   const [visibleLessonCount, setVisibleLessonCount] = useState(40);
-  const [quizBankCache, setQuizBankCache] = useState<Record<string, QuizQuestion[]>>({});
-  const [quizLesson, setQuizLesson] = useState<FoundationContent | null>(null);
-  const [quizQuestions, setQuizQuestions] = useState<QuizQuestion[]>([]);
-  const [quizAnswers, setQuizAnswers] = useState<Record<string, number>>({});
-  const [quizResult, setQuizResult] = useState<QuizResult | null>(null);
-  const [quizLoading, setQuizLoading] = useState(false);
-  const [quizSubmitting, setQuizSubmitting] = useState(false);
-  const [quizError, setQuizError] = useState('');
   const activeSection = requestedSection;
   const curriculum = foundationCurriculum[activeSection.key];
   const shouldLoadFoundationContent = hasSubject && !(program === "qudrat" && activeSection.key === "verbal");
+  const contentSubjectId = `subject.${program}.${activeSection.key}`;
   const {
     data: foundationContent,
     isLoading,
     isError: isContentError,
     error: contentError,
     refetch: refetchContent,
-  } = useFoundationContent(program, shouldLoadFoundationContent);
+  } = useFoundationContent(program, shouldLoadFoundationContent, contentSubjectId);
   const {
     data: dashboard,
     isLoading: isDashboardLoading,
@@ -553,107 +525,6 @@ export default function FoundationPage() {
     setSelectedLesson(null);
     setVisibleLessonCount(40);
     setLocation(`/foundation?program=${program}&subject=${section.key}`);
-  };
-
-  const startSectionQuiz = () => {
-    void openQuiz({
-      _id: `section-quiz-${program}-${activeSection.key}`,
-      program,
-      title: `اختبار ${activeSection.title}`,
-      description: `اختبار قصير من 10 أسئلة في ${activeSection.shortTitle}.`,
-      videoUrl: "",
-      order: 1,
-    });
-  };
-
-  const startCurriculumQuiz = (title: string, order: number) => {
-    void openQuiz({
-      _id: `curriculum-quiz-${program}-${activeSection.key}-${order}`,
-      program,
-      title: `اختبار تأسيس ${title}`,
-      description: `اختبار تدريبي من بنك ${activeSection.shortTitle} بعد شرح ${title}.`,
-      videoUrl: "",
-      order,
-    });
-  };
-
-  const openQuiz = async (lesson: FoundationContent) => {
-    setQuizLesson(lesson);
-    setQuizAnswers({});
-    setQuizResult(null);
-    setQuizError('');
-    setQuizQuestions([]);
-    setQuizLoading(true);
-    try {
-      const cacheKey = `${program}:${activeSection.key}`;
-      let questions: QuizQuestion[] = [];
-      if (quizBankCache[cacheKey]) {
-        questions = quizBankCache[cacheKey];
-      } else {
-        if (activeSection.tahsiliSubject) {
-          const response = await fetch(`/api/tahsili/question-bank?subject=${encodeURIComponent(activeSection.tahsiliSubject)}&page=1&limit=50`, {
-            credentials: "include",
-          });
-          const data = await response.json();
-          questions = Array.isArray(data.questions) ? data.questions : [];
-        } else if (activeSection.questionCategory) {
-          const response = await fetch(`/api/questions?category=${activeSection.questionCategory}`, { credentials: "include" });
-          const data = await response.json();
-          const source = Array.isArray(data) ? data : [];
-          const allowed = new Set(activeSection.questionSubcategories || []);
-          questions = source.filter((question: QuizQuestion & { subcategory?: string }) => allowed.has(String(question.subcategory)));
-          if (questions.length < 10) questions = source;
-        }
-        setQuizBankCache((current) => ({ ...current, [cacheKey]: questions }));
-      }
-
-      if (questions.length < 10) {
-        throw new Error("لا توجد عشرة أسئلة معتمدة كافية لهذا القسم حاليًا.");
-      }
-
-      const start = ((Math.max(1, Number(lesson.order) || 1) - 1) * 10) % questions.length;
-      const rotated = [...questions.slice(start), ...questions.slice(0, start)];
-      setQuizQuestions(rotated.slice(0, 10));
-    } catch (error) {
-      setQuizError(error instanceof Error ? error.message : "تعذر تجهيز اختبار الدرس");
-    } finally {
-      setQuizLoading(false);
-    }
-  };
-  const closeQuiz = () => {
-    setQuizLesson(null);
-    setQuizQuestions([]);
-    setQuizAnswers({});
-    setQuizResult(null);
-    setQuizError('');
-  };
-  const submitQuiz = async () => {
-    if (!quizLesson || quizQuestions.length === 0) return;
-    setQuizSubmitting(true);
-    setQuizError('');
-    try {
-      const answered = quizQuestions.filter((question) => {
-        const key = String(question._id || question.id || question.questionId);
-        return Number.isInteger(quizAnswers[key]);
-      });
-      const correctAnswers = answered.filter((question) => {
-        const key = String(question._id || question.id || question.questionId);
-        return quizAnswers[key] === question.correctOptionIndex;
-      }).length;
-      const score = Math.round((correctAnswers / quizQuestions.length) * 100);
-      setQuizResult({
-        score,
-        correctAnswers,
-        totalQuestions: quizQuestions.length,
-        skippedQuestions: quizQuestions.length - answered.length,
-        passed: score >= 60,
-        passingScore: 60,
-      });
-    } catch (error) {
-      setQuizError(error instanceof Error ? error.message : 'تعذر تصحيح الاختبار');
-    } finally {
-      setQuizSubmitting(false);
-    }
   };
 
   return (
@@ -744,9 +615,9 @@ export default function FoundationPage() {
                   {selectedLesson?.description || "بنمشي معك خطوة خطوة، وبعد الشرح تقدر تختبر فهمك من نفس المكان."}
                 </p>
                 <div className="mt-4 flex flex-wrap items-center gap-2">
-                  {selectedLesson && (
-                    <Button type="button" onClick={() => openQuiz(selectedLesson)} className="rounded-xl bg-[#F7F775] font-black text-[#0D1B2A] hover:bg-[#F7F775]/90">
-                      <ListChecks className="ml-2 h-4 w-4" /> اختبار الدرس — 10 أسئلة
+                  {selectedLesson && /^[a-f\d]{24}$/i.test(selectedLesson._id) && (
+                    <Button type="button" onClick={() => setLocation(`/foundation/content/${selectedLesson._id}`)} className="rounded-xl bg-[#F7F775] font-black text-[#0D1B2A] hover:bg-[#F7F775]/90">
+                      <BookOpen className="ml-2 h-4 w-4" /> فتح الكتاب
                     </Button>
                   )}
                   <div className="flex items-center gap-2 text-xs text-slate-400">
@@ -823,23 +694,9 @@ export default function FoundationPage() {
                 </div>
                 <ListChecks className="h-4 w-4 text-primary" />
               </div>
-              <div className="space-y-2">
-                {curriculum.lessons.map((lesson, index) => (
-                  <button
-                    key={lesson.title}
-                    type="button"
-                    onClick={() => startCurriculumQuiz(lesson.title, index + 1)}
-                    className="flex w-full items-center gap-3 rounded-2xl border border-border bg-background p-3 text-right transition-colors hover:border-primary/40 hover:bg-primary/5"
-                  >
-                    <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-emerald-500/10 text-xs font-black text-emerald-700 dark:text-emerald-300">{index + 1}</span>
-                    <span className="min-w-0 flex-1">
-                      <span className="block truncate text-sm font-bold text-foreground">{lesson.title}</span>
-                      <span className="mt-1 block truncate text-xs text-muted-foreground">اختبار من بنك {activeSection.shortTitle}</span>
-                    </span>
-                    <ArrowLeft className="h-4 w-4 shrink-0 text-muted-foreground" />
-                  </button>
-                ))}
-              </div>
+                <div className="rounded-2xl border border-dashed border-border bg-background p-4 text-sm leading-7 text-muted-foreground">
+                  افتح أي درس منشور لقراءة المحتوى ثم ابدأ التدريب المرتبط به من داخل الكتاب. لا يتم تصحيح الإجابات داخل هذه الصفحة.
+                </div>
             </div>
           </aside>
         </section>
@@ -848,7 +705,7 @@ export default function FoundationPage() {
           <BookOpen className="mx-auto mb-3 h-12 w-12 text-muted-foreground" />
           <h3 className="text-lg font-black text-foreground">المحتوى المرئي قيد التجهيز</h3>
           <p className="mt-1 text-sm text-muted-foreground">الشرح والاختبار جاهزان، وسيظهر الفيديو هنا عند نشره.</p>
-          <Button type="button" onClick={startSectionQuiz} className="mt-5 rounded-xl">ابدأ اختبار القسم</Button>
+          <p className="mx-auto mt-5 max-w-md text-sm leading-7 text-muted-foreground">سيظهر التدريب داخل قارئ المحتوى عند نشر درس متاح لهذا القسم.</p>
         </div>
       )}
 
@@ -879,50 +736,6 @@ export default function FoundationPage() {
         </div>
       </section>
 
-      <Dialog open={!!quizLesson} onOpenChange={open => !open && closeQuiz()}>
-        <DialogContent className="max-h-[94vh] w-[calc(100%-1rem)] max-w-3xl overflow-y-auto bg-background p-4 sm:p-6">
-          <DialogHeader className="text-right">
-            <DialogTitle className="text-2xl font-black">{quizLesson?.quiz?.title || 'اختبار الدرس'}</DialogTitle>
-            {quizLesson?.quiz?.instructions && <p className="text-sm leading-6 text-muted-foreground">{quizLesson.quiz.instructions}</p>}
-          </DialogHeader>
-          {quizLoading ? (
-            <div className="flex items-center justify-center gap-3 py-12 text-muted-foreground">
-              <Loader2 className="h-5 w-5 animate-spin" /> جارٍ تجهيز 10 أسئلة مناسبة للقسم...
-            </div>
-          ) : !quizResult ? (
-            <div className="space-y-5">
-              {quizQuestions.map((question, index) => (
-                <div key={String(question._id || question.id || question.questionId)} className="rounded-2xl border border-border bg-card p-4 shadow-sm">
-                  <div className="mb-3 flex items-start gap-3">
-                    <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-primary/10 text-sm font-black text-primary">{index + 1}</span>
-                    <p className="whitespace-pre-wrap text-sm font-bold leading-7 text-foreground">{question.text}</p>
-                  </div>
-                  {(question.imageUrl || question.imageUrls?.[0]) && <img src={question.imageUrl || question.imageUrls?.[0]} alt="" className="mb-4 max-h-56 w-full rounded-xl object-contain" />}
-                  <div className="grid gap-2 sm:grid-cols-2">
-                    {question.options.map((option, optionIndex) => {
-                      const questionKey = String(question._id || question.id || question.questionId);
-                      const selected = quizAnswers[questionKey] === optionIndex;
-                      return <button type="button" key={`${questionKey}-${optionIndex}`} onClick={() => setQuizAnswers(current => ({ ...current, [questionKey]: optionIndex }))} className={`rounded-xl border p-3 text-right text-sm transition-colors ${selected ? 'border-primary bg-primary/10 font-bold text-primary' : 'border-border bg-background hover:bg-muted'}`}><span className="ml-2 font-black">{String.fromCharCode(1575 + optionIndex)}.</span>{option}</button>;
-                    })}
-                  </div>
-                </div>
-              ))}
-              {quizError && <p className="rounded-xl bg-red-500/10 p-3 text-sm text-red-600">{quizError}</p>}
-              <div className="flex flex-wrap items-center justify-between gap-3">
-                <span className="text-sm text-muted-foreground">{Object.keys(quizAnswers).length} من {quizQuestions.length} تمت الإجابة عنها</span>
-                <Button type="button" onClick={submitQuiz} disabled={quizSubmitting || quizQuestions.length === 0} className="rounded-xl bg-primary px-6 font-bold">{quizSubmitting && <Loader2 className="ml-2 h-4 w-4 animate-spin" />}تصحيح الاختبار</Button>
-              </div>
-            </div>
-          ) : (
-            <div className="py-8 text-center">
-              <div className={`mx-auto flex h-20 w-20 items-center justify-center rounded-full text-2xl font-black ${quizResult.passed ? 'bg-emerald-500/15 text-emerald-600' : 'bg-amber-500/15 text-amber-600'}`}>{quizResult.score}%</div>
-              <h3 className="mt-5 text-2xl font-black text-foreground">{quizResult.passed ? 'أحسنت! اجتزت الاختبار' : 'بداية جيدة، راجع الشرح وحاول مرة أخرى'}</h3>
-              <p className="mt-2 text-sm text-muted-foreground">أجبت بشكل صحيح عن {quizResult.correctAnswers} من {quizResult.totalQuestions} أسئلة · درجة النجاح {quizResult.passingScore}%</p>
-              <Button type="button" onClick={closeQuiz} className="mt-6 rounded-xl">إغلاق</Button>
-            </div>
-          )}
-        </DialogContent>
-      </Dialog>
     </div>
   );
 }

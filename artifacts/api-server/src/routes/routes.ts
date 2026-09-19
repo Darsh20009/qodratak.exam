@@ -88,6 +88,16 @@ import {
   publicQuestionSelection,
   selectAndPersistContentForSessionStep,
 } from '../services/questionSelectionService';
+import {
+  LearningContentError,
+  completeLearningContent,
+  getFoundationPractice,
+  getLearningContent,
+  getLearningContentProgress,
+  publicLearningContentProgress,
+  submitFoundationPractice,
+  updateLearningContentProgress,
+} from '../services/learningContentService';
 
 function getQuestionImageUrls(question: { imageUrl?: unknown; imageUrls?: unknown }): string[] {
   const urls = [
@@ -11986,6 +11996,106 @@ app.post("/api/auth/register", async (req: Request, res: Response) => {
     }
   });
 
+  const learningContentErrorResponse = (error: LearningContentError, res: Response) => {
+    const status = error.code === 'CONTENT_UNAVAILABLE' ? 404 :
+      error.code === 'PRACTICE_UNAVAILABLE' ? 422 :
+        error.code === 'STUDENT_REQUIRED' ? 401 : 400;
+    return res.status(status).json({ error: error.message, code: error.code });
+  };
+
+  app.get('/api/learning/content/:contentId', requireAuth, async (req: Request, res: Response) => {
+    const studentId = studentOnly(req, res);
+    if (!studentId) return;
+    try {
+      return res.json(await getLearningContent(studentId, String(req.params.contentId || '')));
+    } catch (error: any) {
+      if (error instanceof LearningContentError) return learningContentErrorResponse(error, res);
+      console.error('Learning content retrieval error:', error);
+      return res.status(500).json({ error: 'تعذر تحميل المحتوى التعليمي' });
+    }
+  });
+
+  app.get('/api/learning/content/:contentId/progress', requireAuth, async (req: Request, res: Response) => {
+    const studentId = studentOnly(req, res);
+    if (!studentId) return;
+    try {
+      return res.json(publicLearningContentProgress(
+        await getLearningContentProgress(studentId, String(req.params.contentId || '')),
+      ));
+    } catch (error: any) {
+      if (error instanceof LearningContentError) return learningContentErrorResponse(error, res);
+      console.error('Learning content progress retrieval error:', error);
+      return res.status(500).json({ error: 'تعذر تحميل تقدم المحتوى' });
+    }
+  });
+
+  app.post('/api/learning/content/:contentId/progress', requireAuth, async (req: Request, res: Response) => {
+    const studentId = studentOnly(req, res);
+    if (!studentId) return;
+    try {
+      return res.json(publicLearningContentProgress(await updateLearningContentProgress(
+        studentId,
+        String(req.params.contentId || ''),
+        {
+          currentSectionId: req.body?.currentSectionId ? String(req.body.currentSectionId) : undefined,
+          progress: req.body?.progress,
+          state: req.body?.state,
+        },
+      )));
+    } catch (error: any) {
+      if (error instanceof LearningContentError) return learningContentErrorResponse(error, res);
+      console.error('Learning content progress update error:', error);
+      return res.status(500).json({ error: 'تعذر حفظ تقدم المحتوى' });
+    }
+  });
+
+  app.post('/api/learning/content/:contentId/complete', requireAuth, async (req: Request, res: Response) => {
+    const studentId = studentOnly(req, res);
+    if (!studentId) return;
+    try {
+      return res.json(publicLearningContentProgress(await completeLearningContent(
+        studentId,
+        String(req.params.contentId || ''),
+      )));
+    } catch (error: any) {
+      if (error instanceof LearningContentError) return learningContentErrorResponse(error, res);
+      console.error('Learning content completion error:', error);
+      return res.status(500).json({ error: 'تعذر تسجيل إتمام المحتوى' });
+    }
+  });
+
+  app.get('/api/learning/content/:contentId/practice', requireAuth, async (req: Request, res: Response) => {
+    const studentId = studentOnly(req, res);
+    if (!studentId) return;
+    try {
+      return res.json(await getFoundationPractice(studentId, String(req.params.contentId || '')));
+    } catch (error: any) {
+      if (error instanceof LearningContentError) return learningContentErrorResponse(error, res);
+      console.error('Learning content practice retrieval error:', error);
+      return res.status(500).json({ error: 'تعذر تحميل تدريب المحتوى' });
+    }
+  });
+
+  app.post('/api/learning/content/:contentId/practice/answer', requireAuth, async (req: Request, res: Response) => {
+    const studentId = studentOnly(req, res);
+    if (!studentId) return;
+    try {
+      return res.json(await submitFoundationPractice(
+        studentId,
+        String(req.params.contentId || ''),
+        {
+          questionId: String(req.body?.questionId || ''),
+          selectedOptionIndex: Number(req.body?.selectedOptionIndex),
+          idempotencyKey: req.body?.idempotencyKey ? String(req.body.idempotencyKey) : undefined,
+        },
+      ));
+    } catch (error: any) {
+      if (error instanceof LearningContentError) return learningContentErrorResponse(error, res);
+      console.error('Learning content practice answer error:', error);
+      return res.status(500).json({ error: 'تعذر حفظ إجابة التدريب' });
+    }
+  });
+
   app.get('/api/foundation-content', requireAuth, async (req: Request, res: Response) => {
     if (!studentOnly(req, res)) return;
     const program = String(req.query.program || '');
@@ -11994,9 +12104,18 @@ app.post("/api/auth/register", async (req: Request, res: Response) => {
     }
     try {
       const { FoundationContent } = await import('../mongodb/models');
-      const content = await FoundationContent.find({ program, published: true })
+      const subjectId = String(req.query.subject || '').trim();
+      const contentQuery: Record<string, unknown> = { program, published: true };
+      if (subjectId) {
+        contentQuery.$or = [
+          { subjectId },
+          { subjectId: { $exists: false } },
+          { subjectId: '' },
+        ];
+      }
+      const content = await FoundationContent.find(contentQuery)
         .sort({ order: 1, createdAt: 1 })
-        .select('program title description videoUrl thumbnailUrl order linkedQuizRoute durationMinutes quiz createdAt updatedAt')
+        .select('program subjectId taxonomyNodeId title description videoUrl thumbnailUrl order linkedQuizRoute durationMinutes sections version publishedAt quiz createdAt updatedAt')
         .populate({
           path: 'quiz.questionIds',
           select: '_id questionId text options imageUrl imageUrls explanation',

@@ -1544,6 +1544,25 @@ export const WhatsAppQuizSession = mongoose.models['WhatsAppQuizSession']
 
 // ─── Student product content and reviews (additive collections) ─────────────
 export type StudentProgram = 'qudrat' | 'tahsili';
+export type FoundationSectionType =
+  | 'INTRO'
+  | 'CONCEPT'
+  | 'RULE'
+  | 'EXAMPLE'
+  | 'NOTE'
+  | 'WARNING'
+  | 'SUMMARY'
+  | 'PRACTICE';
+export interface IFoundationContentSection {
+  id: string;
+  type: FoundationSectionType;
+  title?: string;
+  body?: string;
+  problem?: string;
+  thinking?: string;
+  solution?: string;
+  why?: string;
+}
 export interface IFoundationQuiz {
   title: string;
   instructions?: string;
@@ -1561,8 +1580,24 @@ const foundationQuizSchema = new Schema<IFoundationQuiz>({
 export interface IFoundationContent extends Document {
   program: StudentProgram; title: string; description: string; videoUrl: string;
   thumbnailUrl?: string; order: number; published: boolean; linkedQuizRoute?: string;
-  durationMinutes?: number; quiz?: IFoundationQuiz; createdAt: Date; updatedAt: Date;
+  durationMinutes?: number; subjectId?: string; taxonomyNodeId?: string;
+  sections?: IFoundationContentSection[]; version: number; publishedAt?: Date;
+  quiz?: IFoundationQuiz; createdAt: Date; updatedAt: Date;
 }
+const foundationContentSectionSchema = new Schema<IFoundationContentSection>({
+  id: { type: String, required: true, trim: true },
+  type: {
+    type: String,
+    enum: ['INTRO', 'CONCEPT', 'RULE', 'EXAMPLE', 'NOTE', 'WARNING', 'SUMMARY', 'PRACTICE'],
+    required: true,
+  },
+  title: { type: String, trim: true, maxlength: 200 },
+  body: { type: String, trim: true, maxlength: 10000 },
+  problem: { type: String, trim: true, maxlength: 5000 },
+  thinking: { type: String, trim: true, maxlength: 5000 },
+  solution: { type: String, trim: true, maxlength: 5000 },
+  why: { type: String, trim: true, maxlength: 5000 },
+}, { _id: false });
 const foundationContentSchema = new Schema<IFoundationContent>({
   program: { type: String, enum: ['qudrat', 'tahsili'], required: true, index: true },
   title: { type: String, required: true, trim: true },
@@ -1573,6 +1608,11 @@ const foundationContentSchema = new Schema<IFoundationContent>({
   published: { type: Boolean, default: false, index: true },
   linkedQuizRoute: { type: String, trim: true },
   durationMinutes: { type: Number, min: 0 },
+  subjectId: { type: String, trim: true, index: true },
+  taxonomyNodeId: { type: String, trim: true, index: true },
+  sections: { type: [foundationContentSectionSchema], default: [] },
+  version: { type: Number, min: 1, default: 1 },
+  publishedAt: { type: Date },
   quiz: { type: foundationQuizSchema },
 }, { timestamps: true });
 foundationContentSchema.index({ program: 1, published: 1, order: 1 });

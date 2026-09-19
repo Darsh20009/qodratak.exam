@@ -14,6 +14,35 @@ import type {
 export type LearningNodeType = TaxonomyNodeType;
 export type LearningNodeStatus = TaxonomyNodeStatus;
 
+export type LearningContentProgressState =
+  | 'NOT_STARTED'
+  | 'READING'
+  | 'COMPLETED'
+  | 'PRACTICE_COMPLETED';
+
+export interface ILearningContentPracticeReference {
+  questionId: string;
+  sourceType: 'mongo_question' | 'mongo_tahsili_question';
+  sourceKey: string;
+  answeredAt?: Date;
+}
+
+export interface ILearningContentProgress extends Document {
+  studentId: string;
+  contentId: mongoose.Types.ObjectId;
+  contentVersion: number;
+  currentSectionId?: string;
+  progress: number;
+  state: LearningContentProgressState;
+  startedAt?: Date;
+  lastReadAt?: Date;
+  completedAt?: Date;
+  practiceCompletedAt?: Date;
+  pendingPractice?: ILearningContentPracticeReference;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
 export interface ILearningContentNode extends Document {
   code: string;
   name: string;
@@ -91,6 +120,39 @@ const learningContentNodeSchema = new Schema<ILearningContentNode>(
   },
   { timestamps: true },
 );
+
+const learningContentPracticeReferenceSchema = new Schema<ILearningContentPracticeReference>({
+  questionId: { type: String, required: true, trim: true },
+  sourceType: {
+    type: String,
+    enum: ['mongo_question', 'mongo_tahsili_question'],
+    required: true,
+  },
+  sourceKey: { type: String, required: true, trim: true },
+  answeredAt: { type: Date },
+}, { _id: false });
+
+const learningContentProgressSchema = new Schema<ILearningContentProgress>({
+  studentId: { type: String, required: true, index: true },
+  contentId: { type: Schema.Types.ObjectId, ref: 'FoundationContent', required: true, index: true },
+  contentVersion: { type: Number, required: true, min: 1 },
+  currentSectionId: { type: String, trim: true },
+  progress: { type: Number, required: true, min: 0, max: 100, default: 0 },
+  state: {
+    type: String,
+    enum: ['NOT_STARTED', 'READING', 'COMPLETED', 'PRACTICE_COMPLETED'],
+    required: true,
+    default: 'NOT_STARTED',
+  },
+  startedAt: { type: Date },
+  lastReadAt: { type: Date },
+  completedAt: { type: Date },
+  practiceCompletedAt: { type: Date },
+  pendingPractice: { type: learningContentPracticeReferenceSchema },
+}, { timestamps: true });
+
+learningContentProgressSchema.index({ studentId: 1, contentId: 1 }, { unique: true });
+learningContentProgressSchema.index({ studentId: 1, updatedAt: -1 });
 
 learningContentNodeSchema.index({ program: 1, type: 1, parentId: 1, status: 1 });
 learningContentNodeSchema.index({ program: 1, subject: 1, status: 1 });
@@ -191,3 +253,7 @@ export const LearningContentNode = mongoose.models['LearningContentNode']
 export const QuestionLearningMap = mongoose.models['QuestionLearningMap']
   ? mongoose.model<IQuestionLearningMap>('QuestionLearningMap')
   : mongoose.model<IQuestionLearningMap>('QuestionLearningMap', questionLearningMapSchema);
+
+export const LearningContentProgress = mongoose.models['LearningContentProgress']
+  ? mongoose.model<ILearningContentProgress>('LearningContentProgress')
+  : mongoose.model<ILearningContentProgress>('LearningContentProgress', learningContentProgressSchema);

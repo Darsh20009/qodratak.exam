@@ -494,7 +494,7 @@ export function applySelectedContentReference(
   };
 }
 
-function publicQuestion(candidate: QuestionCandidate): PublicSelectedQuestion {
+export function publicQuestionCandidate(candidate: QuestionCandidate): PublicSelectedQuestion {
   return {
     questionId: candidate.questionId,
     sourceType: candidate.sourceType,
@@ -644,6 +644,26 @@ async function loadQuestionCandidates(context: QuestionSelectionContext): Promis
       applyApprovedMap(candidateFromTahsiliQuestion(question), mapForQuestion(maps, 'mongo_tahsili_question', question)));
   }
   return [];
+}
+
+export async function selectQuestionForContext(
+  context: QuestionSelectionContext,
+): Promise<{ candidate: QuestionCandidate | null; filtering: QuestionCandidateFilteringResult }> {
+  const hydratedContext = await loadSelectionContext(context);
+  const candidates = await loadQuestionCandidates(hydratedContext);
+  return selectQuestionFromCandidates(candidates, hydratedContext);
+}
+
+export async function getQuestionCandidateForReference(
+  context: QuestionSelectionContext,
+  reference: { questionId: string; sourceType: LearningAttemptSourceType; sourceKey: string },
+): Promise<QuestionCandidate | null> {
+  const candidates = await loadQuestionCandidates(context);
+  return candidates.find((candidate) =>
+    candidate.questionId === reference.questionId &&
+    candidate.sourceType === reference.sourceType &&
+    candidate.sourceKey === reference.sourceKey,
+  ) || null;
 }
 
 async function loadSelectionContext(
@@ -848,7 +868,7 @@ export async function selectContentForSessionStep(
         sessionId: String(session._id),
         stepId,
         contentReference: questionReference(selected),
-        question: publicQuestion(selected),
+        question: publicQuestionCandidate(selected),
       };
     }
   }
@@ -888,7 +908,7 @@ export async function selectContentForSessionStep(
     sessionId: String(session._id),
     stepId,
     contentReference: questionReference(selected),
-    question: publicQuestion(selected),
+    question: publicQuestionCandidate(selected),
   };
 }
 

@@ -36,6 +36,8 @@ export interface StudentDashboard {
 export interface FoundationContent {
   _id: string;
   program: 'qudrat' | 'tahsili';
+  subjectId?: string;
+  taxonomyNodeId?: string;
   title: string;
   description: string;
   videoUrl: string;
@@ -58,6 +60,73 @@ export interface FoundationContent {
       explanation?: string;
     }>;
   };
+}
+
+export interface LearningContentSection {
+  id: string;
+  type: string;
+  title?: string;
+  body?: string;
+  problem?: string;
+  thinking?: string;
+  solution?: string;
+  why?: string;
+}
+
+export interface LearningContentDocument {
+  id: string;
+  programId: string;
+  subjectId?: string;
+  taxonomyNodeId?: string;
+  title: string;
+  description: string;
+  estimatedMinutes: number;
+  sections: LearningContentSection[];
+  status: "published";
+  version: number;
+  publishedAt?: string;
+  videoUrl?: string;
+  thumbnailUrl?: string;
+  linkedQuizRoute?: string;
+  hasPractice: boolean;
+}
+
+export interface LearningContentProgress {
+  contentId: string;
+  contentVersion: number;
+  currentSectionId?: string;
+  progress: number;
+  state: "NOT_STARTED" | "READING" | "COMPLETED" | "PRACTICE_COMPLETED";
+  startedAt?: string;
+  lastReadAt?: string;
+  completedAt?: string;
+  practiceCompletedAt?: string;
+}
+
+export interface FoundationPracticeQuestion {
+  questionId: string;
+  sourceType: string;
+  sourceKey: string;
+  text: string;
+  options: string[];
+  explanation?: string;
+  imageUrl?: string;
+  imageUrls?: string[];
+}
+
+export interface FoundationPracticeResponse {
+  question?: FoundationPracticeQuestion;
+}
+
+export interface FoundationPracticeAnswerResponse {
+  result: {
+    isCorrect: boolean;
+    explanation?: string;
+    correction?: string;
+    nextStep?: string;
+    practiceCompletedAt?: string;
+  };
+  progress: LearningContentProgress;
 }
 
 export interface FoundationLearningState {
@@ -241,12 +310,92 @@ export function useUpdateExamDate() {
   });
 }
 
-export function useFoundationContent(program: 'qudrat' | 'tahsili', enabled = true) {
+export function useFoundationContent(program: 'qudrat' | 'tahsili', enabled = true, subjectId?: string) {
   return useQuery<FoundationContent[]>({
-    queryKey: ["/api/foundation-content", program],
-    queryFn: async () => (await fetchJson<{ content: FoundationContent[] }>(`/api/foundation-content?program=${program}`)).content,
+    queryKey: ["/api/foundation-content", program, subjectId || ""],
+    queryFn: async () => (await fetchJson<{ content: FoundationContent[] }>(
+      `/api/foundation-content?program=${program}${subjectId ? `&subject=${encodeURIComponent(subjectId)}` : ""}`,
+    )).content,
     enabled,
     staleTime: 5 * 60 * 1000,
+  });
+}
+
+export function useLearningContent(contentId: string, enabled = true) {
+  return useQuery<LearningContentDocument>({
+    queryKey: ["/api/learning/content", contentId],
+    queryFn: () => fetchJson<LearningContentDocument>(`/api/learning/content/${encodeURIComponent(contentId)}`),
+    enabled: enabled && Boolean(contentId),
+    staleTime: 60 * 1000,
+  });
+}
+
+export function useLearningContentProgress(contentId: string, enabled = true) {
+  return useQuery<LearningContentProgress>({
+    queryKey: ["/api/learning/content", contentId, "progress"],
+    queryFn: () => fetchJson<LearningContentProgress>(`/api/learning/content/${encodeURIComponent(contentId)}/progress`),
+    enabled: enabled && Boolean(contentId),
+    staleTime: 15 * 1000,
+    refetchOnWindowFocus: true,
+  });
+}
+
+export function useUpdateLearningContentProgress(contentId: string) {
+  const queryClient = useQueryClient();
+  return useMutation<LearningContentProgress, Error, {
+    currentSectionId?: string;
+    progress: number;
+    state?: LearningContentProgress["state"];
+  }>({
+    mutationFn: (payload) => fetchJson<LearningContentProgress>(`/api/learning/content/${encodeURIComponent(contentId)}/progress`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    }),
+    onSuccess: (data) => {
+      queryClient.setQueryData(["/api/learning/content", contentId, "progress"], data);
+    },
+  });
+}
+
+export function useCompleteLearningContent(contentId: string) {
+  const queryClient = useQueryClient();
+  return useMutation<LearningContentProgress, Error, undefined>({
+    mutationFn: () => fetchJson<LearningContentProgress>(`/api/learning/content/${encodeURIComponent(contentId)}/complete`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({}),
+    }),
+    onSuccess: (data) => {
+      queryClient.setQueryData(["/api/learning/content", contentId, "progress"], data);
+    },
+  });
+}
+
+export function useFoundationPractice(contentId: string, enabled = true) {
+  return useQuery<FoundationPracticeResponse>({
+    queryKey: ["/api/learning/content", contentId, "practice"],
+    queryFn: () => fetchJson<FoundationPracticeResponse>(`/api/learning/content/${encodeURIComponent(contentId)}/practice`),
+    enabled: enabled && Boolean(contentId),
+    staleTime: 0,
+  });
+}
+
+export function useSubmitFoundationPractice(contentId: string) {
+  const queryClient = useQueryClient();
+  return useMutation<FoundationPracticeAnswerResponse, Error, {
+    questionId: string;
+    selectedOptionIndex: number;
+  }>({
+    mutationFn: (payload) => fetchJson<FoundationPracticeAnswerResponse>(`/api/learning/content/${encodeURIComponent(contentId)}/practice/answer`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    }),
+    onSuccess: (data) => {
+      queryClient.setQueryData(["/api/learning/content", contentId, "progress"], data.progress);
+      queryClient.invalidateQueries({ queryKey: ["/api/learning/content", contentId, "practice"] });
+    },
   });
 }
 
