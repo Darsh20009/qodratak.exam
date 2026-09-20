@@ -14,6 +14,13 @@ import {
   normalizeDiagnosticProgram,
 } from './studentDiagnosticService';
 import { listApprovedMasteryNodes } from './masteryService';
+import {
+  listLearningReviewItemsForRecommendation,
+} from './spacedRepetitionService';
+import type {
+  LearningRetentionConfidence,
+  LearningReviewReasonCode,
+} from '../mongodb/learningReviewModels';
 
 export type LearningRecommendationType =
   | 'LEARN'
@@ -36,7 +43,13 @@ export type RecommendationReasonCode =
   | 'STALE_EVIDENCE'
   | 'RETURNED_AFTER_GAP'
   | 'NEAR_MASTERY_LOW_CONFIDENCE'
-  | 'UNKNOWN_EVIDENCE_ONLY';
+  | 'UNKNOWN_EVIDENCE_ONLY'
+  | 'REVIEW_DUE'
+  | 'OVERDUE'
+  | 'RECENT_FAILURE'
+  | 'CONCEPT_ERROR'
+  | 'LOW_RETENTION_CONFIDENCE'
+  | 'POST_MASTERY_CHECK';
 
 export const RECOMMENDATION_CALCULATION_VERSION = 'phase-09-v1';
 export const RECOMMENDATION_RECENT_DAYS = 30;
@@ -64,6 +77,9 @@ export interface RecommendationEvidence {
   lastEvidenceAt?: Date;
   diagnosticState: StudentDiagnosticDecision['diagnosticState'];
   dataConfidence: StudentDiagnosticDecision['dataConfidence'];
+  reviewDue?: boolean;
+  retentionConfidence?: LearningRetentionConfidence;
+  reviewReasonCodes?: LearningReviewReasonCode[];
 }
 
 export interface LearningRecommendation {
@@ -115,11 +131,23 @@ export interface RecommendationMasteryRecord {
   lastEvidenceAt?: Date | string;
 }
 
+export interface RecommendationReviewRecord {
+  programId: string;
+  subjectId?: string;
+  taxonomyNodeId?: string;
+  due: boolean;
+  priority: number;
+  retentionConfidence: LearningRetentionConfidence;
+  reasonCodes: LearningReviewReasonCode[];
+  masteryLevel?: MasteryLevel;
+}
+
 export interface BuildRecommendationsInput {
   diagnostic: StudentDiagnosticDecision;
   attempts: RecommendationAttemptRecord[];
   errorEvidence?: RecommendationErrorRecord[];
   mastery?: RecommendationMasteryRecord[];
+  reviewItems?: RecommendationReviewRecord[];
   requestedProgramId?: string;
   now?: Date;
 }
@@ -158,6 +186,7 @@ interface RecommendationCandidate {
   priorityFactors: RecommendationPriorityFactors;
   confidence: RecommendationConfidence;
   expiresInDays: number;
+  reviewPriority?: number;
 }
 
 const CONCEPT_ERROR_TYPES = new Set<LearningErrorType>([
@@ -342,6 +371,64 @@ function buildCandidate(
   };
 }
 
+function recommendationReviewReasons(
+  reasons: LearningReviewReasonCode[],
+): RecommendationReasonCode[] {
+  const allowed: RecommendationReasonCode[] = [
+    'REVIEW_DUE',
+    'OVERDUE',
+    'RECENT_FAILURE',
+    'CONCEPT_ERROR',
+    'LOW_RETENTION_CONFIDENCE',
+    'POST_MASTERY_CHECK',
+  ];
+  return reasons.filter((reason): reason is RecommendationReasonCode =>
+    allowed.includes(reason as RecommendationReasonCode),
+  );
+}
+
+function reviewCandidate(
+  review: RecommendationReviewRecord,
+  diagnostic: StudentDiagnosticDecision,
+  nodes: ApprovedRecommendationNode[],
+  now: Date,
+): RecommendationCandidate | undefined {
+  const node = nodes.find((candidate) =>
+    candidate.code === review.taxonomyNodeId ||
+    (candidate.programId === review.programId &&
+      (!review.subjectId || candidate.subjectId === review.subjectId)),
+  );
+  if (!node) return undefined;
+  const type: LearningRecommendationType =
+    review.masteryLevel === 'MASTERED' ? 'MASTERY_CHECK' : 'REVIEW';
+  const candidate = buildCandidate(
+    type,
+    {
+      node,
+      attempts: [],
+      errors: [],
+      recentAttempts: [],
+      recentErrors: [],
+      trustworthyErrors: [],
+      lastEvidenceAt: now,
+    },
+    diagnostic,
+    recommendationReviewReasons(review.reasonCodes).length
+      ? recommendationReviewReasons(review.reasonCodes)
+      : ['REVIEW_DUE'],
+    now,
+    3,
+  );
+  candidate.reviewPriority = Math.max(candidate.priorityFactors.base, Math.min(100, review.priority));
+  candidate.evidence = {
+    ...candidate.evidence,
+    reviewDue: review.due,
+    retentionConfidence: review.retentionConfidence,
+    reviewReasonCodes: review.reasonCodes,
+  };
+  return candidate;
+}
+
 function candidateForScope(
   scope: ScopeEvidence,
   diagnostic: StudentDiagnosticDecision,
@@ -462,7 +549,7 @@ function materializeCandidate(
     subjectId: candidate.scope.subjectId,
     taxonomyNodeId: candidate.scope.code,
     recommendationType: candidate.type,
-    priority: Math.round(clamp(
+    priority: candidate.reviewPriority ?? Math.round(clamp(
       candidate.priorityFactors.base +
         candidate.priorityFactors.masteryWeakness +
         candidate.priorityFactors.repeatedError +
@@ -570,6 +657,11 @@ export function buildLearningRecommendations(
       const candidate = candidateForScope(evidence, input.diagnostic, now);
       if (candidate) candidates.push(candidate);
     }
+    for (const review of input.reviewItems || []) {
+      if (!review.due) continue;
+      const candidate = reviewCandidate(review, input.diagnostic, nodes, now);
+      if (candidate) candidates.push(candidate);
+    }
   }
 
   const recommendations = deduplicateRecommendations(
@@ -603,11 +695,12 @@ export async function getStudentRecommendations(
   if (requestedProgramId && !normalizedProgramId) {
     throw new Error('البرنامج غير صالح');
   }
-  const [diagnostic, attempts, errorEvidence, mastery] = await Promise.all([
+  const [diagnostic, attempts, errorEvidence, mastery, reviewItems] = await Promise.all([
     getStudentDiagnosticDecision(studentId, normalizedProgramId),
     LearningAttempt.find({ studentId }).select('_id programId subjectId isAnswered isCorrect createdAt').lean(),
     LearningErrorEvidence.find({ studentId }).select('attemptId programId subjectId errorType confidence detectedAt').lean(),
     StudentMastery.find({ studentId }).select('taxonomyNodeId taxonomyNodeType programId subjectId masteryScore masteryLevel evidenceCount confidence lastAttemptAt lastEvidenceAt').lean(),
+    listLearningReviewItemsForRecommendation(studentId, { programId: normalizedProgramId }),
   ]);
   return buildLearningRecommendations(studentId, {
     diagnostic,
@@ -633,6 +726,7 @@ export async function getStudentRecommendations(
       lastAttemptAt: record.lastAttemptAt,
       lastEvidenceAt: record.lastEvidenceAt,
     })),
+    reviewItems,
   });
 }
 

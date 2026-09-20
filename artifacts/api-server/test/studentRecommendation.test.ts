@@ -5,6 +5,7 @@ import {
   type RecommendationAttemptRecord,
   type RecommendationErrorRecord,
   type RecommendationMasteryRecord,
+  type RecommendationReviewRecord,
 } from '../src/services/studentRecommendationService.ts';
 import type { StudentDiagnosticDecision } from '../src/services/studentDiagnosticService.ts';
 
@@ -386,4 +387,29 @@ test('legacy recommendation fields are not rewritten by the new engine', () => {
   });
   assert.equal(result.recommendations[0].recommendationType, 'DIAGNOSTIC');
   assert.equal(result.diagnostic.calculationVersion, 'phase-08-v1');
+});
+
+test('due retention evidence adds a review recommendation without changing mastery confidence', () => {
+  const review: RecommendationReviewRecord = {
+    programId: PROGRAM,
+    subjectId: VERBAL,
+    due: true,
+    priority: 88,
+    retentionConfidence: 'LOW',
+    reasonCodes: ['OVERDUE', 'LOW_RETENTION_CONFIDENCE'],
+    masteryLevel: 'PROFICIENT',
+  };
+  const result = buildLearningRecommendations('student-a', {
+    diagnostic: activeDiagnostic(),
+    attempts: [],
+    reviewItems: [review],
+    now: NOW,
+  });
+  const recommendation = result.recommendations.find((item) => item.recommendationType === 'REVIEW');
+  assert.ok(recommendation);
+  assert.equal(recommendation.subjectId, VERBAL);
+  assert.equal(recommendation.priority, 88);
+  assert.equal(recommendation.evidence.retentionConfidence, 'LOW');
+  assert.deepEqual(recommendation.evidence.reviewReasonCodes, ['OVERDUE', 'LOW_RETENTION_CONFIDENCE']);
+  assert.equal(recommendation.evidence.masteryConfidence, undefined);
 });

@@ -22,6 +22,7 @@ import {
   type QuestionSelectionContext,
 } from './questionSelectionService';
 import { CONTROLLED_TAXONOMY_NODES } from '../learning/taxonomyRegistry';
+import { syncLearningReviewItemFromContent } from './spacedRepetitionService';
 
 export interface LearningContentDocument {
   id: string;
@@ -264,6 +265,12 @@ export async function completeLearningContent(
   if (!progress.startedAt) progress.startedAt = new Date();
   progress.lastReadAt = new Date();
   await progress.save();
+  await syncLearningReviewItemFromContent(studentId, {
+    id: String(content._id),
+    programId: programId(content.program),
+    subjectId: content.subjectId,
+    taxonomyNodeId: content.taxonomyNodeId,
+  });
   return publicProgress(progress);
 }
 

@@ -76,6 +76,11 @@ import {
   publicStudentRecommendations,
 } from '../services/studentRecommendationService';
 import {
+  annotateLearningReviewItemFromErrorEvidence,
+  listDueLearningReviewItems,
+  SpacedRepetitionError,
+} from '../services/spacedRepetitionService';
+import {
   DailyLearningSessionError,
   completeTodayLearningSession,
   getTodayLearningSession,
@@ -11758,7 +11763,19 @@ app.post("/api/auth/register", async (req: Request, res: Response) => {
           ? String(req.body.idempotencyKey)
           : undefined,
       });
-      await recalculateMasteryForAttempt(studentId, String(req.body?.attemptId || ''));
+      const attemptId = String(req.body?.attemptId || '');
+      const mastery = await recalculateMasteryForAttempt(studentId, attemptId);
+      if (!result.duplicate) {
+        const attempt = await LearningAttempt.findOne({ _id: attemptId, studentId }).lean();
+        if (attempt) {
+          await annotateLearningReviewItemFromErrorEvidence(
+            studentId,
+            attempt as any,
+            String(result.evidence?.errorType || 'UNKNOWN'),
+            mastery?.masteryLevel,
+          );
+        }
+      }
       return res.status(result.duplicate ? 200 : 201).json({
         duplicate: result.duplicate,
         evidence: publicLearningErrorEvidence(result.evidence),
@@ -11872,6 +11889,36 @@ app.post("/api/auth/register", async (req: Request, res: Response) => {
       }
       console.error('Student recommendations retrieval error:', error);
       return res.status(500).json({ error: 'تعذر تحديد ما يحتاجه الطالب الآن' });
+    }
+  });
+
+  app.get('/api/learning/reviews/due', requireAuth, async (req: Request, res: Response) => {
+    const studentId = studentOnly(req, res);
+    if (!studentId) return;
+    const requestedProgram = req.query.programId ?? req.query.program;
+    const programId = requestedProgram
+      ? normalizeDiagnosticProgram(String(requestedProgram))
+      : undefined;
+    if (requestedProgram && !programId) {
+      return res.status(400).json({ error: 'البرنامج غير صالح', code: 'INVALID_PROGRAM' });
+    }
+    try {
+      const reviewItems = await listDueLearningReviewItems(studentId, {
+        programId,
+        subjectId: req.query.subjectId ? String(req.query.subjectId) : undefined,
+        limit: req.query.limit === undefined ? undefined : Number(req.query.limit),
+      });
+      return res.json({
+        reviewItems,
+        calculationVersion: 'phase-14-v1',
+      });
+    } catch (error: any) {
+      if (error instanceof SpacedRepetitionError) {
+        const status = error.code === 'INVALID_LIMIT' || error.code === 'INVALID_PROGRAM' ? 400 : 400;
+        return res.status(status).json({ error: error.message, code: error.code });
+      }
+      console.error('Learning review retrieval error:', error);
+      return res.status(500).json({ error: 'تعذر جلب المراجعات المستحقة' });
     }
   });
 

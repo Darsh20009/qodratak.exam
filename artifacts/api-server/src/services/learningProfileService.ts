@@ -12,6 +12,7 @@ import {
 } from '../learning/taxonomyRegistry';
 import { recordAutomaticLearningErrorEvidence } from './learningErrorService';
 import { recalculateMasteryForAttempt } from './masteryService';
+import { syncLearningReviewItemFromAttempt } from './spacedRepetitionService';
 
 const approvedPrograms = new Set(
   CONTROLLED_TAXONOMY_NODES
@@ -429,12 +430,18 @@ export async function recordVerifiedLearningAttempt(
       hasExplanation: typeof (question as any).explanation === 'string' &&
         (question as any).explanation.trim().length > 0,
     };
-    await recordAutomaticLearningErrorEvidence(
+    const errorEvidence = await recordAutomaticLearningErrorEvidence(
       studentId,
       result.attempt as any,
       questionMetadata,
     );
-    await recalculateMasteryForAttempt(studentId, String((result.attempt as any)._id));
+    const mastery = await recalculateMasteryForAttempt(studentId, String((result.attempt as any)._id));
+    await syncLearningReviewItemFromAttempt(
+      studentId,
+      result.attempt as any,
+      errorEvidence?.evidence as any,
+      mastery?.masteryLevel,
+    );
   }
 
   return result;

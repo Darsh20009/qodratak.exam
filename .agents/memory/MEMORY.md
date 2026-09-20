@@ -25,3 +25,4 @@
 - [Error evidence boundary](error-evidence-boundary.md) — wrong answers are evidence, not concept-gap judgments; keep inferred error types traceable and separate from legacy ErrorLog.
 - [Mastery taxonomy gate](mastery-foundation.md) — calculate mastery only for formally approved taxonomy nodes; current deep mappings remain review-only.
 - [Authenticated route integration tests](authenticated-route-integration-tests.md) — use real Mongo fixtures with the app’s existing in-memory session fallback to avoid leaked connect-mongo handles.
+- [Phase 14 retention engine](phase14-retention-engine.md) — keep source identity complete and retention confidence separate from mastery and recommendation confidence.
