@@ -272,12 +272,16 @@ export async function deleteLearningContentAnnotation(
   contentId: string,
   annotationId: string,
 ): Promise<void> {
-  await loadContent(studentId, contentId);
+  const content = await loadContent(studentId, contentId);
   assertObjectId(annotationId, 'INVALID_ANNOTATION_ID');
-  const deleted = await LearningContentAnnotation.deleteOne({ _id: annotationId, studentId, contentId });
-  if (!deleted.deletedCount) {
+  const annotation = await LearningContentAnnotation.findOne({ _id: annotationId, studentId, contentId });
+  if (!annotation) {
     throw new LearningContentAnnotationError('الـannotation غير موجودة', 'ANNOTATION_NOT_FOUND');
   }
+  if (annotation.contentVersion !== content.version) {
+    throw new LearningContentAnnotationError('هذه annotation مرتبطة بإصدار قديم ولا تعرض تلقائيًا', 'VERSION_MISMATCH');
+  }
+  await LearningContentAnnotation.deleteOne({ _id: annotationId, studentId, contentId });
 }
 
 export const learningContentAnnotationLimits = {

@@ -10198,7 +10198,7 @@ app.post("/api/auth/register", async (req: Request, res: Response) => {
   });
 
   // ========== Background Reminder Scheduler (every 60 seconds) ==========
-  setInterval(async () => {
+  if (process.env.NODE_ENV !== 'test') setInterval(async () => {
     try {
       const { ExamBooking } = await import('./mongodb/models');
       const now = new Date();
