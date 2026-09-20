@@ -1,0 +1,764 @@
+نفّذ الآن **Phase 15 فقط: ADAPTIVE LEARNING DECISION ENGINE**.
+
+ممنوع البدء في Phase 16 أو أي مرحلة لاحقة.
+
+الهدف:
+بناء **محرك قرار Adaptive Learning deterministic** يحدد ما الذي يجب أن يحدث للطالب بعد ذلك بناءً على البيانات الموجودة حاليًا، بدون ML وبدون تغيير الـUI بشكل كبير.
+
+النظام الحالي أصبح يحتوي على:
+
+`Diagnostic`
+→ `Recommendation`
+→ `Today's Learning Session`
+→ `Question Selection`
+→ `LearningAttempt`
+→ `Error Evidence`
+→ `Mastery`
+→ `Digital Textbook`
+→ `Retention / Due Reviews`
+
+الآن نحتاج طبقة قرار تجمع هذه الإشارات بطريقة واضحة وقابلة للاختبار.
+
+---
+
+## 1. Audit أولًا
+
+راجع:
+
+* `studentDiagnosticService`
+* `studentRecommendationService`
+* `dailyLearningSessionService`
+* `questionSelectionService`
+* `StudentMastery`
+* `LearningAttempt`
+* `LearningErrorEvidence`
+* `LearningReviewItem`
+* `LearningContentProgress`
+
+لا تنشئ محركًا موازيًا إذا كان هناك logic موجود يمكن إعادة استخدامه.
+
+---
+
+## 2. Adaptive Decision Engine
+
+أنشئ service مستقلة، مثل:
+
+`adaptiveLearningDecisionService.ts`
+
+مسؤوليتها الوحيدة:
+
+**تحديد الخطوة التعليمية التالية.**
+
+لا تنشئ السؤال.
+
+لا تنشئ الدرس.
+
+لا تسجل attempt.
+
+لا تعدل mastery.
+
+لا تعدل retention.
+
+فقط:
+
+`Student State`
+→ `Adaptive Decision`
+→ `Recommendation / Session`
+
+---
+
+## 3. Decision Types
+
+ادعم مبدئيًا:
+
+* `DIAGNOSTIC`
+* `LEARN`
+* `PRACTICE`
+* `CORRECT`
+* `SIMILAR`
+* `REVIEW`
+* `RECOVERY`
+* `MASTERY_CHECK`
+* `ADVANCE`
+
+إذا كان enum مختلفًا أنسب للarchitecture الحالية، استخدم contract واضحًا بدل تكرار enums.
+
+---
+
+## 4. Student State
+
+المحرك يجب أن يقرأ:
+
+### Diagnostic
+
+* NEW
+* INSUFFICIENT_DATA
+* ACTIVE
+* RETURNING
+
+### Mastery
+
+* UNKNOWN
+* EMERGING
+* DEVELOPING
+* PROFICIENT
+* MASTERED
+
+### Retention
+
+* due review
+* overdue
+* retention confidence
+
+### Errors
+
+* repeated concept errors
+* calculation errors
+* reading errors
+* misunderstanding
+* wrong strategy
+* rushed
+* memory gap
+* etc.
+
+### Recent Attempts
+
+* correctness
+* recency
+* recent failures
+* recent successes
+
+### Content
+
+* available FoundationContent
+* available questions
+* approved taxonomy
+
+---
+
+## 5. Core Decision Rules
+
+ابدأ بقواعد واضحة ולא ML.
+
+### NEW student
+
+إذا لا توجد learning data:
+
+`DIAGNOSTIC`
+
+---
+
+### INSUFFICIENT_DATA
+
+إذا البيانات غير كافية:
+
+`DIAGNOSTIC`
+
+ولا تبدأ بافتراض mastery.
+
+---
+
+### RETURNING student
+
+إذا الطالب عاد بعد gap:
+
+`RECOVERY`
+
+إلا إذا كانت هناك review/diagnostic evidence أقوى وفق القواعد المحددة.
+
+لا تجبر الطالب على البدء من الصفر.
+
+---
+
+### Repeated Concept Error
+
+إذا توجد أخطاء conceptual موثوقة ومتكررة:
+
+`CORRECT`
+
+أو:
+
+`LEARN`
+
+بحسب توفر FoundationContent.
+
+ثم:
+
+`PRACTICE`
+
+---
+
+### Procedural Error
+
+إذا الخطأ procedural/calculation منفرد:
+
+`PRACTICE`
+
+ولا تحول خطأ واحد إلى concept gap.
+
+---
+
+### Due Review
+
+إذا يوجد review مستحق:
+
+`REVIEW`
+
+لكن لا تجعل review يتغلب دائمًا على learning جديد.
+
+استخدم priority deterministic.
+
+---
+
+### Emerging / Developing
+
+إذا mastery منخفض:
+
+`LEARN`
+
+أو:
+
+`PRACTICE`
+
+بحسب وجود content وأخطاء حديثة.
+
+---
+
+### Near Mastery
+
+إذا:
+
+`PROFICIENT`
+
+مع evidence كافية:
+
+`MASTERY_CHECK`
+
+---
+
+### MASTERED
+
+إذا mastery = MASTERED وretention stable:
+
+`ADVANCE`
+
+إذا review مستحق:
+
+`REVIEW`
+
+ولا تعيد الطالب إلى learning الأساسي بدون evidence.
+
+---
+
+## 6. Strong Student
+
+يجب أن يستطيع الطالب القوي تجاوز المحتوى الذي لديه evidence قوية على إتقانه.
+
+مثال:
+
+`MASTERED + stable retention + recent successful evidence`
+
+→ لا ترسل الطالب إلى READ لنفس المحتوى مرة أخرى.
+
+يمكن:
+
+`MASTERY_CHECK`
+أو
+`ADVANCE`
+
+لكن لا تعتبر الإجابة الصحيحة الواحدة دليلًا كافيًا للـskip.
+
+---
+
+## 7. Returning Student
+
+إذا:
+
+`RETURNING`
+
+والبيانات قديمة:
+
+لا تفترض أن mastery اختفى.
+
+ولا تفترض أنه ما زال كاملًا.
+
+استخدم:
+
+`RECOVERY`
+
+ثم دع النتائج الجديدة تحدث الحالة.
+
+---
+
+## 8. Error Escalation
+
+لا تجعل خطأ واحدًا يغير الخطة جذريًا.
+
+مثال:
+
+### خطأ واحد
+
+لا escalation كبير.
+
+### أخطاء conceptual متكررة
+
+ارفع الحاجة إلى:
+
+`CORRECT`
+أو
+`LEARN`
+
+### نجاحات متكررة
+
+اسمح بالانتقال إلى:
+
+`MASTERY_CHECK`
+
+---
+
+## 9. Decision Priority
+
+أنشئ priority deterministic.
+
+مثال factors:
+
+* diagnostic requirement
+* repeated conceptual errors
+* returning status
+* overdue review
+* low mastery
+* recent failure
+* near mastery
+* stable mastery
+
+لكن:
+
+**لا تستخدم scoring سحري غير قابل للتفسير.**
+
+كل قرار يجب أن يحتوي على:
+
+* `decision`
+* `reasonCode`
+* `reason`
+* `confidence`
+* `scope`
+
+---
+
+## 10. Reason Codes
+
+أنشئ reason codes واضحة مثل:
+
+* `NEW_STUDENT`
+* `INSUFFICIENT_DATA`
+* `RETURNING_AFTER_GAP`
+* `REPEATED_CONCEPT_ERROR`
+* `RECENT_FAILURE`
+* `LOW_MASTERY`
+* `DUE_REVIEW`
+* `OVERDUE_REVIEW`
+* `NEAR_MASTERY`
+* `MASTERED_STABLE`
+* `ADVANCE_READY`
+* `CONTENT_UNAVAILABLE`
+* `PRACTICE_AVAILABLE`
+* `MASTERY_CHECK_READY`
+
+لا تستخدم أوصافًا نفسية.
+
+---
+
+## 11. Confidence
+
+افصل:
+
+`decision confidence`
+
+عن:
+
+* mastery confidence
+* retention confidence
+* recommendation confidence
+* data confidence
+
+يمكن أن تكون:
+
+* LOW
+* MEDIUM
+* HIGH
+
+ولا تدعي أنها probability علمية.
+
+---
+
+## 12. Content Availability
+
+إذا القرار:
+
+`LEARN`
+
+لكن لا يوجد FoundationContent منشور:
+
+لا تعيد:
+
+`LEARN`
+
+بشكل أعمى.
+
+انتقل إلى fallback منطقي مثل:
+
+`PRACTICE`
+
+إذا كان متاحًا.
+
+وإذا لم يوجد شيء مناسب:
+
+`DIAGNOSTIC`
+
+أو حالة واضحة مثل:
+
+`NO_ACTIONABLE_CONTENT`
+
+لكن لا تستخدم مادة أخرى أو taxonomy غير معتمدة.
+
+---
+
+## 13. Question Availability
+
+نفس القاعدة:
+
+إذا:
+
+`PRACTICE`
+
+لكن لا يوجد سؤال صالح:
+
+لا تخترع سؤالًا.
+
+استخدم fallback واضحًا.
+
+---
+
+## 14. Taxonomy
+
+لا تستخدم إلا:
+
+`status = mapped`
+
+و:
+
+`reviewStatus = APPROVED`
+
+للـdeep taxonomy.
+
+وإلا:
+
+`Program + Subject`
+
+---
+
+## 15. Spaced Repetition Integration
+
+اقرأ:
+
+`LearningReviewItem`
+
+لكن لا تعدل review state.
+
+المحرك يستطيع أن يقول:
+
+`REVIEW`
+
+لكن تحديث interval يبقى مسؤولية Spaced Repetition Engine.
+
+---
+
+## 16. Recommendation Integration
+
+لا تلغِ Recommendation Engine.
+
+حدد المسؤوليات:
+
+### Adaptive Decision Engine
+
+يقرر:
+
+**ماذا نحتاج الآن؟**
+
+### Recommendation Engine
+
+يقرر:
+
+**ما recommendation المناسبة؟**
+
+### Session Engine
+
+يقرر:
+
+**كيف ننفذها في session؟**
+
+### Question Selection
+
+يقرر:
+
+**أي سؤال؟**
+
+### Content Engine
+
+يقرر:
+
+**أي محتوى؟**
+
+---
+
+## 17. Today's Session Integration
+
+لا تعيد بناء Today's Session.
+
+أضف integration بسيطة بحيث يستطيع session engine استخدام adaptive decision كـinput.
+
+لا تجعل Adaptive Engine ينشئ LearningSession مباشرة إذا architecture الحالية لا تحتاج ذلك.
+
+---
+
+## 18. Determinism
+
+ممنوع:
+
+`Math.random()`
+
+نفس:
+
+`student state + evidence + timestamp`
+
+يجب أن ينتج نفس القرار.
+
+---
+
+## 19. Student Isolation
+
+كل state يأتي من authenticated student.
+
+لا تسمح للclient بإرسال:
+
+* mastery
+* confidence
+* diagnostic state
+* retention
+* error history
+* decision
+
+الـserver يحسب كل ذلك.
+
+---
+
+## 20. Public Response
+
+إذا أضفت API، لا تعرض:
+
+* internal scoring
+* weights
+* private errors
+* mastery calculations
+* retention calculations
+
+اعرض فقط:
+
+* decision
+* reason
+* basic scope
+* confidence
+* next action
+
+---
+
+## 21. API
+
+إذا كان مناسبًا، أضف:
+
+`GET /api/learning/adaptive/decision`
+
+اختياري:
+
+`?programId=...`
+
+و:
+
+`?subjectId=...`
+
+لكن استخدم route structure الحالية إذا كان هناك structure أفضل.
+
+بدون session:
+
+`401`.
+
+---
+
+## 22. Tests
+
+أضف اختبارات لكل حالة أساسية:
+
+### New
+
+* NEW → DIAGNOSTIC
+
+### Insufficient
+
+* INSUFFICIENT_DATA → DIAGNOSTIC
+
+### Returning
+
+* RETURNING → RECOVERY
+
+### Errors
+
+* repeated concept errors → CORRECT/LEARN
+* single procedural error → PRACTICE
+* repeated failure → recovery/correction
+
+### Mastery
+
+* EMERGING → LEARN/PRACTICE
+* DEVELOPING → PRACTICE
+* PROFICIENT → MASTERY_CHECK
+* MASTERED + stable → ADVANCE
+* MASTERED + due review → REVIEW
+
+### Content
+
+* LEARN with content
+* LEARN without content
+* practice with questions
+* practice without questions
+
+### Retention
+
+* due review
+* overdue review
+* stable retention
+
+### Determinism
+
+same input → same decision
+
+### Security
+
+unauthenticated → 401
+student isolation
+
+### Regression
+
+Recommendation Engine
+Today's Session
+Question Selection
+Spaced Repetition
+
+---
+
+## 23. No UI Overhaul
+
+هذه المرحلة backend/decision foundation.
+
+لا تعيد تصميم:
+
+* Home
+* Dashboard
+* Reader
+* Apple Pencil UI
+
+يمكن إضافة minimal API hook فقط إذا كان ضروريًا.
+
+---
+
+## 24. No Student-Facing AI
+
+ممنوع تمامًا:
+
+`AI`
+`Artificial Intelligence`
+`ذكاء اصطناعي`
+`AI Tutor`
+`AI Assistant`
+`Powered by AI`
+
+---
+
+## 25. Scope Lock
+
+ممنوع تنفيذ:
+
+* Phase 16
+* ML
+* LLM
+* Full adaptive UI
+* chatbot
+* OCR
+* handwriting recognition
+* gamification
+* notifications
+* calendar
+* تغيير historical attempts
+* تغيير historical mastery
+* taxonomy expansion
+
+---
+
+## 26. Documentation
+
+أضف:
+
+`docs/adaptive-learning-decision-engine.md`
+
+وثّق:
+
+* decision model
+* inputs
+* rules
+* priority
+* confidence
+* reason codes
+* fallbacks
+* responsibility boundaries
+* integration
+* limitations
+
+---
+
+## 27. Final Verification
+
+شغّل:
+
+1. Phase 15 tests
+2. full server tests
+3. regression:
+
+   * Phase 14
+   * Phase 13
+   * Phase 12
+4. API build
+5. frontend build فقط إذا حدث frontend
+6. `git diff --check`
+7. API startup
+8. unauthenticated API check → 401
+
+وفي التقرير النهائي أعطني:
+
+1. الملفات المتغيرة
+2. Adaptive Decision model
+3. decision rules
+4. reason codes
+5. confidence model
+6. fallback logic
+7. integration مع Recommendation
+8. integration مع Session
+9. integration مع Retention
+10. integration مع Question Selection
+11. tests الجديدة
+12. total tests
+13. build
+14. runtime
+15. TypeScript baseline
+16. limitations
+17. تأكيد أن Phase 16 لم تبدأ
+
+**نفّذ Phase 15 فقط ولا تنتقل تلقائيًا لأي مرحلة بعدها.**
