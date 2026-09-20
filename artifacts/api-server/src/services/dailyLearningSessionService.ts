@@ -11,6 +11,10 @@ import {
   type LearningRecommendation,
   type RecommendationConfidence,
 } from './studentRecommendationService';
+import {
+  getAdaptiveLearningDecision,
+  type AdaptiveLearningDecision,
+} from './adaptiveLearningDecisionService';
 import { normalizeDiagnosticProgram } from './studentDiagnosticService';
 
 export type LearningSessionStepType =
@@ -415,11 +419,6 @@ async function foundationContent(programId: string) {
     .lean();
 }
 
-async function recommendationFor(studentId: string, programId?: string) {
-  const result = await getStudentRecommendations(studentId, programId);
-  return result.recommendations[0];
-}
-
 async function recentSessionCount(studentId: string, programId: string): Promise<number> {
   const cutoff = new Date(Date.now() - 7 * 86400000);
   return LearningSession.countDocuments({
@@ -490,7 +489,15 @@ export async function getTodayLearningSession(
       duplicate: true,
     };
   }
-  const recommendation = await recommendationFor(studentId, programId);
+  const [adaptiveDecision, recommendationResult] = await Promise.all([
+    getAdaptiveLearningDecision(studentId, { programId }),
+    getStudentRecommendations(studentId, programId),
+  ]);
+  const requestedType = adaptiveDecision.nextAction.recommendationType;
+  const recommendation = requestedType
+    ? recommendationResult.recommendations.find((item) => item.recommendationType === requestedType) ||
+      recommendationResult.recommendations[0]
+    : recommendationResult.recommendations[0];
   return {
     plan: await buildPlanForStudent(studentId, recommendation, now, daily),
     started: false,

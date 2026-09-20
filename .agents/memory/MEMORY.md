@@ -26,3 +26,4 @@
 - [Mastery taxonomy gate](mastery-foundation.md) — calculate mastery only for formally approved taxonomy nodes; current deep mappings remain review-only.
 - [Authenticated route integration tests](authenticated-route-integration-tests.md) — use real Mongo fixtures with the app’s existing in-memory session fallback to avoid leaked connect-mongo handles.
 - [Phase 14 retention engine](phase14-retention-engine.md) — keep source identity complete and retention confidence separate from mastery and recommendation confidence.
+- [Adaptive decision boundary](adaptive-decision-boundary.md) — keep Phase 15 deterministic/read-only and map its next action into existing learning contracts.

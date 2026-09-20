@@ -94,6 +94,11 @@ import {
   selectAndPersistContentForSessionStep,
 } from '../services/questionSelectionService';
 import {
+  AdaptiveLearningDecisionError,
+  getAdaptiveLearningDecision,
+  publicAdaptiveLearningDecision,
+} from '../services/adaptiveLearningDecisionService';
+import {
   LearningContentError,
   completeLearningContent,
   getFoundationPractice,
@@ -11919,6 +11924,27 @@ app.post("/api/auth/register", async (req: Request, res: Response) => {
       }
       console.error('Learning review retrieval error:', error);
       return res.status(500).json({ error: 'تعذر جلب المراجعات المستحقة' });
+    }
+  });
+
+  app.get('/api/learning/adaptive/decision', requireAuth, async (req: Request, res: Response) => {
+    const studentId = studentOnly(req, res);
+    if (!studentId) return;
+    try {
+      const decision = await getAdaptiveLearningDecision(studentId, {
+        programId: req.query.programId || req.query.program
+          ? String(req.query.programId ?? req.query.program)
+          : undefined,
+        subjectId: req.query.subjectId ? String(req.query.subjectId) : undefined,
+      });
+      return res.json(publicAdaptiveLearningDecision(decision));
+    } catch (error: any) {
+      if (error instanceof AdaptiveLearningDecisionError) {
+        const status = error.code === 'INVALID_STUDENT' ? 401 : 400;
+        return res.status(status).json({ error: error.message, code: error.code });
+      }
+      console.error('Adaptive learning decision error:', error);
+      return res.status(500).json({ error: 'تعذر تحديد الخطوة التعليمية التالية' });
     }
   });
 
