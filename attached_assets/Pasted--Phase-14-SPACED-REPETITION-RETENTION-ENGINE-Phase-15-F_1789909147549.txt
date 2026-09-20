@@ -1,0 +1,739 @@
+نفّذ الآن **Phase 14 فقط: SPACED REPETITION / RETENTION ENGINE**.
+
+ممنوع البدء في Phase 15 أو Full Adaptive Learning.
+
+الهدف:
+بناء محرك deterministic يحدد **متى يحتاج الطالب إلى مراجعة شيء سبق أن تعلمه أو أخطأ فيه**، بدون تحويل النظام إلى مجرد جدول مراجعات ثابت.
+
+المحرك يجب أن يعمل فوق البيانات الحالية:
+
+`LearningAttempt`
+→ `LearningErrorEvidence`
+→ `StudentMastery`
+→ `LearningContentProgress`
+→ `LearningSession`
+→ `LearningRecommendation`
+
+ولا يغيّر historical attempts.
+
+---
+
+# 1. Audit أولًا
+
+افحص:
+
+* LearningAttempt
+* LearningErrorEvidence
+* StudentMastery
+* LearningContentProgress
+* LearningSession
+* Recommendation Engine
+* Question Selection Engine
+* taxonomy
+* أي existing review/reminder logic
+
+لا تنشئ نظامًا موازيًا إذا كان هناك foundation مناسب.
+
+---
+
+# 2. الهدف الحقيقي
+
+نريد أن يستطيع النظام معرفة:
+
+* ما الذي يحتاج مراجعة؟
+* لماذا؟
+* متى آخر مرة ظهر؟
+* هل الطالب أتقنه؟
+* هل الاحتفاظ به بدأ يضعف؟
+* هل توجد أخطاء متكررة؟
+* هل المراجعة عاجلة أم يمكن تأجيلها؟
+
+لكن لا تجعل المحرك يدعي أنه يعرف "نسيان" الطالب بشكل يقيني.
+
+استخدم لغة مثل:
+
+`review_due`
+
+و:
+
+`retention_confidence`
+
+بدل ادعاء قياس الذاكرة مباشرة.
+
+---
+
+# 3. Review Item
+
+أنشئ model/service مستقلًا، مثل:
+
+`LearningReviewItem`
+
+يدعم:
+
+* `studentId`
+* `programId`
+* `subjectId`
+* `taxonomyNodeId` عند وجود mapping معتمد
+* `sourceType`
+* `sourceId`
+* `sourceIdentity`
+* `lastReviewedAt`
+* `lastSuccessfulReviewAt`
+* `lastFailedAt`
+* `reviewCount`
+* `successfulReviewCount`
+* `consecutiveSuccesses`
+* `consecutiveFailures`
+* `nextReviewAt`
+* `intervalDays`
+* `retentionConfidence`
+* `priority`
+* `state`
+
+states مبدئيًا:
+
+* `NEW`
+* `LEARNING`
+* `REVIEW_DUE`
+* `STABLE`
+* `SUSPENDED`
+
+لا تخترع Skill/SubSkill/Concept.
+
+---
+
+# 4. What becomes reviewable?
+
+لا تجعل كل سؤال يحلّه الطالب يتحول تلقائيًا إلى Review Item.
+
+الأولوية للمصادر التعليمية meaningful:
+
+### Content
+
+FoundationContent / section.
+
+### Conceptual area
+
+approved taxonomy node.
+
+### Question pattern
+
+question/source identity عند الحاجة.
+
+لكن لا تستخدم Question ID وحده كبديل عن مفهوم تعليمي.
+
+إذا لم توجد taxonomy موثوقة، ابقَ على:
+
+`Program + Subject`
+
+---
+
+# 5. Initial creation
+
+عند وجود evidence مناسب:
+
+### New learning
+
+إنهاء content + practice يمكن أن ينشئ review candidate.
+
+### Wrong answer
+
+خطأ موثوق يمكن أن ينشئ review candidate.
+
+### Concept error
+
+`CONCEPT_GAP`
+
+يرفع أولوية المراجعة أكثر من خطأ حسابي منفرد.
+
+### Correct answer
+
+إجابة صحيحة واحدة لا تعني mastery ولا تعني stable retention.
+
+---
+
+# 6. Interval Algorithm
+
+أنشئ خوارزمية بسيطة deterministic.
+
+لا تستخدم:
+
+`Math.random()`
+
+ولا تحتاج ML.
+
+ابدأ مثلًا بفكرة:
+
+`1 → 3 → 7 → 14 → 30 → 60`
+
+لكن **لا تطبق هذه الأرقام بشكل أعمى**.
+
+الـinterval يجب أن يتأثر بـ:
+
+* نجاح المراجعة
+* فشل المراجعة
+* consecutive successes
+* consecutive failures
+* mastery level
+* error severity
+* recency
+* confidence
+
+مثال منطقي:
+
+فشل review:
+
+`interval ↓`
+
+نجاح review:
+
+`interval ↑`
+
+خطأ conceptual:
+
+`interval` أقصر من خطأ procedural بسيط.
+
+لكن يجب أن تكون القواعد deterministic ومكتوبة بوضوح.
+
+---
+
+# 7. Retention Confidence
+
+أنشئ قيمة منفصلة:
+
+`retentionConfidence`
+
+ولا تخلطها مع:
+
+`masteryConfidence`
+
+ولا تخلطها مع:
+
+`recommendation confidence`.
+
+مثلًا يمكن أن تتأثر بـ:
+
+* عدد successful reviews
+* recency
+* consecutive success
+* interval consistency
+* failures بعد نجاح سابق
+
+لكن لا تجعلها نسبة علمية أو probability حقيقية إذا لم يكن لدينا model إحصائي لذلك.
+
+يمكن أن تكون:
+
+* `LOW`
+* `MEDIUM`
+* `HIGH`
+
+---
+
+# 8. Due Calculation
+
+أنشئ service مثل:
+
+`spacedRepetitionService`
+
+مسؤوليته:
+
+* إنشاء/تحديث review item
+* حساب interval
+* حساب nextReviewAt
+* تحديد due/not due
+* تحديد priority
+* تفسير سبب المراجعة
+
+مثال:
+
+`REVIEW_DUE`
+
+إذا:
+
+`now >= nextReviewAt`
+
+لكن لا تعتمد على frontend clock.
+
+الوقت الأساسي server-side.
+
+---
+
+# 9. Review Priority
+
+أولوية المراجعة يجب أن تأخذ في الاعتبار:
+
+* overdue duration
+* mastery
+* repeated errors
+* conceptual errors
+* recent failure
+* retention confidence
+* importance of approved subject/taxonomy context
+
+لكن لا تعمل ranking شامل لكل الطالب بطريقة expensive.
+
+استخدم bounded queries.
+
+---
+
+# 10. Review Reasons
+
+استخدم reason codes واضحة، مثل:
+
+* `FIRST_REVIEW`
+* `REVIEW_DUE`
+* `OVERDUE`
+* `RECENT_FAILURE`
+* `CONCEPT_ERROR`
+* `LOW_RETENTION_CONFIDENCE`
+* `POST_MASTERY_CHECK`
+
+لا تجعل reason codes ادعاءات نفسية أو طبية.
+
+---
+
+# 11. Recommendation Integration
+
+اربط المحرك مع Recommendation Engine الحالي.
+
+إذا كان هناك review مستحق، يستطيع Recommendation Engine إنتاج:
+
+`REVIEW`
+
+أو:
+
+`MASTERY_CHECK`
+
+لكن:
+
+**Spaced Repetition Engine لا يجب أن يقرر كامل جلسة الطالب.**
+
+هو يوفر evidence/context فقط.
+
+يبقى:
+
+`Recommendation Engine`
+
+هو المسؤول عن recommendation.
+
+---
+
+# 12. Today's Learning Integration
+
+اربط review evidence مع:
+
+`Today's Learning Session`
+
+لكن لا تجعل كل review item ينشئ Session منفصل.
+
+يمكن أن تكون النتيجة:
+
+`Today's Session`
+→ `REVIEW`
+→ `Question Selection`
+
+أو:
+
+`Today's Session`
+→ `READ`
+→ `PRACTICE`
+
+حسب recommendation الحالية.
+
+---
+
+# 13. Question Selection Integration
+
+عند الحاجة إلى review question:
+
+استخدم Question Selection Engine الحالي.
+
+لا تخترع سؤالًا جديدًا داخل Spaced Repetition Engine.
+
+لا تعيد نفس السؤال تلقائيًا.
+
+ولا تجعل review مجرد إعادة السؤال السابق.
+
+---
+
+# 14. Content Review
+
+إذا كان review مربوطًا بـFoundationContent:
+
+يمكن أن يصبح:
+
+`Review Content`
+
+ثم:
+
+`Practice`
+
+لكن لا تعدل FoundationContent نفسه.
+
+ولا تجعل قراءة المحتوى وحدها تعني retention success.
+
+---
+
+# 15. Review Completion
+
+يجب تحديد ما الذي يعتبر successful review.
+
+مبدئيًا:
+
+### Content review
+
+قراءة المحتوى + completion.
+
+### Question review
+
+إجابة صحيحة موثوقة.
+
+### Failed review
+
+إجابة خاطئة موثوقة.
+
+لكن لا ترفع retention بسبب مجرد فتح الصفحة.
+
+---
+
+# 16. Error Interaction
+
+إذا ظهر:
+
+`CONCEPT_GAP`
+
+أثناء review:
+
+* لا تعتبر المراجعة ناجحة.
+* قلل interval.
+* ارفع priority.
+* يمكن أن يعاد إدخال العنصر في learning/recovery flow.
+
+لكن لا تجعل Spaced Repetition يعدل mastery مباشرة.
+
+Mastery يبقى مسؤولية Mastery Engine.
+
+---
+
+# 17. Mastery Interaction
+
+Mastery يجب أن يكون input.
+
+مثال:
+
+`MASTERED`
+
+قد يؤدي إلى intervals أطول.
+
+لكن:
+
+`MASTERED`
+
+لا يعني أن review غير ضروري.
+
+وبالعكس:
+
+`LOW mastery`
+
+لا يعني أن كل review يجب أن يكون عاجلًا.
+
+افصل:
+
+`Mastery`
+
+عن:
+
+`Retention`.
+
+---
+
+# 18. Taxonomy Safety
+
+استخدم deep taxonomy فقط إذا:
+
+`status = mapped`
+
+و:
+
+`reviewStatus = APPROVED`
+
+وإلا:
+
+`Program + Subject`
+
+لا تخترع Concept.
+
+---
+
+# 19. APIs
+
+أنشئ APIs مناسبة مثل:
+
+`GET /api/learning/reviews`
+
+لجلب due reviews.
+
+ويمكن دعم:
+
+`?programId=...`
+
+`?subjectId=...`
+
+مع limits.
+
+وإذا احتجت endpoint لتحديث review، اجعله server-controlled.
+
+لا تسمح للclient بتحديد:
+
+* interval
+* priority
+* retentionConfidence
+* nextReviewAt
+* mastery
+* review state
+
+---
+
+# 20. Student Isolation
+
+كل review data:
+
+`studentId from session`
+
+ممنوع:
+
+`studentId from body/query`
+
+ويجب منع cross-student access.
+
+---
+
+# 21. Idempotency
+
+تحديث review يجب ألا ينتج duplicate records بسبب:
+
+* retry
+* refresh
+* network duplication
+
+استخدم identity مستقرة مناسبة.
+
+---
+
+# 22. Determinism
+
+نفس evidence ونفس الوقت المرجعي يجب أن يعطي نفس النتيجة.
+
+لا:
+
+`Math.random()`
+
+لا random fallback.
+
+لا sorting غير deterministic.
+
+---
+
+# 23. Performance
+
+لا تفعل:
+
+`load all attempts → calculate everything every request`
+
+استخدم:
+
+* bounded queries
+* indexed fields
+* stable identity
+* incremental update عندما يكون ذلك مناسبًا
+
+إذا كانت architecture الحالية لا تدعم incremental safely، استخدم recalculation bounded ووثّق ذلك.
+
+---
+
+# 24. Security
+
+لا ترسل للطالب:
+
+* internal scoring details
+* error evidence internals
+* mastery calculation internals
+* algorithm weights
+
+الـpublic response يجب أن يكون بسيطًا، مثل:
+
+* item
+* due
+* reason
+* suggested review type
+* basic priority/context
+
+---
+
+# 25. Tests
+
+أضف tests تغطي:
+
+### Creation
+
+* first learning
+* first wrong answer
+* concept error
+* correct answer
+* no duplicate review item
+
+### Interval
+
+* first review
+* successful review
+* consecutive successes
+* failed review
+* repeated failure
+* conceptual failure
+* mastery influence
+* recency influence
+
+### Due
+
+* not due
+* due
+* overdue
+* boundary timestamps
+
+### Retention
+
+* LOW
+* MEDIUM
+* HIGH
+* no false certainty
+
+### Recommendation
+
+* REVIEW integration
+* MASTERY_CHECK integration
+* no review recommendation when nothing is due
+
+### Security
+
+* unauthenticated → 401
+* student isolation
+* client cannot set interval
+* client cannot set priority
+* client cannot set retentionConfidence
+
+### Determinism
+
+نفس inputs → نفس outputs.
+
+---
+
+# 26. Time Testing
+
+استخدم injectable/fake clock أو architecture الاختبارات الحالية.
+
+لا تعتمد على sleep الحقيقي.
+
+اختبر الحدود الزمنية بشكل deterministic.
+
+---
+
+# 27. Documentation
+
+أضف:
+
+`docs/spaced-repetition-retention-engine.md`
+
+وثّق:
+
+* data model
+* identity
+* interval algorithm
+* retention confidence
+* due logic
+* priority
+* error interaction
+* mastery interaction
+* recommendation integration
+* security
+* limitations
+
+---
+
+# 28. Important limitation
+
+لا تدّعِ أن النظام يقيس "نسيان" الطالب علميًا.
+
+هذا engine heuristic/deterministic في هذه المرحلة.
+
+لا تستخدم:
+
+* ML
+* probabilistic memory model
+* external research claims
+* medical/psychological claims
+
+إلا إذا كانت هناك حاجة مستقبلية مستقلة.
+
+---
+
+# 29. No Student-Facing AI
+
+ممنوع:
+
+`AI`
+`Artificial Intelligence`
+`ذكاء اصطناعي`
+`AI Tutor`
+`AI Assistant`
+`Powered by AI`
+
+في student-facing UI.
+
+---
+
+# 30. Scope Lock
+
+ممنوع تنفيذ:
+
+* Phase 15
+* Full Adaptive Learning
+* ML recommendation
+* handwriting recognition
+* OCR
+* chatbot
+* gamification
+* notifications
+* calendar
+* تغيير historical attempts
+* تغيير historical mastery
+* taxonomy expansion
+
+---
+
+# 31. Final Verification
+
+في النهاية أعطني تقريرًا واضحًا:
+
+1. الملفات التي تغيرت
+2. review model
+3. spaced repetition service
+4. interval algorithm
+5. retention confidence
+6. due logic
+7. recommendation integration
+8. today's session integration
+9. question selection integration
+10. security
+11. idempotency
+12. tests الجديدة
+13. total server tests
+14. frontend tests إن تغيرت
+15. API build
+16. Web build إن تغير
+17. TypeScript baseline
+18. runtime
+19. limitations
+20. تأكيد صريح أن Phase 15 لم تبدأ
+
+**نفّذ Phase 14 فقط.**
+لا تبدأ أي Phase لاحقة تلقائيًا.
