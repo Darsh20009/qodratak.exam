@@ -7,4 +7,4 @@ Authenticated API integration tests should create isolated Mongo fixtures, authe
 
 **Why:** The full route registration starts background work, and connect-mongo owns its client inside express-session closure; importing the production app with Mongo-backed sessions leaves a test handle that is difficult to close cleanly.
 
-**How to apply:** Temporarily omit `MONGODB_URI` only while importing the app for the test, restore it before requests, keep Mongo connected for fixture and route data, disable unrelated test-environment schedulers, and clean up fixtures plus the Mongoose connection in `finally`.
+**How to apply:** Temporarily omit `MONGODB_URI` only while importing the app for the test, restore it before requests, keep Mongo connected for fixture and route data, give every fixture attempt an explicit unique idempotency key, disable unrelated test-environment schedulers, and clean up fixtures plus the Mongoose connection in `finally`.

@@ -44,7 +44,6 @@ export interface PublicLearningReviewItem {
   due: boolean;
   state: LearningReviewState;
   nextReviewAt: Date;
-  intervalDays: number;
   retentionConfidence: LearningRetentionConfidence;
   priority: number;
   reasonCodes: LearningReviewReasonCode[];
@@ -196,7 +195,6 @@ export function publicLearningReviewItem(
     due,
     state: due && item.state !== 'SUSPENDED' ? 'REVIEW_DUE' : item.state,
     nextReviewAt: item.nextReviewAt,
-    intervalDays: item.intervalDays,
     retentionConfidence: item.retentionConfidence,
     priority: item.priority,
     reasonCodes: item.reasonCodes || [],
