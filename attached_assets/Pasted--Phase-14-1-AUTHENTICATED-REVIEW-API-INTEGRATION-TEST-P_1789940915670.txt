@@ -1,0 +1,240 @@
+نفّذ الآن **Phase 14.1 فقط: AUTHENTICATED REVIEW API INTEGRATION TEST**.
+
+هذه ليست Phase 15.
+
+الهدف الوحيد هو إغلاق الـgap الحالي في Phase 14:
+
+> اختبار HTTP موثّق باستخدام authenticated student session لمسار due reviews، والتأكد من أن review evidence تصل بشكل صحيح إلى Recommendation Engine.
+
+لا تغيّر Spaced Repetition architecture أو algorithm.
+
+## 1. Authenticated HTTP Flow
+
+استخدم authentication الحقيقي الموجود في المشروع.
+
+اختبر:
+
+`POST /api/auth/login`
+
+ثم:
+
+`GET /api/learning/reviews/due`
+
+باستخدام session الطالب المصادق عليه.
+
+لا تستخدم studentId في query أو body.
+
+---
+
+## 2. Due Reviews
+
+أنشئ/استخدم test data تجعل review item:
+
+`REVIEW_DUE`
+
+ثم تحقق أن:
+
+`GET /api/learning/reviews/due`
+
+يعيده للطالب الصحيح.
+
+اختبر أيضًا:
+
+* item غير مستحق لا يظهر.
+* item مستحق يظهر.
+* item overdue يظهر.
+* `programId` filter يعمل.
+* `subjectId` filter يعمل.
+* `limit` يعمل.
+
+---
+
+## 3. Recommendation Integration
+
+اختبر HTTP flow الحقيقي:
+
+`review evidence`
+→ `Recommendation Engine`
+→ `GET /api/learning/recommendations`
+
+وتأكد أن review evidence يمكن أن ينتج recommendation من النوع:
+
+`REVIEW`
+
+أو النوع الذي architecture الحالية تستخدمه فعليًا لهذا السياق.
+
+لا تفترض response جديدًا إذا كان Recommendation Engine الحالي يستخدم contract مختلفًا.
+
+---
+
+## 4. Student Isolation
+
+أنشئ:
+
+`Student A`
+
+و:
+
+`Student B`
+
+واجعل A لديه due review.
+
+تحقق أن:
+
+### Student A
+
+يرى review الخاص به.
+
+### Student B
+
+لا يرى review الخاص بـA.
+
+وكذلك Recommendation API لا يعرض evidence أو recommendation الخاصة بالطالب الآخر.
+
+---
+
+## 5. Public Response Safety
+
+تحقق أن HTTP response لا يكشف:
+
+* interval algorithm internals
+* scoring weights
+* raw error evidence
+* mastery internals
+* internal recommendation calculations
+* private student data
+
+ويعرض فقط الـpublic contract الحالي.
+
+---
+
+## 6. Unauthenticated
+
+اختبر:
+
+`GET /api/learning/reviews/due`
+
+بدون session.
+
+يجب أن يعيد:
+
+`401 Unauthorized`
+
+وكذلك endpoint recommendations إذا كان محميًا بالطريقة نفسها.
+
+---
+
+## 7. Time Boundary
+
+استخدم fake/injectable clock أو test mechanism الموجود حاليًا.
+
+اختبر:
+
+* `nextReviewAt` قبل الوقت الحالي → due.
+* `nextReviewAt` بعد الوقت الحالي → not due.
+* boundary مساوي للوقت الحالي → السلوك المحدد في service contract.
+
+ممنوع استخدام `sleep()` الحقيقي.
+
+---
+
+## 8. Database / Persistence
+
+إذا كان integration infrastructure الحالي يسمح بذلك، تحقق أن:
+
+* review item محفوظ.
+* API يعيد نفس item من persistence.
+* لا يتم إنشاء duplicate review item بسبب تكرار GET.
+* GET لا يغير review state بطريقة غير مقصودة.
+
+لا تنشئ database architecture جديدة.
+
+---
+
+## 9. Recommendation Must Remain Separate
+
+لا تجعل هذا الاختبار يغير مسؤوليات الخدمات.
+
+يجب أن يبقى:
+
+`Spaced Repetition`
+= يحدد review evidence/due state.
+
+و:
+
+`Recommendation Engine`
+= يقرر recommendation.
+
+ولا تجعل `GET /reviews/due` ينشئ Recommendation مباشرة إذا كانت architecture الحالية لا تفعل ذلك.
+
+---
+
+## 10. Tests
+
+أضف integration test واحدًا أو أقل عدد ممكن من الاختبارات المركزة التي تغطي:
+
+* authenticated due review
+* unauthenticated 401
+* student isolation
+* filters
+* due/not-due
+* recommendation integration
+* response safety
+* persistence/idempotency
+
+لا تضف اختبارات مكررة للـunit tests الموجودة.
+
+---
+
+## 11. Scope Lock
+
+ممنوع:
+
+* Phase 15
+* تعديل interval algorithm
+* تعديل retention confidence algorithm
+* ML
+* Full Adaptive Learning
+* OCR
+* handwriting recognition
+* AI
+* chatbot
+* gamification
+* notifications
+* calendar
+* taxonomy expansion
+* تعديل historical attempts
+* تعديل historical mastery
+
+---
+
+## 12. Final Verification
+
+شغّل:
+
+1. Phase 14.1 integration test
+2. Phase 14 tests
+3. Phase 13 regression
+4. Phase 12 regression
+5. full server tests
+6. API build
+7. `git diff --check`
+8. API startup
+9. authenticated HTTP flow
+10. unauthenticated `401`
+
+وفي النهاية أعطني:
+
+* الملفات التي تغيرت
+* عدد اختبارات Phase 14.1
+* authenticated HTTP result
+* due review result
+* recommendation integration result
+* student isolation result
+* total server tests
+* build status
+* runtime status
+* أي limitation متبقية
+
+**نفّذ Phase 14.1 فقط.**
+لا تبدأ Phase 15 تلقائيًا.
