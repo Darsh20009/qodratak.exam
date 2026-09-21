@@ -469,6 +469,19 @@ export interface IQuestion extends Document {
   keywords?: string[];
   section?: number;
   explanation?: string;
+  studentTip?: string;
+  answerStatus?: 'approved' | 'review';
+  source?: {
+    type: 'google_form' | 'manual' | 'generated';
+    url?: string;
+    formIndex?: number;
+    formTitle?: string;
+    questionId?: string;
+    section?: string;
+    subcategory?: string;
+    passageLabel?: string;
+    passageText?: string;
+  };
   imageUrl?: string;
   imageUrls?: string[];
   imageOriginalUrl?: string;
@@ -505,6 +518,22 @@ const questionSchema = new Schema<IQuestion>({
   keywords: { type: [String], default: ['general'] },
   section: { type: Number, default: 1 },
   explanation: { type: String },
+  studentTip: { type: String },
+  answerStatus: { type: String, enum: ['approved', 'review'], default: 'approved', index: true },
+  source: {
+    type: {
+      type: String,
+      enum: ['google_form', 'manual', 'generated'],
+    },
+    url: { type: String },
+    formIndex: { type: Number },
+    formTitle: { type: String },
+    questionId: { type: String },
+    section: { type: String },
+    subcategory: { type: String },
+    passageLabel: { type: String },
+    passageText: { type: String },
+  },
   imageUrl: { type: String },
   imageUrls: { type: [String], default: [] },
   imageOriginalUrl: { type: String },

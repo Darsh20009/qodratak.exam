@@ -29,3 +29,4 @@
 - [Phase 14 retention engine](phase14-retention-engine.md) — keep source identity complete and retention confidence separate from mastery and recommendation confidence.
 - [Adaptive decision boundary](adaptive-decision-boundary.md) — keep Phase 15 deterministic/read-only and map its next action into existing learning contracts.
 - [Tahsili visual language](tahsili-visual-language.md) — keep study surfaces calm and unified while exam-taking screens stay focused and scanable.
+- [Verbal Forms import boundary](verbal-forms-import-boundary.md) — preserve source passages and IDs, dedupe by question plus options, and keep incomplete-option items out of scored pools.
