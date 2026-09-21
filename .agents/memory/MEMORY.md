@@ -10,6 +10,7 @@
 - [Dark-mode page contrast](dark-mode-page-contrast.md) — legacy pages use fixed light colors; keep contrast overrides scoped to the shared app surface.
 - [Subscription entitlement consistency](subscription-entitlement-consistency.md) — derive access from active Mongo records; make wallet activation atomic and invoices transaction-truthful.
 - [Question image import compatibility](question-image-import.md) — keep the first-image fields for legacy consumers while treating multi-image extraction as optional and reviewable.
+- [Public Forms answer-key boundary](public-forms-answer-key.md) — public respondent HTML can expose prompts and options, but its numeric metadata is not a reliable answer key.
 - [Development admin fixture](development-admin-fixture.md) — keep the local admin demo identity independent from the removed legacy user export.
 - [Qodratak mailbox integration](mailbox-integration.md) — official mailbox settings must take precedence over legacy SMTP variables and remain secret-backed.
 - [Persistent media boundary](persistent-media-boundary.md) — production uploads must fail clearly without a persistent provider; local disk is development-only.
