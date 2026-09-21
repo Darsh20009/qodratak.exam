@@ -1,0 +1,651 @@
+نفّذ الآن **Phase 16 فقط: STUDENT LEARNING HOME & TODAY'S LEARNING EXPERIENCE**.
+
+ممنوع البدء في Phase 17 أو أي Engine جديد.
+
+الهدف:
+تحويل الـlearning engines الموجودة إلى تجربة طالب واحدة متماسكة في الواجهة.
+
+لدينا حاليًا:
+
+`Diagnostic`
+→ `Adaptive Decision`
+→ `Recommendation`
+→ `Today's Learning Session`
+→ `Content / Question Selection`
+→ `LearningAttempt`
+→ `ErrorEvidence`
+→ `Mastery`
+→ `Retention`
+
+Phase 16 لا تعيد بناء هذه الأنظمة.
+
+فقط توصلها بتجربة الطالب.
+
+---
+
+# 1. Audit أولًا
+
+راجع الواجهة الحالية:
+
+* Home
+* Dashboard
+* FoundationPage
+* FoundationReaderPage
+* Today's Learning APIs
+* Adaptive Decision API
+* Recommendations API
+* Learning Profile
+* Mastery
+* Reviews
+
+حدد ما يمكن إعادة استخدامه.
+
+لا تنشئ Dashboard جديدًا إذا كان هناك Home يمكن تطويره.
+
+---
+
+# 2. Student Home
+
+اجعل الصفحة الرئيسية للطالب بسيطة جدًا.
+
+المبدأ:
+
+**الطالب يجب أن يعرف ماذا يفعل الآن، وليس أن يرى كل البيانات التي يعرفها النظام.**
+
+العنصر الأساسي:
+
+`خطوتك التالية`
+
+ثم:
+
+* ماذا تفعل؟
+* لماذا؟
+* المدة التقريبية
+* زر بدء واضح
+
+مثال:
+
+`خطوتك التالية`
+
+`راجع النسبة المئوية`
+
+`12 دقيقة`
+
+`ابدأ`
+
+لكن لا تستخدم هذا النص حرفيًا إذا كان القرار الحالي مختلفًا.
+
+---
+
+# 3. Today's Learning
+
+اربط Home مع:
+
+`GET /api/learning/today`
+
+و:
+
+`GET /api/learning/adaptive/decision`
+
+و:
+
+`GET /api/learning/recommendations`
+
+لكن لا تجعل frontend يقرر أي engine له الأولوية.
+
+الخادم هو مصدر القرار.
+
+---
+
+# 4. Session Start
+
+عند الضغط على:
+
+`ابدأ`
+
+استخدم:
+
+`POST /api/learning/today/start`
+
+ولا تسمح للclient بإرسال:
+
+* recommendation type
+* mastery
+* priority
+* studentId
+* confidence
+
+الخادم يحدد ذلك.
+
+---
+
+# 5. Session Progress
+
+أثناء الجلسة يجب أن يرى الطالب:
+
+* أين هو الآن؟
+* كم خطوة تقريبًا؟
+* ماذا يفعل الآن؟
+* زر التالي
+
+لكن بدون Dashboard داخل الجلسة.
+
+مثال:
+
+`1 من 4`
+
+`اقرأ الفكرة`
+
+ثم المحتوى.
+
+---
+
+# 6. READ Step
+
+إذا كانت الخطوة:
+
+`READ`
+
+افتح Digital Textbook الحالي.
+
+استخدم:
+
+`FoundationReaderPage`
+
+ولا تنشئ reader جديدًا.
+
+يجب أن يستطيع الطالب:
+
+* القراءة
+* استئناف القراءة
+* استخدام annotations
+* إنهاء المحتوى
+
+ثم العودة إلى session.
+
+---
+
+# 7. EXAMPLE Step
+
+إذا كانت:
+
+`EXAMPLE`
+
+اعرض المثال داخل نفس learning flow.
+
+لا تنقل الطالب إلى صفحة منفصلة بلا سبب.
+
+---
+
+# 8. PRACTICE Step
+
+إذا كانت:
+
+`PRACTICE`
+
+استخدم Question Selection الحالي.
+
+الـclient لا يختار السؤال.
+
+التدفق:
+
+`POST /api/learning/today/select`
+
+ثم عرض السؤال.
+
+بعد الإجابة:
+
+`recordVerifiedLearningAttempt`
+
+والـserver هو الذي يحدد correctness.
+
+---
+
+# 9. FEEDBACK
+
+بعد الإجابة:
+
+إذا صحيحة:
+
+عرض feedback بسيط ثم:
+
+`التالي`
+
+إذا خاطئة:
+
+اعرض:
+
+* ما الخطأ؟
+* explanation المتاحة
+* correction إذا كانت متاحة
+* الخطوة التالية
+
+لكن لا تعرض internal error taxonomy أو mastery score.
+
+---
+
+# 10. CORRECT / SIMILAR
+
+إذا session plan يحتوي:
+
+`CORRECT`
+
+أو:
+
+`SIMILAR`
+
+نفّذها داخل نفس session flow.
+
+لا تضف Adaptive Logic جديد في frontend.
+
+الخادم هو الذي يحدد الخطوة.
+
+---
+
+# 11. MASTERY CHECK
+
+إذا الخطوة:
+
+`MASTERY_CHECK`
+
+استخدم Question Selection Engine الحالي.
+
+بعد الإجابة:
+
+* سجل LearningAttempt
+* شغّل existing mastery pipeline
+* لا تحسب mastery في frontend
+
+---
+
+# 12. REVIEW
+
+إذا القرار:
+
+`REVIEW`
+
+اعرض للمستخدم مراجعة طبيعية.
+
+لا تعرض:
+
+* retention score
+* interval
+* review algorithm
+* priority score
+
+يمكن أن تقول فقط:
+
+`مراجعة سريعة`
+
+أو نصًا تعليميًا مناسبًا.
+
+---
+
+# 13. RECOVERY
+
+إذا القرار:
+
+`RECOVERY`
+
+لا تعرض للمستخدم:
+
+`RETURNING`
+
+أو internal state.
+
+بدل ذلك قدم التجربة كخطوة طبيعية:
+
+`خلينا نحدد من أين نكمل`
+
+ثم نفذ session الحالية.
+
+---
+
+# 14. ADVANCE
+
+إذا:
+
+`ADVANCE`
+
+لا تجعل الطالب يعيد محتوى MASTERED بدون سبب.
+
+اعرض الخطوة التعليمية التالية التي يوفرها server.
+
+إذا لم يوجد محتوى:
+
+استخدم fallback الحالي.
+
+---
+
+# 15. Session Resume
+
+إذا الطالب أغلق الصفحة أثناء session:
+
+عند العودة:
+
+استدعِ:
+
+`GET /api/learning/today`
+
+ويجب أن يعود إلى:
+
+`currentStep`
+
+ولا تبدأ Session جديدة إذا توجد session قابلة للاستئناف.
+
+---
+
+# 16. Completion
+
+عند انتهاء آخر step:
+
+استخدم:
+
+`POST /api/learning/today/complete`
+
+ثم اعرض نتيجة هادئة مثل:
+
+`اكتمل درس اليوم`
+
+مع progress بسيط.
+
+لا تعرض عشرات الإحصائيات.
+
+---
+
+# 17. Progress
+
+اعرض progress بسيط:
+
+* اليوم
+* المادة
+* التقدم العام عند توفره
+
+لا تحول الصفحة إلى analytics dashboard.
+
+---
+
+# 18. Mobile First
+
+الواجهة الأساسية يجب أن تكون ممتازة على:
+
+* Mobile
+* iPad
+* Desktop
+
+ولا تستخدم layout مزدحم.
+
+---
+
+# 19. iPad
+
+حافظ على:
+
+* Digital Reader
+* Apple Pencil annotations
+* touch targets
+* scrolling
+* orientation
+
+لا تعدل Annotation Engine.
+
+---
+
+# 20. Visual Design
+
+حافظ على أسلوب Qodratak:
+
+* academic
+* premium
+* calm
+* minimal
+* white space
+* typography واضحة
+* RTL ممتاز
+
+ممنوع:
+
+* neon
+* gaming UI
+* huge gradients
+* dashboard cards الكثيرة
+* floating AI button
+* chatbot bubble
+* sparkle icons
+* generic AI illustrations
+
+---
+
+# 21. Student-facing Language
+
+ممنوع ظهور:
+
+`AI`
+`Artificial Intelligence`
+`ذكاء اصطناعي`
+`AI Tutor`
+`AI Assistant`
+`Powered by AI`
+
+النظام يجب أن يبدو كأنه منصة تعليمية تفهم الطالب، بدون شرح التكنولوجيا خلفها.
+
+استخدم لغة طبيعية مثل:
+
+* `خطوتك التالية`
+* `نكمل؟`
+* `راجع`
+* `تدرّب`
+* `افهم الخطأ`
+* `جرّب سؤالًا مشابهًا`
+* `أكمل الدرس`
+
+---
+
+# 22. Error Handling
+
+إذا API أعاد:
+
+`CONTENT_UNAVAILABLE`
+
+أو:
+
+`NO_SUITABLE_CONTENT`
+
+أو:
+
+`PRACTICE_UNAVAILABLE`
+
+لا تظهر stack trace أو technical details.
+
+اعرض حالة مفهومة للطالب.
+
+ولا تخترع fallback غير موجود في server.
+
+---
+
+# 23. Authentication
+
+كل learning pages يجب أن تتعامل مع:
+
+`401`
+
+بشكل صحيح.
+
+لا تظهر صفحة learning وكأنها فارغة إذا انتهت session.
+
+---
+
+# 24. Loading States
+
+استخدم loading states بسيطة.
+
+ممنوع:
+
+* flashing layouts
+* excessive skeletons
+* unnecessary animations
+
+---
+
+# 25. API Responsibility
+
+Frontend لا يقرر:
+
+* recommendation
+* adaptive decision
+* mastery
+* retention
+* priority
+* question selection
+* correctness
+
+Frontend يعرض فقط قرار server.
+
+---
+
+# 26. Tests
+
+أضف frontend tests تغطي:
+
+* authenticated Home
+* adaptive decision rendering
+* Today's Learning rendering
+* start session
+* session resume
+* READ
+* PRACTICE
+* feedback
+* CORRECT
+* SIMILAR
+* MASTERY_CHECK
+* REVIEW
+* RECOVERY
+* completion
+* 401
+* unavailable content
+* no suitable content
+
+اختبر أيضًا أن frontend لا يرسل:
+
+* studentId
+* mastery
+* recommendation type
+* priority
+* correctness
+
+إلى endpoints التي يجب أن يحددها server.
+
+---
+
+# 27. Regression
+
+شغّل:
+
+* Phase 15 tests
+* Phase 14 tests
+* Phase 13 tests
+* Phase 12 tests
+* full server tests
+* full frontend tests
+
+---
+
+# 28. Build
+
+شغّل:
+
+* API build
+* Web production build
+* `git diff --check`
+
+إذا لم يتغير backend فلا داعي لتغييره.
+
+---
+
+# 29. Runtime
+
+شغّل:
+
+* API
+* Web
+
+وتحقق من:
+
+* Home
+* Today's Learning
+* Reader
+* Practice
+* Session resume
+* completion
+
+---
+
+# 30. Scope Lock
+
+ممنوع تنفيذ:
+
+* Phase 17
+* Adaptive Engine changes
+* Spaced Repetition changes
+* Mastery changes
+* Question Selection changes
+* Apple Pencil changes
+* ML
+* LLM
+* Chatbot
+* OCR
+* handwriting recognition
+* Gamification
+* Notifications
+* Calendar
+* taxonomy expansion
+
+---
+
+# 31. Documentation
+
+أضف:
+
+`docs/student-learning-experience.md`
+
+وثّق:
+
+* Home flow
+* Today's Learning
+* session lifecycle
+* step rendering
+* resume
+* completion
+* API responsibilities
+* error states
+* security
+* UX principles
+
+---
+
+# 32. Final Report
+
+في النهاية أعطني:
+
+1. الملفات التي تغيرت
+2. Home flow
+3. Today's Learning integration
+4. Session integration
+5. Reader integration
+6. Practice integration
+7. Feedback flow
+8. Resume behavior
+9. Completion behavior
+10. 401 handling
+11. frontend tests
+12. backend regression tests
+13. total tests
+14. API build
+15. Web build
+16. runtime status
+17. TypeScript baseline
+18. screenshots/preview status
+19. limitations الحقيقية
+20. تأكيد صريح أن Phase 17 لم تبدأ
+
+**نفّذ Phase 16 فقط. لا تبدأ أي مرحلة لاحقة تلقائيًا.**
