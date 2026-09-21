@@ -148,7 +148,7 @@ const TahsilikStudyCenter: React.FC = () => {
           <div className="flex items-center justify-start mb-4 sm:mb-6">
             <Button 
               variant="ghost" 
-              onClick={() => setLocation('/tahsilik')}
+              onClick={() => setLocation('/tahsili')}
               className="text-white/80 hover:text-white hover:bg-white/10 transition-all duration-300 -mr-2 touch-manipulation"
               data-testid="button-back-to-platform"
             >

@@ -110,7 +110,7 @@ const TahsilikMobileDashboard: React.FC = () => {
       icon: Brain,
       gradient: 'from-rose-500 via-pink-500 to-fuchsia-500',
       bgGradient: 'from-rose-50 to-amber-600 dark:from-rose-900/20 dark:to-amber-600/20',
-      path: '/tahsilik/tests-hub',
+      path: '/tahsilik/tests',
       stats: { tests: '50+ اختبار', questions: '5000+ سؤال' },
       features: ['اختبارات مخصصة', '110 سؤال شامل', 'اختبارات موضوعية']
     },
@@ -136,7 +136,7 @@ const TahsilikMobileDashboard: React.FC = () => {
       description: 'أنشئ اختباراً حسب اختيارك',
       icon: PenTool,
       color: 'from-blue-500 to-cyan-500',
-      action: () => setLocation('/tahsilik/tests-hub')
+      action: () => setLocation('/tahsilik/tests')
     },
     {
       type: 'comprehensive',
@@ -144,7 +144,7 @@ const TahsilikMobileDashboard: React.FC = () => {
       description: 'اختبار كامل لجميع المواد',
       icon: Crown,
       color: 'from-green-600 to-amber-600',
-      action: () => setLocation('/tahsilik/tests-hub')
+      action: () => setLocation('/tahsilik/tests')
     },
     {
       type: 'subject',
@@ -152,7 +152,7 @@ const TahsilikMobileDashboard: React.FC = () => {
       description: 'اختبار في مادة محددة',
       icon: Target,
       color: 'from-emerald-500 to-teal-500',
-      action: () => setLocation('/tahsilik/tests-hub')
+      action: () => setLocation('/tahsilik/tests')
     }
   ];
 

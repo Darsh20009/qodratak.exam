@@ -115,7 +115,7 @@ export default function TahsilikTestsHub() {
       <SEO
         title="مركز اختبارات التحصيلي — منصة قدراتك"
         description="اختبارات تحصيلية شاملة وموضوعية في الفيزياء والكيمياء والأحياء والرياضيات"
-        url="/tahsilik/tests-hub"
+        url="/tahsilik/tests"
       />
 
       <div className="qodratak-tahsili-surface min-h-[100dvh] pb-24" dir="rtl">
@@ -128,7 +128,7 @@ export default function TahsilikTestsHub() {
               <div className="absolute bottom-0 left-0 w-32 h-32 bg-white rounded-full translate-y-8 -translate-x-8 blur-xl" />
             </div>
             <button
-              onClick={() => setLocation("/tahsilik")}
+              onClick={() => setLocation("/tahsili")}
               className="relative flex items-center gap-1.5 text-xs text-white/70 hover:text-white mb-3 transition-colors"
             >
               <ArrowLeft className="w-3.5 h-3.5" />

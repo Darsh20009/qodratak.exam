@@ -49,9 +49,8 @@ const PROGRAMS: Record<ProgramKey, ProgramConfig> = {
       { title: "الأحياء", description: "شرح تأسيسي واختبار من بنك أسئلة الأحياء.", href: "/foundation?program=tahsili&subject=biology", icon: GraduationCap },
     ],
     computer: [
-      { title: "الاختبارات المحاكية", description: "اختبارات تدريبية ومتكاملة للتحصيلي.", href: "/tahsilik/tests", icon: GraduationCap },
-      { title: "بنك التحصيلي", description: "تدريب حسب المواد والمستوى.", href: "/tahsilik/question-bank", icon: Brain },
-      { title: "اختبار شامل", description: "اختبار شامل لقياس جاهزيتك.", href: "/tahsilik/comprehensive-test", icon: Target },
+      { title: "مركز الاختبارات", description: "اختر بين اختبار شامل أو حسب المادة أو اختبار مخصص.", href: "/tahsilik/tests", icon: GraduationCap },
+      { title: "بنك أسئلة التحصيلي", description: "تدرّب حسب المادة ثم راجع إجاباتك وأخطاءك.", href: "/tahsilik/question-bank", icon: Brain },
     ],
   },
 };

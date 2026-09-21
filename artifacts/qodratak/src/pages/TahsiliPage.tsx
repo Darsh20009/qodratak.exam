@@ -7,10 +7,11 @@ import {
   Brain,
   CheckCircle2,
   ChevronLeft,
-  Clock3,
   Download,
   ExternalLink,
   FileText,
+  Settings2,
+  Target,
   X,
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -28,61 +29,12 @@ const featuredBook = {
   viewerUrl: "https://online.pubhtml5.com/lhlxd/ecbp/",
 };
 
-const availableTests = [
-  {
-    id: "exam-10",
-    title: "اختبار تمهيدي سريع",
-    description: "بداية قصيرة للتعرف على مستوى الاستعداد.",
-    difficulty: "مبتدئ",
-    questions: 10,
-    time: "15 دقيقة",
-  },
-  {
-    id: "exam-50",
-    title: "اختبار التقييم المتوسط",
-    description: "تقييم أوسع لمراجعة نقاط القوة والاحتياج.",
-    difficulty: "متوسط",
-    questions: 50,
-    time: "60 دقيقة",
-  },
-  {
-    id: "exam-100",
-    title: "اختبار المحاكاة الشامل",
-    description: "محاكاة أطول لتجربة الاختبار بتركيز.",
-    difficulty: "متقدم",
-    questions: 100,
-    time: "120 دقيقة",
-  },
-  {
-    id: "exam-110",
-    title: "تحدي الخبراء الأقصى",
-    description: "تحدٍ متقدم لمن يريد اختبار جاهزيته.",
-    difficulty: "خبير",
-    questions: 110,
-    time: "150 دقيقة",
-  },
-];
-
-const difficultyClassName: Record<string, string> = {
-  مبتدئ: "border-sky-200 bg-sky-50 text-sky-700 dark:border-sky-900 dark:bg-sky-950/40 dark:text-sky-200",
-  متوسط:
-    "border-indigo-200 bg-indigo-50 text-indigo-700 dark:border-indigo-900 dark:bg-indigo-950/40 dark:text-indigo-200",
-  متقدم:
-    "border-violet-200 bg-violet-50 text-violet-700 dark:border-violet-900 dark:bg-violet-950/40 dark:text-violet-200",
-  خبير:
-    "border-slate-300 bg-slate-100 text-slate-700 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200",
-};
-
 export default function TahsiliPage() {
   const [showBook, setShowBook] = useState(false);
   const [, setLocation] = useLocation();
 
   const handleDownload = () => {
     window.open(featuredBook.downloadUrl, "_blank", "noopener,noreferrer");
-  };
-
-  const handleStartTest = (examId: string) => {
-    setLocation(`/tahsili/exams?exam=${examId}`);
   };
 
   return (
@@ -177,45 +129,52 @@ export default function TahsiliPage() {
                   <Award className="size-6" aria-hidden="true" />
                 </div>
                 <div>
-                  <p className="mb-1 text-sm font-bold text-primary">التطبيق</p>
-                  <CardTitle className="text-xl text-foreground sm:text-2xl">الاختبارات التفاعلية</CardTitle>
+                  <p className="mb-1 text-sm font-bold text-primary">الخطوة الثالثة</p>
+                  <CardTitle className="text-xl text-foreground sm:text-2xl">مركز الاختبارات</CardTitle>
                   <p className="mt-2 text-sm leading-7 text-muted-foreground">
-                    اختر المستوى المناسب وابدأ مباشرة دون خطوات إضافية.
+                    اختر نوع الاختبار أولًا، ثم ابدأ التدريب من الصفحة المناسبة.
                   </p>
                 </div>
               </div>
             </CardHeader>
             <CardContent className="space-y-3 p-5 sm:p-7">
-              {availableTests.map((test) => (
+              {[
+                {
+                  icon: Target,
+                  title: "اختبار شامل",
+                  description: "مراجعة عامة تغطي مواد التحصيلي في جلسة واحدة.",
+                  label: "للمراجعة العامة",
+                },
+                {
+                  icon: BookOpen,
+                  title: "اختبار حسب المادة",
+                  description: "ركّز على الرياضيات أو الفيزياء أو الكيمياء أو الأحياء.",
+                  label: "تدريب مركّز",
+                },
+                {
+                  icon: Settings2,
+                  title: "اختبار مخصص",
+                  description: "حدد المادة والمستوى وعدد الأسئلة حسب احتياجك.",
+                  label: "خطة مرنة",
+                },
+              ].map((test) => (
                 <button
-                  key={test.id}
+                  key={test.title}
                   type="button"
-                  data-testid={`card-test-${test.id}`}
-                  onClick={() => handleStartTest(test.id)}
+                  data-testid={`card-test-type-${test.title}`}
+                  onClick={() => setLocation("/tahsilik/tests")}
                   className="group flex w-full min-w-0 items-start gap-3 rounded-2xl border border-border/70 bg-background p-4 text-right transition-colors hover:border-primary/50 hover:bg-primary/[0.03] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                 >
                   <span className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
-                    <BookOpen className="size-5" aria-hidden="true" />
+                    <test.icon className="size-5" aria-hidden="true" />
                   </span>
                   <span className="min-w-0 flex-1">
-                    <span className="flex flex-wrap items-center gap-2">
+                    <span className="flex flex-wrap items-center justify-between gap-2">
                       <span className="break-words font-bold text-foreground">{test.title}</span>
-                      <Badge variant="outline" className={difficultyClassName[test.difficulty]}>
-                        {test.difficulty}
-                      </Badge>
+                      <span className="rounded-full bg-muted px-2.5 py-1 text-[11px] font-semibold text-muted-foreground">{test.label}</span>
                     </span>
                     <span className="mt-1 block break-words text-sm leading-6 text-muted-foreground">
                       {test.description}
-                    </span>
-                    <span className="mt-3 flex flex-wrap gap-2 text-xs text-muted-foreground">
-                      <span className="inline-flex items-center gap-1 rounded-full bg-muted px-2.5 py-1">
-                        <Clock3 className="size-3.5" aria-hidden="true" />
-                        {test.time}
-                      </span>
-                      <span className="inline-flex items-center gap-1 rounded-full bg-muted px-2.5 py-1">
-                        <FileText className="size-3.5" aria-hidden="true" />
-                        {test.questions} سؤال
-                      </span>
                     </span>
                   </span>
                   <ChevronLeft className="mt-1 size-5 shrink-0 text-muted-foreground transition-colors group-hover:text-primary" aria-hidden="true" />
@@ -225,9 +184,9 @@ export default function TahsiliPage() {
                 variant="secondary"
                 className="mt-2 h-11 w-full"
                 onClick={() => setLocation("/tahsilik/tests")}
-                data-testid="button-start-tahsili-tests"
+                data-testid="button-open-test-center"
               >
-                الذهاب إلى مركز الاختبارات
+                فتح مركز الاختبارات
                 <ChevronLeft className="me-2 size-4" aria-hidden="true" />
               </Button>
             </CardContent>

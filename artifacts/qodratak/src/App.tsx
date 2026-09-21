@@ -106,9 +106,7 @@ import ChatPage from "@/pages/admin/ChatPage";
 import TahsiliPage from "@/pages/TahsiliPage";
 import TahsiliDashboard from "@/pages/TahsiliDashboard";
 import TahsiliExamPage from "@/pages/TahsiliExamPage";
-import TahsilikPlatform from "@/pages/TahsilikPlatform";
 import TahsilikStudyCenter from "@/pages/TahsilikStudyCenter";
-import TahsilikTestCenter from "@/pages/TahsilikTestCenter";
 import TahsilikQualificationTest from "@/pages/TahsilikQualificationTest";
 import TahsilikMobileDashboard from "@/pages/TahsilikMobileDashboard";
 import TahsilikCustomTest from "@/pages/TahsilikCustomTest";
@@ -898,7 +896,7 @@ function Router({ splashDone }: { splashDone: boolean }) {
 
       {/* منصة تحصيلك المتكاملة */}
       <Route path="/tahsilik">
-        {() => <StudentShell><ProtectedRoute requiresPremium={true}><TahsilikPlatform /></ProtectedRoute></StudentShell>}
+        {() => <StudentShell><ProtectedRoute requiresPremium={true}><Redirect to="/tahsili" /></ProtectedRoute></StudentShell>}
       </Route>
       <Route path="/tahsilik/mobile-dashboard">
         {() => <StudentShell><ProtectedRoute requiresPremium={true}><TahsilikMobileDashboard /></ProtectedRoute></StudentShell>}
@@ -907,7 +905,7 @@ function Router({ splashDone }: { splashDone: boolean }) {
         {() => <StudentShell><ProtectedRoute requiresPremium={true}><TahsilikStudyCenter /></ProtectedRoute></StudentShell>}
       </Route>
       <Route path="/tahsilik/tests">
-        {() => <StudentShell><ProtectedRoute requiresPremium={true}><TahsilikTestCenter /></ProtectedRoute></StudentShell>}
+        {() => <StudentShell><ProtectedRoute requiresPremium={true}><TahsilikTestsHub /></ProtectedRoute></StudentShell>}
       </Route>
       <Route path="/tahsilik/qualification">
         {() => <StudentShell><ProtectedRoute requiresPremium={true}><TahsilikQualificationTest /></ProtectedRoute></StudentShell>}
@@ -928,7 +926,7 @@ function Router({ splashDone }: { splashDone: boolean }) {
         {() => <StudentShell><ProtectedRoute requiresPremium={true}><TahsilikSubjectTest /></ProtectedRoute></StudentShell>}
       </Route>
       <Route path="/tahsilik/tests-hub">
-        {() => <StudentShell><ProtectedRoute requiresPremium={true}><TahsilikTestsHub /></ProtectedRoute></StudentShell>}
+        {() => <StudentShell><ProtectedRoute requiresPremium={true}><Redirect to="/tahsilik/tests" /></ProtectedRoute></StudentShell>}
       </Route>
 
       {/* صفحات متاحة للحسابات المجانية */}

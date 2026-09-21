@@ -76,7 +76,7 @@ export default function TahsilikQualificationTest() {
         {/* Header */}
         <div className="flex items-center gap-3 mb-8">
           <button
-            onClick={() => setLocation('/tahsilik')}
+            onClick={() => setLocation('/tahsili')}
             className="text-gray-500 hover:text-teal-700 transition-colors"
             data-testid="btn-back"
           >
