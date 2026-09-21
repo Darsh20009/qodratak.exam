@@ -1037,98 +1037,15 @@ export class MemStorage implements IStorage {
               console.log(`Questions loaded successfully from MongoDB (${mongoCount} questions)`);
               return;
             }
+            console.log('MongoDB question bank is empty; keeping the legacy in-memory question bank empty until new content is imported.');
+            return;
           }
         } catch (mongoErr: any) {
           console.log('MongoDB question load unavailable, falling back to file... Error:', mongoErr?.message || mongoErr);
         }
       }
 
-      // ── Fallback: load from JSON file ──
-      const questionsPath = path.resolve(process.cwd(), "artifacts/api-server/server/questions.json");
-
-      if (fs.existsSync(questionsPath)) {
-        const fileContent = fs.readFileSync(questionsPath, "utf-8");
-        const questionsData = JSON.parse(fileContent);
-
-        // Process verbal questions
-        let count = 0;
-        if (questionsData.verbal && Array.isArray(questionsData.verbal)) {
-          for (const question of questionsData.verbal) {
-            try {
-              // Distribute difficulty levels
-              let difficulty: TestDifficulty = "beginner";
-              if (count % 3 === 1) difficulty = "intermediate";
-              if (count % 3 === 2) difficulty = "advanced";
-
-              // Generate keywords from question text
-              const keywords = this.extractKeywords(question.text);
-
-              // Add the question with comprehensive structure
-              await this.createQuestion({
-                category: "verbal",
-                subcategory: question.category || "التناظر اللفظي", // Use Arabic subcategory
-                text: question.text,
-                options: question.options,
-                correctOptionIndex: question.correctOptionIndex,
-                difficulty: difficulty,
-                topic: "general",
-                dialect: "standard",
-                keywords: keywords,
-                section: Math.floor(count / 20) + 1,
-                explanation: question.explanation || "" // Include explanation
-              });
-              count++;
-
-              if (count % 100 === 0) {
-                console.log(`Processed ${count} verbal questions`);
-              }
-            } catch (error) {
-              console.error("Error adding verbal question:", error);
-            }
-          }
-        }
-
-        // Process quantitative questions
-        count = 0;
-        if (questionsData.quantitative && Array.isArray(questionsData.quantitative)) {
-          for (const question of questionsData.quantitative) {
-            try {
-              // Distribute difficulty levels
-              let difficulty: TestDifficulty = "beginner";
-              if (count % 3 === 1) difficulty = "intermediate";
-              if (count % 3 === 2) difficulty = "advanced";
-
-              // Generate keywords from question text
-              const keywords = this.extractKeywords(question.text);
-
-              // Add the question with comprehensive structure
-              await this.createQuestion({
-                category: "quantitative",
-                subcategory: question.category || "عمليات حسابية", // Use Arabic subcategory
-                text: question.text,
-                options: question.options,
-                correctOptionIndex: question.correctOptionIndex,
-                difficulty: difficulty,
-                topic: "general",
-                dialect: "standard",
-                keywords: keywords,
-                section: Math.floor(count / 20) + 1,
-                explanation: question.explanation || "" // Include explanation
-              });
-              count++;
-
-              if (count % 100 === 0) {
-                console.log(`Processed ${count} quantitative questions`);
-              }
-            } catch (error) {
-              console.error("Error adding quantitative question:", error);
-            }
-          }
-        }
-        console.log("Questions loaded successfully from file");
-      } else {
-        console.error("Questions file not found at:", questionsPath);
-      }
+      console.log('Question bank is empty; waiting for a reviewed content import.');
     } catch (error) {
       console.error("Error loading questions from file:", error);
     }
@@ -2180,11 +2097,10 @@ export class MemStorage implements IStorage {
       const path = await import('path');
       const modelsFile = path.join(process.cwd(), 'artifacts', 'api-server', 'server', 'data', 'paper-models.json');
       
-      if (!fs.existsSync(modelsFile)) {
-        console.error('❌ CRITICAL: Paper models file not found at', modelsFile);
-        console.error('❌ Run: npx tsx server/generate-stable-models.ts to create stable models');
-        throw new Error('Paper models file not found');
-      }
+       if (!fs.existsSync(modelsFile)) {
+         console.log('📭 No paper models available; waiting for a reviewed content import.');
+         return;
+       }
 
       const fileContent = fs.readFileSync(modelsFile, 'utf-8');
       const { models, version, generatedAt } = JSON.parse(fileContent);

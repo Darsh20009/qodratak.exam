@@ -1069,71 +1069,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Auth routes will be added here
 
   app.get("/api/seed-questions", async (req: Request, res: Response) => {
-    try {
-      // Clear existing questions first
-      await storage.clearAllQuestions();
-      console.log("Cleared existing questions");
-
-      const questionsPath = path.resolve(
-        process.cwd(),
-        "artifacts/api-server/server/questions.json"
-      );
-
-      if (!fs.existsSync(questionsPath)) {
-        return res.status(404).json({ message: "Questions file not found" });
-      }
-
-      const fileContent = fs.readFileSync(questionsPath, "utf-8");
-      const questionsData = JSON.parse(fileContent);
-
-      // Process verbal questions
-      if (questionsData.verbal && Array.isArray(questionsData.verbal)) {
-        for (const question of questionsData.verbal) {
-          try {
-            // Validate question format with the new comprehensive structure
-            const questionData: any = {
-              category: "verbal",
-              subcategory: question.category || "التناظر اللفظي",
-              text: question.text,
-              options: question.options,
-              correctOptionIndex: question.correctOptionIndex,
-              explanation: question.explanation || "",
-              difficulty: "beginner"
-            };
-
-            await storage.createQuestion(questionData);
-          } catch (error) {
-            console.error("Error seeding question:", error);
-          }
-        }
-      }
-
-      // Process quantitative questions if they exist
-      if (questionsData.quantitative && Array.isArray(questionsData.quantitative)) {
-        for (const question of questionsData.quantitative) {
-          try {
-            const questionData: any = {
-              category: "quantitative",
-              subcategory: question.category || "عمليات حسابية",
-              text: question.text,
-              options: question.options,
-              correctOptionIndex: question.correctOptionIndex,
-              explanation: question.explanation || "",
-              difficulty: "beginner"
-            };
-
-            await storage.createQuestion(questionData);
-          } catch (error) {
-            console.error("Error seeding question:", error);
-          }
-        }
-      }
-
-      return res.status(200).json({ message: "Questions seeded successfully" });
-    } catch (error) {
-      console.error("Error reading questions file:", error);
-      return res.status(500).json({ message: "Error seeding questions" });
-    }
+    return res.status(410).json({ message: "تم إيقاف مصدر الأسئلة القديم. أدخل بنكًا مراجعًا جديدًا قبل التفعيل." });
   });
 
   // Get questions by category and difficulty
@@ -1219,20 +1155,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Get questions statistics
   app.get("/api/questions/stats", async (req: Request, res: Response) => {
     try {
-      const questionsPath = path.resolve(
-        process.cwd(),
-        "artifacts/api-server/server/questions.json"
-      );
-
-      if (!fs.existsSync(questionsPath)) {
-        return res.status(404).json({ message: "Questions file not found" });
-      }
-
-      const fileContent = fs.readFileSync(questionsPath, "utf-8");
-      const questionsData = JSON.parse(fileContent);
-
-      const verbalCount = questionsData.verbal?.length || 0;
-      const quantitativeCount = questionsData.quantitative?.length || 0;
+      const { Question } = await import("../mongodb/models");
+      const [verbalCount, quantitativeCount] = await Promise.all([
+        Question.countDocuments({ category: "verbal" }),
+        Question.countDocuments({ category: "quantitative" }),
+      ]);
       const totalCount = verbalCount + quantitativeCount;
 
       const roundedToHundred = Math.floor(totalCount / 100) * 100;
@@ -1252,20 +1179,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Get all questions from JSON file (for book generation)
   app.get("/api/questions/all", async (req: Request, res: Response) => {
     try {
-      const questionsPath = path.resolve(
-        process.cwd(),
-        "artifacts/api-server/server/questions.json"
-      );
-
-      if (!fs.existsSync(questionsPath)) {
-        return res.status(404).json({ message: "Questions file not found" });
-      }
-
-      const fileContent = fs.readFileSync(questionsPath, "utf-8");
-      const questionsData = JSON.parse(fileContent);
-
-      // Return the data in the format: { verbal: [...], quantitative: [...] }
-      return res.json(questionsData);
+      const { Question } = await import("../mongodb/models");
+      const [verbal, quantitative] = await Promise.all([
+        Question.find({ category: "verbal" }).lean(),
+        Question.find({ category: "quantitative" }).lean(),
+      ]);
+      return res.json({ verbal, quantitative });
     } catch (error) {
       console.error("Error fetching all questions:", error);
       return res.status(500).json({ message: "Error fetching all questions" });
@@ -7195,30 +7114,7 @@ app.post("/api/auth/register", async (req: Request, res: Response) => {
   });
 
   app.post("/api/admin/questions/seed-from-json", requireAdmin, async (req: Request, res: Response) => {
-    try {
-      const questionsPath = path.resolve(process.cwd(), 'artifacts/api-server/server/questions.json');
-      if (!fs.existsSync(questionsPath)) {
-        return res.status(404).json({ error: 'ملف الأسئلة غير موجود' });
-      }
-      const data = JSON.parse(fs.readFileSync(questionsPath, 'utf-8'));
-      const verbalRaw: any[] = data.verbal || [];
-      const quantRaw: any[] = data.quantitative || [];
-
-      const existing = await mongoStorage.getQuestionCount();
-      if (existing.total > 0) {
-        return res.json({ message: `الأسئلة موجودة بالفعل (${existing.total} سؤال)`, added: 0 });
-      }
-
-      const toInsert = [
-        ...verbalRaw.map((q: any, i: number) => ({ ...q, category: 'verbal', questionId: i + 1 })),
-        ...quantRaw.map((q: any, i: number) => ({ ...q, category: 'quantitative', questionId: verbalRaw.length + i + 1 })),
-      ];
-      const added = await mongoStorage.bulkCreateQuestions(toInsert);
-      res.json({ message: `تم إضافة ${added} سؤال بنجاح`, added });
-    } catch (error) {
-      console.error('Error seeding questions:', error);
-      res.status(500).json({ error: 'فشل في استيراد الأسئلة' });
-    }
+    res.status(410).json({ error: 'تم إيقاف استيراد بنك الأسئلة القديم. استخدم استيراد المحتوى المراجع الجديد.' });
   });
 
   app.post("/api/admin/questions", requireAdmin, async (req: Request, res: Response) => {

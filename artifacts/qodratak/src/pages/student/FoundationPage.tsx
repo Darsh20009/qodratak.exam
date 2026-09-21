@@ -11,7 +11,6 @@ import {
   useStudentDashboard,
   useSubmitFoundationDiagnostic,
 } from "@/hooks/use-student";
-import { verbalBankVideos } from "@/data/verbalBankVideos";
 import { foundationSections, getFoundationSection, type FoundationProgram, type FoundationSection } from "@/data/foundationSections";
 import { foundationCurriculum } from "@/data/foundationCurriculum";
 import { Link, useLocation, useSearch } from "wouter";
@@ -447,7 +446,7 @@ export default function FoundationPage() {
   const [visibleLessonCount, setVisibleLessonCount] = useState(40);
   const activeSection = requestedSection;
   const curriculum = foundationCurriculum[activeSection.key];
-  const shouldLoadFoundationContent = hasSubject && !(program === "qudrat" && activeSection.key === "verbal");
+  const shouldLoadFoundationContent = hasSubject;
   const contentSubjectId = `subject.${program}.${activeSection.key}`;
   const {
     data: foundationContent,
@@ -463,7 +462,7 @@ export default function FoundationPage() {
     error: dashboardError,
     refetch: refetchDashboard,
   } = useStudentDashboard(!hasSubject);
-  const content = program === "qudrat" && activeSection.key === "verbal" ? verbalBankVideos : foundationContent || [];
+  const content = foundationContent || [];
   const selectedLessonIndex = selectedLesson ? content.findIndex((item) => item._id === selectedLesson._id) : -1;
   const currentGuide = curriculum.lessons[Math.max(0, selectedLessonIndex) % curriculum.lessons.length];
 

@@ -1,10 +1,14 @@
 import fs from 'fs';
 import path from 'path';
 
-const questionsFile = path.join(process.cwd(), 'server', 'questions.json');
+const questionsFile = process.env.QUESTIONS_FILE ?? '';
 const outputFile = path.join(process.cwd(), 'server', 'data', 'paper-models.json');
 
 console.log('🎲 Generating 30 STABLE paper models...');
+
+if (!questionsFile) {
+  throw new Error('The legacy question bank was removed. Set QUESTIONS_FILE to a reviewed import before generating paper models.');
+}
 
 const questionsData = JSON.parse(fs.readFileSync(questionsFile, 'utf-8'));
 

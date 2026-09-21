@@ -69,7 +69,7 @@ export interface ControlledSampleMapping {
   mappingVersion: string;
 }
 
-const sourceBank = 'artifacts/api-server/server/questions.json';
+const sourceBank = 'reviewed_mongo_question_import';
 const tahsiliBank = 'artifacts/api-server/src/data/comprehensive-questions-bank.json';
 
 const evidence = (
