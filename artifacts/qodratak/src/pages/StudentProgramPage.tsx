@@ -2,6 +2,7 @@ import { BookOpen, Brain, ChevronLeft, FileText, GraduationCap, Library, Target 
 import { Link, useLocation, useRoute } from "wouter";
 import { useStudentDashboard } from "@/hooks/use-student";
 import { Progress } from "@/components/ui/progress";
+import ComputerizedPage from "@/pages/student/ComputerizedPage";
 
 type ProgramKey = "qudrat" | "tahsili";
 
@@ -78,9 +79,12 @@ export default function StudentProgramPage() {
   const programKey = params?.program as ProgramKey;
   const program = PROGRAMS[programKey] || PROGRAMS.qudrat;
   const section = new URLSearchParams(location.split("?")[1] || "").get("section");
+  const { data: dashboard } = useStudentDashboard();
+  if ((programKey === "qudrat" || programKey === "tahsili") && section === "computer") {
+    return <ComputerizedPage key={programKey} initialTrack={programKey} />;
+  }
   const showFoundation = !section || section === "foundation";
   const showComputer = !section || section === "computer";
-  const { data: dashboard } = useStudentDashboard();
   const qudratProgress = dashboard?.progress.qudrat.percentage || 0;
   const tahsiliProgress = dashboard?.progress.tahsili.percentage || 0;
   const practiceSectionTitle = "المحوسب";

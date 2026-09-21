@@ -1,178 +1,548 @@
-import { useState } from "react";
+import { useState, type FormEvent } from "react";
 import { Link } from "wouter";
 import {
-  Activity,
+  ArrowLeft,
   BookOpen,
-  BrainCircuit,
   Calculator,
   CheckCircle2,
-  ChevronLeft,
-  FileText,
-  FolderOpen,
-  GraduationCap,
-  Layers,
-  Loader2,
-  Microscope,
+  CircleHelp,
+  Clock3,
+  FileQuestion,
+  Flag,
+  Layers3,
+  Library,
+  LockKeyhole,
+  PlayCircle,
+  Search,
+  Sparkles,
   Target,
-  TrendingUp,
+  Trophy,
 } from "lucide-react";
+import type { LucideIcon } from "lucide-react";
 import { useStudentDashboard } from "@/hooks/use-student";
 
-type Track = "qudrat" | "tahsili";
+type ComputerizedMode = "quantitative" | "verbal" | "mixed" | "search";
+type ComputerizedTrack = "qudrat" | "tahsili";
 
-const TRACKS = {
-  qudrat: {
-    label: "قدرات",
-    description: "تدريب كمي ولفظي واختبارات مختلطة تحاكي قياس.",
-    icon: BrainCircuit,
-    color: "text-[#147D68]",
-    surface: "bg-[#EAF8F3]",
-    sections: [
-      { title: "الاختبارات الكمية", description: "الجبر والهندسة والحساب والمقارنات", href: "/quantitative-tests", icon: Calculator },
-      { title: "الاختبارات اللفظية", description: "التناظر وإكمال الجمل واستيعاب المقروء", href: "/verbal-tests", icon: BookOpen },
-      { title: "الاختبارات المختلطة", description: "كمي ولفظي في محاكاة واحدة متوازنة", href: "/qiyas", icon: Activity },
-      { title: "بنوك القدرات", description: "الأسئلة مرتبة في أقسام وبنوك واضحة", href: "/question-bank", icon: Layers },
-    ],
-  },
-  tahsili: {
-    label: "تحصيلي",
-    description: "مراجعة المواد العلمية ثم قياس الاستعداد باختبارات شاملة.",
-    icon: GraduationCap,
-    color: "text-[#C94C65]",
-    surface: "bg-[#FFF0F2]",
-    sections: [
-      { title: "تدريب المواد", description: "رياضيات وفيزياء وكيمياء وأحياء", href: "/tahsili", icon: Microscope },
-      { title: "بنوك التحصيلي", description: "تجميعات وأسئلة مرتبة حسب المادة", href: "/tahsili/question-bank", icon: Layers },
-      { title: "الاختبارات الشاملة", description: "محاكاة متكاملة لجميع مواد التحصيلي", href: "/tahsili/exams", icon: Activity },
-      { title: "نتائجي وتقدمي", description: "راجع محاولاتك واعرف ما يحتاج مراجعة", href: "/records", icon: TrendingUp },
-    ],
-  },
-} as const;
+type ModeConfig = {
+  key: ComputerizedMode;
+  title: string;
+  description: string;
+  icon: LucideIcon;
+  accent: string;
+  iconSurface: string;
+};
 
-export default function ComputerizedPage() {
-  const [activeTrack, setActiveTrack] = useState<Track>("qudrat");
-  const { data: dashboard, isLoading } = useStudentDashboard();
-  const track = TRACKS[activeTrack];
-  const TrackIcon = track.icon;
+type ContentItem = {
+  title: string;
+  description: string;
+  icon: LucideIcon;
+  href?: string;
+  tag?: string;
+};
+
+const MODES: ModeConfig[] = [
+  {
+    key: "quantitative",
+    title: "الكمي",
+    description: "بنوك وفيديوهات واختبارات مرتبة حسب مهارات الكمي.",
+    icon: Calculator,
+    accent: "text-[#147D68]",
+    iconSurface: "bg-[#EAF8F3]",
+  },
+  {
+    key: "verbal",
+    title: "اللفظي",
+    description: "تدرّب على أقسام اللفظي من الشرح إلى الاختبار.",
+    icon: BookOpen,
+    accent: "text-[#3B67A5]",
+    iconSurface: "bg-[#EEF4FF]",
+  },
+  {
+    key: "mixed",
+    title: "الاختبارات المختلطة",
+    description: "محاكاة تجمع الكمي واللفظي في اختبار واحد.",
+    icon: Layers3,
+    accent: "text-[#9A6A1F]",
+    iconSurface: "bg-[#FFF7E6]",
+  },
+  {
+    key: "search",
+    title: "ابحث عن سؤال فقط",
+    description: "انتقل مباشرة إلى السؤال الذي تريد مراجعته.",
+    icon: Search,
+    accent: "text-[#7A4B91]",
+    iconSurface: "bg-[#F7EEFB]",
+  },
+];
+
+const TRACKS: Array<{
+  key: ComputerizedTrack;
+  title: string;
+  description: string;
+  icon: LucideIcon;
+}> = [
+  {
+    key: "qudrat",
+    title: "قدرات",
+    description: "الكمي واللفظي والاختبارات المختلطة.",
+    icon: Target,
+  },
+  {
+    key: "tahsili",
+    title: "تحصيلي",
+    description: "المواد العلمية والبنوك والاختبارات الشاملة.",
+    icon: BookOpen,
+  },
+];
+
+const QUANTITATIVE_ITEMS: ContentItem[] = [
+  {
+    title: "الحساب والعمليات",
+    description: "تدريب الحساب، الكسور، التقدير، وترتيب العمليات.",
+    icon: Calculator,
+  },
+  {
+    title: "النسبة والتناسب",
+    description: "النسب، التناسب الطردي والعكسي، والتطبيقات اللفظية.",
+    icon: Target,
+  },
+  {
+    title: "النسبة المئوية",
+    description: "الزيادة والنقصان والخصومات والنسب المركبة.",
+    icon: Sparkles,
+  },
+  {
+    title: "الجبر والمعادلات",
+    description: "تبسيط العبارات، المعادلات، والمتغيرات.",
+    icon: FileQuestion,
+  },
+  {
+    title: "الهندسة",
+    description: "الزوايا، المثلثات، المحيط، المساحة، والحجوم.",
+    icon: Flag,
+  },
+  {
+    title: "المقارنات",
+    description: "استراتيجيات مقارنة الكميتين واختيار المعطى الكافي.",
+    icon: CheckCircle2,
+  },
+  {
+    title: "الإحصاء",
+    description: "المتوسط والوسيط والمنوال وقراءة الجداول والرسوم.",
+    icon: Trophy,
+  },
+  {
+    title: "الحركة والأنماط",
+    description: "السرعة، الزمن، المتتاليات، واكتشاف النمط.",
+    icon: Clock3,
+  },
+  {
+    title: "أفكار متنوعة",
+    description: "أسئلة مركبة لتثبيت المهارات وربط أكثر من فكرة.",
+    icon: Sparkles,
+  },
+];
+
+const VERBAL_ITEMS: ContentItem[] = [
+  {
+    title: "التناظر اللفظي",
+    description: "اكتشف العلاقة بين الكلمتين ثم طبّقها على الخيارات.",
+    icon: Layers3,
+  },
+  {
+    title: "إكمال الجمل",
+    description: "افهم السياق واختر الكلمة أو العبارة التي تكمل المعنى.",
+    icon: FileQuestion,
+  },
+  {
+    title: "الخطأ السياقي",
+    description: "حدّد الكلمة التي لا تنسجم مع معنى الجملة وسياقها.",
+    icon: CircleHelp,
+  },
+  {
+    title: "استيعاب المقروء",
+    description: "اقرأ النص، استخرج فكرته، وأجب عن الأسئلة بدقة.",
+    icon: BookOpen,
+  },
+  {
+    title: "المفردة الشاذة",
+    description: "ميّز الكلمة المختلفة عن المجموعة وفق العلاقة المشتركة.",
+    icon: Search,
+  },
+  {
+    title: "أفكار متنوعة",
+    description: "تدريب شامل يربط بين مهارات القسم اللفظي.",
+    icon: Sparkles,
+  },
+];
+
+function EmptyContentNotice({ label }: { label: string }) {
+  return (
+    <div className="mt-3 rounded-xl border border-dashed border-[#CBD5E1] bg-white/70 px-3 py-2 text-xs leading-5 text-[#64748B]">
+      ستظهر {label} هنا بعد إضافة الداتا الجديدة ومراجعتها.
+    </div>
+  );
+}
+
+function SectionItemCard({ item }: { item: ContentItem }) {
+  const Icon = item.icon;
+  const card = (
+    <div className={`group h-full rounded-2xl border border-[#E2E8F0] bg-white p-4 transition ${item.href ? "hover:-translate-y-0.5 hover:border-[#0D1B2A]/30 hover:shadow-md" : ""}`}>
+      <div className="flex items-start justify-between gap-3">
+        <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#F1F5F9] text-[#0D1B2A]">
+          <Icon className="h-5 w-5" />
+        </span>
+        {item.tag ? (
+          <span className="rounded-full bg-[#F8FAFC] px-2.5 py-1 text-[10px] font-black text-[#64748B]">{item.tag}</span>
+        ) : (
+          <LockKeyhole className="h-4 w-4 text-[#94A3B8]" aria-label="بانتظار الداتا" />
+        )}
+      </div>
+      <h3 className="mt-4 text-sm font-black text-[#0D1B2A]">{item.title}</h3>
+      <p className="mt-1 text-xs leading-5 text-[#64748B]">{item.description}</p>
+      <EmptyContentNotice label="بنك هذا القسم" />
+    </div>
+  );
+
+  return item.href ? <Link href={item.href}>{card}</Link> : card;
+}
+
+function ResourceCard({
+  title,
+  description,
+  icon: Icon,
+  href,
+  accent,
+}: {
+  title: string;
+  description: string;
+  icon: LucideIcon;
+  href: string;
+  accent: string;
+}) {
+  return (
+    <Link href={href} className="group block rounded-2xl border border-[#E2E8F0] bg-white p-4 transition hover:-translate-y-0.5 hover:border-[#0D1B2A]/30 hover:shadow-md">
+      <div className="flex items-start justify-between gap-3">
+        <span className={`flex h-11 w-11 items-center justify-center rounded-xl ${accent}`}>
+          <Icon className="h-5 w-5" />
+        </span>
+        <ArrowLeft className="h-4 w-4 text-[#94A3B8] transition-transform group-hover:-translate-x-1" />
+      </div>
+      <h3 className="mt-4 text-base font-black text-[#0D1B2A]">{title}</h3>
+      <p className="mt-1 text-xs leading-5 text-[#64748B]">{description}</p>
+      <EmptyContentNotice label={title === "الفيديوهات" ? "الفيديوهات" : "الاختبارات"} />
+    </Link>
+  );
+}
+
+function SubjectWorkspace({ mode }: { mode: "quantitative" | "verbal" }) {
+  const isQuantitative = mode === "quantitative";
+  const title = isQuantitative ? "مسار الكمي" : "مسار اللفظي";
+  const description = isQuantitative
+    ? "مساحة منظمة لبنوك الكمي، فيديوهات الشرح، اختبارات الأقسام، والتقفيلات."
+    : "مساحة منظمة لبنوك اللفظي، فيديوهات الشرح، اختبارات الأقسام، والتقفيلات.";
+  const items = isQuantitative ? QUANTITATIVE_ITEMS : VERBAL_ITEMS;
+  const subject = isQuantitative ? "quantitative" : "verbal";
+
+  return (
+    <section className="space-y-5" aria-labelledby={`${subject}-workspace-title`}>
+      <div className="rounded-[1.5rem] border border-[#DDE6E2] bg-[#F8FBFA] p-5 md:p-6">
+        <div className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
+          <div>
+            <p className="text-xs font-black text-[#147D68]">المحوسب · {isQuantitative ? "الكمي" : "اللفظي"}</p>
+            <h2 id={`${subject}-workspace-title`} className="mt-1 text-2xl font-black text-[#0D1B2A]">{title}</h2>
+            <p className="mt-2 max-w-2xl text-sm leading-6 text-[#64748B]">{description}</p>
+          </div>
+          <div className="rounded-xl border border-[#DDE6E2] bg-white px-4 py-3 text-right">
+            <p className="text-[11px] font-bold text-[#64748B]">حالة المحتوى</p>
+            <p className="mt-1 text-sm font-black text-[#9A6A1F]">بانتظار الداتا الجديدة</p>
+          </div>
+        </div>
+      </div>
+
+      <div>
+        <div className="mb-3 flex items-end justify-between gap-3">
+          <div>
+            <h3 className="text-lg font-black text-[#0D1B2A]">المصادر الرئيسية</h3>
+            <p className="mt-1 text-xs text-[#64748B]">كل مصدر له مكان واضح حتى تتم إضافة المحتوى بدون إعادة بناء الواجهة.</p>
+          </div>
+          <span className="hidden rounded-full bg-[#F1F5F9] px-3 py-1 text-[11px] font-black text-[#64748B] sm:inline-flex">٣ مسارات</span>
+        </div>
+        <div className="grid gap-3 md:grid-cols-3">
+          <ResourceCard
+            title={`بنك ${isQuantitative ? "الكمي" : "اللفظي"}`}
+            description="أسئلة مصنفة حسب القسم والمستوى والمصدر."
+            icon={Library}
+            href={`/question-bank?category=${subject}`}
+            accent={isQuantitative ? "bg-[#EAF8F3] text-[#147D68]" : "bg-[#EEF4FF] text-[#3B67A5]"}
+          />
+          <ResourceCard
+            title="الفيديوهات"
+            description="شرح قصير لكل مهارة مع اختبار مرتبط بالدرس."
+            icon={PlayCircle}
+            href={`/foundation?program=qudrat&subject=${subject}`}
+            accent="bg-[#FFF7E6] text-[#9A6A1F]"
+          />
+          <ResourceCard
+            title="الاختبارات والتقفيلات"
+            description="اختبار كل قسم ثم تقفيلة شاملة عند اكتمال المحتوى."
+            icon={Flag}
+            href={isQuantitative ? "/quantitative-tests" : "/verbal-tests"}
+            accent="bg-[#F7EEFB] text-[#7A4B91]"
+          />
+        </div>
+      </div>
+
+      <div>
+        <div className="mb-3">
+          <h3 className="text-lg font-black text-[#0D1B2A]">أقسام {isQuantitative ? "الكمي" : "اللفظي"}</h3>
+          <p className="mt-1 text-xs text-[#64748B]">ستظهر البنوك والفيديوهات والاختبارات الخاصة بكل قسم في هذه البطاقات.</p>
+        </div>
+        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+          {items.map((item) => <SectionItemCard key={item.title} item={item} />)}
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function MixedWorkspace() {
+  return (
+    <section className="rounded-[1.5rem] border border-[#E8DFC9] bg-[#FFFCF5] p-5 md:p-6">
+      <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+        <div>
+          <p className="text-xs font-black text-[#9A6A1F]">المحوسب · اختبارات مختلطة</p>
+          <h2 className="mt-1 text-2xl font-black text-[#0D1B2A]">اختبر الكمي واللفظي معًا</h2>
+          <p className="mt-2 max-w-2xl text-sm leading-6 text-[#64748B]">
+            هنا ستظهر الاختبارات المحاكية والتقفيلات المختلطة التي تجمع القسمين في تجربة واحدة.
+          </p>
+        </div>
+        <Link href="/qiyas" className="inline-flex shrink-0 items-center justify-center gap-2 rounded-xl bg-[#0D1B2A] px-4 py-3 text-sm font-black text-white transition hover:bg-[#18334D]">
+          فتح الاختبارات المختلطة
+          <ArrowLeft className="h-4 w-4" />
+        </Link>
+      </div>
+      <EmptyContentNotice label="الاختبارات المختلطة" />
+    </section>
+  );
+}
+
+function SearchWorkspace() {
+  const [query, setQuery] = useState("");
+  const [submittedQuery, setSubmittedQuery] = useState("");
+
+  const submitSearch = (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    setSubmittedQuery(query.trim());
+  };
+
+  return (
+    <section className="rounded-[1.5rem] border border-[#E4D8E9] bg-[#FCF9FD] p-5 md:p-6">
+      <div>
+        <p className="text-xs font-black text-[#7A4B91]">المحوسب · سؤال مباشر</p>
+        <h2 className="mt-1 text-2xl font-black text-[#0D1B2A]">ابحث عن سؤال فقط</h2>
+        <p className="mt-2 max-w-2xl text-sm leading-6 text-[#64748B]">
+          اكتب كلمة أو رقم السؤال للوصول إليه بعد إضافة بنك الأسئلة الجديد وتصنيفه.
+        </p>
+      </div>
+      <form onSubmit={submitSearch} className="mt-5 flex flex-col gap-2 sm:flex-row">
+        <label htmlFor="computerized-question-search" className="sr-only">ابحث في بنك الأسئلة</label>
+        <div className="relative flex-1">
+          <Search className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#94A3B8]" />
+          <input
+            id="computerized-question-search"
+            value={query}
+            onChange={(event) => setQuery(event.target.value)}
+            placeholder="مثال: سؤال الهندسة أو رقم السؤال"
+            className="h-12 w-full rounded-xl border border-[#DCCDE3] bg-white pr-10 pl-4 text-sm text-[#0D1B2A] outline-none transition placeholder:text-[#94A3B8] focus:border-[#7A4B91] focus:ring-2 focus:ring-[#7A4B91]/15"
+          />
+        </div>
+        <button type="submit" className="inline-flex h-12 items-center justify-center gap-2 rounded-xl bg-[#7A4B91] px-5 text-sm font-black text-white transition hover:bg-[#633D77]">
+          بحث
+          <Search className="h-4 w-4" />
+        </button>
+      </form>
+      <div className="mt-4 rounded-xl border border-dashed border-[#DCCDE3] bg-white/70 px-3 py-3 text-xs leading-5 text-[#64748B]">
+        {submittedQuery
+          ? `لا توجد نتائج حالية لعبارة «${submittedQuery}». ستظهر النتائج بعد إضافة الداتا الجديدة ومراجعتها.`
+          : "نتائج البحث ستظهر هنا بعد إضافة الداتا الجديدة ومراجعتها."}
+      </div>
+      <div className="mt-4 flex flex-col gap-4 border-t border-[#E4D8E9] pt-4 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <p className="text-sm font-black text-[#0D1B2A]">البحث المتقدم</p>
+          <p className="mt-1 text-xs text-[#64748B]">يمكن ربط الفلاتر بالقسم والمصدر والمستوى عند وصول الداتا.</p>
+        </div>
+        <span className="inline-flex items-center gap-2 rounded-full bg-[#F7EEFB] px-3 py-2 text-[11px] font-black text-[#7A4B91]">
+          <Sparkles className="h-3.5 w-3.5" />
+          جاهز للتصنيف
+        </span>
+      </div>
+    </section>
+  );
+}
+
+function TahsiliWorkspace() {
+  return (
+    <section className="space-y-5" aria-labelledby="tahsili-workspace-title">
+      <div className="rounded-[1.5rem] border border-[#F0DCE1] bg-[#FFF9FA] p-5 md:p-6">
+        <p className="text-xs font-black text-[#C94C65]">المحوسب · التحصيلي</p>
+        <h2 id="tahsili-workspace-title" className="mt-1 text-2xl font-black text-[#0D1B2A]">مسار التحصيلي</h2>
+        <p className="mt-2 max-w-2xl text-sm leading-6 text-[#64748B]">
+          اختر المادة أو انتقل إلى بنك الأسئلة والاختبارات الشاملة. سيُضاف محتوى كل مادة هنا عند وصول الداتا الجديدة.
+        </p>
+      </div>
+
+      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+        <ResourceCard
+          title="المواد العلمية"
+          description="رياضيات وفيزياء وكيمياء وأحياء."
+          icon={BookOpen}
+          href="/tahsili"
+          accent="bg-[#FFF0F2] text-[#C94C65]"
+        />
+        <ResourceCard
+          title="بنك التحصيلي"
+          description="أسئلة مرتبة حسب المادة والمستوى."
+          icon={Library}
+          href="/tahsilik/question-bank"
+          accent="bg-[#F2F7FF] text-[#3B67A5]"
+        />
+        <ResourceCard
+          title="الاختبارات الشاملة"
+          description="اختبارات محاكية لجميع مواد التحصيلي."
+          icon={Trophy}
+          href="/tahsilik/tests"
+          accent="bg-[#FFF7E6] text-[#9A6A1F]"
+        />
+        <ResourceCard
+          title="نتائجي وتقدمي"
+          description="راجع محاولاتك وما يحتاج إلى مراجعة."
+          icon={CheckCircle2}
+          href="/records"
+          accent="bg-[#F7EEFB] text-[#7A4B91]"
+        />
+      </div>
+    </section>
+  );
+}
+
+export default function ComputerizedPage({
+  initialTrack = "qudrat",
+}: {
+  initialTrack?: ComputerizedTrack;
+}) {
+  const [activeTrack, setActiveTrack] = useState<ComputerizedTrack>(initialTrack);
+  const [activeMode, setActiveMode] = useState<ComputerizedMode>("quantitative");
+  const { data: dashboard } = useStudentDashboard();
   const completed = dashboard?.stats.totalTests ?? 0;
   const average = dashboard?.stats.averageScore ?? 0;
 
   return (
-    <div className="mx-auto max-w-5xl space-y-7 p-4 pb-10 md:p-8">
-      <header className="overflow-hidden rounded-[1.75rem] bg-[#0D1B2A] p-6 text-white shadow-sm md:p-8">
-        <div className="flex flex-col justify-between gap-6 md:flex-row md:items-end">
-          <div>
-            <p className="mb-2 text-xs font-black text-[#F7F775]">مركز التدريب</p>
-            <h1 className="text-3xl font-black">المحوسب</h1>
-            <p className="mt-2 max-w-xl text-sm font-medium leading-6 text-white/65">
-              اختر قدرات أو تحصيلي، ثم أكمل البنوك بالترتيب. نتيجتك وتقدمك محفوظان في حسابك.
-            </p>
-          </div>
-          <div className="grid grid-cols-2 gap-2">
-            <div className="rounded-2xl bg-white/10 px-4 py-3">
-              <p className="text-2xl font-black">{completed}</p>
-              <p className="text-[11px] font-bold text-white/55">اختبار مكتمل</p>
-            </div>
-            <div className="rounded-2xl bg-white/10 px-4 py-3">
-              <p className="text-2xl font-black">{average}%</p>
-              <p className="text-[11px] font-bold text-white/55">متوسط الأداء</p>
-            </div>
-          </div>
-        </div>
-      </header>
-
-      <div className="grid grid-cols-2 gap-3" role="tablist" aria-label="اختر المسار">
-        {(Object.keys(TRACKS) as Track[]).map((key) => {
-          const item = TRACKS[key];
-          const Icon = item.icon;
-          const selected = activeTrack === key;
-          return (
-            <button
-              key={key}
-              type="button"
-              role="tab"
-              aria-selected={selected}
-              onClick={() => setActiveTrack(key)}
-              className={`rounded-2xl border p-4 text-right transition-all md:p-5 ${
-                selected
-                  ? "border-[#0D1B2A] bg-[#0D1B2A] text-white shadow-md"
-                  : "border-border bg-white text-foreground hover:-translate-y-0.5 hover:border-[#0D1B2A]/30 dark:bg-card"
-              }`}
-            >
-              <Icon className={`mb-3 h-6 w-6 ${selected ? "text-[#F7F775]" : item.color}`} />
-              <p className="text-lg font-black">{item.label}</p>
-              <p className={`mt-1 text-xs font-medium leading-5 ${selected ? "text-white/60" : "text-muted-foreground"}`}>
-                {item.description}
+    <div className="min-h-full bg-background" dir="rtl">
+      <div className="mx-auto max-w-6xl space-y-6 px-4 py-6 pb-24 lg:px-8">
+        <header className="overflow-hidden rounded-[1.75rem] bg-[#0D1B2A] p-6 text-white shadow-sm md:p-8">
+          <div className="flex flex-col justify-between gap-6 md:flex-row md:items-end">
+            <div>
+              <p className="mb-2 text-xs font-black text-[#F7F775]">قدرات · مركز التدريب</p>
+              <h1 className="text-3xl font-black md:text-4xl">المحوسب</h1>
+              <p className="mt-3 max-w-2xl text-sm leading-7 text-[#CBD5E1]">
+                اختر أولًا بين القدرات والتحصيلي، ثم انتقل إلى نوع التدريب الذي يناسبك.
               </p>
-            </button>
-          );
-        })}
-      </div>
-
-      <section className="rounded-[1.75rem] border border-border bg-white p-4 shadow-sm dark:bg-card md:p-6">
-        <div className="mb-5 flex items-center gap-3">
-          <span className={`flex h-11 w-11 items-center justify-center rounded-2xl ${track.surface} ${track.color}`}>
-            <TrackIcon className="h-5 w-5" />
-          </span>
-          <div>
-            <h2 className="text-xl font-black text-foreground">اختبارات {track.label}</h2>
-            <p className="mt-1 text-xs font-medium text-muted-foreground">ابدأ بالقسم الذي يناسب خطتك الحالية.</p>
+            </div>
+            <div className="grid grid-cols-2 gap-2">
+              <div className="rounded-2xl bg-white/10 px-4 py-3">
+                <p className="text-2xl font-black">{completed}</p>
+                <p className="text-[11px] font-bold text-white/60">اختبار مكتمل</p>
+              </div>
+              <div className="rounded-2xl bg-white/10 px-4 py-3">
+                <p className="text-2xl font-black">{average}%</p>
+                <p className="text-[11px] font-bold text-white/60">متوسط الأداء</p>
+              </div>
+            </div>
           </div>
-        </div>
+        </header>
 
-        <div className="space-y-3">
-          {track.sections.map((section, index) => {
-            const Icon = section.icon;
-            const recentMatch = dashboard?.recentTests.find((test) =>
-              test.title.includes(activeTrack === "qudrat" ? "قدرات" : "تحصيلي"),
-            );
-            return (
-              <Link key={section.href} href={section.href}>
-                <div className="group flex cursor-pointer items-center gap-4 rounded-2xl border border-border bg-[#F8FAFB] p-4 transition-all hover:-translate-y-0.5 hover:border-[#398B79]/50 hover:bg-white hover:shadow-md dark:bg-background md:p-5">
-                  <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-white text-[#0D1B2A] shadow-sm dark:bg-card dark:text-white">
+        <section aria-labelledby="computerized-track-title">
+          <div className="mb-3">
+            <h2 id="computerized-track-title" className="text-xl font-black text-[#0D1B2A]">اختر المسار</h2>
+            <p className="mt-1 text-sm text-[#64748B]">هذه هي الخطوة الأولى قبل اختيار نوع التدريب.</p>
+          </div>
+          <div className="grid gap-3 sm:grid-cols-2">
+            {TRACKS.map((track) => {
+              const Icon = track.icon;
+              const selected = activeTrack === track.key;
+              return (
+                <button
+                  key={track.key}
+                  type="button"
+                  aria-pressed={selected}
+                  onClick={() => {
+                    setActiveTrack(track.key);
+                    setActiveMode("quantitative");
+                  }}
+                  className={`flex items-center gap-4 rounded-2xl border p-4 text-right transition-all md:p-5 ${
+                    selected
+                      ? "border-[#0D1B2A] bg-[#0D1B2A] text-white shadow-md"
+                      : "border-[#E2E8F0] bg-white text-[#0D1B2A] hover:-translate-y-0.5 hover:border-[#0D1B2A]/30 hover:shadow-sm"
+                  }`}
+                >
+                  <span className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-xl ${selected ? "bg-white/10 text-[#F7F775]" : track.key === "qudrat" ? "bg-[#EAF8F3] text-[#147D68]" : "bg-[#FFF0F2] text-[#C94C65]"}`}>
+                    <Icon className="h-6 w-6" />
+                  </span>
+                  <span>
+                    <span className="block text-lg font-black">{track.title}</span>
+                    <span className={`mt-1 block text-xs leading-5 ${selected ? "text-white/65" : "text-[#64748B]"}`}>{track.description}</span>
+                  </span>
+                  {selected && <CheckCircle2 className="mr-auto h-5 w-5 text-[#F7F775]" />}
+                </button>
+              );
+            })}
+          </div>
+        </section>
+
+        {activeTrack === "qudrat" && (
+          <>
+        <section aria-labelledby="computerized-options-title">
+          <div className="mb-3">
+            <h2 id="computerized-options-title" className="text-xl font-black text-[#0D1B2A]">اختر مسار التدريب</h2>
+            <p className="mt-1 text-sm text-[#64748B]">ابدأ من النوع الذي تريد مراجعته الآن.</p>
+          </div>
+          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+            {MODES.map((mode) => {
+              const Icon = mode.icon;
+              const selected = activeMode === mode.key;
+              return (
+                <button
+                  key={mode.key}
+                  type="button"
+                  aria-pressed={selected}
+                  onClick={() => setActiveMode(mode.key)}
+                  className={`rounded-2xl border p-4 text-right transition-all ${
+                    selected
+                      ? "border-[#0D1B2A] bg-[#0D1B2A] text-white shadow-md"
+                      : "border-[#E2E8F0] bg-white text-[#0D1B2A] hover:-translate-y-0.5 hover:border-[#0D1B2A]/30 hover:shadow-sm"
+                  }`}
+                >
+                  <span className={`flex h-11 w-11 items-center justify-center rounded-xl ${selected ? "bg-white/10 text-[#F7F775]" : `${mode.iconSurface} ${mode.accent}`}`}>
                     <Icon className="h-5 w-5" />
                   </span>
-                  <div className="min-w-0 flex-1">
-                    <div className="flex items-center gap-2">
-                      <span className="text-[11px] font-black text-muted-foreground">{String(index + 1).padStart(2, "0")}</span>
-                      <h3 className="font-black text-foreground">{section.title}</h3>
-                    </div>
-                    <p className="mt-1 text-xs font-medium leading-5 text-muted-foreground">{section.description}</p>
-                  </div>
-                  {recentMatch && index === 0 ? (
-                    <span className="hidden items-center gap-1 rounded-full bg-emerald-50 px-2.5 py-1 text-[11px] font-black text-emerald-700 sm:flex">
-                      <CheckCircle2 className="h-3.5 w-3.5" /> {recentMatch.score}%
-                    </span>
-                  ) : null}
-                  <ChevronLeft className="h-5 w-5 shrink-0 text-muted-foreground transition-transform group-hover:-translate-x-1" />
-                </div>
-              </Link>
-            );
-          })}
-        </div>
-      </section>
-
-      {isLoading ? (
-        <div className="flex justify-center py-4"><Loader2 className="h-6 w-6 animate-spin text-muted-foreground" /></div>
-      ) : (
-        <section className="grid gap-3 sm:grid-cols-3">
-          <Link href="/folders" className="rounded-2xl border border-border bg-white p-4 transition hover:border-[#398B79] dark:bg-card">
-            <FolderOpen className="h-5 w-5 text-[#398B79]" />
-            <p className="mt-3 font-black text-foreground">مجلداتي</p>
-            <p className="mt-1 text-xs text-muted-foreground">{dashboard?.foldersCount ?? 0} مجلد محفوظ</p>
-          </Link>
-          <Link href="/records" className="rounded-2xl border border-border bg-white p-4 transition hover:border-[#398B79] dark:bg-card">
-            <FileText className="h-5 w-5 text-[#398B79]" />
-            <p className="mt-3 font-black text-foreground">سجل الاختبارات</p>
-            <p className="mt-1 text-xs text-muted-foreground">{completed} نتيجة محفوظة</p>
-          </Link>
-          <Link href="/" className="rounded-2xl border border-border bg-white p-4 transition hover:border-[#398B79] dark:bg-card">
-            <Target className="h-5 w-5 text-[#398B79]" />
-            <p className="mt-3 font-black text-foreground">خطتي الحالية</p>
-            <p className="mt-1 text-xs text-muted-foreground">{dashboard?.recommendedPlan.title || "العودة إلى لوحتي"}</p>
-          </Link>
+                  <p className="mt-4 text-base font-black">{mode.title}</p>
+                  <p className={`mt-1 text-xs leading-5 ${selected ? "text-white/65" : "text-[#64748B]"}`}>{mode.description}</p>
+                </button>
+              );
+            })}
+          </div>
         </section>
-      )}
+
+        {activeMode === "quantitative" && <SubjectWorkspace mode="quantitative" />}
+        {activeMode === "verbal" && <SubjectWorkspace mode="verbal" />}
+        {activeMode === "mixed" && <MixedWorkspace />}
+        {activeMode === "search" && <SearchWorkspace />}
+          </>
+        )}
+        {activeTrack === "tahsili" && <TahsiliWorkspace />}
+      </div>
     </div>
   );
 }
