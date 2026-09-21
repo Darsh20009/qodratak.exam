@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
-import { Link, useParams } from "wouter";
+import { Link, useLocation, useParams, useSearch } from "wouter";
 import {
   ArrowRight,
   BookOpen,
@@ -37,6 +37,7 @@ import {
   useLearningContentAnnotations,
   useCreateLearningContentAnnotation,
   useDeleteLearningContentAnnotation,
+  useUpdateTodayLearningStep,
   type LearningContentAnnotation,
   type LearningContentAnnotationData,
   type LearningContentAnnotationType,
@@ -581,7 +582,13 @@ function AnnotationToolbar({
 
 export default function FoundationReaderPage() {
   const params = useParams<{ contentId?: string }>();
+  const search = useSearch();
+  const [, setLocation] = useLocation();
   const contentId = params.contentId || "";
+  const searchParams = useMemo(() => new URLSearchParams(search), [search]);
+  const fromToday = searchParams.get("from") === "today";
+  const todaySessionId = searchParams.get("sessionId") || "";
+  const todayStepId = searchParams.get("stepId") || "";
   const contentQuery = useLearningContent(contentId);
   const progressQuery = useLearningContentProgress(contentId);
   const updateProgress = useUpdateLearningContentProgress(contentId);
@@ -589,6 +596,7 @@ export default function FoundationReaderPage() {
   const annotationQuery = useLearningContentAnnotations(contentId);
   const createAnnotation = useCreateLearningContentAnnotation(contentId);
   const deleteAnnotation = useDeleteLearningContentAnnotation(contentId);
+  const updateTodayStep = useUpdateTodayLearningStep();
   const [currentSectionId, setCurrentSectionId] = useState<string | undefined>();
   const [localProgress, setLocalProgress] = useState<number | null>(null);
   const [practiceOpen, setPracticeOpen] = useState(false);
@@ -821,10 +829,19 @@ export default function FoundationReaderPage() {
 
   const markComplete = () => {
     if (completeContent.isPending || isContentCompleted) return;
-    complete(undefined, {
-      onSuccess: () => {
+      complete(undefined, {
+        onSuccess: () => {
         setLocalProgress(100);
         setCurrentSectionId(sections.at(-1)?.id);
+          if (fromToday && todaySessionId && todayStepId) {
+            updateTodayStep.mutate({
+              sessionId: todaySessionId,
+              stepId: todayStepId,
+              action: "complete",
+            }, {
+              onSuccess: () => setLocation("/learning/today"),
+            });
+          }
       },
     });
   };
@@ -836,9 +853,9 @@ export default function FoundationReaderPage() {
     >
       <div className="sticky top-0 z-20 border-b border-[hsl(var(--reader-line)/0.9)] bg-[hsl(var(--reader-paper)/0.94)] backdrop-blur-md">
         <div className="mx-auto flex min-h-16 max-w-6xl items-center justify-between gap-4 px-4 sm:px-8 lg:px-12">
-          <Link href="/foundation" className="inline-flex min-h-11 items-center gap-2 rounded-xl px-2 text-sm font-bold text-[hsl(var(--reader-muted))] transition-colors hover:bg-[hsl(var(--reader-surface))] hover:text-[hsl(var(--reader-ink))] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[hsl(var(--reader-accent))]">
+          <Link href={fromToday ? "/learning/today" : "/foundation"} className="inline-flex min-h-11 items-center gap-2 rounded-xl px-2 text-sm font-bold text-[hsl(var(--reader-muted))] transition-colors hover:bg-[hsl(var(--reader-surface))] hover:text-[hsl(var(--reader-ink))] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[hsl(var(--reader-accent))]">
             <ArrowRight className="h-4 w-4" aria-hidden="true" />
-            <span className="hidden sm:inline">التأسيس</span>
+            <span className="hidden sm:inline">{fromToday ? "مهمة اليوم" : "التأسيس"}</span>
           </Link>
           <div className="flex min-w-0 items-center gap-3">
             <span className="hidden h-8 w-8 items-center justify-center rounded-lg bg-[hsl(var(--reader-accent))] text-[hsl(var(--reader-ink))] sm:flex">

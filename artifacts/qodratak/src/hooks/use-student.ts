@@ -199,11 +199,152 @@ export interface PlatformReview {
   createdAt: string;
 }
 
+export type LearningSessionStepType =
+  | "READ"
+  | "EXAMPLE"
+  | "PRACTICE"
+  | "REFLECT"
+  | "CORRECT"
+  | "SIMILAR"
+  | "MASTERY_CHECK";
+
+export type LearningSessionStepStatus =
+  | "NOT_STARTED"
+  | "IN_PROGRESS"
+  | "COMPLETED"
+  | "SKIPPED"
+  | "UNAVAILABLE";
+
+export interface TodayLearningContentReference {
+  kind: string;
+  id: string;
+  programId?: string;
+  subjectId?: string;
+  availability?: string;
+  sourceType?: string;
+  sourceKey?: string;
+  questionId?: string;
+}
+
+export interface TodayLearningStep {
+  stepId: string;
+  stepType: LearningSessionStepType;
+  estimatedMinutes: number;
+  status: LearningSessionStepStatus;
+  contentReference: TodayLearningContentReference;
+}
+
+export interface TodayLearningPlan {
+  sessionId?: string;
+  planId: string;
+  programId?: string;
+  subjectId?: string;
+  title: string;
+  estimatedMinutes: number;
+  steps: TodayLearningStep[];
+  sessionReason?: string;
+  planStatus: string;
+  state: string;
+  progress: number;
+  nextStep?: TodayLearningStep;
+}
+
+export interface TodayLearningSession {
+  sessionId?: string;
+  started: boolean;
+  duplicate?: boolean;
+  plan: TodayLearningPlan | null;
+}
+
+export interface AdaptiveLearningDecision {
+  decision: string;
+  reasonCode?: string;
+  reason?: string;
+  confidence?: string;
+  nextAction?: {
+    recommendationType?: string;
+    questionActivity?: string;
+  };
+  diagnosticState?: string;
+}
+
+export interface StudentLearningRecommendation {
+  recommendationType?: string;
+  title?: string;
+  reason?: string;
+  estimatedMinutes?: number;
+}
+
+export interface StudentLearningRecommendations {
+  recommendations: StudentLearningRecommendation[];
+}
+
+export interface TodayQuestion {
+  questionId: string;
+  sourceType: string;
+  sourceKey: string;
+  text: string;
+  options: string[];
+  explanation?: string;
+  correction?: string;
+  nextStep?: string;
+  imageUrl?: string;
+  imageUrls?: string[];
+}
+
+export interface TodayFoundationContent {
+  contentId: string;
+  title: string;
+  description?: string;
+  videoUrl?: string;
+  thumbnailUrl?: string;
+  durationMinutes?: number;
+  linkedQuizRoute?: string;
+  hasQuiz?: boolean;
+}
+
+export interface TodayContentSelection {
+  selectionStatus: "SELECTED" | "SELECTION_PENDING" | "NO_SUITABLE_CONTENT" | string;
+  activityType?: string;
+  sessionId: string;
+  stepId: string;
+  contentReference?: TodayLearningContentReference;
+  question?: TodayQuestion;
+  foundationContent?: TodayFoundationContent;
+}
+
+export interface TodayStepAnswer {
+  result?: {
+    isCorrect: boolean;
+    explanation?: string;
+    correction?: string;
+    nextStep?: string;
+  };
+  attemptId?: string;
+  attempt?: { id?: string };
+}
+
+export class StudentApiError extends Error {
+  status: number;
+  code?: string;
+
+  constructor(message: string, status: number, code?: string) {
+    super(message);
+    this.name = "StudentApiError";
+    this.status = status;
+    this.code = code;
+  }
+}
+
 async function fetchJson<T>(url: string, options?: RequestInit): Promise<T> {
   const res = await fetch(url, { credentials: "include", ...options });
   const body = res.status === 204 ? null : await res.json().catch(() => null);
   if (!res.ok) {
-    throw new Error(body?.error || body?.message || "تعذر تحميل البيانات");
+    throw new StudentApiError(
+      body?.error || body?.message || "تعذر تحميل البيانات",
+      res.status,
+      body?.code,
+    );
   }
   return body as T;
 }
@@ -285,6 +426,109 @@ export function useStudentDashboard(enabled = true) {
     staleTime: 15000,
     refetchOnWindowFocus: true,
     enabled,
+  });
+}
+
+export function useTodayLearningSession(enabled = true) {
+  return useQuery<TodayLearningSession>({
+    queryKey: ["/api/learning/today"],
+    queryFn: () => fetchJson<TodayLearningSession>("/api/learning/today"),
+    enabled,
+    staleTime: 15 * 1000,
+    refetchOnWindowFocus: true,
+  });
+}
+
+export function useAdaptiveLearningDecision(enabled = true) {
+  return useQuery<AdaptiveLearningDecision>({
+    queryKey: ["/api/learning/adaptive/decision"],
+    queryFn: () => fetchJson<AdaptiveLearningDecision>("/api/learning/adaptive/decision"),
+    enabled,
+    staleTime: 15 * 1000,
+    refetchOnWindowFocus: true,
+  });
+}
+
+export function useStudentLearningRecommendations(enabled = true) {
+  return useQuery<StudentLearningRecommendations>({
+    queryKey: ["/api/learning/recommendations"],
+    queryFn: () => fetchJson<StudentLearningRecommendations>("/api/learning/recommendations"),
+    enabled,
+    staleTime: 15 * 1000,
+    refetchOnWindowFocus: true,
+  });
+}
+
+export function useStartTodayLearningSession() {
+  const queryClient = useQueryClient();
+  return useMutation<TodayLearningSession, StudentApiError, void>({
+    mutationFn: () => fetchJson<TodayLearningSession>("/api/learning/today/start", { method: "POST" }),
+    onSuccess: (data) => {
+      queryClient.setQueryData(["/api/learning/today"], data);
+    },
+  });
+}
+
+export function useUpdateTodayLearningStep() {
+  const queryClient = useQueryClient();
+  return useMutation<TodayLearningSession, StudentApiError, {
+    sessionId: string;
+    stepId?: string;
+    action?: "complete" | "pause" | "resume" | "skip";
+    durationSeconds?: number;
+    attemptIds?: string[];
+  }>({
+    mutationFn: (payload) => fetchJson<TodayLearningSession>("/api/learning/today/step", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    }),
+    onSuccess: (data) => {
+      queryClient.setQueryData(["/api/learning/today"], data);
+    },
+  });
+}
+
+export function useCompleteTodayLearningSession() {
+  const queryClient = useQueryClient();
+  return useMutation<TodayLearningSession, StudentApiError, { sessionId?: string; state?: "completed" | "abandoned" }>({
+    mutationFn: (payload) => fetchJson<TodayLearningSession>("/api/learning/today/complete", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    }),
+    onSuccess: (data) => {
+      queryClient.setQueryData(["/api/learning/today"], data);
+    },
+  });
+}
+
+export function useSelectTodayLearningContent() {
+  return useMutation<TodayContentSelection, StudentApiError, {
+    sessionId: string;
+    stepId: string;
+    retry?: boolean;
+  }>({
+    mutationFn: (payload) => fetchJson<TodayContentSelection>("/api/learning/today/select", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    }),
+  });
+}
+
+export function useSubmitTodayLearningAnswer() {
+  return useMutation<TodayStepAnswer, StudentApiError, {
+    sessionId: string;
+    stepId: string;
+    selectedOptionIndex: number;
+    durationSeconds?: number;
+  }>({
+    mutationFn: (payload) => fetchJson<TodayStepAnswer>("/api/learning/today/answer", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    }),
   });
 }
 

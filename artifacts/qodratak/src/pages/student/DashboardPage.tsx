@@ -1,6 +1,14 @@
 import React, { useState } from "react";
 import { Link } from "wouter";
-import { usePlatformReviews, useStudentDashboard, useSubmitReview, useUpdateExamDate } from "@/hooks/use-student";
+import {
+  useAdaptiveLearningDecision,
+  usePlatformReviews,
+  useStudentDashboard,
+  useStudentLearningRecommendations,
+  useSubmitReview,
+  useTodayLearningSession,
+  useUpdateExamDate,
+} from "@/hooks/use-student";
 import OfficialScoreCard from "@/components/student/OfficialScoreCard";
 import { useUser } from "@/hooks/use-user";
 import {
@@ -29,6 +37,9 @@ export default function DashboardPage() {
   const { user, isLoading: isUserLoading } = useUser();
   const isStudent = user?.role === "student";
   const { data: dashboard, isLoading, isError, error } = useStudentDashboard(isStudent);
+  const todayLearning = useTodayLearningSession(isStudent);
+  const adaptiveDecision = useAdaptiveLearningDecision(isStudent);
+  const recommendations = useStudentLearningRecommendations(isStudent);
   const updateExamDate = useUpdateExamDate();
   const { data: reviews = [] } = usePlatformReviews();
   const submitReview = useSubmitReview();
@@ -108,6 +119,19 @@ export default function DashboardPage() {
   const recommendedHref = ["/foundation", "/computerized", "/book-exam"].includes(dashboard.recommendedPlan.nextAction.href)
     ? dashboard.recommendedPlan.nextAction.href
     : "/foundation";
+  const todayPlan = todayLearning.data?.plan;
+  const adaptiveLabel = adaptiveDecision.data?.decision === "REVIEW"
+    ? "مراجعة سريعة"
+    : adaptiveDecision.data?.decision === "RECOVERY"
+      ? "نكمل من حيث توقفت"
+      : adaptiveDecision.data?.decision === "ADVANCE"
+        ? "خطوتك التعليمية التالية"
+        : adaptiveDecision.data?.decision === "PRACTICE"
+          ? "تدرّب على ما يحتاج دعمًا"
+          : "خطوتك التالية";
+  const todayTitle = todayPlan?.title || recommendations.data?.recommendations?.[0]?.title || adaptiveLabel;
+  const todayReason = todayPlan?.sessionReason || adaptiveDecision.data?.reason || recommendations.data?.recommendations?.[0]?.reason || "جلسة قصيرة بخطوات واضحة تساعدك على التقدم.";
+  const todayIsComplete = todayPlan?.state === "COMPLETED";
 
   return (
     <div className="mx-auto max-w-5xl p-5 md:p-8 space-y-8 animate-fade-in">
@@ -117,6 +141,42 @@ export default function DashboardPage() {
         <h1 className="text-3xl font-black text-[#0D1B2A] dark:text-white">{firstName}</h1>
         <p className="text-sm text-muted-foreground">تابع تقدمك واستعد لاختبارك القادم بثقة.</p>
       </header>
+
+      <section data-testid="student-next-step" className="rounded-3xl border border-primary/20 bg-primary/5 p-5 shadow-sm sm:p-6" dir="rtl">
+        <div className="flex flex-col gap-5 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex items-start gap-3">
+            <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-primary/10 text-primary">
+              <PlayCircle className="h-5 w-5" aria-hidden="true" />
+            </span>
+            <div>
+              <p className="text-xs font-black text-primary">خطوتك التالية</p>
+              {todayLearning.isLoading ? (
+                <p className="mt-2 text-sm font-bold text-muted-foreground">نجهز مهمتك...</p>
+              ) : todayLearning.isError ? (
+                <p className="mt-2 text-sm leading-7 text-muted-foreground">تعذر تحميل مهمة اليوم. يمكنك المحاولة من جديد من هنا.</p>
+              ) : (
+                <>
+                  <h2 className="mt-1 text-xl font-black text-foreground">{todayIsComplete ? "اكتمل درس اليوم" : todayTitle}</h2>
+                  <p className="mt-1 max-w-2xl text-sm leading-7 text-muted-foreground">{todayReason}</p>
+                  {todayPlan ? (
+                    <div className="mt-3 flex flex-wrap items-center gap-3 text-xs font-bold text-muted-foreground">
+                      <span>{todayPlan.estimatedMinutes} دقيقة تقريبًا</span>
+                      <span>{Math.round(todayPlan.progress || 0)}٪ من جلسة اليوم</span>
+                    </div>
+                  ) : null}
+                </>
+              )}
+            </div>
+          </div>
+          <Link
+            href={todayPlan?.planStatus === "DIAGNOSTIC_REQUIRED" ? "/foundation" : "/learning/today"}
+            className="inline-flex min-h-11 shrink-0 items-center justify-center gap-2 rounded-xl bg-[#0D1B2A] px-5 text-sm font-black text-white transition-colors hover:bg-[#0D1B2A]/90"
+          >
+            {todayLearning.isError ? "إعادة المحاولة" : todayPlan?.planStatus === "DIAGNOSTIC_REQUIRED" ? "ابدأ التقييم" : todayIsComplete ? "عرض درس اليوم" : todayLearning.data?.started ? "نكمل؟" : "ابدأ"}
+            <ChevronLeft className="h-4 w-4" aria-hidden="true" />
+          </Link>
+        </div>
+      </section>
 
       {/* Subscription Banner */}
       {dashboard.subscription.status === "active" && (

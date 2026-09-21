@@ -158,6 +158,7 @@ import { useUser } from "@/hooks/use-user";
 import DashboardPage from "@/pages/student/DashboardPage";
 import FoundationPage from "@/pages/student/FoundationPage";
 import FoundationReaderPage from "@/pages/student/FoundationReaderPage";
+import LearningTodayPage from "@/pages/student/LearningTodayPage";
 import ComputerizedPage from "@/pages/student/ComputerizedPage";
 import AccountPage from "@/pages/student/AccountPage";
 import { StudentShell } from "@/components/student/StudentShell";
@@ -868,6 +869,9 @@ function Router({ splashDone }: { splashDone: boolean }) {
       </Route>
       <Route path="/foundation/content/:contentId">
         {() => <StudentShell><ProtectedRoute><FoundationReaderPage /></ProtectedRoute></StudentShell>}
+      </Route>
+      <Route path="/learning/today">
+        {() => <StudentShell><ProtectedRoute><LearningTodayPage /></ProtectedRoute></StudentShell>}
       </Route>
 
       <Route path="/computerized">

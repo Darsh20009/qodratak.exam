@@ -12076,6 +12076,58 @@ app.post("/api/auth/register", async (req: Request, res: Response) => {
     }
   });
 
+  app.post('/api/learning/today/answer', requireAuth, async (req: Request, res: Response) => {
+    const studentId = studentOnly(req, res);
+    if (!studentId) return;
+    const sessionId = String(req.body?.sessionId || '');
+    const stepId = String(req.body?.stepId || '');
+    const selectedOptionIndex = req.body?.selectedOptionIndex;
+    if (!mongoose.Types.ObjectId.isValid(sessionId) || !stepId.trim()) {
+      return res.status(400).json({ error: 'بيانات الخطوة غير صالحة', code: 'INVALID_STEP' });
+    }
+    if (!Number.isInteger(Number(selectedOptionIndex)) || Number(selectedOptionIndex) < 0) {
+      return res.status(400).json({ error: 'الإجابة المحددة غير صالحة', code: 'INVALID_ANSWER' });
+    }
+    try {
+      const session = await LearningSession.findOne({ _id: sessionId, studentId });
+      const snapshot = session?.planSnapshot as any;
+      const step = Array.isArray(snapshot?.steps)
+        ? snapshot.steps.find((candidate: any) => candidate.stepId === stepId)
+        : undefined;
+      const reference = step?.contentReference;
+      if (!session || !step || reference?.kind !== 'question' || !reference.questionId) {
+        return res.status(404).json({ error: 'السؤال غير متاح لهذه الجلسة', code: 'INVALID_STEP' });
+      }
+      const recorded = await recordVerifiedLearningAttempt(studentId, {
+        questionId: String(reference.questionId),
+        sourceType: reference.sourceType,
+        sourceKey: reference.sourceKey,
+        programId: String(snapshot.programId),
+        subjectId: snapshot.subjectId,
+        selectedAnswer: Number(selectedOptionIndex),
+        responseTime: Math.max(0, Number(req.body?.durationSeconds || 0)),
+        sessionId,
+        idempotencyKey: `today:${sessionId}:${stepId}`,
+        metadata: { flow: 'today-learning' },
+      });
+      const selected = await selectAndPersistContentForSessionStep(studentId, session, stepId);
+      return res.json({
+        result: {
+          isCorrect: Boolean(recorded.attempt?.isCorrect),
+          explanation: selected.question?.explanation,
+        },
+        attemptId: recorded.attempt?._id ? String(recorded.attempt._id) : undefined,
+      });
+    } catch (error: any) {
+      if (error instanceof LearningAttemptError) {
+        const status = error.code === 'UNKNOWN_QUESTION' ? 404 : 400;
+        return res.status(status).json({ error: error.message, code: error.code });
+      }
+      console.error('Today learning answer error:', error);
+      return res.status(500).json({ error: 'تعذر تصحيح الإجابة حاليًا' });
+    }
+  });
+
   const learningContentErrorResponse = (error: LearningContentError, res: Response) => {
     const status = error.code === 'CONTENT_UNAVAILABLE' ? 404 :
       error.code === 'PRACTICE_UNAVAILABLE' ? 422 :
