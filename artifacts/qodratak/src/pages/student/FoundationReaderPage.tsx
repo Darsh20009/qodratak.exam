@@ -8,7 +8,6 @@ import {
   ChevronDown,
   CircleAlert,
   Clock3,
-  ExternalLink,
   FileText,
   HelpCircle,
   Lightbulb,
@@ -50,6 +49,7 @@ import {
   type FoundationAnnotationTool,
 } from "@/components/student/FoundationAnnotationSurface";
 import { getCurrentTextSelection } from "@/lib/foundationAnnotations";
+import { getVideoEmbedUrl } from "@/lib/video";
 
 type ContentStatus = "draft" | "published" | "archived" | string;
 type ProgressState = "NOT_STARTED" | "READING" | "COMPLETED" | "PRACTICE_COMPLETED";
@@ -217,32 +217,33 @@ function ReaderUnavailable({ message, onRetry }: { message: string; onRetry?: ()
 
 function VideoPanel({ content }: { content: LearningContent }) {
   if (!content.videoUrl) return null;
+  const embedUrl = getVideoEmbedUrl(content.videoUrl);
 
   return (
     <section aria-labelledby="video-heading" className="overflow-hidden rounded-[1.5rem] border border-[hsl(var(--reader-line))] bg-[hsl(var(--reader-ink))]">
       <div className="flex items-center justify-between gap-3 border-b border-white/10 px-4 py-3 text-white sm:px-5">
         <h2 id="video-heading" className="flex items-center gap-2 text-sm font-black">
           <PlayCircle className="h-4 w-4 text-[hsl(var(--reader-accent))]" aria-hidden="true" />
-          الفيديو المصاحب
+          الفيديو داخل قدراتك
         </h2>
-        <a
-          href={content.videoUrl}
-          target="_blank"
-          rel="noreferrer"
-          className="inline-flex min-h-10 items-center gap-1.5 rounded-lg px-2 text-xs font-bold text-white/75 transition-colors hover:bg-white/10 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[hsl(var(--reader-accent))]"
-        >
-          فتح في نافذة جديدة
-          <ExternalLink className="h-3.5 w-3.5" aria-hidden="true" />
-        </a>
+        <span className="text-xs font-bold text-white/60">مشاهدة داخل المنصة</span>
       </div>
       <div className="aspect-video bg-[#13252a]">
-        <iframe
-          title={`الفيديو المصاحب لـ ${content.title}`}
-          src={content.videoUrl}
-          className="h-full w-full border-0"
-          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-          allowFullScreen
-        />
+        {embedUrl ? (
+          <iframe
+            title={`فيديو درس ${content.title}`}
+            src={embedUrl}
+            className="h-full w-full border-0"
+            allow="accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture"
+            sandbox="allow-scripts allow-same-origin allow-presentation"
+            referrerPolicy="strict-origin-when-cross-origin"
+            allowFullScreen
+          />
+        ) : (
+          <div className="flex h-full items-center justify-center p-6 text-center text-sm font-bold text-white/70">
+            تعذر تجهيز الفيديو داخل المنصة.
+          </div>
+        )}
       </div>
     </section>
   );

@@ -20,40 +20,7 @@ import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Progress } from "@/components/ui/progress";
 import OfficialScoreCard from "@/components/student/OfficialScoreCard";
-
-function getEmbedUrl(value: string) {
-  try {
-    const url = new URL(value);
-    if (!["http:", "https:"].includes(url.protocol)) return null;
-
-    if (url.hostname === "youtu.be") {
-      const id = url.pathname.slice(1).split("/")[0];
-      return id ? `https://www.youtube-nocookie.com/embed/${id}?controls=0&disablekb=1&fs=0&modestbranding=1&playsinline=1&rel=0` : null;
-    }
-
-    if (url.hostname.endsWith("youtube.com")) {
-      if (url.pathname.startsWith("/embed/")) {
-        const id = url.pathname.split("/").filter(Boolean)[1];
-        return id ? `https://www.youtube-nocookie.com/embed/${id}?controls=0&disablekb=1&fs=0&modestbranding=1&playsinline=1&rel=0` : null;
-      }
-      const id = url.searchParams.get("v");
-      return id ? `https://www.youtube-nocookie.com/embed/${id}?controls=0&disablekb=1&fs=0&modestbranding=1&playsinline=1&rel=0` : null;
-    }
-
-    if (url.hostname === "vimeo.com") {
-      const id = url.pathname.split("/").filter(Boolean)[0];
-      return id && /^\d+$/.test(id) ? `https://player.vimeo.com/video/${id}` : null;
-    }
-
-    if (url.hostname === "player.vimeo.com" && url.pathname.startsWith("/video/")) {
-      return url.toString();
-    }
-
-    return url.toString();
-  } catch {
-    return null;
-  }
-}
+import { getVideoEmbedUrl } from "@/lib/video";
 
 function ProgressBar({ value, className = "" }: { value: number; className?: string }) {
   return <Progress value={Math.max(0, Math.min(100, value))} className={`h-2.5 ${className}`} />;
@@ -501,7 +468,7 @@ export default function FoundationPage() {
   const currentGuide = curriculum.lessons[Math.max(0, selectedLessonIndex) % curriculum.lessons.length];
 
   const selectedEmbedUrl = useMemo(
-    () => (selectedLesson ? getEmbedUrl(selectedLesson.videoUrl) : null),
+    () => (selectedLesson ? getVideoEmbedUrl(selectedLesson.videoUrl) : null),
     [selectedLesson],
   );
 
