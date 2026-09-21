@@ -12227,7 +12227,7 @@ app.post("/api/auth/register", async (req: Request, res: Response) => {
       }
       const content = await FoundationContent.find(contentQuery)
         .sort({ order: 1, createdAt: 1 })
-        .select('program subjectId taxonomyNodeId title description videoUrl thumbnailUrl order linkedQuizRoute durationMinutes sections version publishedAt quiz createdAt updatedAt')
+        .select('program subjectId taxonomyNodeId title description videoUrl thumbnailUrl order linkedQuizRoute durationMinutes sections attachments version publishedAt quiz createdAt updatedAt')
         .populate({
           path: 'quiz.questionIds',
           select: '_id questionId text options imageUrl imageUrls explanation',

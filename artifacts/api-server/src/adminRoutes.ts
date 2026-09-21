@@ -719,15 +719,15 @@ router.patch('/learning-taxonomy/mappings/:id/review', requireAdminAuth, async (
 
 // ── STUDENT PRODUCT: FOUNDATION CONTENT & REVIEW MODERATION ───────────────
 const studentPrograms = new Set(['qudrat', 'tahsili']);
-const foundationFields = ['program', 'title', 'description', 'videoUrl', 'thumbnailUrl', 'order', 'published', 'linkedQuizRoute', 'durationMinutes', 'quiz'];
+const foundationFields = ['program', 'title', 'description', 'videoUrl', 'thumbnailUrl', 'order', 'published', 'linkedQuizRoute', 'durationMinutes', 'quiz', 'attachments'];
 
 function contentPayload(body: Record<string, unknown>, creating = false) {
   const payload: Record<string, unknown> = {};
   for (const field of foundationFields) {
     if (body[field] !== undefined) payload[field] = body[field];
   }
-  if (creating && (!payload.program || !payload.title || !payload.description || !payload.videoUrl || payload.order === undefined)) {
-    return { error: 'البرنامج والعنوان والوصف ورابط الفيديو والترتيب مطلوبة' };
+  if (creating && (!payload.program || !payload.title || !payload.description || payload.order === undefined)) {
+    return { error: 'البرنامج والعنوان والوصف والترتيب مطلوبة' };
   }
   if (payload.program !== undefined && !studentPrograms.has(String(payload.program))) {
     return { error: 'البرنامج المدعوم هو qudrat أو tahsili فقط' };
@@ -740,6 +740,28 @@ function contentPayload(body: Record<string, unknown>, creating = false) {
   }
   if (payload.published !== undefined && typeof payload.published !== 'boolean') {
     return { error: 'حالة النشر غير صالحة' };
+  }
+  if (payload.attachments !== undefined) {
+    if (!Array.isArray(payload.attachments) || payload.attachments.length > 10) {
+      return { error: 'مرفقات الدرس غير صالحة أو تتجاوز 10 ملفات' };
+    }
+    payload.attachments = payload.attachments.map((attachment) => {
+      const item = attachment as Record<string, unknown>;
+      return {
+        id: String(item.id || '').trim(),
+        type: 'pdf',
+        title: String(item.title || '').trim(),
+        url: String(item.url || '').trim(),
+        originalName: String(item.originalName || '').trim(),
+        contentType: 'application/pdf',
+        ...(item.bytes === undefined ? {} : { bytes: Number(item.bytes) }),
+      };
+    });
+    const invalidAttachment = (payload.attachments as Array<Record<string, unknown>>).some((attachment) =>
+      !attachment.id || !attachment.title || !attachment.url || !attachment.originalName ||
+      (attachment.bytes !== undefined && (!Number.isFinite(Number(attachment.bytes)) || Number(attachment.bytes) < 0)),
+    );
+    if (invalidAttachment) return { error: 'بيانات مرفق PDF غير صالحة' };
   }
   if (payload.quiz !== undefined && payload.quiz !== null) {
     const quiz = payload.quiz as Record<string, unknown>;

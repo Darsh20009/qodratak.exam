@@ -41,6 +41,15 @@ export interface FoundationContent {
   title: string;
   description: string;
   videoUrl: string;
+  attachments?: Array<{
+    id: string;
+    type: 'pdf';
+    title: string;
+    url: string;
+    originalName: string;
+    contentType: 'application/pdf';
+    bytes?: number;
+  }>;
   thumbnailUrl?: string;
   order: number;
   linkedQuizRoute?: string;

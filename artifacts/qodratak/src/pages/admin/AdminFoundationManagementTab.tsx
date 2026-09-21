@@ -16,6 +16,7 @@ interface FoundationContent {
   title: string;
   description: string;
   videoUrl: string;
+  attachments?: Array<{ id: string; type: 'pdf'; title: string; url: string; originalName: string; contentType: 'application/pdf'; bytes?: number }>;
   thumbnailUrl?: string;
   order: number;
   published: boolean;
@@ -215,7 +216,7 @@ export default function AdminFoundationManagementTab() {
           {lessonsQuery.isLoading ? <Loading /> : lessonsQuery.isError ? <ErrorState message={(lessonsQuery.error as Error).message} retry={() => lessonsQuery.refetch()} /> : lessons.length === 0 ? <EmptyState label="لا توجد دروس تأسيسية بعد." /> :
             <div className="divide-y divide-slate-800">{[...lessons].sort((a, b) => a.order - b.order).map(lesson => <div key={recordId(lesson)} className="flex flex-wrap items-center gap-4 p-4">
               <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-emerald-500/15 text-emerald-300"><Video className="h-5 w-5" /></div>
-              <div className="min-w-[180px] flex-1"><p className="font-medium text-white">{lesson.title}</p><p className="mt-1 text-xs text-slate-400">{lesson.program === 'qudrat' ? 'قدرات' : 'تحصيلي'} · الترتيب {lesson.order}{lesson.durationMinutes ? ` · ${lesson.durationMinutes} دقيقة` : ''}{lesson.linkedQuizRoute ? ' · اختبار مرتبط' : ''}</p></div>
+              <div className="min-w-[180px] flex-1"><p className="font-medium text-white">{lesson.title}</p><p className="mt-1 text-xs text-slate-400">{lesson.program === 'qudrat' ? 'قدرات' : 'تحصيلي'} · الترتيب {lesson.order}{lesson.durationMinutes ? ` · ${lesson.durationMinutes} دقيقة` : ''}{lesson.linkedQuizRoute ? ' · اختبار مرتبط' : ''}{lesson.attachments?.length ? ` · ${lesson.attachments.length} ملف PDF` : ''}</p></div>
               <span className={`rounded-full px-2 py-1 text-xs ${lesson.published ? 'bg-emerald-500/15 text-emerald-300' : 'bg-slate-700 text-slate-300'}`}>{lesson.published ? 'منشور' : 'مسودة'}</span>
               <Button variant="ghost" size="sm" onClick={() => openEdit(lesson)} className="text-slate-300"><Edit className="ml-1 h-4 w-4" />تعديل</Button>
               <Button variant="ghost" size="sm" onClick={() => { if (window.confirm('هل تريد حذف هذا الدرس؟')) deleteLesson.mutate(lesson); }} disabled={deleteLesson.isPending} className="text-red-300 hover:text-red-200"><Trash2 className="h-4 w-4" /></Button>
@@ -232,7 +233,7 @@ export default function AdminFoundationManagementTab() {
         <DialogContent className="max-h-[90vh] overflow-y-auto bg-slate-950 text-white sm:max-w-2xl">
           <DialogHeader>
             <DialogTitle>{editingLesson ? 'تعديل درس تأسيسي' : 'إضافة درس تأسيسي'}</DialogTitle>
-            <p className="text-sm text-slate-400">أضف رابط الفيديو، وسيظهر للطالب داخل مشغل iframe في صفحة التأسيس.</p>
+            <p className="text-sm text-slate-400">يمكن حفظ الدرس بالمادة المكتوبة الآن، وإضافة رابط الفيديو لاحقًا ليظهر داخل المشغل.</p>
           </DialogHeader>
           <form className="grid gap-4" onSubmit={event => { event.preventDefault(); saveLesson.mutate(); }}>
             <div className="grid gap-4 sm:grid-cols-2">
@@ -241,7 +242,7 @@ export default function AdminFoundationManagementTab() {
             </div>
             <Field label="عنوان الدرس"><Input required value={lessonForm.title} onChange={e => setLessonForm(f => ({ ...f, title: e.target.value }))} className="border-slate-700 bg-slate-900" /></Field>
             <Field label="وصف الدرس"><Textarea required value={lessonForm.description} onChange={e => setLessonForm(f => ({ ...f, description: e.target.value }))} className="border-slate-700 bg-slate-900" /></Field>
-            <Field label="رابط الفيديو"><Input required type="url" dir="ltr" placeholder="https://www.youtube.com/watch?v=... أو رابط embed" value={lessonForm.videoUrl} onChange={e => setLessonForm(f => ({ ...f, videoUrl: e.target.value }))} className="border-slate-700 bg-slate-900" /><span className="text-xs text-slate-500">يفضل استخدام رابط YouTube أو Vimeo؛ يتم تحويله تلقائيًا إلى iframe للطالب.</span></Field>
+             <Field label="رابط الفيديو (اختياري)"><Input type="url" dir="ltr" placeholder="https://www.youtube.com/watch?v=... أو رابط embed" value={lessonForm.videoUrl} onChange={e => setLessonForm(f => ({ ...f, videoUrl: e.target.value }))} className="border-slate-700 bg-slate-900" /><span className="text-xs text-slate-500">يمكن تركه فارغًا إلى أن ترسل فيديو الدرس. يدعم YouTube وVimeo.</span></Field>
             {lessonForm.videoUrl && <div className="overflow-hidden rounded-xl border border-slate-800 bg-black"><div className="flex items-center gap-2 border-b border-slate-800 px-3 py-2 text-xs text-slate-400"><Eye className="h-4 w-4 text-emerald-400" />معاينة المشغل داخل المنصة</div><div className="aspect-video">{getEmbedUrl(lessonForm.videoUrl) ? <iframe src={getEmbedUrl(lessonForm.videoUrl) || undefined} title="معاينة الفيديو" className="h-full w-full" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowFullScreen referrerPolicy="strict-origin-when-cross-origin" /> : <p className="p-6 text-center text-sm text-amber-300">أدخل رابط فيديو صحيحًا لمعاينته داخل المنصة.</p>}</div></div>}
             <div className="rounded-2xl border border-emerald-500/25 bg-emerald-500/5 p-4">
               <div className="flex flex-wrap items-center justify-between gap-3">

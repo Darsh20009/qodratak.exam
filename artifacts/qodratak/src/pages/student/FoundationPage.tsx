@@ -14,7 +14,7 @@ import {
 import { foundationSections, getFoundationSection, type FoundationProgram, type FoundationSection } from "@/data/foundationSections";
 import { foundationCurriculum } from "@/data/foundationCurriculum";
 import { Link, useLocation, useSearch } from "wouter";
-import { ArrowLeft, BarChart3, BookOpen, Clock, GraduationCap, Info, ListChecks, Loader2, PlayCircle, Route, ShieldCheck, Target, Trophy } from "lucide-react";
+import { ArrowLeft, BarChart3, BookOpen, Clock, FileText, GraduationCap, Info, ListChecks, Loader2, PlayCircle, Route, ShieldCheck, Target, Trophy } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Progress } from "@/components/ui/progress";
@@ -588,9 +588,31 @@ export default function FoundationPage() {
                   )}
                   <div className="flex items-center gap-2 text-xs text-slate-400">
                     <ShieldCheck className="h-4 w-4 text-emerald-400" />
-                    الفيديو والاختبار داخل الصفحة
+                     الفيديو والاختبار داخل الصفحة
                   </div>
                 </div>
+                 {selectedLesson?.attachments?.length ? (
+                   <div className="mt-4 rounded-2xl border border-white/10 bg-white/5 p-3">
+                     <div className="mb-2 flex items-center gap-2 text-xs font-black text-[#F7F775]">
+                       <FileText className="h-4 w-4" />
+                       ملفات الدرس
+                     </div>
+                     <div className="grid gap-2 sm:grid-cols-2">
+                       {selectedLesson.attachments.map((attachment) => (
+                         <a
+                           key={attachment.id}
+                           href={attachment.url}
+                           target="_blank"
+                           rel="noreferrer"
+                           className="flex items-center gap-2 rounded-xl border border-white/10 bg-black/20 px-3 py-2 text-xs font-bold text-slate-200 transition-colors hover:border-[#F7F775]/60 hover:text-[#F7F775]"
+                         >
+                           <FileText className="h-4 w-4 shrink-0 text-red-300" />
+                           <span className="min-w-0 truncate">{attachment.title}</span>
+                         </a>
+                       ))}
+                     </div>
+                   </div>
+                 ) : null}
               </div>
             </div>
             <div className="rounded-2xl border border-border bg-card p-5">

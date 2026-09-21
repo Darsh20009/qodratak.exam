@@ -1592,6 +1592,15 @@ export interface IFoundationContentSection {
   solution?: string;
   why?: string;
 }
+export interface IFoundationAttachment {
+  id: string;
+  type: 'pdf';
+  title: string;
+  url: string;
+  originalName: string;
+  contentType: 'application/pdf';
+  bytes?: number;
+}
 export interface IFoundationQuiz {
   title: string;
   instructions?: string;
@@ -1610,7 +1619,8 @@ export interface IFoundationContent extends Document {
   program: StudentProgram; title: string; description: string; videoUrl: string;
   thumbnailUrl?: string; order: number; published: boolean; linkedQuizRoute?: string;
   durationMinutes?: number; subjectId?: string; taxonomyNodeId?: string;
-  sections?: IFoundationContentSection[]; version: number; publishedAt?: Date;
+  sections?: IFoundationContentSection[]; attachments?: IFoundationAttachment[];
+  version: number; publishedAt?: Date;
   quiz?: IFoundationQuiz; createdAt: Date; updatedAt: Date;
 }
 const foundationContentSectionSchema = new Schema<IFoundationContentSection>({
@@ -1627,11 +1637,20 @@ const foundationContentSectionSchema = new Schema<IFoundationContentSection>({
   solution: { type: String, trim: true, maxlength: 5000 },
   why: { type: String, trim: true, maxlength: 5000 },
 }, { _id: false });
+const foundationAttachmentSchema = new Schema<IFoundationAttachment>({
+  id: { type: String, required: true, trim: true },
+  type: { type: String, enum: ['pdf'], required: true },
+  title: { type: String, required: true, trim: true, maxlength: 200 },
+  url: { type: String, required: true, trim: true },
+  originalName: { type: String, required: true, trim: true, maxlength: 255 },
+  contentType: { type: String, enum: ['application/pdf'], required: true },
+  bytes: { type: Number, min: 0 },
+}, { _id: false });
 const foundationContentSchema = new Schema<IFoundationContent>({
   program: { type: String, enum: ['qudrat', 'tahsili'], required: true, index: true },
   title: { type: String, required: true, trim: true },
   description: { type: String, required: true, trim: true },
-  videoUrl: { type: String, required: true, trim: true },
+  videoUrl: { type: String, trim: true, default: '' },
   thumbnailUrl: { type: String, trim: true },
   order: { type: Number, required: true, min: 0, index: true },
   published: { type: Boolean, default: false, index: true },
@@ -1640,6 +1659,7 @@ const foundationContentSchema = new Schema<IFoundationContent>({
   subjectId: { type: String, trim: true, index: true },
   taxonomyNodeId: { type: String, trim: true, index: true },
   sections: { type: [foundationContentSectionSchema], default: [] },
+  attachments: { type: [foundationAttachmentSchema], default: [] },
   version: { type: Number, min: 1, default: 1 },
   publishedAt: { type: Date },
   quiz: { type: foundationQuizSchema },
