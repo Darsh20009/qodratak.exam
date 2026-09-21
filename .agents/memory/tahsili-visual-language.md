@@ -7,4 +7,4 @@ Pages that introduce, browse, or organize Tahsili content should use a calm shar
 
 **Why:** The older Tahsili screens used unrelated dark gradients, glow effects, and dense motion, which made study navigation feel like a marketing page and reduced consistency with the newer computerized experience.
 
-**How to apply:** Extend the scoped Tahsili surface and shared frame for new Tahsili overview, study, test-center, and question-bank work. Keep exam-taking interactions visually stable and avoid reintroducing floating particles or heavy animation.
+**How to apply:** Use semantic theme tokens in the page markup for new Tahsili overview, study, test-center, and question-bank work; do not depend on broad CSS selectors to hide legacy colors. Keep exam-taking interactions visually stable and avoid reintroducing floating particles or heavy animation.
