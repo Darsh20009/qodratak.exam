@@ -1,5 +1,6 @@
 import React from 'react';
 import { useLocation } from 'wouter';
+import { TahsiliPageFrame } from "@/components/tahsili/TahsiliPageFrame";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { motion } from "framer-motion";
@@ -46,7 +47,7 @@ const TahsilikPlatform: React.FC = () => {
   ];
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50/30 to-teal-500/50 dark:from-gray-900 dark:via-blue-950/30 dark:to-teal-500/50">
+    <TahsiliPageFrame>
       <div className="container mx-auto px-6 py-12">
         {/* Header */}
         <motion.div 
@@ -146,7 +147,7 @@ const TahsilikPlatform: React.FC = () => {
           }
         }
       `}</style>
-    </div>
+    </TahsiliPageFrame>
   );
 };
 

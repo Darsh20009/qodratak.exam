@@ -132,6 +132,143 @@
   color: hsl(var(--foreground));
 }
 
+/* Shared Tahsili study surfaces: quiet, legible, and intentionally flatter
+   than the older promotional screens. The class is opt-in so test runners
+   and unrelated product areas retain their existing contracts. */
+.qodratak-tahsili-surface {
+  --tahsili-ink: 211 38% 19%;
+  --tahsili-muted: 213 16% 47%;
+  --tahsili-line: 211 22% 88%;
+  --tahsili-panel: 0 0% 100%;
+  --tahsili-wash: 210 28% 97%;
+  min-height: 100%;
+  background:
+    linear-gradient(180deg, hsl(210 30% 98%) 0%, hsl(var(--background)) 48%, hsl(208 25% 96%) 100%);
+  color: hsl(var(--tahsili-ink));
+}
+
+.dark .qodratak-tahsili-surface {
+  --tahsili-ink: 210 24% 93%;
+  --tahsili-muted: 213 14% 68%;
+  --tahsili-line: 214 20% 23%;
+  --tahsili-panel: 213 28% 13%;
+  --tahsili-wash: 214 25% 16%;
+  background:
+    linear-gradient(180deg, hsl(214 32% 11%) 0%, hsl(var(--background)) 52%, hsl(214 28% 10%) 100%);
+}
+
+.qodratak-tahsili-surface .qodratak-tahsili-section-header {
+  display: flex;
+  align-items: end;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.qodratak-tahsili-surface .qodratak-tahsili-eyebrow {
+  margin: 0 0 .4rem;
+  color: hsl(var(--primary));
+  font-size: .72rem;
+  font-weight: 800;
+  letter-spacing: .08em;
+}
+
+.qodratak-tahsili-surface .qodratak-tahsili-title {
+  margin: 0;
+  color: hsl(var(--tahsili-ink));
+  font-size: clamp(1.7rem, 4vw, 2.7rem);
+  font-weight: 900;
+  letter-spacing: -.035em;
+}
+
+.qodratak-tahsili-surface .qodratak-tahsili-description {
+  max-width: 42rem;
+  margin: .55rem 0 0;
+  color: hsl(var(--tahsili-muted));
+  line-height: 1.8;
+}
+
+/* Normalize common legacy decorations only inside the new shared layer. */
+.qodratak-tahsili-surface .bg-gradient-to-br.from-slate-900,
+.qodratak-tahsili-surface .bg-gradient-to-br.from-slate-50,
+.qodratak-tahsili-surface .bg-gradient-to-br.from-gray-900,
+.qodratak-tahsili-surface .bg-gradient-to-br.from-white\/10 {
+  background-image: none !important;
+}
+
+.qodratak-tahsili-surface .backdrop-blur-sm,
+.qodratak-tahsili-surface .backdrop-blur-xl {
+  backdrop-filter: none !important;
+}
+
+.qodratak-tahsili-surface > .absolute.inset-0.pointer-events-none,
+.qodratak-tahsili-surface > .absolute.pointer-events-none {
+  display: none !important;
+}
+
+.qodratak-tahsili-surface .bg-clip-text {
+  background-image: none !important;
+  -webkit-text-fill-color: currentColor !important;
+  color: hsl(var(--tahsili-ink)) !important;
+}
+
+.qodratak-tahsili-surface .shadow-2xl,
+.qodratak-tahsili-surface .shadow-xl,
+.qodratak-tahsili-surface .shadow-lg {
+  box-shadow: 0 8px 24px hsl(var(--foreground) / .06) !important;
+}
+
+.qodratak-tahsili-surface .border-white\/20,
+.qodratak-tahsili-surface .border-white\/10 {
+  border-color: hsl(var(--tahsili-line)) !important;
+}
+
+.qodratak-tahsili-surface .bg-white\/5,
+.qodratak-tahsili-surface .bg-white\/10,
+.qodratak-tahsili-surface .bg-white\/80 {
+  background-color: hsl(var(--tahsili-panel) / .86) !important;
+}
+
+.qodratak-tahsili-surface [class*="text-blue-100"],
+.qodratak-tahsili-surface [class*="text-blue-200"],
+.qodratak-tahsili-surface [class*="text-blue-300"],
+.qodratak-tahsili-surface [class*="text-green-700"],
+.qodratak-tahsili-surface [class*="text-gray-300"] {
+  color: hsl(var(--tahsili-muted)) !important;
+}
+
+.qodratak-tahsili-surface [class*="text-white"] {
+  color: hsl(var(--tahsili-ink)) !important;
+}
+
+.qodratak-tahsili-surface [class*="bg-gradient-to-"] svg[class*="text-white"],
+.qodratak-tahsili-surface [class*="bg-primary"] svg[class*="text-white"] {
+  color: hsl(var(--primary-foreground)) !important;
+}
+
+.qodratak-tahsili-surface [class*="bg-gradient-to-"][class*="text-white"] {
+  background: hsl(var(--primary)) !important;
+  color: hsl(var(--primary-foreground)) !important;
+}
+
+.qodratak-tahsili-surface button [class*="text-white"],
+.qodratak-tahsili-surface a [class*="text-white"] {
+  color: hsl(var(--primary-foreground)) !important;
+}
+
+.qodratak-tahsili-surface .animate-pulse,
+.qodratak-tahsili-surface .animate-ping,
+.qodratak-tahsili-surface .animate-float {
+  animation: none !important;
+}
+
+@media (max-width: 767px) {
+  .qodratak-tahsili-surface .qodratak-tahsili-section-header {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+}
+
 /* Admin and auth screens still contain a few legacy brand classes. Keep their
    palette coherent when the shared theme switches to dark mode. */
 .dark .qodratak-admin-surface,

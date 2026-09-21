@@ -646,7 +646,7 @@ const TahsiliExamPage: React.FC = () => {
 <body>
     <div class="container">
         <div class="header">
-            <h1>🎯 أخطاء الاختبار</h1>
+            <h1>أخطاء الاختبار</h1>
             <h2>${selectedExam?.name}</h2>
             <p>عدد الأخطاء: ${mistakeQuestions.length} من أصل ${selectedExam?.questions.length}</p>
         </div>
@@ -693,7 +693,7 @@ const TahsiliExamPage: React.FC = () => {
         if (question.hint) {
           htmlContent += `
             <div class="hint">
-                <strong>💡 تلميح:</strong> ${question.hint}
+                <strong>تلميح:</strong> ${question.hint}
             </div>
 `;
         }
@@ -816,7 +816,7 @@ const TahsiliExamPage: React.FC = () => {
   if (currentView === 'selection') {
     return (
       <NewProtectedRoute requiresPremium={true}>
-        <div className="min-h-screen bg-background py-8" dir="rtl">
+        <div className="qodratak-tahsili-surface min-h-[100dvh] py-8" dir="rtl">
           <div className="container mx-auto px-4 max-w-6xl">
             
             {/* العنوان الرئيسي */}
@@ -827,7 +827,7 @@ const TahsiliExamPage: React.FC = () => {
               transition={{ duration: 0.6 }}
             >
               <h1 className="text-3xl md:text-4xl font-black text-foreground mb-4">
-                🎓 اختبارات التحصيلي
+                اختبارات التحصيلي
               </h1>
               <p className="text-base md:text-lg text-muted-foreground max-w-3xl mx-auto">
                 اختبر مستواك في المواد الأساسية واستعد للاختبار التحصيلي بثقة
@@ -1028,7 +1028,7 @@ const TahsiliExamPage: React.FC = () => {
   // صفحة النتائج
   if (currentView === 'results' && examResults) {
     return (
-      <div className="min-h-screen bg-background py-8" dir="rtl">
+      <div className="qodratak-tahsili-surface min-h-[100dvh] py-8" dir="rtl">
         <div className="container mx-auto px-4 max-w-4xl">
           
           {/* العنوان والنتيجة الرئيسية */}

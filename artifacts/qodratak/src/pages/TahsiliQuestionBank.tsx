@@ -122,7 +122,7 @@ export default function TahsiliQuestionBank() {
   const questions = data?.questions || [];
 
   return (
-    <main className="min-h-screen bg-background pb-24 text-foreground" dir="rtl">
+    <main className="qodratak-tahsili-surface min-h-[100dvh] pb-24" dir="rtl">
       <div className="mx-auto max-w-7xl space-y-6 px-4 py-6 md:px-6 md:py-10">
         <section className="rounded-3xl border border-border bg-card p-6 shadow-sm md:p-8">
           <div className="flex flex-col gap-5 md:flex-row md:items-end md:justify-between">

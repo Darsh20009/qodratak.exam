@@ -118,7 +118,7 @@ export default function TahsilikTestsHub() {
         url="/tahsilik/tests-hub"
       />
 
-      <div className="min-h-screen bg-background pb-24" dir="rtl">
+      <div className="qodratak-tahsili-surface min-h-[100dvh] pb-24" dir="rtl">
         <div className="max-w-lg mx-auto px-4 py-6 space-y-5">
 
           {/* ── Hero ─────────────────────────────────────────── */}

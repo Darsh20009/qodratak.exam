@@ -70,7 +70,7 @@ export default function TahsilikQualificationTest() {
   };
 
   return (
-    <div className="min-h-screen bg-background py-6 px-4" dir="rtl">
+    <div className="qodratak-tahsili-surface min-h-[100dvh] py-6 px-4" dir="rtl">
       <div className="max-w-2xl mx-auto">
 
         {/* Header */}

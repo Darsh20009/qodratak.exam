@@ -115,7 +115,7 @@ const TahsilikStudyCenter: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-blue-900 to-teal-500 text-white">
+    <div className="qodratak-tahsili-surface min-h-[100dvh]">
       {/* Background Elements - Enhanced for mobile */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
         <div className="absolute top-1/4 left-1/4 w-64 h-64 md:w-96 md:h-96 bg-gradient-to-r from-blue-400/20 to-emerald-600/20 rounded-full blur-3xl animate-pulse"></div>

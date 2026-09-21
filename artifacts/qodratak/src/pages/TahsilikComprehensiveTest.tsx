@@ -138,7 +138,7 @@ const TahsilikComprehensiveTest: React.FC = () => {
   const totalTime = questionDistribution.reduce((sum, subject) => sum + subject.timeAllocation, 0);
 
   return (
-    <div className="min-h-screen bg-background" dir="rtl">
+    <div className="qodratak-tahsili-surface min-h-[100dvh]" dir="rtl">
       <div className="container mx-auto px-4 py-8">
         {/* Header */}
         <motion.div

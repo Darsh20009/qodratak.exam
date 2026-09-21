@@ -166,7 +166,7 @@ const TahsilikMobileDashboard: React.FC = () => {
   ];
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-teal-500 dark:from-slate-900 dark:via-blue-900/50 dark:to-teal-500 relative overflow-hidden">
+    <div className="qodratak-tahsili-surface min-h-[100dvh] relative overflow-hidden">
       {/* Animated background elements */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
         <motion.div
