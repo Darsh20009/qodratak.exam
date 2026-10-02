@@ -21,7 +21,6 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 
-const CHECKOUT_URL = "https://www.paypal.com/ncp/payment/XZWPA8WLMNDGS";
 const SUPPORT_WHATSAPP_URL = `https://wa.me/966510510140?text=${encodeURIComponent("أحتاج اشتراك لعذر مادي")}`;
 
 type PaymentMethod = "wallet" | "card";
@@ -66,7 +65,6 @@ export default function SubscriptionRenewalDialog({
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [method, setMethod] = useState<PaymentMethod>("wallet");
-  const [checkoutStarted, setCheckoutStarted] = useState(false);
   const [selectedPlanKey, setSelectedPlanKey] = useState("pro");
 
   const { data: planData, isLoading: planLoading } = useQuery<{ plan?: SubscriptionPlan; plans?: SubscriptionPlan[] }>({
@@ -144,43 +142,45 @@ export default function SubscriptionRenewalDialog({
     },
   });
 
-  const requestMutation = useMutation({
+  const checkoutMutation = useMutation({
     mutationFn: async () => {
-      const response = await apiRequest("POST", "/api/subscription/subscribe-request", {
+      const response = await apiRequest("POST", "/api/subscription/geidea/sessions", {
         planKey: selectedPlan?.key || "pro",
-        paymentMethod: method,
       });
       return response.json();
     },
-    onSuccess: () => {
-      toast({
-        title: "تم تسجيل طلب الاشتراك",
-        description: "سيظهر التفعيل بعد تأكيد عملية الدفع ومراجعة الطلب.",
-      });
-      queryClient.invalidateQueries({ queryKey: ["/api/user/my-subscriptions"] });
-      setCheckoutStarted(false);
-      onOpenChange(false);
+    onSuccess: (result: { checkoutUrl?: string }) => {
+      if (!result?.checkoutUrl) {
+        toast({
+          title: "تعذر فتح بوابة الدفع",
+          description: "لم يصل رابط الدفع من Geidea.",
+          variant: "destructive",
+        });
+        return;
+      }
+      window.location.assign(result.checkoutUrl);
     },
     onError: (error: Error) => {
+      let description = error.message.replace(/^\d+:\s*/, "");
+      try {
+        const responseBody = JSON.parse(description);
+        if (typeof responseBody?.error === "string") {
+          description = responseBody.error;
+        }
+      } catch {
+        // Keep plain-text or network errors readable.
+      }
       toast({
-        title: "تعذر تسجيل طلب الاشتراك",
-        description: error.message.replace(/^\d+:\s*/, ""),
+        title: "تعذر بدء الدفع",
+        description,
         variant: "destructive",
       });
     },
   });
 
   const close = (nextOpen: boolean) => {
-    if (!nextOpen) {
-      setMethod("wallet");
-      setCheckoutStarted(false);
-    }
+    if (!nextOpen) setMethod("wallet");
     onOpenChange(nextOpen);
-  };
-
-  const startExternalCheckout = () => {
-    setCheckoutStarted(true);
-    window.open(CHECKOUT_URL, "_blank", "noopener,noreferrer");
   };
 
   const isLoading = planLoading || subscriptionsLoading || walletLoading;
@@ -339,31 +339,22 @@ export default function SubscriptionRenewalDialog({
             ) : (
               <div className="rounded-2xl border border-[#E5E7EB] bg-white p-4">
                 <p className="text-sm font-bold leading-6">
-                  ادفع بالبطاقة البنكية من صفحة الدفع الآمنة دون إدخال بيانات البطاقة داخل قدراتك.
+                  أكمل الدفع في صفحة Geidea الآمنة. قد تظهر مدى أو Visa أو Mastercard أو Apple Pay بحسب إعدادات حساب التاجر.
                 </p>
                 <Button
                   type="button"
-                  onClick={startExternalCheckout}
+                  onClick={() => checkoutMutation.mutate()}
+                  disabled={checkoutMutation.isPending}
                   className="mt-4 h-11 w-full rounded-xl bg-[#0D1B2A] font-black text-white hover:bg-[#1E2938]"
                 >
-                  <CreditCard className="ml-2 h-4 w-4" />
-                  {checkoutStarted ? "فتح صفحة الدفع مرة أخرى" : "الدفع بالبطاقة"}
+                  {checkoutMutation.isPending
+                    ? <Loader2 className="ml-2 h-4 w-4 animate-spin" />
+                    : <CreditCard className="ml-2 h-4 w-4" />}
+                  {checkoutMutation.isPending ? "جارٍ تجهيز الدفع..." : "الدفع عبر Geidea"}
                   <ChevronLeft className="mr-auto h-4 w-4" />
                 </Button>
-                {checkoutStarted && (
-                  <Button
-                    type="button"
-                    variant="outline"
-                    onClick={() => requestMutation.mutate()}
-                    disabled={requestMutation.isPending}
-                    className="mt-2 h-10 w-full rounded-xl border-[#0D1B2A] font-black"
-                  >
-                    {requestMutation.isPending && <Loader2 className="ml-2 h-4 w-4 animate-spin" />}
-                    أكملت الدفع — تأكيد الاشتراك
-                  </Button>
-                )}
                 <p className="mt-3 text-center text-[11px] font-medium text-[#94A3B8]">
-                  لا يتم تفعيل الاشتراك قبل تأكيد الدفع ومراجعة العملية.
+                  لا يتم التفعيل إلا بعد أن يؤكد خادم قدراتك نجاح العملية مباشرة من Geidea.
                 </p>
               </div>
             )}

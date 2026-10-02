@@ -4,6 +4,7 @@ import {
   adaptLearningSessionPlan,
   buildLearningSessionPlan,
   publicTodayLearningSession,
+  sessionScopeQuery,
   type LearningSessionPlan,
 } from '../src/services/dailyLearningSessionService.ts';
 import type { LearningRecommendation } from '../src/services/studentRecommendationService.ts';
@@ -244,4 +245,13 @@ test('plan status remains explicit when a diagnostic recommendation is returned'
   const plan = build('DIAGNOSTIC');
   assert.equal(plan.planStatus, 'DIAGNOSTIC_REQUIRED');
   assert.equal(plan.sessionReason, 'المحتوى التشخيصي مطلوب قبل اختيار نشاط محدد.');
+});
+
+test('session reuse scope includes the requested program and subject', () => {
+  assert.deepEqual(sessionScopeQuery('student-a', '2026-09-18', PROGRAM, SUBJECT), {
+    studentId: 'student-a',
+    dailyKey: { $regex: '^today:2026-09-18:' },
+    programId: PROGRAM,
+    subjectId: SUBJECT,
+  });
 });

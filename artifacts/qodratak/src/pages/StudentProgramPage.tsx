@@ -107,6 +107,12 @@ export default function StudentProgramPage() {
             <div className="rounded-xl border border-white/10 bg-white/5 px-3 py-3"><span className="text-[#F7F775]">2</span> ادرس وتدرّب</div>
             <div className="rounded-xl border border-white/10 bg-white/5 px-3 py-3"><span className="text-[#F7F775]">3</span> اختبر جاهزيتك</div>
           </div>
+          <Link
+            href={`/learning/today?programId=${programKey === "tahsili" ? "tahsili" : "qudrat"}`}
+            className="mt-5 inline-flex min-h-11 items-center justify-center rounded-xl bg-[#F7F775] px-5 text-sm font-black text-[#0D1B2A] transition hover:bg-white"
+          >
+            ابدأ رحلة اليوم في {program.arabic}
+          </Link>
         </header>
 
         <section className="grid gap-3 sm:grid-cols-2">

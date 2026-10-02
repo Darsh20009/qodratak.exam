@@ -52,6 +52,13 @@ import {
   sendWhatsAppText,
 } from './services/whatsappService';
 import { getClientIp } from './middleware/sessionIp';
+import {
+  GeideaConfigurationError,
+  GeideaRequestError,
+  isGeideaSandboxConfigured,
+  refundGeideaOrder,
+} from './services/geideaService';
+import { subscriptionInvoiceNumber } from './services/geideaPaymentService';
 
 const router = Router();
 
@@ -251,6 +258,7 @@ function requiredAdminPermission(req: Request) {
   const pathName = req.path;
   const readOnly = req.method === 'GET';
   if (pathName === '/session' || pathName === '/logout') return null;
+  if (pathName.startsWith('/geidea/transactions')) return 'manage_accounting';
   if (pathName.startsWith('/learning-taxonomy')) return 'manage_content';
   if (pathName.startsWith('/dashboard')) return 'view_dashboard';
   if (pathName.startsWith('/users')) return readOnly ? 'view_students' : 'manage_students';
@@ -2709,6 +2717,251 @@ router.post('/users/:userId/notify', requireAdminAuth, async (req: Request, res:
     res.json({ success: true });
   } catch (e) {
     res.status(500).json({ error: 'فشل في إرسال الإشعار' });
+  }
+});
+
+router.get('/geidea/transactions', requireAdminAuth, async (req: Request, res: Response) => {
+  try {
+    const page = Math.max(1, Number.parseInt(String(req.query.page || '1'), 10) || 1);
+    const limit = Math.min(100, Math.max(1, Number.parseInt(String(req.query.limit || '25'), 10) || 25));
+    const { Subscription } = await import('./mongodb/models');
+    const [rows, total] = await Promise.all([
+      Subscription.find({ paymentGateway: 'geidea' })
+        .sort({ createdAt: -1, _id: -1 })
+        .skip((page - 1) * limit)
+        .limit(limit)
+        .lean(),
+      Subscription.countDocuments({ paymentGateway: 'geidea' }),
+    ]);
+    const userIds = rows
+      .map((payment: any) => String(payment.userId || ''))
+      .filter((id: string) => mongoose.Types.ObjectId.isValid(id))
+      .map((id: string) => new mongoose.Types.ObjectId(id));
+    const users = userIds.length
+      ? await User.find({ _id: { $in: userIds } })
+          .select('fullName username email phone whatsappPhone')
+          .lean()
+      : [];
+    const usersById = new Map(users.map((user: any) => [String(user._id), user]));
+    const toIso = (value: unknown) => {
+      if (!value) return null;
+      const date = new Date(value as any);
+      return Number.isNaN(date.getTime()) ? null : date.toISOString();
+    };
+
+    res.json({
+      transactions: rows.map((payment: any) => {
+        const user = usersById.get(String(payment.userId));
+        return {
+          id: String(payment._id),
+          studentName: user?.fullName || user?.username || user?.email || String(payment.userId),
+          studentEmail: user?.email || null,
+          studentPhone: user?.whatsappPhone || user?.phone || null,
+          plan: String(payment.type || ''),
+          amount: Number(payment.price || 0),
+          currency: String(payment.currency || 'SAR'),
+          status: String(payment.paymentStatus || payment.status || 'pending'),
+          providerStatus: payment.providerStatus || null,
+          providerOrderId: payment.providerOrderId || null,
+          merchantReferenceId: payment.providerMerchantReferenceId || null,
+          invoiceNumber: subscriptionInvoiceNumber(payment),
+          createdAt: toIso(payment.createdAt) || new Date().toISOString(),
+          paidAt: toIso(payment.paidAt),
+          refundedAt: toIso(payment.refundedAt),
+          refundedAmount: Number(payment.refundedAmount || 0),
+          refundReason: payment.refundReason || null,
+        };
+      }),
+      total,
+      page,
+      limit,
+      totalPages: Math.ceil(total / limit),
+    });
+  } catch (error) {
+    req.log.error({ error }, 'Could not list Geidea transactions');
+    res.status(500).json({ error: 'تعذر جلب سجل مدفوعات Geidea' });
+  }
+});
+
+router.post('/geidea/transactions/:id/refund', requireAdminAuth, async (req: Request, res: Response) => {
+  const paymentId = String(req.params.id || '');
+  const reason = String(req.body?.reason || '').trim();
+  if (!mongoose.Types.ObjectId.isValid(paymentId)) {
+    res.status(404).json({ error: 'عملية الدفع غير موجودة' });
+    return;
+  }
+  if (reason.length < 3 || reason.length > 300) {
+    res.status(400).json({ error: 'اكتب سبب الاسترداد (3 إلى 300 حرف)' });
+    return;
+  }
+  if (!isGeideaSandboxConfigured()) {
+    res.status(503).json({ error: 'إعدادات Geidea التجريبية غير مكتملة' });
+    return;
+  }
+
+  try {
+    const { Subscription } = await import('./mongodb/models');
+    const existing = await Subscription.findOne({
+      _id: paymentId,
+      paymentGateway: 'geidea',
+    });
+    if (!existing) {
+      res.status(404).json({ error: 'عملية الدفع غير موجودة' });
+      return;
+    }
+    if (existing.paymentStatus !== 'paid' || !existing.providerOrderId) {
+      res.status(400).json({ error: 'لا يمكن استرداد هذه العملية أو أنها قيد المعالجة' });
+      return;
+    }
+    const amount = Math.round((Number(existing.price || 0) - Number(existing.refundedAmount || 0)) * 100) / 100;
+    if (!Number.isFinite(amount) || amount < 0.01) {
+      res.status(400).json({ error: 'لا يوجد مبلغ متبقٍ لاسترداده' });
+      return;
+    }
+
+    const requestedAt = new Date();
+    const admin = (req as any).session?.admin;
+    const reserved = await Subscription.findOneAndUpdate(
+      {
+        _id: existing._id,
+        paymentStatus: 'paid',
+        providerOrderId: existing.providerOrderId,
+      },
+      {
+        $set: {
+          paymentStatus: 'refund_pending',
+          refundReason: reason,
+          refundRequestedBy: String(admin?.adminId || admin?._id || 'admin'),
+          refundRequestedAt: requestedAt,
+          updatedAt: requestedAt,
+        },
+      },
+      { new: true },
+    );
+    if (!reserved) {
+      res.status(409).json({ error: 'تم بدء استرداد هذه العملية بالفعل' });
+      return;
+    }
+
+    let providerResult: { refundedAmount: number; detailedStatus: string };
+    try {
+      providerResult = await refundGeideaOrder({
+        orderId: String(reserved.providerOrderId),
+        amount,
+      });
+    } catch (error) {
+      await Subscription.updateOne(
+        { _id: reserved._id, paymentStatus: 'refund_pending' },
+        {
+          $set: {
+            paymentStatus: 'refund_failed',
+            providerStatus: 'refund_result_unconfirmed',
+            updatedAt: new Date(),
+          },
+        },
+      );
+      if (error instanceof GeideaConfigurationError) {
+        res.status(503).json({ error: 'إعدادات Geidea التجريبية غير مكتملة' });
+        return;
+      }
+      req.log.error(
+        {
+          statusCode: error instanceof GeideaRequestError ? error.statusCode : undefined,
+          responseCode: error instanceof GeideaRequestError ? error.responseCode : undefined,
+          paymentId,
+        },
+        'Geidea did not confirm the refund',
+      );
+      res.status(502).json({ error: 'تعذر تأكيد الاسترداد لدى Geidea؛ راجع العملية قبل إعادة المحاولة' });
+      return;
+    }
+
+    const completeRefund = providerResult.refundedAmount >= Number(reserved.price || 0) - 0.01;
+    if (!completeRefund) {
+      await Subscription.updateOne(
+        { _id: reserved._id, paymentStatus: 'refund_pending' },
+        {
+          $set: {
+            paymentStatus: 'refund_failed',
+            refundedAmount: providerResult.refundedAmount,
+            providerStatus: `partial_refund:${providerResult.detailedStatus}`,
+            updatedAt: new Date(),
+          },
+        },
+      );
+      res.status(502).json({ error: 'أكدت Geidea استردادًا جزئيًا فقط؛ يلزم التحقق اليدوي' });
+      return;
+    }
+
+    const refundedAt = new Date();
+    const finalized = await Subscription.findOneAndUpdate(
+      { _id: reserved._id, paymentStatus: 'refund_pending' },
+      {
+        $set: {
+          paymentStatus: 'refunded',
+          status: 'cancelled',
+          refundedAmount: providerResult.refundedAmount,
+          refundedAt,
+          providerStatus: providerResult.detailedStatus,
+          updatedAt: refundedAt,
+        },
+      },
+      { new: true },
+    );
+    if (!finalized) {
+      req.log.error({ paymentId }, 'Geidea refund succeeded but the payment ledger did not finalize');
+      res.status(503).json({ error: 'قبلت Geidea الاسترداد لكن تعذر تحديث السجل؛ يلزم التحقق اليدوي' });
+      return;
+    }
+
+    const endDate = new Date(reserved.endDate).toISOString().split('T')[0];
+    const now = new Date();
+    const userId = String(reserved.userId);
+    const userIdCandidates: Array<string | mongoose.Types.ObjectId> = [userId];
+    if (mongoose.Types.ObjectId.isValid(userId)) {
+      userIdCandidates.push(new mongoose.Types.ObjectId(userId));
+    }
+    const remainingSubscription = await Subscription.findOne({
+      userId: { $in: userIdCandidates },
+      status: 'active',
+      startDate: { $lte: now },
+      endDate: { $gt: now },
+    })
+      .sort({ endDate: -1 })
+      .lean();
+    if (mongoose.Types.ObjectId.isValid(userId)) {
+      await User.updateOne(
+        {
+          _id: new mongoose.Types.ObjectId(userId),
+          'subscription.type': reserved.type,
+          'subscription.endDate': endDate,
+        },
+        {
+          $set: {
+            'subscription.type': remainingSubscription?.type || 'free',
+            'subscription.status': remainingSubscription ? 'active' : 'cancelled',
+            'subscription.startDate': remainingSubscription
+              ? new Date(remainingSubscription.startDate).toISOString().split('T')[0]
+              : null,
+            'subscription.endDate': remainingSubscription
+              ? new Date(remainingSubscription.endDate).toISOString().split('T')[0]
+              : null,
+          },
+        },
+      ).catch((error) => {
+        req.log.warn({ error, paymentId }, 'Could not update the user subscription summary after refund');
+      });
+    }
+
+    res.json({
+      success: true,
+      paymentId,
+      refundedAmount: providerResult.refundedAmount,
+      status: 'refunded',
+    });
+  } catch (error) {
+    req.log.error({ error, paymentId }, 'Could not refund Geidea transaction');
+    res.status(500).json({ error: 'تعذر استرداد العملية' });
   }
 });
 

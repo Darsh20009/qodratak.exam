@@ -28,7 +28,7 @@ test("learning hooks expose the server-owned session lifecycle", () => {
 test("session start sends no client decision data", () => {
   const start = block(hooks, "export function useStartTodayLearningSession", "export function useUpdateTodayLearningStep");
   assert.match(start, /method: "POST"/);
-  assert.doesNotMatch(start, /body:/);
+  assert.match(start, /body: JSON\.stringify\(scope\)/);
   for (const forbidden of ["studentId", "mastery", "recommendationType", "priority", "confidence", "correctness"]) {
     assert.doesNotMatch(start, new RegExp(`\\b${forbidden}\\b`));
   }
@@ -47,6 +47,8 @@ test("content selection and answer submission use only owned session fields", ()
 test("student home and session UI provide the core Phase 16 states", () => {
   assert.match(home, /data-testid="student-next-step"/);
   assert.match(home, /\/learning\/today/);
+  assert.match(home, /useTodayLearningSession\(hasJourneyScope, journeyProgram, journeySubjectId\)/);
+  assert.match(session, /useTodayLearningSession\(true, programId, subjectId\)/);
   for (const label of ["خطوتك التالية", "نكمل؟", "ابدأ"]) assert.match(home, new RegExp(label));
   for (const label of ["ابدأ الآن", "أكمل القراءة", "إرسال الإجابة", "التالي", "اكتمل درس اليوم"]) {
     assert.match(session, new RegExp(label));
@@ -60,5 +62,8 @@ test("reader returns to the current session after completing a today step", () =
   assert.match(reader, /fromToday/);
   assert.match(reader, /todaySessionId/);
   assert.match(reader, /updateTodayStep\.mutate/);
-  assert.match(reader, /setLocation\("\/learning\/today"\)/);
+  assert.match(reader, /todayReturnHref/);
+  assert.match(reader, /setLocation\(todayReturnHref\)/);
+  assert.match(reader, /programId/);
+  assert.match(reader, /subjectId/);
 });

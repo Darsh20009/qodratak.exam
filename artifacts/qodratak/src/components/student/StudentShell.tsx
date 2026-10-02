@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useContext, useState } from "react";
 import { Link, useLocation } from "wouter";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import NotificationBell from "@/components/NotificationBell";
@@ -6,10 +6,11 @@ import { useUser } from "@/hooks/use-user";
 import { cn } from "@/lib/utils";
 import { HomeIcon, BookOpenIcon, BrainCircuitIcon, UserIcon, MenuIcon, XIcon, LogOut } from "lucide-react";
 import { BrandMark } from "@/components/BrandMark";
+import { StudentExamChromeContext } from "@/components/student/StudentExamChromeContext";
 
 const NAV_ITEMS = [
   { name: "لوحتي", href: "/", icon: HomeIcon },
-  { name: "التأسيس", href: "/foundation", icon: BookOpenIcon },
+  { name: "رحلتي", href: "/foundation", icon: BookOpenIcon },
   { name: "المحوسب", href: "/computerized", icon: BrainCircuitIcon },
   { name: "حسابي", href: "/account", icon: UserIcon },
 ];
@@ -18,6 +19,7 @@ export function StudentShell({ children }: { children: React.ReactNode }) {
   const [location] = useLocation();
   const { user, logout } = useUser();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const { isActive: isExamLayoutActive } = useContext(StudentExamChromeContext);
 
   const userName = user?.name || user?.username || "طالب";
   const userInitial = userName.charAt(0);
@@ -27,9 +29,9 @@ export function StudentShell({ children }: { children: React.ReactNode }) {
   };
 
   return (
-    <div className="qodratak-app-shell flex min-h-[100dvh] bg-background text-foreground" dir="rtl">
+    <div className={cn("qodratak-app-shell flex min-h-[100dvh] bg-background text-foreground", isExamLayoutActive && "h-[100dvh] max-h-[100dvh] overflow-hidden")} dir="rtl">
       {/* Desktop Sidebar */}
-      <aside className="hidden md:flex w-64 flex-col border-l border-border bg-card">
+      {!isExamLayoutActive && <aside className="hidden md:flex w-64 flex-col border-l border-border bg-card">
         <div className="p-5 border-b border-border">
           <Link href="/" className="flex items-center gap-3 qodratak-focus-ring rounded-lg">
             <BrandMark />
@@ -76,10 +78,10 @@ export function StudentShell({ children }: { children: React.ReactNode }) {
             </div>
           </div>
         </div>
-      </aside>
+      </aside>}
 
       {/* Mobile Top Header */}
-      <div className="md:hidden fixed top-0 left-0 right-0 h-16 bg-card border-b border-border z-40 flex items-center justify-between px-4">
+      {!isExamLayoutActive && <div className="md:hidden fixed top-0 left-0 right-0 h-16 bg-card border-b border-border z-40 flex items-center justify-between px-4">
         <Link href="/" className="flex items-center gap-2">
           <BrandMark imageClassName="h-8 w-8" />
         </Link>
@@ -95,15 +97,20 @@ export function StudentShell({ children }: { children: React.ReactNode }) {
             {userInitial}
           </Link>
         </div>
-      </div>
+      </div>}
 
       {/* Main Content Area */}
-      <main className="flex-1 flex flex-col md:pt-0 pt-16 pb-20 md:pb-0 h-[100dvh] overflow-y-auto bg-[#F7F8FA] dark:bg-background">
+      <main className={cn(
+        "flex-1 flex flex-col bg-[#F7F8FA] dark:bg-background",
+        isExamLayoutActive
+          ? "h-[100dvh] overflow-hidden"
+          : "md:pt-0 pt-16 pb-20 md:pb-0 h-[100dvh] overflow-y-auto"
+      )}>
         {children}
       </main>
 
       {/* Mobile Bottom Navigation */}
-      <div className="md:hidden fixed bottom-0 left-0 right-0 bg-card border-t border-border z-40 px-2 pb-[env(safe-area-inset-bottom)]">
+      {!isExamLayoutActive && <div className="md:hidden fixed bottom-0 left-0 right-0 bg-card border-t border-border z-40 px-2 pb-[env(safe-area-inset-bottom)]">
         <nav className="flex items-center justify-around h-16">
           {NAV_ITEMS.map((item) => {
             const isActive = location === item.href || (item.href !== "/" && location.startsWith(item.href));
@@ -125,7 +132,7 @@ export function StudentShell({ children }: { children: React.ReactNode }) {
             );
           })}
         </nav>
-      </div>
+      </div>}
     </div>
   );
 }

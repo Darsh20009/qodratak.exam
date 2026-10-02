@@ -5,6 +5,7 @@ import AdminWalletsTab from './AdminWalletsTab';
 import AdminSeasonalExamsTab from './AdminSeasonalExamsTab';
 import AdminFoundationManagementTab from './AdminFoundationManagementTab';
 import AdminAccountManagementTab from './AdminAccountManagementTab';
+import AdminGeideaTransactionsTab from './AdminGeideaTransactionsTab';
 import WhatsAppAdminTab from './WhatsAppAdminTab';
 import EmailAdminTab from './EmailAdminTab';
 import AdminOverview from './AdminOverview';
@@ -1369,6 +1370,7 @@ export default function AdminDashboard({ initialTab = 'overview' }: { initialTab
               );})()}
             </div>
           )}
+          {activeTab === 'accounting' && <AdminGeideaTransactionsTab />}
 
           {/* ─── TEST BUILDER TAB ─── */}
           {activeTab === 'test-builder' && (

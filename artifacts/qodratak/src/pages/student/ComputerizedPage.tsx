@@ -8,18 +8,19 @@ import {
   CircleHelp,
   Clock3,
   FileQuestion,
+  FileText,
   Flag,
   Layers3,
   Library,
-  LockKeyhole,
-  PlayCircle,
   Search,
   Sparkles,
   Target,
   Trophy,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
-import { useStudentDashboard } from "@/hooks/use-student";
+import { useFoundationContent, useStudentDashboard, type FoundationContent } from "@/hooks/use-student";
+import { StudentWorkflow } from "@/components/student/StudentWorkflow";
+import { isDirectFoundationVideo, resolveFoundationAssetUrl } from "@/lib/foundationVideoUrl";
 
 type ComputerizedMode = "quantitative" | "verbal" | "mixed" | "search";
 type ComputerizedTrack = "qudrat" | "tahsili";
@@ -180,7 +181,7 @@ const VERBAL_ITEMS: ContentItem[] = [
 function EmptyContentNotice({ label }: { label: string }) {
   return (
     <div className="mt-3 rounded-xl border border-dashed border-[#CBD5E1] bg-white/70 px-3 py-2 text-xs leading-5 text-[#64748B]">
-      ستظهر {label} هنا بعد إضافة الداتا الجديدة ومراجعتها.
+      لا يوجد محتوى منشور لـ{label} حتى الآن.
     </div>
   );
 }
@@ -193,15 +194,13 @@ function SectionItemCard({ item }: { item: ContentItem }) {
         <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#F1F5F9] text-[#0D1B2A]">
           <Icon className="h-5 w-5" />
         </span>
-        {item.tag ? (
-          <span className="rounded-full bg-[#F8FAFC] px-2.5 py-1 text-[10px] font-black text-[#64748B]">{item.tag}</span>
-        ) : (
-          <LockKeyhole className="h-4 w-4 text-[#94A3B8]" aria-label="بانتظار الداتا" />
-        )}
+        <span className="rounded-full bg-[#F8FAFC] px-2.5 py-1 text-[10px] font-black text-[#64748B]">
+          {item.tag || (item.href ? "فتح بنك القسم" : "قيد المراجعة")}
+        </span>
       </div>
       <h3 className="mt-4 text-sm font-black text-[#0D1B2A]">{item.title}</h3>
       <p className="mt-1 text-xs leading-5 text-[#64748B]">{item.description}</p>
-      <EmptyContentNotice label="بنك هذا القسم" />
+      {item.href && <p className="mt-3 text-[11px] font-black text-[#147D68]">افتح بنك الأسئلة للتدريب والاختبار</p>}
     </div>
   );
 
@@ -231,9 +230,118 @@ function ResourceCard({
       </div>
       <h3 className="mt-4 text-base font-black text-[#0D1B2A]">{title}</h3>
       <p className="mt-1 text-xs leading-5 text-[#64748B]">{description}</p>
-      <EmptyContentNotice label={title === "الفيديوهات" ? "الفيديوهات" : "الاختبارات"} />
     </Link>
   );
+}
+
+function TestChoiceCard({
+  title,
+  description,
+  href,
+  icon: Icon,
+}: {
+  title: string;
+  description: string;
+  href: string;
+  icon: LucideIcon;
+}) {
+  return (
+    <Link
+      href={href}
+      className="group flex items-center gap-3 rounded-2xl border border-[#E2E8F0] bg-white p-4 transition hover:-translate-y-0.5 hover:border-[#0D1B2A]/30 hover:shadow-md"
+    >
+      <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#F1F5F9] text-[#0D1B2A]">
+        <Icon className="h-5 w-5" />
+      </span>
+      <span className="min-w-0 flex-1">
+        <span className="block text-sm font-black text-[#0D1B2A]">{title}</span>
+        <span className="mt-1 block text-xs leading-5 text-[#64748B]">{description}</span>
+      </span>
+      <ArrowLeft className="h-4 w-4 shrink-0 text-[#94A3B8] transition-transform group-hover:-translate-x-1" />
+    </Link>
+  );
+}
+
+function BankLessonCard({ lesson, index, subject }: { lesson: FoundationContent; index: number; subject: "quantitative" | "verbal" }) {
+  const directVideo = isDirectFoundationVideo(lesson.videoUrl || "");
+  const lessonHref = `/foundation?program=qudrat&subject=${lesson.subjectId?.split(".").pop() || "quantitative"}&lesson=${encodeURIComponent(lesson._id)}`;
+
+  return (
+    <article className="overflow-hidden rounded-3xl border border-[#DDE6E2] bg-white shadow-sm">
+      <div className="relative aspect-video bg-[#07111f]">
+        {directVideo ? (
+          <video
+            src={resolveFoundationAssetUrl(lesson.videoUrl)}
+            title={lesson.title}
+            className="h-full w-full object-cover"
+            controls
+            playsInline
+            preload="metadata"
+            controlsList="nodownload"
+          />
+        ) : lesson.videoUrl ? (
+          <iframe
+            src={lesson.videoUrl}
+            title={lesson.title}
+            className="h-full w-full"
+            allow="accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture"
+          />
+        ) : (
+          <div className="flex h-full items-center justify-center text-sm font-bold text-slate-300">لا يوجد فيديو لهذا البنك</div>
+        )}
+        <span className="absolute right-3 top-3 rounded-full bg-[#0D1B2A]/85 px-3 py-1 text-[11px] font-black text-white">
+          بنك {index + 1}
+        </span>
+      </div>
+      <div className="space-y-3 p-4">
+        <div>
+           <p className="text-xs font-black text-[#147D68]">فيديوهات تدريب المحوسب · بنك {subject === "quantitative" ? "الكمي" : "اللفظي"}</p>
+          <h4 className="mt-1 text-base font-black text-[#0D1B2A]">{lesson.title}</h4>
+          <p className="mt-1 text-xs leading-5 text-[#64748B]">{lesson.description}</p>
+        </div>
+        <div className="grid gap-2 sm:grid-cols-2">
+          {lesson.attachments?.length ? (
+            lesson.attachments.map((attachment) => (
+              <a
+                key={attachment.id}
+                href={resolveFoundationAssetUrl(attachment.url)}
+                target="_blank"
+                rel="noreferrer"
+                className="inline-flex items-center justify-center gap-2 rounded-xl border border-[#F0C7C7] bg-[#FFF7F7] px-3 py-2 text-xs font-black text-[#A64242] hover:bg-[#FDECEC]"
+              >
+                <FileText className="h-4 w-4" />
+                ملف البنك PDF
+              </a>
+            ))
+          ) : (
+            <span className="inline-flex items-center justify-center rounded-xl border border-dashed border-[#CBD5E1] px-3 py-2 text-xs font-bold text-[#64748B]">
+              لا يوجد ملف لهذا البنك
+            </span>
+          )}
+          {lesson.quiz?.questionIds?.length ? (
+            <Link
+              href={lessonHref}
+              className="inline-flex items-center justify-center gap-2 rounded-xl bg-[#0D1B2A] px-3 py-2 text-xs font-black text-white hover:bg-[#18334D]"
+            >
+              <ListChecksIcon />
+              الاختبار ({lesson.quiz.questionIds.length} سؤال)
+            </Link>
+          ) : (
+            <span className="inline-flex items-center justify-center rounded-xl border border-dashed border-[#CBD5E1] px-3 py-2 text-xs font-bold text-[#64748B]">
+              لا يوجد اختبار مرتبط
+            </span>
+          )}
+        </div>
+        <Link href={lessonHref} className="block text-center text-xs font-black text-[#147D68] hover:underline">
+          فتح البنك في صفحة الدرس والاختبار
+        </Link>
+      </div>
+    </article>
+  );
+}
+
+function ListChecksIcon() {
+  return <CheckCircle2 className="h-4 w-4" />;
 }
 
 function SubjectWorkspace({ mode }: { mode: "quantitative" | "verbal" }) {
@@ -244,6 +352,14 @@ function SubjectWorkspace({ mode }: { mode: "quantitative" | "verbal" }) {
     : "مساحة منظمة لبنوك اللفظي، فيديوهات الشرح، اختبارات الأقسام، والتقفيلات.";
   const items = isQuantitative ? QUANTITATIVE_ITEMS : VERBAL_ITEMS;
   const subject = isQuantitative ? "quantitative" : "verbal";
+  const { data: lessons = [], isLoading: isLessonsLoading } = useFoundationContent(
+    "qudrat",
+    true,
+    `subject.qudrat.${subject}`,
+  );
+  const bankLessons = isQuantitative
+    ? lessons.filter((lesson) => /^بنك الكمي المحوسب \d+$/.test(lesson.title))
+    : lessons;
 
   return (
     <section className="space-y-5" aria-labelledby={`${subject}-workspace-title`}>
@@ -252,11 +368,11 @@ function SubjectWorkspace({ mode }: { mode: "quantitative" | "verbal" }) {
           <div>
             <p className="text-xs font-black text-[#147D68]">المحوسب · {isQuantitative ? "الكمي" : "اللفظي"}</p>
             <h2 id={`${subject}-workspace-title`} className="mt-1 text-2xl font-black text-[#0D1B2A]">{title}</h2>
-            <p className="mt-2 max-w-2xl text-sm leading-6 text-[#64748B]">{description}</p>
+             <p className="mt-2 max-w-2xl text-sm leading-6 text-[#64748B]">{description}</p>
           </div>
           <div className="rounded-xl border border-[#DDE6E2] bg-white px-4 py-3 text-right">
             <p className="text-[11px] font-bold text-[#64748B]">حالة المحتوى</p>
-            <p className="mt-1 text-sm font-black text-[#9A6A1F]">بانتظار الداتا الجديدة</p>
+             <p className="mt-1 text-sm font-black text-[#147D68]">{bankLessons.length ? `${bankLessons.length} بنكًا منشورًا` : "لا توجد بنوك منشورة"}</p>
           </div>
         </div>
       </div>
@@ -267,40 +383,78 @@ function SubjectWorkspace({ mode }: { mode: "quantitative" | "verbal" }) {
             <h3 className="text-lg font-black text-[#0D1B2A]">المصادر الرئيسية</h3>
             <p className="mt-1 text-xs text-[#64748B]">كل مصدر له مكان واضح حتى تتم إضافة المحتوى بدون إعادة بناء الواجهة.</p>
           </div>
-          <span className="hidden rounded-full bg-[#F1F5F9] px-3 py-1 text-[11px] font-black text-[#64748B] sm:inline-flex">٣ مسارات</span>
+           <span className="hidden rounded-full bg-[#F1F5F9] px-3 py-1 text-[11px] font-black text-[#64748B] sm:inline-flex">٤ اختيارات</span>
         </div>
-        <div className="grid gap-3 md:grid-cols-3">
-          <ResourceCard
-            title={`بنك ${isQuantitative ? "الكمي" : "اللفظي"}`}
-            description="أسئلة مصنفة حسب القسم والمستوى والمصدر."
-            icon={Library}
-            href={`/question-bank?category=${subject}`}
-            accent={isQuantitative ? "bg-[#EAF8F3] text-[#147D68]" : "bg-[#EEF4FF] text-[#3B67A5]"}
-          />
-          <ResourceCard
-            title="الفيديوهات"
-            description="شرح قصير لكل مهارة مع اختبار مرتبط بالدرس."
-            icon={PlayCircle}
-            href={`/foundation?program=qudrat&subject=${subject}`}
-            accent="bg-[#FFF7E6] text-[#9A6A1F]"
-          />
-          <ResourceCard
-            title="الاختبارات والتقفيلات"
-            description="اختبار كل قسم ثم تقفيلة شاملة عند اكتمال المحتوى."
-            icon={Flag}
-            href={isQuantitative ? "/quantitative-tests" : "/verbal-tests"}
-            accent="bg-[#F7EEFB] text-[#7A4B91]"
-          />
+        <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
+           <ResourceCard
+             title={`بنك أسئلة ${isQuantitative ? "الكمي" : "اللفظي"}`}
+             description="أسئلة مرتبة حسب القسم والمستوى والمصدر."
+             icon={Library}
+             href="/question-bank"
+             accent={isQuantitative ? "bg-[#EAF8F3] text-[#147D68]" : "bg-[#EEF4FF] text-[#3B67A5]"}
+           />
+           <TestChoiceCard
+             title={`اختبارات ${isQuantitative ? "الكمي" : "اللفظي"}`}
+             description="اختبارات الأقسام والتدريب المحوسب."
+             icon={Flag}
+             href={isQuantitative ? "/quantitative-tests" : "/verbal-tests"}
+           />
+           <TestChoiceCard
+             title="اختبار مخصص"
+             description={`اختر عدد أسئلة ${isQuantitative ? "الكمي" : "اللفظي"} بنفسك.`}
+             icon={Target}
+             href="/custom-exam"
+           />
+           <TestChoiceCard
+             title={isQuantitative ? "اختبار كمي شامل · ٥٥ سؤالًا" : "اختبار لفظي شامل · ٦٥ سؤالًا"}
+             description="اختبار كامل داخل إطار الاختبار الأساسي."
+             icon={Trophy}
+             href={isQuantitative ? "/qiyas?examId=3" : "/qiyas?examId=2"}
+           />
         </div>
       </div>
+
+       <section className="rounded-3xl border border-[#DDE6E2] bg-[#F8FBFA] p-5 md:p-6" aria-labelledby={`${subject}-banks-title`}>
+         <div className="flex flex-wrap items-end justify-between gap-3">
+           <div>
+             <p className="text-xs font-black text-[#147D68]">المحتوى المرتبط</p>
+             <h3 id={`${subject}-banks-title`} className="mt-1 text-xl font-black text-[#0D1B2A]">
+               {isQuantitative ? "بنوك الكمي" : "بنوك اللفظي"}
+             </h3>
+                <p className="mt-1 text-sm leading-6 text-[#64748B]">
+               {isQuantitative
+                  ? "هذه فيديوهات تدريب المحوسب، وليست دروس التأسيس. شاهد الفيديو ثم افتح ملف البنك واختباره من نفس البطاقة."
+                  : "فيديوهات اللفظي المحوسب منفصلة في هذه المرحلة عن فيديوهات التأسيس، ولكل بنك ملف واختبار مرتبطان به."}
+             </p>
+           </div>
+           <span className="rounded-full bg-white px-3 py-1 text-xs font-black text-[#147D68]">
+              {isLessonsLoading ? "جاري التحميل" : `${bankLessons.length} بنك`}
+           </span>
+         </div>
+          {bankLessons.length ? (
+           <div className="mt-5 grid gap-4 lg:grid-cols-2">
+              {bankLessons.map((lesson, index) => <BankLessonCard key={lesson._id} lesson={lesson} index={index} subject={subject} />)}
+           </div>
+         ) : !isLessonsLoading ? (
+           <EmptyContentNotice label={`بنوك ${isQuantitative ? "الكمي" : "اللفظي"}`} />
+         ) : null}
+       </section>
 
       <div>
         <div className="mb-3">
           <h3 className="text-lg font-black text-[#0D1B2A]">أقسام {isQuantitative ? "الكمي" : "اللفظي"}</h3>
-          <p className="mt-1 text-xs text-[#64748B]">ستظهر البنوك والفيديوهات والاختبارات الخاصة بكل قسم في هذه البطاقات.</p>
+          <p className="mt-1 text-xs text-[#64748B]">اختر القسم للوصول إلى بنك أسئلته واختباره، ثم استخدم الاختبار الشامل عند الانتهاء.</p>
         </div>
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-          {items.map((item) => <SectionItemCard key={item.title} item={item} />)}
+          {items.map((item) => (
+            <SectionItemCard
+              key={item.title}
+              item={{
+                ...item,
+                href: item.href || `/question-bank?category=${subject}&subcategory=${encodeURIComponent(item.title)}`,
+              }}
+            />
+          ))}
         </div>
       </div>
     </section>
@@ -323,7 +477,11 @@ function MixedWorkspace() {
           <ArrowLeft className="h-4 w-4" />
         </Link>
       </div>
-      <EmptyContentNotice label="الاختبارات المختلطة" />
+      <div className="mt-5 grid gap-3 md:grid-cols-3">
+        <TestChoiceCard title="اختبار مختلط شامل" description="اختبار قدرات يجمع الكمي واللفظي." href="/qiyas?examId=1" icon={Layers3} />
+        <TestChoiceCard title="اختبار محاكاة كامل" description="تجربة اختبار داخل إطار الاختبار الأساسي." href="/qiyas?examId=5" icon={Trophy} />
+        <TestChoiceCard title="اختبار مختلط مخصص" description="حدد توزيع وعدد الأسئلة بنفسك." href="/custom-exam" icon={Target} />
+      </div>
     </section>
   );
 }
@@ -462,6 +620,14 @@ export default function ComputerizedPage({
             </div>
           </div>
         </header>
+
+        <StudentWorkflow
+          currentStage="skills"
+          level={dashboard?.recommendedPlan.level || "foundation"}
+          progress={activeTrack === "tahsili" ? dashboard?.progress.tahsili.percentage || 0 : dashboard?.progress.qudrat.percentage || 0}
+          focusLabel={dashboard?.recommendedPlan.focusSubject === "verbal" ? "اللفظي" : dashboard?.recommendedPlan.focusSubject === "quantitative" ? "الكمي" : undefined}
+          nextAction={{ label: "افتح مهمة التدريب", href: "/computerized" }}
+        />
 
         <section aria-labelledby="computerized-track-title">
           <div className="mb-3">

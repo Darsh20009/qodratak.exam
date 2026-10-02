@@ -120,6 +120,7 @@ export class DailyLearningSessionError extends Error {
     public readonly code:
       | 'INVALID_STUDENT'
       | 'INVALID_PROGRAM'
+      | 'INVALID_SUBJECT'
       | 'INVALID_SESSION'
       | 'INVALID_STEP'
       | 'SESSION_NOT_ACTIVE'
@@ -211,12 +212,17 @@ function dayKey(now: Date): string {
   return `${values.year}-${values.month}-${values.day}`;
 }
 
-function dailyKeyFor(day: string, programId: string): string {
-  return `today:${day}:${programId}`;
+function dailyKeyFor(day: string, programId: string, subjectId?: string): string {
+  return `today:${day}:${programId}:${subjectId || ''}`;
 }
 
 function normalizedProgram(value: string | undefined): string | undefined {
   return value ? normalizeDiagnosticProgram(value) : undefined;
+}
+
+function normalizedSubject(value: string | undefined): string | undefined {
+  const subject = value?.trim();
+  return subject && subject.startsWith('subject.') ? subject : undefined;
 }
 
 function scopeReference(
@@ -411,9 +417,15 @@ function planFromSession(session: any): LearningSessionPlan | null {
   };
 }
 
-async function foundationContent(programId: string) {
+async function foundationContent(recommendation: LearningRecommendation) {
+  const { programId, subjectId, taxonomyNodeId } = recommendation;
   const program = programId.replace(/^program\./, '') as 'qudrat' | 'tahsili';
-  return FoundationContent.findOne({ program, published: true })
+  return FoundationContent.findOne({
+    program,
+    published: true,
+    ...(subjectId ? { subjectId } : {}),
+    ...(taxonomyNodeId ? { taxonomyNodeId } : {}),
+  })
     .sort({ order: 1 })
     .select('_id title')
     .lean();
@@ -428,19 +440,29 @@ async function recentSessionCount(studentId: string, programId: string): Promise
   });
 }
 
-async function currentSession(studentId: string, day: string, programId?: string) {
+export function sessionScopeQuery(
+  studentId: string,
+  day: string,
+  programId?: string,
+  subjectId?: string,
+): Record<string, unknown> {
   const query: Record<string, unknown> = {
     studentId,
     dailyKey: { $regex: `^today:${day}:` },
   };
   if (programId) query.programId = programId;
-  return LearningSession.findOne(query).sort({ updatedAt: -1 }).lean();
+  if (subjectId) query.subjectId = subjectId;
+  return query;
 }
 
-async function activeSession(studentId: string, day: string) {
+async function currentSession(studentId: string, day: string, programId?: string, subjectId?: string) {
+  return LearningSession.findOne(sessionScopeQuery(studentId, day, programId, subjectId))
+    .sort({ updatedAt: -1 }).lean();
+}
+
+async function activeSession(studentId: string, day: string, programId?: string, subjectId?: string) {
   return LearningSession.findOne({
-    studentId,
-    dailyKey: { $regex: `^today:${day}:` },
+    ...sessionScopeQuery(studentId, day, programId, subjectId),
     status: 'active',
     sessionState: { $in: ['IN_PROGRESS', 'PAUSED'] },
   }).sort({ updatedAt: -1 });
@@ -454,7 +476,7 @@ async function buildPlanForStudent(
 ) {
   if (!recommendation) return null;
   const content = recommendation.recommendationType === 'LEARN' || recommendation.recommendationType === 'REVIEW'
-    ? await foundationContent(recommendation.programId)
+    ? await foundationContent(recommendation)
     : undefined;
   const count = await recentSessionCount(studentId, recommendation.programId);
   return buildLearningSessionPlan(studentId, recommendation, {
@@ -469,6 +491,7 @@ async function buildPlanForStudent(
 export async function getTodayLearningSession(
   studentId: string,
   requestedProgramId?: string,
+  requestedSubjectId?: string,
 ): Promise<TodayLearningSessionView> {
   if (!String(studentId || '').trim()) {
     throw new DailyLearningSessionError('studentId غير صالح', 'INVALID_STUDENT');
@@ -477,10 +500,14 @@ export async function getTodayLearningSession(
   if (requestedProgramId && !programId) {
     throw new DailyLearningSessionError('البرنامج غير صالح', 'INVALID_PROGRAM');
   }
+  const subjectId = normalizedSubject(requestedSubjectId);
+  if (requestedSubjectId && !subjectId) {
+    throw new DailyLearningSessionError('المادة غير صالحة', 'INVALID_SUBJECT');
+  }
   const now = new Date();
   const daily = dayKey(now);
-  const active = await activeSession(studentId, daily);
-  const existing = active || await currentSession(studentId, daily, programId);
+  const active = await activeSession(studentId, daily, programId, subjectId);
+  const existing = active || await currentSession(studentId, daily, programId, subjectId);
   if (existing) {
     return {
       sessionId: String(existing._id),
@@ -490,14 +517,17 @@ export async function getTodayLearningSession(
     };
   }
   const [adaptiveDecision, recommendationResult] = await Promise.all([
-    getAdaptiveLearningDecision(studentId, { programId }),
+    getAdaptiveLearningDecision(studentId, { programId, subjectId }),
     getStudentRecommendations(studentId, programId),
   ]);
   const requestedType = adaptiveDecision.nextAction.recommendationType;
+  const scopedRecommendations = subjectId
+    ? recommendationResult.recommendations.filter((item) => item.subjectId === subjectId)
+    : recommendationResult.recommendations;
   const recommendation = requestedType
-    ? recommendationResult.recommendations.find((item) => item.recommendationType === requestedType) ||
-      recommendationResult.recommendations[0]
-    : recommendationResult.recommendations[0];
+    ? scopedRecommendations.find((item) => item.recommendationType === requestedType) ||
+      (subjectId ? undefined : scopedRecommendations[0])
+    : scopedRecommendations[0];
   return {
     plan: await buildPlanForStudent(studentId, recommendation, now, daily),
     started: false,
@@ -508,8 +538,9 @@ export async function getTodayLearningSession(
 export async function startTodayLearningSession(
   studentId: string,
   requestedProgramId?: string,
+  requestedSubjectId?: string,
 ): Promise<TodayLearningSessionView> {
-  const initial = await getTodayLearningSession(studentId, requestedProgramId);
+  const initial = await getTodayLearningSession(studentId, requestedProgramId, requestedSubjectId);
   if (initial.started && initial.sessionId) {
     const session = await LearningSession.findOne({ _id: initial.sessionId, studentId });
     if (session && session.status === 'active' && session.sessionState === 'PAUSED') {
@@ -528,7 +559,7 @@ export async function startTodayLearningSession(
   if (!plan || plan.planStatus !== 'READY') return initial;
   const now = new Date();
   const daily = dayKey(now);
-  const existingActive = await activeSession(studentId, daily);
+  const existingActive = await activeSession(studentId, daily, plan.programId, plan.subjectId);
   if (existingActive) {
     return {
       sessionId: String(existingActive._id),
@@ -537,7 +568,7 @@ export async function startTodayLearningSession(
       duplicate: true,
     };
   }
-  const dailyKey = dailyKeyFor(daily, plan.programId);
+  const dailyKey = dailyKeyFor(daily, plan.programId, plan.subjectId);
   const stepProgress = plan.steps.map((step) => ({
     stepId: step.stepId,
     status: step.status,

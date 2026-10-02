@@ -47,6 +47,10 @@ interface Question {
   difficulty?: string;
   imageUrl?: string;
   imageUrls?: string[];
+  source?: {
+    type?: string;
+    section?: string;
+  };
 }
 
 interface TestAnswer {
@@ -983,6 +987,10 @@ export default function QuestionBankTestRunner() {
       questionText={currentQuestion.text}
       questionImageUrl={currentQuestion.imageUrl}
       questionImageUrls={currentQuestion.imageUrls}
+      hideQuestionTextWhenImageBacked={
+        currentQuestion.source?.type === "quantitative-computer-bank" ||
+        currentQuestion.source?.section === "بنك الكمي المحوسب"
+      }
       options={currentQuestion.options}
       selectedAnswer={selectedAnswers[currentQuestionIndex] ?? null}
       onSelectAnswer={selectAnswer}

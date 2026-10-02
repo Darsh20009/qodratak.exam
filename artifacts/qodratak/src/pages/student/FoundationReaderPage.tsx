@@ -28,7 +28,9 @@ import {
 } from "lucide-react";
 import {
   useFoundationPractice,
+  useFoundationContent,
   useLearningContent,
+  useLearningContentProgressSummary,
   useLearningContentProgress,
   useUpdateLearningContentProgress,
   useCompleteLearningContent,
@@ -50,6 +52,7 @@ import {
 } from "@/components/student/FoundationAnnotationSurface";
 import { getCurrentTextSelection } from "@/lib/foundationAnnotations";
 import { getVideoEmbedUrl } from "@/lib/video";
+import { isDirectFoundationVideo, resolveFoundationAssetUrl, resolveFoundationVideoUrl } from "@/lib/foundationVideoUrl";
 
 type ContentStatus = "draft" | "published" | "archived" | string;
 type ProgressState = "NOT_STARTED" | "READING" | "COMPLETED" | "PRACTICE_COMPLETED";
@@ -218,6 +221,7 @@ function ReaderUnavailable({ message, onRetry }: { message: string; onRetry?: ()
 function VideoPanel({ content }: { content: LearningContent }) {
   if (!content.videoUrl) return null;
   const embedUrl = getVideoEmbedUrl(content.videoUrl);
+  const isDirectVideo = isDirectFoundationVideo(content.videoUrl);
 
   return (
     <section aria-labelledby="video-heading" className="overflow-hidden rounded-[1.5rem] border border-[hsl(var(--reader-line))] bg-[hsl(var(--reader-ink))]">
@@ -229,7 +233,18 @@ function VideoPanel({ content }: { content: LearningContent }) {
         <span className="text-xs font-bold text-white/60">مشاهدة داخل المنصة</span>
       </div>
       <div className="aspect-video bg-[#13252a]">
-        {embedUrl ? (
+        {isDirectVideo ? (
+          <video
+            src={resolveFoundationVideoUrl(content.videoUrl)}
+            title={`فيديو درس ${content.title}`}
+            className="h-full w-full object-contain"
+            controls
+            playsInline
+            preload="metadata"
+            controlsList="nodownload"
+            onContextMenu={(event) => event.preventDefault()}
+          />
+        ) : embedUrl ? (
           <iframe
             title={`فيديو درس ${content.title}`}
             src={embedUrl}
@@ -592,6 +607,17 @@ export default function FoundationReaderPage() {
   const todayStepId = searchParams.get("stepId") || "";
   const contentQuery = useLearningContent(contentId);
   const progressQuery = useLearningContentProgress(contentId);
+  const content = contentQuery.data as unknown as LearningContent | undefined;
+  const readerProgram =
+    content?.programId === "tahsili" ||
+    content?.programId === "program.tahsili" ||
+    searchParams.get("program") === "tahsili"
+      ? "tahsili"
+      : "qudrat";
+  const subjectKey = searchParams.get("subject") || content?.subjectId?.split(".").at(-1) || "";
+  const courseSubjectId = content?.subjectId || (subjectKey ? `subject.${readerProgram}.${subjectKey}` : undefined);
+  const foundationLessonsQuery = useFoundationContent(readerProgram, Boolean(content), courseSubjectId);
+  const courseProgressQuery = useLearningContentProgressSummary(readerProgram, courseSubjectId, Boolean(content));
   const updateProgress = useUpdateLearningContentProgress(contentId);
   const completeContent = useCompleteLearningContent(contentId);
   const annotationQuery = useLearningContentAnnotations(contentId);
@@ -612,14 +638,13 @@ export default function FoundationReaderPage() {
   const annotationSectionRefs = useRef<Record<string, HTMLDivElement | null>>({});
   const cancelledPendingIds = useRef(new Set<string>());
 
-  const content = contentQuery.data as unknown as LearningContent | undefined;
   const savedProgress = progressQuery.data as unknown as LearningProgress | undefined;
   const sections = useMemo(() => content?.sections || [], [content?.sections]);
   const currentId = currentSectionId || savedProgress?.currentSectionId || sections[0]?.id;
   const currentIndex = Math.max(0, sections.findIndex((section) => section.id === currentId));
   const savedPercent = normalizeProgress(savedProgress?.progress);
   const progressPercent = localProgress ?? savedPercent;
-  const isContentCompleted = completeContent.isSuccess || savedProgress?.state === "COMPLETED" || savedProgress?.state === "PRACTICE_COMPLETED";
+  const isContentCompleted = savedProgress?.state === "COMPLETED" || savedProgress?.state === "PRACTICE_COMPLETED";
   const isPracticeCompleted = savedProgress?.state === "PRACTICE_COMPLETED" || Boolean(savedProgress?.practiceCompletedAt);
   const serverAnnotations = annotationQuery.data?.annotations || [];
   const annotations = useMemo(
@@ -631,6 +656,43 @@ export default function FoundationReaderPage() {
     variables?: undefined,
     options?: MutationOptions<unknown>,
   ) => void;
+  const approvedCourseIds = useMemo(
+    () => new Set(courseProgressQuery.data?.items.map((item) => item.contentId) || []),
+    [courseProgressQuery.data?.items],
+  );
+  const courseLessons = useMemo(
+    () => (foundationLessonsQuery.data || []).filter((lesson) => approvedCourseIds.has(lesson._id)),
+    [approvedCourseIds, foundationLessonsQuery.data],
+  );
+  const courseLessonIndex = courseLessons.findIndex((lesson) => lesson._id === contentId);
+  const previousLesson = courseLessonIndex > 0 ? courseLessons[courseLessonIndex - 1] : undefined;
+  const nextLesson = courseLessonIndex >= 0 ? courseLessons[courseLessonIndex + 1] : undefined;
+  const courseHref = `/foundation?program=${readerProgram}${subjectKey ? `&subject=${encodeURIComponent(subjectKey)}` : ""}`;
+  const todayReturnHref = (() => {
+    const params = new URLSearchParams();
+    const scopedProgram = searchParams.get("programId") || searchParams.get("program")
+      || (readerProgram === "tahsili" ? "tahsili" : "qudrat");
+    const scopedSubjectId = searchParams.get("subjectId") || content?.subjectId;
+    params.set("programId", scopedProgram);
+    if (scopedSubjectId) params.set("subjectId", scopedSubjectId);
+    return `/learning/today?${params.toString()}`;
+  })();
+  const nextLessonHref = (nextId: string) => {
+    const params = new URLSearchParams();
+    params.set("program", readerProgram);
+    if (subjectKey) params.set("subject", subjectKey);
+    if (fromToday) {
+      params.set("from", "today");
+      if (todaySessionId) params.set("sessionId", todaySessionId);
+      if (todayStepId) params.set("stepId", todayStepId);
+      params.set("programId", searchParams.get("programId") || readerProgram);
+      if (searchParams.get("subjectId") || content?.subjectId) {
+        params.set("subjectId", searchParams.get("subjectId") || content?.subjectId || "");
+      }
+    }
+    return `/foundation/content/${encodeURIComponent(nextId)}?${params.toString()}`;
+  };
+  const currentFoundationLesson = (foundationLessonsQuery.data || []).find((lesson) => lesson._id === contentId);
 
   useEffect(() => {
     if (savedProgress?.currentSectionId && !currentSectionId) setCurrentSectionId(savedProgress.currentSectionId);
@@ -840,7 +902,7 @@ export default function FoundationReaderPage() {
               stepId: todayStepId,
               action: "complete",
             }, {
-              onSuccess: () => setLocation("/learning/today"),
+              onSuccess: () => setLocation(todayReturnHref),
             });
           }
       },
@@ -854,9 +916,9 @@ export default function FoundationReaderPage() {
     >
       <div className="sticky top-0 z-20 border-b border-[hsl(var(--reader-line)/0.9)] bg-[hsl(var(--reader-paper)/0.94)] backdrop-blur-md">
         <div className="mx-auto flex min-h-16 max-w-6xl items-center justify-between gap-4 px-4 sm:px-8 lg:px-12">
-          <Link href={fromToday ? "/learning/today" : "/foundation"} className="inline-flex min-h-11 items-center gap-2 rounded-xl px-2 text-sm font-bold text-[hsl(var(--reader-muted))] transition-colors hover:bg-[hsl(var(--reader-surface))] hover:text-[hsl(var(--reader-ink))] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[hsl(var(--reader-accent))]">
+          <Link href={fromToday ? todayReturnHref : courseHref} className="inline-flex min-h-11 items-center gap-2 rounded-xl px-2 text-sm font-bold text-[hsl(var(--reader-muted))] transition-colors hover:bg-[hsl(var(--reader-surface))] hover:text-[hsl(var(--reader-ink))] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[hsl(var(--reader-accent))]">
             <ArrowRight className="h-4 w-4" aria-hidden="true" />
-            <span className="hidden sm:inline">{fromToday ? "مهمة اليوم" : "التأسيس"}</span>
+            <span className="hidden sm:inline">{fromToday ? "مهمة اليوم" : "كل الدروس"}</span>
           </Link>
           <div className="flex min-w-0 items-center gap-3">
             <span className="hidden h-8 w-8 items-center justify-center rounded-lg bg-[hsl(var(--reader-accent))] text-[hsl(var(--reader-ink))] sm:flex">
@@ -868,6 +930,72 @@ export default function FoundationReaderPage() {
         </div>
         <Progress value={progressPercent} className="h-1 rounded-none bg-[hsl(var(--reader-line))] [&>div]:bg-[hsl(var(--reader-accent-dark))]" aria-label="نسبة قراءة المحتوى" />
       </div>
+      <section className="mx-auto mt-5 max-w-6xl rounded-2xl border border-[hsl(var(--reader-line))] bg-[hsl(var(--reader-surface))] p-4 sm:px-6" dir="rtl" aria-label="التنقل بين الدروس">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <p className="text-sm font-black text-[hsl(var(--reader-ink))]">
+              {courseProgressQuery.data && courseLessonIndex >= 0
+                ? `الدرس ${courseLessonIndex + 1} من ${courseProgressQuery.data.total}`
+                : "مسار الدروس"}
+            </p>
+            {courseProgressQuery.data ? (
+              <p className="mt-1 text-xs font-bold text-[hsl(var(--reader-muted))]">
+                أتممت {courseProgressQuery.data.completed} من {courseProgressQuery.data.total} درسًا
+              </p>
+            ) : courseProgressQuery.isError ? (
+              <p className="mt-1 text-xs font-bold text-destructive">تعذر تحميل تقدم الدروس؛ يمكنك متابعة الدرس الحالي.</p>
+            ) : (
+              <p className="mt-1 text-xs font-bold text-[hsl(var(--reader-muted))]">جارٍ تحميل تقدم الدروس…</p>
+            )}
+          </div>
+          <Link href={courseHref} className="inline-flex min-h-10 items-center rounded-xl border border-[hsl(var(--reader-line))] px-3 text-xs font-black text-[hsl(var(--reader-ink))] hover:bg-[hsl(var(--reader-paper))]">
+            كل دروس القسم
+          </Link>
+        </div>
+        {foundationLessonsQuery.isError || courseProgressQuery.isError ? (
+          <div className="mt-3 flex flex-wrap items-center justify-between gap-2 rounded-xl bg-amber-50 px-3 py-2 text-xs text-amber-900" role="status">
+            <span>تعذر تحميل قائمة الدروس أو تقدمها؛ الدرس الحالي ما زال متاحًا.</span>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => {
+                void foundationLessonsQuery.refetch();
+                void courseProgressQuery.refetch();
+              }}
+              className="min-h-9 rounded-lg border-amber-300 bg-white px-3 text-xs"
+            >
+              إعادة المحاولة
+            </Button>
+          </div>
+        ) : null}
+        {courseProgressQuery.data && courseProgressQuery.data.total > 0 ? (
+          <div className="mt-3">
+            <Progress value={courseProgressQuery.data.completionPercent} className="h-2 bg-[hsl(var(--reader-line))] [&>div]:bg-[hsl(var(--reader-accent-dark))]" aria-label="إنجاز دروس القسم" />
+            {courseProgressQuery.data.completed === courseProgressQuery.data.total ? (
+              <p className="mt-2 text-xs font-black text-emerald-700">أكملت جميع دروس هذا القسم.</p>
+            ) : null}
+          </div>
+        ) : null}
+        <div className="mt-4 grid grid-cols-2 gap-2">
+          <Button
+            type="button"
+            variant="outline"
+            disabled={!previousLesson}
+            onClick={() => previousLesson && setLocation(nextLessonHref(previousLesson._id))}
+            className="min-h-11 rounded-xl border-[hsl(var(--reader-line))] bg-background text-xs font-black"
+          >
+            الدرس السابق
+          </Button>
+          <Button
+            type="button"
+            disabled={!nextLesson}
+            onClick={() => nextLesson && setLocation(nextLessonHref(nextLesson._id))}
+            className="min-h-11 rounded-xl bg-[hsl(var(--reader-ink))] text-xs font-black"
+          >
+            الدرس التالي
+          </Button>
+        </div>
+      </section>
       <AnnotationToolbar
         activeTool={activeTool}
         onToolChange={setActiveTool}
@@ -941,7 +1069,37 @@ export default function FoundationReaderPage() {
                 {isPracticeCompleted ? "التدريب مكتمل" : "انتقل إلى التدريب"}
               </Button>
             ) : null}
+            {currentFoundationLesson?.quiz ? (
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setLocation(`/foundation/computer-bank-test/${encodeURIComponent(contentId)}`)}
+                className="min-h-11 rounded-xl border-[hsl(var(--reader-line))] bg-[hsl(var(--reader-surface))]"
+              >
+                <Target className="h-4 w-4" aria-hidden="true" />
+                اختبار الدرس
+              </Button>
+            ) : null}
           </div>
+          {currentFoundationLesson?.attachments?.length ? (
+            <section className="mt-5 rounded-2xl border border-[hsl(var(--reader-line))] bg-[hsl(var(--reader-surface))] p-4" aria-label="ملفات الدرس">
+              <h2 className="text-sm font-black text-[hsl(var(--reader-ink))]">ملزمة وملفات الدرس</h2>
+              <div className="mt-3 flex flex-wrap gap-2">
+                {currentFoundationLesson.attachments.map((attachment) => (
+                  <a
+                    key={attachment.id}
+                    href={resolveFoundationAssetUrl(attachment.url)}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="inline-flex min-h-10 items-center gap-2 rounded-xl border border-[hsl(var(--reader-line))] bg-background px-3 text-xs font-black text-[hsl(var(--reader-ink))] hover:border-[hsl(var(--reader-accent-dark))]"
+                  >
+                    <FileText className="h-4 w-4 text-red-600" aria-hidden="true" />
+                    {attachment.title || "فتح ملف PDF"}
+                  </a>
+                ))}
+              </div>
+            </section>
+          ) : null}
         </header>
 
         <div className="mt-10 grid gap-8 lg:grid-cols-[minmax(0,1fr)_18rem] lg:items-start">

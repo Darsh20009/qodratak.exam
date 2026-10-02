@@ -1,0 +1,16 @@
+uploads = []
+generated = []
+
+[[outputs]]
+id = "rv8qflvD0USlndpto04Lc"
+uri = "file://attached_assets/question-46-001-bg-removal-preview.png"
+type = "image"
+title = "تجربة إزالة خلفية سؤال كمي"
+description = "نسخة PNG شفافة تجريبية للسؤال 1 من بنك 46؛ الأصل لم يتغير، وهذه النسخة لم تُطبّق على قاعدة البيانات."
+logical_id = "73d1dd11-1585-491b-b472-188556a0df49"
+content_hash = "sha256:4d1aee9c63c4da624350311bc9667418295afbf71e9a25db7c98c90961accaab"
+size = 949065
+mtime_ms = 1790771881422
+storage_uri = "gcs://replit-rams-assets-pike/rams/assets/repl:79f460e2-89e6-494d-9d5c-e2f64f1b6716/73d1dd11-1585-491b-b472-188556a0df49/fbdd013b-c8ac-4ce1-8931-e0937e0a9e91"
+storage_version_token = "1790771897745370"
+content_type = "image/png"
