@@ -21,6 +21,7 @@ import {
   notifyAdminNewStudent,
   notifyAdminSubscription,
 } from '../services/adminWhatsAppNotifications';
+import { createGeideaPaymentRouter } from '../routes/geideaPaymentRoutes';
 import {
   consumePhoneOtp,
   normalizeSaudiPhone,
@@ -103,11 +104,18 @@ import {
   completeLearningContent,
   getFoundationPractice,
   getLearningContent,
+  getLearningContentProgressSummary,
   getLearningContentProgress,
   publicLearningContentProgress,
   submitFoundationPractice,
   updateLearningContentProgress,
 } from '../services/learningContentService';
+import {
+  getFoundationLearningPath,
+  isFoundationQuestionDifficulty,
+  selectFoundationCoverageQuestions,
+  type FoundationQuestionDifficulty,
+} from '../services/foundationPersonalizationService';
 import {
   LearningContentAnnotationError,
   createLearningContentAnnotation,
@@ -123,6 +131,86 @@ function getQuestionImageUrls(question: { imageUrl?: unknown; imageUrls?: unknow
   ].filter((url): url is string => typeof url === 'string' && url.trim().length > 0);
 
   return Array.from(new Set(urls));
+}
+
+async function createQuestionBankCoverageTest(
+  req: Request,
+  res: Response,
+  userId: string,
+  category: 'verbal' | 'quantitative',
+  count: number,
+  difficulty: FoundationQuestionDifficulty,
+): Promise<void> {
+  const { questions: selectedQuestions, coverage } = await selectFoundationCoverageQuestions(
+    userId,
+    category,
+    count,
+    difficulty,
+  );
+  if (selectedQuestions.length === 0) {
+    res.status(404).json({ message: 'لا توجد أسئلة متاحة بهذا المستوى حالياً' });
+    return;
+  }
+
+  const attemptId = crypto.randomUUID();
+  const session = req.session as any;
+  const attempts = session.mobileExamAttempts || {};
+  const now = Date.now();
+  for (const [id, attempt] of Object.entries(attempts) as [string, any][]) {
+    if (!attempt?.createdAt || now - Number(attempt.createdAt) > 2 * 60 * 60 * 1000) {
+      delete attempts[id];
+    }
+  }
+
+  let learningSessionId: string | undefined;
+  if (mongoose.connection.readyState === 1 && mongoose.Types.ObjectId.isValid(userId)) {
+    try {
+      const learningSession = await createLearningSession(userId, {
+        programId: 'program.qudrat',
+        subjectId: category === 'verbal'
+          ? 'subject.qudrat.verbal'
+          : 'subject.qudrat.quantitative',
+        idempotencyKey: `question-bank-coverage:${attemptId}`,
+      });
+      learningSessionId = String(learningSession.session._id);
+    } catch (error) {
+      console.error('[LearningAttempt] question-bank test session creation failed', error);
+    }
+  }
+
+  const questions = selectedQuestions.map((question: any) => {
+    const id = String(question._id);
+    attempts[attemptId] ??= {
+      userId,
+      category,
+      difficulty,
+      createdAt: now,
+      learningSessionId,
+      coverage,
+      status: 'in_progress',
+      questions: [],
+    };
+    attempts[attemptId].questions.push({
+      id,
+      correctOptionIndex: Number(question.correctOptionIndex),
+      optionsCount: Array.isArray(question.options) ? question.options.length : 0,
+    });
+    return {
+      id,
+      text: question.text,
+      options: question.options,
+      category,
+      difficulty: question.difficulty || difficulty,
+      imageUrl: getQuestionImageUrls(question)[0] || null,
+      imageUrls: getQuestionImageUrls(question),
+    };
+  });
+
+  session.mobileExamAttempts = attempts;
+  await new Promise<void>((resolve, reject) =>
+    req.session.save((error) => error ? reject(error) : resolve())
+  );
+  res.json({ attemptId, questions, total: questions.length, coverage });
 }
 
 async function saveLoginSession(req: Request, context: string) {
@@ -682,6 +770,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Initialize passport
   app.use(passport.initialize());
   app.use(passport.session());
+  app.use("/api", createGeideaPaymentRouter({
+    requireAuth,
+    getPlanByKey: getSubscriptionPlanByKey,
+  }));
 
   passport.serializeUser((user: any, done) => {
     done(null, user);
@@ -1231,6 +1323,30 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.post('/api/learning/foundation-test', requireAuth, async (req: Request, res: Response): Promise<void> => {
+    const userId = studentOnly(req, res);
+    if (!userId) return;
+    const category = String(req.body?.category || '');
+    const count = Number(req.body?.count);
+    const difficulty = String(req.body?.difficulty || '');
+    if (
+      (category !== 'verbal' && category !== 'quantitative') ||
+      !Number.isInteger(count) ||
+      count < 5 ||
+      count > 60 ||
+      !isFoundationQuestionDifficulty(difficulty)
+    ) {
+      res.status(400).json({ message: 'بيانات الاختبار غير صالحة' });
+      return;
+    }
+    try {
+      await createQuestionBankCoverageTest(req, res, userId, category, count, difficulty);
+    } catch (error) {
+      console.error('Foundation coverage test creation failed:', error);
+      res.status(500).json({ message: 'تعذر إنشاء الاختبار حالياً' });
+    }
+  });
+
   // Get random questions for multiplayer / custom use
   app.get("/api/questions/random", async (req: Request, res: Response) => {
     try {
@@ -1278,68 +1394,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (category !== 'verbal' && category !== 'quantitative') {
         return res.status(400).json({ message: "Category must be 'verbal' or 'quantitative'" });
       }
-
-      let selectedQuestions: any[] = [];
-      try {
-        selectedQuestions = await mongoStorage.getUnseenQuestions(sessionUserId, 20, { category });
-      } catch {}
-      if (selectedQuestions.length === 0) {
-        const allQuestions = await storage.getQuestionsByCategory(category);
-        selectedQuestions = [...allQuestions].sort(() => Math.random() - 0.5).slice(0, 20);
-      }
-      if (selectedQuestions.length === 0) {
-        return res.status(404).json({ message: 'لا توجد أسئلة متاحة حالياً' });
-      }
-
-      const attemptId = crypto.randomUUID();
-      const attempts = (req.session as any).mobileExamAttempts || {};
-      const now = Date.now();
-      for (const [id, attempt] of Object.entries(attempts) as [string, any][]) {
-        if (!attempt?.createdAt || now - Number(attempt.createdAt) > 2 * 60 * 60 * 1000) delete attempts[id];
-      }
-      let learningSessionId: string | undefined;
-      if (mongoose.connection.readyState === 1 && mongoose.Types.ObjectId.isValid(sessionUserId)) {
-        try {
-          const learningSession = await createLearningSession(sessionUserId, {
-            programId: 'program.qudrat',
-            subjectId: category === 'verbal'
-              ? 'subject.qudrat.verbal'
-              : 'subject.qudrat.quantitative',
-            idempotencyKey: `mobile-free:${attemptId}`,
-          });
-          learningSessionId = String(learningSession.session._id);
-        } catch (error) {
-          console.error('[LearningAttempt] mobile session creation failed', error);
-        }
-      }
-      const questions = selectedQuestions.map((question: any) => {
-        const id = String(question._id || question.id || question.questionId);
-        attempts[attemptId] ??= {
-          userId: sessionUserId,
-          category,
-          createdAt: now,
-          learningSessionId,
-          questions: [],
-        };
-        attempts[attemptId].questions.push({
-          id,
-          correctOptionIndex: Number(question.correctOptionIndex ?? question.correctAnswer ?? 0),
-        });
-        return {
-          id,
-          text: question.text || question.question,
-          options: question.options || question.choices || [],
-          category: question.category || category,
-          difficulty: question.difficulty || 'mixed',
-          imageUrl: getQuestionImageUrls(question)[0],
-          imageUrls: getQuestionImageUrls(question),
-        };
-      });
-      (req.session as any).mobileExamAttempts = attempts;
-      await new Promise<void>((resolve, reject) =>
-        req.session.save((error) => error ? reject(error) : resolve())
-      );
-      return res.json({ attemptId, questions, total: questions.length });
+      await createQuestionBankCoverageTest(req, res, sessionUserId, category, 20, 'mixed');
     } catch (error) {
       console.error('Mobile free-test error:', error);
       return res.status(500).json({ message: 'تعذر تحميل الاختبار حالياً' });
@@ -1364,15 +1419,33 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       const submitted = Array.isArray(req.body?.answers) ? req.body.answers : [];
-      const answerMap = new Map(
-        submitted.map((answer: any) => [String(answer?.questionId || ''), Number(answer?.selectedIndex)])
-      );
+      if (submitted.length > attempt.questions.length) {
+        return res.status(400).json({ message: 'عدد الإجابات أكبر من عدد أسئلة الاختبار' });
+      }
+      const answerMap = new Map<string, { selectedIndex: number; responseTime: number }>();
+      for (const answer of submitted) {
+        const questionId = String(answer?.questionId || '');
+        const selectedIndex = Number(answer?.selectedIndex);
+        const responseTime = Math.max(0, Math.min(Number(answer?.responseTime) || 0, 86400));
+        const matchingQuestion = attempt.questions.find((question: any) => String(question.id) === questionId);
+        if (
+          !questionId ||
+          !matchingQuestion ||
+          answerMap.has(questionId) ||
+          !Number.isInteger(selectedIndex) ||
+          selectedIndex < 0 ||
+          (Number.isInteger(matchingQuestion.optionsCount) && selectedIndex >= matchingQuestion.optionsCount)
+        ) {
+          return res.status(400).json({ message: 'تحتوي الإجابات على سؤال أو خيار غير صالح' });
+        }
+        answerMap.set(questionId, { selectedIndex, responseTime });
+      }
       const totalQuestions = attempt.questions.length;
       let score = 0;
       let skippedQuestions = 0;
       for (const question of attempt.questions) {
         if (!answerMap.has(question.id)) skippedQuestions += 1;
-        else if (answerMap.get(question.id) === question.correctOptionIndex) score += 1;
+        else if (answerMap.get(question.id)?.selectedIndex === question.correctOptionIndex) score += 1;
       }
       const wrongAnswers = totalQuestions - score - skippedQuestions;
       const pointsEarned = score * 10 - wrongAnswers - skippedQuestions * 0.5;
@@ -1384,16 +1457,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
           await recordVerifiedLearningAttempt(sessionUserId, {
             questionId: String(question.id),
             sourceType: 'mongo_question',
-            sourceKey: `mobile-free:${attemptId}`,
+            sourceKey: 'question-bank',
             programId: 'program.qudrat',
             subjectId: attempt.category === 'verbal'
               ? 'subject.qudrat.verbal'
               : 'subject.qudrat.quantitative',
-            selectedAnswer: answerMap.has(question.id) ? answerMap.get(question.id) : null,
-            responseTime: 0,
+            selectedAnswer: answerMap.get(question.id)?.selectedIndex ?? null,
+            responseTime: answerMap.get(question.id)?.responseTime ?? 0,
             sessionId: attempt.learningSessionId,
             idempotencyKey: `mobile-free:${attemptId}:${question.id}`,
-            metadata: { flow: 'mobile-free-test' },
+            metadata: {
+              flow: 'question-bank-coverage-test',
+              difficulty: attempt.difficulty || 'mixed',
+            },
           });
         }
       }
@@ -1404,7 +1480,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           userId: sessionUserId,
           program: 'qudrat',
           testType: attempt.category,
-          difficulty: 'mixed',
+          difficulty: attempt.difficulty || 'mixed',
           score,
           totalQuestions,
           correctAnswers: score,
@@ -5107,7 +5183,9 @@ app.post("/api/auth/register", async (req: Request, res: Response) => {
   });
 
   // Subscription management endpoints
-  app.post("/api/subscription/create", async (req: Request, res: Response) => {
+  app.post("/api/subscription/create", requireAuth, async (req: Request, res: Response) => {
+    res.status(410).json({ message: "مسار إنشاء الاشتراك القديم معطل. ابدأ الدفع من بوابة الاشتراك الآمنة." });
+    return;
     try {
       const { userId, type, duration, paymentMethod, transactionId, price } = req.body;
       const primaryPlan = await getPrimarySubscriptionPlan();
@@ -5828,7 +5906,9 @@ app.post("/api/auth/register", async (req: Request, res: Response) => {
     }
   });
 
-  app.post("/api/subscription/create", async (req: Request, res: Response) => {
+  app.post("/api/subscription/create", requireAuth, async (req: Request, res: Response) => {
+    res.status(410).json({ message: "مسار إنشاء الاشتراك القديم معطل. ابدأ الدفع من بوابة الاشتراك الآمنة." });
+    return;
     try {
       const { userId, planType, paymentMethod, transactionId } = req.body;
 
@@ -11858,6 +11938,7 @@ app.post("/api/auth/register", async (req: Request, res: Response) => {
       const result = await getTodayLearningSession(
         studentId,
         requestedProgram ? String(requestedProgram) : undefined,
+        req.query.subjectId ? String(req.query.subjectId) : undefined,
       );
       return res.json(publicTodayLearningSession(result));
     } catch (error: any) {
@@ -11879,6 +11960,7 @@ app.post("/api/auth/register", async (req: Request, res: Response) => {
       const result = await startTodayLearningSession(
         studentId,
         req.body?.programId ? String(req.body.programId) : undefined,
+        req.body?.subjectId ? String(req.body.subjectId) : undefined,
       );
       return res.status(result.duplicate ? 200 : result.started ? 201 : 200)
         .json(publicTodayLearningSession(result));
@@ -12044,6 +12126,30 @@ app.post("/api/auth/register", async (req: Request, res: Response) => {
     return res.status(status).json({ error: error.message, code: error.code });
   };
 
+  app.get('/api/learning/content-progress-summary', requireAuth, async (req: Request, res: Response) => {
+    const studentId = studentOnly(req, res);
+    if (!studentId) return;
+    const program = String(req.query.program || '');
+    const subjectId = typeof req.query.subjectId === 'string' ? req.query.subjectId.trim() : '';
+    if (!supportedPrograms.has(program)) {
+      return res.status(400).json({ error: 'البرنامج غير صالح' });
+    }
+    if (subjectId && !subjectId.startsWith(`subject.${program}.`)) {
+      return res.status(400).json({ error: 'القسم غير صالح' });
+    }
+    try {
+      return res.json(await getLearningContentProgressSummary(
+        studentId,
+        program as 'qudrat' | 'tahsili',
+        subjectId || undefined,
+      ));
+    } catch (error: any) {
+      if (error instanceof LearningContentError) return learningContentErrorResponse(error, res);
+      req.log.error({ err: error }, 'Learning content progress summary error');
+      return res.status(500).json({ error: 'تعذر تحميل إنجاز الدروس' });
+    }
+  });
+
   app.get('/api/learning/content/:contentId', requireAuth, async (req: Request, res: Response) => {
     const studentId = studentOnly(req, res);
     if (!studentId) return;
@@ -12208,6 +12314,30 @@ app.post("/api/auth/register", async (req: Request, res: Response) => {
     }
   });
 
+  const handleFoundationLearningPath = async (
+    req: Request,
+    res: Response,
+    subjectId: 'subject.qudrat.verbal' | 'subject.qudrat.quantitative',
+  ): Promise<void> => {
+    const studentId = studentOnly(req, res);
+    if (!studentId) return;
+    try {
+      const path = await getFoundationLearningPath(studentId, subjectId);
+      res.json(path);
+    } catch (error) {
+      console.error('Foundation personalization failed:', error);
+      res.status(503).json({ error: 'تعذر تحميل مسار التأسيس المخصص حاليًا.' });
+    }
+  };
+
+  app.get('/api/learning/foundation-path/verbal', requireAuth, async (req: Request, res: Response): Promise<void> => {
+    await handleFoundationLearningPath(req, res, 'subject.qudrat.verbal');
+  });
+
+  app.get('/api/learning/foundation-path/quantitative', requireAuth, async (req: Request, res: Response): Promise<void> => {
+    await handleFoundationLearningPath(req, res, 'subject.qudrat.quantitative');
+  });
+
   app.get('/api/foundation-content', requireAuth, async (req: Request, res: Response) => {
     if (!studentOnly(req, res)) return;
     const program = String(req.query.program || '');
@@ -12230,7 +12360,7 @@ app.post("/api/auth/register", async (req: Request, res: Response) => {
         .select('program subjectId taxonomyNodeId title description videoUrl thumbnailUrl order linkedQuizRoute durationMinutes sections attachments version publishedAt quiz createdAt updatedAt')
         .populate({
           path: 'quiz.questionIds',
-          select: '_id questionId text options imageUrl imageUrls explanation',
+          select: '_id questionId text options imageUrl imageUrls explanation source.videoTimestampSeconds source.videoTimestampInferred',
         })
         .lean();
       return res.json({ content });
@@ -12243,10 +12373,11 @@ app.post("/api/auth/register", async (req: Request, res: Response) => {
   app.post('/api/foundation-content/:id/quiz/submit', requireAuth, async (req: Request, res: Response) => {
     const userId = studentOnly(req, res);
     if (!userId) return;
-    if (!mongoose.Types.ObjectId.isValid(req.params.id)) return res.status(400).json({ error: 'معرف الدرس غير صالح' });
+    const rawLessonId = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id;
+    if (!rawLessonId || !mongoose.Types.ObjectId.isValid(rawLessonId)) return res.status(400).json({ error: 'معرف الدرس غير صالح' });
     try {
        const { FoundationContent, Question, TestResult } = await import('../mongodb/models');
-      const lesson = await FoundationContent.findOne({ _id: req.params.id, published: true }).select('program title quiz').lean() as any;
+      const lesson = await FoundationContent.findOne({ _id: rawLessonId, published: true }).select('program title quiz').lean() as any;
       if (!lesson?.quiz?.questionIds?.length) return res.status(404).json({ error: 'لا يوجد اختبار مرتبط بهذا الدرس' });
 
       const submitted = Array.isArray(req.body?.answers) ? req.body.answers : [];
@@ -12268,7 +12399,7 @@ app.post("/api/auth/register", async (req: Request, res: Response) => {
          return res.status(400).json({ error: 'الإجابة لا تنتمي إلى اختبار الدرس' });
        }
        const questions = await Question.find({ _id: { $in: questionIds } })
-         .select('_id correctOptionIndex options subcategory difficulty')
+          .select('_id correctOptionIndex options subcategory difficulty source.videoTimestampSeconds')
          .lean();
       const questionById = new Map(questions.map((question: any) => [String(question._id), question]));
        if (questions.length !== questionIds.length) {
@@ -12289,32 +12420,49 @@ app.post("/api/auth/register", async (req: Request, res: Response) => {
         const isCorrect = answered && selectedOptionIndex === question.correctOptionIndex;
         if (answered) answeredQuestions += 1;
         if (isCorrect) correctAnswers += 1;
-        return { questionId, selectedOptionIndex: answered ? selectedOptionIndex : null, isCorrect };
+         return {
+           questionId,
+           selectedOptionIndex: answered ? selectedOptionIndex : null,
+           isCorrect,
+           correctOptionIndex: question?.correctOptionIndex ?? null,
+           videoTimestampSeconds: question?.source?.videoTimestampSeconds ?? null,
+         };
       });
       const totalQuestions = questionIds.length;
       const percentage = Math.round((correctAnswers / totalQuestions) * 100);
       const skippedQuestions = totalQuestions - answeredQuestions;
       const timeTaken = Math.max(0, Number(req.body?.timeTakenSeconds) || 0);
        const baseIdempotencyKey = req.body?.idempotencyKey
-         ? String(req.body.idempotencyKey).trim()
-         : undefined;
-       for (const detail of questionDetails) {
-         await recordVerifiedLearningAttempt(userId, {
-           questionId: detail.questionId,
-           sourceType: 'mongo_question',
-           sourceKey: `foundation-lesson:${String(lesson._id)}`,
-           programId: `program.${lesson.program}`,
-           selectedAnswer: detail.selectedOptionIndex,
-           responseTime: 0,
-           idempotencyKey: baseIdempotencyKey
-             ? `${baseIdempotencyKey}:${detail.questionId}`
-             : undefined,
-           metadata: {
-             flow: 'foundation-lesson-quiz',
-             lessonId: String(lesson._id),
-           },
-         });
-       }
+          ? String(req.body.idempotencyKey).trim()
+          : `foundation-quiz:${String(lesson._id)}:${userId}:${crypto.randomUUID()}`;
+        const answeredDetails = questionDetails.filter(
+          (detail: any) => detail.selectedOptionIndex !== null,
+        );
+        const learningAttemptConcurrency = 8;
+        for (let offset = 0; offset < answeredDetails.length; offset += learningAttemptConcurrency) {
+          const batch = answeredDetails.slice(offset, offset + learningAttemptConcurrency);
+          const outcomes = await Promise.allSettled(batch.map((detail: any) =>
+            recordVerifiedLearningAttempt(userId, {
+              questionId: detail.questionId,
+              sourceType: 'mongo_question',
+              sourceKey: `foundation-lesson:${String(lesson._id)}`,
+              programId: `program.${lesson.program}`,
+              selectedAnswer: detail.selectedOptionIndex,
+              responseTime: 0,
+              idempotencyKey: baseIdempotencyKey
+                ? `${baseIdempotencyKey}:${detail.questionId}`
+                : undefined,
+              metadata: {
+                flow: 'foundation-lesson-quiz',
+                lessonId: String(lesson._id),
+              },
+            }),
+          ));
+          const failedAttempt = outcomes.find(
+            (outcome): outcome is PromiseRejectedResult => outcome.status === 'rejected',
+          );
+          if (failedAttempt) throw failedAttempt.reason;
+        }
       await TestResult.create({
         userId,
         program: lesson.program,
@@ -12341,6 +12489,7 @@ app.post("/api/auth/register", async (req: Request, res: Response) => {
         skippedQuestions,
         passed: percentage >= Number(lesson.quiz.passingScore || 60),
         passingScore: Number(lesson.quiz.passingScore || 60),
+        questionDetails,
       });
     } catch (error) {
       console.error('Foundation quiz submission error:', error);
@@ -12700,21 +12849,43 @@ app.post("/api/auth/register", async (req: Request, res: Response) => {
     if (!hasVerbal && !hasQuantitative) {
       return res.status(400).json({ error: 'أدخل درجة لفظي أو كمي واحدة على الأقل' });
     }
-    const normalized = {
-      ...(hasVerbal ? { verbal: Number(verbal) } : {}),
-      ...(hasQuantitative ? { quantitative: Number(quantitative) } : {}),
-      ...(program === 'qudrat' || program === 'tahsili' ? { program } : {}),
-      updatedAt: new Date(),
-    };
-    const values = [normalized.verbal, normalized.quantitative].filter((value) => value !== undefined);
+    const normalizedVerbal = hasVerbal ? Number(verbal) : undefined;
+    const normalizedQuantitative = hasQuantitative ? Number(quantitative) : undefined;
+    const values = [normalizedVerbal, normalizedQuantitative].filter((value) => value !== undefined);
     if (values.some((value) => !Number.isFinite(value) || value < 0 || value > 100)) {
       return res.status(400).json({ error: 'الدرجات يجب أن تكون بين 0 و100' });
     }
     try {
       const { User } = await import('../mongodb/models');
+      const existing = await User.findById(userId).select('officialScores').lean() as any;
+      if (!existing) return res.status(404).json({ error: 'المستخدم غير موجود' });
+      const requestedProgram = program === 'qudrat' || program === 'tahsili'
+        ? program
+        : existing.officialScores?.program || 'qudrat';
+      if (requestedProgram === 'tahsili') {
+        return res.status(400).json({
+          error: 'خانات اللفظي والكمي مخصصة لنتيجة القدرات. استخدم مسار التحصيلي لمتابعة نتائج مواده.',
+        });
+      }
+      const programChanged = Boolean(
+        requestedProgram &&
+        existing.officialScores?.program &&
+        requestedProgram !== existing.officialScores.program,
+      );
+      const set: Record<string, unknown> = {
+        'officialScores.updatedAt': new Date(),
+      };
+      const unset: Record<string, 1> = {};
+      set['officialScores.program'] = requestedProgram;
+      if (normalizedVerbal !== undefined) set['officialScores.verbal'] = normalizedVerbal;
+      else if (programChanged) unset['officialScores.verbal'] = 1;
+      if (normalizedQuantitative !== undefined) set['officialScores.quantitative'] = normalizedQuantitative;
+      else if (programChanged) unset['officialScores.quantitative'] = 1;
+      const update: Record<string, unknown> = { $set: set };
+      if (Object.keys(unset).length) update.$unset = unset;
       const user = await User.findByIdAndUpdate(
         userId,
-        { $set: { officialScores: normalized } },
+        update,
         { new: true, projection: { officialScores: 1 } },
       ).lean() as any;
       if (!user) return res.status(404).json({ error: 'المستخدم غير موجود' });
@@ -12825,10 +12996,16 @@ app.post("/api/auth/register", async (req: Request, res: Response) => {
       const totals = testAggregate[0] || { total: 0, averagePercentage: 0, correct: 0, wrong: 0, skipped: 0, questions: 0 };
       const level = Math.max(1, Number(user.level || 1));
       const officialScores = (user as any).officialScores || null;
-      const weakestOfficialArea = officialScores?.verbal !== undefined && officialScores?.quantitative !== undefined
-        ? (Number(officialScores.verbal) <= Number(officialScores.quantitative) ? 'verbal' : 'quantitative')
-        : officialScores?.verbal !== undefined ? 'verbal'
-          : officialScores?.quantitative !== undefined ? 'quantitative' : null;
+      const activeProgram = officialScores?.program === 'tahsili'
+        ? 'tahsili'
+        : officialScores?.program === 'qudrat'
+          ? 'qudrat'
+          : (user as any).academicTrack === 'tahsili' ? 'tahsili' : 'qudrat';
+      const qudratScores = officialScores?.program === 'tahsili' ? null : officialScores;
+      const weakestOfficialArea = qudratScores?.verbal !== undefined && qudratScores?.quantitative !== undefined
+        ? (Number(qudratScores.verbal) <= Number(qudratScores.quantitative) ? 'verbal' : 'quantitative')
+        : qudratScores?.verbal !== undefined ? 'verbal'
+          : qudratScores?.quantitative !== undefined ? 'quantitative' : null;
       const recommendedPlan = weakestOfficialArea
         ? {
             level: 'practice',
@@ -12837,13 +13014,20 @@ app.post("/api/auth/register", async (req: Request, res: Response) => {
               ? 'خطتك موجهة لتحسين اللفظي أولًا، ثم مراجعة الكمي أسبوعيًا.'
               : 'خطتك موجهة لتحسين الكمي أولًا، ثم مراجعة اللفظي أسبوعيًا.',
             focusSubject: weakestOfficialArea,
-            program: officialScores.program || ((user as any).academicTrack === 'tahsili' ? 'tahsili' : 'qudrat'),
+            program: 'qudrat',
+            subjectId: `subject.qudrat.${weakestOfficialArea}`,
           }
         : level <= 2
-        ? { level: 'foundation', sessionsPerWeek: 4, focus: 'إتقان الأساسيات وحل اختبارات قصيرة' }
+        ? { level: 'foundation', sessionsPerWeek: 4, focus: activeProgram === 'tahsili'
+          ? 'اختر مادة التحصيلي التي تدرسها لعرض التأسيس المناسب.'
+          : 'إتقان الأساسيات وحل اختبارات قصيرة', program: activeProgram }
         : level <= 5
-          ? { level: 'practice', sessionsPerWeek: 5, focus: 'التدريب المركز على نقاط الضعف' }
-          : { level: 'mastery', sessionsPerWeek: 6, focus: 'محاكاة الاختبارات ومراجعة الأخطاء' };
+          ? { level: 'practice', sessionsPerWeek: 5, focus: activeProgram === 'tahsili'
+            ? 'ابدأ اختبارًا حسب المادة وراجع أخطاءك.'
+            : 'التدريب المركز على نقاط الضعف', program: activeProgram }
+          : { level: 'mastery', sessionsPerWeek: 6, focus: activeProgram === 'tahsili'
+            ? 'اختبر جاهزيتك في مركز اختبارات التحصيلي.'
+            : 'محاكاة الاختبارات ومراجعة الأخطاء', program: activeProgram };
       const trialActive = Boolean(user.trialEndDate && new Date(user.trialEndDate) > now);
       const emptyProgress = () => ({ percentage: 0, tests: 0, questions: 0 });
       const progressBuckets: Record<string, { tests: number; questions: number; correct: number }> = {

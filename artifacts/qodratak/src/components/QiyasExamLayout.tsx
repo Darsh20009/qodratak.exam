@@ -1,9 +1,10 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useContext } from "react";
 import formulasImg from "@assets/Screenshot_2026-03-08_071500_1772943315708.png";
 import { X, BookmarkCheck, Bookmark, Flag, AlertTriangle, CheckCircle2, LayoutGrid, ChevronRight, ChevronLeft } from "lucide-react";
 import ImageZoom from "@/components/ImageZoom";
 import { getQuestionImageUrls } from "@/lib/questionImages";
 import { BrandMark } from "@/components/BrandMark";
+import { StudentExamChromeContext } from "@/components/student/StudentExamChromeContext";
 
 const OPTION_LABELS = ['أ', 'ب', 'ج', 'د'];
 
@@ -28,6 +29,7 @@ export interface QiyasExamLayoutProps {
   questionTypeLabel?: string;
   questionImageUrl?: string;
   questionImageUrls?: string[];
+  hideQuestionTextWhenImageBacked?: boolean;
   options: string[];
   selectedAnswer: number | null;
   onSelectAnswer: (index: number) => void;
@@ -42,6 +44,7 @@ export interface QiyasExamLayoutProps {
   onNext?: () => void;
   onFinish?: () => void;
   onEndSection?: () => void;
+  isFinishing?: boolean;
   canGoPrev?: boolean;
   canGoNext?: boolean;
   isLastQuestion?: boolean;
@@ -78,6 +81,7 @@ export function QiyasExamLayout({
   questionTypeLabel,
   questionImageUrl,
   questionImageUrls,
+  hideQuestionTextWhenImageBacked = false,
   options,
   selectedAnswer,
   onSelectAnswer,
@@ -90,6 +94,7 @@ export function QiyasExamLayout({
   onNext,
   onFinish,
   onEndSection,
+  isFinishing = false,
   canGoPrev = true,
   canGoNext = true,
   isLastQuestion = false,
@@ -102,6 +107,7 @@ export function QiyasExamLayout({
   onShowFormulas,
   questionId,
 }: QiyasExamLayoutProps) {
+  const { setActive: setStudentExamChromeActive } = useContext(StudentExamChromeContext);
   const [fontSize, setFontSize] = useState<'sm' | 'base' | 'lg'>('base');
   const [visitedQuestions, setVisitedQuestions] = useState<Set<number>>(new Set([0]));
   const [showExamInstructions, setShowExamInstructions] = useState(false);
@@ -119,6 +125,11 @@ export function QiyasExamLayout({
     imageUrl: questionImageUrl,
     imageUrls: questionImageUrls,
   });
+
+  useEffect(() => {
+    setStudentExamChromeActive(true);
+    return () => setStudentExamChromeActive(false);
+  }, [setStudentExamChromeActive]);
 
   useEffect(() => {
     const syncFullscreenState = () => {
@@ -171,7 +182,7 @@ export function QiyasExamLayout({
   }, [currentQuestionIndex]);
 
   const fontClass =
-    fontSize === 'sm' ? 'text-sm' : fontSize === 'lg' ? 'text-xl' : 'text-base';
+    fontSize === 'sm' ? 'text-base' : fontSize === 'lg' ? 'text-xl' : 'text-lg';
 
   const answeredTotal = answeredCount ?? questionsStatus?.filter(q => q.answered).length ?? 0;
   const sectionTotal = sectionQuestionsCount ?? questionsStatus?.length ?? totalQuestions;
@@ -298,21 +309,24 @@ export function QiyasExamLayout({
           <div className="min-h-0 flex-1 overflow-y-auto p-3 sm:p-4 md:p-6">
 
             {/* Mobile font controls */}
-            <div className="md:hidden flex items-center gap-1 mb-3">
+            <div className="md:hidden flex items-center gap-2 mb-4" aria-label="حجم الخط">
               {(['sm', 'base', 'lg'] as const).map((size, i) => (
                 <button
                   key={size}
+                  type="button"
+                  aria-pressed={fontSize === size}
+                  aria-label={`حجم الخط ${['صغير', 'متوسط', 'كبير'][i]}`}
                   onClick={() => setFontSize(size)}
-                  className={`h-7 px-2.5 rounded border text-xs font-bold transition-colors ${
+                  className={`min-h-9 px-3 rounded border text-xs font-bold transition-colors ${
                     fontSize === size
                       ? 'bg-blue-600 text-white border-blue-600'
                       : 'bg-white text-gray-600 border-gray-200 hover:bg-gray-50'
                   }`}
                 >
-                  {i === 0 ? 'ص' : i === 1 ? 'م' : 'ك'}
+                  {['صغير', 'متوسط', 'كبير'][i]}
                 </button>
               ))}
-              <span className="text-xs text-gray-400 mr-1">حجم الخط</span>
+              <span className="text-xs font-medium text-gray-500">الخط</span>
             </div>
 
             {questionTypeLabel && (
@@ -339,9 +353,11 @@ export function QiyasExamLayout({
               </div>
             ) : null}
 
-            <p className={`text-gray-800 leading-relaxed mb-5 ${fontClass}`}>
-              {questionText}
-            </p>
+            {(!hideQuestionTextWhenImageBacked || questionImages.length === 0) && (
+              <p className={`text-gray-800 leading-relaxed mb-5 ${fontClass}`}>
+                {questionText}
+              </p>
+            )}
 
             {showFormulas && (
               <div className="bg-gray-50 rounded-xl border border-gray-200 p-4 mb-4">
@@ -402,9 +418,11 @@ export function QiyasExamLayout({
               {isLastQuestion ? (
                 <button
                   onClick={onFinish}
-                  className="px-6 py-2 rounded-lg bg-teal-600 text-white text-sm font-bold hover:bg-teal-700 transition-colors shadow-sm"
+                  disabled={isFinishing}
+                  aria-busy={isFinishing}
+                  className="px-6 py-2 rounded-lg bg-teal-600 text-white text-sm font-bold hover:bg-teal-700 transition-colors shadow-sm disabled:cursor-wait disabled:opacity-60"
                 >
-                  إنهاء القسم
+                  {isFinishing ? "جارٍ التصحيح..." : "إنهاء القسم"}
                 </button>
               ) : (
                 <button
@@ -452,22 +470,25 @@ export function QiyasExamLayout({
       {/* ════════════════════════════════════════
           MOBILE BOTTOM NAVIGATION BAR (fixed)
       ════════════════════════════════════════ */}
-      <div className={`md:hidden fixed bottom-0 inset-x-0 z-30 bg-white border-t border-gray-200 shadow-lg pb-[env(safe-area-inset-bottom)] ${isDisplayFullscreen ? "hidden" : ""}`} dir="rtl">
-        <div className="flex h-14 items-center gap-1 px-2">
+      <div className={`md:hidden fixed bottom-0 inset-x-0 z-[60] bg-white border-t border-gray-200 shadow-lg pb-[env(safe-area-inset-bottom)] ${isDisplayFullscreen ? "hidden" : ""}`} dir="rtl">
+        <div className="flex h-16 items-center gap-1 px-2">
           {/* Previous */}
           <button
             onClick={onPrev}
             disabled={!canGoPrev}
-            className="flex-shrink-0 w-10 h-10 rounded-xl bg-gray-100 text-gray-700 flex items-center justify-center disabled:opacity-30 active:scale-95 transition-all"
+            aria-label="السؤال السابق"
+            className="flex-shrink-0 w-[58px] h-11 rounded-xl bg-gray-100 text-gray-700 flex flex-col items-center justify-center disabled:opacity-30 active:scale-95 transition-all"
           >
-            <ChevronRight className="w-5 h-5" />
+            <ChevronRight className="w-4 h-4" />
+            <span className="text-[9px] font-bold leading-none">السابق</span>
           </button>
 
           {/* Bookmark */}
           <button
             type="button"
             onClick={() => onToggleBookmark?.()}
-            className={`flex-shrink-0 w-10 h-10 rounded-xl flex items-center justify-center transition-all active:scale-95 ${
+            aria-label="تمييز السؤال للمراجعة"
+            className={`flex-shrink-0 w-11 h-11 rounded-xl flex items-center justify-center transition-all active:scale-95 ${
               isBookmarked
                 ? 'bg-yellow-50 text-yellow-600 border border-yellow-200'
                 : 'bg-gray-100 text-gray-500'
@@ -479,7 +500,7 @@ export function QiyasExamLayout({
           {/* Center: Question grid button */}
           <button
             onClick={() => setShowMobilePanel(true)}
-            className="flex-1 h-10 rounded-xl bg-blue-50 border border-blue-100 text-blue-700 flex items-center justify-center gap-2 text-xs font-semibold active:scale-95 transition-all"
+            className="flex-1 h-11 rounded-xl bg-blue-50 border border-blue-100 text-blue-700 flex items-center justify-center gap-2 text-xs font-semibold active:scale-95 transition-all"
           >
             <LayoutGrid className="w-4 h-4" />
             <span>{answeredTotal}/{sectionTotal} أُجيب</span>
@@ -489,7 +510,8 @@ export function QiyasExamLayout({
           <button
             type="button"
             onClick={() => setShowReportDialog(true)}
-            className="flex-shrink-0 w-10 h-10 rounded-xl bg-rose-50 text-rose-500 flex items-center justify-center active:scale-95 transition-all"
+            aria-label="الإبلاغ عن خطأ في السؤال"
+            className="flex-shrink-0 w-11 h-11 rounded-xl bg-rose-50 text-rose-500 flex items-center justify-center active:scale-95 transition-all"
           >
             <Flag className="w-4 h-4" />
           </button>
@@ -498,17 +520,21 @@ export function QiyasExamLayout({
           {isLastQuestion ? (
             <button
               onClick={onFinish}
-              className="flex-shrink-0 h-10 px-4 rounded-xl bg-teal-600 text-white text-xs font-bold active:scale-95 transition-all shadow-sm"
+              disabled={isFinishing}
+              aria-busy={isFinishing}
+              className="flex-shrink-0 min-h-11 px-4 rounded-xl bg-teal-600 text-white text-xs font-bold active:scale-95 transition-all shadow-sm disabled:cursor-wait disabled:opacity-60"
             >
-              إنهاء
+              {isFinishing ? "جارٍ التصحيح..." : "إنهاء"}
             </button>
           ) : (
             <button
               onClick={onNext}
               disabled={!canGoNext}
-              className="flex-shrink-0 w-10 h-10 rounded-xl bg-teal-600 text-white flex items-center justify-center disabled:opacity-30 active:scale-95 transition-all shadow-sm"
+              aria-label="السؤال التالي"
+              className="flex-shrink-0 w-[58px] h-11 rounded-xl bg-teal-600 text-white flex flex-col items-center justify-center disabled:opacity-30 active:scale-95 transition-all shadow-sm"
             >
-              <ChevronLeft className="w-5 h-5" />
+              <ChevronLeft className="w-4 h-4" />
+              <span className="text-[9px] font-bold leading-none">التالي</span>
             </button>
           )}
         </div>
@@ -519,7 +545,7 @@ export function QiyasExamLayout({
       ════════════════════════════════════════ */}
       {showMobilePanel && (
         <div
-          className="md:hidden fixed inset-0 z-50 flex flex-col justify-end"
+          className="md:hidden fixed inset-0 z-[70] flex flex-col justify-end"
           dir="rtl"
           onClick={() => setShowMobilePanel(false)}
         >
@@ -605,9 +631,11 @@ export function QiyasExamLayout({
                 </button>
                 <button
                   onClick={() => { setShowMobilePanel(false); (onEndSection ?? onFinish)?.(); }}
-                  className="py-2.5 px-1 text-xs font-semibold bg-red-50 text-red-700 border border-red-200 rounded-xl hover:bg-red-100 transition-colors"
+                  disabled={isFinishing}
+                  aria-busy={isFinishing}
+                  className="py-2.5 px-1 text-xs font-semibold bg-red-50 text-red-700 border border-red-200 rounded-xl hover:bg-red-100 transition-colors disabled:cursor-wait disabled:opacity-60"
                 >
-                  إنهاء القسم
+                  {isFinishing ? "جارٍ التصحيح..." : "إنهاء القسم"}
                 </button>
               </div>
             </div>
@@ -808,9 +836,11 @@ export function QiyasExamLayout({
           </button>
           <button
             onClick={onEndSection ?? onFinish}
-            className="py-2 px-1 text-xs font-semibold bg-red-50 text-red-700 border border-red-200 rounded-lg hover:bg-red-100 transition-colors"
+            disabled={isFinishing}
+            aria-busy={isFinishing}
+            className="py-2 px-1 text-xs font-semibold bg-red-50 text-red-700 border border-red-200 rounded-lg hover:bg-red-100 transition-colors disabled:cursor-wait disabled:opacity-60"
           >
-            إنهاء القسم
+            {isFinishing ? "جارٍ التصحيح..." : "إنهاء القسم"}
           </button>
           <button
             onClick={() => {

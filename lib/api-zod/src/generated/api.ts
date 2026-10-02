@@ -18,3 +18,275 @@ export const HealthCheckResponse = zod.object({
 })
 
 
+/**
+ * @summary Get a personalized verbal foundation path
+ */
+export const getVerbalFoundationLearningPathResponseRecommendationsItemPredictedCorrectProbabilityMin = 0;
+export const getVerbalFoundationLearningPathResponseRecommendationsItemPredictedCorrectProbabilityMax = 1;
+
+export const getVerbalFoundationLearningPathResponseRecommendationsItemConfidenceMin = 0;
+export const getVerbalFoundationLearningPathResponseRecommendationsItemConfidenceMax = 1;
+
+export const getVerbalFoundationLearningPathResponseCoveragePercentMin = 0;
+export const getVerbalFoundationLearningPathResponseCoveragePercentMax = 100;
+
+
+
+export const GetVerbalFoundationLearningPathResponse = zod.object({
+  "programId": zod.string(),
+  "subjectId": zod.string(),
+  "book": zod.object({
+  "contentId": zod.string(),
+  "title": zod.string(),
+  "chapterCount": zod.number()
+}),
+  "attemptsUsed": zod.number(),
+  "level": zod.enum(['STARTER', 'BUILDING', 'DEVELOPING', 'READY']),
+  "modelVersion": zod.string(),
+  "recommendations": zod.array(zod.object({
+  "skillKey": zod.string(),
+  "title": zod.string(),
+  "predictedCorrectProbability": zod.number().min(getVerbalFoundationLearningPathResponseRecommendationsItemPredictedCorrectProbabilityMin).max(getVerbalFoundationLearningPathResponseRecommendationsItemPredictedCorrectProbabilityMax),
+  "confidence": zod.number().min(getVerbalFoundationLearningPathResponseRecommendationsItemConfidenceMin).max(getVerbalFoundationLearningPathResponseRecommendationsItemConfidenceMax),
+  "reason": zod.string()
+})),
+  "coverage": zod.object({
+  "covered": zod.number(),
+  "total": zod.number(),
+  "remaining": zod.number(),
+  "percent": zod.number().min(getVerbalFoundationLearningPathResponseCoveragePercentMin).max(getVerbalFoundationLearningPathResponseCoveragePercentMax)
+})
+})
+
+
+/**
+ * @summary Get a personalized quantitative foundation path
+ */
+export const getQuantitativeFoundationLearningPathResponseRecommendationsItemPredictedCorrectProbabilityMin = 0;
+export const getQuantitativeFoundationLearningPathResponseRecommendationsItemPredictedCorrectProbabilityMax = 1;
+
+export const getQuantitativeFoundationLearningPathResponseRecommendationsItemConfidenceMin = 0;
+export const getQuantitativeFoundationLearningPathResponseRecommendationsItemConfidenceMax = 1;
+
+export const getQuantitativeFoundationLearningPathResponseCoveragePercentMin = 0;
+export const getQuantitativeFoundationLearningPathResponseCoveragePercentMax = 100;
+
+
+
+export const GetQuantitativeFoundationLearningPathResponse = zod.object({
+  "programId": zod.string(),
+  "subjectId": zod.string(),
+  "book": zod.object({
+  "contentId": zod.string(),
+  "title": zod.string(),
+  "chapterCount": zod.number()
+}),
+  "attemptsUsed": zod.number(),
+  "level": zod.enum(['STARTER', 'BUILDING', 'DEVELOPING', 'READY']),
+  "modelVersion": zod.string(),
+  "recommendations": zod.array(zod.object({
+  "skillKey": zod.string(),
+  "title": zod.string(),
+  "predictedCorrectProbability": zod.number().min(getQuantitativeFoundationLearningPathResponseRecommendationsItemPredictedCorrectProbabilityMin).max(getQuantitativeFoundationLearningPathResponseRecommendationsItemPredictedCorrectProbabilityMax),
+  "confidence": zod.number().min(getQuantitativeFoundationLearningPathResponseRecommendationsItemConfidenceMin).max(getQuantitativeFoundationLearningPathResponseRecommendationsItemConfidenceMax),
+  "reason": zod.string()
+})),
+  "coverage": zod.object({
+  "covered": zod.number(),
+  "total": zod.number(),
+  "remaining": zod.number(),
+  "percent": zod.number().min(getQuantitativeFoundationLearningPathResponseCoveragePercentMin).max(getQuantitativeFoundationLearningPathResponseCoveragePercentMax)
+})
+})
+
+
+/**
+ * @summary Create a personalized question-bank coverage test
+ */
+export const createFoundationCoverageTestBodyCountMin = 5;
+export const createFoundationCoverageTestBodyCountMax = 60;
+
+
+
+export const CreateFoundationCoverageTestBody = zod.object({
+  "category": zod.enum(['verbal', 'quantitative']),
+  "count": zod.number().min(createFoundationCoverageTestBodyCountMin).max(createFoundationCoverageTestBodyCountMax),
+  "difficulty": zod.enum(['mixed', 'beginner', 'intermediate', 'advanced'])
+})
+
+export const createFoundationCoverageTestResponseCoveragePercentMin = 0;
+export const createFoundationCoverageTestResponseCoveragePercentMax = 100;
+
+
+
+export const CreateFoundationCoverageTestResponse = zod.object({
+  "attemptId": zod.string(),
+  "questions": zod.array(zod.object({
+  "id": zod.string(),
+  "text": zod.string(),
+  "options": zod.array(zod.string()),
+  "category": zod.enum(['verbal', 'quantitative']),
+  "difficulty": zod.string(),
+  "imageUrl": zod.string().nullish(),
+  "imageUrls": zod.array(zod.string())
+})),
+  "total": zod.number(),
+  "coverage": zod.object({
+  "covered": zod.number(),
+  "total": zod.number(),
+  "remaining": zod.number(),
+  "percent": zod.number().min(createFoundationCoverageTestResponseCoveragePercentMin).max(createFoundationCoverageTestResponseCoveragePercentMax)
+})
+})
+
+
+/**
+ * @summary Submit answers for a server-owned question-bank test
+ */
+
+
+export const submitMobileFreeTestBodyAnswersItemSelectedIndexMin = 0;
+
+export const submitMobileFreeTestBodyAnswersItemResponseTimeMin = 0;
+export const submitMobileFreeTestBodyAnswersItemResponseTimeMax = 86400;
+
+export const submitMobileFreeTestBodyTimeTakenMin = 0;
+export const submitMobileFreeTestBodyTimeTakenMax = 7200;
+
+
+
+export const SubmitMobileFreeTestBody = zod.object({
+  "attemptId": zod.string().min(1),
+  "answers": zod.array(zod.object({
+  "questionId": zod.string().min(1),
+  "selectedIndex": zod.number().min(submitMobileFreeTestBodyAnswersItemSelectedIndexMin),
+  "responseTime": zod.number().min(submitMobileFreeTestBodyAnswersItemResponseTimeMin).max(submitMobileFreeTestBodyAnswersItemResponseTimeMax).optional()
+})),
+  "timeTaken": zod.number().min(submitMobileFreeTestBodyTimeTakenMin).max(submitMobileFreeTestBodyTimeTakenMax).optional()
+})
+
+export const SubmitMobileFreeTestResponse = zod.object({
+  "score": zod.number(),
+  "totalQuestions": zod.number(),
+  "correctAnswers": zod.number(),
+  "wrongAnswers": zod.number(),
+  "skippedQuestions": zod.number(),
+  "percentage": zod.number()
+})
+
+
+/**
+ * @summary Create a sandbox Geidea hosted-checkout session for the signed-in student
+ */
+export const CreateGeideaCheckoutSessionBody = zod.object({
+  "planKey": zod.enum(['pro', 'proLifePlus'])
+})
+
+export const CreateGeideaCheckoutSessionResponse = zod.object({
+  "paymentId": zod.string(),
+  "sessionId": zod.string(),
+  "checkoutUrl": zod.string()
+})
+
+
+/**
+ * @summary Reconcile and return the signed-in student's Geidea payment status
+ */
+export const GetGeideaPaymentStatusParams = zod.object({
+  "paymentId": zod.coerce.string()
+})
+
+export const GetGeideaPaymentStatusResponse = zod.object({
+  "paymentId": zod.string(),
+  "status": zod.enum(['session_created', 'pending', 'paid', 'failed', 'refund_pending', 'refund_failed', 'refunded']),
+  "plan": zod.string(),
+  "amount": zod.number(),
+  "currency": zod.enum(['SAR']),
+  "invoiceNumber": zod.string().nullish(),
+  "providerOrderId": zod.string().nullish(),
+  "paidAt": zod.coerce.date().nullish()
+})
+
+
+/**
+ * @summary Receive a Geidea callback and reconcile it against the merchant API
+ */
+export const ReceiveGeideaPaymentCallbackBody = zod.object({
+  "merchantReferenceId": zod.string().optional(),
+  "orderId": zod.string().optional(),
+  "amount": zod.number().optional(),
+  "currency": zod.string().optional(),
+  "status": zod.string().optional(),
+  "timestamp": zod.string().optional(),
+  "signature": zod.string().optional()
+})
+
+export const ReceiveGeideaPaymentCallbackResponse = zod.unknown()
+
+
+/**
+ * @summary List Geidea subscription payments for authorized accounting admins
+ */
+export const listGeideaTransactionsQueryPageDefault = 1;
+
+export const listGeideaTransactionsQueryLimitDefault = 25;
+export const listGeideaTransactionsQueryLimitMax = 100;
+
+
+
+export const ListGeideaTransactionsQueryParams = zod.object({
+  "page": zod.coerce.number().min(1).default(listGeideaTransactionsQueryPageDefault),
+  "limit": zod.coerce.number().min(1).max(listGeideaTransactionsQueryLimitMax).default(listGeideaTransactionsQueryLimitDefault)
+})
+
+export const ListGeideaTransactionsResponse = zod.object({
+  "transactions": zod.array(zod.object({
+  "id": zod.string(),
+  "studentName": zod.string(),
+  "studentEmail": zod.string().nullish(),
+  "studentPhone": zod.string().nullish(),
+  "plan": zod.string(),
+  "amount": zod.number(),
+  "currency": zod.string(),
+  "status": zod.string(),
+  "providerStatus": zod.string().nullish(),
+  "providerOrderId": zod.string().nullish(),
+  "merchantReferenceId": zod.string().nullish(),
+  "invoiceNumber": zod.string().optional(),
+  "createdAt": zod.coerce.date(),
+  "paidAt": zod.coerce.date().nullish(),
+  "refundedAt": zod.coerce.date().nullish(),
+  "refundedAmount": zod.number().optional(),
+  "refundReason": zod.string().nullish()
+})),
+  "total": zod.number(),
+  "page": zod.number(),
+  "limit": zod.number(),
+  "totalPages": zod.number()
+})
+
+
+/**
+ * @summary Refund the remaining paid balance through Geidea
+ */
+export const RefundGeideaTransactionParams = zod.object({
+  "id": zod.coerce.string()
+})
+
+export const refundGeideaTransactionBodyReasonMin = 3;
+export const refundGeideaTransactionBodyReasonMax = 300;
+
+
+
+export const RefundGeideaTransactionBody = zod.object({
+  "reason": zod.string().min(refundGeideaTransactionBodyReasonMin).max(refundGeideaTransactionBodyReasonMax)
+})
+
+export const RefundGeideaTransactionResponse = zod.object({
+  "success": zod.boolean(),
+  "paymentId": zod.string(),
+  "refundedAmount": zod.number(),
+  "status": zod.enum(['refunded'])
+})
+
+

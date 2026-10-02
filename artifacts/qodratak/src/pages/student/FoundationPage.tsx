@@ -6,7 +6,9 @@ import {
   FoundationLearningState,
   StudentDashboard,
   useFoundationContent,
+  useFoundationLearningPath,
   useFoundationLearningState,
+  useLearningContentProgressSummary,
   useStartFoundationDiagnostic,
   useStudentDashboard,
   useSubmitFoundationDiagnostic,
@@ -14,12 +16,19 @@ import {
 import { foundationSections, getFoundationSection, type FoundationProgram, type FoundationSection } from "@/data/foundationSections";
 import { foundationCurriculum } from "@/data/foundationCurriculum";
 import { Link, useLocation, useSearch } from "wouter";
-import { ArrowLeft, BarChart3, BookOpen, Clock, FileText, GraduationCap, Info, ListChecks, Loader2, PlayCircle, Route, ShieldCheck, Target, Trophy } from "lucide-react";
+import { ArrowLeft, BarChart3, BookOpen, CheckCircle2, Clock, FileText, GraduationCap, Info, ListChecks, Loader2, PlayCircle, Route, ShieldCheck, Target, Trophy } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Progress } from "@/components/ui/progress";
 import OfficialScoreCard from "@/components/student/OfficialScoreCard";
 import { getVideoEmbedUrl } from "@/lib/video";
+import {
+  isDirectFoundationVideo,
+  resolveFoundationAssetUrl,
+  resolveFoundationVideoUrl,
+} from "@/lib/foundationVideoUrl";
+import { getQuestionImageUrls } from "@/lib/questionImages";
+import { StudentWorkflow, workflowStageForLevel, type WorkflowStage } from "@/components/student/StudentWorkflow";
 
 function ProgressBar({ value, className = "" }: { value: number; className?: string }) {
   return <Progress value={Math.max(0, Math.min(100, value))} className={`h-2.5 ${className}`} />;
@@ -167,10 +176,19 @@ function DiagnosticQuestionCard({
   selected?: number;
   onSelect: (questionId: string, optionIndex: number) => void;
 }) {
+  const questionImages = getQuestionImageUrls(question);
   return (
     <fieldset className="rounded-2xl border border-border bg-card p-4">
       <legend className="px-1 text-sm font-black text-foreground">السؤال {index + 1} · {question.category === "verbal" ? "لفظي" : "كمي"}</legend>
-      <p className="mt-2 text-sm font-bold leading-7 text-foreground">{question.text}</p>
+      {questionImages.length ? (
+        <div className="mt-2 space-y-2">
+          {questionImages.map((imageUrl) => (
+            <img key={imageUrl} src={imageUrl} alt={`صورة السؤال ${index + 1}`} className="mx-auto max-h-80 w-auto max-w-full rounded-xl border border-border object-contain" />
+          ))}
+        </div>
+      ) : (
+        <p className="mt-2 text-sm font-bold leading-7 text-foreground">{question.text}</p>
+      )}
       <p className="mt-1 text-xs text-muted-foreground">{question.subcategory}</p>
       <div className="mt-3 grid gap-2 sm:grid-cols-2">
         {question.options.map((option, optionIndex) => (
@@ -190,6 +208,355 @@ function DiagnosticQuestionCard({
         ))}
       </div>
     </fieldset>
+  );
+}
+
+function FoundationQuizCard({ lesson }: { lesson: FoundationContent }) {
+  const quiz = lesson.quiz;
+  const [, setLocation] = useLocation();
+
+  if (!quiz?.questionIds?.length) return null;
+
+  return (
+    <section className="mt-5 rounded-2xl border border-primary/25 bg-primary/5 p-4" dir="rtl">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <div className="flex items-center gap-2 text-primary">
+            <ListChecks className="h-4 w-4" />
+            <p className="text-xs font-black">اختبار في صفحة مستقلة</p>
+          </div>
+          <h3 className="mt-1 text-base font-black text-foreground">{quiz.title}</h3>
+          <p className="mt-1 text-xs leading-6 text-muted-foreground">
+            {quiz.instructions || "أجب عن أسئلة هذا البنك بعد مشاهدة الشرح."}
+          </p>
+        </div>
+        <Button
+          type="button"
+          className="shrink-0 rounded-xl font-black"
+          onClick={() => setLocation(`/foundation/computer-bank-test/${lesson._id}`)}
+        >
+          ابدأ الاختبار
+        </Button>
+      </div>
+    </section>
+  );
+}
+
+function JourneyVideo({ lesson }: { lesson: FoundationContent | null }) {
+  const videoUrl = lesson?.videoUrl?.trim() || "";
+  const isDirectVideo = isDirectFoundationVideo(videoUrl);
+  const embedUrl = videoUrl && !isDirectVideo ? getVideoEmbedUrl(videoUrl) : null;
+
+  return (
+    <div className="overflow-hidden rounded-2xl bg-[#07111f]">
+      {isDirectVideo ? (
+        <video
+          src={resolveFoundationVideoUrl(videoUrl)}
+          title={lesson?.title || "فيديو الدرس"}
+          className="aspect-video w-full bg-black object-contain"
+          controls
+          playsInline
+          preload="metadata"
+          controlsList="nodownload"
+        />
+      ) : embedUrl ? (
+        <iframe
+          src={embedUrl}
+          title={lesson?.title || "فيديو الدرس"}
+          className="aspect-video w-full"
+          allow="accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture"
+          sandbox="allow-scripts allow-same-origin allow-presentation"
+          referrerPolicy="strict-origin-when-cross-origin"
+        />
+      ) : (
+        <div className="flex aspect-video flex-col items-center justify-center px-6 text-center text-slate-300">
+          <PlayCircle className="h-12 w-12 text-[#F7F775]" />
+          <p className="mt-3 text-sm font-black">
+            {lesson ? "الفيديو سيظهر هنا عند نشره" : "سيظهر فيديو مهمتك هنا"}
+          </p>
+          <p className="mt-1 text-xs leading-6 text-slate-400">
+            لا تحتاج إلى البحث عنه داخل البنوك؛ سيبقى مرتبطًا بمهمتك الحالية.
+          </p>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function CurrentStageCard({
+  stage,
+  lesson,
+  isLoading,
+  title,
+  description,
+  action,
+}: {
+  stage: WorkflowStage;
+  lesson: FoundationContent | null;
+  isLoading: boolean;
+  title?: string;
+  description?: string;
+  action?: { label: string; href: string };
+}) {
+  const stageCopy: Record<Exclude<WorkflowStage, "foundation">, {
+    eyebrow: string;
+    title: string;
+    description: string;
+    href: string;
+    action: string;
+  }> = {
+    skills: {
+      eyebrow: "المرحلة الحالية · التدريب المهاري",
+      title: "ابدأ تدريبك المحوسب",
+      description: "اختر الكمي أو اللفظي، ثم تدرب على المهارة التي حددتها لك الخطة. فيديوهات هذه المرحلة منفصلة عن فيديوهات التأسيس.",
+      href: "/computerized",
+      action: "فتح التدريب المحوسب",
+    },
+    banks: {
+      eyebrow: "المرحلة الحالية · بنوك الأقسام",
+      title: "وسّع تدريبك داخل البنك",
+      description: "بعد تثبيت المهارة، انتقل إلى بنك القسم وحل مجموعة أكبر مع مراجعة الأخطاء.",
+      href: "/question-bank",
+      action: "فتح بنك الأسئلة",
+    },
+    simulation: {
+      eyebrow: "المرحلة الحالية · المحاكاة والاحتراف",
+      title: "اختبر مستواك في محاكاة كاملة",
+      description: "أنت جاهز لاختبار كامل بوقت وتحليل نتيجة يحدد آخر نقاط التحسين.",
+      href: "/qiyas",
+      action: "فتح الاختبارات",
+    },
+  };
+
+  if (stage !== "foundation") {
+    const copy = stageCopy[stage];
+    return (
+      <div className="flex min-h-full flex-col justify-between rounded-3xl bg-[#0D1B2A] p-5 text-white shadow-sm sm:p-6">
+        <div>
+          <div className="inline-flex rounded-full bg-white/10 px-3 py-1 text-[11px] font-black text-[#F7F775]">
+            {copy.eyebrow}
+          </div>
+          <h2 className="mt-5 text-2xl font-black">{title || copy.title}</h2>
+          <p className="mt-3 text-sm leading-7 text-[#CBD5E1]">{description || copy.description}</p>
+        </div>
+        <Link data-testid="link-current-stage-action" href={action?.href || copy.href} className="mt-8 inline-flex items-center justify-center gap-2 rounded-xl bg-[#F7F775] px-4 py-3 text-sm font-black text-[#0D1B2A]">
+          {action?.label || copy.action}
+          <ArrowLeft className="h-4 w-4" />
+        </Link>
+      </div>
+    );
+  }
+
+  return (
+    <div className="rounded-3xl border border-border bg-card p-4 shadow-sm sm:p-5">
+      <div className="mb-4 flex items-start justify-between gap-3">
+        <div>
+          <p className="text-xs font-black text-primary">المرحلة الحالية · فيديو التأسيس</p>
+          <h2 className="mt-1 text-xl font-black text-foreground">
+            {isLoading ? "نحضر الدرس..." : title || lesson?.title || "أول درس في رحلتك"}
+          </h2>
+        </div>
+        <PlayCircle className="h-6 w-6 shrink-0 text-primary" />
+      </div>
+      <JourneyVideo lesson={lesson} />
+      <div className="mt-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <p className="text-xs leading-6 text-muted-foreground">
+          {description || lesson?.description || "بعد المشاهدة انتقل إلى التدريب ثم اختبار التثبيت من نفس الدرس."}
+        </p>
+        <Link data-testid="link-current-stage-action" href={action?.href || "/foundation?program=qudrat&subject=verbal"} className="inline-flex shrink-0 items-center justify-center gap-2 rounded-xl bg-primary px-4 py-2.5 text-xs font-black text-primary-foreground">
+          {action?.label || "فتح درس التأسيس"}
+          <ArrowLeft className="h-4 w-4" />
+        </Link>
+      </div>
+    </div>
+  );
+}
+
+function JourneyStep({
+  number,
+  title,
+  description,
+  href,
+  state,
+}: {
+  number: number;
+  title: string;
+  description: string;
+  href?: string;
+  state: "current" | "open" | "locked";
+}) {
+  const content = (
+    <div
+      className={`relative rounded-2xl border p-4 transition ${
+        state === "current"
+          ? "border-primary bg-primary/5 shadow-sm"
+          : state === "open"
+            ? "border-border bg-card hover:border-primary/40 hover:shadow-sm"
+            : "border-border/70 bg-muted/30 opacity-65"
+      }`}
+    >
+      <div className="flex items-start gap-3">
+        <span
+          className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-xl text-sm font-black ${
+            state === "current"
+              ? "bg-primary text-primary-foreground"
+              : state === "open"
+                ? "bg-primary/10 text-primary"
+                : "bg-muted text-muted-foreground"
+          }`}
+        >
+          {number}
+        </span>
+        <div className="min-w-0">
+          <div className="flex flex-wrap items-center gap-2">
+            <h3 className="text-sm font-black text-foreground">{title}</h3>
+            <span
+              className={`rounded-full px-2 py-0.5 text-[10px] font-black ${
+                state === "current"
+                  ? "bg-primary/10 text-primary"
+                  : state === "open"
+                    ? "bg-emerald-500/10 text-emerald-700 dark:text-emerald-300"
+                    : "bg-muted text-muted-foreground"
+              }`}
+            >
+              {state === "current" ? "أنت هنا" : state === "open" ? "متاح" : "بعدها"}
+            </span>
+          </div>
+          <p className="mt-1 text-xs leading-6 text-muted-foreground">{description}</p>
+        </div>
+      </div>
+    </div>
+  );
+
+  return href && state !== "locked" ? (
+    <Link href={href} className="block">
+      {content}
+    </Link>
+  ) : (
+    content
+  );
+}
+
+function JourneyHome({
+  dashboard,
+  isLoading,
+  isError,
+  error,
+  onRetry,
+  learningContent,
+  isLearningContentLoading,
+}: {
+  dashboard?: StudentDashboard;
+  isLoading: boolean;
+  isError: boolean;
+  error?: Error | null;
+  onRetry: () => void;
+  learningContent: FoundationContent | null;
+  isLearningContentLoading: boolean;
+}) {
+  const progress = dashboard?.progress;
+  const {
+    data: learningState,
+    isLoading: isLearningStateLoading,
+    isError: isLearningStateError,
+    error: learningStateError,
+    refetch: refetchLearningState,
+  } = useFoundationLearningState("qudrat");
+  const [diagnosticOpen, setDiagnosticOpen] = useState(false);
+  const diagnosticComplete = learningState?.status === "diagnostic_completed";
+  const qudratProgress = progress?.qudrat.percentage || 0;
+  const recommendation = learningState?.recommendation;
+  const dashboardPlan = dashboard?.recommendedPlan;
+  const workflowLevel = dashboardPlan?.level || "foundation";
+  const workflowStage = diagnosticComplete ? workflowStageForLevel(workflowLevel) : "foundation";
+
+  if (isError || isLearningStateError) {
+    return (
+      <div className="mx-auto flex min-h-[60vh] max-w-xl flex-col items-center justify-center gap-4 p-6 text-center" dir="rtl">
+        <p className="text-sm font-bold text-destructive">
+          {error?.message || learningStateError?.message || "تعذر تحميل رحلتك حاليًا."}
+        </p>
+        <Button
+          type="button"
+          variant="outline"
+          className="rounded-xl"
+          onClick={() => {
+            onRetry();
+            void refetchLearningState();
+          }}
+        >
+          إعادة المحاولة
+        </Button>
+      </div>
+    );
+  }
+
+  const nextActionHref = diagnosticComplete
+    ? dashboardPlan?.nextAction.href || recommendation?.href || "/foundation?program=qudrat&subject=verbal"
+    : undefined;
+
+  return (
+    <>
+      <div className="mx-auto max-w-5xl space-y-5 p-5 md:p-8" dir="rtl">
+        <header>
+          <p className="text-xs font-black text-primary">رحلتك في قدراتك</p>
+          <h1 className="mt-1 text-2xl font-black text-foreground sm:text-3xl">خطوتك القادمة واضحة</h1>
+          <p className="mt-2 text-sm leading-6 text-muted-foreground">
+            {diagnosticComplete
+              ? `مرحلتك الحالية: ${workflowStage === "simulation" ? "المحاكاة" : workflowStage === "skills" ? "التدريب المهاري" : "التأسيس"}`
+              : "ابدأ بتقييم قصير، ثم نحدد لك من أين تبدأ."}
+          </p>
+        </header>
+
+        {!diagnosticComplete && (
+          <section data-testid="foundation-diagnostic-next-step" className="flex flex-col gap-4 rounded-3xl border border-primary/20 bg-primary/5 p-5 sm:flex-row sm:items-center sm:justify-between sm:p-6">
+            <div>
+              <p className="text-xs font-black text-primary">أول خطوة</p>
+              <h2 className="mt-1 text-lg font-black text-foreground">
+                {isLoading || isLearningStateLoading ? "نحدد نقطة البداية..." : "ابدأ تقييم البداية"}
+              </h2>
+              <p className="mt-1 text-sm leading-6 text-muted-foreground">
+                أجب عن أسئلة قصيرة لنقترح لك مستوى البداية المناسب.
+              </p>
+            </div>
+            <Button
+              type="button"
+              data-testid="button-start-foundation-diagnostic"
+              className="shrink-0 rounded-xl font-black"
+              disabled={isLoading || isLearningStateLoading}
+              onClick={() => setDiagnosticOpen(true)}
+            >
+              {isLoading || isLearningStateLoading ? "جارٍ التحميل" : "ابدأ التقييم"}
+              <ListChecks className="mr-2 h-4 w-4" />
+            </Button>
+          </section>
+        )}
+
+        {diagnosticComplete && (
+          <CurrentStageCard
+            stage={workflowStage}
+            lesson={learningContent}
+            isLoading={isLearningContentLoading}
+            title={workflowStage === "foundation" ? undefined : dashboardPlan?.title || recommendation?.title}
+            description={workflowStage === "foundation" ? undefined : dashboardPlan?.description || recommendation?.reason}
+            action={{
+              label: dashboardPlan?.nextAction.label || "ابدأ مهمتك",
+              href: nextActionHref || "/foundation?program=qudrat&subject=verbal",
+            }}
+          />
+        )}
+
+        {!isLoading && !isLearningStateLoading && (
+          <StudentWorkflow
+            currentStage={workflowStage}
+            level={workflowLevel}
+            progress={qudratProgress}
+            focusLabel={learningState?.focus?.label}
+          />
+        )}
+      </div>
+      <FoundationDiagnosticDialog open={diagnosticOpen} onOpenChange={setDiagnosticOpen} />
+    </>
   );
 }
 
@@ -442,12 +809,30 @@ export default function FoundationPage() {
   const hasSubject = Boolean(params.get("subject"));
   const program: FoundationProgram = params.get("program") === "tahsili" ? "tahsili" : "qudrat";
   const requestedSection = getFoundationSection(program, params.get("subject"));
+  const requestedLessonId = params.get("lesson");
   const [selectedLesson, setSelectedLesson] = useState<FoundationContent | null>(null);
   const [visibleLessonCount, setVisibleLessonCount] = useState(40);
   const activeSection = requestedSection;
   const curriculum = foundationCurriculum[activeSection.key];
   const shouldLoadFoundationContent = hasSubject;
   const contentSubjectId = `subject.${program}.${activeSection.key}`;
+  const personalizationSubjectId = contentSubjectId === "subject.qudrat.verbal" || contentSubjectId === "subject.qudrat.quantitative"
+    ? contentSubjectId
+    : undefined;
+  const {
+    data: foundationPath,
+    isLoading: isFoundationPathLoading,
+    isError: isFoundationPathError,
+    refetch: refetchFoundationPath,
+  } = useFoundationLearningPath(program === "qudrat" ? personalizationSubjectId : undefined);
+  const {
+    data: homeVerbalContent = [],
+    isLoading: isHomeVerbalContentLoading,
+  } = useFoundationContent("qudrat", !hasProgram, "subject.qudrat.verbal");
+  const {
+    data: homeQuantitativeContent = [],
+    isLoading: isHomeQuantitativeContentLoading,
+  } = useFoundationContent("qudrat", !hasProgram, "subject.qudrat.quantitative");
   const {
     data: foundationContent,
     isLoading,
@@ -456,29 +841,64 @@ export default function FoundationPage() {
     refetch: refetchContent,
   } = useFoundationContent(program, shouldLoadFoundationContent, contentSubjectId);
   const {
+    data: completionSummary,
+    isError: isCompletionSummaryError,
+    refetch: refetchCompletionSummary,
+  } = useLearningContentProgressSummary(program, contentSubjectId, shouldLoadFoundationContent);
+  const {
     data: dashboard,
     isLoading: isDashboardLoading,
     isError: isDashboardError,
     error: dashboardError,
     refetch: refetchDashboard,
   } = useStudentDashboard(!hasSubject);
-  const content = foundationContent || [];
+  const content = useMemo(() => {
+    return foundationContent || [];
+  }, [foundationContent]);
+  const foundationBook = program === "qudrat"
+    ? content.find((item) => item.title.startsWith("كتاب قدراتك · التأسيس"))
+    : undefined;
+  const completedContentIds = useMemo(
+    () => new Set(completionSummary?.completedContentIds || []),
+    [completionSummary?.completedContentIds],
+  );
+  const homeLearningContent = homeVerbalContent[0] || homeQuantitativeContent[0] || null;
+  const isHomeContentLoading = isHomeVerbalContentLoading || isHomeQuantitativeContentLoading;
   const selectedLessonIndex = selectedLesson ? content.findIndex((item) => item._id === selectedLesson._id) : -1;
   const currentGuide = curriculum.lessons[Math.max(0, selectedLessonIndex) % curriculum.lessons.length];
 
+  useEffect(() => {
+    if (content.length > 0) {
+      const requestedLesson = requestedLessonId ? content.find((item) => item._id === requestedLessonId) : undefined;
+      if (requestedLesson) {
+        setSelectedLesson(requestedLesson);
+      } else if (!selectedLesson || !content.some((item) => item._id === selectedLesson._id)) {
+        setSelectedLesson(content[0]);
+      }
+    }
+  }, [content, requestedLessonId, selectedLesson]);
+
   const selectedEmbedUrl = useMemo(
-    () => (selectedLesson ? getVideoEmbedUrl(selectedLesson.videoUrl) : null),
+    () => {
+      if (!selectedLesson || isDirectFoundationVideo(selectedLesson.videoUrl)) return null;
+      return getVideoEmbedUrl(selectedLesson.videoUrl);
+    },
     [selectedLesson],
   );
+  const selectedDirectVideoUrl = selectedLesson && isDirectFoundationVideo(selectedLesson.videoUrl)
+    ? resolveFoundationVideoUrl(selectedLesson.videoUrl)
+    : null;
 
   if (!hasProgram) {
     return (
-      <FoundationHome
+      <JourneyHome
         dashboard={dashboard}
         isLoading={isDashboardLoading}
         isError={isDashboardError}
         error={dashboardError}
         onRetry={() => void refetchDashboard()}
+        learningContent={homeLearningContent}
+        isLearningContentLoading={isHomeContentLoading}
       />
     );
   }
@@ -492,6 +912,13 @@ export default function FoundationPage() {
     setVisibleLessonCount(40);
     setLocation(`/foundation?program=${program}&subject=${section.key}`);
   };
+  const readerHref = (contentId: string) =>
+    `/foundation/content/${encodeURIComponent(contentId)}?program=${program}&subject=${encodeURIComponent(activeSection.key)}`;
+  const coverageTestHref = `/foundation/coverage-test?subjectId=${encodeURIComponent(contentSubjectId)}`;
+  const foundationBookName = program === "tahsili" ? "كتاب التحصيلي" : "كتاب قدراتك";
+  const subjectActionHref = program === "tahsili" && activeSection.tahsiliSubject
+    ? `/tahsilik/tests/subject?subject=${encodeURIComponent(activeSection.tahsiliSubject)}`
+    : `/learning/today?programId=${program}&subjectId=${encodeURIComponent(contentSubjectId)}`;
 
   return (
     <div className="mx-auto max-w-7xl p-5 md:p-8 animate-fade-in">
@@ -501,9 +928,115 @@ export default function FoundationPage() {
           <span className="rounded-full bg-primary/10 px-3 py-1 text-primary">{program === "qudrat" ? "القدرات" : "التحصيلي"}</span>
           <span>التأسيس</span>
         </div>
-        <h1 className="text-3xl font-black text-[#0D1B2A] dark:text-white mb-2">{activeSection.title}</h1>
-        <p className="text-sm text-muted-foreground">{activeSection.description}</p>
+         <h1 className="text-3xl font-black text-[#0D1B2A] dark:text-white mb-2">{foundationBookName} · {activeSection.title}</h1>
+         <p className="max-w-3xl text-sm leading-7 text-muted-foreground">
+           هذا هو كتاب التأسيس الخاص بقسم {activeSection.shortTitle}: اقرأ الملزمة، شاهد الشرح، ثم صحّح اختبار كل درس من المكان نفسه.
+         </p>
+         <Button type="button" className="mt-4 rounded-xl font-black" onClick={() => setLocation(subjectActionHref)}>
+           {program === "tahsili" ? "ابدأ اختبار هذه المادة" : "ابدأ مهمة اليوم"}
+         </Button>
       </header>
+
+        <section className="mb-8 rounded-3xl border border-primary/20 bg-primary/5 p-4 sm:p-5" aria-label={`طريقة استخدام ${foundationBookName}`}>
+         <div className="flex items-center gap-2">
+           <BookOpen className="h-5 w-5 text-primary" />
+            <h2 className="text-base font-black text-foreground">كيف تستخدم {foundationBookName}؟</h2>
+         </div>
+         <div className="mt-4 grid gap-3 md:grid-cols-3">
+           {[
+             ["١", "اقرأ الباب", "افهم الفكرة، ثم تتبّع المثال المحلول وأعده بنفسك."],
+             ["٢", "شاهد الشرح", "شاهد الفيديو المرتبط بالدرس لتثبيت طريقة الحل."],
+             ["٣", "اختبر فهمك", "راجع أخطاءك، ثم استخدم اختبار تغطية البنك للتدرّب على أسئلة جديدة."],
+           ].map(([number, title, description]) => (
+             <div key={number} className="flex items-start gap-3 rounded-2xl border border-primary/10 bg-background/70 p-3">
+               <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-primary text-sm font-black text-primary-foreground">{number}</span>
+               <div>
+                 <p className="text-sm font-black text-foreground">{title}</p>
+                 <p className="mt-1 text-xs leading-5 text-muted-foreground">{description}</p>
+               </div>
+             </div>
+           ))}
+         </div>
+       </section>
+
+      {program === "qudrat" ? (
+        <section className="mb-8 grid gap-4 lg:grid-cols-[minmax(0,1.1fr)_minmax(320px,0.9fr)]" aria-label="الكتاب والمسار المخصص">
+          <div className="rounded-3xl border border-primary/20 bg-gradient-to-br from-primary/10 via-card to-card p-5 shadow-sm">
+            <div className="flex flex-wrap items-start justify-between gap-3">
+              <div>
+                <span className="inline-flex rounded-full bg-primary/10 px-3 py-1 text-xs font-black text-primary">كتاب تأسيسي مكتوب</span>
+                <h2 className="mt-3 text-xl font-black text-foreground">
+                  {foundationBook?.title || `كتاب التأسيس ${activeSection.shortTitle}`}
+                </h2>
+                <p className="mt-2 max-w-2xl text-sm leading-7 text-muted-foreground">
+                  شرح أصلي منظم من أساسيات الباب إلى استراتيجيات حل أسئلة القدرات، مع أمثلة محلولة وتنبيهات على الأخطاء الشائعة.
+                </p>
+              </div>
+              <BookOpen className="h-7 w-7 text-primary" />
+            </div>
+            <div className="mt-4 flex flex-wrap gap-2">
+              {foundationBook ? (
+                <Button type="button" onClick={() => setLocation(readerHref(foundationBook._id))} className="rounded-xl font-black">
+                  <BookOpen className="ml-2 h-4 w-4" /> افتح الكتاب
+                </Button>
+              ) : null}
+              <Button type="button" variant="outline" onClick={() => setLocation(coverageTestHref)} className="rounded-xl font-black">
+                <ListChecks className="ml-2 h-4 w-4" /> أنشئ اختبار تغطية
+              </Button>
+            </div>
+          </div>
+
+          <div className="rounded-3xl border border-border bg-card p-5 shadow-sm">
+            <div className="flex items-start justify-between gap-3">
+              <div>
+                <div className="flex items-center gap-2">
+                  <Route className="h-5 w-5 text-primary" />
+                  <h2 className="font-black text-foreground">مسارك حسب محاولاتك</h2>
+                </div>
+                <p className="mt-1 text-xs leading-5 text-muted-foreground">نموذج تعلّم آلي يرتّب الأبواب بحسب إجاباتك السابقة؛ التوقع تدريبي وليس حكمًا نهائيًا على الإتقان.</p>
+              </div>
+              <span className="rounded-full bg-muted px-2.5 py-1 text-[11px] font-bold text-muted-foreground">
+                {foundationPath?.attemptsUsed ?? 0} محاولة
+              </span>
+            </div>
+
+            {isFoundationPathLoading ? (
+              <div className="mt-5 flex items-center gap-2 text-sm text-muted-foreground">
+                <Loader2 className="h-4 w-4 animate-spin" /> نبني ترتيبك من محاولاتك السابقة...
+              </div>
+            ) : isFoundationPathError ? (
+              <div className="mt-4 rounded-xl border border-destructive/20 bg-destructive/5 p-3 text-sm text-destructive">
+                تعذر تحميل التخصيص الآن.
+                <Button type="button" variant="link" onClick={() => void refetchFoundationPath()} className="mr-1 h-auto p-0 text-destructive">إعادة المحاولة</Button>
+              </div>
+            ) : foundationPath ? (
+              <>
+                <div className="mt-4 space-y-2">
+                  {foundationPath.recommendations.slice(0, 3).map((recommendation, index) => (
+                    <div key={recommendation.skillKey} className="flex items-start gap-3 rounded-xl border border-border bg-background p-3">
+                      <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-xs font-black text-primary">{index + 1}</span>
+                      <div className="min-w-0 flex-1">
+                        <p className="text-sm font-black text-foreground">{recommendation.title}</p>
+                        <p className="mt-1 text-xs leading-5 text-muted-foreground">{recommendation.reason}</p>
+                      </div>
+                      <span className="shrink-0 rounded-full bg-muted px-2 py-1 text-[10px] font-bold text-muted-foreground">
+                        {recommendation.confidence < 0.3 ? "بيانات قليلة" : `توقع ${Math.round(recommendation.predictedCorrectProbability * 100)}٪`}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+                <div className="mt-4 rounded-xl bg-primary/5 p-3">
+                  <div className="flex items-center justify-between gap-3 text-xs">
+                    <span className="font-bold text-foreground">تغطية بنك الأسئلة</span>
+                    <span className="font-black text-primary">{foundationPath.coverage.covered.toLocaleString("ar")} من {foundationPath.coverage.total.toLocaleString("ar")} · {foundationPath.coverage.percent}٪</span>
+                  </div>
+                  <ProgressBar value={foundationPath.coverage.percent} className="mt-2" />
+                </div>
+              </>
+            ) : null}
+          </div>
+        </section>
+      ) : null}
 
       <div className={`mb-8 grid gap-3 ${program === "qudrat" ? "sm:grid-cols-2" : "sm:grid-cols-2 lg:grid-cols-4"}`}>
         {foundationSections[program].map((section) => (
@@ -525,11 +1058,39 @@ export default function FoundationPage() {
 
       <div className="mb-4 flex flex-wrap items-end justify-between gap-3">
         <div>
-          <h2 className="text-xl font-black text-foreground">فيديوهات واختبارات التأسيس</h2>
-          <p className="mt-1 text-sm text-muted-foreground">شاهد الدرس، ثم اختبر فهمك من بنك {activeSection.shortTitle}.</p>
+           <h2 className="text-xl font-black text-foreground">دروس كتاب قدراتك</h2>
+           <p className="mt-1 text-sm text-muted-foreground">كل درس يجمع الملزمة، الفيديو، واختبار القسم في مسار واحد.</p>
         </div>
         <span className="rounded-full bg-primary/10 px-3 py-1 text-xs font-black text-primary">من الصفر إلى الاحتراف</span>
       </div>
+
+      {completionSummary && completionSummary.total > 0 ? (
+        <section className={`mb-5 rounded-2xl border p-4 ${completionSummary.completed === completionSummary.total ? "border-emerald-500/30 bg-emerald-500/10" : "border-primary/20 bg-primary/5"}`} aria-live="polite">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div className="flex items-center gap-2">
+              <CheckCircle2 className={`h-5 w-5 ${completionSummary.completed === completionSummary.total ? "text-emerald-600" : "text-primary"}`} />
+              <p className="font-black text-foreground">
+                {completionSummary.completed === completionSummary.total
+                  ? "أكملت جميع دروس هذا القسم"
+                  : `أكملت ${completionSummary.completed} من ${completionSummary.total} درسًا`}
+              </p>
+            </div>
+            <span className="rounded-full bg-background px-3 py-1 text-xs font-black text-foreground">
+              {completionSummary.completionPercent}٪
+            </span>
+          </div>
+          <ProgressBar value={completionSummary.completionPercent} className="mt-3" />
+        </section>
+      ) : null}
+
+      {isCompletionSummaryError ? (
+        <div className="mb-5 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-amber-500/30 bg-amber-500/5 p-4 text-sm text-foreground">
+          <span>تعذر تحميل بيانات الإنجاز، لكن يمكنك متابعة الدروس المنشورة.</span>
+          <Button type="button" variant="outline" className="rounded-xl" onClick={() => void refetchCompletionSummary()}>
+            إعادة تحميل الإنجاز
+          </Button>
+        </div>
+      ) : null}
 
       {isLoading ? (
         <div className="flex items-center justify-center rounded-2xl border border-border bg-card py-20">
@@ -537,18 +1098,37 @@ export default function FoundationPage() {
         </div>
       ) : isContentError ? (
         <div className="flex flex-col items-center justify-center gap-4 rounded-2xl border border-dashed border-destructive/40 bg-destructive/5 px-5 py-16 text-center">
-          <p className="text-sm font-bold text-destructive">
-            {contentError?.message || "تعذر تحميل محتوى هذا القسم حاليًا."}
-          </p>
-          <Button type="button" variant="outline" className="rounded-xl" onClick={() => void refetchContent()}>
+          <p className="text-sm font-bold text-destructive">{contentError?.message || "تعذر تحميل محتوى هذا القسم حاليًا."}</p>
+          <Button
+            type="button"
+            variant="outline"
+            className="rounded-xl"
+            onClick={() => {
+              void refetchContent();
+            }}
+          >
             إعادة المحاولة
           </Button>
         </div>
-      ) : content && content.length > 0 ? (
+      ) : content.length > 0 ? (
         <section className="grid items-start gap-5 lg:grid-cols-[minmax(0,1fr)_360px]">
           <div className="space-y-4 lg:sticky lg:top-5">
             <div className="overflow-hidden rounded-3xl border border-slate-800 bg-[#07111f] text-white shadow-xl">
-              {selectedLesson && selectedEmbedUrl ? (
+              {selectedLesson && selectedDirectVideoUrl ? (
+                <div className="aspect-video w-full bg-black">
+                  <video
+                    key={selectedDirectVideoUrl}
+                    src={selectedDirectVideoUrl}
+                    title={selectedLesson.title}
+                    className="h-full w-full"
+                    controls
+                    playsInline
+                    preload="metadata"
+                    controlsList="nodownload"
+                    onContextMenu={(event) => event.preventDefault()}
+                  />
+                </div>
+              ) : selectedLesson && selectedEmbedUrl ? (
                 <div className="aspect-video w-full bg-black">
                   <iframe
                     key={selectedEmbedUrl}
@@ -582,37 +1162,38 @@ export default function FoundationPage() {
                 </p>
                 <div className="mt-4 flex flex-wrap items-center gap-2">
                   {selectedLesson && /^[a-f\d]{24}$/i.test(selectedLesson._id) && (
-                    <Button type="button" onClick={() => setLocation(`/foundation/content/${selectedLesson._id}`)} className="rounded-xl bg-[#F7F775] font-black text-[#0D1B2A] hover:bg-[#F7F775]/90">
-                      <BookOpen className="ml-2 h-4 w-4" /> فتح الكتاب
+                    <Button type="button" onClick={() => setLocation(readerHref(selectedLesson._id))} className="rounded-xl bg-[#F7F775] font-black text-[#0D1B2A] hover:bg-[#F7F775]/90">
+                       <BookOpen className="ml-2 h-4 w-4" /> فتح صفحة الدرس
                     </Button>
                   )}
                   <div className="flex items-center gap-2 text-xs text-slate-400">
                     <ShieldCheck className="h-4 w-4 text-emerald-400" />
-                     الفيديو والاختبار داخل الصفحة
+                    {selectedLesson?.quiz ? "الاختبار في صفحة مستقلة" : "فيديو شرح للدرس"}
                   </div>
                 </div>
                  {selectedLesson?.attachments?.length ? (
                    <div className="mt-4 rounded-2xl border border-white/10 bg-white/5 p-3">
                      <div className="mb-2 flex items-center gap-2 text-xs font-black text-[#F7F775]">
                        <FileText className="h-4 w-4" />
-                       ملفات الدرس
+                        ملزمة كتاب قدراتك
                      </div>
                      <div className="grid gap-2 sm:grid-cols-2">
                        {selectedLesson.attachments.map((attachment) => (
                          <a
                            key={attachment.id}
-                           href={attachment.url}
+                            href={resolveFoundationAssetUrl(attachment.url)}
                            target="_blank"
                            rel="noreferrer"
                            className="flex items-center gap-2 rounded-xl border border-white/10 bg-black/20 px-3 py-2 text-xs font-bold text-slate-200 transition-colors hover:border-[#F7F775]/60 hover:text-[#F7F775]"
                          >
                            <FileText className="h-4 w-4 shrink-0 text-red-300" />
-                           <span className="min-w-0 truncate">{attachment.title}</span>
+                            <span className="min-w-0 truncate">{attachment.title || "ملزمة الدرس بصيغة PDF"}</span>
                          </a>
                        ))}
                      </div>
                    </div>
                  ) : null}
+                  {selectedLesson && <FoundationQuizCard key={selectedLesson._id} lesson={selectedLesson} />}
               </div>
             </div>
             <div className="rounded-2xl border border-border bg-card p-5">
@@ -639,7 +1220,7 @@ export default function FoundationPage() {
           <aside className="rounded-3xl border border-border bg-card p-4 shadow-sm">
             <div className="mb-3 flex items-center justify-between gap-3 border-b border-border pb-4">
               <div>
-                <h2 className="text-lg font-black text-foreground">فيديوهات الدروس</h2>
+                <h2 className="text-lg font-black text-foreground">قائمة الدروس</h2>
                 <p className="mt-1 text-xs text-muted-foreground">{content.length} درسًا مرتبة من البداية إلى الاحتراف</p>
               </div>
               <span className="rounded-full bg-primary/10 px-3 py-1 text-xs font-black text-primary">{activeSection.shortTitle}</span>
@@ -647,17 +1228,24 @@ export default function FoundationPage() {
             <div className="max-h-[680px] space-y-2 overflow-y-auto pl-1">
               {content.slice(0, visibleLessonCount).map((item, idx) => {
                 const active = selectedLesson?._id === item._id;
+                const completed = completedContentIds.has(item._id);
                 return (
                   <button
                     key={item._id}
                     type="button"
-                    onClick={() => setSelectedLesson(item)}
+                    onClick={() => setLocation(readerHref(item._id))}
+                    aria-label={`فتح درس ${item.title}`}
                     className={`flex w-full items-center gap-3 rounded-2xl border p-3 text-right transition ${active ? "border-primary bg-primary/10" : "border-border bg-background hover:border-primary/40 hover:bg-primary/5"}`}
                   >
-                    <span className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-xl text-xs font-black ${active ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground"}`}>{idx + 1}</span>
+                    <span className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-xl text-xs font-black ${completed ? "bg-emerald-500/15 text-emerald-700 dark:text-emerald-300" : active ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground"}`}>
+                      {completed ? <CheckCircle2 className="h-4 w-4" /> : idx + 1}
+                    </span>
                     <span className="min-w-0 flex-1">
                       <span className="block truncate text-sm font-black text-foreground">{item.title}</span>
-                      <span className="mt-1 block truncate text-xs text-muted-foreground">{item.description}</span>
+                      <span className="mt-1 block truncate text-xs text-muted-foreground">{completed ? "مكتمل · افتح لمراجعة الدرس" : item.description}</span>
+                    </span>
+                    <span className={`shrink-0 text-xs font-black ${completed ? "text-emerald-700 dark:text-emerald-300" : "text-primary"}`}>
+                      {completed ? "مكتمل" : "افتح الدرس"}
                     </span>
                     <PlayCircle className={`h-4 w-4 shrink-0 ${active ? "text-primary" : "text-muted-foreground"}`} />
                   </button>
@@ -678,12 +1266,12 @@ export default function FoundationPage() {
               <div className="mb-3 flex items-center justify-between gap-2">
                 <div>
                   <h3 className="text-sm font-black text-foreground">اختبارات التأسيس</h3>
-                  <p className="mt-1 text-xs text-muted-foreground">اختبر فهمك بعد كل موضوع.</p>
+                    <p className="mt-1 text-xs text-muted-foreground">اختبر فهمك بعد كل موضوع.</p>
                 </div>
                 <ListChecks className="h-4 w-4 text-primary" />
               </div>
                 <div className="rounded-2xl border border-dashed border-border bg-background p-4 text-sm leading-7 text-muted-foreground">
-                  افتح أي درس منشور لقراءة المحتوى ثم ابدأ التدريب المرتبط به من داخل الكتاب. لا يتم تصحيح الإجابات داخل هذه الصفحة.
+                   افتح صفحة الدرس من القائمة لمشاهدة الفيديو والملزمة والتنقل بين الدروس. يمكنك اختبار فهمك بعد ذلك.
                 </div>
             </div>
           </aside>
@@ -691,9 +1279,8 @@ export default function FoundationPage() {
       ) : (
         <div className="rounded-2xl border border-dashed border-border bg-card px-5 py-16 text-center">
           <BookOpen className="mx-auto mb-3 h-12 w-12 text-muted-foreground" />
-          <h3 className="text-lg font-black text-foreground">المحتوى المرئي قيد التجهيز</h3>
-          <p className="mt-1 text-sm text-muted-foreground">الشرح والاختبار جاهزان، وسيظهر الفيديو هنا عند نشره.</p>
-          <p className="mx-auto mt-5 max-w-md text-sm leading-7 text-muted-foreground">سيظهر التدريب داخل قارئ المحتوى عند نشر درس متاح لهذا القسم.</p>
+          <h3 className="text-lg font-black text-foreground">لا توجد دروس منشورة قابلة للفتح في هذا القسم</h3>
+          <p className="mt-1 text-sm text-muted-foreground">ستظهر الدروس هنا بعد نشرها واعتمادها.</p>
         </div>
       )}
 
@@ -702,7 +1289,7 @@ export default function FoundationPage() {
           <div>
             <div className="flex items-center gap-2">
               <BookOpen className="h-5 w-5 text-primary" />
-              <h2 className="text-xl font-black text-foreground">كتاب تأسيس {activeSection.shortTitle}</h2>
+               <h2 className="text-xl font-black text-foreground">خريطة {foundationBookName} · {activeSection.shortTitle}</h2>
             </div>
             <p className="mt-2 max-w-3xl text-sm leading-7 text-muted-foreground">{curriculum.intro}</p>
           </div>

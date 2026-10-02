@@ -7,19 +7,22 @@
 - [Server session authority](server-session-authority.md) — route access and the home screen must trust the server session, never stale localStorage data.
 - [Device-limit recovery](device-limit-recovery.md) — a verified login may delete one registered device through a short-lived challenge, then continue login safely.
 - [Unified plans and WhatsApp care](unified-plans-whatsapp-care.md) — purchase values use one plan setting; WhatsApp is restricted to queued OTP and essential transactional alerts.
+- [Geidea KSA checkout prerequisites](geidea-ksa-checkout.md) — keep KSA HPP hosts separate from Egypt examples; sandbox code 110/080 indicates online payments need merchant-side enablement.
 - [Dark-mode page contrast](dark-mode-page-contrast.md) — legacy pages use fixed light colors; keep contrast overrides scoped to the shared app surface.
 - [Subscription entitlement consistency](subscription-entitlement-consistency.md) — derive access from active Mongo records; make wallet activation atomic and invoices transaction-truthful.
 - [Question image import compatibility](question-image-import.md) — keep the first-image fields for legacy consumers while treating multi-image extraction as optional and reviewable.
+- [Question-number badge cleanup](question-number-badge-cleanup.md) — badge positions vary; locate the capsule geometry and mask only digit ink inside the number disc.
 - [Public Forms answer-key boundary](public-forms-answer-key.md) — public respondent HTML can expose prompts and options, but its numeric metadata is not a reliable answer key.
 - [Development admin fixture](development-admin-fixture.md) — keep the local admin demo identity independent from the removed legacy user export.
 - [Qodratak mailbox integration](mailbox-integration.md) — official mailbox settings must take precedence over legacy SMTP variables and remain secret-backed.
 - [Persistent media boundary](persistent-media-boundary.md) — production uploads must fail clearly without a persistent provider; local disk is development-only.
-- [Tahsili OCR review boundary](tahsili-ocr-review-boundary.md) — publish scanned-book questions as review-only until four options and the printed answer key are confidently matched.
+- [Scanned exam OCR review boundary](tahsili-ocr-review-boundary.md) — preserve source images, use OCR as supporting text, and keep ambiguous answer-key glyphs out of scored quizzes.
 - [Foundation progress metrics](foundation-progress-metrics.md) — current percentages reflect saved test performance; lesson completion needs separate persistence.
 - [Authenticated preview checks](authenticated-preview-checks.md) — a public preview can show an expected 401 for session-only APIs; validate protected flows with an authenticated browser session.
 - [Official score planning](official-score-planning.md) — keep externally reported verbal/quantitative scores separate from training results and use them to focus the next plan.
 - [Wouter query navigation](wouter-query-navigation.md) — use `useSearch()` for query state; `useLocation()` returns pathname only in the installed wouter version.
 - [Exam display mode](exam-display-mode.md) — fullscreen exam views hide platform chrome and keep the legacy exam layout on a controlled light palette.
+- [Computerized exam boundary](computerized-exam-boundary.md) — bank, section, comprehensive, and mixed exams must enter the shared Qiyas frame; source question images outrank noisy OCR.
 - [Content taxonomy review boundary](content-taxonomy-review-boundary.md) — source labels can seed safe program/subject candidates, but deep Skill/Concept mappings require review evidence.
 - [Student learning profile foundation](student-learning-profile-foundation.md) — keep observed counters compact, attempts/sessions separate, and legacy diagnostic fields backward-compatible.
 - [Unified learning attempts](unified-learning-attempts.md) — server-owned answer keys and source identity are mandatory before recording trusted per-question learning data.
@@ -31,3 +34,10 @@
 - [Tahsili visual language](tahsili-visual-language.md) — keep study surfaces calm and unified while exam-taking screens stay focused and scanable.
 - [Verbal Forms import boundary](verbal-forms-import-boundary.md) — preserve source passages and IDs, dedupe by question plus options, and keep incomplete-option items out of scored pools.
 - [Quantitative foundation attachments](foundation-quantitative-attachments.md) — publish stable PDF lesson materials before their matching videos arrive; keep video URLs optional.
+- [Local foundation video playback](local-foundation-video-playback.md) — local MP4 lessons need native video playback and byte-range serving, not provider iframes.
+- [Artifact build environment](artifact-build-environment.md) — standalone Vite builds need the artifact’s injected PORT and BASE_PATH values.
+- [Quantitative video timing calibration](quantitative-video-timing-calibration.md) — visually verify each question-badge prototype against its actual video frame before using it.
+- [Arabic PDF text normalization](arabic-pdf-text-normalization.md) — normalize PyMuPDF Arabic text with NFKC before matching printed answer labels.
+- [FFmpeg progress reporting](ffmpeg-progress-reporting.md) — configure progress at launch; SIGUSR1 terminated a running FFmpeg job and left partial output.
+- [OpenAPI codegen constraints](openapi-codegen-constraints.md) — use the generator-compatible schema and route shapes that keep Zod and client types compiling.
+- [React runtime error stacks](react-runtime-error-stack.md) — format JavaScript and React component stacks as strings in development logs so browser collectors preserve them.

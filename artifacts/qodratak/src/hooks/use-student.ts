@@ -18,8 +18,11 @@ export interface StudentDashboard {
     title: string;
     description: string;
     nextAction: { label: string; href: string };
+    level: "foundation" | "practice" | "mastery";
+    sessionsPerWeek?: number;
     focusSubject?: "verbal" | "quantitative";
     program?: "qudrat" | "tahsili";
+    subjectId?: string;
   };
   officialScores: {
     verbal?: number;
@@ -67,6 +70,10 @@ export interface FoundationContent {
       imageUrl?: string;
       imageUrls?: string[];
       explanation?: string;
+      source?: {
+        videoTimestampSeconds?: number;
+        videoTimestampInferred?: boolean;
+      };
     }>;
   };
 }
@@ -110,6 +117,20 @@ export interface LearningContentProgress {
   lastReadAt?: string;
   completedAt?: string;
   practiceCompletedAt?: string;
+}
+
+export interface LearningContentProgressSummary {
+  total: number;
+  completed: number;
+  completionPercent: number;
+  completedContentIds: string[];
+  items: Array<{
+    contentId: string;
+    order: number;
+    progress: number;
+    state: LearningContentProgress["state"];
+    completedAt?: string;
+  }>;
 }
 
 export type LearningContentAnnotationType = "HIGHLIGHT" | "UNDERLINE" | "DRAWING" | "NOTE";
@@ -278,6 +299,9 @@ export interface AdaptiveLearningDecision {
 }
 
 export interface StudentLearningRecommendation {
+  recommendationId?: string;
+  programId?: string;
+  subjectId?: string;
   recommendationType?: string;
   title?: string;
   reason?: string;
@@ -372,6 +396,12 @@ export function useStudentDashboard(enabled = true) {
         practice: "ركّز على نقاط الضعف",
         mastery: "انتقل للمحاكاة والمراجعة",
       };
+      const planLevel: "foundation" | "practice" | "mastery" =
+        data.recommendedPlan?.level === "mastery"
+          ? "mastery"
+          : data.recommendedPlan?.level === "practice"
+            ? "practice"
+            : "foundation";
       const recentTests = Array.isArray(data.recentTests) ? data.recentTests : [];
       const maxErrors = Math.max(1, ...(data.weaknesses || []).map((item: any) => Number(item.errorCount || 0)));
       return {
@@ -405,14 +435,37 @@ export function useStudentDashboard(enabled = true) {
             ? "ابدأ بخطة اللفظي"
             : data.recommendedPlan?.focusSubject === "quantitative"
               ? "ابدأ بخطة الكمي"
-              : levelLabels[data.recommendedPlan?.level] || "خطتك التالية",
+              : data.recommendedPlan?.program === "tahsili"
+                ? "ابدأ بخطة التحصيلي"
+              : levelLabels[planLevel] || "خطتك التالية",
           description: data.recommendedPlan?.focus || "ابدأ بالتأسيس ثم انتقل إلى التدريب المحوسب.",
           nextAction: {
-            label: data.recommendedPlan?.level === "mastery" ? "ابدأ اختبارًا محاكيًا" : "افتح خطتك",
-            href: data.recommendedPlan?.focusSubject
-              ? `/foundation?program=${data.recommendedPlan?.program || "qudrat"}&subject=${data.recommendedPlan.focusSubject}`
-              : data.recommendedPlan?.level === "mastery" ? "/book-exam" : "/foundation",
+            label: planLevel === "mastery"
+              ? data.recommendedPlan?.program === "tahsili" ? "ابدأ اختبارًا تحصيليًا" : "ابدأ اختبارًا محاكيًا"
+              : planLevel === "practice"
+                ? data.recommendedPlan?.program === "tahsili" ? "ابدأ اختبارًا حسب المادة" : "ابدأ التدريب"
+                : "ابدأ التأسيس",
+            href: planLevel === "mastery"
+              ? data.recommendedPlan?.program === "tahsili" ? "/tahsilik/tests" : "/qiyas"
+              : planLevel === "practice"
+                ? data.recommendedPlan?.program === "tahsili" ? "/tahsilik/tests" : "/computerized"
+                : data.recommendedPlan?.focusSubject
+                  ? `/foundation?program=${data.recommendedPlan?.program || "qudrat"}&subject=${data.recommendedPlan.focusSubject}`
+                  : data.recommendedPlan?.program === "tahsili"
+                    ? "/foundation?program=tahsili"
+                    : "/foundation",
           },
+          level: planLevel,
+          sessionsPerWeek: Number(data.recommendedPlan?.sessionsPerWeek || 0) || undefined,
+          focusSubject: data.recommendedPlan?.focusSubject === "verbal" || data.recommendedPlan?.focusSubject === "quantitative"
+            ? data.recommendedPlan.focusSubject
+            : undefined,
+          program: data.recommendedPlan?.program === "tahsili" ? "tahsili" : "qudrat",
+          subjectId: typeof data.recommendedPlan?.subjectId === "string"
+            ? data.recommendedPlan.subjectId
+            : data.recommendedPlan?.focusSubject === "verbal" || data.recommendedPlan?.focusSubject === "quantitative"
+              ? `subject.qudrat.${data.recommendedPlan.focusSubject}`
+              : undefined,
         },
         officialScores: data.officialScores
           ? {
@@ -438,30 +491,63 @@ export function useStudentDashboard(enabled = true) {
   });
 }
 
-export function useTodayLearningSession(enabled = true) {
+type StudentJourneyScope = {
+  programId?: "qudrat" | "tahsili";
+  subjectId?: string;
+};
+
+function scopedLearningUrl(path: string, scope: StudentJourneyScope) {
+  const params = new URLSearchParams();
+  if (scope.programId) params.set("programId", scope.programId);
+  if (scope.subjectId) params.set("subjectId", scope.subjectId);
+  const query = params.toString();
+  return query ? `${path}?${query}` : path;
+}
+
+function scopedLearningKey(path: string, scope: StudentJourneyScope) {
+  return [path, scope.programId || "all-programs", scope.subjectId || "all-subjects"];
+}
+
+export function useTodayLearningSession(
+  enabled = true,
+  programId?: StudentJourneyScope["programId"],
+  subjectId?: string,
+) {
+  const scope = { programId, subjectId };
   return useQuery<TodayLearningSession>({
-    queryKey: ["/api/learning/today"],
-    queryFn: () => fetchJson<TodayLearningSession>("/api/learning/today"),
+    queryKey: scopedLearningKey("/api/learning/today", scope),
+    queryFn: () => fetchJson<TodayLearningSession>(scopedLearningUrl("/api/learning/today", scope)),
     enabled,
     staleTime: 15 * 1000,
     refetchOnWindowFocus: true,
   });
 }
 
-export function useAdaptiveLearningDecision(enabled = true) {
+export function useAdaptiveLearningDecision(
+  enabled = true,
+  programId?: StudentJourneyScope["programId"],
+  subjectId?: string,
+) {
+  const scope = { programId, subjectId };
   return useQuery<AdaptiveLearningDecision>({
-    queryKey: ["/api/learning/adaptive/decision"],
-    queryFn: () => fetchJson<AdaptiveLearningDecision>("/api/learning/adaptive/decision"),
+    queryKey: scopedLearningKey("/api/learning/adaptive/decision", scope),
+    queryFn: () => fetchJson<AdaptiveLearningDecision>(scopedLearningUrl("/api/learning/adaptive/decision", scope)),
     enabled,
     staleTime: 15 * 1000,
     refetchOnWindowFocus: true,
   });
 }
 
-export function useStudentLearningRecommendations(enabled = true) {
+export function useStudentLearningRecommendations(
+  enabled = true,
+  programId?: StudentJourneyScope["programId"],
+) {
+  const scope = { programId };
   return useQuery<StudentLearningRecommendations>({
-    queryKey: ["/api/learning/recommendations"],
-    queryFn: () => fetchJson<StudentLearningRecommendations>("/api/learning/recommendations"),
+    queryKey: scopedLearningKey("/api/learning/recommendations", scope),
+    queryFn: () => fetchJson<StudentLearningRecommendations>(
+      scopedLearningUrl("/api/learning/recommendations", scope),
+    ),
     enabled,
     staleTime: 15 * 1000,
     refetchOnWindowFocus: true,
@@ -470,10 +556,14 @@ export function useStudentLearningRecommendations(enabled = true) {
 
 export function useStartTodayLearningSession() {
   const queryClient = useQueryClient();
-  return useMutation<TodayLearningSession, StudentApiError, void>({
-    mutationFn: () => fetchJson<TodayLearningSession>("/api/learning/today/start", { method: "POST" }),
-    onSuccess: (data) => {
-      queryClient.setQueryData(["/api/learning/today"], data);
+  return useMutation<TodayLearningSession, StudentApiError, StudentJourneyScope>({
+    mutationFn: (scope) => fetchJson<TodayLearningSession>("/api/learning/today/start", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(scope),
+    }),
+    onSuccess: (data, scope) => {
+      queryClient.setQueryData(scopedLearningKey("/api/learning/today", scope), data);
     },
   });
 }
@@ -492,8 +582,8 @@ export function useUpdateTodayLearningStep() {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(payload),
     }),
-    onSuccess: (data) => {
-      queryClient.setQueryData(["/api/learning/today"], data);
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/learning/today"] });
     },
   });
 }
@@ -506,8 +596,8 @@ export function useCompleteTodayLearningSession() {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(payload),
     }),
-    onSuccess: (data) => {
-      queryClient.setQueryData(["/api/learning/today"], data);
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/learning/today"] });
     },
   });
 }
@@ -556,6 +646,9 @@ export function useUpdateOfficialScores() {
     }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/student/dashboard"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/learning/today"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/learning/adaptive/decision"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/learning/recommendations"] });
       toast({
         title: "تم حفظ النتيجة",
         description: "حدّثنا الخطة لتبدأ من القسم الذي يحتاج دعمًا أكبر.",
@@ -592,6 +685,71 @@ export function useUpdateExamDate() {
   });
 }
 
+export interface FoundationBankCoverage {
+  covered: number;
+  total: number;
+  remaining: number;
+  percent: number;
+}
+
+export interface FoundationChapterRecommendation {
+  skillKey: string;
+  title: string;
+  predictedCorrectProbability: number;
+  confidence: number;
+  reason: string;
+}
+
+export interface FoundationLearningPath {
+  programId: string;
+  subjectId: string;
+  book: { contentId: string; title: string; chapterCount: number };
+  attemptsUsed: number;
+  level: "STARTER" | "BUILDING" | "DEVELOPING" | "READY";
+  modelVersion: string;
+  recommendations: FoundationChapterRecommendation[];
+  coverage: FoundationBankCoverage;
+}
+
+export interface FoundationCoverageTestQuestion {
+  id: string;
+  text: string;
+  options: string[];
+  category: "verbal" | "quantitative";
+  difficulty: string;
+  imageUrl?: string | null;
+  imageUrls: string[];
+}
+
+export interface FoundationCoverageTest {
+  attemptId: string;
+  questions: FoundationCoverageTestQuestion[];
+  total: number;
+  coverage: FoundationBankCoverage;
+}
+
+export interface FoundationCoverageTestResult {
+  score: number;
+  totalQuestions: number;
+  correctAnswers: number;
+  wrongAnswers: number;
+  skippedQuestions: number;
+  percentage: number;
+}
+
+export function useFoundationLearningPath(
+  subjectId: "subject.qudrat.verbal" | "subject.qudrat.quantitative" | undefined,
+) {
+  const suffix = subjectId === "subject.qudrat.verbal" ? "verbal" : "quantitative";
+  return useQuery<FoundationLearningPath>({
+    queryKey: ["/api/learning/foundation-path", subjectId || ""],
+    queryFn: () => fetchJson<FoundationLearningPath>(`/api/learning/foundation-path/${suffix}`),
+    enabled: Boolean(subjectId),
+    staleTime: 30 * 1000,
+    refetchOnWindowFocus: true,
+  });
+}
+
 export function useFoundationContent(program: 'qudrat' | 'tahsili', enabled = true, subjectId?: string) {
   return useQuery<FoundationContent[]>({
     queryKey: ["/api/foundation-content", program, subjectId || ""],
@@ -622,6 +780,22 @@ export function useLearningContentProgress(contentId: string, enabled = true) {
   });
 }
 
+export function useLearningContentProgressSummary(
+  program: "qudrat" | "tahsili",
+  subjectId?: string,
+  enabled = true,
+) {
+  return useQuery<LearningContentProgressSummary>({
+    queryKey: ["/api/learning/content-progress-summary", program, subjectId || ""],
+    queryFn: () => fetchJson<LearningContentProgressSummary>(
+      `/api/learning/content-progress-summary?program=${encodeURIComponent(program)}${subjectId ? `&subjectId=${encodeURIComponent(subjectId)}` : ""}`,
+    ),
+    enabled,
+    staleTime: 15 * 1000,
+    refetchOnWindowFocus: true,
+  });
+}
+
 export function useUpdateLearningContentProgress(contentId: string) {
   const queryClient = useQueryClient();
   return useMutation<LearningContentProgress, Error, {
@@ -636,6 +810,7 @@ export function useUpdateLearningContentProgress(contentId: string) {
     }),
     onSuccess: (data) => {
       queryClient.setQueryData(["/api/learning/content", contentId, "progress"], data);
+      void queryClient.invalidateQueries({ queryKey: ["/api/learning/content-progress-summary"] });
     },
   });
 }
@@ -650,6 +825,7 @@ export function useCompleteLearningContent(contentId: string) {
     }),
     onSuccess: (data) => {
       queryClient.setQueryData(["/api/learning/content", contentId, "progress"], data);
+      void queryClient.invalidateQueries({ queryKey: ["/api/learning/content-progress-summary"] });
     },
   });
 }
@@ -778,6 +954,9 @@ export function useSubmitFoundationDiagnostic() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/foundation/learning-state", "qudrat"] });
       queryClient.invalidateQueries({ queryKey: ["/api/student/dashboard"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/learning/today"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/learning/adaptive/decision"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/learning/recommendations"] });
     },
   });
 }

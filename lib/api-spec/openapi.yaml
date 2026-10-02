@@ -10,6 +10,10 @@ servers:
 tags:
   - name: health
     description: Health operations
+  - name: learning
+    description: Foundation books, personalization, and question-bank practice
+  - name: payments
+    description: Sandbox Geidea checkout, reconciliation, and admin refunds
 paths:
   /healthz:
     get:
@@ -30,8 +34,294 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/HealthStatus"
+  /learning/foundation-path/verbal:
+    get:
+      operationId: getVerbalFoundationLearningPath
+      tags: [learning]
+      summary: Get a personalized verbal foundation path
+      responses:
+        "200":
+          description: Student-specific chapter priorities and question-bank coverage
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/FoundationLearningPath"
+        "401":
+          description: Authentication required
+        "503":
+          description: Foundation book or personalization service is unavailable
+  /learning/foundation-path/quantitative:
+    get:
+      operationId: getQuantitativeFoundationLearningPath
+      tags: [learning]
+      summary: Get a personalized quantitative foundation path
+      responses:
+        "200":
+          description: Student-specific chapter priorities and question-bank coverage
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/FoundationLearningPath"
+        "401":
+          description: Authentication required
+        "503":
+          description: Foundation book or personalization service is unavailable
+  /learning/foundation-test:
+    post:
+      operationId: createFoundationCoverageTest
+      tags: [learning]
+      summary: Create a personalized question-bank coverage test
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/FoundationCoverageTestInput"
+      responses:
+        "200":
+          description: A server-graded test containing unattempted bank questions first
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/FreeTestSession"
+        "401":
+          description: Authentication required
+        "400":
+          description: The requested category, size, or difficulty is invalid
+        "404":
+          description: No eligible questions are available
+  /mobile/test-results:
+    post:
+      operationId: submitMobileFreeTest
+      tags: [learning]
+      summary: Submit answers for a server-owned question-bank test
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/MobileFreeTestSubmission"
+      responses:
+        "201":
+          description: Graded result; answered questions are recorded for learning and review
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MobileFreeTestResult"
+        "400":
+          description: Test session is invalid or expired
+  /subscription/geidea/sessions:
+    post:
+      operationId: createGeideaCheckoutSession
+      tags: [payments]
+      summary: Create a sandbox Geidea hosted-checkout session for the signed-in student
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/GeideaCheckoutSessionInput"
+      responses:
+        "201":
+          description: A server-created checkout session; card details remain on Geidea
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GeideaCheckoutSession"
+        "400":
+          description: Unknown plan
+        "401":
+          description: Authentication required
+        "503":
+          description: Sandbox merchant credentials are not configured
+  /subscription/geidea/payments/{paymentId}:
+    get:
+      operationId: getGeideaPaymentStatus
+      tags: [payments]
+      summary: Reconcile and return the signed-in student's Geidea payment status
+      parameters:
+        - name: paymentId
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        "200":
+          description: Server-verified payment and subscription state
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GeideaPaymentStatus"
+        "401":
+          description: Authentication required
+        "404":
+          description: Payment not found for this student
+  /payments/geidea/callback:
+    post:
+      operationId: receiveGeideaPaymentCallback
+      tags: [payments]
+      summary: Receive a Geidea callback and reconcile it against the merchant API
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/GeideaCallbackPayload"
+      responses:
+        "200":
+          description: Callback accepted or already reconciled
+        "400":
+          description: Callback is missing a recognized merchant reference
+        "404":
+          description: Callback does not match a known payment
+        "503":
+          description: Geidea could not be reached; the callback can be retried
+  /admin/geidea/transactions:
+    get:
+      operationId: listGeideaTransactions
+      tags: [payments]
+      summary: List Geidea subscription payments for authorized accounting admins
+      parameters:
+        - name: page
+          in: query
+          schema: { type: number, minimum: 1, default: 1 }
+        - name: limit
+          in: query
+          schema: { type: number, minimum: 1, maximum: 100, default: 25 }
+      responses:
+        "200":
+          description: Paginated payment ledger
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GeideaTransactionList"
+        "401":
+          description: Admin authentication required
+        "403":
+          description: Accounting permission required
+  /admin/geidea/transactions/{id}/refund:
+    post:
+      operationId: refundGeideaTransaction
+      tags: [payments]
+      summary: Refund the remaining paid balance through Geidea
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/GeideaRefundInput"
+      responses:
+        "200":
+          description: Refund accepted by Geidea and recorded
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GeideaRefundResult"
+        "400":
+          description: Payment is not refundable or a refund is already in progress
+        "401":
+          description: Admin authentication required
+        "403":
+          description: Accounting permission required
+        "404":
+          description: Payment not found
 components:
   schemas:
+    GeideaCheckoutSessionInput:
+      type: object
+      additionalProperties: false
+      required: [planKey]
+      properties:
+        planKey:
+          type: string
+          enum: [pro, proLifePlus]
+    GeideaCheckoutSession:
+      type: object
+      additionalProperties: false
+      required: [paymentId, sessionId, checkoutUrl]
+      properties:
+        paymentId: { type: string }
+        sessionId: { type: string }
+        checkoutUrl: { type: string }
+    GeideaPaymentStatus:
+      type: object
+      additionalProperties: false
+      required: [paymentId, status, plan, amount, currency]
+      properties:
+        paymentId: { type: string }
+        status:
+          type: string
+          enum: [session_created, pending, paid, failed, refund_pending, refund_failed, refunded]
+        plan: { type: string }
+        amount: { type: number }
+        currency: { type: string, enum: [SAR] }
+        invoiceNumber: { type: ["string", "null"] }
+        providerOrderId: { type: ["string", "null"] }
+        paidAt: { type: ["string", "null"], format: date-time }
+    GeideaCallbackPayload:
+      type: object
+      additionalProperties: true
+      properties:
+        merchantReferenceId: { type: string }
+        orderId: { type: string }
+        amount: { type: number }
+        currency: { type: string }
+        status: { type: string }
+        timestamp: { type: string }
+        signature: { type: string }
+    GeideaTransaction:
+      type: object
+      additionalProperties: false
+      required: [id, studentName, plan, amount, currency, status, createdAt]
+      properties:
+        id: { type: string }
+        studentName: { type: string }
+        studentEmail: { type: ["string", "null"] }
+        studentPhone: { type: ["string", "null"] }
+        plan: { type: string }
+        amount: { type: number }
+        currency: { type: string }
+        status: { type: string }
+        providerStatus: { type: ["string", "null"] }
+        providerOrderId: { type: ["string", "null"] }
+        merchantReferenceId: { type: ["string", "null"] }
+        invoiceNumber: { type: string }
+        createdAt: { type: string, format: date-time }
+        paidAt: { type: ["string", "null"], format: date-time }
+        refundedAt: { type: ["string", "null"], format: date-time }
+        refundedAmount: { type: number }
+        refundReason: { type: ["string", "null"] }
+    GeideaTransactionList:
+      type: object
+      additionalProperties: false
+      required: [transactions, total, page, limit, totalPages]
+      properties:
+        transactions:
+          type: array
+          items: { $ref: "#/components/schemas/GeideaTransaction" }
+        total: { type: number }
+        page: { type: number }
+        limit: { type: number }
+        totalPages: { type: number }
+    GeideaRefundInput:
+      type: object
+      additionalProperties: false
+      required: [reason]
+      properties:
+        reason: { type: string, minLength: 3, maxLength: 300 }
+    GeideaRefundResult:
+      type: object
+      additionalProperties: false
+      required: [success, paymentId, refundedAmount, status]
+      properties:
+        success: { type: boolean }
+        paymentId: { type: string }
+        refundedAmount: { type: number }
+        status: { type: string, enum: [refunded] }
     HealthStatus:
       type: object
       properties:
@@ -44,4 +334,106 @@ components:
       required:
         - status
         - mongodb
+    FoundationLearningPath:
+      type: object
+      required: [programId, subjectId, book, attemptsUsed, level, modelVersion, recommendations, coverage]
+      properties:
+        programId: { type: string }
+        subjectId: { type: string }
+        book:
+          type: object
+          required: [contentId, title, chapterCount]
+          properties:
+            contentId: { type: string }
+            title: { type: string }
+            chapterCount: { type: number }
+        attemptsUsed: { type: number }
+        level:
+          type: string
+          enum: [STARTER, BUILDING, DEVELOPING, READY]
+        modelVersion: { type: string }
+        recommendations:
+          type: array
+          items:
+            $ref: "#/components/schemas/FoundationChapterRecommendation"
+        coverage:
+          $ref: "#/components/schemas/QuestionBankCoverage"
+    FoundationChapterRecommendation:
+      type: object
+      required: [skillKey, title, predictedCorrectProbability, confidence, reason]
+      properties:
+        skillKey: { type: string }
+        title: { type: string }
+        predictedCorrectProbability: { type: number, minimum: 0, maximum: 1 }
+        confidence: { type: number, minimum: 0, maximum: 1 }
+        reason: { type: string }
+    QuestionBankCoverage:
+      type: object
+      required: [covered, total, remaining, percent]
+      properties:
+        covered: { type: number }
+        total: { type: number }
+        remaining: { type: number }
+        percent: { type: number, minimum: 0, maximum: 100 }
+    FreeTestSession:
+      type: object
+      required: [attemptId, questions, total, coverage]
+      properties:
+        attemptId: { type: string }
+        questions:
+          type: array
+          items:
+            $ref: "#/components/schemas/FreeTestQuestion"
+        total: { type: number }
+        coverage:
+          $ref: "#/components/schemas/QuestionBankCoverage"
+    FreeTestQuestion:
+      type: object
+      required: [id, text, options, category, difficulty, imageUrls]
+      properties:
+        id: { type: string }
+        text: { type: string }
+        options:
+          type: array
+          items: { type: string }
+        category: { type: string, enum: [verbal, quantitative] }
+        difficulty: { type: string }
+        imageUrl: { type: ["string", "null"] }
+        imageUrls:
+          type: array
+          items: { type: string }
+    FoundationCoverageTestInput:
+      type: object
+      required: [category, count, difficulty]
+      properties:
+        category: { type: string, enum: [verbal, quantitative] }
+        count: { type: number, minimum: 5, maximum: 60 }
+        difficulty: { type: string, enum: [mixed, beginner, intermediate, advanced] }
+    MobileFreeTestSubmission:
+      type: object
+      required: [attemptId, answers]
+      properties:
+        attemptId: { type: string, minLength: 1 }
+        answers:
+          type: array
+          items:
+            $ref: "#/components/schemas/FreeTestAnswer"
+        timeTaken: { type: number, minimum: 0, maximum: 7200 }
+    FreeTestAnswer:
+      type: object
+      required: [questionId, selectedIndex]
+      properties:
+        questionId: { type: string, minLength: 1 }
+        selectedIndex: { type: number, minimum: 0 }
+        responseTime: { type: number, minimum: 0, maximum: 86400 }
+    MobileFreeTestResult:
+      type: object
+      required: [score, totalQuestions, correctAnswers, wrongAnswers, skippedQuestions, percentage]
+      properties:
+        score: { type: number }
+        totalQuestions: { type: number }
+        correctAnswers: { type: number }
+        wrongAnswers: { type: number }
+        skippedQuestions: { type: number }
+        percentage: { type: number }
 

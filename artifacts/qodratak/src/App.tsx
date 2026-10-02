@@ -10,6 +10,7 @@ import NationalDayPopup from "@/components/NationalDayPopup";
 
 import NotFound from "@/pages/not-found";
 import Home from "@/pages/NewHome";
+import GeideaPaymentReturnPage from "@/pages/GeideaPaymentReturnPage";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import ExamRecordsPage from "@/pages/ExamRecordsPage";
 import { ThemeProvider } from "next-themes";
@@ -155,11 +156,14 @@ import FooterGuidePage from "@/pages/FooterGuidePage";
 import { useUser } from "@/hooks/use-user";
 import DashboardPage from "@/pages/student/DashboardPage";
 import FoundationPage from "@/pages/student/FoundationPage";
+import FoundationCoverageTestPage from "@/pages/student/FoundationCoverageTestPage";
+import FoundationBankTestPage from "@/pages/student/FoundationBankTestPage";
 import FoundationReaderPage from "@/pages/student/FoundationReaderPage";
 import LearningTodayPage from "@/pages/student/LearningTodayPage";
 import ComputerizedPage from "@/pages/student/ComputerizedPage";
 import AccountPage from "@/pages/student/AccountPage";
 import { StudentShell } from "@/components/student/StudentShell";
+import { StudentExamChromeContext } from "@/components/student/StudentExamChromeContext";
 import { BrandLoadingScreen, PageTransition } from "@/components/PageTransition";
 import { BrandMark } from "@/components/BrandMark";
 
@@ -240,6 +244,52 @@ function AuthenticatedRouteBoundary({ children }: { children: React.ReactNode })
   }
 
   return <>{children}</>;
+}
+
+type ActiveExamFlags = {
+  qiyas: boolean;
+  abilities: boolean;
+  tahsili: boolean;
+};
+
+const TEST_ROUTES = [
+  '/free-verbal-test',
+  '/free-quantitative-test',
+  '/verbal-test-runner',
+  '/quantitative-test-runner',
+  '/advanced-verbal-test',
+  '/advanced-quantitative-test',
+  '/custom-exam',
+  '/mistake-challenge',
+  '/enhanced-mistake-challenge',
+  '/pre-exam-day',
+  '/folder-test',
+];
+
+function readActiveExamFlags(): ActiveExamFlags {
+  if (typeof window === 'undefined') {
+    return { qiyas: false, abilities: false, tahsili: false };
+  }
+
+  return {
+    qiyas: localStorage.getItem('qiyasExamInProgress') === 'true',
+    abilities: localStorage.getItem('abilitiesExamInProgress') === 'true',
+    tahsili: localStorage.getItem('tahsiliExamInProgress') === 'true',
+  };
+}
+
+function isTestModeLocation(
+  location: string,
+  activeExams: ActiveExamFlags,
+  isExamLayoutActive = false,
+): boolean {
+  if (isExamLayoutActive || TEST_ROUTES.includes(location)) return true;
+  if (location.startsWith('/book-exam/')) return true;
+  if (/^\/question-bank\/[^/]+\/\d+$/.test(location)) return true;
+  if (location === '/qiyas' && activeExams.qiyas) return true;
+  if (location === '/abilities' && activeExams.abilities) return true;
+  if (location === '/tahsili/exams' && activeExams.tahsili) return true;
+  return false;
 }
 
 function MainLayout({ children }: { children: React.ReactNode }) {
@@ -418,6 +468,7 @@ function MainLayout({ children }: { children: React.ReactNode }) {
   const [qiyasExamActive, setQiyasExamActive] = React.useState(false);
   const [abilitiesExamActive, setAbilitiesExamActive] = React.useState(false);
   const [tahsiliExamActive, setTahsiliExamActive] = React.useState(false);
+  const [isExamLayoutActive, setIsExamLayoutActive] = React.useState(false);
 
   React.useEffect(() => {
     const checkActiveExams = () => {
@@ -437,57 +488,17 @@ function MainLayout({ children }: { children: React.ReactNode }) {
     return () => window.removeEventListener('storage', checkActiveExams);
   }, []);
 
-  const isInTestMode = React.useMemo(() => {
-    const testRoutes = [
-      '/free-verbal-test',
-      '/free-quantitative-test',
-      '/verbal-test-runner',
-      '/quantitative-test-runner',
-      '/advanced-verbal-test',
-      '/advanced-quantitative-test',
-      '/custom-exam',
-      '/mistake-challenge',
-      '/enhanced-mistake-challenge',
-      '/pre-exam-day',
-      '/folder-test'
-    ];
-
-    // التحقق من المسارات الثابتة
-    if (testRoutes.includes(location)) {
-      return true;
-    }
-
-    // الاختبار المحجوز يملك غلافاً كاملاً خاصاً به؛ لا تضعه داخل
-    // الشريط الجانبي والهيدر والتنقل السفلي للتطبيق.
-    if (location.startsWith('/book-exam/')) {
-      return true;
-    }
-
-    // التحقق من مسارات بنك الأسئلة التي تحتوي على معاملات
-    if (location.match(/^\/question-bank\/[^\/]+\/\d+$/)) {
-      return true;
-    }
-
-    // التحقق من حالة الاختبار في qiyas
-    if (location === '/qiyas' && qiyasExamActive) {
-      return true;
-    }
-
-    // التحقق من حالة الاختبار في abilities
-    if (location === '/abilities' && abilitiesExamActive) {
-      return true;
-    }
-
-    // التحقق من حالة الاختبار في tahsili
-    if (location === '/tahsili/exams' && tahsiliExamActive) {
-      return true;
-    }
-
-    return false;
-  }, [location, qiyasExamActive, abilitiesExamActive, tahsiliExamActive]);
-
+  const isInTestMode = React.useMemo(
+    () => isTestModeLocation(location, {
+      qiyas: qiyasExamActive,
+      abilities: abilitiesExamActive,
+      tahsili: tahsiliExamActive,
+    }, isExamLayoutActive),
+    [location, qiyasExamActive, abilitiesExamActive, tahsiliExamActive, isExamLayoutActive],
+  );
 
   return (
+    <StudentExamChromeContext.Provider value={{ isActive: isExamLayoutActive, setActive: setIsExamLayoutActive }}>
     <div className={cn(
       "qodratak-app-shell flex min-h-screen bg-background text-foreground",
       isInTestMode && "h-[100dvh] max-h-[100dvh] overflow-hidden"
@@ -828,7 +839,30 @@ function MainLayout({ children }: { children: React.ReactNode }) {
 
       </div>
     </div>
+    </StudentExamChromeContext.Provider>
   );
+}
+
+function TestModeBadgeController() {
+  const [location] = useLocation();
+  const [activeExams, setActiveExams] = React.useState(readActiveExamFlags);
+
+  React.useEffect(() => {
+    const syncActiveExams = () => setActiveExams(readActiveExamFlags());
+    syncActiveExams();
+    window.addEventListener('storage', syncActiveExams);
+    return () => window.removeEventListener('storage', syncActiveExams);
+  }, [location]);
+
+  const isInTestMode = isTestModeLocation(location, activeExams);
+
+  React.useLayoutEffect(() => {
+    const root = document.documentElement;
+    root.classList.toggle('qodratak-test-mode', isInTestMode);
+    return () => root.classList.remove('qodratak-test-mode');
+  }, [isInTestMode]);
+
+  return null;
 }
 
 function Router({ splashDone }: { splashDone: boolean }) {
@@ -836,11 +870,15 @@ function Router({ splashDone }: { splashDone: boolean }) {
 
   return (
     <>
+      <TestModeBadgeController />
       {splashDone && <RotateDevicePrompt />}
        <RouteSEO isAuthenticated={Boolean(serverUser)} isLoading={isUserLoading} />
       <AuthenticatedRouteBoundary>
       <PageTransition>
       <Switch>
+      <Route path="/payment/geidea/return">
+        <GeideaPaymentReturnPage />
+      </Route>
       <Route path="/parent-dashboard">
         <ProtectedRoute>
           <ParentDashboardPage />
@@ -864,6 +902,18 @@ function Router({ splashDone }: { splashDone: boolean }) {
 
       <Route path="/foundation">
         {() => <StudentShell><ProtectedRoute><FoundationPage /></ProtectedRoute></StudentShell>}
+      </Route>
+      <Route path="/foundation/coverage-test">
+        {() => <StudentShell><ProtectedRoute><FoundationCoverageTestPage /></ProtectedRoute></StudentShell>}
+      </Route>
+      <Route path="/foundation/computer-bank-test/:contentId">
+        {(params) => (
+          <StudentShell>
+            <ProtectedRoute>
+              <FoundationBankTestPage contentId={params.contentId} />
+            </ProtectedRoute>
+          </StudentShell>
+        )}
       </Route>
       <Route path="/foundation/content/:contentId">
         {() => <StudentShell><ProtectedRoute><FoundationReaderPage /></ProtectedRoute></StudentShell>}

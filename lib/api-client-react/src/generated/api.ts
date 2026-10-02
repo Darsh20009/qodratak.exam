@@ -6,21 +6,38 @@
  * OpenAPI spec version: 0.1.0
  */
 import {
+  useMutation,
   useQuery
 } from '@tanstack/react-query';
 import type {
+  MutationFunction,
   QueryFunction,
   QueryKey,
+  UseMutationOptions,
+  UseMutationResult,
   UseQueryOptions,
   UseQueryResult
 } from '@tanstack/react-query';
 
 import type {
-  HealthStatus
+  FoundationCoverageTestInput,
+  FoundationLearningPath,
+  FreeTestSession,
+  GeideaCallbackPayload,
+  GeideaCheckoutSession,
+  GeideaCheckoutSessionInput,
+  GeideaPaymentStatus,
+  GeideaRefundInput,
+  GeideaRefundResult,
+  GeideaTransactionList,
+  HealthStatus,
+  ListGeideaTransactionsParams,
+  MobileFreeTestResult,
+  MobileFreeTestSubmission
 } from './api.schemas';
 
 import { customFetch } from '../custom-fetch';
-import type { ErrorType } from '../custom-fetch';
+import type { ErrorType , BodyType } from '../custom-fetch';
 
 type AwaitedInput<T> = PromiseLike<T> | T;
 
@@ -123,4 +140,675 @@ export function useHealthCheck<TData = Awaited<ReturnType<typeof healthCheck>>, 
 
 
 
+
+export const getGetVerbalFoundationLearningPathUrl = () => {
+
+
+
+
+  return `/api/learning/foundation-path/verbal`
+}
+
+/**
+ * @summary Get a personalized verbal foundation path
+ */
+export const getVerbalFoundationLearningPath = async ( options?: Parameters<typeof customFetch>[1]): Promise<FoundationLearningPath> => {
+
+  return customFetch<FoundationLearningPath>(getGetVerbalFoundationLearningPathUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetVerbalFoundationLearningPathQueryKey = () => {
+    return [
+    `/api/learning/foundation-path/verbal`
+    ] as const;
+    }
+
+
+export const getGetVerbalFoundationLearningPathQueryOptions = <TData = Awaited<ReturnType<typeof getVerbalFoundationLearningPath>>, TError = ErrorType<void>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getVerbalFoundationLearningPath>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetVerbalFoundationLearningPathQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getVerbalFoundationLearningPath>>> = ({ signal }) => getVerbalFoundationLearningPath({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getVerbalFoundationLearningPath>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetVerbalFoundationLearningPathQueryResult = NonNullable<Awaited<ReturnType<typeof getVerbalFoundationLearningPath>>>
+export type GetVerbalFoundationLearningPathQueryError = ErrorType<void>
+
+
+/**
+ * @summary Get a personalized verbal foundation path
+ */
+
+export function useGetVerbalFoundationLearningPath<TData = Awaited<ReturnType<typeof getVerbalFoundationLearningPath>>, TError = ErrorType<void>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getVerbalFoundationLearningPath>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetVerbalFoundationLearningPathQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getGetQuantitativeFoundationLearningPathUrl = () => {
+
+
+
+
+  return `/api/learning/foundation-path/quantitative`
+}
+
+/**
+ * @summary Get a personalized quantitative foundation path
+ */
+export const getQuantitativeFoundationLearningPath = async ( options?: Parameters<typeof customFetch>[1]): Promise<FoundationLearningPath> => {
+
+  return customFetch<FoundationLearningPath>(getGetQuantitativeFoundationLearningPathUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetQuantitativeFoundationLearningPathQueryKey = () => {
+    return [
+    `/api/learning/foundation-path/quantitative`
+    ] as const;
+    }
+
+
+export const getGetQuantitativeFoundationLearningPathQueryOptions = <TData = Awaited<ReturnType<typeof getQuantitativeFoundationLearningPath>>, TError = ErrorType<void>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getQuantitativeFoundationLearningPath>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetQuantitativeFoundationLearningPathQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getQuantitativeFoundationLearningPath>>> = ({ signal }) => getQuantitativeFoundationLearningPath({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getQuantitativeFoundationLearningPath>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetQuantitativeFoundationLearningPathQueryResult = NonNullable<Awaited<ReturnType<typeof getQuantitativeFoundationLearningPath>>>
+export type GetQuantitativeFoundationLearningPathQueryError = ErrorType<void>
+
+
+/**
+ * @summary Get a personalized quantitative foundation path
+ */
+
+export function useGetQuantitativeFoundationLearningPath<TData = Awaited<ReturnType<typeof getQuantitativeFoundationLearningPath>>, TError = ErrorType<void>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getQuantitativeFoundationLearningPath>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetQuantitativeFoundationLearningPathQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getCreateFoundationCoverageTestUrl = () => {
+
+
+
+
+  return `/api/learning/foundation-test`
+}
+
+/**
+ * @summary Create a personalized question-bank coverage test
+ */
+export const createFoundationCoverageTest = async (foundationCoverageTestInput: FoundationCoverageTestInput, options?: Parameters<typeof customFetch>[1]): Promise<FreeTestSession> => {
+
+  return customFetch<FreeTestSession>(getCreateFoundationCoverageTestUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(foundationCoverageTestInput)
+  }
+);}
+
+
+
+
+
+export const getCreateFoundationCoverageTestMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createFoundationCoverageTest>>, TError,{data: BodyType<FoundationCoverageTestInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof createFoundationCoverageTest>>, TError,{data: BodyType<FoundationCoverageTestInput>}, TContext> => {
+
+const mutationKey = ['createFoundationCoverageTest'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof createFoundationCoverageTest>>, {data: BodyType<FoundationCoverageTestInput>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  createFoundationCoverageTest(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type CreateFoundationCoverageTestMutationResult = NonNullable<Awaited<ReturnType<typeof createFoundationCoverageTest>>>
+    export type CreateFoundationCoverageTestMutationBody = BodyType<FoundationCoverageTestInput>
+    export type CreateFoundationCoverageTestMutationError = ErrorType<void>
+
+    /**
+ * @summary Create a personalized question-bank coverage test
+ */
+export const useCreateFoundationCoverageTest = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createFoundationCoverageTest>>, TError,{data: BodyType<FoundationCoverageTestInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof createFoundationCoverageTest>>,
+        TError,
+        {data: BodyType<FoundationCoverageTestInput>},
+        TContext
+      > => {
+      return useMutation(getCreateFoundationCoverageTestMutationOptions(options));
+    }
+
+export const getSubmitMobileFreeTestUrl = () => {
+
+
+
+
+  return `/api/mobile/test-results`
+}
+
+/**
+ * @summary Submit answers for a server-owned question-bank test
+ */
+export const submitMobileFreeTest = async (mobileFreeTestSubmission: MobileFreeTestSubmission, options?: Parameters<typeof customFetch>[1]): Promise<MobileFreeTestResult> => {
+
+  return customFetch<MobileFreeTestResult>(getSubmitMobileFreeTestUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(mobileFreeTestSubmission)
+  }
+);}
+
+
+
+
+
+export const getSubmitMobileFreeTestMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof submitMobileFreeTest>>, TError,{data: BodyType<MobileFreeTestSubmission>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof submitMobileFreeTest>>, TError,{data: BodyType<MobileFreeTestSubmission>}, TContext> => {
+
+const mutationKey = ['submitMobileFreeTest'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof submitMobileFreeTest>>, {data: BodyType<MobileFreeTestSubmission>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  submitMobileFreeTest(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type SubmitMobileFreeTestMutationResult = NonNullable<Awaited<ReturnType<typeof submitMobileFreeTest>>>
+    export type SubmitMobileFreeTestMutationBody = BodyType<MobileFreeTestSubmission>
+    export type SubmitMobileFreeTestMutationError = ErrorType<void>
+
+    /**
+ * @summary Submit answers for a server-owned question-bank test
+ */
+export const useSubmitMobileFreeTest = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof submitMobileFreeTest>>, TError,{data: BodyType<MobileFreeTestSubmission>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof submitMobileFreeTest>>,
+        TError,
+        {data: BodyType<MobileFreeTestSubmission>},
+        TContext
+      > => {
+      return useMutation(getSubmitMobileFreeTestMutationOptions(options));
+    }
+
+export const getCreateGeideaCheckoutSessionUrl = () => {
+
+
+
+
+  return `/api/subscription/geidea/sessions`
+}
+
+/**
+ * @summary Create a sandbox Geidea hosted-checkout session for the signed-in student
+ */
+export const createGeideaCheckoutSession = async (geideaCheckoutSessionInput: GeideaCheckoutSessionInput, options?: Parameters<typeof customFetch>[1]): Promise<GeideaCheckoutSession> => {
+
+  return customFetch<GeideaCheckoutSession>(getCreateGeideaCheckoutSessionUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(geideaCheckoutSessionInput)
+  }
+);}
+
+
+
+
+
+export const getCreateGeideaCheckoutSessionMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createGeideaCheckoutSession>>, TError,{data: BodyType<GeideaCheckoutSessionInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof createGeideaCheckoutSession>>, TError,{data: BodyType<GeideaCheckoutSessionInput>}, TContext> => {
+
+const mutationKey = ['createGeideaCheckoutSession'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof createGeideaCheckoutSession>>, {data: BodyType<GeideaCheckoutSessionInput>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  createGeideaCheckoutSession(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type CreateGeideaCheckoutSessionMutationResult = NonNullable<Awaited<ReturnType<typeof createGeideaCheckoutSession>>>
+    export type CreateGeideaCheckoutSessionMutationBody = BodyType<GeideaCheckoutSessionInput>
+    export type CreateGeideaCheckoutSessionMutationError = ErrorType<void>
+
+    /**
+ * @summary Create a sandbox Geidea hosted-checkout session for the signed-in student
+ */
+export const useCreateGeideaCheckoutSession = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createGeideaCheckoutSession>>, TError,{data: BodyType<GeideaCheckoutSessionInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof createGeideaCheckoutSession>>,
+        TError,
+        {data: BodyType<GeideaCheckoutSessionInput>},
+        TContext
+      > => {
+      return useMutation(getCreateGeideaCheckoutSessionMutationOptions(options));
+    }
+
+export const getGetGeideaPaymentStatusUrl = (paymentId: string,) => {
+
+
+
+
+  return `/api/subscription/geidea/payments/${paymentId}`
+}
+
+/**
+ * @summary Reconcile and return the signed-in student's Geidea payment status
+ */
+export const getGeideaPaymentStatus = async (paymentId: string, options?: Parameters<typeof customFetch>[1]): Promise<GeideaPaymentStatus> => {
+
+  return customFetch<GeideaPaymentStatus>(getGetGeideaPaymentStatusUrl(paymentId),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetGeideaPaymentStatusQueryKey = (paymentId: string,) => {
+    return [
+    `/api/subscription/geidea/payments/${paymentId}`
+    ] as const;
+    }
+
+
+export const getGetGeideaPaymentStatusQueryOptions = <TData = Awaited<ReturnType<typeof getGeideaPaymentStatus>>, TError = ErrorType<void>>(paymentId: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getGeideaPaymentStatus>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetGeideaPaymentStatusQueryKey(paymentId);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getGeideaPaymentStatus>>> = ({ signal }) => getGeideaPaymentStatus(paymentId, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: paymentId !== null && paymentId !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getGeideaPaymentStatus>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetGeideaPaymentStatusQueryResult = NonNullable<Awaited<ReturnType<typeof getGeideaPaymentStatus>>>
+export type GetGeideaPaymentStatusQueryError = ErrorType<void>
+
+
+/**
+ * @summary Reconcile and return the signed-in student's Geidea payment status
+ */
+
+export function useGetGeideaPaymentStatus<TData = Awaited<ReturnType<typeof getGeideaPaymentStatus>>, TError = ErrorType<void>>(
+ paymentId: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getGeideaPaymentStatus>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetGeideaPaymentStatusQueryOptions(paymentId,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getReceiveGeideaPaymentCallbackUrl = () => {
+
+
+
+
+  return `/api/payments/geidea/callback`
+}
+
+/**
+ * @summary Receive a Geidea callback and reconcile it against the merchant API
+ */
+export const receiveGeideaPaymentCallback = async (geideaCallbackPayload: GeideaCallbackPayload, options?: Parameters<typeof customFetch>[1]): Promise<void> => {
+
+  return customFetch<void>(getReceiveGeideaPaymentCallbackUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(geideaCallbackPayload)
+  }
+);}
+
+
+
+
+
+export const getReceiveGeideaPaymentCallbackMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof receiveGeideaPaymentCallback>>, TError,{data: BodyType<GeideaCallbackPayload>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof receiveGeideaPaymentCallback>>, TError,{data: BodyType<GeideaCallbackPayload>}, TContext> => {
+
+const mutationKey = ['receiveGeideaPaymentCallback'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof receiveGeideaPaymentCallback>>, {data: BodyType<GeideaCallbackPayload>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  receiveGeideaPaymentCallback(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type ReceiveGeideaPaymentCallbackMutationResult = NonNullable<Awaited<ReturnType<typeof receiveGeideaPaymentCallback>>>
+    export type ReceiveGeideaPaymentCallbackMutationBody = BodyType<GeideaCallbackPayload>
+    export type ReceiveGeideaPaymentCallbackMutationError = ErrorType<void>
+
+    /**
+ * @summary Receive a Geidea callback and reconcile it against the merchant API
+ */
+export const useReceiveGeideaPaymentCallback = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof receiveGeideaPaymentCallback>>, TError,{data: BodyType<GeideaCallbackPayload>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof receiveGeideaPaymentCallback>>,
+        TError,
+        {data: BodyType<GeideaCallbackPayload>},
+        TContext
+      > => {
+      return useMutation(getReceiveGeideaPaymentCallbackMutationOptions(options));
+    }
+
+export const getListGeideaTransactionsUrl = (params?: ListGeideaTransactionsParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/admin/geidea/transactions?${stringifiedParams}` : `/api/admin/geidea/transactions`
+}
+
+/**
+ * @summary List Geidea subscription payments for authorized accounting admins
+ */
+export const listGeideaTransactions = async (params?: ListGeideaTransactionsParams, options?: Parameters<typeof customFetch>[1]): Promise<GeideaTransactionList> => {
+
+  return customFetch<GeideaTransactionList>(getListGeideaTransactionsUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListGeideaTransactionsQueryKey = (params?: ListGeideaTransactionsParams,) => {
+    return [
+    `/api/admin/geidea/transactions`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getListGeideaTransactionsQueryOptions = <TData = Awaited<ReturnType<typeof listGeideaTransactions>>, TError = ErrorType<void>>(params?: ListGeideaTransactionsParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listGeideaTransactions>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListGeideaTransactionsQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listGeideaTransactions>>> = ({ signal }) => listGeideaTransactions(params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listGeideaTransactions>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListGeideaTransactionsQueryResult = NonNullable<Awaited<ReturnType<typeof listGeideaTransactions>>>
+export type ListGeideaTransactionsQueryError = ErrorType<void>
+
+
+/**
+ * @summary List Geidea subscription payments for authorized accounting admins
+ */
+
+export function useListGeideaTransactions<TData = Awaited<ReturnType<typeof listGeideaTransactions>>, TError = ErrorType<void>>(
+ params?: ListGeideaTransactionsParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listGeideaTransactions>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListGeideaTransactionsQueryOptions(params,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getRefundGeideaTransactionUrl = (id: string,) => {
+
+
+
+
+  return `/api/admin/geidea/transactions/${id}/refund`
+}
+
+/**
+ * @summary Refund the remaining paid balance through Geidea
+ */
+export const refundGeideaTransaction = async (id: string,
+    geideaRefundInput: GeideaRefundInput, options?: Parameters<typeof customFetch>[1]): Promise<GeideaRefundResult> => {
+
+  return customFetch<GeideaRefundResult>(getRefundGeideaTransactionUrl(id),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(geideaRefundInput)
+  }
+);}
+
+
+
+
+
+export const getRefundGeideaTransactionMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof refundGeideaTransaction>>, TError,{id: string;data: BodyType<GeideaRefundInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof refundGeideaTransaction>>, TError,{id: string;data: BodyType<GeideaRefundInput>}, TContext> => {
+
+const mutationKey = ['refundGeideaTransaction'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof refundGeideaTransaction>>, {id: string;data: BodyType<GeideaRefundInput>}> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  refundGeideaTransaction(id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type RefundGeideaTransactionMutationResult = NonNullable<Awaited<ReturnType<typeof refundGeideaTransaction>>>
+    export type RefundGeideaTransactionMutationBody = BodyType<GeideaRefundInput>
+    export type RefundGeideaTransactionMutationError = ErrorType<void>
+
+    /**
+ * @summary Refund the remaining paid balance through Geidea
+ */
+export const useRefundGeideaTransaction = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof refundGeideaTransaction>>, TError,{id: string;data: BodyType<GeideaRefundInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof refundGeideaTransaction>>,
+        TError,
+        {id: string;data: BodyType<GeideaRefundInput>},
+        TContext
+      > => {
+      return useMutation(getRefundGeideaTransactionMutationOptions(options));
+    }
 

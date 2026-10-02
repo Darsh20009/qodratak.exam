@@ -102,7 +102,7 @@ function EmailField({ value, onChange, required = true }: { value: string; onCha
     <div>
       <div className="relative">
         <Mail className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-[#8B8278]" />
-        <input type="text" autoComplete="email" required={required} value={value} onChange={(event) => onChange(event.target.value.trim())} placeholder={required ? "name@email.com" : "البريد الإلكتروني (اختياري)"} dir="ltr" className="h-12 w-full rounded-xl border border-[#24202D]/15 bg-[#F8F6F1] px-4 pl-11 text-left text-sm outline-none focus:border-[#171723] focus:bg-white focus:ring-4 focus:ring-[#171723]/10" />
+        <input type="email" inputMode="email" autoComplete="email" autoCapitalize="none" autoCorrect="off" spellCheck={false} required={required} value={value} onChange={(event) => onChange(event.target.value.trim())} placeholder={required ? "name@email.com" : "البريد الإلكتروني (اختياري)"} dir="ltr" className="h-12 w-full rounded-xl border border-[#24202D]/15 bg-[#F8F6F1] px-4 pl-11 text-left text-sm text-[#171723] caret-[#171723] placeholder:text-[#8B8278] outline-none focus:border-[#171723] focus:bg-white focus:ring-4 focus:ring-[#171723]/10" />
       </div>
       {suggestions.length > 0 && (
         <div className="mt-2 flex gap-1.5 overflow-x-auto pb-1" dir="ltr">
@@ -493,12 +493,12 @@ export function AuthModal({ open, mode, onClose, onModeChange }: { open: boolean
   return (
     <>
     <Dialog open={open} onOpenChange={(value) => !value && onClose()}>
-      <DialogContent className="max-h-[calc(100vh-20px)] overflow-hidden border border-[#24202D]/15 bg-[#FFFCF7] p-0 shadow-none" style={{ maxWidth: 460, borderRadius: 24, direction: "rtl" }}>
+      <DialogContent className="max-h-[calc(100vh-20px)] overflow-hidden border border-[#24202D]/15 bg-[#FFFCF7] p-0 text-[#171723] shadow-none" style={{ maxWidth: 460, borderRadius: 24, direction: "rtl", colorScheme: "light" }}>
         <div className="flex max-h-[calc(100vh-20px)] flex-col">
           <div className="flex items-center justify-between border-b border-[#24202D]/10 px-6 py-4">
             <div className="flex items-center gap-2.5">
               <BrandMark imageClassName="h-10 w-10" tone="light" />
-              <p className="text-[11px] text-[#8B8278]">{mode === "login" ? "دخول سريع وآمن" : "حسابك في دقائق"}</p>
+              {mode === "signup" && <p className="text-[11px] text-[#8B8278]">حسابك في دقائق</p>}
             </div>
             <button onClick={onClose} aria-label="إغلاق" className="rounded-lg p-2 text-[#8B8278] hover:bg-[#24202D]/5"><X className="h-4 w-4" /></button>
           </div>
