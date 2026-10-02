@@ -20,3 +20,9 @@ External deployment must be checked against the Dockerfile source paths, not onl
 **Why:** A successful deployment only proves that the selected commit and build completed; it does not prove that the intended workspace artifact was built.
 
 **How to apply:** Inspect the deployment log’s commit and Docker build context, verify the served HTML reflects the current artifact, then deploy the latest pushed commit after correcting source paths.
+
+GitHub's warning threshold for regular Git files is distinct from whether a push succeeds. Chunking commits can make a large pack upload succeed while GH001 warnings remain for individual files over 50 MB.
+
+**Why:** A successful chunked upload still produced GH001 warnings for regular media files between roughly 57 MB and 94 MB.
+
+**How to apply:** Check per-file sizes separately from total pack size. Chunking addresses pack transfer size; if the user approves LFS, consider migrating warning-size media too, while confirming the deployment builder can fetch it.
