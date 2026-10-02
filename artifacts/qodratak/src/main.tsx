@@ -17,6 +17,19 @@ if ('serviceWorker' in navigator) {
   });
 }
 
+if (import.meta.env.DEV) {
+  const originalConsoleError = console.error.bind(console);
+  console.error = (...args: any[]) => {
+    originalConsoleError(...args);
+    if (!args.some((arg) => typeof arg === "string" && arg.includes("Invalid hook call"))) return;
+
+    const callSite = new Error("Invalid hook call trace").stack?.split("\n").slice(2, 14) || [];
+    for (const frame of callSite) {
+      originalConsoleError(`[Invalid hook call trace] ${frame.trim()}`);
+    }
+  };
+}
+
 function formatReactRuntimeError(
   label: string,
   error: unknown,
