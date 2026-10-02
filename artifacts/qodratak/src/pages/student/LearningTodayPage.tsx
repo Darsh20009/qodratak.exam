@@ -29,6 +29,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { cn } from "@/lib/utils";
+import { foundationHrefForScope } from "@/lib/foundationRoutes.mjs";
 
 function isUnauthorized(error: unknown) {
   return error instanceof StudentApiError && error.status === 401;
@@ -334,13 +335,13 @@ export default function LearningTodayPage() {
     return null;
   }, [plan, programId]);
 
-  const planProgram = plan?.programId === "program.tahsili" ? "tahsili" : programId;
+  const planProgram = plan?.programId === "program.tahsili"
+    ? "tahsili"
+    : plan?.programId === "program.qudrat"
+      ? "qudrat"
+      : programId;
   const planSubjectId = subjectId || plan?.subjectId;
-  const foundationHref = planProgram === "tahsili"
-    ? planSubjectId
-      ? `/foundation?program=tahsili&subject=${encodeURIComponent(planSubjectId.replace(/^subject\.tahsili\./, ""))}`
-      : "/foundation?program=tahsili"
-    : "/foundation";
+  const foundationHref = foundationHrefForScope(planProgram, planSubjectId);
 
   if (todayQuery.isLoading) return <LoadingState />;
   if (isUnauthorized(todayQuery.error) || isUnauthorized(startSession.error)) return <AuthState />;

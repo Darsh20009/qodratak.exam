@@ -1,11 +1,13 @@
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import test from "node:test";
+import { foundationHrefForScope, todayLearningHref } from "../src/lib/foundationRoutes.mjs";
 
 const hooks = await readFile(new URL("../src/hooks/use-student.ts", import.meta.url), "utf8");
 const home = await readFile(new URL("../src/pages/student/DashboardPage.tsx", import.meta.url), "utf8");
 const session = await readFile(new URL("../src/pages/student/LearningTodayPage.tsx", import.meta.url), "utf8");
 const reader = await readFile(new URL("../src/pages/student/FoundationReaderPage.tsx", import.meta.url), "utf8");
+const coverageTest = await readFile(new URL("../src/pages/student/FoundationCoverageTestPage.tsx", import.meta.url), "utf8");
 
 function block(source, start, end) {
   const startIndex = source.indexOf(start);
@@ -66,4 +68,32 @@ test("reader returns to the current session after completing a today step", () =
   assert.match(reader, /setLocation\(todayReturnHref\)/);
   assert.match(reader, /programId/);
   assert.match(reader, /subjectId/);
+});
+
+test("foundation and today links preserve the active program and subject", () => {
+  assert.equal(
+    foundationHrefForScope("qudrat", "subject.qudrat.quantitative"),
+    "/foundation?program=qudrat&subject=quantitative",
+  );
+  assert.equal(
+    foundationHrefForScope("tahsili", "subject.tahsili.physics"),
+    "/foundation?program=tahsili&subject=physics",
+  );
+  assert.equal(
+    todayLearningHref(undefined, "subject.qudrat.quantitative"),
+    "/learning/today?programId=qudrat&subjectId=subject.qudrat.quantitative",
+  );
+  assert.equal(todayLearningHref(undefined, undefined), "/learning/today");
+});
+
+test("reader course navigation includes published lessons even when progress is partial", () => {
+  assert.match(reader, /const courseLessons = useMemo\(\s*\(\) => foundationLessonsQuery\.data \|\| \[\]/);
+  assert.doesNotMatch(reader, /approvedCourseIds/);
+  assert.match(reader, /الدرس \$\{courseLessonIndex \+ 1\} من \$\{courseLessons\.length\}/);
+});
+
+test("coverage tests reject missing or unsupported section scope", () => {
+  assert.match(coverageTest, /requestedSubjectId/);
+  assert.match(coverageTest, /if \(!subjectId \|\| !category\)/);
+  assert.match(coverageTest, /لم يتم تحديد قسم صالح للاختبار/);
 });

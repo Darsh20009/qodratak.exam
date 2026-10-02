@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useLocation, useSearch } from "wouter";
 import { useQueryClient } from "@tanstack/react-query";
-import { ArrowLeft, BookOpen, CheckCircle2, Clock3, Loader2, RotateCcw, Target, Trophy } from "lucide-react";
+import { ArrowLeft, BookOpen, CheckCircle2, CircleAlert, Clock3, Loader2, RotateCcw, Target, Trophy } from "lucide-react";
 import { QiyasExamLayout } from "@/components/QiyasExamLayout";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
@@ -32,12 +32,23 @@ export default function FoundationCoverageTestPage() {
   const [, setLocation] = useLocation();
   const queryString = useSearch();
   const params = new URLSearchParams(queryString);
-  const subjectId = params.get("subjectId") === "subject.qudrat.verbal"
-    ? "subject.qudrat.verbal"
-    : "subject.qudrat.quantitative";
-  const category = subjectId.endsWith(".verbal") ? "verbal" : "quantitative";
-  const bookTitle = category === "verbal" ? "التأسيس اللفظي" : "التأسيس الكمي";
-  const foundationHref = `/foundation?program=qudrat&subject=${category}`;
+  const requestedSubjectId = params.get("subjectId");
+  const subjectId = requestedSubjectId === "subject.qudrat.verbal" || requestedSubjectId === "subject.qudrat.quantitative"
+    ? requestedSubjectId
+    : undefined;
+  const category = subjectId === "subject.qudrat.verbal"
+    ? "verbal"
+    : subjectId === "subject.qudrat.quantitative"
+      ? "quantitative"
+      : undefined;
+  const bookTitle = category === "verbal"
+    ? "التأسيس اللفظي"
+    : category === "quantitative"
+      ? "التأسيس الكمي"
+      : "التأسيس";
+  const foundationHref = category
+    ? `/foundation?program=qudrat&subject=${category}`
+    : "/foundation?program=qudrat";
   const queryClient = useQueryClient();
   const { data: learningPath, refetch: refetchLearningPath } = useFoundationLearningPath(subjectId);
 
@@ -65,6 +76,10 @@ export default function FoundationCoverageTestPage() {
   }, [currentIndex, test]);
 
   const startTest = async () => {
+    if (!subjectId || !category) {
+      setError("اختر قسمًا صالحًا قبل بدء الاختبار.");
+      return;
+    }
     setIsStarting(true);
     setError("");
     try {
@@ -142,6 +157,19 @@ export default function FoundationCoverageTestPage() {
       void submitTest();
     }
   }, [error, isSubmitting, result, submitTest, test, timeLeft]);
+
+  if (!subjectId || !category) {
+    return (
+      <div className="mx-auto flex min-h-[60vh] max-w-xl flex-col items-center justify-center gap-4 p-6 text-center" dir="rtl">
+        <CircleAlert className="h-10 w-10 text-amber-600" aria-hidden="true" />
+        <h1 className="text-xl font-black text-foreground">لم يتم تحديد قسم صالح للاختبار</h1>
+        <p className="text-sm leading-6 text-muted-foreground">ارجع إلى التأسيس واختر القسم اللفظي أو الكمي أولًا.</p>
+        <Button type="button" onClick={() => setLocation("/foundation?program=qudrat")} className="rounded-xl">
+          العودة إلى أقسام التأسيس
+        </Button>
+      </div>
+    );
+  }
 
   const moveToQuestion = (nextIndex: number) => {
     if (!test || nextIndex < 0 || nextIndex >= test.questions.length || nextIndex === currentIndex) return;

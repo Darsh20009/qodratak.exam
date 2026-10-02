@@ -99,6 +99,7 @@ test(
     const studentIds: string[] = [];
     const questionIds: unknown[] = [];
     let lessonId: string | undefined;
+    let unrelatedLessonId: string | undefined;
     let server: import('node:http').Server | undefined;
     let application: any;
     let connectedByTest = false;
@@ -159,6 +160,16 @@ test(
       });
       lessonId = String(lesson._id);
 
+      const unrelatedLesson = await FoundationContent.create({
+        program: 'qudrat',
+        subjectId: 'subject.qudrat.verbal',
+        title: `${marker} unrelated verbal lesson`,
+        description: 'Must not appear in the quantitative content response.',
+        order: 999_998,
+        published: true,
+      });
+      unrelatedLessonId = String(unrelatedLesson._id);
+
       const restoreTimerBehavior = makeRegisteredTimersUnref();
       const originalNodeEnv = process.env.NODE_ENV;
       const originalMongoUri = process.env.MONGODB_URI;
@@ -187,9 +198,14 @@ test(
 
       const beforeSubmission = await jsonRequest(
         studentHttp,
-        '/api/foundation-content?program=qudrat&subjectId=subject.qudrat.quantitative',
+        '/api/foundation-content?program=qudrat&subject=subject.qudrat.quantitative',
       );
       assert.equal(beforeSubmission.response.status, 200);
+      assert.equal(
+        beforeSubmission.body.content.some((item: any) => item._id === unrelatedLessonId),
+        false,
+        'quantitative content must not include a verbal lesson',
+      );
       const visibleLesson = beforeSubmission.body.content.find(
         (item: any) => item._id === lessonId,
       );
@@ -275,6 +291,7 @@ test(
         await User.deleteMany({ _id: { $in: studentIds } });
       }
       if (lessonId) await FoundationContent.deleteMany({ _id: lessonId });
+      if (unrelatedLessonId) await FoundationContent.deleteMany({ _id: unrelatedLessonId });
       if (questionIds.length) await Question.deleteMany({ _id: { $in: questionIds } });
       if (connectedByTest && getConnectionStatus()) await disconnectFromMongoDB();
     }

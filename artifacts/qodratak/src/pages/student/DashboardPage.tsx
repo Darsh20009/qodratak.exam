@@ -30,6 +30,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import SubscriptionRenewalDialog from "@/components/SubscriptionRenewalDialog";
+import { foundationHrefForScope, todayLearningHref } from "@/lib/foundationRoutes.mjs";
 
 const SUPPORTED_DASHBOARD_PATHS = new Set([
   "/",
@@ -183,16 +184,8 @@ export default function DashboardPage() {
       ? "qudrat"
       : journeyProgram;
   const planSubjectId = todayPlan?.subjectId || journeySubjectId;
-  const foundationHref = planProgram === "tahsili"
-    ? planSubjectId
-      ? `/foundation?program=tahsili&subject=${encodeURIComponent(planSubjectId.replace(/^subject\.tahsili\./, ""))}`
-      : "/foundation?program=tahsili"
-    : "/foundation";
-  const todaySessionHref = (() => {
-    const params = new URLSearchParams({ programId: planProgram });
-    if (planSubjectId) params.set("subjectId", planSubjectId);
-    return `/learning/today?${params.toString()}`;
-  })();
+  const foundationHref = foundationHrefForScope(planProgram, planSubjectId);
+  const todaySessionHref = todayLearningHref(planProgram, planSubjectId);
   const adaptiveLabel =
     adaptiveDecision.data?.decision === "REVIEW"
       ? "مراجعة سريعة"

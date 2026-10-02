@@ -656,13 +656,9 @@ export default function FoundationReaderPage() {
     variables?: undefined,
     options?: MutationOptions<unknown>,
   ) => void;
-  const approvedCourseIds = useMemo(
-    () => new Set(courseProgressQuery.data?.items.map((item) => item.contentId) || []),
-    [courseProgressQuery.data?.items],
-  );
   const courseLessons = useMemo(
-    () => (foundationLessonsQuery.data || []).filter((lesson) => approvedCourseIds.has(lesson._id)),
-    [approvedCourseIds, foundationLessonsQuery.data],
+    () => foundationLessonsQuery.data || [],
+    [foundationLessonsQuery.data],
   );
   const courseLessonIndex = courseLessons.findIndex((lesson) => lesson._id === contentId);
   const previousLesson = courseLessonIndex > 0 ? courseLessons[courseLessonIndex - 1] : undefined;
@@ -934,13 +930,13 @@ export default function FoundationReaderPage() {
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
             <p className="text-sm font-black text-[hsl(var(--reader-ink))]">
-              {courseProgressQuery.data && courseLessonIndex >= 0
-                ? `الدرس ${courseLessonIndex + 1} من ${courseProgressQuery.data.total}`
+              {courseLessonIndex >= 0
+                ? `الدرس ${courseLessonIndex + 1} من ${courseLessons.length}`
                 : "مسار الدروس"}
             </p>
             {courseProgressQuery.data ? (
               <p className="mt-1 text-xs font-bold text-[hsl(var(--reader-muted))]">
-                أتممت {courseProgressQuery.data.completed} من {courseProgressQuery.data.total} درسًا
+                سُجل إكمال {courseProgressQuery.data.completed} من {courseProgressQuery.data.total} درسًا
               </p>
             ) : courseProgressQuery.isError ? (
               <p className="mt-1 text-xs font-bold text-destructive">تعذر تحميل تقدم الدروس؛ يمكنك متابعة الدرس الحالي.</p>
@@ -970,9 +966,9 @@ export default function FoundationReaderPage() {
         ) : null}
         {courseProgressQuery.data && courseProgressQuery.data.total > 0 ? (
           <div className="mt-3">
-            <Progress value={courseProgressQuery.data.completionPercent} className="h-2 bg-[hsl(var(--reader-line))] [&>div]:bg-[hsl(var(--reader-accent-dark))]" aria-label="إنجاز دروس القسم" />
+            <Progress value={courseProgressQuery.data.completionPercent} className="h-2 bg-[hsl(var(--reader-line))] [&>div]:bg-[hsl(var(--reader-accent-dark))]" aria-label="إنجاز الدروس المسجلة" />
             {courseProgressQuery.data.completed === courseProgressQuery.data.total ? (
-              <p className="mt-2 text-xs font-black text-emerald-700">أكملت جميع دروس هذا القسم.</p>
+              <p className="mt-2 text-xs font-black text-emerald-700">أكملت جميع الدروس المسجلة في تقدم هذا القسم.</p>
             ) : null}
           </div>
         ) : null}
