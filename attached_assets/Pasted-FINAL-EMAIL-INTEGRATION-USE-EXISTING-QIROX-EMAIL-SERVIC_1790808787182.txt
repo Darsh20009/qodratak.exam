@@ -1,0 +1,97 @@
+FINAL EMAIL INTEGRATION — USE EXISTING QIROX EMAIL SERVICE
+
+The project already has an existing Qirox Studio email integration.
+
+Do NOT add SMTP2GO.
+Do NOT add another email provider.
+Do NOT add a new dependency.
+
+Use the existing Qirox email service.
+
+Development API endpoint:
+
+https://qiroxstudio.online/api/v1/projects/6a994e0e21f958475d1c6b1e/email
+
+Documentation:
+
+https://qiroxstudio.online/api/v1/projects/integrations/docs
+
+IMPORTANT SECURITY:
+- Do NOT print the API key.
+- Do NOT commit the API key.
+- Do NOT put the key in source code.
+- Read it only from a Replit Secret/environment variable.
+- If a secret already exists for this integration, reuse it.
+- If not, tell me the exact environment variable name required and stop before exposing or inventing a key.
+
+First inspect the API documentation and the existing email/notification architecture.
+
+Connect the existing B Fluent email notification layer to this provider.
+
+Use it for the email capabilities that already exist in B Fluent, such as:
+- email OTP fallback
+- account-related notifications
+- important student notifications
+- important teacher/admin notifications
+
+Do NOT create new product features.
+
+Preserve the existing Notification/Outbox architecture.
+
+Required behavior:
+
+Application event
+→ Notification
+→ Email Outbox
+→ Qirox Email API
+→ Delivery result
+→ success/failure state
+
+Do not send email directly from random UI components.
+
+Keep server-side sending only.
+
+Never expose provider credentials to the browser.
+
+Add safe handling for:
+- timeout
+- provider unavailable
+- HTTP errors
+- invalid configuration
+- retryable failures
+
+Never expose provider/API errors to users.
+
+After implementation verify with a safe Development test email if the existing provider allows it.
+
+Do not send real production emails to random users.
+
+FINAL REPORT:
+
+EMAIL PROVIDER:
+READY / BLOCKED
+
+QIROX EMAIL API:
+CONNECTED / NOT CONNECTED
+
+EMAIL OTP FALLBACK:
+PASS / FAIL
+
+NOTIFICATION EMAIL:
+PASS / FAIL
+
+OUTBOX:
+PASS / FAIL
+
+SECRETS:
+SAFE / NEEDS CONFIGURATION
+
+PRODUCTION EMAIL:
+READY / NOT CONFIGURED
+
+REMAINING EMAIL BLOCKERS:
+...
+
+Do not modify authentication architecture.
+Do not add SMTP2GO.
+Do not add dependencies unless an existing required dependency is genuinely missing.

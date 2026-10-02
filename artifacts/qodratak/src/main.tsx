@@ -17,7 +17,36 @@ if ('serviceWorker' in navigator) {
   });
 }
 
-createRoot(document.getElementById("root")!).render(
+function formatReactRuntimeError(
+  label: string,
+  error: unknown,
+  componentStack?: string | null,
+) {
+  const errorDetails = error instanceof Error
+    ? `${error.name}: ${error.message}${error.stack ? `\n${error.stack}` : ""}`
+    : String(error);
+  const reactStack = componentStack
+    ? `\nReact component stack:\n${componentStack}`
+    : "";
+
+  return `[${label}]\n${errorDetails}${reactStack}`;
+}
+
+const root = createRoot(
+  document.getElementById("root")!,
+  import.meta.env.DEV
+    ? {
+        onCaughtError: (error, info) =>
+          console.error(formatReactRuntimeError("React caught", error, info.componentStack)),
+        onUncaughtError: (error, info) =>
+          console.error(formatReactRuntimeError("React uncaught", error, info.componentStack)),
+        onRecoverableError: (error, info) =>
+          console.error(formatReactRuntimeError("React recoverable", error, info.componentStack)),
+      }
+    : undefined,
+);
+
+root.render(
   <ErrorBoundary>
     <HelmetProvider>
       <App />

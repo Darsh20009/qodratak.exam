@@ -1,0 +1,208 @@
+    }
+    res: {
+      "statusCode": 304
+    }
+    responseTime: 1138
+[18:50:39.476] INFO (293): request completed
+    req: {
+      "id": 20,
+      "method": "GET",
+      "url": "/api/notifications/in-app/69406df1bd446b34edf4f940"
+    }
+    res: {
+      "statusCode": 304
+    }
+    responseTime: 924
+[18:50:39.677] INFO (293): request completed
+    req: {
+      "id": 19,
+      "method": "GET",
+      "url": "/api/foundation-content"
+    }
+    res: {
+      "statusCode": 304
+    }
+    responseTime: 2978
+[18:50:51.837] INFO (293): request completed
+    req: {
+      "id": 21,
+      "method": "GET",
+      "url": "/api/foundation/learning-state"
+    }
+    res: {
+      "statusCode": 304
+    }
+    responseTime: 884
+[18:50:52.280] INFO (293): request completed
+    req: {
+      "id": 23,
+      "method": "GET",
+      "url": "/api/foundation-content"
+    }
+    res: {
+      "statusCode": 304
+    }
+    responseTime: 1103
+[18:50:52.867] INFO (293): request completed
+    req: {
+      "id": 22,
+      "method": "GET",
+      "url": "/api/learning/foundation-path/verbal"
+    }
+    res: {
+      "statusCode": 304
+    }
+    responseTime: 1833
+[18:50:55.210] INFO (293): request completed
+    req: {
+      "id": 24,
+      "method": "GET",
+      "url": "/"
+    }
+    res: {
+      "statusCode": 404
+    }
+    responseTime: 2
+[18:51:13.981] INFO (293): request completed
+    req: {
+      "id": 25,
+      "method": "GET",
+      "url": "/api/user"
+    }
+    res: {
+      "statusCode": 200
+    }
+    responseTime: 903
+💬 WebSocket connected: 69406df1bd446b34edf4f940 (student)
+[18:51:14.826] INFO (293): request completed
+    req: {
+      "id": 27,
+      "method": "GET",
+      "url": "/api/auth/security-status"
+    }
+    res: {
+      "statusCode": 304
+    }
+    responseTime: 668
+[18:51:14.832] INFO (293): request completed
+    req: {
+      "id": 26,
+      "method": "POST",
+      "url": "/api/subscription/status"
+    }
+    res: {
+      "statusCode": 200
+    }
+    responseTime: 677
+[18:51:15.042] INFO (293): request completed
+    req: {
+      "id": 28,
+      "method": "GET",
+      "url": "/api/notifications/in-app/69406df1bd446b34edf4f940"
+    }
+    res: {
+      "statusCode": 304
+    }
+    responseTime: 884
+💬 WebSocket connected: 69406df1bd446b34edf4f940 (student)
+[18:51:16.120] INFO (293): request completed
+    req: {
+      "id": 29,
+      "method": "GET",
+      "url": "/api/student/dashboard"
+    }
+    res: {
+      "statusCode": 304
+    }
+    responseTime: 1137
+[18:51:18.008] INFO (293): request completed
+    req: {
+      "id": 30,
+      "method": "GET",
+      "url": "/api/foundation-content"
+    }
+    res: {
+      "statusCode": 304
+    }
+    responseTime: 3023
+[18:51:32.628] INFO (293): request completed
+    req: {
+      "id": 31,
+      "method": "GET",
+      "url": "/api/subscription/plan"
+    }
+    res: {
+      "statusCode": 304
+    }
+    responseTime: 899
+[18:51:32.848] INFO (293): request completed
+    req: {
+      "id": 33,
+      "method": "GET",
+      "url": "/api/user/my-subscriptions"
+    }
+    res: {
+      "statusCode": 304
+    }
+    responseTime: 674
+[18:51:32.943] INFO (293): request completed
+    req: {
+      "id": 32,
+      "method": "GET",
+      "url": "/api/wallet"
+    }
+    res: {
+      "statusCode": 304
+    }
+    responseTime: 912
+[18:51:41.630] ERROR (293): Geidea could not create a checkout session
+    req: {
+      "id": 34,
+      "method": "POST",
+      "url": "/api/subscription/geidea/sessions"
+    }
+    statusCode: 404
+[18:51:41.850] INFO (293): request errored
+    req: {
+      "id": 34,
+      "method": "POST",
+      "url": "/api/subscription/geidea/sessions"
+    }
+    res: {
+      "statusCode": 502
+    }
+    responseTime: 2730
+    err: {
+      "type": "Error",
+      "message": "failed with status code 502",
+      "stack":
+          Error: failed with status code 502
+              at onResFinished (/home/runner/workspace/node_modules/.pnpm/pino-http@10.5.0/node_modules/pino-http/logger.js:115:39)
+              at ServerResponse.onResponseComplete (/home/runner/workspace/node_modules/.pnpm/pino-http@10.5.0/node_modules/pino-http/logger.js:178:14)
+              at ServerResponse.emit (node:events:536:35)
+              at onFinish (node:_http_outgoing:1031:10)
+              at callback (node:internal/streams/writable:766:21)
+              at afterWrite (node:internal/streams/writable:710:5)
+              at afterWriteTick (node:internal/streams/writable:696:10)
+              at process.processTicksAndRejections (node:internal/process/task_queues:81:21)
+    }
+[18:51:46.082] INFO (293): request completed
+    req: {
+      "id": 35,
+      "method": "GET",
+      "url": "/api/notifications/in-app/69406df1bd446b34edf4f940"
+    }
+    res: {
+      "statusCode": 304
+    }
+    responseTime: 890
+[18:51:51.620] INFO (293): request completed
+    req: {
+      "id": 36,
+      "method": "GET",
+      "url": "/"
+    }
+    res: {
+      "statusCode": 404
+    }
+    responseTime: 1

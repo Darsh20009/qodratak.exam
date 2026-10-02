@@ -204,6 +204,18 @@ function normalizeSubjectId(value: unknown): string | undefined {
   return subject.startsWith('subject.') ? subject : undefined;
 }
 
+/** Maps the canonical learning subject ID to the label stored on TahsiliQuestion. */
+export function canonicalSubjectToTahsiliLabel(subjectId: string | undefined): string | undefined {
+  const key = subjectId?.split('.').slice(2).join('.');
+  return ({
+    math: 'رياضيات',
+    physics: 'فيزياء',
+    chemistry: 'كيمياء',
+    biology: 'أحياء',
+    environment: 'علم البيئة',
+  } as Record<string, string>)[key || ''];
+}
+
 function scopeKey(scope: AdaptiveDecisionScope): string {
   return `${scope.programId}|${scope.subjectId || ''}`;
 }
@@ -730,13 +742,13 @@ async function availabilityForScopes(
     const [foundationContent, questionCount] = await Promise.all([
       FoundationContent.exists(foundationQuery),
       program === 'qudrat'
-        ? Question.countDocuments(subject
+        ? Question.countDocuments((subject
           ? { category: subject }
-          : { category: { $in: ['verbal', 'quantitative'] } })
-        : TahsiliQuestion.countDocuments({
+          : { category: { $in: ['verbal', 'quantitative'] } }) as any)
+        : TahsiliQuestion.countDocuments(({
           answerConfidence: 'verified',
-          ...(subject ? { subject } : {}),
-        }),
+          ...(subject ? { subject: canonicalSubjectToTahsiliLabel(scope.subjectId) || '__unmapped_subject__' } : {}),
+        }) as any),
     ]);
     unique.set(scopeKey(scope), {
       programId: scope.programId,

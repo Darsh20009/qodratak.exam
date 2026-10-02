@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from "react";
-import { Link, useLocation } from "wouter";
+import { Link, useLocation, useSearch } from "wouter";
 import {
   ArrowLeft,
   BookOpen,
@@ -225,7 +225,21 @@ function QuestionActivity({
 
 export default function LearningTodayPage() {
   const [, setLocation] = useLocation();
-  const todayQuery = useTodayLearningSession(true);
+  const search = useSearch();
+  const searchParams = useMemo(() => new URLSearchParams(search), [search]);
+  const requestedProgram = searchParams.get("programId") || searchParams.get("program");
+  const programId = requestedProgram === "qudrat" || requestedProgram === "tahsili"
+    ? requestedProgram
+    : undefined;
+  const requestedSubject = searchParams.get("subjectId") || searchParams.get("subject");
+  const subjectId = requestedSubject
+    ? requestedSubject.startsWith("subject.")
+      ? requestedSubject
+      : programId
+        ? `subject.${programId}.${requestedSubject}`
+        : undefined
+    : undefined;
+  const todayQuery = useTodayLearningSession(true, programId, subjectId);
   const startSession = useStartTodayLearningSession();
   const updateStep = useUpdateTodayLearningStep();
   const completeSession = useCompleteTodayLearningSession();
@@ -290,7 +304,7 @@ export default function LearningTodayPage() {
   };
 
   const handleStart = () => {
-    startSession.mutate();
+    startSession.mutate({ programId, subjectId });
   };
 
   const handleSubmitAnswer = () => {
@@ -310,10 +324,23 @@ export default function LearningTodayPage() {
   const pageError = todayQuery.error || startSession.error || completeSession.error;
   const planStatusMessage = useMemo(() => {
     if (!plan) return null;
-    if (plan.planStatus === "DIAGNOSTIC_REQUIRED") return "أكمل التقييم القصير في مساحة التأسيس أولًا، ثم سنبني لك مهمة مناسبة.";
+    if (plan.planStatus === "DIAGNOSTIC_REQUIRED") {
+      const tahsiliPlan = programId === "tahsili" || plan.programId === "program.tahsili";
+      return tahsiliPlan
+        ? "اختر مادة التحصيلي من مساحة التأسيس لعرض الدروس والتدريب المناسبين."
+        : "أكمل التقييم القصير في مساحة التأسيس أولًا، ثم سنبني لك مهمة مناسبة.";
+    }
     if (plan.planStatus === "CONTENT_UNAVAILABLE" || plan.planStatus === "NO_RECOMMENDATION") return "لا توجد خطوة تعليمية مناسبة الآن. جرّب العودة لاحقًا بعد توفر محتوى جديد.";
     return null;
-  }, [plan]);
+  }, [plan, programId]);
+
+  const planProgram = plan?.programId === "program.tahsili" ? "tahsili" : programId;
+  const planSubjectId = subjectId || plan?.subjectId;
+  const foundationHref = planProgram === "tahsili"
+    ? planSubjectId
+      ? `/foundation?program=tahsili&subject=${encodeURIComponent(planSubjectId.replace(/^subject\.tahsili\./, ""))}`
+      : "/foundation?program=tahsili"
+    : "/foundation";
 
   if (todayQuery.isLoading) return <LoadingState />;
   if (isUnauthorized(todayQuery.error) || isUnauthorized(startSession.error)) return <AuthState />;
@@ -392,7 +419,7 @@ export default function LearningTodayPage() {
           <BookOpen className="mx-auto h-10 w-10 text-primary" aria-hidden="true" />
           <h1 className="mt-4 text-xl font-black text-foreground">{decisionLabel(plan.planStatus)}</h1>
           <p className="mx-auto mt-2 max-w-lg text-sm leading-7 text-muted-foreground">{planStatusMessage}</p>
-          <Button asChild className="mt-5 rounded-xl"><Link href="/foundation">فتح التأسيس</Link></Button>
+          <Button asChild className="mt-5 rounded-xl"><Link href={foundationHref}>فتح التأسيس</Link></Button>
         </section>
       ) : (
         <>
@@ -424,7 +451,19 @@ export default function LearningTodayPage() {
                 </div>
               </div>
               <Button asChild className="mt-6 min-h-11 rounded-xl font-black">
-                <Link href={`/foundation/content/${encodeURIComponent(selectedFoundation.contentId)}?from=today&sessionId=${encodeURIComponent(sessionId)}&stepId=${encodeURIComponent(currentStep?.stepId || "")}`}>
+                <Link href={`/foundation/content/${encodeURIComponent(selectedFoundation.contentId)}?${(() => {
+                  const params = new URLSearchParams({
+                    from: "today",
+                    sessionId,
+                    stepId: currentStep?.stepId || "",
+                  });
+                  if (programId) params.set("program", programId);
+                  if (subjectId) {
+                    params.set("subjectId", subjectId);
+                    params.set("subject", subjectId.replace(/^subject\.[^.]+\./, ""));
+                  }
+                  return params.toString();
+                })()}`}>
                   <BookOpen className="h-4 w-4" />
                   {currentStep?.stepType === "EXAMPLE" ? "عرض المثال" : "أكمل القراءة"}
                   <ArrowLeft className="mr-1 h-4 w-4" />

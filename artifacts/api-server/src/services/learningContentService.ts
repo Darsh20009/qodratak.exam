@@ -54,6 +54,22 @@ export interface PublicLearningContentProgress {
   practiceCompletedAt?: Date;
 }
 
+export interface PublicLearningContentProgressSummaryItem {
+  contentId: string;
+  order: number;
+  progress: number;
+  state: LearningContentProgressState;
+  completedAt?: Date;
+}
+
+export interface PublicLearningContentProgressSummary {
+  total: number;
+  completed: number;
+  completionPercent: number;
+  completedContentIds: string[];
+  items: PublicLearningContentProgressSummaryItem[];
+}
+
 export interface PublicFoundationPractice {
   question?: PublicSelectedQuestion;
 }
@@ -221,6 +237,72 @@ export async function getLearningContentProgress(
   assertStudent(studentId);
   const content = await loadPublishedContent(contentId);
   return publicProgress(await getOrCreateProgress(studentId, content));
+}
+
+export function buildLearningContentProgressSummary(
+  content: readonly Pick<IFoundationContent, '_id' | 'order'>[],
+  progressRows: readonly Pick<ILearningContentProgress, 'contentId' | 'progress' | 'state' | 'completedAt'>[],
+): PublicLearningContentProgressSummary {
+  const progressByContentId = new Map(
+    progressRows.map((row) => [String(row.contentId), row]),
+  );
+  const items = content.map((item) => {
+    const contentId = String(item._id);
+    const savedProgress = progressByContentId.get(contentId);
+    return {
+      contentId,
+      order: item.order,
+      progress: savedProgress?.progress ?? 0,
+      state: savedProgress?.state ?? 'NOT_STARTED',
+      completedAt: savedProgress?.completedAt,
+    };
+  });
+  const completedContentIds = items
+    .filter((item) => item.state === 'COMPLETED' || item.state === 'PRACTICE_COMPLETED')
+    .map((item) => item.contentId);
+
+  return {
+    total: items.length,
+    completed: completedContentIds.length,
+    completionPercent: items.length ? Math.round((completedContentIds.length / items.length) * 100) : 0,
+    completedContentIds,
+    items,
+  };
+}
+
+export async function getLearningContentProgressSummary(
+  studentId: string,
+  program: 'qudrat' | 'tahsili',
+  subjectId?: string,
+): Promise<PublicLearningContentProgressSummary> {
+  assertStudent(studentId);
+  const contentFilter = {
+    program,
+    published: true,
+    ...(subjectId ? {
+      $or: [
+        { subjectId },
+        { subjectId: { $exists: false } },
+        { subjectId: '' },
+      ],
+    } : {}),
+  };
+  const candidates = await FoundationContent.find(contentFilter)
+    .select('_id program subjectId taxonomyNodeId order')
+    .sort({ order: 1, createdAt: 1 })
+    .lean() as Array<Pick<IFoundationContent, '_id' | 'program' | 'subjectId' | 'taxonomyNodeId' | 'order'>>;
+  const approvedContent = candidates.filter(isApprovedScope);
+  const contentIds = approvedContent.map((item) => item._id);
+  if (!contentIds.length) return buildLearningContentProgressSummary([], []);
+
+  const progressRows = await LearningContentProgress.find({
+    studentId,
+    contentId: { $in: contentIds },
+  })
+    .select('contentId progress state completedAt')
+    .lean() as Array<Pick<ILearningContentProgress, 'contentId' | 'progress' | 'state' | 'completedAt'>>;
+
+  return buildLearningContentProgressSummary(approvedContent, progressRows);
 }
 
 export async function updateLearningContentProgress(

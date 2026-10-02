@@ -157,6 +157,8 @@ export async function notifyStudentSubscriptionActivated(input: {
   plan: string;
   price?: number;
   endDate?: Date | string;
+  invoiceNumber?: string;
+  paymentMethod?: string;
 }) {
   const endDate = input.endDate ? new Date(input.endDate) : null;
   const endDateLabel = endDate && !Number.isNaN(endDate.getTime())
@@ -167,8 +169,10 @@ export async function notifyStudentSubscriptionActivated(input: {
     title: "تم تفعيل اشتراكك ✅",
     body: [
       "أهلاً بك في رحلتك التعليمية مع قدراتك.",
+      ...(input.invoiceNumber ? [`رقم الفاتورة: ${input.invoiceNumber}`] : []),
       `الخطة: ${input.plan}`,
       `المبلغ: ${Number(input.price || 0).toLocaleString("ar-SA")} ر.س`,
+      `طريقة الدفع: ${input.paymentMethod || "غير محددة"}`,
       `ينتهي الاشتراك في: ${endDateLabel}`,
       "",
       "افتح المنصة وابدأ خطتك اليوم. نحن نتابع تقدمك معك خطوة بخطوة.",
