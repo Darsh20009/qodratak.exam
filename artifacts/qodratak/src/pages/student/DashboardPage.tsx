@@ -1,86 +1,152 @@
-import React, { useState } from "react";
+import { useState } from "react";
 import { Link } from "wouter";
 import {
+  AlertTriangle,
+  Award,
+  BookOpen,
+  Brain,
+  Calendar,
+  ChevronLeft,
+  ChevronDown,
+  ClipboardCheck,
+  FileText,
+  Laptop,
+  ListChecks,
+  PlayCircle,
+  RefreshCw,
+  Route,
+  Target,
+} from "lucide-react";
+import {
   useAdaptiveLearningDecision,
-  usePlatformReviews,
   useStudentDashboard,
   useStudentLearningRecommendations,
-  useSubmitReview,
   useTodayLearningSession,
   useUpdateExamDate,
 } from "@/hooks/use-student";
 import OfficialScoreCard from "@/components/student/OfficialScoreCard";
 import { useUser } from "@/hooks/use-user";
-import {
-  Brain,
-  Calendar,
-  ChevronLeft,
-  Target,
-  TrendingUp,
-  FileText,
-  FolderOpen,
-  Award,
-  Loader2,
-  AlertTriangle,
-  PlayCircle
-  , Star
-  , Headphones
-  , CalendarCheck
-  , BellRing
-} from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import SubscriptionRenewalDialog from "@/components/SubscriptionRenewalDialog";
 
+const SUPPORTED_DASHBOARD_PATHS = new Set([
+  "/",
+  "/foundation",
+  "/student-program/qudrat",
+  "/student-program/tahsili",
+  "/learning/today",
+  "/tahsilik/tests",
+  "/computerized",
+  "/question-bank",
+  "/qiyas",
+  "/book-exam",
+  "/account",
+]);
+
+function getSafeInternalHref(value: unknown) {
+  if (typeof value !== "string" || !value.trim()) return "/foundation";
+
+  try {
+    const url = new URL(value.trim(), "https://qodratak.internal");
+    if (url.origin !== "https://qodratak.internal" || !SUPPORTED_DASHBOARD_PATHS.has(url.pathname)) {
+      return "/foundation";
+    }
+    return `${url.pathname}${url.search}`;
+  } catch {
+    return "/foundation";
+  }
+}
+
+function clampPercentage(value: number | undefined) {
+  return Math.max(0, Math.min(100, Math.round(Number(value) || 0)));
+}
+
+function formatDateInput(value: string | null) {
+  if (!value) return "";
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "";
+  return date.toISOString().slice(0, 10);
+}
+
+function DashboardSkeleton() {
+  return (
+    <div className="mx-auto w-full max-w-5xl space-y-6 p-5 md:p-8" dir="rtl" aria-label="جاري تحميل لوحة الطالب">
+      <div className="space-y-3">
+        <div className="h-4 w-28 animate-pulse rounded bg-muted" />
+        <div className="h-10 w-48 animate-pulse rounded bg-muted" />
+        <div className="h-4 w-72 max-w-full animate-pulse rounded bg-muted" />
+      </div>
+      <div className="h-44 animate-pulse rounded-3xl bg-muted" />
+      <div className="grid gap-4 md:grid-cols-2">
+        <div className="h-52 animate-pulse rounded-3xl bg-muted" />
+        <div className="h-52 animate-pulse rounded-3xl bg-muted" />
+      </div>
+    </div>
+  );
+}
+
+const paths = [
+  { href: "/foundation", label: "التأسيس والتقييم", detail: "ابنِ أساسك", icon: BookOpen },
+  { href: "/computerized", label: "التدريب المحوسب", detail: "تدرّب بتركيز", icon: Laptop },
+  { href: "/question-bank", label: "بنك الأسئلة", detail: "راجع ما تحتاجه", icon: ListChecks },
+  { href: "/qiyas", label: "المحاكاة", detail: "اختبر جاهزيتك", icon: ClipboardCheck },
+];
+
 export default function DashboardPage() {
   const { user, isLoading: isUserLoading } = useUser();
   const isStudent = user?.role === "student";
-  const { data: dashboard, isLoading, isError, error } = useStudentDashboard(isStudent);
-  const todayLearning = useTodayLearningSession(isStudent);
-  const adaptiveDecision = useAdaptiveLearningDecision(isStudent);
-  const recommendations = useStudentLearningRecommendations(isStudent);
+  const {
+    data: dashboard,
+    isLoading,
+    isError,
+    error,
+    refetch: refetchDashboard,
+  } = useStudentDashboard(isStudent);
+  const journeyProgram = dashboard?.recommendedPlan?.program
+    ?? dashboard?.officialScores?.program
+    ?? "qudrat";
+  const journeySubjectId = dashboard?.recommendedPlan?.subjectId;
+  const hasJourneyScope = isStudent && Boolean(dashboard);
+  const todayLearning = useTodayLearningSession(hasJourneyScope, journeyProgram, journeySubjectId);
+  const adaptiveDecision = useAdaptiveLearningDecision(hasJourneyScope, journeyProgram, journeySubjectId);
+  const recommendations = useStudentLearningRecommendations(hasJourneyScope, journeyProgram);
   const updateExamDate = useUpdateExamDate();
-  const { data: reviews = [] } = usePlatformReviews();
-  const submitReview = useSubmitReview();
   const [examDateStr, setExamDateStr] = useState("");
   const [isExamDialogOpen, setIsExamDialogOpen] = useState(false);
-  const [rating, setRating] = useState(5);
-  const [reviewText, setReviewText] = useState("");
   const [subscriptionDialogOpen, setSubscriptionDialogOpen] = useState(false);
 
-  const userName = user?.name || user?.username || "طالب";
-  const firstName = userName.split(" ")[0];
-
-  if (isUserLoading || (isStudent && isLoading)) {
-    return (
-      <div className="flex h-full items-center justify-center">
-        <Loader2 className="h-8 w-8 animate-spin text-[#0D1B2A] dark:text-primary" />
-      </div>
-    );
-  }
+  if (isUserLoading || (isStudent && isLoading)) return <DashboardSkeleton />;
 
   if (!user) {
     return (
-      <div className="flex h-full flex-col items-center justify-center text-center p-6">
-        <AlertTriangle className="h-12 w-12 text-amber-500 mb-4" />
+      <div className="flex min-h-full flex-col items-center justify-center p-6 text-center" dir="rtl">
+        <AlertTriangle className="mb-4 h-12 w-12 text-amber-600" aria-hidden="true" />
         <h2 className="text-xl font-black text-foreground">انتهت جلسة تسجيل الدخول</h2>
-        <p className="text-muted-foreground mt-2">سجّل الدخول من جديد للوصول إلى لوحة التحكم.</p>
-        <Link href="/login" className="mt-4 font-black text-primary">الانتقال إلى تسجيل الدخول</Link>
+        <p className="mt-2 text-muted-foreground">سجّل الدخول من جديد للوصول إلى لوحة التحكم.</p>
+        <Link href="/login" data-testid="link-login" className="mt-5 rounded-xl px-4 py-2 font-black text-primary hover:bg-primary/10">
+          الانتقال إلى تسجيل الدخول
+        </Link>
       </div>
     );
   }
 
   if (!isStudent) {
+    const accountHref =
+      user.role === "parent"
+        ? "/parent-dashboard"
+        : user.role === "institution_admin"
+          ? "/institution"
+          : user.role === "teacher"
+            ? "/teacher"
+            : "/";
     return (
-      <div className="flex h-full flex-col items-center justify-center text-center p-6">
-        <AlertTriangle className="h-12 w-12 text-amber-500 mb-4" />
+      <div className="flex min-h-full flex-col items-center justify-center p-6 text-center" dir="rtl">
+        <AlertTriangle className="mb-4 h-12 w-12 text-amber-600" aria-hidden="true" />
         <h2 className="text-xl font-black text-foreground">هذه ليست لوحة حسابك</h2>
-        <p className="text-muted-foreground mt-2">سيتم توجيهك إلى المساحة المناسبة لنوع حسابك.</p>
-        <Link
-          href={user.role === "parent" ? "/parent-dashboard" : user.role === "institution_admin" ? "/institution" : user.role === "teacher" ? "/teacher" : "/"}
-          className="mt-4 font-black text-primary"
-        >
+        <p className="mt-2 text-muted-foreground">افتح المساحة المناسبة لنوع حسابك.</p>
+        <Link href={accountHref} data-testid="link-account-space" className="mt-5 rounded-xl px-4 py-2 font-black text-primary hover:bg-primary/10">
           فتح لوحة حسابي
         </Link>
       </div>
@@ -89,324 +155,351 @@ export default function DashboardPage() {
 
   if (isError || !dashboard) {
     return (
-      <div className="flex h-full flex-col items-center justify-center text-center p-6">
-        <AlertTriangle className="h-12 w-12 text-red-500 mb-4" />
-        <h2 className="text-xl font-black text-foreground">حدث خطأ في تحميل البيانات</h2>
-        <p className="text-muted-foreground mt-2">{error instanceof Error ? error.message : "يرجى المحاولة مرة أخرى لاحقاً."}</p>
+      <div className="flex min-h-full flex-col items-center justify-center p-6 text-center" dir="rtl">
+        <AlertTriangle className="mb-4 h-12 w-12 text-rose-600" aria-hidden="true" />
+        <h2 className="text-xl font-black text-foreground">تعذر تحميل لوحتك</h2>
+        <p className="mt-2 max-w-md text-sm leading-7 text-muted-foreground">
+          {error instanceof Error ? error.message : "حدث خطأ مؤقت. حاول تحميل البيانات من جديد."}
+        </p>
+        <Button
+          type="button"
+          data-testid="button-retry-dashboard"
+          onClick={() => refetchDashboard()}
+          className="mt-5 rounded-xl font-black"
+        >
+          <RefreshCw className="ml-2 h-4 w-4" aria-hidden="true" />
+          إعادة المحاولة
+        </Button>
       </div>
     );
   }
 
-  const handleSaveExamDate = () => {
-    if (examDateStr) {
-      updateExamDate.mutate(new Date(examDateStr).toISOString(), {
-        onSuccess: () => setIsExamDialogOpen(false)
-      });
-    }
-  };
-
-  const getGreeting = () => {
-    const hour = new Date().getHours();
-    if (hour < 12) return "صباح الخير";
-    if (hour < 17) return "مساء الخير";
-    return "مساء النور";
-  };
-
+  const userName = user.name || user.username || "طالب";
+  const firstName = userName.split(" ")[0];
+  const todayPlan = todayLearning.data?.plan;
+  const planProgram = todayPlan?.programId === "program.tahsili"
+    ? "tahsili"
+    : todayPlan?.programId === "program.qudrat"
+      ? "qudrat"
+      : journeyProgram;
+  const planSubjectId = todayPlan?.subjectId || journeySubjectId;
+  const foundationHref = planProgram === "tahsili"
+    ? planSubjectId
+      ? `/foundation?program=tahsili&subject=${encodeURIComponent(planSubjectId.replace(/^subject\.tahsili\./, ""))}`
+      : "/foundation?program=tahsili"
+    : "/foundation";
+  const todaySessionHref = (() => {
+    const params = new URLSearchParams({ programId: planProgram });
+    if (planSubjectId) params.set("subjectId", planSubjectId);
+    return `/learning/today?${params.toString()}`;
+  })();
+  const adaptiveLabel =
+    adaptiveDecision.data?.decision === "REVIEW"
+      ? "مراجعة سريعة"
+      : adaptiveDecision.data?.decision === "RECOVERY"
+        ? "نكمل من حيث توقفت"
+        : adaptiveDecision.data?.decision === "ADVANCE"
+          ? "خطوتك التعليمية التالية"
+          : adaptiveDecision.data?.decision === "PRACTICE"
+            ? "تدرّب على ما يحتاج دعمًا"
+            : "خطوتك التالية";
+  const recommendation = recommendations.data?.recommendations?.find((item) =>
+    !journeySubjectId || item.subjectId === journeySubjectId
+  );
+  const todayTitle = todayPlan?.title || recommendation?.title || adaptiveLabel;
+  const todayReason =
+    todayPlan?.sessionReason ||
+    adaptiveDecision.data?.reason ||
+    recommendation?.reason ||
+    "جلسة قصيرة بخطوات واضحة تساعدك على التقدم.";
+  const todayIsComplete = todayPlan?.state === "COMPLETED";
+  const todayHref = todayPlan?.planStatus === "DIAGNOSTIC_REQUIRED" ? foundationHref : todaySessionHref;
+  const recommendedHref = getSafeInternalHref(dashboard.recommendedPlan?.nextAction?.href);
   const daysToExam = dashboard.upcomingExam.date
     ? Math.max(0, Math.ceil((new Date(dashboard.upcomingExam.date).getTime() - Date.now()) / 86400000))
     : null;
-  const examProgress = daysToExam === null ? 0 : Math.max(5, Math.min(100, 100 - (daysToExam / 90) * 100));
-  const recommendedHref = ["/foundation", "/computerized", "/book-exam"].includes(dashboard.recommendedPlan.nextAction.href)
-    ? dashboard.recommendedPlan.nextAction.href
-    : "/foundation";
-  const todayPlan = todayLearning.data?.plan;
-  const adaptiveLabel = adaptiveDecision.data?.decision === "REVIEW"
-    ? "مراجعة سريعة"
-    : adaptiveDecision.data?.decision === "RECOVERY"
-      ? "نكمل من حيث توقفت"
-      : adaptiveDecision.data?.decision === "ADVANCE"
-        ? "خطوتك التعليمية التالية"
-        : adaptiveDecision.data?.decision === "PRACTICE"
-          ? "تدرّب على ما يحتاج دعمًا"
-          : "خطوتك التالية";
-  const todayTitle = todayPlan?.title || recommendations.data?.recommendations?.[0]?.title || adaptiveLabel;
-  const todayReason = todayPlan?.sessionReason || adaptiveDecision.data?.reason || recommendations.data?.recommendations?.[0]?.reason || "جلسة قصيرة بخطوات واضحة تساعدك على التقدم.";
-  const todayIsComplete = todayPlan?.state === "COMPLETED";
+  const recentTests = dashboard.recentTests ?? [];
+  const weaknesses = dashboard.weaknesses ?? [];
+  const progressItems = [
+    { key: "overall", label: "الإجمالي", value: dashboard.progress.overall.percentage },
+    { key: "verbal", label: "اللفظي", value: dashboard.progress.verbal.percentage },
+    { key: "quantitative", label: "الكمي", value: dashboard.progress.quantitative.percentage },
+    { key: "tahsili", label: "التحصيلي", value: dashboard.progress.tahsili.percentage },
+  ];
+
+  const handleOpenExamDialog = () => {
+    setExamDateStr(formatDateInput(dashboard.upcomingExam.date));
+    setIsExamDialogOpen(true);
+  };
+
+  const handleSaveExamDate = () => {
+    if (!examDateStr) return;
+    updateExamDate.mutate(new Date(`${examDateStr}T12:00:00`).toISOString(), {
+      onSuccess: () => setIsExamDialogOpen(false),
+    });
+  };
 
   return (
-    <div className="mx-auto max-w-5xl p-5 md:p-8 space-y-8 animate-fade-in">
-      {/* Header */}
-      <header className="flex flex-col gap-2">
-        <p className="text-sm font-bold text-muted-foreground">{getGreeting()}،</p>
-        <h1 className="text-3xl font-black text-[#0D1B2A] dark:text-white">{firstName}</h1>
-        <p className="text-sm text-muted-foreground">تابع تقدمك واستعد لاختبارك القادم بثقة.</p>
+    <div className="mx-auto w-full max-w-5xl space-y-7 p-5 md:p-8" dir="rtl">
+      <header className="space-y-2">
+        <p className="text-sm font-bold text-muted-foreground">{new Date().getHours() < 17 ? "مرحبًا" : "مساء الخير"}،</p>
+        <h1 data-testid="text-student-name" className="text-3xl font-black tracking-tight text-foreground md:text-4xl">
+          {firstName}
+        </h1>
+        <p className="text-sm leading-7 text-muted-foreground">خطوة واحدة الآن تكفي لتعرف ما التالي في استعدادك.</p>
       </header>
 
-      <section data-testid="student-next-step" className="rounded-3xl border border-primary/20 bg-primary/5 p-5 shadow-sm sm:p-6" dir="rtl">
-        <div className="flex flex-col gap-5 sm:flex-row sm:items-center sm:justify-between">
-          <div className="flex items-start gap-3">
-            <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-primary/10 text-primary">
-              <PlayCircle className="h-5 w-5" aria-hidden="true" />
+      <section data-testid="student-next-step" className="overflow-hidden rounded-3xl border border-primary/20 bg-primary/5 shadow-sm">
+        <div className="flex flex-col gap-5 p-5 sm:p-7 md:flex-row md:items-center md:justify-between">
+          <div className="flex items-start gap-4">
+            <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-primary text-primary-foreground">
+              <PlayCircle className="h-6 w-6" aria-hidden="true" />
             </span>
-            <div>
-              <p className="text-xs font-black text-primary">خطوتك التالية</p>
+            <div className="min-w-0">
+              <p className="text-xs font-black tracking-wide text-primary">مهمتك التالية</p>
               {todayLearning.isLoading ? (
-                <p className="mt-2 text-sm font-bold text-muted-foreground">نجهز مهمتك...</p>
+                <div className="mt-3 space-y-2" data-testid="status-today-loading">
+                  <div className="h-6 w-56 animate-pulse rounded bg-muted" />
+                  <div className="h-4 w-80 max-w-full animate-pulse rounded bg-muted" />
+                </div>
               ) : todayLearning.isError ? (
-                <p className="mt-2 text-sm leading-7 text-muted-foreground">تعذر تحميل مهمة اليوم. يمكنك المحاولة من جديد من هنا.</p>
+                <div data-testid="status-today-error">
+                  <h2 className="mt-1 text-xl font-black text-foreground">لم نتمكن من تجهيز مهمة اليوم</h2>
+                  <p className="mt-1 text-sm leading-7 text-muted-foreground">تحقق من الاتصال وحاول تحميل المهمة مرة أخرى.</p>
+                </div>
+              ) : !todayPlan ? (
+                <div data-testid="status-today-empty">
+                  <h2 className="mt-1 text-xl font-black text-foreground">ابدأ بتحديد مسارك</h2>
+                  <p className="mt-1 text-sm leading-7 text-muted-foreground">لا توجد مهمة جاهزة بعد. ابدأ بالتقييم لنقترح لك الخطوة المناسبة.</p>
+                </div>
               ) : (
-                <>
-                  <h2 className="mt-1 text-xl font-black text-foreground">{todayIsComplete ? "اكتمل درس اليوم" : todayTitle}</h2>
+                <div data-testid="status-today-ready">
+                  <h2 className="mt-1 text-xl font-black text-foreground">{todayIsComplete ? "أكملت مهمة اليوم" : todayTitle}</h2>
                   <p className="mt-1 max-w-2xl text-sm leading-7 text-muted-foreground">{todayReason}</p>
-                  {todayPlan ? (
-                    <div className="mt-3 flex flex-wrap items-center gap-3 text-xs font-bold text-muted-foreground">
-                      <span>{todayPlan.estimatedMinutes} دقيقة تقريبًا</span>
-                      <span>{Math.round(todayPlan.progress || 0)}٪ من جلسة اليوم</span>
-                    </div>
-                  ) : null}
-                </>
+                  <div className="mt-3 flex flex-wrap gap-x-4 gap-y-1 text-xs font-bold text-muted-foreground">
+                    <span>{todayPlan.estimatedMinutes} دقيقة تقريبًا</span>
+                    <span>{clampPercentage(todayPlan.progress)}٪ من المهمة</span>
+                  </div>
+                </div>
               )}
             </div>
           </div>
-          <Link
-            href={todayPlan?.planStatus === "DIAGNOSTIC_REQUIRED" ? "/foundation" : "/learning/today"}
-            className="inline-flex min-h-11 shrink-0 items-center justify-center gap-2 rounded-xl bg-[#0D1B2A] px-5 text-sm font-black text-white transition-colors hover:bg-[#0D1B2A]/90"
-          >
-            {todayLearning.isError ? "إعادة المحاولة" : todayPlan?.planStatus === "DIAGNOSTIC_REQUIRED" ? "ابدأ التقييم" : todayIsComplete ? "عرض درس اليوم" : todayLearning.data?.started ? "نكمل؟" : "ابدأ"}
-            <ChevronLeft className="h-4 w-4" aria-hidden="true" />
-          </Link>
+          {todayLearning.isError ? (
+            <Button
+              type="button"
+              data-testid="button-retry-today-learning"
+              onClick={() => todayLearning.refetch()}
+              className="min-h-11 shrink-0 rounded-xl bg-foreground px-5 font-black text-background hover:bg-foreground/90"
+            >
+              <RefreshCw className="ml-2 h-4 w-4" aria-hidden="true" />
+              إعادة المحاولة
+            </Button>
+          ) : (
+            <Link
+              href={todayPlan ? todayHref : foundationHref}
+              data-testid="link-start-next-step"
+              className="inline-flex min-h-11 shrink-0 items-center justify-center gap-2 rounded-xl bg-foreground px-5 text-sm font-black text-background transition-opacity hover:opacity-90"
+            >
+              {todayPlan?.planStatus === "DIAGNOSTIC_REQUIRED" || !todayPlan
+                ? planProgram === "tahsili" ? "اختر مادتك" : "ابدأ التقييم"
+                : todayIsComplete ? "عرض مهمة اليوم" : todayLearning.data?.started ? "نكمل؟" : "ابدأ المهمة"}
+              <ChevronLeft className="h-4 w-4" aria-hidden="true" />
+            </Link>
+          )}
         </div>
       </section>
 
-      {/* Subscription Banner */}
-      {dashboard.subscription.status === "active" && (
-        <div className="rounded-2xl border border-[#91D7C5]/30 bg-[#EAF8F3] dark:bg-emerald-950/20 px-5 py-4 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <Award className="h-6 w-6 text-[#398B79]" />
-            <div>
-              <p className="text-sm font-black text-[#171723] dark:text-emerald-100">اشتراك {dashboard.subscription.type}</p>
-              <p className="text-xs font-bold text-[#398B79]">متبقي {dashboard.subscription.daysLeft} يوم</p>
-            </div>
-          </div>
-          <button type="button" onClick={() => setSubscriptionDialogOpen(true)} className="text-xs font-bold text-[#17354A] dark:text-emerald-200 hover:underline">
-            عرض اشتراكي
-          </button>
-        </div>
-      )}
-      {dashboard.subscription.status === "trial" && (
-        <div className="rounded-2xl border border-[#F7F775] bg-[#FFFDEB] dark:bg-amber-950/20 px-5 py-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+      <section data-testid="student-progress-summary" className="rounded-3xl border border-border bg-card p-5 shadow-sm md:p-6">
+        <div className="flex flex-col gap-4 border-b border-border pb-5 sm:flex-row sm:items-end sm:justify-between">
           <div>
-            <p className="text-sm font-black text-[#171723] dark:text-amber-100">تجربتك المجانية مفتوحة بالكامل</p>
-            <p className="text-xs font-bold text-[#7A6410] mt-1">متبقي {dashboard.trial?.daysLeft || 0} يوم — استخدم التأسيس والمحوسب والمحاكاة بلا قيود.</p>
+            <p className="text-xs font-black text-primary">ملخص التقدم</p>
+            <h2 className="mt-1 text-xl font-black text-foreground">أين وصلت حتى الآن؟</h2>
           </div>
-          <button type="button" onClick={() => setSubscriptionDialogOpen(true)} className="text-xs font-black text-[#0D1B2A] dark:text-amber-100 underline">عرض اشتراكي</button>
+          <div className="flex gap-5 text-sm">
+            <div data-testid="stat-average-score">
+              <p className="text-2xl font-black text-foreground">{dashboard.stats.averageScore}%</p>
+              <p className="text-xs font-bold text-muted-foreground">متوسط الأداء</p>
+            </div>
+            <div data-testid="stat-total-tests">
+              <p className="text-2xl font-black text-foreground">{dashboard.stats.totalTests}</p>
+              <p className="text-xs font-bold text-muted-foreground">اختبارات منجزة</p>
+            </div>
+            <div data-testid="stat-points">
+              <p className="text-2xl font-black text-foreground">{dashboard.stats.points}</p>
+              <p className="text-xs font-bold text-muted-foreground">إجابة صحيحة</p>
+            </div>
+          </div>
         </div>
-      )}
-      {dashboard.subscription.status === "none" && (
-        <div className="rounded-2xl border border-[#FF8A70]/40 bg-[#FFF0EA] dark:bg-rose-950/20 px-5 py-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-          <div>
-            <p className="text-sm font-black text-[#171723] dark:text-rose-100">حسابك المجاني: اختبار واحد كل يوم</p>
-            <p className="text-xs font-bold text-[#9A4D38] mt-1">اشترك لفتح التأسيس والبنوك والمحاكاة دون حد يومي.</p>
-          </div>
-          <Button onClick={() => setSubscriptionDialogOpen(true)} className="rounded-xl bg-[#0D1B2A] text-white font-black">اشترك بـ 39 ريال</Button>
-        </div>
-      )}
-
-      {/* Stats Grid */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        {[
-          { label: "الاختبارات المنجزة", value: dashboard.stats.totalTests, icon: FileText, color: "text-blue-500", bg: "bg-blue-50 dark:bg-blue-900/20" },
-          { label: "متوسط الأداء", value: `${dashboard.stats.averageScore}%`, icon: Target, color: "text-emerald-500", bg: "bg-emerald-50 dark:bg-emerald-900/20" },
-          { label: "النقاط المكتسبة", value: dashboard.stats.points, icon: TrendingUp, color: "text-amber-500", bg: "bg-amber-50 dark:bg-amber-900/20" },
-          { label: "الأيام للاختبار", value: daysToExam ?? "—", icon: Calendar, color: "text-rose-500", bg: "bg-rose-50 dark:bg-rose-900/20" },
-        ].map((stat, i) => (
-          <div key={i} className="rounded-2xl bg-white dark:bg-card border border-border p-5 shadow-sm transition hover:shadow-md">
-            <div className={`h-10 w-10 rounded-xl flex items-center justify-center ${stat.bg} ${stat.color} mb-4`}>
-              <stat.icon className="h-5 w-5" />
-            </div>
-            <p className="text-2xl font-black text-foreground">{stat.value}</p>
-            <p className="text-xs font-bold text-muted-foreground mt-1">{stat.label}</p>
-          </div>
-        ))}
-      </div>
-
-      <div className="grid md:grid-cols-3 gap-6">
-        {/* Main Column */}
-        <div className="md:col-span-2 space-y-6">
-          <OfficialScoreCard scores={dashboard.officialScores} />
-          {/* Recommended Plan */}
-          <section>
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-lg font-black text-foreground">خطتك المقترحة</h2>
-            </div>
-            <div className="rounded-2xl bg-[#0D1B2A] text-white p-6 relative overflow-hidden">
-              <div className="relative z-10">
-                <p className="text-sm font-bold text-[#F7F775] mb-2">{dashboard.recommendedPlan.title}</p>
-                <h3 className="text-xl font-black mb-3">{dashboard.recommendedPlan.description}</h3>
-                <Link href={recommendedHref}>
-                  <Button className="mt-4 bg-[#F7F775] text-[#0D1B2A] hover:bg-[#F7F775]/90 font-black rounded-xl">
-                    <PlayCircle className="ml-2 h-4 w-4" />
-                    {dashboard.recommendedPlan.nextAction.label}
-                  </Button>
-                </Link>
-              </div>
-              <div className="absolute -left-10 -bottom-10 h-40 w-40 rounded-full bg-white/5 blur-3xl pointer-events-none" />
-            </div>
-          </section>
-
-          <Link href="/book-exam">
-            <section className="rounded-2xl border border-[#0D1B2A]/10 bg-white dark:bg-card p-5 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md">
-              <div className="flex items-center justify-between gap-4">
-                <div className="flex items-center gap-3">
-                  <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-[#EAF8F3] text-[#398B79]"><CalendarCheck className="h-5 w-5" /></span>
-                  <div>
-                    <h2 className="font-black text-foreground">احجز اختبارًا محاكيًا</h2>
-                    <p className="mt-1 text-xs text-muted-foreground">اختر موعدًا وخض تجربة قريبة من اختبار قياس.</p>
-                  </div>
+        <div className="mt-5 grid gap-x-6 gap-y-4 sm:grid-cols-2">
+          {progressItems.map((item) => {
+            const percentage = clampPercentage(item.value);
+            return (
+              <div key={item.key} data-testid={`progress-${item.key}`}>
+                <div className="mb-2 flex items-center justify-between text-sm font-bold">
+                  <span className="text-foreground">{item.label}</span>
+                  <span className="text-muted-foreground">{percentage}%</span>
                 </div>
-                <ChevronLeft className="h-5 w-5 text-muted-foreground" />
+                <div className="h-2 overflow-hidden rounded-full bg-muted">
+                  <div className="h-full rounded-full bg-primary transition-all" style={{ width: `${percentage}%` }} />
+                </div>
               </div>
-            </section>
-          </Link>
+            );
+          })}
+        </div>
+      </section>
 
-          {/* Recent Tests */}
-          <section>
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-lg font-black text-foreground">الاختبارات الأخيرة</h2>
-              <Link href="/computerized" className="text-sm font-bold text-muted-foreground hover:text-foreground">
+      <section data-testid="student-paths" className="space-y-3">
+        <div>
+          <div>
+            <p className="text-xs font-black text-primary">مساراتك</p>
+            <h2 className="mt-1 text-xl font-black text-foreground">اختر ما تريد إنجازه</h2>
+          </div>
+        </div>
+        <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+          {paths.map((path) => {
+            const Icon = path.icon;
+            return (
+              <Link
+                key={path.href}
+                href={path.href}
+                data-testid={`link-path-${path.href.slice(1).replace("/", "-") || "home"}`}
+                className="group flex items-center gap-3 rounded-2xl border border-border bg-card p-4 shadow-sm transition-colors hover:border-primary/40 hover:bg-primary/5"
+              >
+                <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-muted text-muted-foreground transition-colors group-hover:bg-primary/10 group-hover:text-primary">
+                  <Icon className="h-5 w-5" aria-hidden="true" />
+                </span>
+                <span className="min-w-0">
+                  <span className="block text-sm font-black text-foreground">{path.label}</span>
+                  <span className="mt-1 block text-xs text-muted-foreground">{path.detail}</span>
+                </span>
+                <ChevronLeft className="mr-auto h-4 w-4 shrink-0 text-muted-foreground" aria-hidden="true" />
+              </Link>
+            );
+          })}
+        </div>
+      </section>
+
+      <div className="grid gap-6 lg:grid-cols-[1.35fr_0.65fr]">
+        <div className="space-y-6">
+          <section data-testid="section-recent-tests" className="rounded-3xl border border-border bg-card p-5 shadow-sm md:p-6">
+            <div className="mb-4 flex items-center justify-between">
+              <div>
+                <p className="text-xs font-black text-primary">سجل التدريب</p>
+                <h2 className="mt-1 text-lg font-black text-foreground">الاختبارات الأخيرة</h2>
+              </div>
+              <Link href="/computerized" data-testid="link-all-tests" className="text-xs font-black text-muted-foreground hover:text-foreground">
                 عرض الكل
               </Link>
             </div>
-            <div className="space-y-3">
-              {dashboard.recentTests.map((test) => (
-                <div key={test.id} className="flex items-center justify-between p-4 rounded-2xl bg-white dark:bg-card border border-border shadow-sm hover:border-[#0D1B2A]/20 transition-colors">
-                  <div className="flex items-center gap-4">
-                    <div className="h-10 w-10 rounded-xl bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-slate-500">
-                      <FileText className="h-5 w-5" />
-                    </div>
-                    <div>
-                      <p className="font-bold text-foreground">{test.title}</p>
-                      <p className="text-xs text-muted-foreground mt-1">
-                        {new Date(test.date).toLocaleDateString('ar-SA', { year: 'numeric', month: 'long', day: 'numeric' })}
-                      </p>
-                    </div>
-                  </div>
-                  <div className="text-left">
-                    <span className="inline-block px-3 py-1 rounded-lg bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-400 font-black text-sm">
-                      {test.score}%
-                    </span>
-                  </div>
-                </div>
-              ))}
-              {dashboard.recentTests.length === 0 && (
-                <div className="rounded-2xl border border-dashed border-border bg-white dark:bg-card p-8 text-center">
-                  <FileText className="mx-auto h-8 w-8 text-muted-foreground" />
-                  <p className="mt-3 font-black text-foreground">لا توجد اختبارات مكتملة بعد</p>
-                  <Link href="/computerized" className="mt-2 inline-block text-sm font-bold text-[#398B79]">ابدأ أول اختبار</Link>
-                </div>
-              )}
-            </div>
-          </section>
-        </div>
-
-        {/* Side Column */}
-        <div className="space-y-6">
-          {/* Upcoming Exam */}
-          <section className="rounded-2xl bg-white dark:bg-card border border-border p-5 shadow-sm">
-            <h2 className="text-base font-black text-foreground mb-4 flex items-center gap-2">
-              <Calendar className="h-5 w-5 text-muted-foreground" /> موعد الاختبار
-            </h2>
-            {dashboard.upcomingExam.date ? (
-              <div className="text-center py-4">
-                <p className="text-3xl font-black text-[#0D1B2A] dark:text-white">
-                  {new Date(dashboard.upcomingExam.date).toLocaleDateString('ar-SA', { day: 'numeric', month: 'long' })}
-                </p>
-                <p className="text-sm font-bold text-muted-foreground mt-2">{daysToExam} يومًا على موعدك</p>
-                <div className="mt-4 h-2 overflow-hidden rounded-full bg-slate-100 dark:bg-slate-800">
-                  <div className="h-full rounded-full bg-[#398B79]" style={{ width: `${examProgress}%` }} />
-                </div>
-                <p className="mt-2 text-[11px] text-muted-foreground">تقدم الخطة خلال آخر 90 يومًا قبل الاختبار</p>
-                <Dialog open={isExamDialogOpen} onOpenChange={setIsExamDialogOpen}>
-                  <DialogTrigger asChild>
-                    <Button variant="outline" className="mt-4 w-full rounded-xl font-bold">تعديل الموعد</Button>
-                  </DialogTrigger>
-                  <DialogContent className="sm:max-w-md rounded-2xl" dir="rtl">
-                    <DialogHeader>
-                      <DialogTitle className="font-black text-xl">تعديل موعد الاختبار</DialogTitle>
-                    </DialogHeader>
-                    <div className="space-y-4 py-4">
-                      <div className="space-y-2">
-                        <label className="text-sm font-bold text-foreground">تاريخ الاختبار</label>
-                        <Input 
-                          type="date" 
-                          value={examDateStr} 
-                          onChange={(e) => setExamDateStr(e.target.value)} 
-                          className="rounded-xl"
-                        />
+            {recentTests.length > 0 ? (
+              <div className="space-y-2">
+                {recentTests.slice(0, 4).map((test) => (
+                  <div key={test.id} data-testid={`row-recent-test-${test.id}`} className="flex items-center justify-between gap-4 rounded-2xl border border-border/70 p-3">
+                    <div className="flex min-w-0 items-center gap-3">
+                      <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-muted text-muted-foreground">
+                        <FileText className="h-4 w-4" aria-hidden="true" />
+                      </span>
+                      <div className="min-w-0">
+                        <p className="truncate text-sm font-bold text-foreground">{test.title}</p>
+                        <p className="mt-1 text-xs text-muted-foreground">
+                          {new Date(test.date).toLocaleDateString("ar-SA", { year: "numeric", month: "long", day: "numeric" })}
+                        </p>
                       </div>
-                      <Button 
-                        onClick={handleSaveExamDate} 
-                        disabled={!examDateStr || updateExamDate.isPending} 
-                        className="w-full rounded-xl font-black bg-[#0D1B2A] text-white hover:bg-[#0D1B2A]/90"
-                      >
-                        {updateExamDate.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : "حفظ الموعد"}
-                      </Button>
                     </div>
-                  </DialogContent>
-                </Dialog>
+                    <span className="shrink-0 rounded-lg bg-primary/10 px-3 py-1 text-sm font-black text-primary">{test.score}%</span>
+                  </div>
+                ))}
               </div>
             ) : (
-              <div className="text-center py-4">
-                <p className="text-sm font-bold text-muted-foreground mb-4">لم تحدد موعد اختبارك بعد.</p>
-                <Dialog open={isExamDialogOpen} onOpenChange={setIsExamDialogOpen}>
-                  <DialogTrigger asChild>
-                    <Button className="w-full rounded-xl font-black bg-[#0D1B2A] text-white hover:bg-[#0D1B2A]/90">
-                      حدد الموعد الآن
-                    </Button>
-                  </DialogTrigger>
-                  <DialogContent className="sm:max-w-md rounded-2xl" dir="rtl">
-                    <DialogHeader>
-                      <DialogTitle className="font-black text-xl">تحديد موعد الاختبار</DialogTitle>
-                    </DialogHeader>
-                    <div className="space-y-4 py-4">
-                      <div className="space-y-2">
-                        <label className="text-sm font-bold text-foreground">تاريخ الاختبار</label>
-                        <Input 
-                          type="date" 
-                          value={examDateStr} 
-                          onChange={(e) => setExamDateStr(e.target.value)} 
-                          className="rounded-xl"
-                        />
-                      </div>
-                      <Button 
-                        onClick={handleSaveExamDate} 
-                        disabled={!examDateStr || updateExamDate.isPending} 
-                        className="w-full rounded-xl font-black bg-[#0D1B2A] text-white hover:bg-[#0D1B2A]/90"
-                      >
-                        {updateExamDate.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : "حفظ الموعد"}
-                      </Button>
-                    </div>
-                  </DialogContent>
-                </Dialog>
+              <div data-testid="empty-recent-tests" className="rounded-2xl border border-dashed border-border p-7 text-center">
+                <FileText className="mx-auto h-8 w-8 text-muted-foreground" aria-hidden="true" />
+                <p className="mt-3 font-black text-foreground">لا توجد اختبارات مكتملة بعد</p>
+                <p className="mt-1 text-sm text-muted-foreground">ابدأ من مهمة اليوم وسنحفظ نتائجك هنا.</p>
               </div>
             )}
           </section>
 
-          {/* Weaknesses */}
-          {dashboard.weaknesses.length > 0 && (
-            <section className="rounded-2xl bg-white dark:bg-card border border-border p-5 shadow-sm">
-              <h2 className="text-base font-black text-foreground mb-4 flex items-center gap-2">
-                <Brain className="h-5 w-5 text-muted-foreground" /> نقاط تحتاج مراجعة
-              </h2>
-              <div className="space-y-4">
-                {dashboard.weaknesses.map((w, i) => (
-                  <div key={i}>
-                    <div className="flex justify-between text-sm font-bold mb-1">
-                      <span className="text-foreground">{w.topic} <span className="text-xs text-muted-foreground font-normal">({w.subject})</span></span>
-                      <span className="text-rose-500">{w.errorRate}% خطأ</span>
+          <details data-testid="details-official-scores" className="group rounded-3xl border border-border bg-card shadow-sm">
+            <summary className="flex cursor-pointer list-none items-center gap-3 p-5 font-black text-foreground [&::-webkit-details-marker]:hidden">
+              <Target className="h-5 w-5 text-primary" aria-hidden="true" />
+              <span className="flex-1">نتيجتي الرسمية</span>
+              <ChevronDown className="h-4 w-4 text-muted-foreground transition-transform group-open:rotate-180" aria-hidden="true" />
+            </summary>
+            <div className="border-t border-border p-4 sm:p-5">
+              <OfficialScoreCard scores={dashboard.officialScores} />
+            </div>
+          </details>
+        </div>
+
+        <aside className="space-y-6">
+          <section data-testid="section-exam-date" className="rounded-3xl border border-border bg-card p-5 shadow-sm">
+            <div className="flex items-center gap-2">
+              <Calendar className="h-5 w-5 text-primary" aria-hidden="true" />
+              <h2 className="font-black text-foreground">موعد الاختبار</h2>
+            </div>
+            {dashboard.upcomingExam.date ? (
+              <div className="mt-5">
+                <p data-testid="text-exam-date" className="text-2xl font-black text-foreground">
+                  {new Date(dashboard.upcomingExam.date).toLocaleDateString("ar-SA", { day: "numeric", month: "long" })}
+                </p>
+                <p className="mt-1 text-sm font-bold text-muted-foreground">{daysToExam} يومًا متبقيًا</p>
+              </div>
+            ) : (
+              <p data-testid="status-no-exam-date" className="mt-4 text-sm leading-7 text-muted-foreground">لم تحدد موعد اختبارك بعد.</p>
+            )}
+            <Dialog open={isExamDialogOpen} onOpenChange={setIsExamDialogOpen}>
+              <div className="mt-5 grid gap-2 sm:grid-cols-2">
+                <DialogTrigger asChild>
+                  <Button type="button" data-testid="button-edit-exam-date" onClick={handleOpenExamDialog} variant="outline" className="w-full rounded-xl font-black">
+                    {dashboard.upcomingExam.date ? "تعديل الموعد" : "حدد الموعد"}
+                  </Button>
+                </DialogTrigger>
+                <Link
+                  href="/book-exam"
+                  data-testid="link-book-simulation"
+                  className="inline-flex min-h-10 items-center justify-center rounded-xl bg-primary px-3 text-sm font-black text-primary-foreground hover:bg-primary/90"
+                >
+                  حجز محاكاة
+                </Link>
+              </div>
+              <DialogContent className="rounded-2xl sm:max-w-md" dir="rtl">
+                <DialogHeader>
+                  <DialogTitle className="text-xl font-black">تعديل موعد الاختبار</DialogTitle>
+                </DialogHeader>
+                <div className="space-y-4 py-4">
+                  <label className="block space-y-2">
+                    <span className="text-sm font-bold text-foreground">تاريخ الاختبار</span>
+                    <Input data-testid="input-exam-date" type="date" value={examDateStr} onChange={(event) => setExamDateStr(event.target.value)} className="rounded-xl" />
+                  </label>
+                  <Button
+                    type="button"
+                    data-testid="button-save-exam-date"
+                    onClick={handleSaveExamDate}
+                    disabled={!examDateStr || updateExamDate.isPending}
+                    className="w-full rounded-xl font-black"
+                  >
+                    {updateExamDate.isPending ? "جارٍ الحفظ..." : "حفظ الموعد"}
+                  </Button>
+                </div>
+              </DialogContent>
+            </Dialog>
+          </section>
+
+          {weaknesses.length > 0 && (
+            <section data-testid="section-weaknesses" className="rounded-3xl border border-border bg-card p-5 shadow-sm">
+              <div className="flex items-center gap-2">
+                <Brain className="h-5 w-5 text-primary" aria-hidden="true" />
+                <h2 className="font-black text-foreground">نقاط تحتاج مراجعة</h2>
+              </div>
+              <div className="mt-5 space-y-4">
+                {weaknesses.slice(0, 3).map((weakness, index) => (
+                  <div key={`${weakness.topic}-${index}`} data-testid={`weakness-${index}`}>
+                    <div className="mb-1 flex justify-between gap-3 text-sm font-bold">
+                      <span className="truncate text-foreground">{weakness.topic}</span>
+                      <span className="shrink-0 text-muted-foreground">{weakness.errorRate}% خطأ</span>
                     </div>
-                    <div className="h-2 w-full bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
-                      <div className="h-full bg-rose-400 rounded-full" style={{ width: `${w.errorRate}%` }} />
+                    <div className="h-2 overflow-hidden rounded-full bg-muted">
+                      <div className="h-full rounded-full bg-amber-500" style={{ width: `${clampPercentage(weakness.errorRate)}%` }} />
                     </div>
                   </div>
                 ))}
@@ -414,70 +507,73 @@ export default function DashboardPage() {
             </section>
           )}
 
-          {/* Quick Links */}
-          <section className="grid grid-cols-2 gap-3">
-            <Link href="/books">
-              <div className="rounded-2xl bg-white dark:bg-card border border-border p-4 text-center hover:border-primary/50 transition-colors shadow-sm">
-                <FolderOpen className="h-6 w-6 mx-auto mb-2 text-muted-foreground" />
-                <p className="font-bold text-sm text-foreground">كتبي</p>
-                <p className="text-xs text-muted-foreground mt-1">{dashboard.booksCount} كتب</p>
+          <details data-testid="details-account-information" className="group rounded-3xl border border-border bg-card shadow-sm">
+            <summary className="flex cursor-pointer list-none items-center gap-3 p-5 font-black text-foreground [&::-webkit-details-marker]:hidden">
+              <Award className="h-5 w-5 text-primary" aria-hidden="true" />
+              <span className="flex-1">معلومات الحساب</span>
+              <ChevronDown className="h-4 w-4 text-muted-foreground transition-transform group-open:rotate-180" aria-hidden="true" />
+            </summary>
+            <div className="space-y-4 border-t border-border px-5 pb-5 pt-4">
+              <div className="flex items-center justify-between text-sm">
+                <span className="text-muted-foreground">حالة الاشتراك</span>
+                <span data-testid="status-subscription" className="font-black text-foreground">
+                  {dashboard.subscription.status === "active"
+                    ? `نشط — ${dashboard.subscription.daysLeft} يوم`
+                    : dashboard.subscription.status === "trial"
+                      ? `تجربة — ${dashboard.trial?.daysLeft || 0} يوم`
+                      : "حساب مجاني"}
+                </span>
               </div>
-            </Link>
-            <Link href="/folders">
-              <div className="rounded-2xl bg-white dark:bg-card border border-border p-4 text-center hover:border-primary/50 transition-colors shadow-sm">
-                <FileText className="h-6 w-6 mx-auto mb-2 text-muted-foreground" />
-                <p className="font-bold text-sm text-foreground">المجلدات</p>
-                <p className="text-xs text-muted-foreground mt-1">{dashboard.foldersCount} مجلدات</p>
+              <div className="flex items-center justify-between text-sm">
+                <span className="text-muted-foreground">المكتبة</span>
+                <span data-testid="text-library-counts" className="font-black text-foreground">{dashboard.booksCount} كتب، {dashboard.foldersCount} مجلدات</span>
               </div>
-            </Link>
-          </section>
+              <Button
+                type="button"
+                data-testid="button-view-subscription"
+                variant="outline"
+                onClick={() => setSubscriptionDialogOpen(true)}
+                className="w-full rounded-xl font-black"
+              >
+                عرض تفاصيل الاشتراك
+              </Button>
+              <Link href={recommendedHref} data-testid="link-recommended-plan" className="flex items-center justify-between rounded-xl bg-muted px-3 py-3 text-sm font-bold text-foreground hover:bg-primary/10">
+                <span>
+                  <span className="block text-xs text-muted-foreground">الخطة المقترحة</span>
+                  <span className="mt-1 block">{dashboard.recommendedPlan.title}</span>
+                </span>
+                <ChevronLeft className="h-4 w-4 text-muted-foreground" aria-hidden="true" />
+              </Link>
+            </div>
+          </details>
 
-        </div>
+          <details data-testid="details-more-links" className="group rounded-3xl border border-border bg-card shadow-sm">
+            <summary className="flex cursor-pointer list-none items-center gap-3 p-5 font-black text-foreground [&::-webkit-details-marker]:hidden">
+              <Route className="h-5 w-5 text-primary" aria-hidden="true" />
+              <span className="flex-1">روابط إضافية</span>
+              <ChevronDown className="h-4 w-4 text-muted-foreground transition-transform group-open:rotate-180" aria-hidden="true" />
+            </summary>
+            <div className="grid gap-2 border-t border-border p-4">
+              {[
+                { href: "/books", label: "كتبي" },
+                { href: "/folders", label: "مجلداتي" },
+                { href: "/support", label: "الدعم والمساعدة" },
+                { href: "/notifications", label: "التحديثات" },
+              ].map((item) => (
+                <Link
+                  key={item.href}
+                  href={item.href}
+                  data-testid={`link-extra-${item.href.slice(1)}`}
+                  className="rounded-xl px-3 py-2 text-sm font-bold text-foreground hover:bg-muted"
+                >
+                  {item.label}
+                </Link>
+              ))}
+            </div>
+          </details>
+        </aside>
       </div>
 
-      <div className="grid gap-6 md:grid-cols-2">
-        <section className="rounded-2xl border border-border bg-white dark:bg-card p-5 shadow-sm">
-          <div className="mb-4 flex items-center gap-2">
-            <Star className="h-5 w-5 text-amber-500" />
-            <h2 className="font-black text-foreground">قيّم تجربتك</h2>
-          </div>
-          <div className="mb-3 flex gap-1" aria-label="اختر التقييم">
-            {[1, 2, 3, 4, 5].map(value => (
-              <button key={value} type="button" onClick={() => setRating(value)} aria-label={`${value} نجوم`}>
-                <Star className={`h-6 w-6 ${value <= rating ? "fill-amber-400 text-amber-400" : "text-slate-300"}`} />
-              </button>
-            ))}
-          </div>
-          <textarea
-            value={reviewText}
-            onChange={event => setReviewText(event.target.value)}
-            maxLength={2000}
-            placeholder="كيف ساعدتك قدراتك؟"
-            className="min-h-24 w-full resize-none rounded-xl border border-border bg-background p-3 text-sm outline-none focus:border-[#398B79]"
-          />
-          <Button
-            disabled={!reviewText.trim() || submitReview.isPending}
-            onClick={() => submitReview.mutate({ rating, text: reviewText.trim() }, { onSuccess: () => setReviewText("") })}
-            className="mt-3 rounded-xl bg-[#0D1B2A] font-black text-white"
-          >
-            إرسال التقييم
-          </Button>
-          {reviews.length > 0 && <p className="mt-4 text-xs text-muted-foreground">آخر تقييم منشور: “{reviews[0].text}” — {reviews[0].studentName}</p>}
-        </section>
-
-        <section className="grid gap-3 sm:grid-cols-2">
-          <Link href="/support" className="rounded-2xl border border-border bg-white dark:bg-card p-5 shadow-sm hover:border-[#398B79]">
-            <Headphones className="h-6 w-6 text-[#398B79]" />
-            <h2 className="mt-4 font-black text-foreground">الدعم والمساعدة</h2>
-            <p className="mt-2 text-xs leading-5 text-muted-foreground">الأسئلة الشائعة وطرق التواصل مع فريق قدراتك.</p>
-          </Link>
-          <Link href="/notifications" className="rounded-2xl border border-border bg-white dark:bg-card p-5 shadow-sm hover:border-[#FF8A70]">
-            <BellRing className="h-6 w-6 text-[#FF8A70]" />
-            <h2 className="mt-4 font-black text-foreground">التحديثات والتسريبات</h2>
-            <p className="mt-2 text-xs leading-5 text-muted-foreground">تابع أحدث ما ينشره فريق الإدارة لحسابك.</p>
-          </Link>
-        </section>
-      </div>
       <SubscriptionRenewalDialog open={subscriptionDialogOpen} onOpenChange={setSubscriptionDialogOpen} user={user} />
     </div>
   );

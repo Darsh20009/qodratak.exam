@@ -24,9 +24,9 @@ const EXAM_TYPES: Record<ExamTypeKey, {
     label: 'قدراتك — تخصص علمي',
     subtitle: 'القدرات العامة (علمي)',
     icon: Brain,
-    color: 'text-teal-700 dark:text-teal-700',
-    bg: 'bg-teal-100 dark:bg-teal-100/20',
-    border: 'border-teal-400 dark:border-teal-400',
+    color: 'text-teal-800 dark:text-teal-200',
+    bg: 'bg-teal-50 dark:bg-teal-900/30',
+    border: 'border-teal-300 dark:border-teal-700',
     questions: 120, duration: '130 دقيقة',
     description: '50% لفظي + 50% كمي — 5 أقسام مختلطة',
     sections: '5 أقسام: 3 مختلطة + لفظي + كمي',
@@ -35,9 +35,9 @@ const EXAM_TYPES: Record<ExamTypeKey, {
     label: 'قدراتك — تخصص أدبي',
     subtitle: 'القدرات العامة (أدبي)',
     icon: BookMarked,
-    color: 'text-teal-700 dark:text-teal-700',
-    bg: 'bg-teal-100 dark:bg-teal-100/20',
-    border: 'border-teal-400 dark:border-teal-400',
+    color: 'text-teal-800 dark:text-teal-200',
+    bg: 'bg-teal-50 dark:bg-teal-900/30',
+    border: 'border-teal-300 dark:border-teal-700',
     questions: 120, duration: '130 دقيقة',
     description: '70% لفظي + 30% كمي — مناسب للتخصصات الأدبية',
     sections: '5 أقسام: تركيز أعلى على اللفظي',
@@ -46,9 +46,9 @@ const EXAM_TYPES: Record<ExamTypeKey, {
     label: 'اختبار تحصيلي',
     subtitle: 'الاختبار التحصيلي الشامل',
     icon: GraduationCap,
-    color: 'text-emerald-600 dark:text-emerald-400',
-    bg: 'bg-emerald-50 dark:bg-emerald-900/20',
-    border: 'border-emerald-200 dark:border-emerald-700',
+    color: 'text-teal-800 dark:text-teal-200',
+    bg: 'bg-teal-50 dark:bg-teal-900/30',
+    border: 'border-teal-300 dark:border-teal-700',
     questions: 100, duration: '120 دقيقة',
     description: 'عربي + رياضيات + علوم + أحياء + كيمياء + فيزياء',
     sections: '6 مواد: شامل للثانوية العامة',
@@ -339,8 +339,8 @@ export default function BookExamPage() {
                   !available
                     ? 'bg-gray-100 dark:bg-gray-800 text-gray-300 dark:text-gray-600 cursor-not-allowed'
                     : isSelected
-                    ? 'bg-teal-100 text-white shadow-lg shadow-green-200 dark:shadow-green-900 scale-105'
-                    : 'bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300 hover:border-teal-400 hover:text-teal-700 hover:shadow-sm'
+                    ? 'bg-teal-700 dark:bg-teal-600 text-white shadow-md shadow-teal-900/10 dark:shadow-teal-900/40 scale-105'
+                    : 'bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300 hover:border-teal-400 hover:text-teal-800 dark:hover:text-teal-200 hover:shadow-sm'
                 }`}
               >
                 {timeStr}
@@ -510,8 +510,8 @@ export default function BookExamPage() {
               data-testid={`tab-${tab.id}`}
               className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl text-sm font-bold transition-all duration-200 ${
                 view === tab.id
-                  ? 'bg-teal-100 text-white shadow-md'
-                  : 'text-gray-500 dark:text-gray-400 hover:text-teal-700 dark:hover:text-teal-700'
+                  ? 'bg-teal-700 dark:bg-teal-600 text-white shadow-sm'
+                  : 'text-gray-500 dark:text-gray-400 hover:text-teal-800 dark:hover:text-teal-200'
               }`}
             >
               <tab.icon className="w-4 h-4" />
@@ -575,13 +575,13 @@ export default function BookExamPage() {
                 <div className="flex gap-1">
                   <button
                     onClick={() => setWeekOffset(w => Math.max(0, w - 1))}
-                    className="w-8 h-8 rounded-lg bg-gray-100 dark:bg-gray-800 flex items-center justify-center text-gray-600 dark:text-gray-400 hover:bg-teal-100 hover:text-teal-700 transition-colors"
+                    className="w-8 h-8 rounded-lg bg-gray-100 dark:bg-gray-800 flex items-center justify-center text-gray-600 dark:text-gray-400 hover:bg-teal-50 dark:hover:bg-teal-900/30 hover:text-teal-800 dark:hover:text-teal-200 transition-colors"
                   >
                     <ChevronRight className="h-4 w-4" />
                   </button>
                   <button
                     onClick={() => setWeekOffset(w => Math.min(3, w + 1))}
-                    className="w-8 h-8 rounded-lg bg-gray-100 dark:bg-gray-800 flex items-center justify-center text-gray-600 dark:text-gray-400 hover:bg-teal-100 hover:text-teal-700 transition-colors"
+                    className="w-8 h-8 rounded-lg bg-gray-100 dark:bg-gray-800 flex items-center justify-center text-gray-600 dark:text-gray-400 hover:bg-teal-50 dark:hover:bg-teal-900/30 hover:text-teal-800 dark:hover:text-teal-200 transition-colors"
                   >
                     <ChevronLeft className="h-4 w-4" />
                   </button>
@@ -601,9 +601,9 @@ export default function BookExamPage() {
                       data-testid={`btn-day-${i}`}
                       className={`rounded-2xl py-2.5 flex flex-col items-center transition-all duration-200 ${
                         isPast ? 'opacity-25 cursor-not-allowed' :
-                        isSelected ? 'bg-teal-100 text-white shadow-lg shadow-green-200 dark:shadow-green-900 scale-105' :
-                        isToday ? 'border-2 border-teal-400 text-teal-700 dark:text-teal-700' :
-                        'hover:bg-teal-100 dark:hover:bg-teal-100/20 text-gray-600 dark:text-gray-400'
+                        isSelected ? 'bg-teal-700 dark:bg-teal-600 text-white shadow-md shadow-teal-900/10 dark:shadow-teal-900/40 scale-105' :
+                        isToday ? 'border-2 border-teal-400 dark:border-teal-500 text-teal-800 dark:text-teal-200' :
+                        'hover:bg-teal-50 dark:hover:bg-teal-900/30 text-gray-600 dark:text-gray-400 hover:text-teal-800 dark:hover:text-teal-200'
                       }`}
                     >
                       <span className="text-xs">{WEEKDAYS_AR[day.getDay()]}</span>
@@ -613,8 +613,8 @@ export default function BookExamPage() {
                 })}
               </div>
 
-              <div className="mt-4 bg-teal-100 dark:bg-teal-100/20 rounded-2xl px-4 py-2.5 text-center">
-                <p className="text-teal-700 dark:text-teal-700 font-bold text-sm">{formatArabicDate(selectedDate)}</p>
+              <div className="mt-4 bg-teal-50 dark:bg-teal-900/30 rounded-2xl px-4 py-2.5 text-center">
+                <p className="text-teal-800 dark:text-teal-200 font-bold text-sm">{formatArabicDate(selectedDate)}</p>
               </div>
             </div>}
 
@@ -640,16 +640,16 @@ export default function BookExamPage() {
                 </div>
               ) : (
                 <div className="space-y-6">
-                  {renderTimeGroup('الصباح (6 — 11)', Sun, HOURS_MORNING, 'bg-amber-400')}
-                  {renderTimeGroup('بعد الظهر (12 — 17)', Sunset, HOURS_AFTERNOON, 'bg-orange-500')}
-                  {renderTimeGroup('المساء (18 — 23)', Moon, HOURS_EVENING, 'bg-teal-100')}
-                  {renderTimeGroup('الليل (12 ص — 5 ص)', Star, HOURS_NIGHT, 'bg-teal-100')}
+                  {renderTimeGroup('الصباح (6 — 11)', Sun, HOURS_MORNING, 'bg-teal-700 dark:bg-teal-600')}
+                  {renderTimeGroup('بعد الظهر (12 — 17)', Sunset, HOURS_AFTERNOON, 'bg-teal-700 dark:bg-teal-600')}
+                  {renderTimeGroup('المساء (18 — 23)', Moon, HOURS_EVENING, 'bg-teal-700 dark:bg-teal-600')}
+                  {renderTimeGroup('الليل (12 ص — 5 ص)', Star, HOURS_NIGHT, 'bg-teal-700 dark:bg-teal-600')}
                 </div>
               )}
               <div className="flex gap-5 mt-5 pt-4 border-t border-gray-100 dark:border-gray-800 text-xs">
                 <div className="flex items-center gap-1.5 text-gray-500"><div className="w-3 h-3 rounded bg-white border border-gray-200 dark:bg-gray-800 dark:border-gray-700" /><span>متاح</span></div>
                 <div className="flex items-center gap-1.5 text-gray-500"><div className="w-3 h-3 rounded bg-gray-100 dark:bg-gray-700" /><span>غير متاح</span></div>
-                <div className="flex items-center gap-1.5 text-gray-500"><div className="w-3 h-3 rounded bg-teal-100" /><span>محدد</span></div>
+                <div className="flex items-center gap-1.5 text-gray-500"><div className="w-3 h-3 rounded bg-teal-700 dark:bg-teal-600" /><span>محدد</span></div>
               </div>
             </div>}
 

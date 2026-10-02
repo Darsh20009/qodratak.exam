@@ -5,6 +5,127 @@
  * API specification
  * OpenAPI spec version: 0.1.0
  */
+export type GeideaCheckoutSessionInputPlanKey = typeof GeideaCheckoutSessionInputPlanKey[keyof typeof GeideaCheckoutSessionInputPlanKey];
+
+
+export const GeideaCheckoutSessionInputPlanKey = {
+  pro: 'pro',
+  proLifePlus: 'proLifePlus',
+} as const;
+
+export interface GeideaCheckoutSessionInput {
+  planKey: GeideaCheckoutSessionInputPlanKey;
+}
+
+export interface GeideaCheckoutSession {
+  paymentId: string;
+  sessionId: string;
+  checkoutUrl: string;
+}
+
+export type GeideaPaymentStatusStatus = typeof GeideaPaymentStatusStatus[keyof typeof GeideaPaymentStatusStatus];
+
+
+export const GeideaPaymentStatusStatus = {
+  session_created: 'session_created',
+  pending: 'pending',
+  paid: 'paid',
+  failed: 'failed',
+  refund_pending: 'refund_pending',
+  refund_failed: 'refund_failed',
+  refunded: 'refunded',
+} as const;
+
+export type GeideaPaymentStatusCurrency = typeof GeideaPaymentStatusCurrency[keyof typeof GeideaPaymentStatusCurrency];
+
+
+export const GeideaPaymentStatusCurrency = {
+  SAR: 'SAR',
+} as const;
+
+export interface GeideaPaymentStatus {
+  paymentId: string;
+  status: GeideaPaymentStatusStatus;
+  plan: string;
+  amount: number;
+  currency: GeideaPaymentStatusCurrency;
+  /** @nullable */
+  invoiceNumber?: string | null;
+  /** @nullable */
+  providerOrderId?: string | null;
+  /** @nullable */
+  paidAt?: string | null;
+}
+
+export interface GeideaCallbackPayload {
+  merchantReferenceId?: string;
+  orderId?: string;
+  amount?: number;
+  currency?: string;
+  status?: string;
+  timestamp?: string;
+  signature?: string;
+  [key: string]: unknown;
+ }
+
+export interface GeideaTransaction {
+  id: string;
+  studentName: string;
+  /** @nullable */
+  studentEmail?: string | null;
+  /** @nullable */
+  studentPhone?: string | null;
+  plan: string;
+  amount: number;
+  currency: string;
+  status: string;
+  /** @nullable */
+  providerStatus?: string | null;
+  /** @nullable */
+  providerOrderId?: string | null;
+  /** @nullable */
+  merchantReferenceId?: string | null;
+  invoiceNumber?: string;
+  createdAt: string;
+  /** @nullable */
+  paidAt?: string | null;
+  /** @nullable */
+  refundedAt?: string | null;
+  refundedAmount?: number;
+  /** @nullable */
+  refundReason?: string | null;
+}
+
+export interface GeideaTransactionList {
+  transactions: GeideaTransaction[];
+  total: number;
+  page: number;
+  limit: number;
+  totalPages: number;
+}
+
+export interface GeideaRefundInput {
+  /**
+     * @minLength 3
+     * @maxLength 300
+     */
+  reason: string;
+}
+
+export type GeideaRefundResultStatus = typeof GeideaRefundResultStatus[keyof typeof GeideaRefundResultStatus];
+
+
+export const GeideaRefundResultStatus = {
+  refunded: 'refunded',
+} as const;
+
+export interface GeideaRefundResult {
+  success: boolean;
+  paymentId: string;
+  refundedAmount: number;
+  status: GeideaRefundResultStatus;
+}
+
 export type HealthStatusStatus = typeof HealthStatusStatus[keyof typeof HealthStatusStatus];
 
 
@@ -25,4 +146,156 @@ export interface HealthStatus {
   status: HealthStatusStatus;
   mongodb: HealthStatusMongodb;
 }
+
+export type FoundationLearningPathBook = {
+  contentId: string;
+  title: string;
+  chapterCount: number;
+};
+
+export type FoundationLearningPathLevel = typeof FoundationLearningPathLevel[keyof typeof FoundationLearningPathLevel];
+
+
+export const FoundationLearningPathLevel = {
+  STARTER: 'STARTER',
+  BUILDING: 'BUILDING',
+  DEVELOPING: 'DEVELOPING',
+  READY: 'READY',
+} as const;
+
+export interface FoundationChapterRecommendation {
+  skillKey: string;
+  title: string;
+  /**
+     * @minimum 0
+     * @maximum 1
+     */
+  predictedCorrectProbability: number;
+  /**
+     * @minimum 0
+     * @maximum 1
+     */
+  confidence: number;
+  reason: string;
+}
+
+export interface QuestionBankCoverage {
+  covered: number;
+  total: number;
+  remaining: number;
+  /**
+     * @minimum 0
+     * @maximum 100
+     */
+  percent: number;
+}
+
+export interface FoundationLearningPath {
+  programId: string;
+  subjectId: string;
+  book: FoundationLearningPathBook;
+  attemptsUsed: number;
+  level: FoundationLearningPathLevel;
+  modelVersion: string;
+  recommendations: FoundationChapterRecommendation[];
+  coverage: QuestionBankCoverage;
+}
+
+export type FreeTestQuestionCategory = typeof FreeTestQuestionCategory[keyof typeof FreeTestQuestionCategory];
+
+
+export const FreeTestQuestionCategory = {
+  verbal: 'verbal',
+  quantitative: 'quantitative',
+} as const;
+
+export interface FreeTestQuestion {
+  id: string;
+  text: string;
+  options: string[];
+  category: FreeTestQuestionCategory;
+  difficulty: string;
+  /** @nullable */
+  imageUrl?: string | null;
+  imageUrls: string[];
+}
+
+export interface FreeTestSession {
+  attemptId: string;
+  questions: FreeTestQuestion[];
+  total: number;
+  coverage: QuestionBankCoverage;
+}
+
+export type FoundationCoverageTestInputCategory = typeof FoundationCoverageTestInputCategory[keyof typeof FoundationCoverageTestInputCategory];
+
+
+export const FoundationCoverageTestInputCategory = {
+  verbal: 'verbal',
+  quantitative: 'quantitative',
+} as const;
+
+export type FoundationCoverageTestInputDifficulty = typeof FoundationCoverageTestInputDifficulty[keyof typeof FoundationCoverageTestInputDifficulty];
+
+
+export const FoundationCoverageTestInputDifficulty = {
+  mixed: 'mixed',
+  beginner: 'beginner',
+  intermediate: 'intermediate',
+  advanced: 'advanced',
+} as const;
+
+export interface FoundationCoverageTestInput {
+  category: FoundationCoverageTestInputCategory;
+  /**
+     * @minimum 5
+     * @maximum 60
+     */
+  count: number;
+  difficulty: FoundationCoverageTestInputDifficulty;
+}
+
+export interface FreeTestAnswer {
+  /** @minLength 1 */
+  questionId: string;
+  /** @minimum 0 */
+  selectedIndex: number;
+  /**
+     * @minimum 0
+     * @maximum 86400
+     */
+  responseTime?: number;
+}
+
+export interface MobileFreeTestSubmission {
+  /** @minLength 1 */
+  attemptId: string;
+  answers: FreeTestAnswer[];
+  /**
+     * @minimum 0
+     * @maximum 7200
+     */
+  timeTaken?: number;
+}
+
+export interface MobileFreeTestResult {
+  score: number;
+  totalQuestions: number;
+  correctAnswers: number;
+  wrongAnswers: number;
+  skippedQuestions: number;
+  percentage: number;
+}
+
+export type ListGeideaTransactionsParams = {
+/**
+ * @minimum 1
+ */
+page?: number;
+/**
+ * @minimum 1
+ * @maximum 100
+ */
+limit?: number;
+};
 

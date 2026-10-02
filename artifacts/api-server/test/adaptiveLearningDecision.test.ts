@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import {
   buildAdaptiveLearningDecision,
+  canonicalSubjectToTahsiliLabel,
   type AdaptiveAttemptRecord,
   type AdaptiveErrorRecord,
   type AdaptiveMasteryRecord,
@@ -13,6 +14,20 @@ const NOW = new Date('2026-09-18T12:00:00.000Z');
 const PROGRAM = 'program.qudrat';
 const VERBAL = 'subject.qudrat.verbal';
 const QUANTITATIVE = 'subject.qudrat.quantitative';
+
+test('maps canonical Tahsili subject IDs to stored Arabic labels', () => {
+  assert.equal(canonicalSubjectToTahsiliLabel('subject.tahsili.math'), 'رياضيات');
+  assert.equal(canonicalSubjectToTahsiliLabel('subject.tahsili.physics'), 'فيزياء');
+  assert.equal(canonicalSubjectToTahsiliLabel('subject.tahsili.chemistry'), 'كيمياء');
+  assert.equal(canonicalSubjectToTahsiliLabel('subject.tahsili.biology'), 'أحياء');
+  assert.equal(canonicalSubjectToTahsiliLabel('subject.tahsili.environment'), 'علم البيئة');
+});
+
+test('does not map non-canonical or unknown subject IDs', () => {
+  assert.equal(canonicalSubjectToTahsiliLabel('math'), undefined);
+  assert.equal(canonicalSubjectToTahsiliLabel('subject.tahsili.unknown'), undefined);
+  assert.equal(canonicalSubjectToTahsiliLabel(undefined), undefined);
+});
 
 function activeDiagnostic(): StudentDiagnosticDecision {
   return {

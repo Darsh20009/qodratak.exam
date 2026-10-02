@@ -9,19 +9,17 @@ interface Props {
 
 export default function OfficialScoreCard({ scores }: Props) {
   const updateScores = useUpdateOfficialScores();
-  const [program, setProgram] = useState<"qudrat" | "tahsili">(scores?.program || "qudrat");
-  const [verbal, setVerbal] = useState(scores?.verbal === undefined ? "" : String(scores.verbal));
-  const [quantitative, setQuantitative] = useState(scores?.quantitative === undefined ? "" : String(scores.quantitative));
+  const hasQudratScores = scores?.program !== "tahsili";
+  const [verbal, setVerbal] = useState(hasQudratScores && scores?.verbal !== undefined ? String(scores.verbal) : "");
+  const [quantitative, setQuantitative] = useState(hasQudratScores && scores?.quantitative !== undefined ? String(scores.quantitative) : "");
 
   useEffect(() => {
-    if (!scores) return;
-    setProgram(scores.program || "qudrat");
-    setVerbal(scores.verbal === undefined ? "" : String(scores.verbal));
-    setQuantitative(scores.quantitative === undefined ? "" : String(scores.quantitative));
+    setVerbal(scores?.program === "tahsili" || scores?.verbal === undefined ? "" : String(scores.verbal));
+    setQuantitative(scores?.program === "tahsili" || scores?.quantitative === undefined ? "" : String(scores.quantitative));
   }, [scores]);
 
   const save = () => {
-    const payload: { verbal?: number; quantitative?: number; program: "qudrat" | "tahsili" } = { program };
+    const payload: { verbal?: number; quantitative?: number; program: "qudrat" } = { program: "qudrat" };
     if (verbal.trim() !== "") payload.verbal = Number(verbal);
     if (quantitative.trim() !== "") payload.quantitative = Number(quantitative);
     updateScores.mutate(payload);
@@ -34,25 +32,20 @@ export default function OfficialScoreCard({ scores }: Props) {
           <Target className="h-5 w-5" />
         </span>
         <div>
-          <h2 className="text-lg font-black text-foreground">أدخل نتيجتك الفعلية</h2>
+          <h2 className="text-lg font-black text-foreground">نتيجة اختبار القدرات الفعلية</h2>
           <p className="mt-1 text-sm leading-6 text-muted-foreground">
-            أدخل درجة اختبارك الخارجي من 100. نستخدمها لتوجيه الخطة، ولا نخلطها مع نتائج التدريب داخل المنصة.
+            أدخل درجتي اللفظي والكمي من اختبار خارجي. نستخدمهما لتوجيه خطة القدرات، ولا نخلطهما مع نتائج التدريب.
           </p>
         </div>
       </div>
 
-      <div className="mt-4 grid gap-3 sm:grid-cols-3">
-        <label className="text-sm font-bold text-foreground">
-          المسار
-          <select
-            value={program}
-            onChange={(event) => setProgram(event.target.value as "qudrat" | "tahsili")}
-            className="mt-2 h-11 w-full rounded-xl border border-border bg-background px-3 text-sm"
-          >
-            <option value="qudrat">القدرات</option>
-            <option value="tahsili">التحصيلي</option>
-          </select>
-        </label>
+      {scores?.program === "tahsili" && (
+        <p className="mt-4 rounded-xl border border-amber-300/60 bg-amber-50 px-4 py-3 text-sm leading-6 text-amber-950">
+          الدرجات المحفوظة سابقًا كتحصيلي لم تعد تُستخدم هنا؛ هذه الخانات مخصصة لتقسيم القدرات إلى لفظي وكمي.
+        </p>
+      )}
+
+      <div className="mt-4 grid gap-3 sm:grid-cols-2">
         <label className="text-sm font-bold text-foreground">
           اللفظي
           <input

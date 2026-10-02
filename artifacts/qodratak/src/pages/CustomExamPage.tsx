@@ -1,10 +1,12 @@
+import { useEffect } from "react";
 import { useLocation } from "wouter";
 
 const CustomExamPage = () => {
   const [, setLocation] = useLocation();
 
-  // Redirect to home since this feature is removed
-  setLocation("/");
+  useEffect(() => {
+    setLocation("/");
+  }, [setLocation]);
 
   return null;
 };

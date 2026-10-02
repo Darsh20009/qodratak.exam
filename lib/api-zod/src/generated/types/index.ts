@@ -6,6 +6,33 @@
  * OpenAPI spec version: 0.1.0
  */
 
+export * from './foundationChapterRecommendation';
+export * from './foundationCoverageTestInput';
+export * from './foundationCoverageTestInputCategory';
+export * from './foundationCoverageTestInputDifficulty';
+export * from './foundationLearningPath';
+export * from './foundationLearningPathBook';
+export * from './foundationLearningPathLevel';
+export * from './freeTestAnswer';
+export * from './freeTestQuestion';
+export * from './freeTestQuestionCategory';
+export * from './freeTestSession';
+export * from './geideaCallbackPayload';
+export * from './geideaCheckoutSession';
+export * from './geideaCheckoutSessionInput';
+export * from './geideaCheckoutSessionInputPlanKey';
+export * from './geideaPaymentStatus';
+export * from './geideaPaymentStatusCurrency';
+export * from './geideaPaymentStatusStatus';
+export * from './geideaRefundInput';
+export * from './geideaRefundResult';
+export * from './geideaRefundResultStatus';
+export * from './geideaTransaction';
+export * from './geideaTransactionList';
 export * from './healthStatus';
 export * from './healthStatusMongodb';
 export * from './healthStatusStatus';
+export * from './listGeideaTransactionsParams';
+export * from './mobileFreeTestResult';
+export * from './mobileFreeTestSubmission';
+export * from './questionBankCoverage';

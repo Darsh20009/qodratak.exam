@@ -342,7 +342,7 @@ export async function recordLearningAttempt(studentId: string, input: LearningAt
         },
       },
     ],
-    { new: true },
+    { new: true, updatePipeline: true },
   ).lean();
 
   if (normalized.value.sessionId) {

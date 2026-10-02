@@ -364,8 +364,23 @@ export interface ISubscription extends Document {
   startDate: Date;
   endDate: Date;
   autoRenew: boolean;
-  paymentMethod?: 'bank' | 'stc' | 'manual' | 'paypal' | 'card' | 'wallet';
+  paymentMethod?: 'bank' | 'stc' | 'manual' | 'paypal' | 'card' | 'wallet' | 'geidea';
   transactionId?: string;
+  paymentGateway?: 'geidea';
+  paymentStatus?: 'session_created' | 'pending' | 'paid' | 'failed' | 'refund_pending' | 'refund_failed' | 'refunded';
+  planKey?: string;
+  durationDays?: number;
+  currency?: string;
+  providerMerchantReferenceId?: string;
+  providerSessionId?: string;
+  providerOrderId?: string;
+  providerStatus?: string;
+  paidAt?: Date;
+  refundedAmount?: number;
+  refundReason?: string;
+  refundRequestedBy?: string;
+  refundRequestedAt?: Date;
+  refundedAt?: Date;
   transferReceiptUrl?: string;
   transferReceiptFilename?: string;
   transferReceiptMetadata?: Record<string, unknown>;
@@ -385,8 +400,26 @@ const subscriptionSchema = new Schema<ISubscription>({
   startDate: { type: Date, required: true },
   endDate: { type: Date, required: true },
   autoRenew: { type: Boolean, default: false },
-  paymentMethod: { type: String, enum: ['bank', 'stc', 'manual', 'paypal', 'card', 'wallet'] },
+  paymentMethod: { type: String, enum: ['bank', 'stc', 'manual', 'paypal', 'card', 'wallet', 'geidea'] },
   transactionId: { type: String },
+  paymentGateway: { type: String, enum: ['geidea'] },
+  paymentStatus: {
+    type: String,
+    enum: ['session_created', 'pending', 'paid', 'failed', 'refund_pending', 'refund_failed', 'refunded'],
+  },
+  planKey: { type: String },
+  durationDays: { type: Number },
+  currency: { type: String },
+  providerMerchantReferenceId: { type: String },
+  providerSessionId: { type: String },
+  providerOrderId: { type: String },
+  providerStatus: { type: String },
+  paidAt: { type: Date },
+  refundedAmount: { type: Number, default: 0 },
+  refundReason: { type: String },
+  refundRequestedBy: { type: String },
+  refundRequestedAt: { type: Date },
+  refundedAt: { type: Date },
   transferReceiptUrl: { type: String },
   transferReceiptFilename: { type: String },
   transferReceiptMetadata: { type: Schema.Types.Mixed },
@@ -398,6 +431,9 @@ const subscriptionSchema = new Schema<ISubscription>({
   createdAt: { type: Date, default: Date.now },
   updatedAt: { type: Date, default: Date.now },
 });
+
+subscriptionSchema.index({ providerMerchantReferenceId: 1 }, { unique: true, sparse: true });
+subscriptionSchema.index({ paymentGateway: 1, paymentStatus: 1, createdAt: -1 });
 
 export interface ITestResult extends Document {
   userId: string;
@@ -481,6 +517,8 @@ export interface IQuestion extends Document {
     subcategory?: string;
     passageLabel?: string;
     passageText?: string;
+    videoTimestampSeconds?: number;
+    videoTimestampInferred?: boolean;
   };
   imageUrl?: string;
   imageUrls?: string[];
@@ -533,6 +571,8 @@ const questionSchema = new Schema<IQuestion>({
     subcategory: { type: String },
     passageLabel: { type: String },
     passageText: { type: String },
+    videoTimestampSeconds: { type: Number, min: 0 },
+    videoTimestampInferred: { type: Boolean },
   },
   imageUrl: { type: String },
   imageUrls: { type: [String], default: [] },
