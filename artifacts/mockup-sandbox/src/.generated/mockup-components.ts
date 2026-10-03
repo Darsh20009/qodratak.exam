@@ -2,5 +2,7 @@
 type ModuleMap = Record<string, () => Promise<Record<string, unknown>>>;
 export const modules: ModuleMap = {
   "./components/mockups/admin-dashboard/Current.tsx": () => import("../components/mockups/admin-dashboard/Current.tsx"),
-  "./components/mockups/admin-dashboard/Premium.tsx": () => import("../components/mockups/admin-dashboard/Premium.tsx")
+  "./components/mockups/admin-dashboard/Premium.tsx": () => import("../components/mockups/admin-dashboard/Premium.tsx"),
+  "./components/mockups/qodratak-tests/Current.tsx": () => import("../components/mockups/qodratak-tests/Current.tsx"),
+  "./components/mockups/qodratak-tests/SystemAligned.tsx": () => import("../components/mockups/qodratak-tests/SystemAligned.tsx")
 };

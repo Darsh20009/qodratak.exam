@@ -554,60 +554,132 @@ export default function SectionedTestRunner() {
 
   // Break Screen
   if (showBreakScreen) {
+    const nextSectionNumber = currentSection + 2;
+    const nextSectionQuestionCount = sections[currentSection + 1]?.questions.length ?? 0;
+    const breakElapsedPercent = ((30 - breakTimeLeft) / 30) * 100;
+
     return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-teal-500 dark:from-gray-900 dark:to-gray-800 flex items-center justify-center p-4">
-        <Card className="w-full max-w-lg bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 shadow-xl">
-          <CardHeader className="text-center pb-6">
-            <div className="w-16 h-16 rounded-full bg-gradient-to-r from-green-400 to-blue-500 mx-auto mb-4 flex items-center justify-center">
-              <Coffee className="h-8 w-8 text-white" />
-            </div>
-            <CardTitle className="text-2xl font-bold text-gray-900 dark:text-white mb-2">
-              استراحة بين الأقسام
-            </CardTitle>
-            <p className="text-gray-600 dark:text-gray-400">
-              أنهيت القسم {currentSection}، استعد للقسم التالي
-            </p>
-          </CardHeader>
+      <div className="qodratak-tahsili-surface min-h-[100dvh] flex items-center justify-center px-4 py-8 sm:px-8">
+        <main className="w-full max-w-5xl">
+          <div className="mb-4 flex items-center justify-between text-sm text-muted-foreground">
+            <span className="font-semibold text-foreground">اختبار القدرات</span>
+            <span>القسم {nextSectionNumber} من {sections.length}</span>
+          </div>
 
-          <CardContent className="text-center space-y-6">
-            <div className="bg-gray-50 dark:bg-gray-700 rounded-xl p-6">
-              <div className="text-4xl font-bold text-blue-600 dark:text-blue-400 mb-2">
-                {formatTime(breakTimeLeft)}
-              </div>
-              <p className="text-sm text-gray-600 dark:text-gray-400">
-                الوقت المتبقي للاستراحة
-              </p>
-            </div>
-
-            <div className="space-y-4">
-              <p className="text-gray-700 dark:text-gray-300">
-                خذ نفسًا عميقًا واستعد للقسم القادم
-              </p>
-
-              {/* Skip button - always available */}
-              <Button 
-                onClick={skipBreak}
-                className="w-full bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white font-medium py-3 rounded-xl shadow-lg transition-all duration-300 hover:scale-105"
-              >
-                <SkipForward className="h-5 w-5 mr-2" />
-                تخطي الاستراحة والمتابعة
-              </Button>
-
-              {/* Auto-continue button with countdown */}
-              <div className="text-center">
-                <p className="text-xs text-gray-500 dark:text-gray-400 mb-2">
-                  أو انتظر {formatTime(breakTimeLeft)} للمتابعة تلقائياً
-                </p>
-                <div className="w-full bg-gray-200 dark:bg-gray-600 rounded-full h-2">
-                  <div 
-                    className="bg-gradient-to-r from-blue-500 to-teal-500 h-2 rounded-full transition-all duration-1000"
-                    style={{ width: `${((30 - breakTimeLeft) / 30) * 100}%` }}
-                  ></div>
+          <Card className="overflow-hidden rounded-2xl border-border bg-card shadow-md">
+            <div className="grid md:grid-cols-[minmax(0,1fr)_18rem]">
+              <CardContent className="space-y-6 p-5 sm:p-8 lg:p-10">
+                <div className="flex items-center gap-3">
+                  <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-accent text-accent-foreground">
+                    <Coffee className="h-5 w-5" />
+                  </div>
+                  <div>
+                    <Badge className="mb-1 border border-border bg-muted text-foreground hover:bg-muted">
+                      استراحة قصيرة
+                    </Badge>
+                    <p className="text-xs text-muted-foreground">بين قسمي الاختبار</p>
+                  </div>
                 </div>
-              </div>
+
+                <div>
+                  <CardTitle className="text-2xl font-bold leading-tight text-card-foreground sm:text-3xl">
+                    أحسنت، أنهيت القسم {currentSection + 1}
+                  </CardTitle>
+                  <p className="mt-2 text-base text-muted-foreground">
+                    خذ لحظة قصيرة ثم انتقل إلى القسم {nextSectionNumber}.
+                  </p>
+                </div>
+
+                <div className="space-y-2" aria-label={`التقدم: القسم ${nextSectionNumber} من ${sections.length}`}>
+                  <div className="flex items-center justify-between text-xs text-muted-foreground">
+                    <span>تقدم الاختبار</span>
+                    <span>{currentSection + 1} من {sections.length} أقسام مكتملة</span>
+                  </div>
+                  <div className="grid gap-2" style={{ gridTemplateColumns: `repeat(${sections.length}, minmax(0, 1fr))` }}>
+                    {sections.map((_, index) => (
+                      <div
+                        key={index}
+                        className={cn(
+                          "h-2 rounded-full",
+                          index <= currentSection ? "bg-primary" : index === currentSection + 1 ? "bg-accent" : "bg-muted"
+                        )}
+                      />
+                    ))}
+                  </div>
+                </div>
+
+                <div className="flex flex-col items-center justify-center rounded-2xl border border-border bg-muted/35 px-6 py-5 text-center sm:flex-row sm:justify-between sm:text-right">
+                  <div>
+                    <p className="text-sm font-medium text-muted-foreground">الوقت المتبقي للاستراحة</p>
+                    <p className="mt-1 text-xs text-muted-foreground">المتابعة تلقائية عند انتهاء العدّ التنازلي</p>
+                  </div>
+                  <div className="mt-3 flex items-center gap-2 sm:mt-0">
+                    <Clock className="h-5 w-5 text-primary" aria-hidden="true" />
+                    <span className="font-mono text-4xl font-bold tabular-nums text-primary" aria-live="off">
+                      {formatTime(breakTimeLeft)}
+                    </span>
+                  </div>
+                </div>
+
+                <p className="text-sm text-muted-foreground">
+                  خذ نفسًا عميقًا واستعد للقسم القادم.
+                </p>
+
+                {/* Skip button remains available throughout the existing 30-second break. */}
+                <Button
+                  onClick={skipBreak}
+                  className="h-12 w-full bg-primary font-semibold text-primary-foreground shadow-sm transition-colors hover:bg-primary/90"
+                >
+                  <SkipForward className="mr-2 h-5 w-5" />
+                  تخطي الاستراحة والمتابعة
+                </Button>
+
+                <div className="space-y-2">
+                  <p className="text-center text-xs text-muted-foreground">
+                    أو انتظر {formatTime(breakTimeLeft)} للمتابعة تلقائياً
+                  </p>
+                  <div
+                    className="h-2 w-full overflow-hidden rounded-full bg-muted"
+                    role="progressbar"
+                    aria-label="الوقت المنقضي من الاستراحة"
+                    aria-valuemin={0}
+                    aria-valuemax={30}
+                    aria-valuenow={30 - breakTimeLeft}
+                  >
+                    <div
+                      className="h-full rounded-full bg-accent transition-[width] duration-1000"
+                      style={{ width: `${breakElapsedPercent}%` }}
+                    />
+                  </div>
+                </div>
+              </CardContent>
+
+              <aside className="border-t border-border bg-muted/25 p-5 sm:p-7 md:border-r md:border-t-0">
+                <p className="text-xs font-bold uppercase tracking-wide text-muted-foreground">القسم القادم</p>
+                <div className="mt-4 flex items-center gap-3">
+                  <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-primary font-bold text-primary-foreground">
+                    {nextSectionNumber}
+                  </div>
+                  <div>
+                    <h2 className="font-bold text-card-foreground">القسم {nextSectionNumber}</h2>
+                    <p className="mt-1 text-sm text-muted-foreground">{nextSectionQuestionCount} أسئلة</p>
+                  </div>
+                </div>
+
+                <div className="mt-7 space-y-4 border-t border-border pt-5">
+                  <div className="flex items-center gap-3 text-sm">
+                    <CheckCircle className="h-4 w-4 text-emerald-700 dark:text-emerald-300" />
+                    <span className="text-foreground">القسم {currentSection + 1} مكتمل</span>
+                  </div>
+                  <div className="flex items-center gap-3 text-sm">
+                    <Target className="h-4 w-4 text-primary" />
+                    <span className="text-muted-foreground">يتبقى {Math.max(sections.length - nextSectionNumber, 0)} أقسام بعدها</span>
+                  </div>
+                </div>
+              </aside>
             </div>
-          </CardContent>
-        </Card>
+          </Card>
+        </main>
       </div>
     );
   }

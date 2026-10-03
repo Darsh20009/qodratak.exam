@@ -1,0 +1,62 @@
+@import url("https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;500;600;700;800&family=Tajawal:wght@300;400;500;700;800&display=swap");
+
+:root {
+  --background: 210 20% 97%;
+  --foreground: 211 54% 11%;
+  --muted: 214 20% 91%;
+  --muted-foreground: 215 16% 45%;
+  --card: 0 0% 100%;
+  --card-foreground: 211 54% 11%;
+  --popover: 0 0% 100%;
+  --popover-foreground: 211 54% 11%;
+  --border: 210 14% 88%;
+  --input: 210 14% 88%;
+  --ring: 211 54% 11%;
+  --primary: 211 54% 11%;
+  --primary-foreground: 0 0% 100%;
+  --secondary: 210 12% 92%;
+  --secondary-foreground: 211 54% 11%;
+  --accent: 60 90% 71%;
+  --accent-foreground: 211 54% 11%;
+  --destructive: 0 65% 50%;
+  --destructive-foreground: 0 0% 100%;
+  --sidebar: 211 54% 11%;
+  --sidebar-foreground: 0 0% 100%;
+  --sidebar-border: 210 14% 88%;
+  --sidebar-accent: 60 90% 71%;
+  --sidebar-accent-foreground: 211 54% 11%;
+  --radius: 0.5rem;
+  --font-sans: "Tajawal", "Inter", system-ui, sans-serif;
+}
+
+.dark {
+  --background: 211 54% 7%;
+  --foreground: 0 0% 95%;
+  --muted: 214 30% 17%;
+  --muted-foreground: 217 10% 64%;
+  --card: 211 42% 10%;
+  --card-foreground: 0 0% 95%;
+  --popover: 211 42% 10%;
+  --popover-foreground: 0 0% 95%;
+  --border: 215 28% 14%;
+  --input: 215 28% 14%;
+  --ring: 60 90% 71%;
+  --primary: 60 90% 71%;
+  --primary-foreground: 211 54% 11%;
+  --secondary: 214 30% 17%;
+  --secondary-foreground: 0 0% 95%;
+  --accent: 60 90% 71%;
+  --accent-foreground: 211 54% 11%;
+  --destructive: 0 62% 50%;
+  --destructive-foreground: 0 0% 100%;
+  --sidebar: 211 54% 11%;
+  --sidebar-foreground: 0 0% 95%;
+  --sidebar-border: 214 30% 17%;
+  --sidebar-accent: 60 90% 71%;
+  --sidebar-accent-foreground: 211 54% 11%;
+}
+
+body {
+  font-family: "Tajawal", "Inter", system-ui, sans-serif;
+  direction: rtl;
+}

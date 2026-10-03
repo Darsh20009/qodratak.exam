@@ -8,6 +8,7 @@ import { BookOpen, Calculator, Download, Play, CheckCircle, Target, Users, Clock
 import { cn } from "@/lib/utils";
 import { VERBAL_SUBCATEGORIES, QUANTITATIVE_SUBCATEGORIES } from "@shared/examUtils";
 import { useUser } from "@/hooks/use-user";
+import { TahsiliPageFrame, TahsiliSectionHeader } from "@/components/tahsili/TahsiliPageFrame";
 
 interface TestProgress {
   testNumber: number;
@@ -437,6 +438,8 @@ export default function QuestionBankPage() {
     const startRange = (testNumber - 1) * questionsPerTest + 1;
     const endRange = Math.min(testNumber * questionsPerTest, totalQuestions);
     const questionsInTest = type === 'standard' ? 120 : (endRange - startRange + 1);
+    const sectionCount = type === 'standard' ? 7 : 5;
+    const testDuration = type === 'standard' ? '120 دقيقة' : '50 دقيقة';
 
     const getScoreColor = (score?: number) => {
       if (!score) return 'text-gray-500 dark:text-gray-400';
@@ -446,53 +449,40 @@ export default function QuestionBankPage() {
       return 'text-red-600 dark:text-red-400';
     };
 
-    const getScoreBg = (score?: number) => {
-      if (!score) return 'bg-gray-50 dark:bg-gray-800 border-gray-200 dark:border-gray-700';
-      if (score >= 90) return 'bg-emerald-50 dark:bg-emerald-900/20 border-emerald-200 dark:border-emerald-800';
-      if (score >= 70) return 'bg-blue-50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-800';
-      if (score >= 50) return 'bg-amber-50 dark:bg-amber-900/20 border-amber-200 dark:border-amber-800';
-      return 'bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-800';
-    };
+    const getScoreBg = () => 'bg-muted/30 border-border';
 
     const getSectionBadgeColor = () => {
-      if (type === 'verbal') return 'bg-gradient-to-r from-blue-500 to-teal-500';
-      if (type === 'quantitative') return 'bg-gradient-to-r from-green-600 to-amber-600';
-      return 'bg-gradient-to-r from-orange-500 to-rose-600';
+      if (type === 'standard') return 'bg-accent text-accent-foreground';
+      return 'bg-primary text-primary-foreground';
     };
 
     return (
-      <Card className="group relative overflow-hidden bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 hover:shadow-lg hover:shadow-blue-500/10 dark:hover:shadow-green-500/10 transition-all duration-300 hover:-translate-y-1">
-        {/* Gradient Background Effect */}
-        <div className={cn(
-          "absolute inset-0 opacity-0 group-hover:opacity-5 transition-opacity duration-300",
-          type === 'verbal' ? 'bg-gradient-to-br from-blue-400 to-teal-500' : 'bg-gradient-to-br from-green-600 to-amber-600'
-        )} />
-        
+      <Card className="group relative overflow-hidden border-border bg-card shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md">
         <CardHeader className="pb-4 relative">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
               <div className={cn(
-                "w-12 h-12 rounded-xl flex items-center justify-center shadow-md",
+                "w-12 h-12 rounded-xl flex items-center justify-center shadow-sm",
                 getSectionBadgeColor()
               )}>
                 {type === 'verbal' ? (
-                  <BookOpen className="h-6 w-6 text-white" />
+                  <BookOpen className="h-6 w-6" />
                 ) : (
-                  <Calculator className="h-6 w-6 text-white" />
+                  <Calculator className="h-6 w-6" />
                 )}
               </div>
               <div>
-                <CardTitle className="text-xl font-bold text-gray-900 dark:text-white mb-1">
+                <CardTitle className="text-xl font-bold text-card-foreground mb-1">
                   اختبار {testNumber}
                 </CardTitle>
                 <div className="flex items-center gap-3 text-sm">
-                  <CardDescription className="text-gray-600 dark:text-gray-400 flex items-center gap-1.5">
-                    <Zap className="h-3.5 w-3.5 text-amber-500 dark:text-amber-400" />
+                  <CardDescription className="text-muted-foreground flex items-center gap-1.5">
+                    <Zap className="h-3.5 w-3.5 text-accent-foreground" />
                     <span className="font-medium">{questionsInTest} سؤال</span>
                   </CardDescription>
-                  <CardDescription className="text-gray-600 dark:text-gray-400 flex items-center gap-1.5">
-                    <Layers className="h-3.5 w-3.5 text-blue-500 dark:text-blue-400" />
-                    <span className="font-medium">5 أقسام</span>
+                  <CardDescription className="text-muted-foreground flex items-center gap-1.5">
+                    <Layers className="h-3.5 w-3.5 text-primary" />
+                    <span className="font-medium">{sectionCount} أقسام</span>
                   </CardDescription>
                 </div>
               </div>
@@ -501,9 +491,9 @@ export default function QuestionBankPage() {
               <div className="flex flex-col items-end gap-1">
                 {/* Badge for Perfect Score */}
                 {score === 100 ? (
-                  <Badge className="bg-gradient-to-r from-yellow-400 to-amber-500 text-white border-0 shadow-lg animate-pulse">
+                  <Badge className="border-0 bg-accent text-accent-foreground shadow-sm">
                     <Trophy className="h-3 w-3 mr-1" />
-                    تم اجتيازه ✓
+                    تم اجتيازه
                   </Badge>
                 ) : (
                   <Badge className="bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400 border-emerald-200 dark:border-emerald-800">
@@ -515,11 +505,11 @@ export default function QuestionBankPage() {
                 {/* Show Improvement or Regression Badge */}
                 {score !== undefined && previousScore !== undefined && score !== previousScore && (
                   score > previousScore ? (
-                    <Badge className="bg-gradient-to-r from-green-500 to-emerald-600 text-white border-0 shadow-md text-xs">
+                    <Badge className="border border-emerald-200 bg-emerald-50 text-emerald-800 shadow-sm text-xs dark:border-emerald-800 dark:bg-emerald-900/25 dark:text-emerald-200">
                       ↑ تحسن {score - previousScore}%
                     </Badge>
                   ) : (
-                    <Badge className="bg-gradient-to-r from-red-500 to-rose-600 text-white border-0 shadow-md text-xs">
+                    <Badge className="border-0 bg-destructive text-destructive-foreground shadow-sm text-xs">
                       ↓ تراجع {previousScore - score}%
                     </Badge>
                   )
@@ -527,7 +517,7 @@ export default function QuestionBankPage() {
                 
                 {/* Attempts Counter */}
                 {attempts && attempts > 1 && (
-                  <div className="text-xs text-gray-500 dark:text-gray-400">
+                  <div className="text-xs text-muted-foreground">
                     المحاولة {attempts}
                   </div>
                 )}
@@ -539,46 +529,42 @@ export default function QuestionBankPage() {
         <CardContent className="pt-0 relative">
           <div className="space-y-4">
             {/* Creative Section Indicators */}
-            <div className="bg-gray-50 dark:bg-gray-900/50 rounded-lg p-3 border border-gray-200 dark:border-gray-700">
+            <div className="rounded-xl border border-border bg-muted/40 p-3">
               <div className="flex items-center justify-between mb-2">
-                <div className="flex items-center gap-1.5 text-xs font-medium text-gray-600 dark:text-gray-400">
+                <div className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground">
                   <Layers className="h-3.5 w-3.5" />
                   أقسام الاختبار ({questionsInTest} سؤال)
                 </div>
                 {completed ? (
                   <div className="flex items-center gap-1">
-                    <div className="flex items-center gap-1 text-xs font-medium text-emerald-600 dark:text-emerald-400">
+                    <div className="flex items-center gap-1 text-xs font-medium text-emerald-700 dark:text-emerald-300">
                       <CheckCircle className="h-3.5 w-3.5" />
-                      مكتمل 5/5
+                      مكتمل {sectionCount}/{sectionCount}
                     </div>
                     {score !== undefined && (
                       <Badge className={cn(
-                        "text-xs ml-1",
-                        score === 100 ? "bg-yellow-500 text-white" :
-                        score >= 90 ? "bg-green-500 text-white" :
-                        score >= 70 ? "bg-blue-500 text-white" :
-                        "bg-gray-500 text-white"
+                        "ml-1 border-0 bg-secondary text-secondary-foreground"
                       )}>
                         {score}%
                       </Badge>
                     )}
                   </div>
                 ) : (
-                  <div className="text-xs text-gray-500 dark:text-gray-400">
+                  <div className="text-xs text-muted-foreground">
                     ابدأ الاختبار
                   </div>
                 )}
               </div>
               <div className="grid grid-cols-5 gap-2">
-                {Array.from({ length: 5 }, (_, i) => (
+                {Array.from({ length: sectionCount }, (_, i) => (
                   <div
                     key={i}
                     className={cn(
                       "relative h-3 rounded-full overflow-hidden transition-all duration-500",
                       "shadow-inner",
                       completed 
-                        ? "bg-gradient-to-r " + (type === 'verbal' ? 'from-blue-500 via-teal-600 to-blue-600' : 'from-green-600 via-pink-500 to-emerald-600')
-                        : "bg-gray-200 dark:bg-gray-700"
+                        ? "bg-primary/75"
+                        : "bg-muted"
                     )}
                     style={{ 
                       transitionDelay: completed ? `${i * 100}ms` : '0ms',
@@ -587,7 +573,7 @@ export default function QuestionBankPage() {
                     }}
                   >
                     {completed && (
-                      <div className="absolute inset-0 bg-white/20 animate-pulse" 
+                      <div className="absolute inset-0 bg-primary-foreground/15"
                         style={{ animationDelay: `${i * 150}ms`, animationDuration: '1.5s' }}
                       />
                     )}
@@ -597,24 +583,24 @@ export default function QuestionBankPage() {
               {/* Progress indicator text */}
               {completed && score !== undefined && (
                 <div className="mt-2 text-center">
-                  <p className="text-xs text-gray-600 dark:text-gray-400">
+                  <p className="text-xs text-muted-foreground">
                     {previousScore !== undefined && previousScore !== score ? (
                       score > previousScore ? (
-                        <span className="text-green-600 dark:text-green-400 font-semibold">
-                          ↑ تحسن بمقدار {score - previousScore}% 🎯
+                          <span className="text-emerald-700 dark:text-emerald-300 font-semibold">
+                          تحسن بمقدار {score - previousScore}%
                         </span>
                       ) : score < previousScore ? (
-                        <span className="text-orange-600 dark:text-orange-400 font-semibold">
+                          <span className="text-amber-700 dark:text-amber-300 font-semibold">
                           ↓ انخفاض {previousScore - score}%
                         </span>
                       ) : (
-                        <span className="text-blue-600 dark:text-blue-400 font-semibold">
-                          ➡️ نفس الدرجة السابقة
+                          <span className="text-primary font-semibold">
+                          نفس الدرجة السابقة
                         </span>
                       )
                     ) : (
-                      <span className="text-emerald-600 dark:text-emerald-400 font-semibold">
-                        ✓ أول محاولة
+                          <span className="text-emerald-700 dark:text-emerald-300 font-semibold">
+                          أول محاولة
                       </span>
                     )}
                   </p>
@@ -624,21 +610,15 @@ export default function QuestionBankPage() {
 
             {/* Score Display */}
             {completed && score !== undefined && (
-              <div className={cn("rounded-xl p-4 border-2", getScoreBg(score))}>
+              <div className={cn("rounded-xl p-4 border", getScoreBg())}>
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-3">
-                    <div className={cn(
-                      "w-10 h-10 rounded-xl flex items-center justify-center shadow-md",
-                      score === 100 ? 'bg-gradient-to-r from-yellow-400 to-amber-500' :
-                      score >= 90 ? 'bg-emerald-500' : 
-                      score >= 70 ? 'bg-blue-500' : 
-                      score >= 50 ? 'bg-amber-500' : 'bg-red-500'
-                    )}>
-                      <Trophy className="h-5 w-5 text-white" />
+                    <div className="w-10 h-10 rounded-xl flex items-center justify-center bg-accent text-accent-foreground shadow-sm">
+                      <Trophy className="h-5 w-5" />
                     </div>
                     <div>
-                      <p className="text-xs text-gray-600 dark:text-gray-400 mb-1">
-                        {score === 100 ? '🎉 نتيجة مثالية!' : 'النتيجة الحالية'}
+                      <p className="text-xs text-muted-foreground mb-1">
+                        {score === 100 ? 'نتيجة مثالية!' : 'النتيجة الحالية'}
                       </p>
                       <div className="flex items-center gap-2">
                         <p className={cn("text-2xl font-bold", getScoreColor(score))}>
@@ -646,12 +626,12 @@ export default function QuestionBankPage() {
                         </p>
                         {previousScore !== undefined && previousScore !== score && (
                           <div className="flex items-center gap-1 text-xs">
-                            <span className="text-gray-400 dark:text-gray-500">من</span>
+                            <span className="text-muted-foreground">من</span>
                             <span className={cn(
                               "font-semibold px-2 py-0.5 rounded",
                               previousScore < score 
-                                ? "text-gray-500 dark:text-gray-400 line-through" 
-                                : "text-gray-600 dark:text-gray-300"
+                                ? "text-muted-foreground line-through"
+                                : "text-muted-foreground"
                             )}>
                               {previousScore}%
                             </span>
@@ -661,19 +641,19 @@ export default function QuestionBankPage() {
                     </div>
                   </div>
                   <div className="text-right">
-                    <p className="text-xs text-gray-600 dark:text-gray-400 mb-1">
+                    <p className="text-xs text-muted-foreground mb-1">
                       {previousScore !== undefined && previousScore !== score && score > previousScore 
                         ? 'التحسن' 
                         : previousScore !== undefined && previousScore !== score && score < previousScore
                         ? 'الفرق'
                         : 'الأسئلة المجابة'}
                     </p>
-                    <p className="text-lg font-semibold text-gray-900 dark:text-white">
+                    <p className="text-lg font-semibold text-card-foreground">
                       {previousScore !== undefined && previousScore !== score ? (
                         score > previousScore ? (
-                          <span className="text-green-600 dark:text-green-400">+{score - previousScore}%</span>
+                          <span className="text-emerald-700 dark:text-emerald-300">+{score - previousScore}%</span>
                         ) : (
-                          <span className="text-red-600 dark:text-red-400">-{previousScore - score}%</span>
+                          <span className="text-destructive">-{previousScore - score}%</span>
                         )
                       ) : (
                         `${questionsInTest} / ${questionsInTest}`
@@ -690,7 +670,7 @@ export default function QuestionBankPage() {
                 <Button 
                   onClick={onStart}
                   className={cn(
-                    "flex-1 font-medium text-white transition-all duration-300 hover:scale-105 shadow-lg",
+                    "flex-1 font-medium transition-all duration-200 hover:shadow-sm",
                     getSectionBadgeColor()
                   )}
                 >
@@ -704,9 +684,7 @@ export default function QuestionBankPage() {
                     variant="outline"
                     className={cn(
                       "flex-1 font-medium transition-all duration-300 hover:scale-105",
-                      type === 'verbal' 
-                        ? 'text-blue-600 border-blue-600 hover:bg-blue-50 dark:text-blue-400 dark:border-blue-500 dark:hover:bg-blue-900/20' 
-                        : 'text-green-700 border-green-400 hover:bg-green-100 dark:text-green-700 dark:border-green-400 dark:hover:bg-green-100/20'
+                      'border-border text-primary hover:bg-muted'
                     )}
                   >
                     <Target className="h-4 w-4 mr-2" />
@@ -715,7 +693,7 @@ export default function QuestionBankPage() {
                   <Button 
                     onClick={() => downloadMistakes(type, testNumber)}
                     variant="outline"
-                    className="border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700"
+                    className="border-border text-foreground hover:bg-muted"
                   >
                     <Download className="h-4 w-4 mr-2" />
                     تحليل الأخطاء
@@ -725,11 +703,11 @@ export default function QuestionBankPage() {
             </div>
 
             {/* Test Info */}
-            <div className="border-t border-gray-100 dark:border-gray-700 pt-3">
-              <div className="flex items-center justify-between text-xs text-gray-500 dark:text-gray-400">
-                <span className="flex items-center gap-1">
+            <div className="border-t border-border pt-3">
+              <div className="flex items-center justify-between text-xs text-muted-foreground">
+                  <span className="flex items-center gap-1">
                   <Clock className="h-3 w-3" />
-                  50 دقيقة
+                  {testDuration}
                 </span>
                 <span className="flex items-center gap-1">
                   <Brain className="h-3 w-3" />
@@ -1091,94 +1069,88 @@ export default function QuestionBankPage() {
   }
 
   return (
-    <div className="min-h-screen bg-background pb-24">
-      {/* Header */}
-      <div className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700">
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 py-8 sm:py-12">
-          <div className="text-center">
-            <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-4">
-              بنك الأسئلة
-            </h1>
-            <p className="text-lg text-gray-600 dark:text-gray-300 mb-8 max-w-2xl mx-auto">
-              مجموعة شاملة من الأسئلة الأصلية مقسمة إلى اختبارات متدرجة لضمان التحضير الأمثل
-            </p>
+    <TahsiliPageFrame className="pb-24">
+      <header className="border-b border-border/70 bg-card/75">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 py-8 sm:py-10">
+          <TahsiliSectionHeader
+            eyebrow="استعد لاختبار القدرات"
+            title="بنك الأسئلة"
+            description="مجموعة شاملة من الأسئلة الأصلية مقسمة إلى اختبارات متدرجة لضمان التحضير الأمثل"
+          />
             
-            {/* Statistics */}
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-6 max-w-2xl mx-auto">
-              <div className="text-center">
-                <div className="text-2xl font-bold text-blue-600 dark:text-blue-400 mb-1">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3 max-w-4xl mx-auto">
+              <div className="rounded-xl border border-border bg-background/70 p-4 text-right">
+                <div className="text-2xl font-black text-primary mb-1">
                   {verbalQuestionCount + quantitativeQuestionCount}
                 </div>
-                <div className="text-sm text-gray-500 dark:text-gray-400">إجمالي الأسئلة</div>
+                <div className="text-sm text-muted-foreground">إجمالي الأسئلة</div>
               </div>
-              <div className="text-center">
-                <div className="text-2xl font-bold text-green-700 dark:text-green-700 mb-1">
+              <div className="rounded-xl border border-border bg-background/70 p-4 text-right">
+                <div className="text-2xl font-black text-primary mb-1">
                   {questionBankState.verbal.length + questionBankState.quantitative.length}
                 </div>
-                <div className="text-sm text-gray-500 dark:text-gray-400">عدد الاختبارات</div>
+                <div className="text-sm text-muted-foreground">عدد الاختبارات</div>
               </div>
-              <div className="text-center">
-                <div className="text-2xl font-bold text-green-600 dark:text-green-400 mb-1">
+              <div className="rounded-xl border border-border bg-background/70 p-4 text-right">
+                <div className="text-2xl font-black text-emerald-700 dark:text-emerald-300 mb-1">
                   {questionBankState.verbal.filter(t => t.completed).length + 
                    questionBankState.quantitative.filter(t => t.completed).length}
                 </div>
-                <div className="text-sm text-gray-500 dark:text-gray-400">مكتمل</div>
+                <div className="text-sm text-muted-foreground">مكتمل</div>
               </div>
-              <div className="text-center">
-                <div className="text-2xl font-bold text-amber-600 dark:text-amber-400 mb-1">
+              <div className="rounded-xl border border-border bg-background/70 p-4 text-right">
+                <div className="text-2xl font-black text-accent-foreground mb-1">
                   {Math.round((getAverageScore(questionBankState.verbal) + 
                               getAverageScore(questionBankState.quantitative)) / 2)}%
                 </div>
-                <div className="text-sm text-gray-500 dark:text-gray-400">متوسط النتائج</div>
+                <div className="text-sm text-muted-foreground">متوسط النتائج</div>
               </div>
-            </div>
+          </div>
 
             {/* Daily limit notice for free users */}
             {!isPremiumUser && (
-              <div className="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-lg p-4 mt-8 max-w-md mx-auto">
-                <div className="flex items-center justify-center gap-2 mb-2">
-                  <Users className="h-4 w-4 text-amber-600 dark:text-amber-400" />
-                  <span className="text-amber-800 dark:text-amber-300 font-medium text-sm">حساب مجاني</span>
+              <div className="bg-accent/20 border border-accent/60 rounded-xl p-4 mt-4 max-w-md mx-auto">
+                <div className="flex items-center justify-center gap-2 mb-1">
+                  <Users className="h-4 w-4 text-accent-foreground" />
+                  <span className="text-foreground font-semibold text-sm">حساب مجاني</span>
                 </div>
-                <p className="text-sm text-amber-700 dark:text-amber-300 mb-2">
+                <p className="text-sm text-muted-foreground mb-2">
                   {MAX_DAILY_FREE_TESTS - dailyTestsTaken} اختبار متبقي اليوم
                 </p>
-                <div className="w-full bg-amber-200 dark:bg-amber-800 rounded-full h-2">
+                <div className="w-full bg-accent/50 rounded-full h-2">
                   <div 
-                    className="bg-amber-500 dark:bg-amber-400 h-2 rounded-full transition-all duration-300"
+                    className="bg-primary h-2 rounded-full transition-all duration-300"
                     style={{ width: `${(dailyTestsTaken / MAX_DAILY_FREE_TESTS) * 100}%` }}
                   />
                 </div>
               </div>
             )}
-
-          </div>
         </div>
-      </div>
+      </header>
 
       {/* Content */}
       <div className="max-w-6xl mx-auto px-6 py-8">
         <Tabs defaultValue="verbal" className="w-full">
           {/* Tab Navigation */}
           <div className="flex justify-center mb-8">
-            <TabsList className="grid grid-cols-3 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-1 shadow-sm">
+            <TabsList className="grid h-auto w-full max-w-2xl grid-cols-3 rounded-xl border border-border bg-card p-1.5 shadow-sm">
               <TabsTrigger 
                 value="verbal" 
-                className="flex items-center gap-2 px-6 py-3 text-gray-600 dark:text-gray-400 data-[state=active]:bg-blue-600 data-[state=active]:text-white rounded-md transition-all font-medium"
+                className="flex items-center justify-center gap-2 rounded-lg px-4 py-3 text-muted-foreground transition-colors data-[state=active]:bg-primary data-[state=active]:text-primary-foreground font-semibold"
               >
                 <BookOpen className="h-4 w-4" />
                 القسم اللفظي
               </TabsTrigger>
               <TabsTrigger 
                 value="quantitative" 
-                className="flex items-center gap-2 px-6 py-3 text-gray-600 dark:text-gray-400 data-[state=active]:bg-green-100 data-[state=active]:text-white rounded-md transition-all font-medium"
+                className="flex items-center justify-center gap-2 rounded-lg px-4 py-3 text-muted-foreground transition-colors data-[state=active]:bg-primary data-[state=active]:text-primary-foreground font-semibold"
               >
                 <Calculator className="h-4 w-4" />
                 القسم الكمي
               </TabsTrigger>
               <TabsTrigger 
                 value="standard" 
-                className="flex items-center gap-2 px-6 py-3 text-gray-600 dark:text-gray-400 data-[state=active]:bg-gradient-to-r data-[state=active]:from-orange-600 data-[state=active]:to-rose-600 data-[state=active]:text-white rounded-md transition-all font-medium"
+                className="flex items-center justify-center gap-2 rounded-lg px-4 py-3 text-muted-foreground transition-colors data-[state=active]:bg-primary data-[state=active]:text-primary-foreground font-semibold"
                 data-testid="tab-standard"
               >
                 <Shuffle className="h-4 w-4" />
@@ -1193,15 +1165,7 @@ export default function QuestionBankPage() {
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4 mb-6">
               {VERBAL_SUBCATEGORIES.map((subcategory, idx) => {
                 const icons = [BookMarked, PenTool, FileText, AlertCircle, Sparkles];
-                const colors = [
-                  'from-blue-500 to-teal-500',
-                  'from-green-600 to-amber-600',
-                  'from-emerald-500 to-teal-600',
-                  'from-orange-500 to-red-600',
-                  'from-amber-500 to-yellow-600'
-                ];
                 const Icon = icons[idx] || BookOpen;
-                const colorClass = colors[idx] || colors[0];
                 const count = verbalSubcategoryCounts[subcategory] || 0;
                 
                 const isSelected = selectedVerbalSubcategory === subcategory;
@@ -1211,44 +1175,38 @@ export default function QuestionBankPage() {
                     key={subcategory} 
                     onClick={() => setSelectedVerbalSubcategory(isSelected ? null : subcategory)}
                     className={cn(
-                      "group relative overflow-hidden border-2 transition-all duration-300 hover:shadow-lg hover:shadow-blue-500/20 hover:-translate-y-1 cursor-pointer",
+                      "group relative overflow-hidden border bg-card shadow-sm transition-all duration-200 hover:shadow-md cursor-pointer",
                       isSelected 
-                        ? "border-blue-500 dark:border-blue-400 shadow-lg shadow-blue-500/30 scale-105" 
-                        : "border-gray-200 dark:border-gray-700 hover:border-blue-400 dark:hover:border-blue-600"
+                        ? "border-primary ring-1 ring-primary/25"
+                        : "border-border hover:border-primary/50"
                     )}
                     data-testid={`card-subcategory-${subcategory}`}
                   >
-                    <div className={cn(
-                      "absolute inset-0 transition-opacity duration-300",
-                      `bg-gradient-to-br ${colorClass}`,
-                      isSelected ? "opacity-15" : "opacity-0 group-hover:opacity-10"
-                    )} />
                     {isSelected && (
-                      <div className="absolute top-2 right-2 bg-blue-500 text-white rounded-full p-1">
+                      <div className="absolute top-2 right-2 bg-primary text-primary-foreground rounded-full p-1">
                         <CheckCircle className="h-4 w-4" />
                       </div>
                     )}
                     <CardContent className="p-4 relative">
                       <div className={cn(
-                        "w-12 h-12 rounded-xl flex items-center justify-center mb-3 shadow-md mx-auto transition-transform duration-300",
-                        `bg-gradient-to-br ${colorClass}`,
-                        isSelected && "scale-110"
+                        "w-12 h-12 rounded-xl flex items-center justify-center mb-3 shadow-sm mx-auto transition-colors",
+                        isSelected ? "bg-primary text-primary-foreground" : "bg-accent/40 text-primary"
                       )}>
-                        <Icon className="h-6 w-6 text-white" />
+                        <Icon className="h-6 w-6" />
                       </div>
                       <h3 className={cn(
                         "text-sm font-bold text-center mb-1",
-                        isSelected ? "text-blue-600 dark:text-blue-400" : "text-gray-900 dark:text-white"
+                        isSelected ? "text-primary" : "text-card-foreground"
                       )}>
                         {subcategory}
                       </h3>
-                      <p className="text-xs text-gray-600 dark:text-gray-400 text-center">
+                      <p className="text-xs text-muted-foreground text-center">
                         {count} سؤال
                       </p>
                       {isSelected && (
                         <div className="mt-2 text-center">
-                          <Badge className="bg-blue-500 text-white text-xs">
-                            مختار ✓
+                          <Badge className="bg-accent text-accent-foreground text-xs">
+                            مختار
                           </Badge>
                         </div>
                       )}
@@ -1259,40 +1217,40 @@ export default function QuestionBankPage() {
             </div>
 
             {/* Main Tests Section */}
-            <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-6">
+            <div className="bg-card border border-border rounded-2xl p-5 sm:p-6 shadow-sm">
               <div className="flex items-center justify-between mb-6">
                 <div>
-                  <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-2 flex items-center gap-2">
+                  <h2 className="text-xl font-semibold text-card-foreground mb-2 flex items-center gap-2">
                     الاختبارات اللفظية
                     {selectedVerbalSubcategory && (
-                      <Badge className="bg-blue-500 text-white">
+                      <Badge className="bg-secondary text-secondary-foreground">
                         {selectedVerbalSubcategory}
                       </Badge>
                     )}
                   </h2>
-                  <p className="text-gray-600 dark:text-gray-300">
+                  <p className="text-muted-foreground">
                     {selectedVerbalSubcategory 
                       ? `${getFilteredTests(questionBankState.verbal, 'verbal', selectedVerbalSubcategory).length} اختبار مفلتر`
                       : `${questionBankState.verbal.length} اختبار • ${verbalQuestionCount} سؤال`
                     }
                   </p>
                 </div>
-                <div className="text-center bg-blue-50 dark:bg-blue-900/20 px-4 py-3 rounded-lg border border-blue-200 dark:border-blue-800">
-                  <div className="text-sm text-gray-500 dark:text-gray-400 mb-1">معدل الإنجاز</div>
-                  <div className="text-3xl font-bold text-blue-600 dark:text-blue-400">
+                <div className="text-center bg-muted/40 px-4 py-3 rounded-xl border border-border">
+                  <div className="text-sm text-muted-foreground mb-1">معدل الإنجاز</div>
+                  <div className="text-3xl font-bold text-primary">
                     {Math.round(getOverallProgress(questionBankState.verbal))}%
                   </div>
-                  <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                  <div className="text-xs text-muted-foreground mt-1">
                     {questionBankState.verbal.filter(t => t.completed).length} / {questionBankState.verbal.length} مكتمل
                   </div>
                 </div>
               </div>
               
               {selectedVerbalSubcategory && (
-                <div className="mb-4 flex items-center justify-between bg-blue-50 dark:bg-blue-900/20 px-4 py-3 rounded-lg border border-blue-200 dark:border-blue-800">
+                <div className="mb-4 flex items-center justify-between bg-muted/40 px-4 py-3 rounded-xl border border-border">
                   <div className="flex items-center gap-2">
-                    <Sparkles className="h-5 w-5 text-blue-600 dark:text-blue-400" />
-                    <span className="text-sm font-medium text-blue-800 dark:text-blue-300">
+                    <Sparkles className="h-5 w-5 text-primary" />
+                    <span className="text-sm font-medium text-foreground">
                       تم تطبيق الفلتر: {selectedVerbalSubcategory}
                     </span>
                   </div>
@@ -1300,7 +1258,7 @@ export default function QuestionBankPage() {
                     onClick={() => setSelectedVerbalSubcategory(null)}
                     variant="outline"
                     size="sm"
-                    className="text-blue-600 border-blue-400 hover:bg-blue-100 dark:text-blue-400 dark:border-blue-600 dark:hover:bg-blue-900/30"
+                    className="border-border text-primary hover:bg-muted"
                     data-testid="button-clear-filter"
                   >
                     إلغاء الفلتر
@@ -1365,18 +1323,7 @@ export default function QuestionBankPage() {
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 xl:grid-cols-4 gap-4 mb-6">
               {QUANTITATIVE_SUBCATEGORIES.map((subcategory, idx) => {
                 const icons = [Shapes, Calculator, Target, Brain, Trophy, Zap, Layers, Clock];
-                const colors = [
-                  'from-green-600 to-amber-600',
-                  'from-blue-500 to-cyan-600',
-                  'from-emerald-500 to-green-600',
-                  'from-orange-500 to-amber-600',
-                  'from-red-500 to-rose-600',
-                  'from-teal-600 to-emerald-600',
-                  'from-teal-500 to-emerald-600',
-                  'from-fuchsia-500 to-amber-600'
-                ];
                 const Icon = icons[idx] || Calculator;
-                const colorClass = colors[idx] || colors[0];
                 const count = quantitativeSubcategoryCounts[subcategory] || 0;
                 const isSelected = selectedQuantitativeSubcategory === subcategory;
                 
@@ -1385,44 +1332,38 @@ export default function QuestionBankPage() {
                     key={subcategory} 
                     onClick={() => setSelectedQuantitativeSubcategory(isSelected ? null : subcategory)}
                     className={cn(
-                      "group relative overflow-hidden border-2 transition-all duration-300 hover:shadow-lg hover:shadow-green-500/20 hover:-translate-y-1 cursor-pointer",
+                      "group relative overflow-hidden border bg-card shadow-sm transition-all duration-200 hover:shadow-md cursor-pointer",
                       isSelected 
-                        ? "border-green-400 dark:border-green-400 shadow-lg shadow-green-500/30 scale-105" 
-                        : "border-gray-200 dark:border-gray-700 hover:border-green-400 dark:hover:border-green-400"
+                        ? "border-primary ring-1 ring-primary/25"
+                        : "border-border hover:border-primary/50"
                     )}
                     data-testid={`card-subcategory-${subcategory}`}
                   >
-                    <div className={cn(
-                      "absolute inset-0 transition-opacity duration-300",
-                      `bg-gradient-to-br ${colorClass}`,
-                      isSelected ? "opacity-15" : "opacity-0 group-hover:opacity-10"
-                    )} />
                     {isSelected && (
-                      <div className="absolute top-2 right-2 bg-green-100 text-white rounded-full p-1">
+                      <div className="absolute top-2 right-2 bg-primary text-primary-foreground rounded-full p-1">
                         <CheckCircle className="h-4 w-4" />
                       </div>
                     )}
                     <CardContent className="p-4 relative">
                       <div className={cn(
-                        "w-12 h-12 rounded-xl flex items-center justify-center mb-3 shadow-md mx-auto transition-transform duration-300",
-                        `bg-gradient-to-br ${colorClass}`,
-                        isSelected && "scale-110"
+                        "w-12 h-12 rounded-xl flex items-center justify-center mb-3 shadow-sm mx-auto transition-colors",
+                        isSelected ? "bg-primary text-primary-foreground" : "bg-accent/40 text-primary"
                       )}>
-                        <Icon className="h-6 w-6 text-white" />
+                        <Icon className="h-6 w-6" />
                       </div>
                       <h3 className={cn(
                         "text-sm font-bold text-center mb-1",
-                        isSelected ? "text-green-700 dark:text-green-700" : "text-gray-900 dark:text-white"
+                        isSelected ? "text-primary" : "text-card-foreground"
                       )}>
                         {subcategory}
                       </h3>
-                      <p className="text-xs text-gray-600 dark:text-gray-400 text-center">
+                      <p className="text-xs text-muted-foreground text-center">
                         {count} سؤال
                       </p>
                       {isSelected && (
                         <div className="mt-2 text-center">
-                          <Badge className="bg-green-100 text-white text-xs">
-                            مختار ✓
+                          <Badge className="bg-accent text-accent-foreground text-xs">
+                            مختار
                           </Badge>
                         </div>
                       )}
@@ -1433,40 +1374,40 @@ export default function QuestionBankPage() {
             </div>
 
             {/* Main Tests Section */}
-            <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-6">
+            <div className="bg-card border border-border rounded-2xl p-5 sm:p-6 shadow-sm">
               <div className="flex items-center justify-between mb-6">
                 <div>
-                  <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-2 flex items-center gap-2">
+                  <h2 className="text-xl font-semibold text-card-foreground mb-2 flex items-center gap-2">
                     الاختبارات الكمية
                     {selectedQuantitativeSubcategory && (
-                      <Badge className="bg-green-100 text-white">
+                      <Badge className="bg-secondary text-secondary-foreground">
                         {selectedQuantitativeSubcategory}
                       </Badge>
                     )}
                   </h2>
-                  <p className="text-gray-600 dark:text-gray-300">
+                  <p className="text-muted-foreground">
                     {selectedQuantitativeSubcategory 
                       ? `${getFilteredTests(questionBankState.quantitative, 'quantitative', selectedQuantitativeSubcategory).length} اختبار مفلتر`
                       : `${questionBankState.quantitative.length} اختبار • ${quantitativeQuestionCount} سؤال`
                     }
                   </p>
                 </div>
-                <div className="text-center bg-green-100 dark:bg-green-100/20 px-4 py-3 rounded-lg border border-green-400 dark:border-green-400">
-                  <div className="text-sm text-gray-500 dark:text-gray-400 mb-1">معدل الإنجاز</div>
-                  <div className="text-3xl font-bold text-green-700 dark:text-green-700">
+                <div className="text-center bg-muted/40 px-4 py-3 rounded-xl border border-border">
+                  <div className="text-sm text-muted-foreground mb-1">معدل الإنجاز</div>
+                  <div className="text-3xl font-bold text-primary">
                     {Math.round(getOverallProgress(questionBankState.quantitative))}%
                   </div>
-                  <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                  <div className="text-xs text-muted-foreground mt-1">
                     {questionBankState.quantitative.filter(t => t.completed).length} / {questionBankState.quantitative.length} مكتمل
                   </div>
                 </div>
               </div>
               
               {selectedQuantitativeSubcategory && (
-                <div className="mb-4 flex items-center justify-between bg-green-100 dark:bg-green-100/20 px-4 py-3 rounded-lg border border-green-400 dark:border-green-400">
+                <div className="mb-4 flex items-center justify-between bg-muted/40 px-4 py-3 rounded-xl border border-border">
                   <div className="flex items-center gap-2">
-                    <Sparkles className="h-5 w-5 text-green-700 dark:text-green-700" />
-                    <span className="text-sm font-medium text-green-700 dark:text-green-700">
+                    <Sparkles className="h-5 w-5 text-primary" />
+                    <span className="text-sm font-medium text-foreground">
                       تم تطبيق الفلتر: {selectedQuantitativeSubcategory}
                     </span>
                   </div>
@@ -1474,7 +1415,7 @@ export default function QuestionBankPage() {
                     onClick={() => setSelectedQuantitativeSubcategory(null)}
                     variant="outline"
                     size="sm"
-                    className="text-green-700 border-green-400 hover:bg-green-100 dark:text-green-700 dark:border-green-400 dark:hover:bg-green-100/30"
+                    className="border-border text-primary hover:bg-muted"
                     data-testid="button-clear-filter"
                   >
                     إلغاء الفلتر
@@ -1536,51 +1477,42 @@ export default function QuestionBankPage() {
           {/* Standard Section Test */}
           <TabsContent value="standard" className="space-y-6">
             {/* Section Distribution Info */}
-            <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-6">
+            <div className="bg-card border border-border rounded-2xl p-5 sm:p-6 shadow-sm">
               <div className="mb-6">
-                <h2 className="text-2xl font-bold text-transparent bg-gradient-to-r from-orange-600 to-rose-600 bg-clip-text mb-2 flex items-center gap-2">
-                  <Shuffle className="h-6 w-6 text-orange-600" />
+                <h2 className="text-2xl font-bold text-card-foreground mb-2 flex items-center gap-2">
+                  <Shuffle className="h-6 w-6 text-primary" />
                   اختبارات القياس (7 أقسام لكل اختبار)
                 </h2>
-                <p className="text-gray-600 dark:text-gray-300">
+                <p className="text-muted-foreground">
                   اختبارات محاكاة كاملة للاختبار الحقيقي • 120 سؤال • 120 دقيقة • 7 أقسام
                 </p>
               </div>
 
-              <div className="bg-gradient-to-br from-orange-50 to-rose-50 dark:from-orange-900/10 dark:to-rose-900/10 border-2 border-orange-200 dark:border-orange-800 rounded-lg p-6 mb-6">
-                <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
-                  <Target className="h-5 w-5 text-orange-600" />
+              <div className="bg-muted/30 border border-border rounded-2xl p-5 mb-6">
+                <h3 className="text-lg font-bold text-card-foreground mb-4 flex items-center gap-2">
+                  <Target className="h-5 w-5 text-primary" />
                   توزيع الأقسام
                 </h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
                   {[
-                    { num: 1, name: 'مختلط', questions: '24 سؤال (11 كمي + 13 لفظي)', time: '24 دقيقة', color: 'from-blue-500 to-emerald-600' },
-                    { num: 2, name: 'مختلط', questions: '24 سؤال (11 كمي + 13 لفظي)', time: '24 دقيقة', color: 'from-green-600 to-amber-600' },
-                    { num: 3, name: 'مختلط', questions: '24 سؤال (11 كمي + 13 لفظي)', time: '24 دقيقة', color: 'from-amber-500 to-rose-500' },
-                    { num: 4, name: 'لفظي', questions: '13 سؤال لفظي', time: '13 دقيقة', color: 'from-blue-500 to-cyan-500' },
-                    { num: 5, name: 'كمي', questions: '11 سؤال كمي', time: '11 دقيقة', color: 'from-green-600 to-emerald-500' },
-                    { num: 6, name: 'لفظي', questions: '13 سؤال لفظي', time: '13 دقيقة', color: 'from-emerald-500 to-teal-500' },
-                    { num: 7, name: 'كمي', questions: '11 سؤال كمي', time: '11 دقيقة', color: 'from-orange-500 to-amber-500' },
+                    { num: 1, name: 'مختلط', questions: '24 سؤال (11 كمي + 13 لفظي)', time: '24 دقيقة' },
+                    { num: 2, name: 'مختلط', questions: '24 سؤال (11 كمي + 13 لفظي)', time: '24 دقيقة' },
+                    { num: 3, name: 'مختلط', questions: '24 سؤال (11 كمي + 13 لفظي)', time: '24 دقيقة' },
+                    { num: 4, name: 'لفظي', questions: '13 سؤال لفظي', time: '13 دقيقة' },
+                    { num: 5, name: 'كمي', questions: '11 سؤال كمي', time: '11 دقيقة' },
+                    { num: 6, name: 'لفظي', questions: '13 سؤال لفظي', time: '13 دقيقة' },
+                    { num: 7, name: 'كمي', questions: '11 سؤال كمي', time: '11 دقيقة' },
                   ].map((section) => (
-                    <div key={section.num} className="relative">
-                      <div className={cn(
-                        "absolute inset-0 bg-gradient-to-br opacity-10 rounded-lg",
-                        section.color
-                      )} />
-                      <div className="relative bg-white/50 dark:bg-gray-800/50 backdrop-blur-sm border border-gray-200 dark:border-gray-700 rounded-lg p-4">
-                        <div className={cn(
-                          "w-10 h-10 rounded-lg flex items-center justify-center mb-3 bg-gradient-to-br text-white font-bold",
-                          section.color
-                        )}>
+                    <div key={section.num} className="rounded-xl border border-border bg-card p-4">
+                        <div className="w-10 h-10 rounded-lg flex items-center justify-center mb-3 bg-accent text-accent-foreground font-bold">
                           {section.num}
                         </div>
-                        <h4 className="font-bold text-gray-900 dark:text-white mb-1">{section.name}</h4>
-                        <p className="text-xs text-gray-600 dark:text-gray-400 mb-1">{section.questions}</p>
-                        <div className="flex items-center gap-1 text-xs text-gray-500 dark:text-gray-400">
+                        <h4 className="font-bold text-card-foreground mb-1">{section.name}</h4>
+                        <p className="text-xs text-muted-foreground mb-1">{section.questions}</p>
+                        <div className="flex items-center gap-1 text-xs text-muted-foreground">
                           <Clock className="h-3 w-3" />
                           {section.time}
                         </div>
-                      </div>
                     </div>
                   ))}
                 </div>
@@ -1589,22 +1521,22 @@ export default function QuestionBankPage() {
             </div>
 
             {/* Main Tests Section */}
-            <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-6">
+            <div className="bg-card border border-border rounded-2xl p-5 sm:p-6 shadow-sm">
               <div className="flex items-center justify-between mb-6">
                 <div>
-                  <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-2 flex items-center gap-2">
+                  <h2 className="text-xl font-semibold text-card-foreground mb-2 flex items-center gap-2">
                     الاختبارات القياسية
                   </h2>
-                  <p className="text-gray-600 dark:text-gray-300">
+                  <p className="text-muted-foreground">
                     {questionBankState.standard.length} اختبار • {totalQuestionCount} سؤال (كل اختبار 120 سؤال)
                   </p>
                 </div>
-                <div className="text-center bg-orange-50 dark:bg-orange-900/20 px-4 py-3 rounded-lg border border-orange-200 dark:border-orange-800">
-                  <div className="text-sm text-gray-500 dark:text-gray-400 mb-1">معدل الإنجاز</div>
-                  <div className="text-3xl font-bold text-orange-600 dark:text-orange-400">
+                <div className="text-center bg-muted/40 px-4 py-3 rounded-xl border border-border">
+                  <div className="text-sm text-muted-foreground mb-1">معدل الإنجاز</div>
+                  <div className="text-3xl font-bold text-primary">
                     {Math.round(getOverallProgress(questionBankState.standard))}%
                   </div>
-                  <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                  <div className="text-xs text-muted-foreground mt-1">
                     {questionBankState.standard.filter(t => t.completed).length} / {questionBankState.standard.length} مكتمل
                   </div>
                 </div>
@@ -1654,6 +1586,6 @@ export default function QuestionBankPage() {
           </TabsContent>
         </Tabs>
       </div>
-    </div>
+    </TahsiliPageFrame>
   );
 }
