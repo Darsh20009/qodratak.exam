@@ -1681,6 +1681,7 @@ export function AdvancedVerbalTest() {
         timeLeft={sectionTimeRemaining}
         isTimeUrgent={sectionTimeRemaining < 120}
         questionText={currentQuestion.text}
+        questionData={currentQuestion}
         questionImageUrl={currentQuestion.imageUrl}
         questionImageUrls={currentQuestion.imageUrls}
         options={currentQuestion.options}

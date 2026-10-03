@@ -559,10 +559,6 @@ export function FreeVerbalTestRunner() {
 
   const currentQuestion = questions[currentQuestionIndex];
   const currentQuestionText = currentQuestion?.text || '';
-  const currentPassage = currentQuestion?.source?.passageText?.trim();
-  const displayQuestionText = currentPassage
-    ? `النص المرتبط بالسؤال:\n${currentPassage}\n\nالسؤال:\n${currentQuestionText}`
-    : currentQuestionText;
   const answeredCount = Object.keys(answers).length;
   const questionsStatusArr = questions.map((_, i) => ({
     answered: answers[i] !== undefined,
@@ -576,7 +572,8 @@ export function FreeVerbalTestRunner() {
       totalQuestions={questions.length}
       timeLeft={timeRemaining}
       isTimeUrgent={timeRemaining < 180}
-      questionText={displayQuestionText}
+      questionText={currentQuestionText}
+      questionData={currentQuestion}
       questionImageUrl={currentQuestion?.imageUrl}
       questionImageUrls={currentQuestion?.imageUrls}
       options={currentQuestion?.options || []}

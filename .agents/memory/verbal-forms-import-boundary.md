@@ -14,3 +14,9 @@ Google Forms may store a reading passage in a separate item-description block ra
 **Why:** The imported question records can have blank passage fields even while the public form still contains the authoritative passage text.
 
 **How to apply:** During a source repair, verify each question ID against the form, keep the section boundary in the match, then update both the import source and the database so later imports retain the passage.
+
+Student-facing question-selection responses must preserve `source.passageText` and `source.passageLabel`. Render the passage separately before the question stem, and do not let image-based stem suppression hide it.
+
+**Why:** Complete database records are not enough if an API projection or shared test layout drops the passage; reading questions cannot be answered without it.
+
+**How to apply:** Check both source storage and downstream selection responses for each practice and exam path. Keep passage data through filtering and section slicing, then display it independently of the question stem and image rules.

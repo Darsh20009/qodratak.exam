@@ -50,6 +50,8 @@ interface Question {
   source?: {
     type?: string;
     section?: string;
+    passageText?: string;
+    passageLabel?: string;
   };
 }
 
@@ -985,6 +987,7 @@ export default function QuestionBankTestRunner() {
       timeLeft={timeLeft}
       isTimeUrgent={timeLeft < 300}
       questionText={currentQuestion.text}
+      questionData={currentQuestion}
       questionImageUrl={currentQuestion.imageUrl}
       questionImageUrls={currentQuestion.imageUrls}
       hideQuestionTextWhenImageBacked={

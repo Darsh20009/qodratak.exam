@@ -203,6 +203,14 @@ async function createQuestionBankCoverageTest(
       difficulty: question.difficulty || difficulty,
       imageUrl: getQuestionImageUrls(question)[0] || null,
       imageUrls: getQuestionImageUrls(question),
+      source: typeof question.source?.passageText === 'string' && question.source.passageText.trim()
+        ? {
+            passageText: question.source.passageText,
+            ...(typeof question.source.passageLabel === 'string' && question.source.passageLabel.trim()
+              ? { passageLabel: question.source.passageLabel }
+              : {}),
+          }
+        : undefined,
     };
   });
 
@@ -9797,6 +9805,14 @@ app.post("/api/auth/register", async (req: Request, res: Response) => {
         difficulty: q.difficulty || 'intermediate',
         imageUrl: getQuestionImageUrls(q)[0] || null,
         imageUrls: getQuestionImageUrls(q),
+        source: typeof q.source?.passageText === 'string' && q.source.passageText.trim()
+          ? {
+              passageText: q.source.passageText,
+              ...(typeof q.source.passageLabel === 'string' && q.source.passageLabel.trim()
+                ? { passageLabel: q.source.passageLabel }
+                : {}),
+            }
+          : undefined,
       });
 
       const questions = interleaved.slice(0, 100).map(formatQ);

@@ -453,10 +453,6 @@ export function VerbalTestRunner() {
 
   const currentQuestion = questions[currentQuestionIndex];
   const currentQuestionText = currentQuestion?.text || currentQuestion?.question || '';
-  const currentPassage = currentQuestion?.source?.passageText?.trim();
-  const displayQuestionText = currentPassage
-    ? `النص المرتبط بالسؤال:\n${currentPassage}\n\nالسؤال:\n${currentQuestionText}`
-    : currentQuestionText;
   const answeredCount = Object.keys(selectedAnswers).length;
   const questionsStatusArr = questions.map((_, i) => ({
     answered: selectedAnswers[i] !== undefined,
@@ -524,7 +520,8 @@ export function VerbalTestRunner() {
         totalQuestions={questions.length}
         timeLeft={timeRemaining}
         isTimeUrgent={timeRemaining < 180}
-        questionText={displayQuestionText}
+        questionText={currentQuestionText}
+        questionData={currentQuestion}
         questionImageUrl={currentQuestion?.imageUrl}
         questionImageUrls={currentQuestion?.imageUrls}
         options={currentQuestion?.options || currentQuestion?.choices || []}

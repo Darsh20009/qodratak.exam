@@ -203,6 +203,7 @@ export default function FoundationCoverageTestPage() {
         timeLeft={timeLeft}
         isTimeUrgent={timeLeft <= 60}
         questionText={question.text}
+        questionData={question}
         questionTypeLabel={question.difficulty}
         questionImageUrl={question.imageUrl || undefined}
         questionImageUrls={question.imageUrls}

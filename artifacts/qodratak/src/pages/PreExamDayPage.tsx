@@ -489,6 +489,7 @@ export default function PreExamDayPage() {
       timeLeft={timeLeft}
       isTimeUrgent={isUrgent}
       questionText={q.text}
+      questionData={q}
       questionImageUrl={q.imageUrl || undefined}
       questionImageUrls={q.imageUrls}
       options={q.options}

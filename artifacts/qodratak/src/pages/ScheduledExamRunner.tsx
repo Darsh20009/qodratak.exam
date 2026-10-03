@@ -846,6 +846,7 @@ export default function ScheduledExamRunner() {
         timeLeft={sectionTimeLeft}
         isTimeUrgent={timeUrgent}
         questionText={currentQuestion.text}
+        questionData={currentQuestion}
         questionImageUrl={currentQuestion.imageUrl}
         questionImageUrls={currentQuestion.imageUrls}
         options={currentQuestion.options}

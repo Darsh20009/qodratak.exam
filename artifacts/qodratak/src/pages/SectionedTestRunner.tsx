@@ -1568,6 +1568,7 @@ export default function SectionedTestRunner() {
       timeLeft={timeLeft}
       isTimeUrgent={timeLeft < 300}
       questionText={currentQuestion.text}
+      questionData={currentQuestion}
       questionImageUrl={currentQuestion.imageUrl}
       questionImageUrls={currentQuestion.imageUrls}
       options={currentQuestion.options}

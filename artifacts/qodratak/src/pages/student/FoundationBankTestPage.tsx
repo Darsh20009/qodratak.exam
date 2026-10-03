@@ -338,6 +338,7 @@ export default function FoundationBankTestPage({ contentId }: { contentId: strin
         sectionLabel="اختبار البنك"
         timeLeft={(quiz.timeLimitMinutes || 45) * 60}
         questionText={currentQuestion.text}
+        questionData={currentQuestion}
         questionImageUrl={currentQuestion.imageUrl}
         questionImageUrls={currentQuestion.imageUrls}
         hideQuestionTextWhenImageBacked={getQuestionImageUrls(currentQuestion).length > 0}

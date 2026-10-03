@@ -750,6 +750,7 @@ export function StandardSectionTestRunner() {
       timeLeft={sectionTimeRemaining}
       isTimeUrgent={sectionTimeRemaining < 300}
       questionText={currentQuestion.text}
+      questionData={currentQuestion}
       questionImageUrl={currentQuestion.imageUrl}
       questionImageUrls={currentQuestion.imageUrls}
       options={currentQuestion.options}

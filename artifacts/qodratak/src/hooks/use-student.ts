@@ -719,6 +719,10 @@ export interface FoundationCoverageTestQuestion {
   difficulty: string;
   imageUrl?: string | null;
   imageUrls: string[];
+  source?: {
+    passageText?: string;
+    passageLabel?: string;
+  };
 }
 
 export interface FoundationCoverageTest {

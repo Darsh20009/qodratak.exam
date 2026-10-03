@@ -27,6 +27,7 @@ export interface QiyasExamLayoutProps {
   isTimeUrgent?: boolean;
 
   questionText: string;
+  questionData?: unknown;
   questionTypeLabel?: string;
   questionImageUrl?: string;
   questionImageUrls?: string[];
@@ -63,6 +64,37 @@ export interface QiyasExamLayoutProps {
   questionId?: number | string;
 }
 
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null;
+}
+
+function nonEmptyString(value: unknown): string | undefined {
+  return typeof value === "string" && value.trim() ? value.trim() : undefined;
+}
+
+function getQuestionDisplayParts(questionData: unknown, originalQuestionText: string) {
+  const question = isRecord(questionData) ? questionData : {};
+  const source = isRecord(question.source) ? question.source : {};
+  const passageText = nonEmptyString(source.passageText) ?? nonEmptyString(question.passageText);
+  const passageLabel = nonEmptyString(source.passageLabel) ?? nonEmptyString(question.passageLabel);
+
+  let displayQuestionText = originalQuestionText;
+  if (passageText) {
+    let candidate = originalQuestionText.trimStart();
+    candidate = candidate.replace(/^(?:النص المرتبط بالسؤال)(?:\s*[:：])?\s*/u, "");
+
+    if (candidate.startsWith(passageText)) {
+      displayQuestionText = candidate
+        .slice(passageText.length)
+        .replace(/^\s*السؤال\s*[:：]?\s*/u, "")
+        .replace(/^[\s\-‐‑‒–—―>→]+/u, "")
+        .trim();
+    }
+  }
+
+  return { passageText, passageLabel, displayQuestionText };
+}
+
 function formatTime(s: number): string {
   const m = Math.floor(Math.abs(s) / 60);
   const sec = Math.abs(s) % 60;
@@ -79,6 +111,7 @@ export function QiyasExamLayout({
   timeLeft,
   isTimeUrgent,
   questionText,
+  questionData,
   questionTypeLabel,
   questionImageUrl,
   questionImageUrls,
@@ -108,6 +141,7 @@ export function QiyasExamLayout({
   onShowFormulas,
   questionId,
 }: QiyasExamLayoutProps) {
+  const { passageText, passageLabel, displayQuestionText } = getQuestionDisplayParts(questionData, questionText);
   const { setActive: setStudentExamChromeActive } = useContext(StudentExamChromeContext);
   const [fontSize, setFontSize] = useState<'sm' | 'base' | 'lg'>('base');
   const [visitedQuestions, setVisitedQuestions] = useState<Set<number>>(new Set([0]));
@@ -338,6 +372,26 @@ export function QiyasExamLayout({
               </div>
             )}
 
+            {passageText ? (
+              <section
+                dir="rtl"
+                aria-label={passageLabel ? `نص القطعة: ${passageLabel}` : "نص القطعة"}
+                className="mb-5 rounded-2xl border border-sky-200 bg-sky-50/80 p-4 dark:border-sky-900 dark:bg-sky-950/35 sm:p-5"
+              >
+                <div className="mb-2 flex flex-wrap items-center gap-2">
+                  <h3 className="text-sm font-extrabold text-sky-950 dark:text-sky-100">نص القطعة</h3>
+                  {passageLabel && (
+                    <span className="rounded-full bg-sky-100 px-2.5 py-1 text-xs font-bold text-sky-800 dark:bg-sky-900/70 dark:text-sky-200">
+                      {passageLabel}
+                    </span>
+                  )}
+                </div>
+                <p className="whitespace-pre-line break-words text-sm leading-7 text-gray-800 dark:text-gray-100">
+                  {passageText}
+                </p>
+              </section>
+            ) : null}
+
             {questionImages.length > 0 ? (
               <div className="mb-4 flex justify-center">
                 <div className="w-full space-y-3">
@@ -355,8 +409,8 @@ export function QiyasExamLayout({
             ) : null}
 
             {(!hideQuestionTextWhenImageBacked || questionImages.length === 0) && (
-              <p className={`text-gray-800 leading-relaxed mb-5 ${fontClass}`}>
-                {questionText}
+              <p className={`whitespace-pre-line text-gray-800 leading-relaxed mb-5 ${fontClass}`}>
+                {displayQuestionText}
               </p>
             )}
 

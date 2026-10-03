@@ -590,6 +590,7 @@ export default function FolderTest() {
       timeLeft={sectionTimeRemaining}
       isTimeUrgent={sectionTimeRemaining < 60}
       questionText={currentQuestion?.text || ""}
+      questionData={currentQuestion}
       questionImageUrl={currentQuestion?.imageUrl}
       questionImageUrls={currentQuestion?.imageUrls}
       options={currentQuestion?.options || []}

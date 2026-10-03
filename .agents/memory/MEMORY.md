@@ -32,7 +32,7 @@
 - [Phase 14 retention engine](phase14-retention-engine.md) — keep source identity complete and retention confidence separate from mastery and recommendation confidence.
 - [Adaptive decision boundary](adaptive-decision-boundary.md) — keep Phase 15 deterministic/read-only and map its next action into existing learning contracts.
 - [Tahsili visual language](tahsili-visual-language.md) — keep study surfaces calm and unified while exam-taking screens stay focused and scanable.
-- [Verbal Forms import boundary](verbal-forms-import-boundary.md) — preserve source passages and IDs, dedupe by question plus options, and keep incomplete-option items out of scored pools.
+- [Verbal Forms passage delivery](verbal-forms-import-boundary.md) — preserve each source passage from form import through student-facing question and exam views.
 - [Quantitative foundation attachments](foundation-quantitative-attachments.md) — publish stable PDF lesson materials before their matching videos arrive; keep video URLs optional.
 - [Local foundation video playback](local-foundation-video-playback.md) — local MP4 lessons need native video playback and byte-range serving, not provider iframes.
 - [Artifact build environment](artifact-build-environment.md) — standalone Vite builds need the artifact’s injected PORT and BASE_PATH values.

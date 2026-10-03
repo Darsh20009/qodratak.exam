@@ -136,6 +136,10 @@ interface ExamQuestion {
   explanation?: string;
   imageUrl?: string;
   imageUrls?: string[];
+  source?: {
+    passageText?: string;
+    passageLabel?: string;
+  };
 }
 
 interface ProcessedExamQuestion extends ExamQuestion {
@@ -1726,6 +1730,7 @@ const QiyasExamPage: React.FC = () => {
           timeLeft={timeLeft}
           isTimeUrgent={timeLeft <= 60}
           questionText={currentQuestionData.text}
+          questionData={currentQuestionData}
           questionImageUrl={currentQuestionData.imageUrl}
         questionImageUrls={currentQuestionData.imageUrls}
           options={currentQuestionData.options}
