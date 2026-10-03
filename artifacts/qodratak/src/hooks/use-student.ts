@@ -370,7 +370,7 @@ export class StudentApiError extends Error {
 }
 
 async function fetchJson<T>(url: string, options?: RequestInit): Promise<T> {
-  const res = await fetch(url, { credentials: "include", ...options });
+  const res = await fetch(url, { credentials: "include", cache: "no-store", ...options });
   const body = res.status === 204 ? null : await res.json().catch(() => null);
   if (!res.ok) {
     throw new StudentApiError(

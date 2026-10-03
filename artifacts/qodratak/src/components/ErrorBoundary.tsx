@@ -21,7 +21,21 @@ export class ErrorBoundary extends Component<Props, State> {
   }
 
   componentDidCatch(error: Error, info: ErrorInfo) {
-    console.error("ErrorBoundary caught:", error, info);
+    if (import.meta.env.DEV) {
+      console.error(`[ErrorBoundary caught] ${error.name}: ${error.message}`);
+      for (const frame of error.stack?.split("\n").slice(1) || []) {
+        console.error(`[ErrorBoundary JS stack] ${frame.trim()}`);
+      }
+      if (info.componentStack) {
+        console.error("[ErrorBoundary] React component stack:");
+        for (const frame of info.componentStack.split("\n")) {
+          if (frame.trim()) console.error(`[ErrorBoundary component] ${frame.trim()}`);
+        }
+      }
+      return;
+    }
+
+    console.error(`ErrorBoundary caught: ${error.name}: ${error.message}`);
   }
 
   render() {

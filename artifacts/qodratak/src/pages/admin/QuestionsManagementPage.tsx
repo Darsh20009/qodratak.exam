@@ -8,6 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { useToast } from '@/hooks/use-toast';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { apiRequest } from '@/lib/queryClient';
+import { resolveFoundationAssetUrl } from '@/lib/foundationVideoUrl';
 import {
   Search, Plus, Edit2, Trash2, Image, Upload, X, ChevronLeft, ChevronRight,
   BookOpen, Filter, RefreshCw, AlertCircle, CheckCircle, Sparkles, Loader2
@@ -465,7 +466,7 @@ export default function QuestionsManagementPage() {
                     </td>
                     <td className="p-4">
                       {q.imageUrl ? (
-                        <img src={q.imageUrl} alt="سؤال" className="w-10 h-10 rounded-lg object-cover border" />
+                        <img src={resolveFoundationAssetUrl(q.imageUrl)} alt="سؤال" className="w-10 h-10 rounded-lg object-cover border" />
                       ) : (
                         <span className="text-gray-300 text-xs">—</span>
                       )}

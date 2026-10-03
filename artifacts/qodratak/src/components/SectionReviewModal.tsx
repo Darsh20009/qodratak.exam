@@ -4,6 +4,7 @@ import { Badge } from "@/components/ui/badge";
 import { CheckCircle2, XCircle, MinusCircle, BookmarkCheck, X } from "lucide-react";
 import ImageZoom from "@/components/ImageZoom";
 import { getQuestionImageUrls } from "@/lib/questionImages";
+import { resolveFoundationAssetUrl } from "@/lib/foundationVideoUrl";
 
 interface QuestionReview {
   index: number;
@@ -160,7 +161,7 @@ export function SectionReviewModal({ sectionIndex, questions, onClose, breakDura
                         {getQuestionImageUrls(q).map((imageUrl, imageIndex) => (
                           <ImageZoom
                             key={`${imageUrl}-${imageIndex}`}
-                            src={imageUrl}
+                            src={resolveFoundationAssetUrl(imageUrl)}
                             imgClassName="max-w-full rounded-lg border border-gray-200 dark:border-gray-600 max-h-48 object-contain"
                           />
                         ))}

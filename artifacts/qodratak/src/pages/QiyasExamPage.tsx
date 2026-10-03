@@ -6,6 +6,7 @@ import { AntiCheatWarning } from '@/components/AntiCheatWarning';
 import AiReviewingScreen, { WrongQuestion } from '@/components/AiReviewingScreen';
 import ImageZoom from '@/components/ImageZoom';
 import { getQuestionImageUrls } from '@/lib/questionImages';
+import { resolveFoundationAssetUrl } from '@/lib/foundationVideoUrl';
 import ResultsTeacherAnalysis from '@/components/exam-results/ResultsTeacherAnalysis';
 import QuestionReportModal from '@/components/exam-results/QuestionReportModal';
 import { apiRequest } from "@/lib/queryClient";
@@ -3177,7 +3178,7 @@ const generateChallengeFile = ({ isTimed, questions: incorrectOrUnansweredQuesti
                                   {getQuestionImageUrls(question).map((imageUrl, imageIndex) => (
                                     <ImageZoom
                                       key={`${imageUrl}-${imageIndex}`}
-                                      src={imageUrl}
+                                      src={resolveFoundationAssetUrl(imageUrl)}
                                       imgClassName="max-w-full rounded-xl border border-gray-200 dark:border-gray-600 max-h-72 object-contain"
                                     />
                                   ))}

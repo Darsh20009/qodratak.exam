@@ -99,7 +99,42 @@ if (process.env.NODE_ENV === "production") {
     process.cwd(),
     "artifacts/qodratak/dist/public",
   );
+  const configuredFoundationAssetBaseUrl =
+    process.env.FOUNDATION_ASSET_BASE_URL?.trim() || "";
+  if (configuredFoundationAssetBaseUrl) {
+    let parsedFoundationAssetBaseUrl: URL;
+    try {
+      parsedFoundationAssetBaseUrl = new URL(configuredFoundationAssetBaseUrl);
+    } catch {
+      throw new Error(
+        "FOUNDATION_ASSET_BASE_URL must be an absolute HTTP or HTTPS URL.",
+      );
+    }
+    if (
+      (parsedFoundationAssetBaseUrl.protocol !== "http:" &&
+        parsedFoundationAssetBaseUrl.protocol !== "https:") ||
+      parsedFoundationAssetBaseUrl.username ||
+      parsedFoundationAssetBaseUrl.password ||
+      parsedFoundationAssetBaseUrl.search ||
+      parsedFoundationAssetBaseUrl.hash
+    ) {
+      throw new Error(
+        "FOUNDATION_ASSET_BASE_URL must be a public HTTP or HTTPS URL without credentials, query, or hash.",
+      );
+    }
+  }
+  const serializedFoundationAssetBaseUrl = JSON.stringify(
+    configuredFoundationAssetBaseUrl,
+  ).replaceAll("<", "\\u003c");
 
+  app.get("/runtime-config.js", (_request, response) => {
+    response
+      .type("application/javascript")
+      .set("Cache-Control", "no-store")
+      .send(
+        `window.__FOUNDATION_ASSET_BASE_URL__=${serializedFoundationAssetBaseUrl};`,
+      );
+  });
   app.use(express.static(frontendDistPath, { index: false }));
   app.use((request, response, next) => {
     if (

@@ -183,7 +183,7 @@ function DiagnosticQuestionCard({
       {questionImages.length ? (
         <div className="mt-2 space-y-2">
           {questionImages.map((imageUrl) => (
-            <img key={imageUrl} src={imageUrl} alt={`صورة السؤال ${index + 1}`} className="mx-auto max-h-80 w-auto max-w-full rounded-xl border border-border object-contain" />
+            <img key={imageUrl} src={resolveFoundationAssetUrl(imageUrl)} alt={`صورة السؤال ${index + 1}`} className="mx-auto max-h-80 w-auto max-w-full rounded-xl border border-border object-contain" />
           ))}
         </div>
       ) : (

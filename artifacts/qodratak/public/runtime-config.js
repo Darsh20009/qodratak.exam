@@ -1,0 +1,1 @@
+window.__FOUNDATION_ASSET_BASE_URL__ = "";

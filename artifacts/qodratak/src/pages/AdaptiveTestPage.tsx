@@ -4,6 +4,7 @@ import { useQuery, useMutation } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import { Link, useLocation } from "wouter";
 import { cn } from "@/lib/utils";
+import { resolveFoundationAssetUrl } from "@/lib/foundationVideoUrl";
 import {
   ChevronRight, Brain, Zap, TrendingUp, TrendingDown,
   CheckCircle2, XCircle, Target, Flame, Trophy, RotateCcw,
@@ -470,7 +471,7 @@ export default function AdaptiveTestPage() {
                 <div className="px-5 py-5">
                   {question.imageUrl && (
                     <div className="flex justify-center mb-4">
-                      <ImageZoom src={question.imageUrl} imgClassName="max-h-32 rounded-xl object-contain w-full" />
+                      <ImageZoom src={resolveFoundationAssetUrl(question.imageUrl)} imgClassName="max-h-32 rounded-xl object-contain w-full" />
                     </div>
                   )}
                   <p className="text-base font-bold text-gray-900 dark:text-white leading-relaxed" dir="rtl">

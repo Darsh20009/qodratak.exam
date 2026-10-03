@@ -11,6 +11,7 @@ import {
   ImageIcon
 } from "lucide-react";
 import ImageZoom from "@/components/ImageZoom";
+import { resolveFoundationAssetUrl } from "@/lib/foundationVideoUrl";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import {
@@ -438,7 +439,7 @@ const QuestionsList: React.FC<QuestionsListProps> = ({
                 {question.imageUrl && (
                   <div className="flex justify-center">
                     <ImageZoom
-                      src={question.imageUrl}
+                      src={resolveFoundationAssetUrl(question.imageUrl)}
                       imgClassName="rounded-xl object-contain border border-gray-200 dark:border-gray-600 max-h-64 w-full"
                     />
                   </div>

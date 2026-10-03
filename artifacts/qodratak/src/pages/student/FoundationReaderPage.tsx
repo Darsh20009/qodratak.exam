@@ -448,10 +448,10 @@ function PracticePanel({
       ) : (
         <div className="mt-6">
           <p className="text-[1.04rem] font-bold leading-8 text-[hsl(var(--reader-ink))]">{question.text}</p>
-          {question.imageUrl ? <img src={question.imageUrl} alt="" className="mt-4 max-h-72 w-full rounded-xl object-contain" /> : null}
+          {question.imageUrl ? <img src={resolveFoundationAssetUrl(question.imageUrl)} alt="" className="mt-4 max-h-72 w-full rounded-xl object-contain" /> : null}
           {question.imageUrls?.length ? (
             <div className="mt-4 grid gap-3 sm:grid-cols-2">
-              {question.imageUrls.map((imageUrl) => <img key={imageUrl} src={imageUrl} alt="" className="max-h-60 w-full rounded-xl object-contain" />)}
+              {question.imageUrls.map((imageUrl) => <img key={imageUrl} src={resolveFoundationAssetUrl(imageUrl)} alt="" className="max-h-60 w-full rounded-xl object-contain" />)}
             </div>
           ) : null}
           <fieldset className="mt-5 grid gap-3">

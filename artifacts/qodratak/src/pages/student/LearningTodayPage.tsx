@@ -30,6 +30,7 @@ import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { cn } from "@/lib/utils";
 import { foundationHrefForScope } from "@/lib/foundationRoutes.mjs";
+import { resolveFoundationAssetUrl } from "@/lib/foundationVideoUrl";
 
 function isUnauthorized(error: unknown) {
   return error instanceof StudentApiError && error.status === 401;
@@ -172,10 +173,10 @@ function QuestionActivity({
       <p className="text-xs font-black text-primary">تطبيق قصير</p>
       <h2 className="mt-2 text-xl font-black text-foreground">أجب ثم نراجع النتيجة معًا</h2>
       <p className="mt-5 text-base font-bold leading-8 text-foreground">{question.text}</p>
-      {question.imageUrl ? <img src={question.imageUrl} alt="" className="mt-5 max-h-72 w-full rounded-2xl object-contain" /> : null}
+      {question.imageUrl ? <img src={resolveFoundationAssetUrl(question.imageUrl)} alt="" className="mt-5 max-h-72 w-full rounded-2xl object-contain" /> : null}
       {question.imageUrls?.length ? (
         <div className="mt-5 grid gap-3 sm:grid-cols-2">
-          {question.imageUrls.map((imageUrl) => <img key={imageUrl} src={imageUrl} alt="" className="max-h-64 w-full rounded-2xl object-contain" />)}
+          {question.imageUrls.map((imageUrl) => <img key={imageUrl} src={resolveFoundationAssetUrl(imageUrl)} alt="" className="max-h-64 w-full rounded-2xl object-contain" />)}
         </div>
       ) : null}
       {result ? (

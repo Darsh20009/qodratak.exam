@@ -3,6 +3,7 @@ import formulasImg from "@assets/Screenshot_2026-03-08_071500_1772943315708.png"
 import { X, BookmarkCheck, Bookmark, Flag, AlertTriangle, CheckCircle2, LayoutGrid, ChevronRight, ChevronLeft } from "lucide-react";
 import ImageZoom from "@/components/ImageZoom";
 import { getQuestionImageUrls } from "@/lib/questionImages";
+import { resolveFoundationAssetUrl } from "@/lib/foundationVideoUrl";
 import { BrandMark } from "@/components/BrandMark";
 import { StudentExamChromeContext } from "@/components/student/StudentExamChromeContext";
 
@@ -343,7 +344,7 @@ export function QiyasExamLayout({
                   {questionImages.map((imageUrl, index) => (
                     <div key={`${imageUrl}-${index}`} className="flex justify-center">
                       <ImageZoom
-                        src={imageUrl}
+                        src={resolveFoundationAssetUrl(imageUrl)}
                         imgClassName="rounded-xl object-contain border border-gray-200 shadow-sm max-w-full"
                         imgStyle={{ maxHeight: '280px', maxWidth: '100%', width: 'auto' }}
                       />

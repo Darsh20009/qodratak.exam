@@ -3,6 +3,7 @@ import ImageZoom from "@/components/ImageZoom";
 import { useQuery } from "@tanstack/react-query";
 import { Link } from "wouter";
 import { cn } from "@/lib/utils";
+import { resolveFoundationAssetUrl } from "@/lib/foundationVideoUrl";
 import {
   ChevronRight, ChevronLeft, RotateCcw, CheckCircle2, XCircle,
   Trophy, Flame, BookOpen, Filter, ArrowRight, Star, Zap,
@@ -89,7 +90,7 @@ function FlipCard({
           {/* Question text */}
           <div className="flex-1 flex flex-col items-center justify-center px-6 py-6 text-center gap-4">
             {question.imageUrl && (
-              <ImageZoom src={question.imageUrl} imgClassName="max-h-28 rounded-xl object-contain" />
+              <ImageZoom src={resolveFoundationAssetUrl(question.imageUrl)} imgClassName="max-h-28 rounded-xl object-contain" />
             )}
             <p className="text-xl font-bold text-gray-900 dark:text-white leading-relaxed" dir="rtl">
               {question.text}

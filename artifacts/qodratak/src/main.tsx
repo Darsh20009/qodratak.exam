@@ -18,31 +18,60 @@ if ('serviceWorker' in navigator) {
 }
 
 if (import.meta.env.DEV) {
-  const originalConsoleError = console.error.bind(console);
-  console.error = (...args: any[]) => {
-    originalConsoleError(...args);
-    if (!args.some((arg) => typeof arg === "string" && arg.includes("Invalid hook call"))) return;
+  const logBrowserError = (
+    label: string,
+    error: unknown,
+    fallbackMessage: string,
+    source?: string,
+  ) => {
+    const message = error instanceof Error
+      ? `${error.name}: ${error.message}`
+      : String(error ?? fallbackMessage);
+    console.error(`[${label}] ${message}`);
 
-    const callSite = new Error("Invalid hook call trace").stack?.split("\n").slice(2, 14) || [];
-    for (const frame of callSite) {
-      originalConsoleError(`[Invalid hook call trace] ${frame.trim()}`);
+    if (error instanceof Error && error.stack) {
+      for (const frame of error.stack.split("\n").slice(1)) {
+        console.error(`[${label} stack] ${frame.trim()}`);
+      }
     }
+
+    if (source) console.error(`[${label} source] ${source}`);
   };
+
+  window.addEventListener("error", (event) => {
+    const source = event.filename
+      ? `${event.filename}:${event.lineno}:${event.colno}`
+      : undefined;
+    logBrowserError("Window error", event.error, event.message, source);
+  });
+
+  window.addEventListener("unhandledrejection", (event) => {
+    logBrowserError("Unhandled rejection", event.reason, "Unhandled promise rejection");
+  });
 }
 
-function formatReactRuntimeError(
+function logReactRuntimeError(
   label: string,
   error: unknown,
   componentStack?: string | null,
 ) {
-  const errorDetails = error instanceof Error
-    ? `${error.name}: ${error.message}${error.stack ? `\n${error.stack}` : ""}`
+  const message = error instanceof Error
+    ? `${error.name}: ${error.message}`
     : String(error);
-  const reactStack = componentStack
-    ? `\nReact component stack:\n${componentStack}`
-    : "";
+  console.error(`[${label}] ${message}`);
 
-  return `[${label}]\n${errorDetails}${reactStack}`;
+  if (error instanceof Error && error.stack) {
+    for (const frame of error.stack.split("\n").slice(1)) {
+      console.error(`[${label} JS stack] ${frame.trim()}`);
+    }
+  }
+
+  if (componentStack) {
+    console.error(`[${label}] React component stack:`);
+    for (const frame of componentStack.split("\n")) {
+      if (frame.trim()) console.error(`[${label} component] ${frame.trim()}`);
+    }
+  }
 }
 
 const root = createRoot(
@@ -50,11 +79,11 @@ const root = createRoot(
   import.meta.env.DEV
     ? {
         onCaughtError: (error, info) =>
-          console.error(formatReactRuntimeError("React caught", error, info.componentStack)),
+          logReactRuntimeError("React caught", error, info.componentStack),
         onUncaughtError: (error, info) =>
-          console.error(formatReactRuntimeError("React uncaught", error, info.componentStack)),
+          logReactRuntimeError("React uncaught", error, info.componentStack),
         onRecoverableError: (error, info) =>
-          console.error(formatReactRuntimeError("React recoverable", error, info.componentStack)),
+          logReactRuntimeError("React recoverable", error, info.componentStack),
       }
     : undefined,
 );
