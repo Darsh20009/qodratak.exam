@@ -3,6 +3,7 @@ import {
   FoundationContent,
   FoundationDiagnostic,
   FoundationDiagnosticQuestion,
+  FoundationLearningPath,
   FoundationLearningState,
   StudentDashboard,
   useFoundationContent,
@@ -20,6 +21,7 @@ import { ArrowLeft, BarChart3, BookOpen, CheckCircle2, Clock, FileText, Graduati
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Progress } from "@/components/ui/progress";
+import { ErrorBoundary } from "@/components/ErrorBoundary";
 import OfficialScoreCard from "@/components/student/OfficialScoreCard";
 import { getVideoEmbedUrl } from "@/lib/video";
 import {
@@ -31,7 +33,55 @@ import { getQuestionImageUrls } from "@/lib/questionImages";
 import { StudentWorkflow, workflowStageForLevel, type WorkflowStage } from "@/components/student/StudentWorkflow";
 
 function ProgressBar({ value, className = "" }: { value: number; className?: string }) {
-  return <Progress value={Math.max(0, Math.min(100, value))} className={`h-2.5 ${className}`} />;
+  const safeValue = Number.isFinite(value) ? Math.max(0, Math.min(100, value)) : 0;
+  return <Progress value={safeValue} className={`h-2.5 ${className}`} />;
+}
+
+function isFoundationLearningPath(value: unknown): value is FoundationLearningPath {
+  if (!value || typeof value !== "object") return false;
+
+  const path = value as Record<string, unknown>;
+  const coverage = path.coverage;
+  if (!Array.isArray(path.recommendations) || !coverage || typeof coverage !== "object") return false;
+
+  const coverageRecord = coverage as Record<string, unknown>;
+  const hasValidCoverage = ["covered", "total", "remaining", "percent"].every(
+    (key) => typeof coverageRecord[key] === "number" && Number.isFinite(coverageRecord[key]),
+  );
+  const hasValidRecommendations = path.recommendations.every((entry) => {
+    if (!entry || typeof entry !== "object") return false;
+    const recommendation = entry as Record<string, unknown>;
+    return typeof recommendation.skillKey === "string"
+      && typeof recommendation.title === "string"
+      && typeof recommendation.reason === "string"
+      && typeof recommendation.confidence === "number"
+      && Number.isFinite(recommendation.confidence)
+      && typeof recommendation.predictedCorrectProbability === "number"
+      && Number.isFinite(recommendation.predictedCorrectProbability);
+  });
+
+  return hasValidCoverage && hasValidRecommendations;
+}
+
+function FoundationPageErrorFallback() {
+  return (
+    <div className="mx-auto flex min-h-[60vh] max-w-xl flex-col items-center justify-center gap-4 p-6 text-center" dir="rtl">
+      <div className="rounded-2xl border border-destructive/20 bg-destructive/5 p-6">
+        <h1 className="text-xl font-black text-foreground">تعذر فتح صفحة التأسيس</h1>
+        <p className="mt-2 text-sm leading-7 text-muted-foreground">
+          لم تُحذف بياناتك. أعد تحميل الصفحة، أو ارجع إلى لوحة الطالب وحاول مرة أخرى.
+        </p>
+        <div className="mt-5 flex flex-wrap justify-center gap-2">
+          <Button type="button" className="rounded-xl" onClick={() => window.location.reload()}>
+            إعادة المحاولة
+          </Button>
+          <Button type="button" variant="outline" className="rounded-xl" onClick={() => window.location.assign(import.meta.env.BASE_URL)}>
+            لوحة الطالب
+          </Button>
+        </div>
+      </div>
+    </div>
+  );
 }
 
 function DashboardProgressCard({
@@ -445,6 +495,8 @@ function JourneyHome({
   onRetry,
   learningContent,
   isLearningContentLoading,
+  isLearningContentError,
+  onRetryLearningContent,
 }: {
   dashboard?: StudentDashboard;
   isLoading: boolean;
@@ -453,6 +505,8 @@ function JourneyHome({
   onRetry: () => void;
   learningContent: FoundationContent | null;
   isLearningContentLoading: boolean;
+  isLearningContentError: boolean;
+  onRetryLearningContent: () => void;
 }) {
   const progress = dashboard?.progress;
   const {
@@ -464,7 +518,7 @@ function JourneyHome({
   } = useFoundationLearningState("qudrat");
   const [diagnosticOpen, setDiagnosticOpen] = useState(false);
   const diagnosticComplete = learningState?.status === "diagnostic_completed";
-  const qudratProgress = progress?.qudrat.percentage || 0;
+  const qudratProgress = progress?.qudrat?.percentage || 0;
   const recommendation = learningState?.recommendation;
   const dashboardPlan = dashboard?.recommendedPlan;
   const workflowLevel = dashboardPlan?.level || "foundation";
@@ -492,7 +546,7 @@ function JourneyHome({
   }
 
   const nextActionHref = diagnosticComplete
-    ? dashboardPlan?.nextAction.href || recommendation?.href || "/foundation?program=qudrat&subject=verbal"
+    ? dashboardPlan?.nextAction?.href || recommendation?.href || "/foundation?program=qudrat&subject=verbal"
     : undefined;
 
   return (
@@ -507,6 +561,15 @@ function JourneyHome({
               : "ابدأ بتقييم قصير، ثم نحدد لك من أين تبدأ."}
           </p>
         </header>
+
+        {isLearningContentError && diagnosticComplete && (
+          <section role="alert" className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-amber-500/30 bg-amber-500/5 p-4">
+            <p className="text-sm leading-6 text-foreground">تعذر تحميل درس اليوم. يمكنك إعادة المحاولة أو متابعة بقية الرحلة.</p>
+            <Button type="button" variant="outline" className="rounded-xl" onClick={onRetryLearningContent}>
+              إعادة تحميل الدرس
+            </Button>
+          </section>
+        )}
 
         {!diagnosticComplete && (
           <section data-testid="foundation-diagnostic-next-step" className="flex flex-col gap-4 rounded-3xl border border-primary/20 bg-primary/5 p-5 sm:flex-row sm:items-center sm:justify-between sm:p-6">
@@ -540,7 +603,7 @@ function JourneyHome({
             title={workflowStage === "foundation" ? undefined : dashboardPlan?.title || recommendation?.title}
             description={workflowStage === "foundation" ? undefined : dashboardPlan?.description || recommendation?.reason}
             action={{
-              label: dashboardPlan?.nextAction.label || "ابدأ مهمتك",
+              label: dashboardPlan?.nextAction?.label || "ابدأ مهمتك",
               href: nextActionHref || "/foundation?program=qudrat&subject=verbal",
             }}
           />
@@ -626,7 +689,7 @@ function FoundationHome({
           <div className="rounded-2xl border border-white/10 bg-white/5 p-4 text-center">
             <Trophy className="mx-auto h-6 w-6 text-[#F7F775]" />
             <p className="mt-2 text-xs text-[#CBD5E1]">متوسط أدائك العام</p>
-            <p className="mt-1 text-3xl font-black">{isLoading ? "—" : `${progress?.overall.percentage || 0}%`}</p>
+            <p className="mt-1 text-3xl font-black">{isLoading ? "—" : `${progress?.overall?.percentage || 0}%`}</p>
           </div>
         </div>
         </header>
@@ -701,14 +764,14 @@ function FoundationHome({
               <h2 className="mt-1 text-xl font-black text-foreground">{plan?.title || "ابدأ بالتأسيس"}</h2>
               <p className="mt-2 text-sm leading-7 text-muted-foreground">{plan?.description || "ابدأ بالشرح، ثم طبّق، ثم اختبر نفسك."}</p>
               <Link
-                href={plan?.nextAction.href || "/foundation?program=qudrat"}
+                href={plan?.nextAction?.href || "/foundation?program=qudrat"}
                 onClick={(event) => {
                   event.preventDefault();
-                  setLocation(plan?.nextAction.href || "/foundation?program=qudrat");
+                  setLocation(plan?.nextAction?.href || "/foundation?program=qudrat");
                 }}
                 className="mt-4 inline-flex items-center gap-2 text-sm font-black text-primary hover:underline"
               >
-                {plan?.nextAction.label || "ابدأ الآن"} <ArrowLeft className="h-4 w-4" />
+                {plan?.nextAction?.label || "ابدأ الآن"} <ArrowLeft className="h-4 w-4" />
               </Link>
             </div>
           </div>
@@ -729,8 +792,8 @@ function FoundationHome({
             <h3 className="mt-5 text-2xl font-black text-foreground">دورة القدرات</h3>
             <p className="mt-2 text-sm leading-7 text-muted-foreground">قسم لفظي وقسم كمي، شرح مرتب، فيديوهات، وتمارين واختبارات من بنك المنصة.</p>
             <div className="mt-5 flex items-center gap-3">
-              <div className="flex-1"><ProgressBar value={progress?.qudrat.percentage || 0} /></div>
-              <span className="text-sm font-black text-primary">{progress?.qudrat.percentage || 0}%</span>
+              <div className="flex-1"><ProgressBar value={progress?.qudrat?.percentage || 0} /></div>
+              <span className="text-sm font-black text-primary">{progress?.qudrat?.percentage || 0}%</span>
             </div>
             <span className="mt-4 inline-flex items-center gap-2 text-sm font-black text-primary">دخول دورة القدرات <ArrowLeft className="h-4 w-4 transition-transform group-hover:-translate-x-1" /></span>
           </Link>
@@ -742,8 +805,8 @@ function FoundationHome({
             <h3 className="mt-5 text-2xl font-black text-foreground">دورة التحصيلي</h3>
             <p className="mt-2 text-sm leading-7 text-muted-foreground">أربعة مسارات: الرياضيات، الفيزياء، الكيمياء، والأحياء، وكل مسار له شرح وتدريب واختبار.</p>
             <div className="mt-5 flex items-center gap-3">
-              <div className="flex-1"><ProgressBar value={progress?.tahsili.percentage || 0} /></div>
-              <span className="text-sm font-black text-primary">{progress?.tahsili.percentage || 0}%</span>
+              <div className="flex-1"><ProgressBar value={progress?.tahsili?.percentage || 0} /></div>
+              <span className="text-sm font-black text-primary">{progress?.tahsili?.percentage || 0}%</span>
             </div>
             <span className="mt-4 inline-flex items-center gap-2 text-sm font-black text-primary">دخول دورة التحصيلي <ArrowLeft className="h-4 w-4 transition-transform group-hover:-translate-x-1" /></span>
           </Link>
@@ -763,7 +826,7 @@ function FoundationTrackOverview({
   dashboard?: StudentDashboard;
 }) {
   const [, setLocation] = useLocation();
-  const progress = program === "qudrat" ? dashboard?.progress.qudrat : dashboard?.progress.tahsili;
+  const progress = program === "qudrat" ? dashboard?.progress?.qudrat : dashboard?.progress?.tahsili;
   return (
     <div className="mx-auto max-w-6xl space-y-6 p-5 md:p-8" dir="rtl">
       <header className="rounded-[28px] bg-[#0D1B2A] p-6 text-white sm:p-8">
@@ -801,7 +864,7 @@ function FoundationTrackOverview({
   );
 }
 
-export default function FoundationPage() {
+function FoundationPageContent() {
   const [, setLocation] = useLocation();
   const queryString = useSearch();
   const params = new URLSearchParams(queryString);
@@ -828,10 +891,14 @@ export default function FoundationPage() {
   const {
     data: homeVerbalContent = [],
     isLoading: isHomeVerbalContentLoading,
+    isError: isHomeVerbalContentError,
+    refetch: refetchHomeVerbalContent,
   } = useFoundationContent("qudrat", !hasProgram, "subject.qudrat.verbal");
   const {
     data: homeQuantitativeContent = [],
     isLoading: isHomeQuantitativeContentLoading,
+    isError: isHomeQuantitativeContentError,
+    refetch: refetchHomeQuantitativeContent,
   } = useFoundationContent("qudrat", !hasProgram, "subject.qudrat.quantitative");
   const {
     data: foundationContent,
@@ -853,7 +920,7 @@ export default function FoundationPage() {
     refetch: refetchDashboard,
   } = useStudentDashboard(!hasSubject);
   const content = useMemo(() => {
-    return foundationContent || [];
+    return Array.isArray(foundationContent) ? foundationContent : [];
   }, [foundationContent]);
   const foundationBook = program === "qudrat"
     ? content.find((item) => item.title.startsWith("كتاب قدراتك · التأسيس"))
@@ -862,10 +929,14 @@ export default function FoundationPage() {
     () => new Set(completionSummary?.completedContentIds || []),
     [completionSummary?.completedContentIds],
   );
-  const homeLearningContent = homeVerbalContent[0] || homeQuantitativeContent[0] || null;
+  const safeHomeVerbalContent = Array.isArray(homeVerbalContent) ? homeVerbalContent : [];
+  const safeHomeQuantitativeContent = Array.isArray(homeQuantitativeContent) ? homeQuantitativeContent : [];
+  const homeLearningContent = safeHomeVerbalContent[0] || safeHomeQuantitativeContent[0] || null;
   const isHomeContentLoading = isHomeVerbalContentLoading || isHomeQuantitativeContentLoading;
   const selectedLessonIndex = selectedLesson ? content.findIndex((item) => item._id === selectedLesson._id) : -1;
-  const currentGuide = curriculum.lessons[Math.max(0, selectedLessonIndex) % curriculum.lessons.length];
+  const currentGuide = curriculum.lessons.length
+    ? curriculum.lessons[Math.max(0, selectedLessonIndex) % curriculum.lessons.length]
+    : { title: activeSection.title, summary: "", coaching: "" };
 
   useEffect(() => {
     if (content.length > 0) {
@@ -899,6 +970,11 @@ export default function FoundationPage() {
         onRetry={() => void refetchDashboard()}
         learningContent={homeLearningContent}
         isLearningContentLoading={isHomeContentLoading}
+        isLearningContentError={isHomeVerbalContentError || isHomeQuantitativeContentError}
+        onRetryLearningContent={() => {
+          void refetchHomeVerbalContent();
+          void refetchHomeQuantitativeContent();
+        }}
       />
     );
   }
@@ -1009,7 +1085,7 @@ export default function FoundationPage() {
                 تعذر تحميل التخصيص الآن.
                 <Button type="button" variant="link" onClick={() => void refetchFoundationPath()} className="mr-1 h-auto p-0 text-destructive">إعادة المحاولة</Button>
               </div>
-            ) : foundationPath ? (
+            ) : isFoundationLearningPath(foundationPath) ? (
               <>
                 <div className="mt-4 space-y-2">
                   {foundationPath.recommendations.slice(0, 3).map((recommendation, index) => (
@@ -1033,6 +1109,13 @@ export default function FoundationPage() {
                   <ProgressBar value={foundationPath.coverage.percent} className="mt-2" />
                 </div>
               </>
+            ) : foundationPath ? (
+              <div role="alert" className="mt-4 rounded-xl border border-amber-500/30 bg-amber-500/5 p-3 text-sm text-foreground">
+                <p>بيانات المسار غير مكتملة، لكن يمكنك متابعة الدروس واختبار التغطية.</p>
+                <Button type="button" variant="link" onClick={() => void refetchFoundationPath()} className="mr-1 h-auto p-0">
+                  إعادة تحميل المسار
+                </Button>
+              </div>
             ) : null}
           </div>
         </section>
@@ -1312,5 +1395,13 @@ export default function FoundationPage() {
       </section>
 
     </div>
+  );
+}
+
+export default function FoundationPage() {
+  return (
+    <ErrorBoundary fallback={<FoundationPageErrorFallback />}>
+      <FoundationPageContent />
+    </ErrorBoundary>
   );
 }
