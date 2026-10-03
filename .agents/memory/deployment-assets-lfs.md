@@ -26,3 +26,9 @@ GitHub's warning threshold for regular Git files is distinct from whether a push
 **Why:** A successful chunked upload still produced GH001 warnings for regular media files between roughly 57 MB and 94 MB.
 
 **How to apply:** Check per-file sizes separately from total pack size. Chunking addresses pack transfer size; if the user approves LFS, consider migrating warning-size media too, while confirming the deployment builder can fetch it.
+
+Git LFS reduces Git pack size but does not reduce checkout disk usage when the builder downloads the media. Keep full media libraries out of a constrained deployment checkout unless the builder has enough space or the app reads them from external persistent storage.
+
+**Why:** Render failed while cloning this media-heavy repository because its temporary `/project` volume is limited to 32 GB; the source media alone occupies tens of gigabytes.
+
+**How to apply:** Estimate materialized checkout size, not just `.git` pack size or pointer size. Excluding media from the Docker build context can reduce later build layers, but cannot fix a clone that already exceeds the checkout volume.
