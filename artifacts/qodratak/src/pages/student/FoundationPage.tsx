@@ -37,20 +37,77 @@ function ProgressBar({ value, className = "" }: { value: number; className?: str
   return <Progress value={safeValue} className={`h-2.5 ${className}`} />;
 }
 
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return Boolean(value) && typeof value === "object" && !Array.isArray(value);
+}
+
+function normalizeFoundationContent(value: unknown, requestedProgram: FoundationProgram): FoundationContent[] {
+  if (!Array.isArray(value)) return [];
+
+  return value.flatMap((entry, index) => {
+    if (!isRecord(entry) || typeof entry._id !== "string" || !entry._id.trim()) return [];
+
+    const attachments = Array.isArray(entry.attachments)
+      ? entry.attachments.flatMap((attachment, attachmentIndex) => {
+          if (!isRecord(attachment) || typeof attachment.url !== "string" || !attachment.url.trim()) return [];
+          return [{
+            id: typeof attachment.id === "string" && attachment.id
+              ? attachment.id
+              : `${entry._id}-attachment-${attachmentIndex}`,
+            type: "pdf" as const,
+            title: typeof attachment.title === "string" ? attachment.title : "",
+            url: attachment.url,
+            originalName: typeof attachment.originalName === "string" ? attachment.originalName : "",
+            contentType: "application/pdf" as const,
+            ...(typeof attachment.bytes === "number" && Number.isFinite(attachment.bytes)
+              ? { bytes: attachment.bytes }
+              : {}),
+          }];
+        })
+      : [];
+
+    const rawQuiz = isRecord(entry.quiz) ? entry.quiz : null;
+    const quiz = rawQuiz && Array.isArray(rawQuiz.questionIds)
+      ? {
+          title: typeof rawQuiz.title === "string" ? rawQuiz.title : "اختبار الدرس",
+          ...(typeof rawQuiz.instructions === "string" ? { instructions: rawQuiz.instructions } : {}),
+          passingScore: typeof rawQuiz.passingScore === "number" && Number.isFinite(rawQuiz.passingScore)
+            ? rawQuiz.passingScore
+            : 0,
+          ...(typeof rawQuiz.timeLimitMinutes === "number" && Number.isFinite(rawQuiz.timeLimitMinutes)
+            ? { timeLimitMinutes: rawQuiz.timeLimitMinutes }
+            : {}),
+          questionIds: rawQuiz.questionIds,
+        } as NonNullable<FoundationContent["quiz"]>
+      : undefined;
+
+    return [{
+      ...entry,
+      _id: entry._id,
+      program: entry.program === "qudrat" || entry.program === "tahsili" ? entry.program : requestedProgram,
+      title: typeof entry.title === "string" ? entry.title : "درس تأسيسي",
+      description: typeof entry.description === "string" ? entry.description : "",
+      videoUrl: typeof entry.videoUrl === "string" ? entry.videoUrl : "",
+      order: typeof entry.order === "number" && Number.isFinite(entry.order) ? entry.order : index,
+      attachments,
+      quiz,
+    } as FoundationContent];
+  });
+}
+
 function isFoundationLearningPath(value: unknown): value is FoundationLearningPath {
-  if (!value || typeof value !== "object") return false;
+  if (!isRecord(value)) return false;
 
-  const path = value as Record<string, unknown>;
+  const path = value;
   const coverage = path.coverage;
-  if (!Array.isArray(path.recommendations) || !coverage || typeof coverage !== "object") return false;
+  if (!Array.isArray(path.recommendations) || !isRecord(coverage)) return false;
 
-  const coverageRecord = coverage as Record<string, unknown>;
   const hasValidCoverage = ["covered", "total", "remaining", "percent"].every(
-    (key) => typeof coverageRecord[key] === "number" && Number.isFinite(coverageRecord[key]),
+    (key) => typeof coverage[key] === "number" && Number.isFinite(coverage[key]),
   );
   const hasValidRecommendations = path.recommendations.every((entry) => {
-    if (!entry || typeof entry !== "object") return false;
-    const recommendation = entry as Record<string, unknown>;
+    if (!isRecord(entry)) return false;
+    const recommendation = entry;
     return typeof recommendation.skillKey === "string"
       && typeof recommendation.title === "string"
       && typeof recommendation.reason === "string"
@@ -63,14 +120,22 @@ function isFoundationLearningPath(value: unknown): value is FoundationLearningPa
   return hasValidCoverage && hasValidRecommendations;
 }
 
-function FoundationPageErrorFallback() {
+function FoundationPageErrorFallback({ error }: { error: Error | null }) {
   return (
     <div className="mx-auto flex min-h-[60vh] max-w-xl flex-col items-center justify-center gap-4 p-6 text-center" dir="rtl">
       <div className="rounded-2xl border border-destructive/20 bg-destructive/5 p-6">
         <h1 className="text-xl font-black text-foreground">تعذر فتح صفحة التأسيس</h1>
         <p className="mt-2 text-sm leading-7 text-muted-foreground">
-          لم تُحذف بياناتك. أعد تحميل الصفحة، أو ارجع إلى لوحة الطالب وحاول مرة أخرى.
+          حدث خطأ أثناء عرض الصفحة. أعد المحاولة، وإذا تكرر أرسل تفاصيل الخطأ للدعم.
         </p>
+        {import.meta.env.DEV && error && (
+          <details className="mt-4 rounded-xl border border-destructive/20 bg-background p-3 text-right">
+            <summary className="cursor-pointer text-xs font-bold text-muted-foreground">تفاصيل التشخيص</summary>
+            <pre dir="ltr" className="mt-2 max-h-40 overflow-auto whitespace-pre-wrap break-words text-left text-xs text-destructive">
+              {error.name}: {error.message}
+            </pre>
+          </details>
+        )}
         <div className="mt-5 flex flex-wrap justify-center gap-2">
           <Button type="button" className="rounded-xl" onClick={() => window.location.reload()}>
             إعادة المحاولة
@@ -919,18 +984,29 @@ function FoundationPageContent() {
     error: dashboardError,
     refetch: refetchDashboard,
   } = useStudentDashboard(!hasSubject);
-  const content = useMemo(() => {
-    return Array.isArray(foundationContent) ? foundationContent : [];
-  }, [foundationContent]);
+  const content = useMemo(
+    () => normalizeFoundationContent(foundationContent, program),
+    [foundationContent, program],
+  );
   const foundationBook = program === "qudrat"
     ? content.find((item) => item.title.startsWith("كتاب قدراتك · التأسيس"))
     : undefined;
   const completedContentIds = useMemo(
-    () => new Set(completionSummary?.completedContentIds || []),
+    () => new Set(
+      Array.isArray(completionSummary?.completedContentIds)
+        ? completionSummary.completedContentIds.filter((id): id is string => typeof id === "string")
+        : [],
+    ),
     [completionSummary?.completedContentIds],
   );
-  const safeHomeVerbalContent = Array.isArray(homeVerbalContent) ? homeVerbalContent : [];
-  const safeHomeQuantitativeContent = Array.isArray(homeQuantitativeContent) ? homeQuantitativeContent : [];
+  const safeHomeVerbalContent = useMemo(
+    () => normalizeFoundationContent(homeVerbalContent, "qudrat"),
+    [homeVerbalContent],
+  );
+  const safeHomeQuantitativeContent = useMemo(
+    () => normalizeFoundationContent(homeQuantitativeContent, "qudrat"),
+    [homeQuantitativeContent],
+  );
   const homeLearningContent = safeHomeVerbalContent[0] || safeHomeQuantitativeContent[0] || null;
   const isHomeContentLoading = isHomeVerbalContentLoading || isHomeQuantitativeContentLoading;
   const selectedLessonIndex = selectedLesson ? content.findIndex((item) => item._id === selectedLesson._id) : -1;
@@ -1400,7 +1476,7 @@ function FoundationPageContent() {
 
 export default function FoundationPage() {
   return (
-    <ErrorBoundary fallback={<FoundationPageErrorFallback />}>
+    <ErrorBoundary fallback={(error) => <FoundationPageErrorFallback error={error} />}>
       <FoundationPageContent />
     </ErrorBoundary>
   );
