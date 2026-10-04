@@ -14,3 +14,17 @@ mtime_ms = 1790771881422
 storage_uri = "gcs://replit-rams-assets-pike/rams/assets/repl:79f460e2-89e6-494d-9d5c-e2f64f1b6716/73d1dd11-1585-491b-b472-188556a0df49/fbdd013b-c8ac-4ce1-8931-e0937e0a9e91"
 storage_version_token = "1790771897745370"
 content_type = "image/png"
+
+[[outputs]]
+id = "djuQAcTu7jBKhzcAr1vLn"
+uri = "file://research/notes.md"
+type = "text"
+title = "بحث كتاب القدرات الكمي"
+description = "خطة البحث وأسئلة التغطية وملاحظات المصادر التي ستوجّه بناء الكتاب."
+logical_id = "9e185fd6-7fde-42c3-8214-ec2dbcb88245"
+content_hash = "sha256:824e74fc3a29914e8259a2f9afabe5fb1f33ed342333f088bd3842f6e58c3aea"
+size = 2023
+mtime_ms = 1791137421127
+storage_uri = "gcs://replit-rams-assets-pike/rams/assets/repl:79f460e2-89e6-494d-9d5c-e2f64f1b6716/9e185fd6-7fde-42c3-8214-ec2dbcb88245/6f7f20c5-5114-46b1-b272-655a1807d1c7"
+storage_version_token = "1791137472007594"
+content_type = "text/markdown"

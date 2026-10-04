@@ -1,4 +1,9 @@
 import type { Express, Request, Response } from "express";
+import {
+  GetQudratQuantitativeBookLessonParams,
+  SubmitQudratQuantitativeBookLessonBody,
+  SubmitQudratQuantitativeBookLessonParams,
+} from "@workspace/api-zod";
 import { createServer, type Server } from "http";
 import mongoose from 'mongoose';
 import passport from 'passport';
@@ -59,6 +64,12 @@ import {
   publicLearningErrorEvidence,
   recordSelfReportedLearningErrorEvidence,
 } from '../services/learningErrorService';
+import {
+  getQudratQuantitativeBook,
+  getQudratQuantitativeBookLesson,
+  QuantitativeBookServiceError,
+  submitQudratQuantitativeBookLesson,
+} from '../services/qudratQuantitativeBookService';
 import {
   MasteryError,
   listApprovedMasteryNodes,
@@ -12352,6 +12363,65 @@ app.post("/api/auth/register", async (req: Request, res: Response) => {
 
   app.get('/api/learning/foundation-path/quantitative', requireAuth, async (req: Request, res: Response): Promise<void> => {
     await handleFoundationLearningPath(req, res, 'subject.qudrat.quantitative');
+  });
+
+  app.get('/api/learning/foundation-book/quantitative', requireAuth, async (req: Request, res: Response): Promise<void> => {
+    const userId = studentOnly(req, res);
+    if (!userId) return;
+    try {
+      const result = await getQudratQuantitativeBook(userId);
+      res.json(result);
+    } catch (error) {
+      req.log.error({ err: error }, 'Failed to load Qudrat quantitative book');
+      res.status(503).json({ error: 'تعذر تحميل تقدم الكتاب الكمي' });
+    }
+  });
+
+  app.get('/api/learning/foundation-book/quantitative/lessons/:lessonId', requireAuth, async (req: Request, res: Response): Promise<void> => {
+    const userId = studentOnly(req, res);
+    if (!userId) return;
+    const params = GetQudratQuantitativeBookLessonParams.safeParse(req.params);
+    if (!params.success) {
+      res.status(400).json({ error: 'معرف الوحدة غير صالح' });
+      return;
+    }
+    try {
+      const result = await getQudratQuantitativeBookLesson(userId, params.data.lessonId);
+      res.json(result);
+    } catch (error) {
+      if (error instanceof QuantitativeBookServiceError) {
+        res.status(error.statusCode).json({ error: error.message });
+        return;
+      }
+      req.log.error({ err: error, lessonId: params.data.lessonId }, 'Failed to load Qudrat quantitative lesson');
+      res.status(503).json({ error: 'تعذر تحميل الوحدة' });
+    }
+  });
+
+  app.post('/api/learning/foundation-book/quantitative/lessons/:lessonId/submit', requireAuth, async (req: Request, res: Response): Promise<void> => {
+    const userId = studentOnly(req, res);
+    if (!userId) return;
+    const params = SubmitQudratQuantitativeBookLessonParams.safeParse(req.params);
+    if (!params.success) {
+      res.status(400).json({ error: 'معرف الوحدة غير صالح' });
+      return;
+    }
+    const body = SubmitQudratQuantitativeBookLessonBody.safeParse(req.body);
+    if (!body.success) {
+      res.status(400).json({ error: 'بيانات الاختبار غير صالحة' });
+      return;
+    }
+    try {
+      const result = await submitQudratQuantitativeBookLesson(userId, params.data.lessonId, body.data);
+      res.json(result);
+    } catch (error) {
+      if (error instanceof QuantitativeBookServiceError) {
+        res.status(error.statusCode).json({ error: error.message });
+        return;
+      }
+      req.log.error({ err: error, lessonId: params.data.lessonId }, 'Failed to submit Qudrat quantitative quiz');
+      res.status(503).json({ error: 'تعذر حفظ نتيجة الاختبار' });
+    }
   });
 
   app.get('/api/foundation-content', requireAuth, async (req: Request, res: Response) => {

@@ -1,0 +1,145 @@
+{
+  "accessedAt": "2026-10-04",
+  "sources": [
+    {
+      "id": "etec-guide",
+      "title": "الدليل الإرشادي لاختبار القدرات العامة",
+      "organization": "هيئة تقويم التعليم والتدريب",
+      "url": "https://media.etec.gov.sa/media/1izihxlo/%D8%A7%D9%84%D8%AF%D9%84%D9%8A%D9%84-%D8%A7%D9%84%D8%A7-%D8%B1%D8%B4%D8%A7%D8%AF%D9%8A-%D9%84%D8%A7%D8%AE%D8%AA%D8%A8%D8%A7%D8%B1-%D8%A7%D9%84%D9%82%D8%AF%D8%B1%D8%A7%D8%AA-%D8%A7%D9%84%D8%B9%D8%A7%D9%85%D8%A9.pdf",
+      "usage": "Official exam context only; full PDF text was not extracted in this pass."
+    },
+    {
+      "id": "etec-sample",
+      "title": "اختبار القدرات العامة العلمي — اختبار تجريبي",
+      "organization": "هيئة تقويم التعليم والتدريب",
+      "url": "https://media.etec.gov.sa/media/wu5lwhvf/%D8%A7%D8%AE%D8%AA%D8%A8%D8%A7%D8%B1-%D8%A7%D9%84%D9%82%D8%AF%D8%B1%D8%A7%D8%AA-%D8%A7%D9%84%D8%B9%D8%A7%D9%85%D8%A9-%D8%A7%D9%84%D8%B9%D9%84%D9%85%D9%8A-%D8%A7%D8%AE%D8%AA%D8%A8%D8%A7%D8%B1-%D8%AA%D8%AC%D8%B1%D9%8A%D8%A8%D9%8A.pdf",
+      "usage": "Official quantitative-word-problem context. Do not copy the sample question."
+    },
+    {
+      "id": "os-index",
+      "title": "Prealgebra 2e Index",
+      "organization": "OpenStax",
+      "url": "https://openstax.org/books/prealgebra-2e/pages/index",
+      "usage": "Source sequence and section index for the 50-topic map."
+    },
+    {
+      "id": "os-factors",
+      "title": "2.4 Find Multiples and Factors",
+      "organization": "OpenStax",
+      "url": "https://openstax.org/books/prealgebra-2e/pages/2-4-find-multiples-and-factors",
+      "usage": "Multiples, factors, and divisibility."
+    },
+    {
+      "id": "os-primes",
+      "title": "2.5 Prime Factorization and the Least Common Multiple",
+      "organization": "OpenStax",
+      "url": "https://openstax.org/books/prealgebra-2e/pages/2-5-prime-factorization-and-the-least-common-multiple",
+      "usage": "Prime factorization and LCM foundations."
+    },
+    {
+      "id": "os-add-integers",
+      "title": "3.2 Add Integers",
+      "organization": "OpenStax",
+      "url": "https://openstax.org/books/prealgebra-2e/pages/3-2-add-integers",
+      "usage": "Integer addition and number-line reasoning."
+    },
+    {
+      "id": "os-subtract-integers",
+      "title": "3.3 Subtract Integers",
+      "organization": "OpenStax",
+      "url": "https://openstax.org/books/prealgebra-2e/pages/3-3-subtract-integers",
+      "usage": "Integer subtraction and additive inverses."
+    },
+    {
+      "id": "os-integers",
+      "title": "3.4 Multiply and Divide Integers",
+      "organization": "OpenStax",
+      "url": "https://openstax.org/books/prealgebra-2e/pages/3-4-multiply-and-divide-integers",
+      "usage": "Sign rules for multiplication and division."
+    },
+    {
+      "id": "os-fractions",
+      "title": "4.1 Visualize Fractions",
+      "organization": "OpenStax",
+      "url": "https://openstax.org/books/prealgebra-2e/pages/4-1-visualize-fractions",
+      "usage": "Fraction meaning, models, and equivalent fractions."
+    },
+    {
+      "id": "os-fraction-add-same-denominator",
+      "title": "4.4 Add and Subtract Fractions with Common Denominators",
+      "organization": "OpenStax",
+      "url": "https://openstax.org/books/prealgebra-2e/pages/4-4-add-and-subtract-fractions-with-common-denominators",
+      "usage": "Fraction addition and subtraction."
+    },
+    {
+      "id": "os-fraction-add-different-denominator",
+      "title": "4.5 Add and Subtract Fractions with Different Denominators",
+      "organization": "OpenStax",
+      "url": "https://openstax.org/books/prealgebra-2e/pages/4-5-add-and-subtract-fractions-with-different-denominators",
+      "usage": "Common denominators and fraction addition/subtraction."
+    },
+    {
+      "id": "os-decimals",
+      "title": "5.2 Decimal Operations",
+      "organization": "OpenStax",
+      "url": "https://openstax.org/books/prealgebra-2e/pages/5-2-decimal-operations",
+      "usage": "Decimal operations and fraction conversion."
+    },
+    {
+      "id": "os-proportions",
+      "title": "6.5 Solve Proportions and their Applications",
+      "organization": "OpenStax",
+      "url": "https://openstax.org/books/prealgebra-2e/pages/6-5-solve-proportions-and-their-applications",
+      "usage": "Proportion solving and applied rate problems."
+    },
+    {
+      "id": "os-statistics",
+      "title": "5.5 Averages and Probability",
+      "organization": "OpenStax",
+      "url": "https://openstax.org/books/prealgebra-2e/pages/5-5-averages-and-probability",
+      "usage": "Mean, median, and introductory probability."
+    },
+    {
+      "id": "os-roots",
+      "title": "5.7 Simplify and Use Square Roots",
+      "organization": "OpenStax",
+      "url": "https://openstax.org/books/prealgebra-2e/pages/5-7-simplify-and-use-square-roots",
+      "usage": "Square roots and estimation."
+    },
+    {
+      "id": "os-geometry",
+      "title": "9.6 Solve Geometry Applications: Volume and Surface Area",
+      "organization": "OpenStax",
+      "url": "https://openstax.org/books/prealgebra-2e/pages/9-6-solve-geometry-applications-volume-and-surface-area",
+      "usage": "Volume and surface-area application problems."
+    },
+    {
+      "id": "os-slope",
+      "title": "11.4 Understand Slope of a Line",
+      "organization": "OpenStax",
+      "url": "https://openstax.org/books/prealgebra-2e/pages/11-4-understand-slope-of-a-line",
+      "usage": "Coordinate reasoning and slope."
+    },
+    {
+      "id": "im-ratio-6",
+      "title": "Grade 6 Ratios and Proportional Relationships",
+      "organization": "Illustrative Mathematics",
+      "url": "https://tasks.illustrativemathematics.org/content-standards/6/RP/A",
+      "usage": "Ratio concepts and ratio reasoning."
+    },
+    {
+      "id": "im-ratio-7",
+      "title": "Grade 7 Ratios and Proportional Relationships",
+      "organization": "Illustrative Mathematics",
+      "url": "https://tasks.illustrativemathematics.org/content-standards/7/RP/A",
+      "usage": "Proportional relationships and applications."
+    },
+    {
+      "id": "im-equations-8",
+      "title": "Grade 8 Expressions and Equations",
+      "organization": "Illustrative Mathematics",
+      "url": "https://tasks.illustrativemathematics.org/content-standards/8/EE/C",
+      "usage": "Linear equations and algebraic reasoning."
+    }
+  ]
+}

@@ -1366,6 +1366,12 @@ function FoundationPageContent() {
          <Button type="button" className="mt-4 rounded-xl font-black" onClick={() => setLocation(subjectActionHref)}>
            {program === "tahsili" ? "ابدأ اختبار هذه المادة" : "ابدأ مهمة اليوم"}
          </Button>
+          {program === "qudrat" && (
+            <Link href="/student/foundation-book/quantitative" className="mt-4 inline-flex items-center gap-2 rounded-xl border border-[#9daa86] bg-[#edf0e2] px-4 py-3 text-sm font-black text-[#365846] transition hover:bg-[#e2e8d3]">
+              <BookOpen className="h-4 w-4" />
+              كتاب التأسيس الكمي · خارطة ٥٠ موضوعًا
+            </Link>
+          )}
       </header>
 
        <FoundationResourceAvailability

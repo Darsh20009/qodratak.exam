@@ -159,6 +159,7 @@ import FoundationPage from "@/pages/student/FoundationPage";
 import FoundationCoverageTestPage from "@/pages/student/FoundationCoverageTestPage";
 import FoundationBankTestPage from "@/pages/student/FoundationBankTestPage";
 import FoundationReaderPage from "@/pages/student/FoundationReaderPage";
+import { QuantitativeBookOverviewPage, QuantitativeBookLessonPage } from "@/pages/student/QuantitativeBookPage";
 import LearningTodayPage from "@/pages/student/LearningTodayPage";
 import ComputerizedPage from "@/pages/student/ComputerizedPage";
 import AccountPage from "@/pages/student/AccountPage";
@@ -902,6 +903,12 @@ function Router({ splashDone }: { splashDone: boolean }) {
 
       <Route path="/foundation">
         {() => <StudentShell><ProtectedRoute><FoundationPage /></ProtectedRoute></StudentShell>}
+      </Route>
+      <Route path="/student/foundation-book/quantitative">
+        {() => <StudentShell><ProtectedRoute><QuantitativeBookOverviewPage /></ProtectedRoute></StudentShell>}
+      </Route>
+      <Route path="/student/foundation-book/quantitative/:lessonId">
+        {(params) => <StudentShell><ProtectedRoute><QuantitativeBookLessonPage lessonId={params.lessonId} /></ProtectedRoute></StudentShell>}
       </Route>
       <Route path="/foundation/coverage-test">
         {() => <StudentShell><ProtectedRoute><FoundationCoverageTestPage /></ProtectedRoute></StudentShell>}

@@ -101,6 +101,144 @@ export const GetQuantitativeFoundationLearningPathResponse = zod.object({
 
 
 /**
+ * @summary Get the Qudrat quantitative pilot book and student progress
+ */
+export const GetQudratQuantitativeBookResponse = zod.object({
+  "id": zod.string(),
+  "title": zod.string(),
+  "description": zod.string(),
+  "passingScore": zod.number(),
+  "totalTopicCount": zod.number(),
+  "publishedLessonCount": zod.number(),
+  "completedLessonCount": zod.number(),
+  "chapters": zod.array(zod.object({
+  "id": zod.string(),
+  "title": zod.string(),
+  "order": zod.number(),
+  "topics": zod.array(zod.object({
+  "id": zod.string(),
+  "title": zod.string(),
+  "order": zod.number(),
+  "summary": zod.string(),
+  "status": zod.enum(['available', 'locked', 'completed', 'coming_soon']),
+  "attemptCount": zod.number(),
+  "lastScore": zod.number().nullable()
+}))
+})),
+  "focus": zod.union([zod.object({
+  "skillCode": zod.string(),
+  "title": zod.string(),
+  "message": zod.string(),
+  "observations": zod.number()
+}),zod.null()])
+})
+
+
+/**
+ * @summary Get one published lesson and its current quiz set
+ */
+export const GetQudratQuantitativeBookLessonParams = zod.object({
+  "lessonId": zod.coerce.string()
+})
+
+export const getQudratQuantitativeBookLessonResponseQuestionsItemOptionsMin = 2;
+
+
+
+export const GetQudratQuantitativeBookLessonResponse = zod.object({
+  "id": zod.string(),
+  "title": zod.string(),
+  "chapterTitle": zod.string(),
+  "summary": zod.string(),
+  "estimatedMinutes": zod.number(),
+  "passingScore": zod.number(),
+  "sections": zod.array(zod.object({
+  "id": zod.string(),
+  "kind": zod.enum(['concept', 'rule', 'example', 'warning']),
+  "title": zod.string(),
+  "paragraphs": zod.array(zod.string()),
+  "workedExample": zod.union([zod.object({
+  "question": zod.string(),
+  "steps": zod.array(zod.string()),
+  "answer": zod.string()
+}),zod.null()]).optional()
+})),
+  "sources": zod.array(zod.object({
+  "id": zod.string(),
+  "title": zod.string(),
+  "organization": zod.string(),
+  "url": zod.string()
+})),
+  "mode": zod.enum(['assessment', 'remediation']),
+  "questions": zod.array(zod.object({
+  "id": zod.string(),
+  "skillCode": zod.string(),
+  "prompt": zod.string(),
+  "options": zod.array(zod.string()).min(getQudratQuantitativeBookLessonResponseQuestionsItemOptionsMin)
+})),
+  "focusSkills": zod.array(zod.object({
+  "skillCode": zod.string(),
+  "title": zod.string()
+}))
+})
+
+
+/**
+ * @summary Submit and server-grade a Qudrat quantitative lesson quiz
+ */
+export const SubmitQudratQuantitativeBookLessonParams = zod.object({
+  "lessonId": zod.coerce.string()
+})
+
+export const submitQudratQuantitativeBookLessonBodyAnswersItemQuestionIdMax = 80;
+
+export const submitQudratQuantitativeBookLessonBodyAnswersItemSelectedOptionIndexMin = 0;
+export const submitQudratQuantitativeBookLessonBodyAnswersItemSelectedOptionIndexMax = 20;
+
+export const submitQudratQuantitativeBookLessonBodyAnswersMax = 20;
+
+export const submitQudratQuantitativeBookLessonBodyTimeTakenSecondsMin = 0;
+export const submitQudratQuantitativeBookLessonBodyTimeTakenSecondsMax = 7200;
+
+export const submitQudratQuantitativeBookLessonBodyIdempotencyKeyMin = 8;
+export const submitQudratQuantitativeBookLessonBodyIdempotencyKeyMax = 120;
+
+
+
+export const SubmitQudratQuantitativeBookLessonBody = zod.object({
+  "answers": zod.array(zod.object({
+  "questionId": zod.string().min(1).max(submitQudratQuantitativeBookLessonBodyAnswersItemQuestionIdMax),
+  "selectedOptionIndex": zod.number().min(submitQudratQuantitativeBookLessonBodyAnswersItemSelectedOptionIndexMin).max(submitQudratQuantitativeBookLessonBodyAnswersItemSelectedOptionIndexMax)
+})).min(1).max(submitQudratQuantitativeBookLessonBodyAnswersMax),
+  "timeTakenSeconds": zod.number().min(submitQudratQuantitativeBookLessonBodyTimeTakenSecondsMin).max(submitQudratQuantitativeBookLessonBodyTimeTakenSecondsMax),
+  "idempotencyKey": zod.string().min(submitQudratQuantitativeBookLessonBodyIdempotencyKeyMin).max(submitQudratQuantitativeBookLessonBodyIdempotencyKeyMax)
+})
+
+export const SubmitQudratQuantitativeBookLessonResponse = zod.object({
+  "lessonId": zod.string(),
+  "score": zod.number(),
+  "correctAnswers": zod.number(),
+  "totalQuestions": zod.number(),
+  "passed": zod.boolean(),
+  "passingScore": zod.number(),
+  "attemptNumber": zod.number(),
+  "questionDetails": zod.array(zod.object({
+  "questionId": zod.string(),
+  "skillCode": zod.string(),
+  "prompt": zod.string(),
+  "selectedOptionIndex": zod.number().nullable(),
+  "selectedOptionText": zod.string().nullable(),
+  "isCorrect": zod.boolean(),
+  "correctOptionIndex": zod.number(),
+  "correctAnswer": zod.string(),
+  "explanation": zod.string(),
+  "selectedOptionFeedback": zod.string().nullable()
+})),
+  "unlockedNextLessonId": zod.string().nullable()
+})
+
+
+/**
  * @summary Create a personalized question-bank coverage test
  */
 export const createFoundationCoverageTestBodyCountMin = 5;

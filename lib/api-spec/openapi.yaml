@@ -66,6 +66,86 @@ paths:
           description: Authentication required
         "503":
           description: Foundation book or personalization service is unavailable
+  /learning/foundation-book/quantitative:
+    get:
+      operationId: getQudratQuantitativeBook
+      tags: [learning]
+      summary: Get the Qudrat quantitative pilot book and student progress
+      responses:
+        "200":
+          description: Published lesson map and student-specific progression
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/QuantitativeBookOverview"
+        "401":
+          description: Authentication required
+        "503":
+          description: Book progress is unavailable
+  /learning/foundation-book/quantitative/lessons/{lessonId}:
+    get:
+      operationId: getQudratQuantitativeBookLesson
+      tags: [learning]
+      summary: Get one published lesson and its current quiz set
+      parameters:
+        - name: lessonId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Lesson content, cited sources, and unanswered quiz questions
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/QuantitativeBookLesson"
+        "400":
+          description: Invalid lesson identifier
+        "401":
+          description: Authentication required
+        "403":
+          description: The lesson is still locked by the mastery sequence
+        "404":
+          description: Lesson is not published
+        "503":
+          description: Lesson progress is unavailable
+  /learning/foundation-book/quantitative/lessons/{lessonId}/submit:
+    post:
+      operationId: submitQudratQuantitativeBookLesson
+      tags: [learning]
+      summary: Submit and server-grade a Qudrat quantitative lesson quiz
+      parameters:
+        - name: lessonId
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/QuantitativeBookQuizInput"
+      responses:
+        "200":
+          description: Score, worked feedback, and unlock status
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/QuantitativeBookQuizResult"
+        "400":
+          description: Invalid or incomplete quiz answers
+        "401":
+          description: Authentication required
+        "403":
+          description: The lesson is locked
+        "404":
+          description: Lesson or current quiz set not found
+        "409":
+          description: The quiz submission conflicts with an earlier request
+        "503":
+          description: Quiz progress could not be stored
   /learning/foundation-test:
     post:
       operationId: createFoundationCoverageTest
@@ -436,4 +516,196 @@ components:
         wrongAnswers: { type: number }
         skippedQuestions: { type: number }
         percentage: { type: number }
+    QuantitativeBookTopic:
+      type: object
+      additionalProperties: false
+      required: [id, title, order, summary, status, attemptCount, lastScore]
+      properties:
+        id: { type: string }
+        title: { type: string }
+        order: { type: number }
+        summary: { type: string }
+        status:
+          type: string
+          enum: [available, locked, completed, coming_soon]
+        attemptCount: { type: number }
+        lastScore: { type: ["number", "null"] }
+    QuantitativeBookChapter:
+      type: object
+      additionalProperties: false
+      required: [id, title, order, topics]
+      properties:
+        id: { type: string }
+        title: { type: string }
+        order: { type: number }
+        topics:
+          type: array
+          items:
+            $ref: "#/components/schemas/QuantitativeBookTopic"
+    QuantitativeBookFocus:
+      type: object
+      additionalProperties: false
+      required: [skillCode, title, message, observations]
+      properties:
+        skillCode: { type: string }
+        title: { type: string }
+        message: { type: string }
+        observations: { type: number }
+    QuantitativeBookOverview:
+      type: object
+      additionalProperties: false
+      required: [id, title, description, passingScore, totalTopicCount, publishedLessonCount, completedLessonCount, chapters, focus]
+      properties:
+        id: { type: string }
+        title: { type: string }
+        description: { type: string }
+        passingScore: { type: number }
+        totalTopicCount: { type: number }
+        publishedLessonCount: { type: number }
+        completedLessonCount: { type: number }
+        chapters:
+          type: array
+          items:
+            $ref: "#/components/schemas/QuantitativeBookChapter"
+        focus:
+          anyOf:
+            - $ref: "#/components/schemas/QuantitativeBookFocus"
+            - type: "null"
+    QuantitativeBookWorkedExample:
+      type: object
+      additionalProperties: false
+      required: [question, steps, answer]
+      properties:
+        question: { type: string }
+        steps:
+          type: array
+          items: { type: string }
+        answer: { type: string }
+    QuantitativeBookSection:
+      type: object
+      additionalProperties: false
+      required: [id, kind, title, paragraphs]
+      properties:
+        id: { type: string }
+        kind:
+          type: string
+          enum: [concept, rule, example, warning]
+        title: { type: string }
+        paragraphs:
+          type: array
+          items: { type: string }
+        workedExample:
+          anyOf:
+            - $ref: "#/components/schemas/QuantitativeBookWorkedExample"
+            - type: "null"
+    QuantitativeBookSource:
+      type: object
+      additionalProperties: false
+      required: [id, title, organization, url]
+      properties:
+        id: { type: string }
+        title: { type: string }
+        organization: { type: string }
+        url: { type: string }
+    QuantitativeBookQuestion:
+      type: object
+      additionalProperties: false
+      required: [id, skillCode, prompt, options]
+      properties:
+        id: { type: string }
+        skillCode: { type: string }
+        prompt: { type: string }
+        options:
+          type: array
+          minItems: 2
+          items: { type: string }
+    QuantitativeBookSkillFocus:
+      type: object
+      additionalProperties: false
+      required: [skillCode, title]
+      properties:
+        skillCode: { type: string }
+        title: { type: string }
+    QuantitativeBookLesson:
+      type: object
+      additionalProperties: false
+      required: [id, title, chapterTitle, summary, estimatedMinutes, passingScore, sections, sources, mode, questions, focusSkills]
+      properties:
+        id: { type: string }
+        title: { type: string }
+        chapterTitle: { type: string }
+        summary: { type: string }
+        estimatedMinutes: { type: number }
+        passingScore: { type: number }
+        sections:
+          type: array
+          items:
+            $ref: "#/components/schemas/QuantitativeBookSection"
+        sources:
+          type: array
+          items:
+            $ref: "#/components/schemas/QuantitativeBookSource"
+        mode:
+          type: string
+          enum: [assessment, remediation]
+        questions:
+          type: array
+          items:
+            $ref: "#/components/schemas/QuantitativeBookQuestion"
+        focusSkills:
+          type: array
+          items:
+            $ref: "#/components/schemas/QuantitativeBookSkillFocus"
+    QuantitativeBookQuizAnswer:
+      type: object
+      additionalProperties: false
+      required: [questionId, selectedOptionIndex]
+      properties:
+        questionId: { type: string, minLength: 1, maxLength: 80 }
+        selectedOptionIndex: { type: number, minimum: 0, maximum: 20 }
+    QuantitativeBookQuizInput:
+      type: object
+      additionalProperties: false
+      required: [answers, timeTakenSeconds, idempotencyKey]
+      properties:
+        answers:
+          type: array
+          minItems: 1
+          maxItems: 20
+          items:
+            $ref: "#/components/schemas/QuantitativeBookQuizAnswer"
+        timeTakenSeconds: { type: number, minimum: 0, maximum: 7200 }
+        idempotencyKey: { type: string, minLength: 8, maxLength: 120 }
+    QuantitativeBookQuestionResult:
+      type: object
+      additionalProperties: false
+      required: [questionId, skillCode, prompt, selectedOptionIndex, selectedOptionText, isCorrect, correctOptionIndex, correctAnswer, explanation, selectedOptionFeedback]
+      properties:
+        questionId: { type: string }
+        skillCode: { type: string }
+        prompt: { type: string }
+        selectedOptionIndex: { type: ["number", "null"] }
+        selectedOptionText: { type: ["string", "null"] }
+        isCorrect: { type: boolean }
+        correctOptionIndex: { type: number }
+        correctAnswer: { type: string }
+        explanation: { type: string }
+        selectedOptionFeedback: { type: ["string", "null"] }
+    QuantitativeBookQuizResult:
+      type: object
+      additionalProperties: false
+      required: [lessonId, score, correctAnswers, totalQuestions, passed, passingScore, attemptNumber, questionDetails, unlockedNextLessonId]
+      properties:
+        lessonId: { type: string }
+        score: { type: number }
+        correctAnswers: { type: number }
+        totalQuestions: { type: number }
+        passed: { type: boolean }
+        passingScore: { type: number }
+        attemptNumber: { type: number }
+        questionDetails:
+          type: array
+          items:
+            $ref: "#/components/schemas/QuantitativeBookQuestionResult"
+        unlockedNextLessonId: { type: ["string", "null"] }
 

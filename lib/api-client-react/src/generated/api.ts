@@ -33,7 +33,11 @@ import type {
   HealthStatus,
   ListGeideaTransactionsParams,
   MobileFreeTestResult,
-  MobileFreeTestSubmission
+  MobileFreeTestSubmission,
+  QuantitativeBookLesson,
+  QuantitativeBookOverview,
+  QuantitativeBookQuizInput,
+  QuantitativeBookQuizResult
 } from './api.schemas';
 
 import { customFetch } from '../custom-fetch';
@@ -294,6 +298,232 @@ export function useGetQuantitativeFoundationLearningPath<TData = Awaited<ReturnT
 
 
 
+
+export const getGetQudratQuantitativeBookUrl = () => {
+
+
+
+
+  return `/api/learning/foundation-book/quantitative`
+}
+
+/**
+ * @summary Get the Qudrat quantitative pilot book and student progress
+ */
+export const getQudratQuantitativeBook = async ( options?: Parameters<typeof customFetch>[1]): Promise<QuantitativeBookOverview> => {
+
+  return customFetch<QuantitativeBookOverview>(getGetQudratQuantitativeBookUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetQudratQuantitativeBookQueryKey = () => {
+    return [
+    `/api/learning/foundation-book/quantitative`
+    ] as const;
+    }
+
+
+export const getGetQudratQuantitativeBookQueryOptions = <TData = Awaited<ReturnType<typeof getQudratQuantitativeBook>>, TError = ErrorType<void>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getQudratQuantitativeBook>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetQudratQuantitativeBookQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getQudratQuantitativeBook>>> = ({ signal }) => getQudratQuantitativeBook({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getQudratQuantitativeBook>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetQudratQuantitativeBookQueryResult = NonNullable<Awaited<ReturnType<typeof getQudratQuantitativeBook>>>
+export type GetQudratQuantitativeBookQueryError = ErrorType<void>
+
+
+/**
+ * @summary Get the Qudrat quantitative pilot book and student progress
+ */
+
+export function useGetQudratQuantitativeBook<TData = Awaited<ReturnType<typeof getQudratQuantitativeBook>>, TError = ErrorType<void>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getQudratQuantitativeBook>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetQudratQuantitativeBookQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getGetQudratQuantitativeBookLessonUrl = (lessonId: string,) => {
+
+
+
+
+  return `/api/learning/foundation-book/quantitative/lessons/${lessonId}`
+}
+
+/**
+ * @summary Get one published lesson and its current quiz set
+ */
+export const getQudratQuantitativeBookLesson = async (lessonId: string, options?: Parameters<typeof customFetch>[1]): Promise<QuantitativeBookLesson> => {
+
+  return customFetch<QuantitativeBookLesson>(getGetQudratQuantitativeBookLessonUrl(lessonId),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetQudratQuantitativeBookLessonQueryKey = (lessonId: string,) => {
+    return [
+    `/api/learning/foundation-book/quantitative/lessons/${lessonId}`
+    ] as const;
+    }
+
+
+export const getGetQudratQuantitativeBookLessonQueryOptions = <TData = Awaited<ReturnType<typeof getQudratQuantitativeBookLesson>>, TError = ErrorType<void>>(lessonId: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getQudratQuantitativeBookLesson>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetQudratQuantitativeBookLessonQueryKey(lessonId);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getQudratQuantitativeBookLesson>>> = ({ signal }) => getQudratQuantitativeBookLesson(lessonId, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: lessonId !== null && lessonId !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getQudratQuantitativeBookLesson>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetQudratQuantitativeBookLessonQueryResult = NonNullable<Awaited<ReturnType<typeof getQudratQuantitativeBookLesson>>>
+export type GetQudratQuantitativeBookLessonQueryError = ErrorType<void>
+
+
+/**
+ * @summary Get one published lesson and its current quiz set
+ */
+
+export function useGetQudratQuantitativeBookLesson<TData = Awaited<ReturnType<typeof getQudratQuantitativeBookLesson>>, TError = ErrorType<void>>(
+ lessonId: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getQudratQuantitativeBookLesson>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetQudratQuantitativeBookLessonQueryOptions(lessonId,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getSubmitQudratQuantitativeBookLessonUrl = (lessonId: string,) => {
+
+
+
+
+  return `/api/learning/foundation-book/quantitative/lessons/${lessonId}/submit`
+}
+
+/**
+ * @summary Submit and server-grade a Qudrat quantitative lesson quiz
+ */
+export const submitQudratQuantitativeBookLesson = async (lessonId: string,
+    quantitativeBookQuizInput: QuantitativeBookQuizInput, options?: Parameters<typeof customFetch>[1]): Promise<QuantitativeBookQuizResult> => {
+
+  return customFetch<QuantitativeBookQuizResult>(getSubmitQudratQuantitativeBookLessonUrl(lessonId),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(quantitativeBookQuizInput)
+  }
+);}
+
+
+
+
+
+export const getSubmitQudratQuantitativeBookLessonMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof submitQudratQuantitativeBookLesson>>, TError,{lessonId: string;data: BodyType<QuantitativeBookQuizInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof submitQudratQuantitativeBookLesson>>, TError,{lessonId: string;data: BodyType<QuantitativeBookQuizInput>}, TContext> => {
+
+const mutationKey = ['submitQudratQuantitativeBookLesson'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof submitQudratQuantitativeBookLesson>>, {lessonId: string;data: BodyType<QuantitativeBookQuizInput>}> = (props) => {
+          const {lessonId,data} = props ?? {};
+
+          return  submitQudratQuantitativeBookLesson(lessonId,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type SubmitQudratQuantitativeBookLessonMutationResult = NonNullable<Awaited<ReturnType<typeof submitQudratQuantitativeBookLesson>>>
+    export type SubmitQudratQuantitativeBookLessonMutationBody = BodyType<QuantitativeBookQuizInput>
+    export type SubmitQudratQuantitativeBookLessonMutationError = ErrorType<void>
+
+    /**
+ * @summary Submit and server-grade a Qudrat quantitative lesson quiz
+ */
+export const useSubmitQudratQuantitativeBookLesson = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof submitQudratQuantitativeBookLesson>>, TError,{lessonId: string;data: BodyType<QuantitativeBookQuizInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof submitQudratQuantitativeBookLesson>>,
+        TError,
+        {lessonId: string;data: BodyType<QuantitativeBookQuizInput>},
+        TContext
+      > => {
+      return useMutation(getSubmitQudratQuantitativeBookLessonMutationOptions(options));
+    }
 
 export const getCreateFoundationCoverageTestUrl = () => {
 

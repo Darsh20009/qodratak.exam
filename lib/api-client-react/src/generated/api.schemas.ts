@@ -287,6 +287,179 @@ export interface MobileFreeTestResult {
   percentage: number;
 }
 
+export type QuantitativeBookTopicStatus = typeof QuantitativeBookTopicStatus[keyof typeof QuantitativeBookTopicStatus];
+
+
+export const QuantitativeBookTopicStatus = {
+  available: 'available',
+  locked: 'locked',
+  completed: 'completed',
+  coming_soon: 'coming_soon',
+} as const;
+
+export interface QuantitativeBookTopic {
+  id: string;
+  title: string;
+  order: number;
+  summary: string;
+  status: QuantitativeBookTopicStatus;
+  attemptCount: number;
+  /** @nullable */
+  lastScore: number | null;
+}
+
+export interface QuantitativeBookChapter {
+  id: string;
+  title: string;
+  order: number;
+  topics: QuantitativeBookTopic[];
+}
+
+export interface QuantitativeBookFocus {
+  skillCode: string;
+  title: string;
+  message: string;
+  observations: number;
+}
+
+export interface QuantitativeBookOverview {
+  id: string;
+  title: string;
+  description: string;
+  passingScore: number;
+  totalTopicCount: number;
+  publishedLessonCount: number;
+  completedLessonCount: number;
+  chapters: QuantitativeBookChapter[];
+  focus: QuantitativeBookFocus | null;
+}
+
+export interface QuantitativeBookWorkedExample {
+  question: string;
+  steps: string[];
+  answer: string;
+}
+
+export type QuantitativeBookSectionKind = typeof QuantitativeBookSectionKind[keyof typeof QuantitativeBookSectionKind];
+
+
+export const QuantitativeBookSectionKind = {
+  concept: 'concept',
+  rule: 'rule',
+  example: 'example',
+  warning: 'warning',
+} as const;
+
+export interface QuantitativeBookSection {
+  id: string;
+  kind: QuantitativeBookSectionKind;
+  title: string;
+  paragraphs: string[];
+  workedExample?: QuantitativeBookWorkedExample | null;
+}
+
+export interface QuantitativeBookSource {
+  id: string;
+  title: string;
+  organization: string;
+  url: string;
+}
+
+export interface QuantitativeBookQuestion {
+  id: string;
+  skillCode: string;
+  prompt: string;
+  /** @minItems 2 */
+  options: string[];
+}
+
+export interface QuantitativeBookSkillFocus {
+  skillCode: string;
+  title: string;
+}
+
+export type QuantitativeBookLessonMode = typeof QuantitativeBookLessonMode[keyof typeof QuantitativeBookLessonMode];
+
+
+export const QuantitativeBookLessonMode = {
+  assessment: 'assessment',
+  remediation: 'remediation',
+} as const;
+
+export interface QuantitativeBookLesson {
+  id: string;
+  title: string;
+  chapterTitle: string;
+  summary: string;
+  estimatedMinutes: number;
+  passingScore: number;
+  sections: QuantitativeBookSection[];
+  sources: QuantitativeBookSource[];
+  mode: QuantitativeBookLessonMode;
+  questions: QuantitativeBookQuestion[];
+  focusSkills: QuantitativeBookSkillFocus[];
+}
+
+export interface QuantitativeBookQuizAnswer {
+  /**
+     * @minLength 1
+     * @maxLength 80
+     */
+  questionId: string;
+  /**
+     * @minimum 0
+     * @maximum 20
+     */
+  selectedOptionIndex: number;
+}
+
+export interface QuantitativeBookQuizInput {
+  /**
+     * @minItems 1
+     * @maxItems 20
+     */
+  answers: QuantitativeBookQuizAnswer[];
+  /**
+     * @minimum 0
+     * @maximum 7200
+     */
+  timeTakenSeconds: number;
+  /**
+     * @minLength 8
+     * @maxLength 120
+     */
+  idempotencyKey: string;
+}
+
+export interface QuantitativeBookQuestionResult {
+  questionId: string;
+  skillCode: string;
+  prompt: string;
+  /** @nullable */
+  selectedOptionIndex: number | null;
+  /** @nullable */
+  selectedOptionText: string | null;
+  isCorrect: boolean;
+  correctOptionIndex: number;
+  correctAnswer: string;
+  explanation: string;
+  /** @nullable */
+  selectedOptionFeedback: string | null;
+}
+
+export interface QuantitativeBookQuizResult {
+  lessonId: string;
+  score: number;
+  correctAnswers: number;
+  totalQuestions: number;
+  passed: boolean;
+  passingScore: number;
+  attemptNumber: number;
+  questionDetails: QuantitativeBookQuestionResult[];
+  /** @nullable */
+  unlockedNextLessonId: string | null;
+}
+
 export type ListGeideaTransactionsParams = {
 /**
  * @minimum 1
