@@ -581,6 +581,12 @@ function JourneyHome({
     error: learningStateError,
     refetch: refetchLearningState,
   } = useFoundationLearningState("qudrat");
+  const {
+    data: quantitativePath,
+    isLoading: isQuantitativePathLoading,
+    isError: isQuantitativePathError,
+    refetch: refetchQuantitativePath,
+  } = useFoundationLearningPath("subject.qudrat.quantitative");
   const [diagnosticOpen, setDiagnosticOpen] = useState(false);
   const diagnosticComplete = learningState?.status === "diagnostic_completed";
   const qudratProgress = progress?.qudrat?.percentage || 0;
@@ -682,9 +688,149 @@ function JourneyHome({
             focusLabel={learningState?.focus?.label}
           />
         )}
+
+        <FoundationStudyPaths
+          quantitativePath={quantitativePath}
+          isQuantitativePathLoading={isQuantitativePathLoading}
+          isQuantitativePathError={isQuantitativePathError}
+          onRetryQuantitativePath={() => void refetchQuantitativePath()}
+        />
       </div>
       <FoundationDiagnosticDialog open={diagnosticOpen} onOpenChange={setDiagnosticOpen} />
     </>
+  );
+}
+
+function FoundationStudyPaths({
+  quantitativePath,
+  isQuantitativePathLoading,
+  isQuantitativePathError,
+  onRetryQuantitativePath,
+}: {
+  quantitativePath?: FoundationLearningPath;
+  isQuantitativePathLoading: boolean;
+  isQuantitativePathError: boolean;
+  onRetryQuantitativePath: () => void;
+}) {
+  const hasValidQuantitativePath = isFoundationLearningPath(quantitativePath);
+
+  return (
+    <section className="space-y-4" aria-labelledby="foundation-study-paths-title">
+      <header>
+        <p className="text-xs font-black text-primary">مسارات التأسيس</p>
+        <h2 id="foundation-study-paths-title" className="mt-1 text-xl font-black text-foreground">
+          خطتك للكمي وتأسيس التحصيلي
+        </h2>
+        <p className="mt-1 text-sm leading-6 text-muted-foreground">
+          تقدر تتابع مسارك الحالي أو تنتقل مباشرة إلى أي مسار تحتاجه.
+        </p>
+      </header>
+
+      <div className="grid gap-4 lg:grid-cols-2">
+        <article className="flex flex-col rounded-3xl border border-border bg-card p-5 shadow-sm">
+          <div className="flex items-start gap-3">
+            <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-primary/10 text-primary">
+              <Target className="h-5 w-5" />
+            </span>
+            <div>
+              <p className="text-xs font-black text-primary">قدراتك · القسم الكمي</p>
+              <h3 className="mt-1 text-lg font-black text-foreground">خطة التأسيس الكمي</h3>
+              <p className="mt-1 text-sm leading-6 text-muted-foreground">
+                مهارات مقترحة وتغطية بنك الأسئلة للقسم الكمي.
+              </p>
+            </div>
+          </div>
+
+          <div className="mt-4 space-y-2">
+            {isQuantitativePathLoading ? (
+              <div className="flex items-center gap-2 rounded-xl bg-muted/50 p-3 text-sm text-muted-foreground">
+                <Loader2 className="h-4 w-4 animate-spin" />
+                نحمّل خطة الكمي...
+              </div>
+            ) : isQuantitativePathError ? (
+              <div role="alert" className="rounded-xl border border-destructive/20 bg-destructive/5 p-3 text-sm text-destructive">
+                تعذر تحميل توصيات الكمي.
+                <Button type="button" variant="link" onClick={onRetryQuantitativePath} className="mr-1 h-auto p-0 text-destructive">
+                  إعادة المحاولة
+                </Button>
+              </div>
+            ) : hasValidQuantitativePath ? (
+              <>
+                {quantitativePath.recommendations.length > 0 ? (
+                  <ol className="space-y-2">
+                    {quantitativePath.recommendations.slice(0, 3).map((recommendation, index) => (
+                      <li key={recommendation.skillKey} className="flex items-start gap-3 rounded-xl border border-border bg-background p-3">
+                        <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-xs font-black text-primary">
+                          {index + 1}
+                        </span>
+                        <div className="min-w-0">
+                          <p className="text-sm font-black text-foreground">{recommendation.title}</p>
+                          <p className="mt-1 text-xs leading-5 text-muted-foreground">{recommendation.reason}</p>
+                        </div>
+                      </li>
+                    ))}
+                  </ol>
+                ) : (
+                  <p className="rounded-xl bg-muted/50 p-3 text-sm leading-6 text-muted-foreground">
+                    ابدأ بدروس الكمي، وستظهر المهارات المقترحة مع تقدّم محاولاتك.
+                  </p>
+                )}
+                <div className="rounded-xl bg-primary/5 p-3">
+                  <div className="flex items-center justify-between gap-3 text-xs">
+                    <span className="font-bold text-foreground">تغطية بنك الأسئلة</span>
+                    <span className="font-black text-primary">
+                      {quantitativePath.coverage.covered.toLocaleString("ar")} من {quantitativePath.coverage.total.toLocaleString("ar")} · {quantitativePath.coverage.percent}٪
+                    </span>
+                  </div>
+                  <ProgressBar value={quantitativePath.coverage.percent} className="mt-2" />
+                </div>
+              </>
+            ) : (
+              <p className="rounded-xl bg-muted/50 p-3 text-sm leading-6 text-muted-foreground">
+                ابدأ بدروس الكمي؛ ستظهر توصيات المهارات عندما تتوفر بيانات تدريبك.
+              </p>
+            )}
+          </div>
+
+          <Link
+            href="/foundation?program=qudrat&subject=quantitative"
+            className="mt-4 inline-flex items-center justify-center gap-2 rounded-xl bg-primary px-4 py-3 text-sm font-black text-primary-foreground"
+          >
+            فتح تأسيس الكمي <ArrowLeft className="h-4 w-4" />
+          </Link>
+        </article>
+
+        <article className="flex flex-col rounded-3xl border border-border bg-card p-5 shadow-sm">
+          <div className="flex items-start gap-3">
+            <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-amber-500/10 text-amber-600">
+              <GraduationCap className="h-5 w-5" />
+            </span>
+            <div>
+              <p className="text-xs font-black text-amber-700 dark:text-amber-300">المسار الثاني</p>
+              <h3 className="mt-1 text-lg font-black text-foreground">تأسيس التحصيلي</h3>
+              <p className="mt-1 text-sm leading-6 text-muted-foreground">
+                اختر المادة وابدأ بالشرح ثم التدريب والاختبار.
+              </p>
+            </div>
+          </div>
+
+          <div className="mt-4 flex flex-wrap gap-2">
+            {["الرياضيات", "الفيزياء", "الكيمياء", "الأحياء"].map((subject) => (
+              <span key={subject} className="rounded-full bg-muted px-3 py-1.5 text-xs font-bold text-foreground">
+                {subject}
+              </span>
+            ))}
+          </div>
+
+          <Link
+            href="/foundation?program=tahsili"
+            className="mt-auto inline-flex items-center justify-center gap-2 rounded-xl border border-border bg-background px-4 py-3 text-sm font-black text-foreground transition-colors hover:border-primary/40 hover:text-primary"
+          >
+            استعراض تأسيس التحصيلي <ArrowLeft className="h-4 w-4" />
+          </Link>
+        </article>
+      </div>
+    </section>
   );
 }
 
