@@ -742,6 +742,7 @@ export function StandardSectionTestRunner() {
   return (
     <QiyasExamLayout
       examTitle="الاختبار القياسي"
+      enableQuantitativeTools={/quantitative|كمي|math|رياضيات/i.test(currentQuestion.category ?? "")}
       questionNumber={currentQuestionIndex + 1}
       totalQuestions={currentSectionData.questionCount}
       sectionLabel={currentSectionData.name}

@@ -23,6 +23,7 @@
 - [Wouter query navigation](wouter-query-navigation.md) — use `useSearch()` for query state; `useLocation()` returns pathname only in the installed wouter version.
 - [Exam display mode](exam-display-mode.md) — fullscreen exam views hide platform chrome and keep the legacy exam layout on a controlled light palette.
 - [Computerized exam boundary](computerized-exam-boundary.md) — bank, section, comprehensive, and mixed exams must enter the shared Qiyas frame; source question images outrank noisy OCR.
+- [Quantitative exam study tools](quantitative-exam-study-tools.md) — show laws and the scientific calculator only for quantitative Qudrat and Tahsili math questions.
 - [Content taxonomy review boundary](content-taxonomy-review-boundary.md) — source labels can seed safe program/subject candidates, but deep Skill/Concept mappings require review evidence.
 - [Student learning profile foundation](student-learning-profile-foundation.md) — keep observed counters compact, attempts/sessions separate, and legacy diagnostic fields backward-compatible.
 - [Unified learning attempts](unified-learning-attempts.md) — server-owned answer keys and source identity are mandatory before recording trusted per-question learning data.

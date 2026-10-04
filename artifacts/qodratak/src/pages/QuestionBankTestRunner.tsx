@@ -982,6 +982,7 @@ export default function QuestionBankTestRunner() {
       />
       <QiyasExamLayout
       examTitle={`${testType === 'verbal' ? 'بنك الأسئلة اللفظية' : 'بنك الأسئلة الكمية'} - اختبار ${testNumber}`}
+      enableQuantitativeTools={testType === 'quantitative'}
       questionNumber={currentQuestionIndex + 1}
       totalQuestions={questions.length}
       timeLeft={timeLeft}

@@ -1,11 +1,11 @@
 import { useState, useEffect, useContext } from "react";
-import formulasImg from "@assets/Screenshot_2026-03-08_071500_1772943315708.png";
-import { X, BookmarkCheck, Bookmark, Flag, AlertTriangle, CheckCircle2, LayoutGrid, ChevronRight, ChevronLeft } from "lucide-react";
+import { X, BookmarkCheck, Bookmark, Flag, AlertTriangle, CheckCircle2, LayoutGrid, ChevronRight, ChevronLeft, BookOpen, Calculator } from "lucide-react";
 import ImageZoom from "@/components/ImageZoom";
 import { getQuestionImageUrls } from "@/lib/questionImages";
 import { resolveFoundationAssetUrl } from "@/lib/foundationVideoUrl";
 import { BrandMark } from "@/components/BrandMark";
 import { StudentExamChromeContext } from "@/components/student/StudentExamChromeContext";
+import { ExamStudyToolsDialog, type ExamStudyTool } from "@/components/ExamStudyTools";
 
 const OPTION_LABELS = ['أ', 'ب', 'ج', 'د'];
 
@@ -60,6 +60,7 @@ export interface QiyasExamLayoutProps {
 
   sectionQuestionsCount?: number;
   onShowFormulas?: () => void;
+  enableQuantitativeTools?: boolean;
 
   questionId?: number | string;
 }
@@ -139,6 +140,7 @@ export function QiyasExamLayout({
   userAvatar,
   sectionQuestionsCount,
   onShowFormulas,
+  enableQuantitativeTools = false,
   questionId,
 }: QiyasExamLayoutProps) {
   const { passageText, passageLabel, displayQuestionText } = getQuestionDisplayParts(questionData, questionText);
@@ -147,7 +149,7 @@ export function QiyasExamLayout({
   const [visitedQuestions, setVisitedQuestions] = useState<Set<number>>(new Set([0]));
   const [showExamInstructions, setShowExamInstructions] = useState(false);
   const [showSectionInstructions, setShowSectionInstructions] = useState(false);
-  const [showFormulas, setShowFormulas] = useState(false);
+  const [activeStudyTool, setActiveStudyTool] = useState<ExamStudyTool | null>(null);
   const [showMobilePanel, setShowMobilePanel] = useState(false);
   const [isDisplayFullscreen, setIsDisplayFullscreen] = useState(false);
 
@@ -226,6 +228,22 @@ export function QiyasExamLayout({
   const remainingInSection = sectionTotal - answeredTotal;
 
   const gridQuestions = questionsStatus ?? Array.from({ length: sectionTotal }, () => ({ answered: false, bookmarked: false }));
+
+  const openLaws = () => {
+    if (onShowFormulas) {
+      onShowFormulas();
+      return;
+    }
+    setActiveStudyTool(current => current === "laws" ? null : "laws");
+  };
+
+  const openCalculator = () => {
+    setActiveStudyTool(current => current === "calculator" ? null : "calculator");
+  };
+
+  useEffect(() => {
+    if (!enableQuantitativeTools) setActiveStudyTool(null);
+  }, [enableQuantitativeTools]);
 
   const QuestionGrid = () => (
     <div className="grid grid-cols-6 gap-1">
@@ -364,6 +382,29 @@ export function QiyasExamLayout({
               <span className="text-xs font-medium text-gray-500">الخط</span>
             </div>
 
+            {enableQuantitativeTools && isDisplayFullscreen && (
+              <div className="md:hidden mb-4 flex gap-2" aria-label="أدوات الاختبار">
+                <button
+                  type="button"
+                  onClick={openLaws}
+                  aria-haspopup="dialog"
+                  className="inline-flex min-h-10 flex-1 items-center justify-center gap-2 rounded-xl border border-sky-200 bg-sky-50 px-3 text-sm font-bold text-sky-800"
+                >
+                  <BookOpen className="h-4 w-4" aria-hidden="true" />
+                  القوانين
+                </button>
+                <button
+                  type="button"
+                  onClick={openCalculator}
+                  aria-haspopup="dialog"
+                  className="inline-flex min-h-10 flex-1 items-center justify-center gap-2 rounded-xl border border-teal-200 bg-teal-50 px-3 text-sm font-bold text-teal-800"
+                >
+                  <Calculator className="h-4 w-4" />
+                  الحاسبة
+                </button>
+              </div>
+            )}
+
             {questionTypeLabel && (
               <div className="mb-3">
                 <span className="inline-block bg-blue-50 text-blue-700 text-xs font-bold px-3 py-1 rounded-full border border-blue-100">
@@ -412,18 +453,6 @@ export function QiyasExamLayout({
               <p className={`whitespace-pre-line text-gray-800 leading-relaxed mb-5 ${fontClass}`}>
                 {displayQuestionText}
               </p>
-            )}
-
-            {showFormulas && (
-              <div className="bg-gray-50 rounded-xl border border-gray-200 p-4 mb-4">
-                <div className="flex items-center justify-between mb-3">
-                  <h3 className="text-sm font-bold text-gray-700">القوانين والمعادلات</h3>
-                  <button onClick={() => setShowFormulas(false)} className="text-gray-400 hover:text-gray-600 transition-colors">
-                    <X className="h-4 w-4" />
-                  </button>
-                </div>
-                <img src={formulasImg} alt="القوانين والمعادلات" className="w-full rounded-lg" />
-              </div>
             )}
 
             {/* Answer options */}
@@ -678,12 +707,28 @@ export function QiyasExamLayout({
                 >
                   تعليمات القسم
                 </button>
-                <button
-                  onClick={() => { if (onShowFormulas) onShowFormulas(); else setShowFormulas(v => !v); setShowMobilePanel(false); }}
-                  className="py-2.5 px-1 text-xs font-semibold bg-teal-50 text-teal-700 border border-teal-200 rounded-xl hover:bg-teal-100 transition-colors"
-                >
-                  المعادلات
-                </button>
+                {enableQuantitativeTools && (
+                  <>
+                    <button
+                      type="button"
+                      onClick={() => { openLaws(); setShowMobilePanel(false); }}
+                      aria-haspopup="dialog"
+                      className="inline-flex min-h-10 items-center justify-center gap-1.5 rounded-xl border border-sky-200 bg-sky-50 px-2 py-2.5 text-xs font-semibold text-sky-800 transition-colors hover:bg-sky-100"
+                    >
+                      <BookOpen className="h-4 w-4" aria-hidden="true" />
+                      القوانين
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => { openCalculator(); setShowMobilePanel(false); }}
+                      aria-haspopup="dialog"
+                      className="inline-flex min-h-10 items-center justify-center gap-1.5 rounded-xl border border-teal-200 bg-teal-50 px-2 py-2.5 text-xs font-semibold text-teal-800 transition-colors hover:bg-teal-100"
+                    >
+                      <Calculator className="h-4 w-4" />
+                      الحاسبة
+                    </button>
+                  </>
+                )}
                 <button
                   onClick={() => { setShowMobilePanel(false); (onEndSection ?? onFinish)?.(); }}
                   disabled={isFinishing}
@@ -897,15 +942,30 @@ export function QiyasExamLayout({
           >
             {isFinishing ? "جارٍ التصحيح..." : "إنهاء القسم"}
           </button>
-          <button
-            onClick={() => {
-              if (onShowFormulas) onShowFormulas();
-              else setShowFormulas(v => !v);
-            }}
-            className="py-2 px-1 text-xs font-semibold bg-teal-50 text-teal-700 border border-teal-200 rounded-lg hover:bg-teal-100 transition-colors"
-          >
-            المعادلات
-          </button>
+          {enableQuantitativeTools && (
+            <>
+              <button
+                type="button"
+                onClick={openLaws}
+                aria-haspopup="dialog"
+                aria-expanded={activeStudyTool === "laws"}
+                className="inline-flex items-center justify-center gap-1.5 rounded-lg border border-sky-200 bg-sky-50 px-3 py-2 text-xs font-semibold text-sky-800 transition-colors hover:bg-sky-100"
+              >
+                <BookOpen className="h-4 w-4" aria-hidden="true" />
+                القوانين
+              </button>
+              <button
+                type="button"
+                onClick={openCalculator}
+                aria-haspopup="dialog"
+                aria-expanded={activeStudyTool === "calculator"}
+                className="inline-flex items-center justify-center gap-1.5 rounded-lg border border-teal-200 bg-teal-50 px-3 py-2 text-xs font-semibold text-teal-800 transition-colors hover:bg-teal-100"
+              >
+                <Calculator className="h-4 w-4" />
+                الحاسبة
+              </button>
+            </>
+          )}
         </div>
       </div>
 
@@ -975,6 +1035,13 @@ export function QiyasExamLayout({
             </button>
           </div>
         </div>
+      )}
+
+      {activeStudyTool && (
+        <ExamStudyToolsDialog
+          tool={activeStudyTool}
+          onClose={() => setActiveStudyTool(null)}
+        />
       )}
     </div>
   );

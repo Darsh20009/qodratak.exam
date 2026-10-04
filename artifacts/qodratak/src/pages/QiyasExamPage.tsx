@@ -1722,6 +1722,7 @@ const QiyasExamPage: React.FC = () => {
 
         <QiyasExamLayout
           examTitle={selectedExam.name}
+          enableQuantitativeTools={currentSectionData.category === "quantitative" || currentQuestionData.category === "quantitative"}
           questionNumber={currentQuestionIdx + 1}
           totalQuestions={questions.length}
           sectionLabel={currentSectionData.name}

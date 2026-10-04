@@ -197,6 +197,7 @@ export default function FoundationCoverageTestPage() {
     return (
       <QiyasExamLayout
         examTitle={`اختبار تغطية البنك · ${bookTitle}`}
+        enableQuantitativeTools
         questionNumber={currentIndex + 1}
         totalQuestions={test.total}
         sectionLabel="تدريب على أسئلة لم تُحل من قبل"

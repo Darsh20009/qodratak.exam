@@ -1792,6 +1792,7 @@ export function AdvancedQuantitativeTest() {
   return (
     <QiyasExamLayout
       examTitle="اختبار القدرات الكمية المتقدم"
+      enableQuantitativeTools
       questionNumber={currentQuestionIndex + 1}
       totalQuestions={testSections[currentSection]?.questionCount || 0}
       sectionLabel={testSections[currentSection]?.name}

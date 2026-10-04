@@ -582,6 +582,7 @@ export default function FolderTest() {
   return (
     <QiyasExamLayout
       examTitle="اختبار المجلدات"
+      enableQuantitativeTools={/quantitative|كمي|math|رياضيات/i.test(currentQuestion?.category ?? "")}
       questionNumber={currentQuestionIndex + 1}
       totalQuestions={testSections[currentSection]?.questions.length || 0}
       sectionLabel={testSections[currentSection]?.name}

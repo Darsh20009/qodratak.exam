@@ -1633,6 +1633,7 @@ export default function SectionedTestRunner() {
       />
       <QiyasExamLayout
       examTitle={testType === 'verbal' ? `القدرات اللفظية - ${testNumber}` : `القدرات الكمية - ${testNumber}`}
+      enableQuantitativeTools={testType === 'quantitative'}
       questionNumber={currentQuestionInSection + 1}
       totalQuestions={currentSectionData.questions.length}
       sectionNumber={currentSection + 1}

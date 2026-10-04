@@ -921,6 +921,7 @@ const TahsiliExamPage: React.FC = () => {
     return (
       <QiyasExamLayout
         examTitle={selectedExam.name}
+        enableQuantitativeTools={/رياضيات|math/i.test(currentQuestion.category)}
         questionNumber={currentQuestionIndex + 1}
         totalQuestions={selectedExam.questions.length}
         sectionLabel={currentQuestion.category}

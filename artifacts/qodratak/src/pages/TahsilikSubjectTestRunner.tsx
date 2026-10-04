@@ -457,6 +457,7 @@ const TahsilikSubjectTestRunner: React.FC = () => {
   return (
     <QiyasExamLayout
       examTitle={testConfig.subject.name}
+      enableQuantitativeTools={/رياضيات|math/i.test(`${testConfig?.subject.id ?? ""} ${testConfig?.subject.name ?? ""}`)}
       questionNumber={currentQuestionIndex + 1}
       totalQuestions={questions.length}
       timeLeft={timeLeft}

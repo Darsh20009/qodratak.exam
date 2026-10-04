@@ -838,6 +838,7 @@ export default function ScheduledExamRunner() {
 
       <QiyasExamLayout
         examTitle="اختبار القدرات"
+        enableQuantitativeTools={/quantitative|كمي|math|رياضيات/i.test(currentQuestion.category ?? "")}
         questionNumber={currentQ + 1}
         totalQuestions={QUESTIONS_PER_SECTION}
         sectionLabel={`القسم ${currentSection + 1}`}

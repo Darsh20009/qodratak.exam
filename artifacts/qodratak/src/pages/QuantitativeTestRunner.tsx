@@ -492,6 +492,7 @@ export function QuantitativeTestRunner() {
 
       <QiyasExamLayout
         examTitle={testData?.testName}
+        enableQuantitativeTools
         questionNumber={currentQuestionIndex + 1}
         totalQuestions={questions.length}
         timeLeft={timeRemaining}

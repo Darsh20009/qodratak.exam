@@ -483,6 +483,7 @@ export default function PreExamDayPage() {
   return (
     <QiyasExamLayout
       examTitle="جلسة ما قبل الاختبار"
+      enableQuantitativeTools={q.category === "quantitative"}
       questionNumber={currentQ + 1}
       totalQuestions={questions.length}
       sectionLabel={q.category === "verbal" ? "لفظي" : "كمي"}

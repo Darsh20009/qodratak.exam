@@ -563,6 +563,7 @@ export function FreeQuantitativeTestRunner() {
   return (
     <QiyasExamLayout
       examTitle="الاختبار الكمي المجاني"
+      enableQuantitativeTools
       questionNumber={currentQuestionIndex + 1}
       totalQuestions={questions.length}
       timeLeft={timeRemaining}

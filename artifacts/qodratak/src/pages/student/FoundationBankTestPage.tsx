@@ -333,6 +333,7 @@ export default function FoundationBankTestPage({ contentId }: { contentId: strin
 
       <QiyasExamLayout
         examTitle={quiz.title}
+        enableQuantitativeTools
         questionNumber={currentQuestionIndex + 1}
         totalQuestions={questions.length}
         sectionLabel="اختبار البنك"
