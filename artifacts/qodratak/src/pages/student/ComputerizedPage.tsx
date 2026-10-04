@@ -621,14 +621,6 @@ export default function ComputerizedPage({
           </div>
         </header>
 
-        <StudentWorkflow
-          currentStage="skills"
-          level={dashboard?.recommendedPlan.level || "foundation"}
-          progress={activeTrack === "tahsili" ? dashboard?.progress.tahsili.percentage || 0 : dashboard?.progress.qudrat.percentage || 0}
-          focusLabel={dashboard?.recommendedPlan.focusSubject === "verbal" ? "اللفظي" : dashboard?.recommendedPlan.focusSubject === "quantitative" ? "الكمي" : undefined}
-          nextAction={{ label: "افتح مهمة التدريب", href: "/computerized" }}
-        />
-
         <section aria-labelledby="computerized-track-title">
           <div className="mb-3">
             <h2 id="computerized-track-title" className="text-xl font-black text-[#0D1B2A]">اختر المسار</h2>
@@ -666,6 +658,14 @@ export default function ComputerizedPage({
             })}
           </div>
         </section>
+
+        <StudentWorkflow
+          currentStage="skills"
+          level={dashboard?.recommendedPlan.level || "foundation"}
+          progress={activeTrack === "tahsili" ? dashboard?.progress.tahsili.percentage || 0 : dashboard?.progress.qudrat.percentage || 0}
+          focusLabel={dashboard?.recommendedPlan.focusSubject === "verbal" ? "اللفظي" : dashboard?.recommendedPlan.focusSubject === "quantitative" ? "الكمي" : undefined}
+          nextAction={{ label: "افتح مهمة التدريب", href: "/computerized" }}
+        />
 
         {activeTrack === "qudrat" && (
           <>

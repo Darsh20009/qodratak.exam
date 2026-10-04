@@ -44,6 +44,7 @@ export interface FoundationContent {
   title: string;
   description: string;
   videoUrl: string;
+  sections?: Array<Record<string, unknown>>;
   attachments?: Array<{
     id: string;
     type: 'pdf';

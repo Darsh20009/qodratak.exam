@@ -88,11 +88,53 @@ function normalizeFoundationContent(value: unknown, requestedProgram: Foundation
       title: typeof entry.title === "string" ? entry.title : "درس تأسيسي",
       description: typeof entry.description === "string" ? entry.description : "",
       videoUrl: typeof entry.videoUrl === "string" ? entry.videoUrl : "",
+      sections: Array.isArray(entry.sections) ? entry.sections.filter(isRecord) : [],
       order: typeof entry.order === "number" && Number.isFinite(entry.order) ? entry.order : index,
       attachments,
       quiz,
     } as FoundationContent];
   });
+}
+
+type FoundationResourceLoadState = "loading" | "error" | "ready";
+
+function FoundationResourceAvailability({
+  content,
+  state,
+  compact = false,
+}: {
+  content: FoundationContent[];
+  state: FoundationResourceLoadState;
+  compact?: boolean;
+}) {
+  const writtenCount = content.reduce((count, item) => count + (item.sections?.length || 0), 0);
+  const fileCount = content.reduce((count, item) => count + (item.attachments?.filter((attachment) => attachment.url.trim()).length || 0), 0);
+  const videoCount = content.filter((item) => {
+    const url = item.videoUrl?.trim() || "";
+    return isDirectFoundationVideo(url) || Boolean(getVideoEmbedUrl(url));
+  }).length;
+  const resources = [
+    { label: "كتاب / شرح مكتوب", available: writtenCount > 0, value: writtenCount > 0 ? "متاح" : "قريبًا" },
+    { label: "ملفات PDF", available: fileCount > 0, value: fileCount > 0 ? `${fileCount} ملف` : "قريبًا" },
+    { label: "فيديوهات", available: videoCount > 0, value: videoCount > 0 ? `${videoCount} فيديو` : "قريبًا" },
+  ];
+
+  return (
+    <div className={`flex flex-wrap gap-2 ${compact ? "mt-3" : "mt-4"}`} aria-live="polite">
+      {resources.map((resource) => (
+        <span
+          key={resource.label}
+          className={`rounded-full border px-3 py-1.5 text-[11px] font-bold ${
+            state === "ready" && resource.available
+              ? "border-emerald-500/25 bg-emerald-500/10 text-emerald-800 dark:text-emerald-300"
+              : "border-border bg-muted/50 text-muted-foreground"
+          }`}
+        >
+          {resource.label}: {state === "loading" ? "جارٍ التحقق" : state === "error" ? "تعذر التحقق" : resource.value}
+        </span>
+      ))}
+    </div>
+  );
 }
 
 function isFoundationLearningPath(value: unknown): value is FoundationLearningPath {
@@ -342,7 +384,7 @@ function FoundationQuizCard({ lesson }: { lesson: FoundationContent }) {
           </div>
           <h3 className="mt-1 text-base font-black text-foreground">{quiz.title}</h3>
           <p className="mt-1 text-xs leading-6 text-muted-foreground">
-            {quiz.instructions || "أجب عن أسئلة هذا البنك بعد مشاهدة الشرح."}
+            {quiz.instructions || "راجع محتوى الدرس المتاح، ثم أجب عن أسئلة الاختبار."}
           </p>
         </div>
         <Button
@@ -387,10 +429,10 @@ function JourneyVideo({ lesson }: { lesson: FoundationContent | null }) {
         <div className="flex aspect-video flex-col items-center justify-center px-6 text-center text-slate-300">
           <PlayCircle className="h-12 w-12 text-[#F7F775]" />
           <p className="mt-3 text-sm font-black">
-            {lesson ? "الفيديو سيظهر هنا عند نشره" : "سيظهر فيديو مهمتك هنا"}
+            {lesson ? "فيديو هذا الدرس غير منشور بعد · قريبًا" : "لا يوجد فيديو تأسيس مرتبط بالمهمة الحالية"}
           </p>
           <p className="mt-1 text-xs leading-6 text-slate-400">
-            لا تحتاج إلى البحث عنه داخل البنوك؛ سيبقى مرتبطًا بمهمتك الحالية.
+            افتح مواد اللفظي أو الكمي للتحقق من الفيديوهات المنشورة.
           </p>
         </div>
       )}
@@ -633,6 +675,8 @@ function JourneyHome({
           </p>
         </header>
 
+        <FoundationProgramChoices />
+
         {isLearningContentError && diagnosticComplete && (
           <section role="alert" className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-amber-500/30 bg-amber-500/5 p-4">
             <p className="text-sm leading-6 text-foreground">تعذر تحميل درس اليوم. يمكنك إعادة المحاولة أو متابعة بقية الرحلة.</p>
@@ -698,6 +742,46 @@ function JourneyHome({
       </div>
       <FoundationDiagnosticDialog open={diagnosticOpen} onOpenChange={setDiagnosticOpen} />
     </>
+  );
+}
+
+function FoundationProgramChoices() {
+  return (
+    <section aria-labelledby="foundation-program-choices-title" className="rounded-3xl border border-primary/20 bg-primary/5 p-4 sm:p-5">
+      <div className="mb-4">
+        <h2 id="foundation-program-choices-title" className="text-lg font-black text-foreground">اختر برنامج التأسيس</h2>
+        <p className="mt-1 text-sm text-muted-foreground">افتح البرنامج أو انتقل مباشرة إلى المادة التي تريدها.</p>
+      </div>
+      <div className="grid gap-3 md:grid-cols-2">
+        {(["qudrat", "tahsili"] as const).map((program) => {
+          const isQudrat = program === "qudrat";
+          return (
+            <div key={program} className="rounded-2xl border border-border bg-card p-4">
+              <div className="flex items-center justify-between gap-3">
+                <div>
+                  <p className="text-xs font-bold text-muted-foreground">برنامج التأسيس</p>
+                  <h3 className="mt-1 text-lg font-black text-foreground">{isQudrat ? "القدرات" : "التحصيلي"}</h3>
+                </div>
+                <Link href={`/foundation?program=${program}`} className="inline-flex shrink-0 items-center gap-1 rounded-xl bg-primary px-3 py-2 text-xs font-black text-primary-foreground">
+                  عرض المواد <ArrowLeft className="h-4 w-4" />
+                </Link>
+              </div>
+              <div className="mt-3 flex flex-wrap gap-2">
+                {foundationSections[program].map((section) => (
+                  <Link
+                    key={section.key}
+                    href={`/foundation?program=${program}&subject=${section.key}`}
+                    className="rounded-xl border border-border bg-background px-3 py-2 text-xs font-bold text-foreground transition hover:border-primary/50 hover:text-primary"
+                  >
+                    {section.shortTitle}
+                  </Link>
+                ))}
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </section>
   );
 }
 
@@ -1001,7 +1085,7 @@ function FoundationHome({
               <span className="rounded-full bg-emerald-500/10 px-3 py-1 text-xs font-black text-emerald-700 dark:text-emerald-300">ابدأ</span>
             </div>
             <h3 className="mt-5 text-2xl font-black text-foreground">دورة القدرات</h3>
-            <p className="mt-2 text-sm leading-7 text-muted-foreground">قسم لفظي وقسم كمي، شرح مرتب، فيديوهات، وتمارين واختبارات من بنك المنصة.</p>
+            <p className="mt-2 text-sm leading-7 text-muted-foreground">اختر اللفظي أو الكمي، ثم راجع الموارد المنشورة فعلًا داخل كل قسم.</p>
             <div className="mt-5 flex items-center gap-3">
               <div className="flex-1"><ProgressBar value={progress?.qudrat?.percentage || 0} /></div>
               <span className="text-sm font-black text-primary">{progress?.qudrat?.percentage || 0}%</span>
@@ -1014,7 +1098,7 @@ function FoundationHome({
               <span className="rounded-full bg-emerald-500/10 px-3 py-1 text-xs font-black text-emerald-700 dark:text-emerald-300">ابدأ</span>
             </div>
             <h3 className="mt-5 text-2xl font-black text-foreground">دورة التحصيلي</h3>
-            <p className="mt-2 text-sm leading-7 text-muted-foreground">أربعة مسارات: الرياضيات، الفيزياء، الكيمياء، والأحياء، وكل مسار له شرح وتدريب واختبار.</p>
+            <p className="mt-2 text-sm leading-7 text-muted-foreground">اختر مادة الرياضيات أو الفيزياء أو الكيمياء أو الأحياء، وتحقق من مواردها المنشورة داخل القسم.</p>
             <div className="mt-5 flex items-center gap-3">
               <div className="flex-1"><ProgressBar value={progress?.tahsili?.percentage || 0} /></div>
               <span className="text-sm font-black text-primary">{progress?.tahsili?.percentage || 0}%</span>
@@ -1032,26 +1116,50 @@ function FoundationHome({
 function FoundationTrackOverview({
   program,
   dashboard,
+  content,
+  resourceState,
+  onRetry,
 }: {
   program: FoundationProgram;
   dashboard?: StudentDashboard;
+  content: FoundationContent[];
+  resourceState: FoundationResourceLoadState;
+  onRetry: () => void;
 }) {
   const [, setLocation] = useLocation();
   const progress = program === "qudrat" ? dashboard?.progress?.qudrat : dashboard?.progress?.tahsili;
   return (
     <div className="mx-auto max-w-6xl space-y-6 p-5 md:p-8" dir="rtl">
+      <nav aria-label="اختيار برنامج التأسيس" className="flex flex-wrap gap-2">
+        {(["qudrat", "tahsili"] as const).map((track) => (
+          <Link
+            key={track}
+            href={`/foundation?program=${track}`}
+            aria-current={track === program ? "page" : undefined}
+            className={`rounded-xl border px-4 py-2 text-sm font-black transition ${
+              track === program
+                ? "border-[#0D1B2A] bg-[#0D1B2A] text-white"
+                : "border-border bg-card text-foreground hover:border-primary/40"
+            }`}
+          >
+            {track === "qudrat" ? "القدرات" : "التحصيلي"}
+          </Link>
+        ))}
+      </nav>
       <header className="rounded-[28px] bg-[#0D1B2A] p-6 text-white sm:p-8">
         <p className="text-sm font-bold text-[#F7F775]">دورة {program === "qudrat" ? "القدرات" : "التحصيلي"}</p>
         <div className="mt-2 flex flex-wrap items-end justify-between gap-4">
           <div>
             <h1 className="text-3xl font-black">اختر قسمك وابدأ</h1>
-            <p className="mt-2 max-w-2xl text-sm leading-7 text-[#CBD5E1]">كل قسم يأخذك من الفهم إلى التطبيق ثم اختبار قصير يقيس تقدمك.</p>
+            <p className="mt-2 max-w-2xl text-sm leading-7 text-[#CBD5E1]">اختر المادة لمراجعة الكتاب والملفات والفيديوهات المنشورة فيها. يظهر «قريبًا» عند عدم توفر مورد.</p>
           </div>
           <div className="rounded-2xl bg-white/10 px-5 py-3 text-center"><span className="block text-3xl font-black">{progress?.percentage || 0}%</span><span className="text-xs text-[#CBD5E1]">تقدم المسار</span></div>
         </div>
       </header>
       <div className={`grid gap-4 ${program === "qudrat" ? "md:grid-cols-2" : "md:grid-cols-2 lg:grid-cols-4"}`}>
-        {foundationSections[program].map((section) => (
+        {foundationSections[program].map((section) => {
+          const sectionContent = content.filter((item) => item.subjectId === `subject.${program}.${section.key}`);
+          return (
            <Link
              key={section.key}
              href={`/foundation?program=${program}&subject=${section.key}`}
@@ -1067,10 +1175,18 @@ function FoundationTrackOverview({
             </div>
             <h2 className="mt-5 text-xl font-black text-foreground">{section.title}</h2>
             <p className="mt-2 text-sm leading-7 text-muted-foreground">{section.description}</p>
-            <span className="mt-5 inline-flex rounded-full bg-emerald-500/10 px-3 py-1 text-xs font-black text-emerald-700 dark:text-emerald-300">ابدأ القسم</span>
+             <FoundationResourceAvailability content={sectionContent} state={resourceState} compact />
+             <span className="mt-4 inline-flex rounded-full bg-primary/10 px-3 py-1 text-xs font-black text-primary">افتح القسم</span>
           </Link>
-        ))}
+          );
+        })}
       </div>
+      {resourceState === "error" && (
+        <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-amber-500/30 bg-amber-500/5 p-4 text-sm">
+          <span className="text-foreground">تعذر التحقق من موارد المواد.</span>
+          <Button type="button" variant="outline" className="rounded-xl" onClick={onRetry}>إعادة التحقق</Button>
+        </div>
+      )}
     </div>
   );
 }
@@ -1119,6 +1235,12 @@ function FoundationPageContent() {
     refetch: refetchContent,
   } = useFoundationContent(program, shouldLoadFoundationContent, contentSubjectId);
   const {
+    data: programContent,
+    isLoading: isProgramContentLoading,
+    isError: isProgramContentError,
+    refetch: refetchProgramContent,
+  } = useFoundationContent(program, hasProgram && !hasSubject);
+  const {
     data: completionSummary,
     isError: isCompletionSummaryError,
     refetch: refetchCompletionSummary,
@@ -1134,9 +1256,11 @@ function FoundationPageContent() {
     () => normalizeFoundationContent(foundationContent, program),
     [foundationContent, program],
   );
-  const foundationBook = program === "qudrat"
-    ? content.find((item) => item.title.startsWith("كتاب قدراتك · التأسيس"))
-    : undefined;
+  const overviewContent = useMemo(
+    () => normalizeFoundationContent(programContent, program),
+    [programContent, program],
+  );
+  const foundationBook = content.find((item) => item.title.startsWith("كتاب") && item.sections?.length);
   const completedContentIds = useMemo(
     () => new Set(
       Array.isArray(completionSummary?.completedContentIds)
@@ -1202,7 +1326,15 @@ function FoundationPageContent() {
   }
 
   if (!hasSubject) {
-    return <FoundationTrackOverview program={program} dashboard={dashboard} />;
+    return (
+      <FoundationTrackOverview
+        program={program}
+        dashboard={dashboard}
+        content={overviewContent}
+        resourceState={isProgramContentLoading ? "loading" : isProgramContentError ? "error" : "ready"}
+        onRetry={() => void refetchProgramContent()}
+      />
+    );
   }
 
   const selectSection = (section: FoundationSection) => {
@@ -1213,7 +1345,8 @@ function FoundationPageContent() {
   const readerHref = (contentId: string) =>
     `/foundation/content/${encodeURIComponent(contentId)}?program=${program}&subject=${encodeURIComponent(activeSection.key)}`;
   const coverageTestHref = `/foundation/coverage-test?subjectId=${encodeURIComponent(contentSubjectId)}`;
-  const foundationBookName = program === "tahsili" ? "كتاب التحصيلي" : "كتاب قدراتك";
+  const foundationBookName = foundationBook?.title.split("·")[0].trim()
+    || (program === "qudrat" ? "مواد تأسيس القدرات" : "مواد تأسيس التحصيلي");
   const subjectActionHref = program === "tahsili" && activeSection.tahsiliSubject
     ? `/tahsilik/tests/subject?subject=${encodeURIComponent(activeSection.tahsiliSubject)}`
     : `/learning/today?programId=${program}&subjectId=${encodeURIComponent(contentSubjectId)}`;
@@ -1226,25 +1359,30 @@ function FoundationPageContent() {
           <span className="rounded-full bg-primary/10 px-3 py-1 text-primary">{program === "qudrat" ? "القدرات" : "التحصيلي"}</span>
           <span>التأسيس</span>
         </div>
-         <h1 className="text-3xl font-black text-[#0D1B2A] dark:text-white mb-2">{foundationBookName} · {activeSection.title}</h1>
+         <h1 className="text-3xl font-black text-[#0D1B2A] dark:text-white mb-2">{activeSection.title} · التأسيس</h1>
          <p className="max-w-3xl text-sm leading-7 text-muted-foreground">
-           هذا هو كتاب التأسيس الخاص بقسم {activeSection.shortTitle}: اقرأ الملزمة، شاهد الشرح، ثم صحّح اختبار كل درس من المكان نفسه.
+            تُعرض هنا الموارد المرتبطة بهذه المادة كما نُشرت. أي مورد غير متاح موضح بأنه «قريبًا».
          </p>
          <Button type="button" className="mt-4 rounded-xl font-black" onClick={() => setLocation(subjectActionHref)}>
            {program === "tahsili" ? "ابدأ اختبار هذه المادة" : "ابدأ مهمة اليوم"}
          </Button>
       </header>
 
+       <FoundationResourceAvailability
+         content={content}
+         state={isLoading ? "loading" : isContentError ? "error" : "ready"}
+       />
+
         <section className="mb-8 rounded-3xl border border-primary/20 bg-primary/5 p-4 sm:p-5" aria-label={`طريقة استخدام ${foundationBookName}`}>
          <div className="flex items-center gap-2">
            <BookOpen className="h-5 w-5 text-primary" />
-            <h2 className="text-base font-black text-foreground">كيف تستخدم {foundationBookName}؟</h2>
+             <h2 className="text-base font-black text-foreground">كيف تتابع مواد {activeSection.shortTitle}؟</h2>
          </div>
          <div className="mt-4 grid gap-3 md:grid-cols-3">
            {[
-             ["١", "اقرأ الباب", "افهم الفكرة، ثم تتبّع المثال المحلول وأعده بنفسك."],
-             ["٢", "شاهد الشرح", "شاهد الفيديو المرتبط بالدرس لتثبيت طريقة الحل."],
-             ["٣", "اختبر فهمك", "راجع أخطاءك، ثم استخدم اختبار تغطية البنك للتدرّب على أسئلة جديدة."],
+              ["١", "ابدأ بالمتاح", "افتح الشرح أو الملف إذا كان منشورًا للمادة."],
+              ["٢", "تابع الفيديو", "شاهد الفيديو عند توفره؛ وإن لم يكن منشورًا فستظهر حالته «قريبًا»."],
+              ["٣", "راجع التدريب", "افتح الاختبار إذا كان مرتبطًا بالدرس."],
            ].map(([number, title, description]) => (
              <div key={number} className="flex items-start gap-3 rounded-2xl border border-primary/10 bg-background/70 p-3">
                <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-primary text-sm font-black text-primary-foreground">{number}</span>
@@ -1262,13 +1400,29 @@ function FoundationPageContent() {
           <div className="rounded-3xl border border-primary/20 bg-gradient-to-br from-primary/10 via-card to-card p-5 shadow-sm">
             <div className="flex flex-wrap items-start justify-between gap-3">
               <div>
-                <span className="inline-flex rounded-full bg-primary/10 px-3 py-1 text-xs font-black text-primary">كتاب تأسيسي مكتوب</span>
-                <h2 className="mt-3 text-xl font-black text-foreground">
-                  {foundationBook?.title || `كتاب التأسيس ${activeSection.shortTitle}`}
-                </h2>
-                <p className="mt-2 max-w-2xl text-sm leading-7 text-muted-foreground">
-                  شرح أصلي منظم من أساسيات الباب إلى استراتيجيات حل أسئلة القدرات، مع أمثلة محلولة وتنبيهات على الأخطاء الشائعة.
-                </p>
+                {foundationBook ? (
+                  <>
+                    <span className="inline-flex rounded-full bg-primary/10 px-3 py-1 text-xs font-black text-primary">كتاب تأسيسي منشور</span>
+                    <h2 className="mt-3 text-xl font-black text-foreground">{foundationBook.title}</h2>
+                    <p className="mt-2 max-w-2xl text-sm leading-7 text-muted-foreground">{foundationBook.description}</p>
+                  </>
+                ) : isLoading ? (
+                  <>
+                    <span className="inline-flex rounded-full bg-muted px-3 py-1 text-xs font-black text-muted-foreground">جارٍ التحقق</span>
+                    <h2 className="mt-3 text-xl font-black text-foreground">جارٍ تحميل بيانات الكتاب</h2>
+                  </>
+                ) : isContentError ? (
+                  <>
+                    <span className="inline-flex rounded-full bg-amber-500/10 px-3 py-1 text-xs font-black text-amber-800 dark:text-amber-300">تعذر التحقق</span>
+                    <h2 className="mt-3 text-xl font-black text-foreground">تعذر تحميل بيانات الكتاب</h2>
+                  </>
+                ) : (
+                  <>
+                    <span className="inline-flex rounded-full bg-muted px-3 py-1 text-xs font-black text-muted-foreground">قريبًا</span>
+                    <h2 className="mt-3 text-xl font-black text-foreground">الكتاب التأسيسي غير منشور بعد</h2>
+                    <p className="mt-2 max-w-2xl text-sm leading-7 text-muted-foreground">ستظهر بيانات الكتاب ورابطه هنا بعد نشره.</p>
+                  </>
+                )}
               </div>
               <BookOpen className="h-7 w-7 text-primary" />
             </div>
@@ -1363,10 +1517,10 @@ function FoundationPageContent() {
 
       <div className="mb-4 flex flex-wrap items-end justify-between gap-3">
         <div>
-           <h2 className="text-xl font-black text-foreground">دروس كتاب قدراتك</h2>
-           <p className="mt-1 text-sm text-muted-foreground">كل درس يجمع الملزمة، الفيديو، واختبار القسم في مسار واحد.</p>
+         <h2 className="text-xl font-black text-foreground">مواد {activeSection.shortTitle} المنشورة</h2>
+            <p className="mt-1 text-sm text-muted-foreground">تختلف موارد كل درس؛ تحقق من حالة الكتاب والملفات والفيديو قبل البدء.</p>
         </div>
-        <span className="rounded-full bg-primary/10 px-3 py-1 text-xs font-black text-primary">من الصفر إلى الاحتراف</span>
+        <span className="rounded-full bg-primary/10 px-3 py-1 text-xs font-black text-primary">المواد المنشورة</span>
       </div>
 
       {completionSummary && completionSummary.total > 0 ? (
@@ -1450,7 +1604,7 @@ function FoundationPageContent() {
                 <div className="flex aspect-video items-center justify-center bg-gradient-to-br from-[#0D1B2A] to-[#173B5C] p-8 text-center">
                   <div>
                     <PlayCircle className="mx-auto h-14 w-14 text-[#F7F775]" />
-                    <p className="mt-4 text-sm font-bold text-slate-200">اختر درسًا من القائمة ليظهر الفيديو هنا</p>
+                    <p className="mt-4 text-sm font-bold text-slate-200">{selectedLesson ? "فيديو هذا الدرس قريبًا" : "اختر مادة من القائمة"}</p>
                   </div>
                 </div>
               )}
@@ -1473,14 +1627,14 @@ function FoundationPageContent() {
                   )}
                   <div className="flex items-center gap-2 text-xs text-slate-400">
                     <ShieldCheck className="h-4 w-4 text-emerald-400" />
-                    {selectedLesson?.quiz ? "الاختبار في صفحة مستقلة" : "فيديو شرح للدرس"}
+                    {selectedLesson?.quiz ? "الاختبار في صفحة مستقلة" : "لا يوجد اختبار مرتبط"}
                   </div>
                 </div>
                  {selectedLesson?.attachments?.length ? (
                    <div className="mt-4 rounded-2xl border border-white/10 bg-white/5 p-3">
                      <div className="mb-2 flex items-center gap-2 text-xs font-black text-[#F7F775]">
                        <FileText className="h-4 w-4" />
-                        ملزمة كتاب قدراتك
+                         ملفات الدرس
                      </div>
                      <div className="grid gap-2 sm:grid-cols-2">
                        {selectedLesson.attachments.map((attachment) => (
@@ -1497,8 +1651,13 @@ function FoundationPageContent() {
                        ))}
                      </div>
                    </div>
-                 ) : null}
-                  {selectedLesson && <FoundationQuizCard key={selectedLesson._id} lesson={selectedLesson} />}
+                  ) : selectedLesson ? (
+                    <p className="mt-3 text-xs font-bold text-slate-400">ملفات هذا الدرس: قريبًا</p>
+                  ) : null}
+                  {selectedLesson && !selectedLesson.videoUrl?.trim() && (
+                    <p className="mt-2 text-xs font-bold text-slate-400">فيديو هذا الدرس: قريبًا</p>
+                  )}
+                   {selectedLesson && <FoundationQuizCard key={selectedLesson._id} lesson={selectedLesson} />}
               </div>
             </div>
             <div className="rounded-2xl border border-border bg-card p-5">
@@ -1576,7 +1735,7 @@ function FoundationPageContent() {
                 <ListChecks className="h-4 w-4 text-primary" />
               </div>
                 <div className="rounded-2xl border border-dashed border-border bg-background p-4 text-sm leading-7 text-muted-foreground">
-                   افتح صفحة الدرس من القائمة لمشاهدة الفيديو والملزمة والتنقل بين الدروس. يمكنك اختبار فهمك بعد ذلك.
+                   افتح صفحة الدرس لمراجعة المحتوى والموارد المنشورة. يظهر «قريبًا» عند عدم توفر ملف أو فيديو.
                 </div>
             </div>
           </aside>
@@ -1584,8 +1743,8 @@ function FoundationPageContent() {
       ) : (
         <div className="rounded-2xl border border-dashed border-border bg-card px-5 py-16 text-center">
           <BookOpen className="mx-auto mb-3 h-12 w-12 text-muted-foreground" />
-          <h3 className="text-lg font-black text-foreground">لا توجد دروس منشورة قابلة للفتح في هذا القسم</h3>
-          <p className="mt-1 text-sm text-muted-foreground">ستظهر الدروس هنا بعد نشرها واعتمادها.</p>
+          <h3 className="text-lg font-black text-foreground">لا توجد مواد منشورة في هذا القسم بعد</h3>
+          <p className="mt-1 text-sm text-muted-foreground">مواد هذا القسم قريبًا. يمكنك العودة واختيار مادة أخرى.</p>
         </div>
       )}
 
@@ -1594,11 +1753,11 @@ function FoundationPageContent() {
           <div>
             <div className="flex items-center gap-2">
               <BookOpen className="h-5 w-5 text-primary" />
-               <h2 className="text-xl font-black text-foreground">خريطة {foundationBookName} · {activeSection.shortTitle}</h2>
+                <h2 className="text-xl font-black text-foreground">خريطة موضوعات {activeSection.shortTitle}</h2>
             </div>
-            <p className="mt-2 max-w-3xl text-sm leading-7 text-muted-foreground">{curriculum.intro}</p>
+            <p className="mt-2 max-w-3xl text-sm leading-7 text-muted-foreground">مقترح إرشادي للموضوعات، منفصل عن الكتب والملفات والفيديوهات المنشورة أعلاه. {curriculum.intro}</p>
           </div>
-          <span className="rounded-full bg-emerald-500/10 px-3 py-1 text-xs font-black text-emerald-700 dark:text-emerald-300">من الصفر إلى الاحتراف</span>
+          <span className="rounded-full bg-muted px-3 py-1 text-xs font-black text-muted-foreground">خريطة إرشادية</span>
         </div>
         <div className="mt-4 grid gap-3 md:grid-cols-2">
           {curriculum.lessons.map((lesson, index) => (
