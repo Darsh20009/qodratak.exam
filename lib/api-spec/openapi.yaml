@@ -146,6 +146,86 @@ paths:
           description: The quiz submission conflicts with an earlier request
         "503":
           description: Quiz progress could not be stored
+  /learning/foundation-book/verbal:
+    get:
+      operationId: getQudratVerbalBook
+      tags: [learning]
+      summary: Get the Qudrat verbal foundation book and student progress
+      responses:
+        "200":
+          description: Published verbal lesson map and student-specific progression
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/QuantitativeBookOverview"
+        "401":
+          description: Authentication required
+        "503":
+          description: Book progress is unavailable
+  /learning/foundation-book/verbal/lessons/{lessonId}:
+    get:
+      operationId: getQudratVerbalBookLesson
+      tags: [learning]
+      summary: Get one published verbal lesson and its current quiz set
+      parameters:
+        - name: lessonId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Verbal lesson content and unanswered quiz questions, including reading passages when relevant
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/VerbalBookLesson"
+        "400":
+          description: Invalid lesson identifier
+        "401":
+          description: Authentication required
+        "403":
+          description: The lesson is still locked by the mastery sequence
+        "404":
+          description: Lesson is not published
+        "503":
+          description: Lesson progress is unavailable
+  /learning/foundation-book/verbal/lessons/{lessonId}/submit:
+    post:
+      operationId: submitQudratVerbalBookLesson
+      tags: [learning]
+      summary: Submit and server-grade a Qudrat verbal lesson quiz
+      parameters:
+        - name: lessonId
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/QuantitativeBookQuizInput"
+      responses:
+        "200":
+          description: Score, worked feedback, and unlock status
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/QuantitativeBookQuizResult"
+        "400":
+          description: Invalid or incomplete quiz answers
+        "401":
+          description: Authentication required
+        "403":
+          description: The lesson is locked
+        "404":
+          description: Lesson or current quiz set not found
+        "409":
+          description: The quiz submission conflicts with an earlier request
+        "503":
+          description: Quiz progress could not be stored
   /learning/foundation-test:
     post:
       operationId: createFoundationCoverageTest
@@ -619,6 +699,20 @@ components:
           type: array
           minItems: 2
           items: { type: string }
+    VerbalBookQuestion:
+      type: object
+      additionalProperties: false
+      required: [id, skillCode, prompt, options]
+      properties:
+        id: { type: string }
+        skillCode: { type: string }
+        prompt: { type: string }
+        options:
+          type: array
+          minItems: 2
+          items: { type: string }
+        passageLabel: { type: string }
+        passageText: { type: string }
     QuantitativeBookSkillFocus:
       type: object
       additionalProperties: false
@@ -652,6 +746,36 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/QuantitativeBookQuestion"
+        focusSkills:
+          type: array
+          items:
+            $ref: "#/components/schemas/QuantitativeBookSkillFocus"
+    VerbalBookLesson:
+      type: object
+      additionalProperties: false
+      required: [id, title, chapterTitle, summary, estimatedMinutes, passingScore, sections, sources, mode, questions, focusSkills]
+      properties:
+        id: { type: string }
+        title: { type: string }
+        chapterTitle: { type: string }
+        summary: { type: string }
+        estimatedMinutes: { type: number }
+        passingScore: { type: number }
+        sections:
+          type: array
+          items:
+            $ref: "#/components/schemas/QuantitativeBookSection"
+        sources:
+          type: array
+          items:
+            $ref: "#/components/schemas/QuantitativeBookSource"
+        mode:
+          type: string
+          enum: [assessment, remediation]
+        questions:
+          type: array
+          items:
+            $ref: "#/components/schemas/VerbalBookQuestion"
         focusSkills:
           type: array
           items:
@@ -691,6 +815,8 @@ components:
         correctAnswer: { type: string }
         explanation: { type: string }
         selectedOptionFeedback: { type: ["string", "null"] }
+        passageLabel: { type: string }
+        passageText: { type: string }
     QuantitativeBookQuizResult:
       type: object
       additionalProperties: false

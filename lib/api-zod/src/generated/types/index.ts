@@ -53,3 +53,6 @@ export * from './quantitativeBookTopic';
 export * from './quantitativeBookTopicStatus';
 export * from './quantitativeBookWorkedExample';
 export * from './questionBankCoverage';
+export * from './verbalBookLesson';
+export * from './verbalBookLessonMode';
+export * from './verbalBookQuestion';

@@ -1,8 +1,11 @@
 import type { Express, Request, Response } from "express";
 import {
   GetQudratQuantitativeBookLessonParams,
+  GetQudratVerbalBookLessonParams,
   SubmitQudratQuantitativeBookLessonBody,
   SubmitQudratQuantitativeBookLessonParams,
+  SubmitQudratVerbalBookLessonBody,
+  SubmitQudratVerbalBookLessonParams,
 } from "@workspace/api-zod";
 import { createServer, type Server } from "http";
 import mongoose from 'mongoose';
@@ -70,6 +73,12 @@ import {
   QuantitativeBookServiceError,
   submitQudratQuantitativeBookLesson,
 } from '../services/qudratQuantitativeBookService';
+import {
+  getQudratVerbalBook,
+  getQudratVerbalBookLesson,
+  submitQudratVerbalBookLesson,
+  VerbalBookServiceError,
+} from '../services/qudratVerbalBookService';
 import {
   MasteryError,
   listApprovedMasteryNodes,
@@ -12421,6 +12430,65 @@ app.post("/api/auth/register", async (req: Request, res: Response) => {
       }
       req.log.error({ err: error, lessonId: params.data.lessonId }, 'Failed to submit Qudrat quantitative quiz');
       res.status(503).json({ error: 'تعذر حفظ نتيجة الاختبار' });
+    }
+  });
+
+  app.get('/api/learning/foundation-book/verbal', requireAuth, async (req: Request, res: Response): Promise<void> => {
+    const userId = studentOnly(req, res);
+    if (!userId) return;
+    try {
+      const result = await getQudratVerbalBook(userId);
+      res.json(result);
+    } catch (error) {
+      req.log.error({ err: error }, 'Failed to load Qudrat verbal book');
+      res.status(503).json({ error: 'تعذر تحميل تقدم الكتاب اللفظي' });
+    }
+  });
+
+  app.get('/api/learning/foundation-book/verbal/lessons/:lessonId', requireAuth, async (req: Request, res: Response): Promise<void> => {
+    const userId = studentOnly(req, res);
+    if (!userId) return;
+    const params = GetQudratVerbalBookLessonParams.safeParse(req.params);
+    if (!params.success) {
+      res.status(400).json({ error: 'معرف الدرس غير صالح' });
+      return;
+    }
+    try {
+      const result = await getQudratVerbalBookLesson(userId, params.data.lessonId);
+      res.json(result);
+    } catch (error) {
+      if (error instanceof VerbalBookServiceError) {
+        res.status(error.statusCode).json({ error: error.message });
+        return;
+      }
+      req.log.error({ err: error, lessonId: params.data.lessonId }, 'Failed to load Qudrat verbal lesson');
+      res.status(503).json({ error: 'تعذر تحميل الدرس اللفظي' });
+    }
+  });
+
+  app.post('/api/learning/foundation-book/verbal/lessons/:lessonId/submit', requireAuth, async (req: Request, res: Response): Promise<void> => {
+    const userId = studentOnly(req, res);
+    if (!userId) return;
+    const params = SubmitQudratVerbalBookLessonParams.safeParse(req.params);
+    if (!params.success) {
+      res.status(400).json({ error: 'معرف الدرس غير صالح' });
+      return;
+    }
+    const body = SubmitQudratVerbalBookLessonBody.safeParse(req.body);
+    if (!body.success) {
+      res.status(400).json({ error: 'بيانات الاختبار غير صالحة' });
+      return;
+    }
+    try {
+      const result = await submitQudratVerbalBookLesson(userId, params.data.lessonId, body.data);
+      res.json(result);
+    } catch (error) {
+      if (error instanceof VerbalBookServiceError) {
+        res.status(error.statusCode).json({ error: error.message });
+        return;
+      }
+      req.log.error({ err: error, lessonId: params.data.lessonId }, 'Failed to submit Qudrat verbal quiz');
+      res.status(503).json({ error: 'تعذر حفظ نتيجة اختبار اللفظي' });
     }
   });
 

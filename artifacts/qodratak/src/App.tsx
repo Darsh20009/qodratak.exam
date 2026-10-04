@@ -160,6 +160,7 @@ import FoundationCoverageTestPage from "@/pages/student/FoundationCoverageTestPa
 import FoundationBankTestPage from "@/pages/student/FoundationBankTestPage";
 import FoundationReaderPage from "@/pages/student/FoundationReaderPage";
 import { QuantitativeBookOverviewPage, QuantitativeBookLessonPage } from "@/pages/student/QuantitativeBookPage";
+import { VerbalBookOverviewPage, VerbalBookLessonPage } from "@/pages/student/VerbalBookPage";
 import LearningTodayPage from "@/pages/student/LearningTodayPage";
 import ComputerizedPage from "@/pages/student/ComputerizedPage";
 import AccountPage from "@/pages/student/AccountPage";
@@ -909,6 +910,12 @@ function Router({ splashDone }: { splashDone: boolean }) {
       </Route>
       <Route path="/student/foundation-book/quantitative/:lessonId">
         {(params) => <StudentShell><ProtectedRoute><QuantitativeBookLessonPage lessonId={params.lessonId} /></ProtectedRoute></StudentShell>}
+      </Route>
+      <Route path="/student/foundation-book/verbal">
+        {() => <StudentShell><ProtectedRoute><VerbalBookOverviewPage /></ProtectedRoute></StudentShell>}
+      </Route>
+      <Route path="/student/foundation-book/verbal/:lessonId">
+        {(params) => <StudentShell><ProtectedRoute><VerbalBookLessonPage lessonId={params.lessonId} /></ProtectedRoute></StudentShell>}
       </Route>
       <Route path="/foundation/coverage-test">
         {() => <StudentShell><ProtectedRoute><FoundationCoverageTestPage /></ProtectedRoute></StudentShell>}

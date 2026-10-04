@@ -37,7 +37,8 @@ import type {
   QuantitativeBookLesson,
   QuantitativeBookOverview,
   QuantitativeBookQuizInput,
-  QuantitativeBookQuizResult
+  QuantitativeBookQuizResult,
+  VerbalBookLesson
 } from './api.schemas';
 
 import { customFetch } from '../custom-fetch';
@@ -523,6 +524,232 @@ export const useSubmitQudratQuantitativeBookLesson = <TError = ErrorType<void>,
         TContext
       > => {
       return useMutation(getSubmitQudratQuantitativeBookLessonMutationOptions(options));
+    }
+
+export const getGetQudratVerbalBookUrl = () => {
+
+
+
+
+  return `/api/learning/foundation-book/verbal`
+}
+
+/**
+ * @summary Get the Qudrat verbal foundation book and student progress
+ */
+export const getQudratVerbalBook = async ( options?: Parameters<typeof customFetch>[1]): Promise<QuantitativeBookOverview> => {
+
+  return customFetch<QuantitativeBookOverview>(getGetQudratVerbalBookUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetQudratVerbalBookQueryKey = () => {
+    return [
+    `/api/learning/foundation-book/verbal`
+    ] as const;
+    }
+
+
+export const getGetQudratVerbalBookQueryOptions = <TData = Awaited<ReturnType<typeof getQudratVerbalBook>>, TError = ErrorType<void>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getQudratVerbalBook>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetQudratVerbalBookQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getQudratVerbalBook>>> = ({ signal }) => getQudratVerbalBook({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getQudratVerbalBook>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetQudratVerbalBookQueryResult = NonNullable<Awaited<ReturnType<typeof getQudratVerbalBook>>>
+export type GetQudratVerbalBookQueryError = ErrorType<void>
+
+
+/**
+ * @summary Get the Qudrat verbal foundation book and student progress
+ */
+
+export function useGetQudratVerbalBook<TData = Awaited<ReturnType<typeof getQudratVerbalBook>>, TError = ErrorType<void>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getQudratVerbalBook>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetQudratVerbalBookQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getGetQudratVerbalBookLessonUrl = (lessonId: string,) => {
+
+
+
+
+  return `/api/learning/foundation-book/verbal/lessons/${lessonId}`
+}
+
+/**
+ * @summary Get one published verbal lesson and its current quiz set
+ */
+export const getQudratVerbalBookLesson = async (lessonId: string, options?: Parameters<typeof customFetch>[1]): Promise<VerbalBookLesson> => {
+
+  return customFetch<VerbalBookLesson>(getGetQudratVerbalBookLessonUrl(lessonId),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetQudratVerbalBookLessonQueryKey = (lessonId: string,) => {
+    return [
+    `/api/learning/foundation-book/verbal/lessons/${lessonId}`
+    ] as const;
+    }
+
+
+export const getGetQudratVerbalBookLessonQueryOptions = <TData = Awaited<ReturnType<typeof getQudratVerbalBookLesson>>, TError = ErrorType<void>>(lessonId: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getQudratVerbalBookLesson>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetQudratVerbalBookLessonQueryKey(lessonId);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getQudratVerbalBookLesson>>> = ({ signal }) => getQudratVerbalBookLesson(lessonId, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: lessonId !== null && lessonId !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getQudratVerbalBookLesson>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetQudratVerbalBookLessonQueryResult = NonNullable<Awaited<ReturnType<typeof getQudratVerbalBookLesson>>>
+export type GetQudratVerbalBookLessonQueryError = ErrorType<void>
+
+
+/**
+ * @summary Get one published verbal lesson and its current quiz set
+ */
+
+export function useGetQudratVerbalBookLesson<TData = Awaited<ReturnType<typeof getQudratVerbalBookLesson>>, TError = ErrorType<void>>(
+ lessonId: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getQudratVerbalBookLesson>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetQudratVerbalBookLessonQueryOptions(lessonId,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getSubmitQudratVerbalBookLessonUrl = (lessonId: string,) => {
+
+
+
+
+  return `/api/learning/foundation-book/verbal/lessons/${lessonId}/submit`
+}
+
+/**
+ * @summary Submit and server-grade a Qudrat verbal lesson quiz
+ */
+export const submitQudratVerbalBookLesson = async (lessonId: string,
+    quantitativeBookQuizInput: QuantitativeBookQuizInput, options?: Parameters<typeof customFetch>[1]): Promise<QuantitativeBookQuizResult> => {
+
+  return customFetch<QuantitativeBookQuizResult>(getSubmitQudratVerbalBookLessonUrl(lessonId),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(quantitativeBookQuizInput)
+  }
+);}
+
+
+
+
+
+export const getSubmitQudratVerbalBookLessonMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof submitQudratVerbalBookLesson>>, TError,{lessonId: string;data: BodyType<QuantitativeBookQuizInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof submitQudratVerbalBookLesson>>, TError,{lessonId: string;data: BodyType<QuantitativeBookQuizInput>}, TContext> => {
+
+const mutationKey = ['submitQudratVerbalBookLesson'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof submitQudratVerbalBookLesson>>, {lessonId: string;data: BodyType<QuantitativeBookQuizInput>}> = (props) => {
+          const {lessonId,data} = props ?? {};
+
+          return  submitQudratVerbalBookLesson(lessonId,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type SubmitQudratVerbalBookLessonMutationResult = NonNullable<Awaited<ReturnType<typeof submitQudratVerbalBookLesson>>>
+    export type SubmitQudratVerbalBookLessonMutationBody = BodyType<QuantitativeBookQuizInput>
+    export type SubmitQudratVerbalBookLessonMutationError = ErrorType<void>
+
+    /**
+ * @summary Submit and server-grade a Qudrat verbal lesson quiz
+ */
+export const useSubmitQudratVerbalBookLesson = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof submitQudratVerbalBookLesson>>, TError,{lessonId: string;data: BodyType<QuantitativeBookQuizInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof submitQudratVerbalBookLesson>>,
+        TError,
+        {lessonId: string;data: BodyType<QuantitativeBookQuizInput>},
+        TContext
+      > => {
+      return useMutation(getSubmitQudratVerbalBookLessonMutationOptions(options));
     }
 
 export const getCreateFoundationCoverageTestUrl = () => {

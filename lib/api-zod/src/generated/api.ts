@@ -232,7 +232,151 @@ export const SubmitQudratQuantitativeBookLessonResponse = zod.object({
   "correctOptionIndex": zod.number(),
   "correctAnswer": zod.string(),
   "explanation": zod.string(),
-  "selectedOptionFeedback": zod.string().nullable()
+  "selectedOptionFeedback": zod.string().nullable(),
+  "passageLabel": zod.string().optional(),
+  "passageText": zod.string().optional()
+})),
+  "unlockedNextLessonId": zod.string().nullable()
+})
+
+
+/**
+ * @summary Get the Qudrat verbal foundation book and student progress
+ */
+export const GetQudratVerbalBookResponse = zod.object({
+  "id": zod.string(),
+  "title": zod.string(),
+  "description": zod.string(),
+  "passingScore": zod.number(),
+  "totalTopicCount": zod.number(),
+  "publishedLessonCount": zod.number(),
+  "completedLessonCount": zod.number(),
+  "chapters": zod.array(zod.object({
+  "id": zod.string(),
+  "title": zod.string(),
+  "order": zod.number(),
+  "topics": zod.array(zod.object({
+  "id": zod.string(),
+  "title": zod.string(),
+  "order": zod.number(),
+  "summary": zod.string(),
+  "status": zod.enum(['available', 'locked', 'completed', 'coming_soon']),
+  "attemptCount": zod.number(),
+  "lastScore": zod.number().nullable()
+}))
+})),
+  "focus": zod.union([zod.object({
+  "skillCode": zod.string(),
+  "title": zod.string(),
+  "message": zod.string(),
+  "observations": zod.number()
+}),zod.null()])
+})
+
+
+/**
+ * @summary Get one published verbal lesson and its current quiz set
+ */
+export const GetQudratVerbalBookLessonParams = zod.object({
+  "lessonId": zod.coerce.string()
+})
+
+export const getQudratVerbalBookLessonResponseQuestionsItemOptionsMin = 2;
+
+
+
+export const GetQudratVerbalBookLessonResponse = zod.object({
+  "id": zod.string(),
+  "title": zod.string(),
+  "chapterTitle": zod.string(),
+  "summary": zod.string(),
+  "estimatedMinutes": zod.number(),
+  "passingScore": zod.number(),
+  "sections": zod.array(zod.object({
+  "id": zod.string(),
+  "kind": zod.enum(['concept', 'rule', 'example', 'warning']),
+  "title": zod.string(),
+  "paragraphs": zod.array(zod.string()),
+  "workedExample": zod.union([zod.object({
+  "question": zod.string(),
+  "steps": zod.array(zod.string()),
+  "answer": zod.string()
+}),zod.null()]).optional()
+})),
+  "sources": zod.array(zod.object({
+  "id": zod.string(),
+  "title": zod.string(),
+  "organization": zod.string(),
+  "url": zod.string()
+})),
+  "mode": zod.enum(['assessment', 'remediation']),
+  "questions": zod.array(zod.object({
+  "id": zod.string(),
+  "skillCode": zod.string(),
+  "prompt": zod.string(),
+  "options": zod.array(zod.string()).min(getQudratVerbalBookLessonResponseQuestionsItemOptionsMin),
+  "passageLabel": zod.string().optional(),
+  "passageText": zod.string().optional()
+})),
+  "focusSkills": zod.array(zod.object({
+  "skillCode": zod.string(),
+  "title": zod.string()
+}))
+})
+
+
+/**
+ * @summary Submit and server-grade a Qudrat verbal lesson quiz
+ */
+export const SubmitQudratVerbalBookLessonParams = zod.object({
+  "lessonId": zod.coerce.string()
+})
+
+export const submitQudratVerbalBookLessonBodyAnswersItemQuestionIdMax = 80;
+
+export const submitQudratVerbalBookLessonBodyAnswersItemSelectedOptionIndexMin = 0;
+export const submitQudratVerbalBookLessonBodyAnswersItemSelectedOptionIndexMax = 20;
+
+export const submitQudratVerbalBookLessonBodyAnswersMax = 20;
+
+export const submitQudratVerbalBookLessonBodyTimeTakenSecondsMin = 0;
+export const submitQudratVerbalBookLessonBodyTimeTakenSecondsMax = 7200;
+
+export const submitQudratVerbalBookLessonBodyIdempotencyKeyMin = 8;
+export const submitQudratVerbalBookLessonBodyIdempotencyKeyMax = 120;
+
+
+
+export const SubmitQudratVerbalBookLessonBody = zod.object({
+  "answers": zod.array(zod.object({
+  "questionId": zod.string().min(1).max(submitQudratVerbalBookLessonBodyAnswersItemQuestionIdMax),
+  "selectedOptionIndex": zod.number().min(submitQudratVerbalBookLessonBodyAnswersItemSelectedOptionIndexMin).max(submitQudratVerbalBookLessonBodyAnswersItemSelectedOptionIndexMax)
+})).min(1).max(submitQudratVerbalBookLessonBodyAnswersMax),
+  "timeTakenSeconds": zod.number().min(submitQudratVerbalBookLessonBodyTimeTakenSecondsMin).max(submitQudratVerbalBookLessonBodyTimeTakenSecondsMax),
+  "idempotencyKey": zod.string().min(submitQudratVerbalBookLessonBodyIdempotencyKeyMin).max(submitQudratVerbalBookLessonBodyIdempotencyKeyMax)
+})
+
+export const SubmitQudratVerbalBookLessonResponse = zod.object({
+  "lessonId": zod.string(),
+  "score": zod.number(),
+  "correctAnswers": zod.number(),
+  "totalQuestions": zod.number(),
+  "passed": zod.boolean(),
+  "passingScore": zod.number(),
+  "attemptNumber": zod.number(),
+  "questionDetails": zod.array(zod.object({
+  "questionId": zod.string(),
+  "skillCode": zod.string(),
+  "prompt": zod.string(),
+  "selectedOptionIndex": zod.number().nullable(),
+  "selectedOptionText": zod.string().nullable(),
+  "isCorrect": zod.boolean(),
+  "correctOptionIndex": zod.number(),
+  "correctAnswer": zod.string(),
+  "explanation": zod.string(),
+  "selectedOptionFeedback": zod.string().nullable(),
+  "passageLabel": zod.string().optional(),
+  "passageText": zod.string().optional()
 })),
   "unlockedNextLessonId": zod.string().nullable()
 })

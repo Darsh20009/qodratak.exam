@@ -20,4 +20,6 @@ export interface QuantitativeBookQuestionResult {
   explanation: string;
   /** @nullable */
   selectedOptionFeedback: string | null;
+  passageLabel?: string;
+  passageText?: string;
 }

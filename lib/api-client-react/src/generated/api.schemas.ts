@@ -373,6 +373,16 @@ export interface QuantitativeBookQuestion {
   options: string[];
 }
 
+export interface VerbalBookQuestion {
+  id: string;
+  skillCode: string;
+  prompt: string;
+  /** @minItems 2 */
+  options: string[];
+  passageLabel?: string;
+  passageText?: string;
+}
+
 export interface QuantitativeBookSkillFocus {
   skillCode: string;
   title: string;
@@ -397,6 +407,28 @@ export interface QuantitativeBookLesson {
   sources: QuantitativeBookSource[];
   mode: QuantitativeBookLessonMode;
   questions: QuantitativeBookQuestion[];
+  focusSkills: QuantitativeBookSkillFocus[];
+}
+
+export type VerbalBookLessonMode = typeof VerbalBookLessonMode[keyof typeof VerbalBookLessonMode];
+
+
+export const VerbalBookLessonMode = {
+  assessment: 'assessment',
+  remediation: 'remediation',
+} as const;
+
+export interface VerbalBookLesson {
+  id: string;
+  title: string;
+  chapterTitle: string;
+  summary: string;
+  estimatedMinutes: number;
+  passingScore: number;
+  sections: QuantitativeBookSection[];
+  sources: QuantitativeBookSource[];
+  mode: VerbalBookLessonMode;
+  questions: VerbalBookQuestion[];
   focusSkills: QuantitativeBookSkillFocus[];
 }
 
@@ -445,6 +477,8 @@ export interface QuantitativeBookQuestionResult {
   explanation: string;
   /** @nullable */
   selectedOptionFeedback: string | null;
+  passageLabel?: string;
+  passageText?: string;
 }
 
 export interface QuantitativeBookQuizResult {
