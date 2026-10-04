@@ -446,7 +446,7 @@ function CurrentStageCard({
   if (stage !== "foundation") {
     const copy = stageCopy[stage];
     return (
-      <div className="flex min-h-full flex-col justify-between rounded-3xl bg-[#0D1B2A] p-5 text-white shadow-sm sm:p-6">
+      <div className="flex flex-col gap-6 rounded-3xl bg-[#0D1B2A] p-5 text-white shadow-sm sm:p-6">
         <div>
           <div className="inline-flex rounded-full bg-white/10 px-3 py-1 text-[11px] font-black text-[#F7F775]">
             {copy.eyebrow}
@@ -454,7 +454,7 @@ function CurrentStageCard({
           <h2 className="mt-5 text-2xl font-black">{title || copy.title}</h2>
           <p className="mt-3 text-sm leading-7 text-[#CBD5E1]">{description || copy.description}</p>
         </div>
-        <Link data-testid="link-current-stage-action" href={action?.href || copy.href} className="mt-8 inline-flex items-center justify-center gap-2 rounded-xl bg-[#F7F775] px-4 py-3 text-sm font-black text-[#0D1B2A]">
+        <Link data-testid="link-current-stage-action" href={action?.href || copy.href} className="inline-flex items-center justify-center gap-2 rounded-xl bg-[#F7F775] px-4 py-3 text-sm font-black text-[#0D1B2A]">
           {action?.label || copy.action}
           <ArrowLeft className="h-4 w-4" />
         </Link>
