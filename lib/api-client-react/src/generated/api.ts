@@ -603,6 +603,83 @@ export function useGetQudratVerbalBook<TData = Awaited<ReturnType<typeof getQudr
 
 
 
+export const getDownloadQudratVerbalBookFileUrl = (fileId: 'sentence-completion' | 'reading-comprehension' | 'contextual-error' | 'verbal-analogy',) => {
+
+
+
+
+  return `/api/learning/foundation-book/verbal/files/${fileId}`
+}
+
+/**
+ * @summary Stream a Qudrat verbal PDF to an authenticated student
+ */
+export const downloadQudratVerbalBookFile = async (fileId: 'sentence-completion' | 'reading-comprehension' | 'contextual-error' | 'verbal-analogy', options?: Parameters<typeof customFetch>[1]): Promise<Blob> => {
+
+  return customFetch<Blob>(getDownloadQudratVerbalBookFileUrl(fileId),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getDownloadQudratVerbalBookFileQueryKey = (fileId: 'sentence-completion' | 'reading-comprehension' | 'contextual-error' | 'verbal-analogy',) => {
+    return [
+    `/api/learning/foundation-book/verbal/files/${fileId}`
+    ] as const;
+    }
+
+
+export const getDownloadQudratVerbalBookFileQueryOptions = <TData = Awaited<ReturnType<typeof downloadQudratVerbalBookFile>>, TError = ErrorType<void>>(fileId: 'sentence-completion' | 'reading-comprehension' | 'contextual-error' | 'verbal-analogy', options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof downloadQudratVerbalBookFile>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getDownloadQudratVerbalBookFileQueryKey(fileId);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof downloadQudratVerbalBookFile>>> = ({ signal }) => downloadQudratVerbalBookFile(fileId, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: fileId !== null && fileId !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof downloadQudratVerbalBookFile>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type DownloadQudratVerbalBookFileQueryResult = NonNullable<Awaited<ReturnType<typeof downloadQudratVerbalBookFile>>>
+export type DownloadQudratVerbalBookFileQueryError = ErrorType<void>
+
+
+/**
+ * @summary Stream a Qudrat verbal PDF to an authenticated student
+ */
+
+export function useDownloadQudratVerbalBookFile<TData = Awaited<ReturnType<typeof downloadQudratVerbalBookFile>>, TError = ErrorType<void>>(
+ fileId: 'sentence-completion' | 'reading-comprehension' | 'contextual-error' | 'verbal-analogy', options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof downloadQudratVerbalBookFile>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getDownloadQudratVerbalBookFileQueryOptions(fileId,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
 export const getGetQudratVerbalBookLessonUrl = (lessonId: string,) => {
 
 

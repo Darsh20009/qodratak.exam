@@ -178,6 +178,25 @@ const VERBAL_ITEMS: ContentItem[] = [
   },
 ];
 
+const VERBAL_COMPUTERIZED_FILES = [
+  {
+    id: "sentence-completion",
+    section: "إكمال الجمل",
+  },
+  {
+    id: "reading-comprehension",
+    section: "استيعاب المقروء",
+  },
+  {
+    id: "contextual-error",
+    section: "الخطأ السياقي",
+  },
+  {
+    id: "verbal-analogy",
+    section: "التناظر اللفظي",
+  },
+] as const;
+
 function EmptyContentNotice({ label }: { label: string }) {
   return (
     <div className="mt-3 rounded-xl border border-dashed border-[#CBD5E1] bg-white/70 px-3 py-2 text-xs leading-5 text-[#64748B]">
@@ -344,6 +363,61 @@ function ListChecksIcon() {
   return <CheckCircle2 className="h-4 w-4" />;
 }
 
+function VerbalFilesSection() {
+  return (
+    <section
+      className="rounded-3xl border border-[#DDE6E2] bg-[#F8FBFA] p-5 md:p-6"
+      aria-labelledby="verbal-computerized-files-title"
+      data-testid="section-verbal-computerized-files"
+    >
+      <div className="flex flex-wrap items-end justify-between gap-3">
+        <div>
+          <p className="text-xs font-black text-[#3B67A5]">مراجعة الأقسام</p>
+          <h3
+            id="verbal-computerized-files-title"
+            className="mt-1 text-xl font-black text-[#0D1B2A]"
+          >
+            الملفات
+          </h3>
+          <p className="mt-1 text-sm leading-6 text-[#64748B]">
+            ملفات PDF مرتبة حسب القسم. ستُضاف فيديوهات كل قسم لاحقًا.
+          </p>
+        </div>
+        <span className="rounded-full bg-white px-3 py-1 text-xs font-black text-[#3B67A5]">
+          ٤ ملفات
+        </span>
+      </div>
+      <div className="mt-4 grid gap-3 sm:grid-cols-2">
+        {VERBAL_COMPUTERIZED_FILES.map((file) => (
+          <a
+            key={file.id}
+            href={`/api/learning/foundation-book/verbal/files/${file.id}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="group flex min-h-20 items-center justify-between gap-3 rounded-2xl border border-[#DDE6E2] bg-white p-4 transition hover:border-[#3B67A5]/40 hover:shadow-sm"
+            data-testid={`link-verbal-book-file-${file.id}`}
+          >
+            <div className="flex min-w-0 items-center gap-3">
+              <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#EEF4FF] text-[#3B67A5]">
+                <FileText className="h-5 w-5" />
+              </span>
+              <span className="min-w-0">
+                <span className="block text-sm font-black text-[#0D1B2A]">
+                  ملخص الـ95
+                </span>
+                <span className="mt-1 block text-xs font-bold text-[#64748B]">
+                  {file.section} · PDF
+                </span>
+              </span>
+            </div>
+            <ArrowLeft className="h-4 w-4 shrink-0 text-[#94A3B8] transition-transform group-hover:-translate-x-1" />
+          </a>
+        ))}
+      </div>
+    </section>
+  );
+}
+
 function SubjectWorkspace({ mode }: { mode: "quantitative" | "verbal" }) {
   const isQuantitative = mode === "quantitative";
   const title = isQuantitative ? "مسار الكمي" : "مسار اللفظي";
@@ -376,6 +450,8 @@ function SubjectWorkspace({ mode }: { mode: "quantitative" | "verbal" }) {
           </div>
         </div>
       </div>
+
+      {!isQuantitative && <VerbalFilesSection />}
 
       <div>
         <div className="mb-3 flex items-end justify-between gap-3">

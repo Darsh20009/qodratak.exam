@@ -275,6 +275,20 @@ export const GetQudratVerbalBookResponse = zod.object({
 
 
 /**
+ * @summary Stream a Qudrat verbal PDF to an authenticated student
+ */
+export const DownloadQudratVerbalBookFileParams = zod.object({
+  "fileId": zod.enum(['sentence-completion', 'reading-comprehension', 'contextual-error', 'verbal-analogy'])
+})
+
+export const DownloadQudratVerbalBookFileHeader = zod.object({
+  "Range": zod.string().optional().describe('Optional single byte range for PDF preview and resume.')
+})
+
+export const DownloadQudratVerbalBookFileResponse = zod.unknown()
+
+
+/**
  * @summary Get one published verbal lesson and its current quiz set
  */
 export const GetQudratVerbalBookLessonParams = zod.object({

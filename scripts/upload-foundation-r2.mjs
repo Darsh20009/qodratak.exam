@@ -372,9 +372,9 @@ function createR2Client({ accountId, bucket, accessKeyId, secretAccessKey }) {
   return { headObject, putObject, putMultipartObject };
 }
 
-async function ensureUploaded(client, file) {
+async function ensureUploaded(client, file, objectPrefix) {
   const filePath = file.absolutePath;
-  const key = `${OBJECT_PREFIX}/${file.relativePath}`;
+  const key = `${objectPrefix}/${file.relativePath}`;
   const initialStat = await stat(filePath);
   const sha256 = await sha256File(filePath);
   const finalStat = await stat(filePath);
@@ -430,6 +430,8 @@ async function main() {
   const args = parseArguments(process.argv.slice(2));
   const accountId = args.get("account-id");
   const bucket = args.get("bucket");
+  const sourceRoot = path.resolve(args.get("source-root") ?? SOURCE_ROOT);
+  const objectPrefix = args.get("object-prefix") ?? OBJECT_PREFIX;
   const uploadEnabled = args.has("upload");
   const accessKeyId = process.env.CLOUDFLARE_R2_ACCESS_KEY_ID;
   const secretAccessKey = process.env.CLOUDFLARE_R2_SECRET_ACCESS_KEY;
@@ -440,11 +442,18 @@ async function main() {
   if (!bucket || !/^[a-z0-9][a-z0-9-]{1,61}[a-z0-9]$/.test(bucket)) {
     throw new Error("Pass a valid R2 bucket name with --bucket.");
   }
+  if (
+    objectPrefix.startsWith("/") ||
+    objectPrefix.endsWith("/") ||
+    objectPrefix.split("/").some((segment) => !/^[a-z0-9][a-z0-9-]*$/.test(segment))
+  ) {
+    throw new Error("Pass a lowercase object prefix with safe path segments.");
+  }
   if (!accessKeyId || !secretAccessKey) {
     throw new Error("R2 credential secrets are unavailable to this process.");
   }
 
-  const allFiles = (await collectFiles(SOURCE_ROOT)).sort((left, right) =>
+  const allFiles = (await collectFiles(sourceRoot)).sort((left, right) =>
     left.relativePath.localeCompare(right.relativePath),
   );
   const limitArgument = args.get("limit");
@@ -455,7 +464,7 @@ async function main() {
   const files = allFiles.slice(0, limit);
   const totalBytes = files.reduce((total, file) => total + statSync(file.absolutePath).size, 0);
   console.log(
-    `${uploadEnabled ? "Uploading" : "Dry run"} ${files.length}/${allFiles.length} files (${(totalBytes / 1024 ** 3).toFixed(2)} GiB) to s3://${bucket}/${OBJECT_PREFIX}/`,
+    `${uploadEnabled ? "Uploading" : "Dry run"} ${files.length}/${allFiles.length} files (${(totalBytes / 1024 ** 3).toFixed(2)} GiB) to s3://${bucket}/${objectPrefix}/`,
   );
   if (!uploadEnabled) {
     console.log("No objects changed. Re-run with --upload to start the resumable transfer.");
@@ -477,7 +486,7 @@ async function main() {
       if (index >= files.length) return;
       const file = files[index];
       try {
-        const result = await ensureUploaded(client, file);
+        const result = await ensureUploaded(client, file, objectPrefix);
         completed += 1;
         completedBytes += result.size;
         if (result.uploaded) uploaded += 1;

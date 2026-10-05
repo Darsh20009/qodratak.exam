@@ -43,3 +43,4 @@
 - [FFmpeg progress reporting](ffmpeg-progress-reporting.md) — configure progress at launch; SIGUSR1 terminated a running FFmpeg job and left partial output.
 - [OpenAPI codegen constraints](openapi-codegen-constraints.md) — use the generator-compatible schema and route shapes that keep Zod and client types compiling.
 - [React runtime error stacks](react-runtime-error-stack.md) — format JavaScript and React component stacks as strings in development logs so browser collectors preserve them.
+- [Large attachment staging](large-attachment-staging.md) — keep temporary hard links on the workspace filesystem; `/tmp` is mounted separately.

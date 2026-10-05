@@ -162,6 +162,47 @@ paths:
           description: Authentication required
         "503":
           description: Book progress is unavailable
+  /learning/foundation-book/verbal/files/{fileId}:
+    get:
+      operationId: downloadQudratVerbalBookFile
+      tags: [learning]
+      summary: Stream a Qudrat verbal PDF to an authenticated student
+      parameters:
+        - name: fileId
+          in: path
+          required: true
+          schema:
+            type: string
+            enum: [sentence-completion, reading-comprehension, contextual-error, verbal-analogy]
+        - name: Range
+          in: header
+          required: false
+          description: Optional single byte range for PDF preview and resume.
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Complete PDF file
+          content:
+            application/pdf:
+              schema: { type: string, format: binary }
+        "206":
+          description: Requested PDF byte range
+          content:
+            application/pdf:
+              schema: { type: string, format: binary }
+        "400":
+          description: Invalid file identifier
+        "401":
+          description: Authentication required
+        "403":
+          description: Students only
+        "404":
+          description: PDF file not found
+        "416":
+          description: Invalid or unsatisfiable byte range
+        "503":
+          description: PDF storage is unavailable
   /learning/foundation-book/verbal/lessons/{lessonId}:
     get:
       operationId: getQudratVerbalBookLesson

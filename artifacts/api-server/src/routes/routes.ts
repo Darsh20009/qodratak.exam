@@ -1,5 +1,6 @@
 import type { Express, Request, Response } from "express";
 import {
+  DownloadQudratVerbalBookFileParams,
   GetQudratQuantitativeBookLessonParams,
   GetQudratVerbalBookLessonParams,
   SubmitQudratQuantitativeBookLessonBody,
@@ -8,6 +9,7 @@ import {
   SubmitQudratVerbalBookLessonParams,
 } from "@workspace/api-zod";
 import { createServer, type Server } from "http";
+import { Readable } from "node:stream";
 import mongoose from 'mongoose';
 import passport from 'passport';
 import { Strategy as GoogleStrategy } from 'passport-google-oauth20';
@@ -79,6 +81,11 @@ import {
   submitQudratVerbalBookLesson,
   VerbalBookServiceError,
 } from '../services/qudratVerbalBookService';
+import {
+  fetchQudratVerbalBookFile,
+  getQudratVerbalBookFile,
+  VerbalBookFileStorageError,
+} from '../services/qudratVerbalBookFilesService';
 import {
   MasteryError,
   listApprovedMasteryNodes,
@@ -12442,6 +12449,72 @@ app.post("/api/auth/register", async (req: Request, res: Response) => {
     } catch (error) {
       req.log.error({ err: error }, 'Failed to load Qudrat verbal book');
       res.status(503).json({ error: 'تعذر تحميل تقدم الكتاب اللفظي' });
+    }
+  });
+
+  app.get('/api/learning/foundation-book/verbal/files/:fileId', requireAuth, async (req: Request, res: Response): Promise<void> => {
+    const userId = studentOnly(req, res);
+    if (!userId) return;
+    const params = DownloadQudratVerbalBookFileParams.safeParse(req.params);
+    if (!params.success) {
+      res.status(400).json({ error: 'معرف الملف غير صالح' });
+      return;
+    }
+
+    const file = getQudratVerbalBookFile(params.data.fileId);
+    if (!file) {
+      res.status(404).json({ error: 'الملف غير موجود' });
+      return;
+    }
+
+    try {
+      const upstream = await fetchQudratVerbalBookFile(params.data.fileId, {
+        method: req.method === 'HEAD' ? 'HEAD' : 'GET',
+        range: req.get('range') || undefined,
+      });
+
+      if (upstream.status !== 200 && upstream.status !== 206 && upstream.status !== 416) {
+        await upstream.body?.cancel();
+        if (upstream.status === 404) {
+          res.status(404).json({ error: 'الملف غير موجود في التخزين' });
+          return;
+        }
+        req.log.error(
+          { fileId: file.id, upstreamStatus: upstream.status },
+          'Failed to retrieve Qudrat verbal study PDF from R2',
+        );
+        res.status(503).json({ error: 'تعذر تحميل الملف حاليًا' });
+        return;
+      }
+
+      res.status(upstream.status);
+      res.setHeader('Content-Type', 'application/pdf');
+      res.setHeader(
+        'Content-Disposition',
+        `inline; filename="${file.id}.pdf"; filename*=UTF-8''${encodeURIComponent(file.downloadName)}`,
+      );
+      res.setHeader('Accept-Ranges', 'bytes');
+      res.setHeader('Cache-Control', 'private, max-age=3600');
+      res.setHeader('X-Content-Type-Options', 'nosniff');
+      for (const headerName of ['content-length', 'content-range', 'etag']) {
+        const value = upstream.headers.get(headerName);
+        if (value) res.setHeader(headerName, value);
+      }
+
+      if (req.method === 'HEAD' || !upstream.body) {
+        await upstream.body?.cancel();
+        res.end();
+        return;
+      }
+
+      Readable.fromWeb(upstream.body as any).pipe(res);
+    } catch (error) {
+      if (error instanceof VerbalBookFileStorageError) {
+        res.status(error.statusCode).json({ error: error.message });
+        return;
+      }
+      req.log.error({ err: error, fileId: file.id }, 'Failed to stream Qudrat verbal study PDF');
+      res.status(503).json({ error: 'تعذر تحميل الملف حاليًا' });
     }
   });
 
