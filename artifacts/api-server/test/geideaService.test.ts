@@ -73,6 +73,8 @@ test("Geidea session uses the KSA v2 endpoint and returns the HPP checkout URL",
   let requestUrl = "";
   let requestInit: RequestInit | undefined;
   const previousFetch = globalThis.fetch;
+  const previousPublicKey = process.env.GEIDEA_TEST_PUBLIC_KEY;
+  const previousApiPassword = process.env.GEIDEA_TEST_API_PASSWORD;
 
   globalThis.fetch = (async (input: RequestInfo | URL, init?: RequestInit) => {
     requestUrl = String(input);
@@ -86,6 +88,8 @@ test("Geidea session uses the KSA v2 endpoint and returns the HPP checkout URL",
       { status: 200, headers: { "content-type": "application/json" } },
     );
   }) as typeof fetch;
+  process.env.GEIDEA_TEST_PUBLIC_KEY = "unit-test-public-key";
+  process.env.GEIDEA_TEST_API_PASSWORD = "unit-test-api-password";
 
   try {
     const result = await createGeideaSession({
@@ -122,6 +126,10 @@ test("Geidea session uses the KSA v2 endpoint and returns the HPP checkout URL",
     );
   } finally {
     globalThis.fetch = previousFetch;
+    if (previousPublicKey === undefined) delete process.env.GEIDEA_TEST_PUBLIC_KEY;
+    else process.env.GEIDEA_TEST_PUBLIC_KEY = previousPublicKey;
+    if (previousApiPassword === undefined) delete process.env.GEIDEA_TEST_API_PASSWORD;
+    else process.env.GEIDEA_TEST_API_PASSWORD = previousApiPassword;
   }
 });
 
