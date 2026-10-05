@@ -34,7 +34,7 @@ for suffix in suffixes:
 
     document = fitz.open(source)
     normalized = unicodedata.normalize("NFKC", source.name).casefold()
-    if "استيعاب" in normalized:
+    if "المقروء" in normalized or "ستيعاب" in normalized:
         category = "reading-comprehension"
     elif "الخطأ" in normalized:
         category = "contextual-error"
