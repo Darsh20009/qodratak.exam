@@ -98,6 +98,10 @@ function normalizeFoundationContent(value: unknown, requestedProgram: Foundation
 
 type FoundationResourceLoadState = "loading" | "error" | "ready";
 
+function isSeparateFoundationBook(item: FoundationContent): boolean {
+  return item.title.trim().startsWith("كتاب") && Boolean(item.sections?.length);
+}
+
 function FoundationResourceAvailability({
   content,
   state,
@@ -114,7 +118,7 @@ function FoundationResourceAvailability({
     return isDirectFoundationVideo(url) || Boolean(getVideoEmbedUrl(url));
   }).length;
   const resources = [
-    { label: "كتاب / شرح مكتوب", available: writtenCount > 0, value: writtenCount > 0 ? "متاح" : "قريبًا" },
+    { label: "شرح مكتوب", available: writtenCount > 0, value: writtenCount > 0 ? "متاح" : "قريبًا" },
     { label: "ملفات PDF", available: fileCount > 0, value: fileCount > 0 ? `${fileCount} ملف` : "قريبًا" },
     { label: "فيديوهات", available: videoCount > 0, value: videoCount > 0 ? `${videoCount} فيديو` : "قريبًا" },
   ];
@@ -1253,14 +1257,13 @@ function FoundationPageContent() {
     refetch: refetchDashboard,
   } = useStudentDashboard(!hasSubject);
   const content = useMemo(
-    () => normalizeFoundationContent(foundationContent, program),
+    () => normalizeFoundationContent(foundationContent, program).filter((item) => !isSeparateFoundationBook(item)),
     [foundationContent, program],
   );
   const overviewContent = useMemo(
-    () => normalizeFoundationContent(programContent, program),
+    () => normalizeFoundationContent(programContent, program).filter((item) => !isSeparateFoundationBook(item)),
     [programContent, program],
   );
-  const foundationBook = content.find((item) => item.title.startsWith("كتاب") && item.sections?.length);
   const completedContentIds = useMemo(
     () => new Set(
       Array.isArray(completionSummary?.completedContentIds)
@@ -1269,12 +1272,17 @@ function FoundationPageContent() {
     ),
     [completionSummary?.completedContentIds],
   );
+  const visibleCompletionTotal = content.length;
+  const visibleCompletionCompleted = content.filter((item) => completedContentIds.has(item._id)).length;
+  const visibleCompletionPercent = visibleCompletionTotal
+    ? Math.round((visibleCompletionCompleted / visibleCompletionTotal) * 100)
+    : 0;
   const safeHomeVerbalContent = useMemo(
-    () => normalizeFoundationContent(homeVerbalContent, "qudrat"),
+    () => normalizeFoundationContent(homeVerbalContent, "qudrat").filter((item) => !isSeparateFoundationBook(item)),
     [homeVerbalContent],
   );
   const safeHomeQuantitativeContent = useMemo(
-    () => normalizeFoundationContent(homeQuantitativeContent, "qudrat"),
+    () => normalizeFoundationContent(homeQuantitativeContent, "qudrat").filter((item) => !isSeparateFoundationBook(item)),
     [homeQuantitativeContent],
   );
   const homeLearningContent = safeHomeVerbalContent[0] || safeHomeQuantitativeContent[0] || null;
@@ -1345,8 +1353,6 @@ function FoundationPageContent() {
   const readerHref = (contentId: string) =>
     `/foundation/content/${encodeURIComponent(contentId)}?program=${program}&subject=${encodeURIComponent(activeSection.key)}`;
   const coverageTestHref = `/foundation/coverage-test?subjectId=${encodeURIComponent(contentSubjectId)}`;
-  const foundationBookName = foundationBook?.title.split("·")[0].trim()
-    || (program === "qudrat" ? "مواد تأسيس القدرات" : "مواد تأسيس التحصيلي");
   const subjectActionHref = program === "tahsili" && activeSection.tahsiliSubject
     ? `/tahsilik/tests/subject?subject=${encodeURIComponent(activeSection.tahsiliSubject)}`
     : `/learning/today?programId=${program}&subjectId=${encodeURIComponent(contentSubjectId)}`;
@@ -1372,12 +1378,6 @@ function FoundationPageContent() {
               كتاب التأسيس الكمي · خارطة ٥٠ موضوعًا
             </Link>
           )}
-          {program === "qudrat" && activeSection.key === "verbal" && (
-            <Link href="/student/foundation-book/verbal" className="mt-4 inline-flex items-center gap-2 rounded-xl border border-[#9daa86] bg-[#edf0e2] px-4 py-3 text-sm font-black text-[#365846] transition hover:bg-[#e2e8d3]">
-              <BookOpen className="h-4 w-4" />
-              كتاب التأسيس اللفظي · خارطة ٥٠ موضوعًا
-            </Link>
-          )}
       </header>
 
        <FoundationResourceAvailability
@@ -1385,7 +1385,7 @@ function FoundationPageContent() {
          state={isLoading ? "loading" : isContentError ? "error" : "ready"}
        />
 
-        <section className="mb-8 rounded-3xl border border-primary/20 bg-primary/5 p-4 sm:p-5" aria-label={`طريقة استخدام ${foundationBookName}`}>
+        <section className="mb-8 rounded-3xl border border-primary/20 bg-primary/5 p-4 sm:p-5" aria-label={`طريقة استخدام مواد ${activeSection.shortTitle}`}>
          <div className="flex items-center gap-2">
            <BookOpen className="h-5 w-5 text-primary" />
              <h2 className="text-base font-black text-foreground">كيف تتابع مواد {activeSection.shortTitle}؟</h2>
@@ -1408,48 +1408,7 @@ function FoundationPageContent() {
        </section>
 
       {program === "qudrat" ? (
-        <section className="mb-8 grid gap-4 lg:grid-cols-[minmax(0,1.1fr)_minmax(320px,0.9fr)]" aria-label="الكتاب والمسار المخصص">
-          <div className="rounded-3xl border border-primary/20 bg-gradient-to-br from-primary/10 via-card to-card p-5 shadow-sm">
-            <div className="flex flex-wrap items-start justify-between gap-3">
-              <div>
-                {foundationBook ? (
-                  <>
-                    <span className="inline-flex rounded-full bg-primary/10 px-3 py-1 text-xs font-black text-primary">كتاب تأسيسي منشور</span>
-                    <h2 className="mt-3 text-xl font-black text-foreground">{foundationBook.title}</h2>
-                    <p className="mt-2 max-w-2xl text-sm leading-7 text-muted-foreground">{foundationBook.description}</p>
-                  </>
-                ) : isLoading ? (
-                  <>
-                    <span className="inline-flex rounded-full bg-muted px-3 py-1 text-xs font-black text-muted-foreground">جارٍ التحقق</span>
-                    <h2 className="mt-3 text-xl font-black text-foreground">جارٍ تحميل بيانات الكتاب</h2>
-                  </>
-                ) : isContentError ? (
-                  <>
-                    <span className="inline-flex rounded-full bg-amber-500/10 px-3 py-1 text-xs font-black text-amber-800 dark:text-amber-300">تعذر التحقق</span>
-                    <h2 className="mt-3 text-xl font-black text-foreground">تعذر تحميل بيانات الكتاب</h2>
-                  </>
-                ) : (
-                  <>
-                    <span className="inline-flex rounded-full bg-muted px-3 py-1 text-xs font-black text-muted-foreground">قريبًا</span>
-                    <h2 className="mt-3 text-xl font-black text-foreground">الكتاب التأسيسي غير منشور بعد</h2>
-                    <p className="mt-2 max-w-2xl text-sm leading-7 text-muted-foreground">ستظهر بيانات الكتاب ورابطه هنا بعد نشره.</p>
-                  </>
-                )}
-              </div>
-              <BookOpen className="h-7 w-7 text-primary" />
-            </div>
-            <div className="mt-4 flex flex-wrap gap-2">
-              {foundationBook ? (
-                <Button type="button" onClick={() => setLocation(readerHref(foundationBook._id))} className="rounded-xl font-black">
-                  <BookOpen className="ml-2 h-4 w-4" /> افتح الكتاب
-                </Button>
-              ) : null}
-              <Button type="button" variant="outline" onClick={() => setLocation(coverageTestHref)} className="rounded-xl font-black">
-                <ListChecks className="ml-2 h-4 w-4" /> أنشئ اختبار تغطية
-              </Button>
-            </div>
-          </div>
-
+        <section className="mb-8" aria-label="مسارك حسب محاولاتك">
           <div className="rounded-3xl border border-border bg-card p-5 shadow-sm">
             <div className="flex items-start justify-between gap-3">
               <div>
@@ -1505,6 +1464,11 @@ function FoundationPageContent() {
                 </Button>
               </div>
             ) : null}
+            <div className="mt-5 flex justify-end">
+              <Button type="button" variant="outline" onClick={() => setLocation(coverageTestHref)} className="rounded-xl font-black">
+                <ListChecks className="ml-2 h-4 w-4" /> أنشئ اختبار تغطية
+              </Button>
+            </div>
           </div>
         </section>
       ) : null}
@@ -1530,27 +1494,27 @@ function FoundationPageContent() {
       <div className="mb-4 flex flex-wrap items-end justify-between gap-3">
         <div>
          <h2 className="text-xl font-black text-foreground">مواد {activeSection.shortTitle} المنشورة</h2>
-            <p className="mt-1 text-sm text-muted-foreground">تختلف موارد كل درس؛ تحقق من حالة الكتاب والملفات والفيديو قبل البدء.</p>
+            <p className="mt-1 text-sm text-muted-foreground">تختلف موارد كل درس؛ تحقق من حالة الشرح والملفات والفيديو قبل البدء.</p>
         </div>
         <span className="rounded-full bg-primary/10 px-3 py-1 text-xs font-black text-primary">المواد المنشورة</span>
       </div>
 
-      {completionSummary && completionSummary.total > 0 ? (
-        <section className={`mb-5 rounded-2xl border p-4 ${completionSummary.completed === completionSummary.total ? "border-emerald-500/30 bg-emerald-500/10" : "border-primary/20 bg-primary/5"}`} aria-live="polite">
+      {completionSummary && visibleCompletionTotal > 0 ? (
+        <section className={`mb-5 rounded-2xl border p-4 ${visibleCompletionCompleted === visibleCompletionTotal ? "border-emerald-500/30 bg-emerald-500/10" : "border-primary/20 bg-primary/5"}`} aria-live="polite">
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div className="flex items-center gap-2">
-              <CheckCircle2 className={`h-5 w-5 ${completionSummary.completed === completionSummary.total ? "text-emerald-600" : "text-primary"}`} />
+              <CheckCircle2 className={`h-5 w-5 ${visibleCompletionCompleted === visibleCompletionTotal ? "text-emerald-600" : "text-primary"}`} />
               <p className="font-black text-foreground">
-                {completionSummary.completed === completionSummary.total
+                {visibleCompletionCompleted === visibleCompletionTotal
                   ? "أكملت جميع دروس هذا القسم"
-                  : `أكملت ${completionSummary.completed} من ${completionSummary.total} درسًا`}
+                  : `أكملت ${visibleCompletionCompleted} من ${visibleCompletionTotal} درسًا`}
               </p>
             </div>
             <span className="rounded-full bg-background px-3 py-1 text-xs font-black text-foreground">
-              {completionSummary.completionPercent}٪
+              {visibleCompletionPercent}٪
             </span>
           </div>
-          <ProgressBar value={completionSummary.completionPercent} className="mt-3" />
+          <ProgressBar value={visibleCompletionPercent} className="mt-3" />
         </section>
       ) : null}
 
