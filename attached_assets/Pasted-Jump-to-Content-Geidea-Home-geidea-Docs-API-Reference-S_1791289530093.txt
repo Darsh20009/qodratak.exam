@@ -1,0 +1,451 @@
+Jump to Content
+Geidea
+Home
+geidea
+Docs
+API Reference
+
+Search
+⌘K
+GETTING STARTED
+
+Overview
+Pre-requisites
+Geidea HPP Checkout
+Express Checkout (Wallets)
+Pay by Link (Egypt & UAE)
+
+Pay by Invoice (KSA)
+
+Direct API Integration
+
+Tokenization
+
+Recurring Payments
+
+Standalone Save Card
+Apple Pay
+
+Google Pay™
+Meeza QR Wallet Payment [Egypt]
+
+Branding and Customization
+Buy Now Pay Later (BNPL)
+
+Installments [Egypt]
+Subscriptions
+
+Transaction and Order Management
+
+E-commerce Plugins
+
+Mobile SDKs
+
+REFERENCE
+
+Test Cards
+API Response Codes and Messages
+Payments glossary
+Troubleshooting & FAQs
+Webhook/Callback Notifications
+
+Powered by 
+
+API Response Codes and Messages
+Respond Code Groups
+These response codes and messages are seen in the payment response:
+
+Response Code	Response Message	Description
+000	Success	Success
+010	Cancelled	Cancel information group
+100	General error - Payment was not successful	General error
+110	Integration error	HPP Integration error
+200	Payment validation failed	Initial backend validation error (card number, luhn check, etc)
+210	Payment intent processing failed	Payment intent processing errors
+230	EInvoice template processing failed	EInvoice template processing errors
+240	EInvoice upload processing failed	EInvoice upload processing errors
+250	Customer processing failed	Customer object processing errors
+260	Branding processing failed	Branding processing errors
+270	Static paylink processing failed	Static paylink processing errors
+300	3DS authentication failed	3DS errors
+400	Payment authorization failed	Authorize operation errors
+500	Payment capture failed	Capture operation errors
+600	Payment blocked by gateway	Filter service errors
+700	Payment failed	Pay operation errors
+710	Subscriptions failed	Subscriptions errors
+720	BNPL transaction failed	Errors regarding to Buy Now Pay Later purchase flows
+750	Tokenized payment failed	Token errors
+760	GLE Failed	GLE operation errors
+800	Refund failed	Refund operation errors
+900	Void Failed	Void operation errors
+Common detailed Messages
+This group refers to message code groups: 400, 500, 700, 800, 900 and are specific acquiring provider errors:
+
+Detailed response code	Detailed Response Message	MPGS gateway code / Description
+x00.501	Transaction failed	DECLINED
+x00.502	Address verification check failed	DECLINED_AVS
+x00.503	Address verification and CVV check failed	DECLINED_AVS_CSC
+x00.504	CVV check failed	DECLINED_CSC
+x00.505	Transaction failed - do not contact issuer	DECLINED_DO_NOT_CONTACT
+x00.506	Invalid PIN	DECLINED_INVALID_PIN
+x00.507	Transaction failed - PIN required	DECLINED_PIN_REQUIRED
+x00.508	Transaction failed due to payment plan	DECLINED_PAYMENT_PLAN
+x00.509	Retry limit exceeded	EXCEEDED_RETRY_LIMIT
+x00.510	Transaction failed - expired card	EXPIRED_CARD
+x00.511	Insufficient funds	INSUFFICIENT_FUNDS
+x00.512	Transaction failed - invalid CVV	INVALID_CSC
+x00.513	Order locked - another transaction is in progress	LOCK_FAILURE
+x00.514	Transaction type not supported	NOT_SUPPORTED
+x00.515	Provider connection timed out	TIMED_OUT
+x00.516	Transaction failed - refer to issuer	REFERRED
+x00.517	Transaction failed - no balance	NO_BALANCE
+x00.518	Blocked by provider	BLOCKED
+x00.519	Cancelled by payer	CANCELLED
+x00.520	Aborted by payer	ABORTED
+x00.521	Acquirer system error	ACQUIRER_SYSTEM_ERROR
+x00.522	Transaction submitted but was not successfully processed by acquiring provider	SUBMITTED
+x00.523	Transaction pending	PENDING
+x00.524	Provider system error	SYSTEM_ERROR
+x00.525	Unknown provider error	UNKNOWN
+x00.526	Unspecified failure from provider	UNSPECIFIED_FAILURE
+x00.527	Transaction declined, please contact your bank	DECLINED
+x00.528	Issuer connection time out	ISSUER TIMEOUT
+x00.529	Provider format error	FORMAT ERROR
+x00.530	Your bank is unavailable	Issuer Unavailable
+x00.531	Your bank cannot be found for routing	Routing Error
+Detailed response code and message groups:
+Success group (000)
+
+Detailed Response Code	Detailed Response Message
+000.000	Your transaction was successful
+000.001	Your transaction was successful - proceed without 3DS verification code
+000.002	Your transaction was successful - proceed with 3DS verification code
+000.003	Token payment successful - but could not find parentOrderId
+000.004	Your transaction was successful - but token was not created
+000.005	Your transaction was successful - but payment intent was not completed
+000.006	Your transaction was processed automatically, but it was not submitted to the acquirer
+000.007	Continue to pay without successful authentication
+000.008	Continue to pay with authentication attempt
+000.009	Your transaction was successful - but subscription occurrence update failed
+000.010	User changed payment method
+000.011	Your transaction was successful - but transaction data not updated
+Cancelled group (010)
+
+Detailed Response Code	Detailed Response Message
+010.001	Cancelled by user
+010.002	Transaction cancelled by user
+General error group (100)
+
+Detailed Response Code	Detailed Response Message
+100.001	HSM invalid input fields
+100.002	Encrypt failed, invalid data
+100.003	Decrypt failed, invalid key
+100.004	Decrypt failed, invalid data
+100.005	Decrypt failed, wrong data-key combination
+100.006	Unable to create key
+100.007	Unable to find key
+100.008	Unable to create order
+100.009	Unable to create transaction
+100.010	Unable to update transaction
+100.011	Order not found
+100.012	Transaction not found
+100.013	Internal Server Error
+100.014	Invalid acquiring provider credentials
+100.015	Acquiring provider URL not found
+100.016	Invalid settlement provider credentials
+100.017	HTTP request failed with connection error
+100.018	Your payment was not successful
+100.019	Unable to update order
+100.021	Client timed out
+100.022	System timed out
+100.023	Merchant authentication failed
+100.024	Merchant account is not configured for this paymentOperation
+100.025	Filter already created
+100.029	Unable to disable key
+100.030	Order is already completed
+100.031	Card on file not enabled for this account
+100.032	Invalid Apple pay certificate used
+100.033	Apple pay token decryption failed
+100.034	Invalid Apple pay configuration
+100.035	Invalid MerchantReferenceId for acquiring provider
+100.036	Unable to find gateway configuration by the provided gateway key
+100.037	Invalid gateway configuration
+100.038	Invalid order
+100.039	Payment method type not allowed
+100.040	Invalid payment methods field
+100.041	Merchant account not configured for this payment method
+100.042	Unable to find terminal configuration by provided TerminalId
+100.043	Invalid statementDescriptor.name for acquiring provider
+100.044	Invalid statementDescriptor.phone for acquiring provider
+100.045	Gateway configuration is not active
+100.046	Test orders deletion failed
+100.047	Invalid orderDecription for acquiring provider
+100.048	Invalid header value
+100.049	Internal system communication problem
+100.050	Gateway configuration not active for meeza digital wallet
+100.051	Unable to create transaction. Transaction number already exists
+100.052	CVV parameter is required for token payment
+100.053	Down payment cannot be processed through BNPL payment methods
+100.054	Terminal authentication failed
+100.055	Declined - Test card used on Live transaction
+100.056	Noto response not successful
+100.057	Provider request version mismatch - required v61
+100.058	Server timed out on 3DS screen
+100.059	Server timed out on bank redirect from 3DS screen
+100.060	Client timed out on 3DS screen
+100.061	Invalid patch request
+100.062	A gateway configuration with the same identifier already exists
+100.063	Your card is not supported by the provider
+100.064	The currency or transaction type is not supported by the provider
+100.065	Transaction ID could not be found at provider
+100.066	Incorrect provider account configuration
+100.067	Onboarding gateway validation error
+100.068	Transaction is already completed
+100.069	Missing Token Id
+100.070	Unable to establish connection to provider
+100.071	Merchant or transaction data has wrong recurring configuration.
+100.999	Transaction could not be completed due to invalid request
+Payment validation error group (200)
+
+Detailed Response Code	Detailed Response Message
+200.001	Card is expired
+200.002	Unknown or unsupported card brand
+200.003	Invalid card number length
+200.004	Currency not supported
+200.005	Card brand not supported
+200.006	Invalid card number, Luhn check failed
+200.007	Invalid CVV
+200.008	Invalid Transaction Amount
+Payment intent error group (210)
+
+Detailed Response Code	Detailed Response Message
+210.001	Invalid paymentIntentId for this account
+210.002	Invalid input fields
+210.003	Payment intent not found
+210.004	The current payment intent status cannot be updated
+210.005	Missing required input fields for QR code generation
+210.006	This payment intent is not active yet
+210.007	Invalid parent payment intent
+210.008	Emulate QR Code Payment Error
+210.009	Invalid Link Identifier
+210.010	Payment intent cannot be updated
+210.011	Payment intent has expired
+210.012	Payment intent is already paid
+210.013	Email or phone not provided for this payment intent
+210.014	Payment intent is already preauthorized
+210.015	Cannot retrieve data for static QR code
+210.016	Meeza operation failed
+210.017	Payment Intent is already partially paid
+210.018	Session has expired
+210.019	Session cleanup failed
+E-invoice template error group (230)
+
+Detailed Response Code	Detailed Response Message
+230.001	Invalid EInvoice TemplateId
+230.002	Dublicated EInvoice template name
+230.003	EInvoice template not found
+E-Invoice upload error group (240)
+
+Detailed Response Code	Detailed Response Message
+240.001	EInvoice upload not found
+240.002	There is already EInvoice upload in progress
+Customer processing error group (250)
+
+Detailed Response Code	Detailed Response Message
+250.001	Customer creation failed
+250.002	Customer not found
+250.003	Unable to update customer
+250.004	Unable to delete customer
+250.005	Payment method creation failed
+250.006	Unable to create customer, combination of an email and phone number already exists
+250.007	Unable to update customer, combination of an email and phone number already exists
+Branding processing error group (260)
+
+Detailed Response Code	Detailed Response Message
+260.001	Invalid StoreId header
+260.002	Branding not found
+260.003	Branding with this StoreId exists
+260.004	Image Not Found
+Static paylink error group (270)
+
+Detailed Response Code	Detailed Response Message
+270.001	Static paylink not found
+270.002	Static paylink is not active yet
+270.003	Static paylink is expired
+270.004	Static paylink is disabled
+270.005	Static paylink max orders threshold is reached
+3DS group errors (300)
+
+Detailed Response Code	Detailed Response Message	Description
+300.001	The card is not 3DS enrolled	Not enrolled PARes status: N
+300.002	The card does not support 3DS	3DS not supported / card not participating
+300.003	Authentication enrolment check not available	Connection error on enrollment check
+300.004	Customer authentication failed	Failed authentication (MPGS - do not proceed), N response (v1 and v2)
+300.005	Customer authentication attempted, but could not be completed	
+"M" response from authentication (do not proceed)
+
+Cybersource specific error: PARes status: "A"
+300.006	Customer authentication not available	
+"X" or "U" response from MPGS
+
+Cybersource specific error: PARes status: "U"
+300.007	Error parsing authentication response	"P" response from MPGS
+300.008	Invalid signature on authentication response	"S" response from MPGS
+300.009	MPI processing error	"I" response from MPGS
+300.010	Authentication could not be created	Internal service error
+300.011	Invalid JWT	Cybersource specific error when JWT is not valid
+300.012	Authentication Error	"E" Response from MPGS (v2)
+300.013	Authentication rejected	"R" response from MPGS (v2)
+300.014	Provider server busy - authentication could not be started	Retry mechanism error
+300.015	Authentication Unavailable	The payer was not able to be authenticated due to a technical or other issue.
+300.016	Authentication exempt from the Regulatory Technical Standards	Exemption from the Regulatory Technical Standards (RTS) requirements for Strong Customer Authentication (SCA) under the Payment Services Directive 2 (PSD2) regulations in the European Economic Area has been claimed or granted.
+300.017	Missing authentication information	There is no authentication information associated with this transaction.
+300.018	Authentication method not supported	The requested authentication method is not supported for this payment method.
+300.019	Payer authentication failed	Payer authentication is failed completion of a challenge process.
+300.020	Payer authentication required	Payer authentication is required for this payment, but was not provided.
+300.021	Payer authentication is available for this payment method	Payer authentication is available for the payment method provided.
+Capture operation error group (500)
+
+Detailed Response Code	Detailed Response Message	Description
+500.001	Capture not allowed	//when orderStatus is not Authorized
+500.002	Invalid order id	/when valid order, but different credentials used
+Filter service error group (600)
+
+Detailed Response Code	Detailed Response Message
+600.001	Blocked PAN
+600.002	Blocked card BIN
+600.003	Blocked customer IP
+600.004	Blocked customer country
+Buy Now Pay Later (BNPL) error group (720)
+
+Detailed Response Code	Detailed Response Message
+720.001	Technical failure
+720.002	Customer is not enrolled with the Buy Now Pay Later provider
+720.003	Customer is not eligible to make payments in installments using Buy Now Pay Later
+720.004	Purchase amount more than Customer limit
+720.005	Merchant credentials not found
+720.006	Down payment limits violated
+720.007	Financed amount limits violated
+720.008	OTP not found
+720.009	The one time password has expired. Please resend the code and try again
+720.010	The one time password is invalid. Please try again
+720.011	OTP already verified
+720.012	You have exceeded the maximum number of attempts with an invalid one time password. Please resend the code and try again
+720.013	Merchant credentials not configured in the gateway
+720.014	Merchant not allowed to redeem discount
+720.015	Phone number is invalid
+720.016	Order is already refunded
+720.017	Ordered already canceled
+720.018	Order cannot be canceled
+720.019	Purchase details different from the initial purchase request.
+720.020	Down payment needs to be paid before confirming the purchase with the Buy Now Pay Later provider.
+720.021	Purchase cannot be confirmed, the amount paid upfront is different than the required down payment.
+720.022	Souhoola transaction failed
+720.023	Down payment needs to be between MIN and MAX
+720.024	To-U balance is higher than your available To-U wallet balance
+720.025	Cashback amount is higher than your available cashback wallet balance
+Token error group (750)
+
+Detailed Response Code	Detailed Response Message
+750.001	Invalid input fields
+750.002	Invalid token
+750.003	Token Owner not found
+750.004	System not found
+750.005	AgreementID does not match initial value
+750.006	Parameter initiatedBy not configured for this account
+Refund operation error group (800)
+
+Detailed Response Code	Detailed Response Message	// comment
+800.001	Refund failed - Order does not exist	// when order cannot be found
+800.002	Refund failed - Payment for order has not been completed	// when order has not been paid / captured
+800.003	Refund failed - Invalid order	//when a merchant tries to refund another merchants Paid/Captured order
+800.004	Refund failed - Order already refunded	//when a merchant tries to refund an already refunded order
+800.005	Refund failed - Refund functionality not enabled	//when Refund flag is disabled for the account
+800.006	Refund rejected by the BNPL provider	//when the refund is rejected by the BNPL provider (e.g. when it is requested after the first installment date for Shahry)
+800.007	Refund failed - refund amount exceeds remaining amount	//When the refund amount exceeds remaining amount 'x'
+800.008	Refund failed - refund amount exceeds order amount	//When the order is not partial refund and the refund amount exceeds the order amount
+Void error group (900)
+
+Detailed Response Code	Detailed Response Message
+900.001	Void failed - invalid order
+900.002	Void failed - order is not in Preauthorized status
+900.003	Order does not exist
+900.004	Void functionality not enabled
+JS SDK Response codes and messages:
+These response codes and messages appear when there is an error (if any of the fields are not input as expected in the field specification) with some of the parameters on the startPayment function:
+
+Error code	Error message
+001	Invalid public key
+002	Missing public key
+003	Invalid amount
+004	Missing amount
+005	Invalid currency
+006	Missing currency
+007	Start payment failed to find target element
+009	Invalid callback url
+010	Your payment has timed out //on HPP
+011	Invalid billing country code
+012	Invalid shipping country code
+013	Invalid billing address
+014	Invalid shipping address
+015	Unable to find gateway configuration by the provided gateway key
+016	Invalid email
+017	Invalid paymentOperation
+018	Invalid paymentIntentID
+019	Invalid initiated by parameter
+020	Invalid agreement ID
+021	Invalid agreement type
+022	Card on file is not enabled for this account
+023	Account not configured for transactions initiatedBy {initiatedBy}
+024	Invalid header color
+025	Invalid HPP profile
+026	Invalid showAddress parameter
+027	Invalid showEmail parameter
+028	Invalid cardOnFile parameter
+029	Invalid language
+030	Gateway not available
+031	Invalid merchant reference ID
+032	Invalid merchant logo URL
+033	Invalid custom parameter
+034	Invalid summary subtotal
+035	Invalid summary shipping
+036	Invalid summary vat
+037	Summary subtotal field is mandatory when submitting summary parameters
+038	The summary total amount must be equal to order amount
+039	Invalid paymentMethods parameter
+040	Parameter integrationType length exceeded
+041	Parameter name length exceeded
+042	Parameter version length exceeded
+043	Parameter pluginVersion length exceeded
+044	Parameter partnerId length exceeded
+045	Parameter merchantName length exceeded
+046	Parameter statementDescription.name length exceeded
+047	Parameter statementDescription.phone length exceeded
+048	{Field} contains invalid characters
+049	Invalid isTransactionReceiptEnabled parameter
+050	Invalid isPaymentMethodSelectionEnabled parameter
+051	Invalid payment option label
+052	Invalid hideGeideaLogo parameter
+053	Invalid CustomerId parameter
+054	Parameter customerReferenceId length exceeded
+055	Invalid recurringCycleInterval parameter
+056	Invalid expiry format parameter
+057	Invalid IsCreateCustomerEnabled parameter
+058	Invalid IsSetPaymentMethodEnabled parameter
+059	Invalid minimum value parameter
+060	Invalid recurring description length parameter
+061	Gateway configuration is not active
+062	Parameter description length exceeded
+063	Parameter apiPassword length exceeded
+064	Invalid merchant item id parameter
+065	Invalid item name parameter
+066	Invalid item description parameter
+067	Invalid item categories parameter
+068	Invalid item count parameter
+069	Invalid item price parameter
+070	Invalid item currency parameter
+Updated over 1 year ago
+
+Test Cards
+Payments glossary
+Did this page help you?

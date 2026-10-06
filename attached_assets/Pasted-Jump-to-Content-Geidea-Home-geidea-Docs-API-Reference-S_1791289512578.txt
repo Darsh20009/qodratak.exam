@@ -1,0 +1,92 @@
+Jump to Content
+Geidea
+Home
+geidea
+Docs
+API Reference
+
+Search
+⌘K
+GETTING STARTED
+
+Overview
+Pre-requisites
+Geidea HPP Checkout
+Express Checkout (Wallets)
+Pay by Link (Egypt & UAE)
+
+Pay by Invoice (KSA)
+
+Direct API Integration
+
+Initiate Authentication
+Authenticate Payer
+Pay
+Tokenization
+
+Recurring Payments
+
+Standalone Save Card
+Apple Pay
+
+Google Pay™
+Meeza QR Wallet Payment [Egypt]
+
+Branding and Customization
+Buy Now Pay Later (BNPL)
+
+Installments [Egypt]
+Subscriptions
+
+Transaction and Order Management
+
+E-commerce Plugins
+
+Mobile SDKs
+
+REFERENCE
+
+Test Cards
+API Response Codes and Messages
+Payments glossary
+Troubleshooting & FAQs
+Webhook/Callback Notifications
+
+Powered by 
+
+Direct API Integration
+If you would like to hyper-personalize the user journey of your clients or would like to have full control over the transaction or manage your own payment pages, you must use the Direct APIs. Our Direct APIs allow you to host server-to-server payment requests, and help you process all payment operations directly. You can directly execute any type of payment request such as authentication, payments, refunds, cancellations and so on.
+
+Our Direct API collection is beneficial for any merchant who would like to handle complex payment operations while wanting to have full control over their payment flow and transactions. With Direct API integration, you can customize your design and checkout journey as desired. One of the key advantages of integrating with this method is that the user experience is not disrupted by a redirection to a third-party page, but payments can be made directly on your website or mobile app.
+
+🚧
+Kindly note this method of integration requires a sizeable additional effort compared to other integration methods.
+👍
+Geidea is a PCI-DSS-certified company and is authorised to handle and process transactions that involve the collection of card details.
+🚧
+Merchants need to ensure that they comply with relevant data protection laws and industry standards, such as the Payment Card Industry Data Security Standard (PCI DSS). To know more about PCI-DSS, click here.
+
+In addition to it, kindly watch out for local data privacy, data governance and data storage laws.
+📘
+Integrating with Direct APIs requires additional technical expertise and resources to implement and maintain. If you opt for this option, you might need the help of a developer to ensure a smooth and flawless integration process.
+❗️
+Please integrate with all APIs as server to server calls. Do not call APIs from your front-end application.
+How does it work?
+
+
+📘
+Please check out the prerequisites section before beginning your integration!
+List of APIs
+Steps for initiating a payment
+
+Step	API	Description
+1	Create Session	Create a payment session
+2	Initiate Authentication	Authenticate the payment instrument
+3	Authenticate Payer	Verify the customer's identity
+4	Pay	Complete a payment
+5	Pre-authorise & Capture	These operations are available only on the Geidea platform in Saudi Arabia. Based on the merchant's requirements, we will enable them on a case-by-case basis for the merchant. For details on integration, please get in touch with our support team via our support channel - geideapay.support@geidea.net or reach out to your point-of-contact who helped with the integration process.
+Updated over 1 year ago
+
+Pay by Invoice - Portal [KSA]
+Initiate Authentication
+Did this page help you?
