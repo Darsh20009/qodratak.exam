@@ -1192,6 +1192,9 @@ function Router({ splashDone }: { splashDone: boolean }) {
       <Route path="/question-bank/standard/:testNumber">
         {() => <StudentShell><StandardSectionTestRunner /></StudentShell>}
       </Route>
+      <Route path="/verbal-lesson-quiz/:type/:testNumber">
+        {() => <StudentShell><ProtectedRoute><QuestionBankTestRunner /></ProtectedRoute></StudentShell>}
+      </Route>
       <Route path="/question-bank/:type/:testNumber">
         {() => <StudentShell><SectionedTestRunner /></StudentShell>}
       </Route>

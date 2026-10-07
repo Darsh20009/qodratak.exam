@@ -207,6 +207,20 @@ const VERBAL_ANALOGY_VIDEOS = [
   { id: "analogy-06", lesson: 6, duration: "33:36" },
 ] as const;
 
+const VERBAL_SENTENCE_COMPLETION_VIDEOS = [
+  { id: "sentence-completion-01", lesson: 1, duration: "49:58" },
+  { id: "sentence-completion-02", lesson: 2, duration: "46:04" },
+  { id: "sentence-completion-03", lesson: 3, duration: "42:05" },
+  { id: "sentence-completion-04", lesson: 4, duration: "35:44" },
+  { id: "sentence-completion-05", lesson: 5, duration: "29:46" },
+] as const;
+
+const VERBAL_CONTEXTUAL_ERROR_VIDEOS = [
+  { id: "contextual-error-01", lesson: 1, duration: "34:01" },
+  { id: "contextual-error-02", lesson: 2, duration: "35:22" },
+  { id: "contextual-error-03", lesson: 3, duration: "30:58" },
+] as const;
+
 function EmptyContentNotice({ label }: { label: string }) {
   return (
     <div className="mt-3 rounded-xl border border-dashed border-[#CBD5E1] bg-white/70 px-3 py-2 text-xs leading-5 text-[#64748B]">
@@ -390,11 +404,11 @@ function VerbalFilesSection() {
             ملفات ودروس اللفظي
           </h3>
           <p className="mt-1 text-sm leading-6 text-[#64748B]">
-            ملفات PDF للأقسام، وستة فيديوهات لشرح التناظر اللفظي في المحوسب.
+            ملفات PDF للأقسام، ودروس إكمال الجمل والخطأ السياقي والتناظر اللفظي في المحوسب مع اختبار بعد كل درس.
           </p>
         </div>
         <span className="rounded-full bg-white px-3 py-1 text-xs font-black text-[#3B67A5]">
-          ٤ ملفات · ٦ فيديوهات
+          ٤ ملفات · ١٤ درسًا واختبارًا
         </span>
       </div>
       <div className="mt-4 grid gap-3 sm:grid-cols-2">
@@ -427,14 +441,138 @@ function VerbalFilesSection() {
       <div className="mt-6 border-t border-[#DDE6E2] pt-5">
         <div className="flex flex-wrap items-end justify-between gap-3">
           <div>
-            <p className="text-xs font-black text-[#147D68]">التناظر اللفظي · المحوسب</p>
+            <p className="text-xs font-black text-[#147D68]">الخطأ السياقي · المحوسب</p>
             <h4 className="mt-1 text-lg font-black text-[#0D1B2A]">دروس ملخص الـ95</h4>
             <p className="mt-1 text-xs leading-5 text-[#64748B]">
-              شغّل الدرس المطلوب من داخل المنصة، ويمكنك التقديم والرجوع أثناء المشاهدة.
+              شاهد كل درس ثم ابدأ اختبارًا من ١٠ أسئلة في الخطأ السياقي.
             </p>
           </div>
           <span className="rounded-full bg-white px-3 py-1 text-xs font-black text-[#147D68]">
-            ٦ دروس
+            ٣ دروس · ٣ اختبارات
+          </span>
+        </div>
+        <div className="mt-4 grid gap-4 lg:grid-cols-2">
+          {VERBAL_CONTEXTUAL_ERROR_VIDEOS.map((video) => {
+            const title = `الخطأ السياقي — الدرس ${video.lesson}`;
+            return (
+              <article
+                key={video.id}
+                className="overflow-hidden rounded-2xl border border-[#DDE6E2] bg-white"
+                data-testid={`verbal-contextual-error-video-${video.lesson}`}
+              >
+                <div className="aspect-video bg-[#07111f]">
+                  <video
+                    src={`/api/learning/computerized/verbal/contextual-error-videos/${video.id}`}
+                    title={title}
+                    className="h-full w-full"
+                    controls
+                    playsInline
+                    preload="none"
+                    controlsList="nodownload"
+                  />
+                </div>
+                <div className="space-y-3 p-4">
+                  <div className="flex items-center justify-between gap-3">
+                    <div className="flex min-w-0 items-center gap-3">
+                      <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#EAF8F3] text-[#147D68]">
+                        <Play className="h-4 w-4" />
+                      </span>
+                      <div className="min-w-0">
+                        <h5 className="truncate text-sm font-black text-[#0D1B2A]">{title}</h5>
+                        <p className="mt-1 text-xs font-bold text-[#64748B]">ملخص الـ95 · الخطأ السياقي</p>
+                      </div>
+                    </div>
+                    <span className="shrink-0 rounded-full bg-[#F1F5F9] px-2.5 py-1 text-xs font-black text-[#475569]">
+                      {video.duration}
+                    </span>
+                  </div>
+                  <Link
+                    href={`/verbal-lesson-quiz/verbal/${video.lesson}?section=contextual-error&count=10`}
+                    className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-[#0D1B2A] px-3 py-2.5 text-xs font-black text-white hover:bg-[#18334D]"
+                    data-testid={`verbal-contextual-error-quiz-${video.lesson}`}
+                  >
+                    <CheckCircle2 className="h-4 w-4" />
+                    اختبار الخطأ السياقي بعد الدرس · ١٠ أسئلة
+                  </Link>
+                </div>
+              </article>
+            );
+          })}
+        </div>
+      </div>
+      <div className="mt-6 border-t border-[#DDE6E2] pt-5">
+        <div className="flex flex-wrap items-end justify-between gap-3">
+          <div>
+            <p className="text-xs font-black text-[#147D68]">إكمال الجمل · المحوسب</p>
+            <h4 className="mt-1 text-lg font-black text-[#0D1B2A]">دروس ملخص الـ95</h4>
+            <p className="mt-1 text-xs leading-5 text-[#64748B]">
+              شاهد كل درس ثم ابدأ اختبارًا من ١٠ أسئلة في إكمال الجمل.
+            </p>
+          </div>
+          <span className="rounded-full bg-white px-3 py-1 text-xs font-black text-[#147D68]">
+            ٥ دروس · ٥ اختبارات
+          </span>
+        </div>
+        <div className="mt-4 grid gap-4 lg:grid-cols-2">
+          {VERBAL_SENTENCE_COMPLETION_VIDEOS.map((video) => {
+            const title = `إكمال الجمل — الدرس ${video.lesson}`;
+            return (
+              <article
+                key={video.id}
+                className="overflow-hidden rounded-2xl border border-[#DDE6E2] bg-white"
+                data-testid={`verbal-sentence-completion-video-${video.lesson}`}
+              >
+                <div className="aspect-video bg-[#07111f]">
+                  <video
+                    src={`/api/learning/computerized/verbal/sentence-completion-videos/${video.id}`}
+                    title={title}
+                    className="h-full w-full"
+                    controls
+                    playsInline
+                    preload="none"
+                    controlsList="nodownload"
+                  />
+                </div>
+                <div className="space-y-3 p-4">
+                  <div className="flex items-center justify-between gap-3">
+                    <div className="flex min-w-0 items-center gap-3">
+                      <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#EAF8F3] text-[#147D68]">
+                        <Play className="h-4 w-4" />
+                      </span>
+                      <div className="min-w-0">
+                        <h5 className="truncate text-sm font-black text-[#0D1B2A]">{title}</h5>
+                        <p className="mt-1 text-xs font-bold text-[#64748B]">ملخص الـ95 · إكمال الجمل</p>
+                      </div>
+                    </div>
+                    <span className="shrink-0 rounded-full bg-[#F1F5F9] px-2.5 py-1 text-xs font-black text-[#475569]">
+                      {video.duration}
+                    </span>
+                  </div>
+                  <Link
+                    href={`/verbal-lesson-quiz/verbal/${video.lesson}?section=sentence-completion&count=10`}
+                    className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-[#0D1B2A] px-3 py-2.5 text-xs font-black text-white hover:bg-[#18334D]"
+                    data-testid={`verbal-sentence-completion-quiz-${video.lesson}`}
+                  >
+                    <CheckCircle2 className="h-4 w-4" />
+                    اختبار إكمال الجمل بعد الدرس · ١٠ أسئلة
+                  </Link>
+                </div>
+              </article>
+            );
+          })}
+        </div>
+      </div>
+      <div className="mt-6 border-t border-[#DDE6E2] pt-5">
+        <div className="flex flex-wrap items-end justify-between gap-3">
+          <div>
+            <p className="text-xs font-black text-[#147D68]">التناظر اللفظي · المحوسب</p>
+            <h4 className="mt-1 text-lg font-black text-[#0D1B2A]">دروس ملخص الـ95</h4>
+            <p className="mt-1 text-xs leading-5 text-[#64748B]">
+              شاهد كل درس ثم ابدأ اختبارًا من ١٠ أسئلة في التناظر اللفظي.
+            </p>
+          </div>
+          <span className="rounded-full bg-white px-3 py-1 text-xs font-black text-[#147D68]">
+            ٦ دروس · ٦ اختبارات
           </span>
         </div>
         <div className="mt-4 grid gap-4 lg:grid-cols-2">
@@ -457,7 +595,8 @@ function VerbalFilesSection() {
                     controlsList="nodownload"
                   />
                 </div>
-                <div className="flex items-center justify-between gap-3 p-4">
+                <div className="space-y-3 p-4">
+                  <div className="flex items-center justify-between gap-3">
                   <div className="flex min-w-0 items-center gap-3">
                     <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#EAF8F3] text-[#147D68]">
                       <Play className="h-4 w-4" />
@@ -470,6 +609,15 @@ function VerbalFilesSection() {
                   <span className="shrink-0 rounded-full bg-[#F1F5F9] px-2.5 py-1 text-xs font-black text-[#475569]">
                     {video.duration}
                   </span>
+                  </div>
+                  <Link
+                    href={`/verbal-lesson-quiz/verbal/${video.lesson}?section=analogy&count=10`}
+                    className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-[#0D1B2A] px-3 py-2.5 text-xs font-black text-white hover:bg-[#18334D]"
+                    data-testid={`verbal-analogy-quiz-${video.lesson}`}
+                  >
+                    <CheckCircle2 className="h-4 w-4" />
+                    اختبار التناظر بعد الدرس · ١٠ أسئلة
+                  </Link>
                 </div>
               </article>
             );

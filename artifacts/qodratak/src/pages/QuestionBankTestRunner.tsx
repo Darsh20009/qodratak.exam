@@ -63,21 +63,57 @@ interface TestAnswer {
   timeSpent: number;
 }
 
+function normalizeVerbalSection(value: string): string {
+  return value
+    .normalize('NFKD')
+    .replace(/\p{M}/gu, '')
+    .replace(/ـ/g, '')
+    .replace(/[إأآ]/g, 'ا')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
 export default function QuestionBankTestRunner() {
   const params = useParams();
   const [, setLocation] = useLocation();
   const testType = params.type as 'verbal' | 'quantitative';
   const testNumber = parseInt(params.testNumber || '1');
   
-  // Get subcategory filter from URL params
   const urlParams = new URLSearchParams(window.location.search);
   const subcategoryFilter = urlParams.get('subcategory');
+  const lessonSection = urlParams.get('section');
+  const lessonNumber = Math.max(1, Number(urlParams.get('lesson')) || testNumber);
+  const requestedCount = Number(urlParams.get('count')) || 10;
+  const questionCount = lessonSection
+    ? Math.min(50, Math.max(1, Math.floor(requestedCount)))
+    : 50;
+  const durationSeconds = questionCount * 60;
+  const lessonSectionLabel =
+    lessonSection === 'sentence-completion'
+      ? 'إكمال الجمل'
+      : lessonSection === 'analogy'
+        ? 'التناظر اللفظي'
+        : lessonSection === 'contextual-error'
+          ? 'الخطأ السياقي'
+          : null;
+  const testTitle = lessonSectionLabel
+    ? `اختبار ${lessonSectionLabel} بعد الدرس ${lessonNumber}`
+    : `بنك الأسئلة ${testType === 'verbal' ? 'اللفظية' : 'الكمية'} - الاختبار رقم ${testNumber}`;
+  const resultTestKey = lessonSection || subcategoryFilter
+    ? `${testType}_${lessonSection || subcategoryFilter}_${testNumber}`
+    : `${testType}_${testNumber}`;
+  const returnLocation = lessonSection
+    ? '/computerized?program=qudrat&subject=verbal'
+    : '/question-bank';
+  const retryLocation = lessonSection
+    ? `${window.location.pathname}${window.location.search}`
+    : `/question-bank/${testType}/${testNumber}`;
   
   const [questions, setQuestions] = useState<Question[]>([]);
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [selectedAnswers, setSelectedAnswers] = useState<{ [key: number]: number }>({});
   const [bookmarkedQuestions, setBookmarkedQuestions] = useState<Set<number>>(new Set());
-  const [timeLeft, setTimeLeft] = useState(50 * 60); // 50 minutes
+  const [timeLeft, setTimeLeft] = useState(durationSeconds);
   const [isPaused, setIsPaused] = useState(false);
   const [isStarted, setIsStarted] = useState(false);
   const [isCompleted, setIsCompleted] = useState(false);
@@ -111,8 +147,13 @@ export default function QuestionBankTestRunner() {
           q.category === testType
         );
         
-        // Apply subcategory filter if provided
-        if (subcategoryFilter) {
+        if (lessonSectionLabel) {
+          const normalizedTarget = normalizeVerbalSection(lessonSectionLabel);
+          filteredQuestions = filteredQuestions.filter((q: Question) => {
+            const section = normalizeVerbalSection(`${q.subcategory || ''} ${q.category || ''}`);
+            return section.includes(normalizedTarget);
+          });
+        } else if (subcategoryFilter) {
           filteredQuestions = filteredQuestions.filter((q: Question) => 
             q.subcategory === subcategoryFilter
           );
@@ -120,8 +161,8 @@ export default function QuestionBankTestRunner() {
         }
         
         // Calculate question range for this test
-        const startIndex = (testNumber - 1) * 50;
-        const endIndex = Math.min(startIndex + 50, filteredQuestions.length);
+        const startIndex = (lessonNumber - 1) * questionCount;
+        const endIndex = Math.min(startIndex + questionCount, filteredQuestions.length);
         
         const testQuestions = filteredQuestions.slice(startIndex, endIndex);
         setQuestions(testQuestions);
@@ -133,7 +174,7 @@ export default function QuestionBankTestRunner() {
     };
 
     loadQuestions();
-  }, [testType, testNumber, subcategoryFilter]);
+  }, [testType, testNumber, lessonNumber, questionCount, subcategoryFilter, lessonSectionLabel]);
 
   // Timer effect
   useEffect(() => {
@@ -234,7 +275,7 @@ export default function QuestionBankTestRunner() {
     const resultsStorageKey = user?.id ? `questionBankResults_${user.id}` : null;
     const progressStorageKey = user?.id ? `questionBankProgress_${user.id}` : null;
     const questionBankResults = JSON.parse(resultsStorageKey ? localStorage.getItem(resultsStorageKey) || '{}' : '{}');
-    const testKey = `${testType}_${testNumber}`;
+    const testKey = resultTestKey;
     const previousResult = questionBankResults[testKey];
     const previousScore = previousResult?.score;
     const previousAttempts = previousResult?.attempts || 0;
@@ -251,7 +292,7 @@ export default function QuestionBankTestRunner() {
       isPerfect,
       attempts: previousAttempts + 1,
       completedAt: new Date().toISOString(),
-      timeSpent: 50 * 60 - timeLeft,
+      timeSpent: durationSeconds - timeLeft,
       correctCount: correctAnswers.length,
       totalQuestions: questions.length,
       answeredCount: answeredQuestions.length,
@@ -267,7 +308,10 @@ export default function QuestionBankTestRunner() {
       progressState[testType] = [];
     }
     
-    const testIndex = progressState[testType].findIndex((t: any) => t.testNumber === testNumber);
+    const testIndex = progressState[testType].findIndex((t: any) =>
+      t.testNumber === testNumber &&
+      (lessonSection ? t.lessonSection === lessonSection : !t.lessonSection)
+    );
     
     if (testIndex !== -1) {
       const currentTest = progressState[testType][testIndex];
@@ -284,11 +328,13 @@ export default function QuestionBankTestRunner() {
         attempts: previousAttempts + 1,
         completedAt: new Date().toISOString(),
         improvement: oldScore !== undefined ? score - oldScore : null,
-        bestScore: Math.max(score, oldScore || 0)
+        bestScore: Math.max(score, oldScore || 0),
+        ...(lessonSection ? { lessonSection } : {}),
       };
     } else {
       progressState[testType].push({
         testNumber,
+        ...(lessonSection ? { lessonSection } : {}),
         completed: true,
         passed,
         isPerfect,
@@ -339,7 +385,7 @@ export default function QuestionBankTestRunner() {
             difficulty: 'intermediate',
             score: correctAnswers.length,
             totalQuestions: questions.length,
-            timeTaken: 50 * 60 - timeLeft,
+            timeTaken: durationSeconds - timeLeft,
             skippedQuestions: questions.length - answeredQuestions.length,
             answers: answers.map(answer => ({
               questionId: (answer.question as any)._id || answer.question.id || (answer.question as any).questionId,
@@ -371,7 +417,7 @@ export default function QuestionBankTestRunner() {
       }));
     setWrongQuestionsForAI(wrongs);
     setShowAiReview(true);
-  }, [isCompleted, questions, selectedAnswers, testType, testNumber, timeLeft, user?.id]);
+  }, [isCompleted, questions, selectedAnswers, testType, testNumber, lessonSection, resultTestKey, durationSeconds, timeLeft, user?.id]);
 
   const downloadResults = () => {
     const mistakes = testAnswers.filter(answer => !answer.correct);
@@ -384,7 +430,7 @@ export default function QuestionBankTestRunner() {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>نتائج الاختبار - ${testType === 'verbal' ? 'اللفظي' : 'الكمي'} - اختبار ${testNumber}</title>
+    <title>${testTitle}</title>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700&display=swap');
         
@@ -523,7 +569,7 @@ export default function QuestionBankTestRunner() {
     <div class="container">
         <div class="header">
             <h1>📊 نتائج الاختبار</h1>
-            <p>بنك الأسئلة ${testType === 'verbal' ? 'اللفظية' : 'الكمية'} - الاختبار رقم ${testNumber}</p>
+            <p>${testTitle}</p>
         </div>
         
         <div class="stats">
@@ -598,7 +644,7 @@ export default function QuestionBankTestRunner() {
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `نتائج_بنك_الاسئلة_${testType === 'verbal' ? 'لفظي' : 'كمي'}_${testNumber}.html`;
+    a.download = `نتائج_الاختبار_${lessonSection || testType}_${lessonNumber}.html`;
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
@@ -641,7 +687,7 @@ export default function QuestionBankTestRunner() {
           </CardHeader>
           <CardContent className="text-center">
             <p className="mb-4">لم يتم العثور على أسئلة لهذا الاختبار</p>
-            <Button onClick={() => setLocation('/question-bank')}>
+            <Button onClick={() => setLocation(returnLocation)}>
               العودة لبنك الأسئلة
             </Button>
           </CardContent>
@@ -655,8 +701,9 @@ export default function QuestionBankTestRunner() {
     const mistakes = testAnswers.filter(a => !a.correct);
     
     // Get previous score and improvement
-    const questionBankResults = JSON.parse(localStorage.getItem('questionBankResults') || '{}');
-    const testKey = `${testType}_${testNumber}`;
+    const resultsStorageKey = user?.id ? `questionBankResults_${user.id}` : null;
+    const questionBankResults = JSON.parse(resultsStorageKey ? localStorage.getItem(resultsStorageKey) || '{}' : '{}');
+    const testKey = resultTestKey;
     const currentResult = questionBankResults[testKey];
     const previousScore = currentResult?.previousScore;
     const improvement = previousScore !== undefined ? score - previousScore : null;
@@ -685,7 +732,7 @@ export default function QuestionBankTestRunner() {
                 </h1>
               </div>
               <p className="text-lg text-gray-600 dark:text-gray-300">
-                بنك الأسئلة {testType === 'verbal' ? 'اللفظية' : 'الكمية'} - الاختبار رقم {testNumber}
+                {testTitle}
               </p>
               {attempts > 1 && (
                 <p className="text-sm text-gray-500 dark:text-gray-400 mt-2">
@@ -755,7 +802,7 @@ export default function QuestionBankTestRunner() {
               <Card className="bg-gradient-to-r from-green-600 to-emerald-600 text-white">
                 <CardContent className="p-6 text-center">
                   <Clock className="h-8 w-8 mx-auto mb-2 opacity-80" />
-                  <p className="text-3xl font-bold">{formatTime(50 * 60 - timeLeft)}</p>
+                  <p className="text-3xl font-bold">{formatTime(durationSeconds - timeLeft)}</p>
                   <p className="opacity-90">الوقت المستغرق</p>
                 </CardContent>
               </Card>
@@ -849,7 +896,7 @@ export default function QuestionBankTestRunner() {
             {/* Actions */}
             <div className="flex flex-wrap gap-4 justify-center mb-8">
               <Button 
-                onClick={() => setLocation('/question-bank')}
+                onClick={() => setLocation(returnLocation)}
                 size="lg"
                 className="bg-gradient-to-r from-blue-600 to-emerald-600 hover:from-blue-700 hover:to-emerald-600 text-white"
               >
@@ -858,7 +905,7 @@ export default function QuestionBankTestRunner() {
               </Button>
               
               <Button 
-                onClick={() => setLocation(`/question-bank/${testType}/${testNumber}`)}
+                onClick={() => setLocation(retryLocation)}
                 size="lg"
                 variant="outline"
                 className="border-blue-300 text-blue-600 hover:bg-blue-50"
@@ -927,7 +974,7 @@ export default function QuestionBankTestRunner() {
               </CardTitle>
             </div>
             <p className="text-lg text-gray-600 dark:text-gray-300">
-              الاختبار رقم {testNumber}
+              {testTitle}
               {subcategoryFilter && (
                 <span className="block text-sm text-blue-600 dark:text-blue-400 mt-1">
                   القسم الفرعي: {subcategoryFilter}
@@ -942,12 +989,12 @@ export default function QuestionBankTestRunner() {
                 <p className="text-sm text-gray-600 dark:text-gray-400">عدد الأسئلة</p>
               </div>
               <div className="text-center p-4 bg-green-100 dark:bg-green-100 rounded-lg">
-                <p className="text-2xl font-bold text-green-700">50</p>
+                <p className="text-2xl font-bold text-green-700">{durationSeconds / 60}</p>
                 <p className="text-sm text-gray-600 dark:text-gray-400">دقيقة</p>
               </div>
               <div className="text-center p-4 bg-green-50 dark:bg-green-950 rounded-lg">
                 <p className="text-2xl font-bold text-green-600">
-                  {(testNumber - 1) * 50 + 1}-{Math.min(testNumber * 50, (testNumber - 1) * 50 + questions.length)}
+                  {(lessonNumber - 1) * questionCount + 1}-{Math.min(lessonNumber * questionCount, (lessonNumber - 1) * questionCount + questions.length)}
                 </p>
                 <p className="text-sm text-gray-600 dark:text-gray-400">نطاق الأسئلة</p>
               </div>
@@ -981,7 +1028,7 @@ export default function QuestionBankTestRunner() {
         maxViolations={5}
       />
       <QiyasExamLayout
-      examTitle={`${testType === 'verbal' ? 'بنك الأسئلة اللفظية' : 'بنك الأسئلة الكمية'} - اختبار ${testNumber}`}
+      examTitle={testTitle}
       enableQuantitativeTools={testType === 'quantitative'}
       questionNumber={currentQuestionIndex + 1}
       totalQuestions={questions.length}

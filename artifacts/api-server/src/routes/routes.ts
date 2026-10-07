@@ -84,8 +84,12 @@ import {
 import {
   fetchQudratVerbalAnalogyVideo,
   fetchQudratVerbalBookFile,
+  fetchQudratVerbalContextualErrorVideo,
+  fetchQudratVerbalSentenceCompletionVideo,
   getQudratVerbalAnalogyVideo,
   getQudratVerbalBookFile,
+  getQudratVerbalContextualErrorVideo,
+  getQudratVerbalSentenceCompletionVideo,
   VerbalBookFileStorageError,
 } from '../services/qudratVerbalBookFilesService';
 import {
@@ -12578,6 +12582,130 @@ app.post("/api/auth/register", async (req: Request, res: Response) => {
         return;
       }
       req.log.error({ err: error, videoId: video.id }, 'Failed to stream computerized verbal analogy video');
+      res.status(503).json({ error: 'تعذر تحميل الفيديو حاليًا' });
+    }
+  });
+
+  app.get('/api/learning/computerized/verbal/sentence-completion-videos/:videoId', requireAuth, async (req: Request, res: Response): Promise<void> => {
+    const userId = studentOnly(req, res);
+    if (!userId) return;
+
+    const videoId = typeof req.params.videoId === 'string' ? req.params.videoId : '';
+    const video = getQudratVerbalSentenceCompletionVideo(videoId);
+    if (!video) {
+      res.status(404).json({ error: 'الفيديو غير موجود' });
+      return;
+    }
+
+    try {
+      const upstream = await fetchQudratVerbalSentenceCompletionVideo(video.id, {
+        method: req.method === 'HEAD' ? 'HEAD' : 'GET',
+        range: req.get('range') || undefined,
+      });
+
+      if (upstream.status !== 200 && upstream.status !== 206 && upstream.status !== 416) {
+        await upstream.body?.cancel();
+        if (upstream.status === 404) {
+          res.status(404).json({ error: 'الفيديو غير موجود في التخزين' });
+          return;
+        }
+        req.log.error(
+          { videoId: video.id, upstreamStatus: upstream.status },
+          'Failed to retrieve computerized verbal sentence-completion video from R2',
+        );
+        res.status(503).json({ error: 'تعذر تحميل الفيديو حاليًا' });
+        return;
+      }
+
+      res.status(upstream.status);
+      res.setHeader('Content-Type', 'video/mp4');
+      res.setHeader(
+        'Content-Disposition',
+        `inline; filename="verbal-sentence-completion-${video.lesson}.mp4"; filename*=UTF-8''${encodeURIComponent(video.downloadName)}`,
+      );
+      res.setHeader('Accept-Ranges', 'bytes');
+      res.setHeader('Cache-Control', 'private, max-age=3600');
+      res.setHeader('X-Content-Type-Options', 'nosniff');
+      for (const headerName of ['content-length', 'content-range', 'etag']) {
+        const value = upstream.headers.get(headerName);
+        if (value) res.setHeader(headerName, value);
+      }
+
+      if (req.method === 'HEAD' || !upstream.body) {
+        await upstream.body?.cancel();
+        res.end();
+        return;
+      }
+
+      Readable.fromWeb(upstream.body as any).pipe(res);
+    } catch (error) {
+      if (error instanceof VerbalBookFileStorageError) {
+        res.status(error.statusCode).json({ error: error.message });
+        return;
+      }
+      req.log.error({ err: error, videoId: video.id }, 'Failed to stream computerized verbal sentence-completion video');
+      res.status(503).json({ error: 'تعذر تحميل الفيديو حاليًا' });
+    }
+  });
+
+  app.get('/api/learning/computerized/verbal/contextual-error-videos/:videoId', requireAuth, async (req: Request, res: Response): Promise<void> => {
+    const userId = studentOnly(req, res);
+    if (!userId) return;
+
+    const videoId = typeof req.params.videoId === 'string' ? req.params.videoId : '';
+    const video = getQudratVerbalContextualErrorVideo(videoId);
+    if (!video) {
+      res.status(404).json({ error: 'الفيديو غير موجود' });
+      return;
+    }
+
+    try {
+      const upstream = await fetchQudratVerbalContextualErrorVideo(video.id, {
+        method: req.method === 'HEAD' ? 'HEAD' : 'GET',
+        range: req.get('range') || undefined,
+      });
+
+      if (upstream.status !== 200 && upstream.status !== 206 && upstream.status !== 416) {
+        await upstream.body?.cancel();
+        if (upstream.status === 404) {
+          res.status(404).json({ error: 'الفيديو غير موجود في التخزين' });
+          return;
+        }
+        req.log.error(
+          { videoId: video.id, upstreamStatus: upstream.status },
+          'Failed to retrieve computerized verbal contextual-error video from R2',
+        );
+        res.status(503).json({ error: 'تعذر تحميل الفيديو حاليًا' });
+        return;
+      }
+
+      res.status(upstream.status);
+      res.setHeader('Content-Type', 'video/mp4');
+      res.setHeader(
+        'Content-Disposition',
+        `inline; filename="verbal-contextual-error-${video.lesson}.mp4"; filename*=UTF-8''${encodeURIComponent(video.downloadName)}`,
+      );
+      res.setHeader('Accept-Ranges', 'bytes');
+      res.setHeader('Cache-Control', 'private, max-age=3600');
+      res.setHeader('X-Content-Type-Options', 'nosniff');
+      for (const headerName of ['content-length', 'content-range', 'etag']) {
+        const value = upstream.headers.get(headerName);
+        if (value) res.setHeader(headerName, value);
+      }
+
+      if (req.method === 'HEAD' || !upstream.body) {
+        await upstream.body?.cancel();
+        res.end();
+        return;
+      }
+
+      Readable.fromWeb(upstream.body as any).pipe(res);
+    } catch (error) {
+      if (error instanceof VerbalBookFileStorageError) {
+        res.status(error.statusCode).json({ error: error.message });
+        return;
+      }
+      req.log.error({ err: error, videoId: video.id }, 'Failed to stream computerized verbal contextual-error video');
       res.status(503).json({ error: 'تعذر تحميل الفيديو حاليًا' });
     }
   });

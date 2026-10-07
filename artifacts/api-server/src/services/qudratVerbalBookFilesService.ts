@@ -76,10 +76,80 @@ export const QUDRAT_VERBAL_ANALOGY_VIDEOS = [
   },
 ] as const;
 
+export const QUDRAT_VERBAL_SENTENCE_COMPLETION_VIDEOS = [
+  {
+    id: "sentence-completion-01",
+    lesson: 1,
+    title: "إكمال الجمل — الدرس ١",
+    downloadName: "إكمال الجمل - الدرس ١.mp4",
+    objectKey: "foundation/verbal/computerized-videos/sentence-completion/lesson-01.mp4",
+  },
+  {
+    id: "sentence-completion-02",
+    lesson: 2,
+    title: "إكمال الجمل — الدرس ٢",
+    downloadName: "إكمال الجمل - الدرس ٢.mp4",
+    objectKey: "foundation/verbal/computerized-videos/sentence-completion/lesson-02.mp4",
+  },
+  {
+    id: "sentence-completion-03",
+    lesson: 3,
+    title: "إكمال الجمل — الدرس ٣",
+    downloadName: "إكمال الجمل - الدرس ٣.mp4",
+    objectKey: "foundation/verbal/computerized-videos/sentence-completion/lesson-03.mp4",
+  },
+  {
+    id: "sentence-completion-04",
+    lesson: 4,
+    title: "إكمال الجمل — الدرس ٤",
+    downloadName: "إكمال الجمل - الدرس ٤.mp4",
+    objectKey: "foundation/verbal/computerized-videos/sentence-completion/lesson-04.mp4",
+  },
+  {
+    id: "sentence-completion-05",
+    lesson: 5,
+    title: "إكمال الجمل — الدرس ٥",
+    downloadName: "إكمال الجمل - الدرس ٥.mp4",
+    objectKey: "foundation/verbal/computerized-videos/sentence-completion/lesson-05.mp4",
+  },
+] as const;
+
+export const QUDRAT_VERBAL_CONTEXTUAL_ERROR_VIDEOS = [
+  {
+    id: "contextual-error-01",
+    lesson: 1,
+    title: "الخطأ السياقي — الدرس ١",
+    downloadName: "الخطأ السياقي - الدرس ١.mp4",
+    objectKey: "foundation/verbal/computerized-videos/contextual-error/lesson-01.mp4",
+  },
+  {
+    id: "contextual-error-02",
+    lesson: 2,
+    title: "الخطأ السياقي — الدرس ٢",
+    downloadName: "الخطأ السياقي - الدرس ٢.mp4",
+    objectKey: "foundation/verbal/computerized-videos/contextual-error/lesson-02.mp4",
+  },
+  {
+    id: "contextual-error-03",
+    lesson: 3,
+    title: "الخطأ السياقي — الدرس ٣",
+    downloadName: "الخطأ السياقي - الدرس ٣.mp4",
+    objectKey: "foundation/verbal/computerized-videos/contextual-error/lesson-03.mp4",
+  },
+] as const;
+
 export type QudratVerbalBookFileId = (typeof QUDRAT_VERBAL_BOOK_FILES)[number]["id"];
 export type QudratVerbalBookFile = (typeof QUDRAT_VERBAL_BOOK_FILES)[number];
 export type QudratVerbalAnalogyVideoId = (typeof QUDRAT_VERBAL_ANALOGY_VIDEOS)[number]["id"];
 export type QudratVerbalAnalogyVideo = (typeof QUDRAT_VERBAL_ANALOGY_VIDEOS)[number];
+export type QudratVerbalSentenceCompletionVideoId =
+  (typeof QUDRAT_VERBAL_SENTENCE_COMPLETION_VIDEOS)[number]["id"];
+export type QudratVerbalSentenceCompletionVideo =
+  (typeof QUDRAT_VERBAL_SENTENCE_COMPLETION_VIDEOS)[number];
+export type QudratVerbalContextualErrorVideoId =
+  (typeof QUDRAT_VERBAL_CONTEXTUAL_ERROR_VIDEOS)[number]["id"];
+export type QudratVerbalContextualErrorVideo =
+  (typeof QUDRAT_VERBAL_CONTEXTUAL_ERROR_VIDEOS)[number];
 
 export function getQudratVerbalBookFile(
   fileId: string,
@@ -91,6 +161,18 @@ export function getQudratVerbalAnalogyVideo(
   videoId: string,
 ): QudratVerbalAnalogyVideo | undefined {
   return QUDRAT_VERBAL_ANALOGY_VIDEOS.find((video) => video.id === videoId);
+}
+
+export function getQudratVerbalSentenceCompletionVideo(
+  videoId: string,
+): QudratVerbalSentenceCompletionVideo | undefined {
+  return QUDRAT_VERBAL_SENTENCE_COMPLETION_VIDEOS.find((video) => video.id === videoId);
+}
+
+export function getQudratVerbalContextualErrorVideo(
+  videoId: string,
+): QudratVerbalContextualErrorVideo | undefined {
+  return QUDRAT_VERBAL_CONTEXTUAL_ERROR_VIDEOS.find((video) => video.id === videoId);
 }
 
 export class VerbalBookFileStorageError extends Error {
@@ -250,6 +332,28 @@ export async function fetchQudratVerbalAnalogyVideo(
   const video = getQudratVerbalAnalogyVideo(videoId);
   if (!video) {
     throw new VerbalBookFileStorageError("Verbal analogy video was not found.", 404);
+  }
+  return fetchR2VerbalObject(video.objectKey, options);
+}
+
+export async function fetchQudratVerbalSentenceCompletionVideo(
+  videoId: string,
+  options: { method?: "GET" | "HEAD"; range?: string } = {},
+): Promise<Response> {
+  const video = getQudratVerbalSentenceCompletionVideo(videoId);
+  if (!video) {
+    throw new VerbalBookFileStorageError("Verbal sentence-completion video was not found.", 404);
+  }
+  return fetchR2VerbalObject(video.objectKey, options);
+}
+
+export async function fetchQudratVerbalContextualErrorVideo(
+  videoId: string,
+  options: { method?: "GET" | "HEAD"; range?: string } = {},
+): Promise<Response> {
+  const video = getQudratVerbalContextualErrorVideo(videoId);
+  if (!video) {
+    throw new VerbalBookFileStorageError("Verbal contextual-error video was not found.", 404);
   }
   return fetchR2VerbalObject(video.objectKey, options);
 }
