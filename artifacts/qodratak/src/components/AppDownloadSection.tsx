@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { registerQodratakServiceWorker } from "@/lib/serviceWorker";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -30,10 +31,7 @@ const AppDownloadSection: React.FC = () => {
 
   const handleInstallPWA = () => {
     // التحقق من إمكانية التثبيت
-    if ('serviceWorker' in navigator) {
-      // تسجيل Service Worker للـ PWA
-      navigator.serviceWorker.register('/sw.js').catch(console.error);
-    }
+    registerQodratakServiceWorker();
 
     // محاولة تشغيل prompt التثبيت
     const event = (window as any).deferredPrompt;

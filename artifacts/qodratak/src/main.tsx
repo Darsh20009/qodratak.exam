@@ -3,19 +3,17 @@ import { HelmetProvider } from 'react-helmet-async';
 import App from "./App";
 import { ErrorBoundary } from "./components/ErrorBoundary";
 import { reportClientError } from "./lib/clientErrorReporter";
+import {
+  registerQodratakServiceWorker,
+  unregisterDevelopmentServiceWorker,
+} from "./lib/serviceWorker";
 import "./index.css";
 
 // ── Service Worker registration (Web Push support) ──────────────────────────
-if ('serviceWorker' in navigator) {
-  window.addEventListener('load', () => {
-    navigator.serviceWorker.register('/sw.js', { scope: '/' })
-      .then((reg) => {
-        console.log('[SW] Registered, scope:', reg.scope);
-      })
-      .catch((err) => {
-        console.warn('[SW] Registration failed:', err);
-      });
-  });
+if (import.meta.env.DEV) {
+  unregisterDevelopmentServiceWorker();
+} else {
+  registerQodratakServiceWorker();
 }
 
 if (import.meta.env.DEV) {

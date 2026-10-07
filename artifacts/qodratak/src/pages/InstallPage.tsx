@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { registerQodratakServiceWorker } from "@/lib/serviceWorker";
 const newLogoPath = "/qodratak-icon.png";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -108,9 +109,7 @@ const InstallPage: React.FC = () => {
   };
 
   const installPWA = () => {
-    if ('serviceWorker' in navigator) {
-      navigator.serviceWorker.register('/sw.js').catch(console.error);
-    }
+    registerQodratakServiceWorker();
 
     const event = (window as any).deferredPrompt;
     if (event) {
