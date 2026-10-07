@@ -221,6 +221,18 @@ const VERBAL_CONTEXTUAL_ERROR_VIDEOS = [
   { id: "contextual-error-03", lesson: 3, duration: "30:58" },
 ] as const;
 
+const VERBAL_READING_COMPREHENSION_VIDEOS = [
+  { id: "reading-comprehension-01", lesson: 1, duration: "55:36" },
+  { id: "reading-comprehension-02", lesson: 2, duration: "50:08" },
+  { id: "reading-comprehension-03", lesson: 3, duration: "46:26" },
+  { id: "reading-comprehension-04", lesson: 4, duration: "49:59" },
+  { id: "reading-comprehension-05", lesson: 5, duration: "41:05" },
+  { id: "reading-comprehension-06", lesson: 6, duration: "43:15" },
+  { id: "reading-comprehension-07", lesson: 7, duration: "42:44" },
+  { id: "reading-comprehension-08", lesson: 8, duration: "42:57" },
+  { id: "reading-comprehension-09", lesson: 9, duration: "65:10" },
+] as const;
+
 function EmptyContentNotice({ label }: { label: string }) {
   return (
     <div className="mt-3 rounded-xl border border-dashed border-[#CBD5E1] bg-white/70 px-3 py-2 text-xs leading-5 text-[#64748B]">
@@ -404,11 +416,11 @@ function VerbalFilesSection() {
             ملفات ودروس اللفظي
           </h3>
           <p className="mt-1 text-sm leading-6 text-[#64748B]">
-            ملفات PDF للأقسام، ودروس إكمال الجمل والخطأ السياقي والتناظر اللفظي في المحوسب مع اختبار بعد كل درس.
+            ملفات PDF للأقسام، ودروس الاستيعاب المقروء وإكمال الجمل والخطأ السياقي والتناظر اللفظي في المحوسب مع اختبار بعد كل درس.
           </p>
         </div>
         <span className="rounded-full bg-white px-3 py-1 text-xs font-black text-[#3B67A5]">
-          ٤ ملفات · ١٤ درسًا واختبارًا
+          ٤ ملفات · ٢٣ درسًا واختبارًا
         </span>
       </div>
       <div className="mt-4 grid gap-3 sm:grid-cols-2">
@@ -437,6 +449,68 @@ function VerbalFilesSection() {
             <ArrowLeft className="h-4 w-4 shrink-0 text-[#94A3B8] transition-transform group-hover:-translate-x-1" />
           </a>
         ))}
+      </div>
+      <div className="mt-6 border-t border-[#DDE6E2] pt-5">
+        <div className="flex flex-wrap items-end justify-between gap-3">
+          <div>
+            <p className="text-xs font-black text-[#147D68]">استيعاب المقروء · المحوسب</p>
+            <h4 className="mt-1 text-lg font-black text-[#0D1B2A]">دروس ملخص الـ95</h4>
+            <p className="mt-1 text-xs leading-5 text-[#64748B]">
+              شاهد كل درس ثم ابدأ اختبارًا من ١٠ أسئلة في استيعاب المقروء.
+            </p>
+          </div>
+          <span className="rounded-full bg-white px-3 py-1 text-xs font-black text-[#147D68]">
+            ٩ دروس · ٩ اختبارات
+          </span>
+        </div>
+        <div className="mt-4 grid gap-4 lg:grid-cols-2">
+          {VERBAL_READING_COMPREHENSION_VIDEOS.map((video) => {
+            const title = `استيعاب المقروء — الدرس ${video.lesson}`;
+            return (
+              <article
+                key={video.id}
+                className="overflow-hidden rounded-2xl border border-[#DDE6E2] bg-white"
+                data-testid={`verbal-reading-comprehension-video-${video.lesson}`}
+              >
+                <div className="aspect-video bg-[#07111f]">
+                  <video
+                    src={`/api/learning/computerized/verbal/reading-comprehension-videos/${video.id}`}
+                    title={title}
+                    className="h-full w-full"
+                    controls
+                    playsInline
+                    preload="none"
+                    controlsList="nodownload"
+                  />
+                </div>
+                <div className="space-y-3 p-4">
+                  <div className="flex items-center justify-between gap-3">
+                    <div className="flex min-w-0 items-center gap-3">
+                      <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#EAF8F3] text-[#147D68]">
+                        <Play className="h-4 w-4" />
+                      </span>
+                      <div className="min-w-0">
+                        <h5 className="truncate text-sm font-black text-[#0D1B2A]">{title}</h5>
+                        <p className="mt-1 text-xs font-bold text-[#64748B]">ملخص الـ95 · استيعاب المقروء</p>
+                      </div>
+                    </div>
+                    <span className="shrink-0 rounded-full bg-[#F1F5F9] px-2.5 py-1 text-xs font-black text-[#475569]">
+                      {video.duration}
+                    </span>
+                  </div>
+                  <Link
+                    href={`/verbal-lesson-quiz/verbal/${video.lesson}?section=reading-comprehension&count=10`}
+                    className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-[#0D1B2A] px-3 py-2.5 text-xs font-black text-white hover:bg-[#18334D]"
+                    data-testid={`verbal-reading-comprehension-quiz-${video.lesson}`}
+                  >
+                    <CheckCircle2 className="h-4 w-4" />
+                    اختبار استيعاب المقروء بعد الدرس · ١٠ أسئلة
+                  </Link>
+                </div>
+              </article>
+            );
+          })}
+        </div>
       </div>
       <div className="mt-6 border-t border-[#DDE6E2] pt-5">
         <div className="flex flex-wrap items-end justify-between gap-3">

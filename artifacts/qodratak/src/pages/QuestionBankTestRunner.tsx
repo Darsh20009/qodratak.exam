@@ -95,7 +95,9 @@ export default function QuestionBankTestRunner() {
         ? 'التناظر اللفظي'
         : lessonSection === 'contextual-error'
           ? 'الخطأ السياقي'
-          : null;
+          : lessonSection === 'reading-comprehension'
+            ? 'استيعاب المقروء'
+            : null;
   const testTitle = lessonSectionLabel
     ? `اختبار ${lessonSectionLabel} بعد الدرس ${lessonNumber}`
     : `بنك الأسئلة ${testType === 'verbal' ? 'اللفظية' : 'الكمية'} - الاختبار رقم ${testNumber}`;

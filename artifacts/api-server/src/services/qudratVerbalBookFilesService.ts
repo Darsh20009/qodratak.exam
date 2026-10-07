@@ -138,6 +138,72 @@ export const QUDRAT_VERBAL_CONTEXTUAL_ERROR_VIDEOS = [
   },
 ] as const;
 
+export const QUDRAT_VERBAL_READING_COMPREHENSION_VIDEOS = [
+  {
+    id: "reading-comprehension-01",
+    lesson: 1,
+    title: "استيعاب المقروء — الدرس ١",
+    downloadName: "استيعاب المقروء - الدرس ١.mp4",
+    objectKey: "foundation/verbal/computerized-videos/reading-comprehension/lesson-01.mp4",
+  },
+  {
+    id: "reading-comprehension-02",
+    lesson: 2,
+    title: "استيعاب المقروء — الدرس ٢",
+    downloadName: "استيعاب المقروء - الدرس ٢.mp4",
+    objectKey: "foundation/verbal/computerized-videos/reading-comprehension/lesson-02.mp4",
+  },
+  {
+    id: "reading-comprehension-03",
+    lesson: 3,
+    title: "استيعاب المقروء — الدرس ٣",
+    downloadName: "استيعاب المقروء - الدرس ٣.mp4",
+    objectKey: "foundation/verbal/computerized-videos/reading-comprehension/lesson-03.mp4",
+  },
+  {
+    id: "reading-comprehension-04",
+    lesson: 4,
+    title: "استيعاب المقروء — الدرس ٤",
+    downloadName: "استيعاب المقروء - الدرس ٤.mp4",
+    objectKey: "foundation/verbal/computerized-videos/reading-comprehension/lesson-04.mp4",
+  },
+  {
+    id: "reading-comprehension-05",
+    lesson: 5,
+    title: "استيعاب المقروء — الدرس ٥",
+    downloadName: "استيعاب المقروء - الدرس ٥.mp4",
+    objectKey: "foundation/verbal/computerized-videos/reading-comprehension/lesson-05.mp4",
+  },
+  {
+    id: "reading-comprehension-06",
+    lesson: 6,
+    title: "استيعاب المقروء — الدرس ٦",
+    downloadName: "استيعاب المقروء - الدرس ٦.mp4",
+    objectKey: "foundation/verbal/computerized-videos/reading-comprehension/lesson-06.mp4",
+  },
+  {
+    id: "reading-comprehension-07",
+    lesson: 7,
+    title: "استيعاب المقروء — الدرس ٧",
+    downloadName: "استيعاب المقروء - الدرس ٧.mp4",
+    objectKey: "foundation/verbal/computerized-videos/reading-comprehension/lesson-07.mp4",
+  },
+  {
+    id: "reading-comprehension-08",
+    lesson: 8,
+    title: "استيعاب المقروء — الدرس ٨",
+    downloadName: "استيعاب المقروء - الدرس ٨.mp4",
+    objectKey: "foundation/verbal/computerized-videos/reading-comprehension/lesson-08.mp4",
+  },
+  {
+    id: "reading-comprehension-09",
+    lesson: 9,
+    title: "استيعاب المقروء — الدرس ٩",
+    downloadName: "استيعاب المقروء - الدرس ٩.mp4",
+    objectKey: "foundation/verbal/computerized-videos/reading-comprehension/lesson-09.mp4",
+  },
+] as const;
+
 export type QudratVerbalBookFileId = (typeof QUDRAT_VERBAL_BOOK_FILES)[number]["id"];
 export type QudratVerbalBookFile = (typeof QUDRAT_VERBAL_BOOK_FILES)[number];
 export type QudratVerbalAnalogyVideoId = (typeof QUDRAT_VERBAL_ANALOGY_VIDEOS)[number]["id"];
@@ -150,6 +216,10 @@ export type QudratVerbalContextualErrorVideoId =
   (typeof QUDRAT_VERBAL_CONTEXTUAL_ERROR_VIDEOS)[number]["id"];
 export type QudratVerbalContextualErrorVideo =
   (typeof QUDRAT_VERBAL_CONTEXTUAL_ERROR_VIDEOS)[number];
+export type QudratVerbalReadingComprehensionVideoId =
+  (typeof QUDRAT_VERBAL_READING_COMPREHENSION_VIDEOS)[number]["id"];
+export type QudratVerbalReadingComprehensionVideo =
+  (typeof QUDRAT_VERBAL_READING_COMPREHENSION_VIDEOS)[number];
 
 export function getQudratVerbalBookFile(
   fileId: string,
@@ -173,6 +243,12 @@ export function getQudratVerbalContextualErrorVideo(
   videoId: string,
 ): QudratVerbalContextualErrorVideo | undefined {
   return QUDRAT_VERBAL_CONTEXTUAL_ERROR_VIDEOS.find((video) => video.id === videoId);
+}
+
+export function getQudratVerbalReadingComprehensionVideo(
+  videoId: string,
+): QudratVerbalReadingComprehensionVideo | undefined {
+  return QUDRAT_VERBAL_READING_COMPREHENSION_VIDEOS.find((video) => video.id === videoId);
 }
 
 export class VerbalBookFileStorageError extends Error {
@@ -354,6 +430,17 @@ export async function fetchQudratVerbalContextualErrorVideo(
   const video = getQudratVerbalContextualErrorVideo(videoId);
   if (!video) {
     throw new VerbalBookFileStorageError("Verbal contextual-error video was not found.", 404);
+  }
+  return fetchR2VerbalObject(video.objectKey, options);
+}
+
+export async function fetchQudratVerbalReadingComprehensionVideo(
+  videoId: string,
+  options: { method?: "GET" | "HEAD"; range?: string } = {},
+): Promise<Response> {
+  const video = getQudratVerbalReadingComprehensionVideo(videoId);
+  if (!video) {
+    throw new VerbalBookFileStorageError("Verbal reading-comprehension video was not found.", 404);
   }
   return fetchR2VerbalObject(video.objectKey, options);
 }

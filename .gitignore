@@ -54,6 +54,7 @@ artifacts/api-server/attached_assets/user.json
 
 # Large lesson-video attachments are uploaded to persistent storage, not tracked in source.
 /attached_assets/video_*.mp4
+/attached_assets/video-output-*.mp4
 /attached_assets/.video_*.mp4.*
 
 # Local WhatsApp device sessions (credentials and encryption keys)
