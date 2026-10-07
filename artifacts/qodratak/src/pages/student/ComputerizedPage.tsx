@@ -12,6 +12,7 @@ import {
   Flag,
   Layers3,
   Library,
+  Play,
   Search,
   Sparkles,
   Target,
@@ -197,6 +198,15 @@ const VERBAL_COMPUTERIZED_FILES = [
   },
 ] as const;
 
+const VERBAL_ANALOGY_VIDEOS = [
+  { id: "analogy-01", lesson: 1, duration: "59:33" },
+  { id: "analogy-02", lesson: 2, duration: "50:40" },
+  { id: "analogy-03", lesson: 3, duration: "41:49" },
+  { id: "analogy-04", lesson: 4, duration: "43:58" },
+  { id: "analogy-05", lesson: 5, duration: "40:43" },
+  { id: "analogy-06", lesson: 6, duration: "33:36" },
+] as const;
+
 function EmptyContentNotice({ label }: { label: string }) {
   return (
     <div className="mt-3 rounded-xl border border-dashed border-[#CBD5E1] bg-white/70 px-3 py-2 text-xs leading-5 text-[#64748B]">
@@ -377,14 +387,14 @@ function VerbalFilesSection() {
             id="verbal-computerized-files-title"
             className="mt-1 text-xl font-black text-[#0D1B2A]"
           >
-            الملفات
+            ملفات ودروس اللفظي
           </h3>
           <p className="mt-1 text-sm leading-6 text-[#64748B]">
-            ملفات PDF مرتبة حسب القسم. ستُضاف فيديوهات كل قسم لاحقًا.
+            ملفات PDF للأقسام، وستة فيديوهات لشرح التناظر اللفظي في المحوسب.
           </p>
         </div>
         <span className="rounded-full bg-white px-3 py-1 text-xs font-black text-[#3B67A5]">
-          ٤ ملفات
+          ٤ ملفات · ٦ فيديوهات
         </span>
       </div>
       <div className="mt-4 grid gap-3 sm:grid-cols-2">
@@ -413,6 +423,58 @@ function VerbalFilesSection() {
             <ArrowLeft className="h-4 w-4 shrink-0 text-[#94A3B8] transition-transform group-hover:-translate-x-1" />
           </a>
         ))}
+      </div>
+      <div className="mt-6 border-t border-[#DDE6E2] pt-5">
+        <div className="flex flex-wrap items-end justify-between gap-3">
+          <div>
+            <p className="text-xs font-black text-[#147D68]">التناظر اللفظي · المحوسب</p>
+            <h4 className="mt-1 text-lg font-black text-[#0D1B2A]">دروس ملخص الـ95</h4>
+            <p className="mt-1 text-xs leading-5 text-[#64748B]">
+              شغّل الدرس المطلوب من داخل المنصة، ويمكنك التقديم والرجوع أثناء المشاهدة.
+            </p>
+          </div>
+          <span className="rounded-full bg-white px-3 py-1 text-xs font-black text-[#147D68]">
+            ٦ دروس
+          </span>
+        </div>
+        <div className="mt-4 grid gap-4 lg:grid-cols-2">
+          {VERBAL_ANALOGY_VIDEOS.map((video) => {
+            const title = `التناظر اللفظي — الدرس ${video.lesson}`;
+            return (
+              <article
+                key={video.id}
+                className="overflow-hidden rounded-2xl border border-[#DDE6E2] bg-white"
+                data-testid={`verbal-analogy-video-${video.lesson}`}
+              >
+                <div className="aspect-video bg-[#07111f]">
+                  <video
+                    src={`/api/learning/computerized/verbal/analogy-videos/${video.id}`}
+                    title={title}
+                    className="h-full w-full"
+                    controls
+                    playsInline
+                    preload="none"
+                    controlsList="nodownload"
+                  />
+                </div>
+                <div className="flex items-center justify-between gap-3 p-4">
+                  <div className="flex min-w-0 items-center gap-3">
+                    <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#EAF8F3] text-[#147D68]">
+                      <Play className="h-4 w-4" />
+                    </span>
+                    <div className="min-w-0">
+                      <h5 className="truncate text-sm font-black text-[#0D1B2A]">{title}</h5>
+                      <p className="mt-1 text-xs font-bold text-[#64748B]">ملخص الـ95 · التناظر اللفظي</p>
+                    </div>
+                  </div>
+                  <span className="shrink-0 rounded-full bg-[#F1F5F9] px-2.5 py-1 text-xs font-black text-[#475569]">
+                    {video.duration}
+                  </span>
+                </div>
+              </article>
+            );
+          })}
+        </div>
       </div>
     </section>
   );

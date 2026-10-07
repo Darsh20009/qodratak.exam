@@ -31,13 +31,66 @@ export const QUDRAT_VERBAL_BOOK_FILES = [
   },
 ] as const;
 
+export const QUDRAT_VERBAL_ANALOGY_VIDEOS = [
+  {
+    id: "analogy-01",
+    lesson: 1,
+    title: "التناظر اللفظي — الدرس ١",
+    downloadName: "التناظر اللفظي - الدرس ١.mp4",
+    objectKey: "foundation/verbal/computerized-videos/analogy/lesson-01.mp4",
+  },
+  {
+    id: "analogy-02",
+    lesson: 2,
+    title: "التناظر اللفظي — الدرس ٢",
+    downloadName: "التناظر اللفظي - الدرس ٢.mp4",
+    objectKey: "foundation/verbal/computerized-videos/analogy/lesson-02.mp4",
+  },
+  {
+    id: "analogy-03",
+    lesson: 3,
+    title: "التناظر اللفظي — الدرس ٣",
+    downloadName: "التناظر اللفظي - الدرس ٣.mp4",
+    objectKey: "foundation/verbal/computerized-videos/analogy/lesson-03.mp4",
+  },
+  {
+    id: "analogy-04",
+    lesson: 4,
+    title: "التناظر اللفظي — الدرس ٤",
+    downloadName: "التناظر اللفظي - الدرس ٤.mp4",
+    objectKey: "foundation/verbal/computerized-videos/analogy/lesson-04.mp4",
+  },
+  {
+    id: "analogy-05",
+    lesson: 5,
+    title: "التناظر اللفظي — الدرس ٥",
+    downloadName: "التناظر اللفظي - الدرس ٥.mp4",
+    objectKey: "foundation/verbal/computerized-videos/analogy/lesson-05.mp4",
+  },
+  {
+    id: "analogy-06",
+    lesson: 6,
+    title: "التناظر اللفظي — الدرس ٦",
+    downloadName: "التناظر اللفظي - الدرس ٦.mp4",
+    objectKey: "foundation/verbal/computerized-videos/analogy/lesson-06.mp4",
+  },
+] as const;
+
 export type QudratVerbalBookFileId = (typeof QUDRAT_VERBAL_BOOK_FILES)[number]["id"];
 export type QudratVerbalBookFile = (typeof QUDRAT_VERBAL_BOOK_FILES)[number];
+export type QudratVerbalAnalogyVideoId = (typeof QUDRAT_VERBAL_ANALOGY_VIDEOS)[number]["id"];
+export type QudratVerbalAnalogyVideo = (typeof QUDRAT_VERBAL_ANALOGY_VIDEOS)[number];
 
 export function getQudratVerbalBookFile(
   fileId: string,
 ): QudratVerbalBookFile | undefined {
   return QUDRAT_VERBAL_BOOK_FILES.find((file) => file.id === fileId);
+}
+
+export function getQudratVerbalAnalogyVideo(
+  videoId: string,
+): QudratVerbalAnalogyVideo | undefined {
+  return QUDRAT_VERBAL_ANALOGY_VIDEOS.find((video) => video.id === videoId);
 }
 
 export class VerbalBookFileStorageError extends Error {
@@ -146,18 +199,13 @@ function signR2Request({
   };
 }
 
-export async function fetchQudratVerbalBookFile(
-  fileId: string,
+async function fetchR2VerbalObject(
+  objectKey: string,
   options: { method?: "GET" | "HEAD"; range?: string } = {},
 ): Promise<Response> {
-  const file = getQudratVerbalBookFile(fileId);
-  if (!file) {
-    throw new VerbalBookFileStorageError("Verbal book PDF was not found.", 404);
-  }
-
   const { accountId, bucket, accessKeyId, secretAccessKey } = getR2Config();
   const host = `${accountId}.r2.cloudflarestorage.com`;
-  const uri = `/${encodePathSegment(bucket)}/${file.objectKey
+  const uri = `/${encodePathSegment(bucket)}/${objectKey
     .split("/")
     .map(encodePathSegment)
     .join("/")}`;
@@ -182,4 +230,26 @@ export async function fetchQudratVerbalBookFile(
     headers,
     redirect: "error",
   });
+}
+
+export async function fetchQudratVerbalBookFile(
+  fileId: string,
+  options: { method?: "GET" | "HEAD"; range?: string } = {},
+): Promise<Response> {
+  const file = getQudratVerbalBookFile(fileId);
+  if (!file) {
+    throw new VerbalBookFileStorageError("Verbal book PDF was not found.", 404);
+  }
+  return fetchR2VerbalObject(file.objectKey, options);
+}
+
+export async function fetchQudratVerbalAnalogyVideo(
+  videoId: string,
+  options: { method?: "GET" | "HEAD"; range?: string } = {},
+): Promise<Response> {
+  const video = getQudratVerbalAnalogyVideo(videoId);
+  if (!video) {
+    throw new VerbalBookFileStorageError("Verbal analogy video was not found.", 404);
+  }
+  return fetchR2VerbalObject(video.objectKey, options);
 }

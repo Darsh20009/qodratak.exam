@@ -82,7 +82,9 @@ import {
   VerbalBookServiceError,
 } from '../services/qudratVerbalBookService';
 import {
+  fetchQudratVerbalAnalogyVideo,
   fetchQudratVerbalBookFile,
+  getQudratVerbalAnalogyVideo,
   getQudratVerbalBookFile,
   VerbalBookFileStorageError,
 } from '../services/qudratVerbalBookFilesService';
@@ -12515,6 +12517,68 @@ app.post("/api/auth/register", async (req: Request, res: Response) => {
       }
       req.log.error({ err: error, fileId: file.id }, 'Failed to stream Qudrat verbal study PDF');
       res.status(503).json({ error: 'تعذر تحميل الملف حاليًا' });
+    }
+  });
+
+  app.get('/api/learning/computerized/verbal/analogy-videos/:videoId', requireAuth, async (req: Request, res: Response): Promise<void> => {
+    const userId = studentOnly(req, res);
+    if (!userId) return;
+
+    const videoId = typeof req.params.videoId === 'string' ? req.params.videoId : '';
+    const video = getQudratVerbalAnalogyVideo(videoId);
+    if (!video) {
+      res.status(404).json({ error: 'الفيديو غير موجود' });
+      return;
+    }
+
+    try {
+      const upstream = await fetchQudratVerbalAnalogyVideo(video.id, {
+        method: req.method === 'HEAD' ? 'HEAD' : 'GET',
+        range: req.get('range') || undefined,
+      });
+
+      if (upstream.status !== 200 && upstream.status !== 206 && upstream.status !== 416) {
+        await upstream.body?.cancel();
+        if (upstream.status === 404) {
+          res.status(404).json({ error: 'الفيديو غير موجود في التخزين' });
+          return;
+        }
+        req.log.error(
+          { videoId: video.id, upstreamStatus: upstream.status },
+          'Failed to retrieve computerized verbal analogy video from R2',
+        );
+        res.status(503).json({ error: 'تعذر تحميل الفيديو حاليًا' });
+        return;
+      }
+
+      res.status(upstream.status);
+      res.setHeader('Content-Type', 'video/mp4');
+      res.setHeader(
+        'Content-Disposition',
+        `inline; filename="verbal-analogy-${video.lesson}.mp4"; filename*=UTF-8''${encodeURIComponent(video.downloadName)}`,
+      );
+      res.setHeader('Accept-Ranges', 'bytes');
+      res.setHeader('Cache-Control', 'private, max-age=3600');
+      res.setHeader('X-Content-Type-Options', 'nosniff');
+      for (const headerName of ['content-length', 'content-range', 'etag']) {
+        const value = upstream.headers.get(headerName);
+        if (value) res.setHeader(headerName, value);
+      }
+
+      if (req.method === 'HEAD' || !upstream.body) {
+        await upstream.body?.cancel();
+        res.end();
+        return;
+      }
+
+      Readable.fromWeb(upstream.body as any).pipe(res);
+    } catch (error) {
+      if (error instanceof VerbalBookFileStorageError) {
+        res.status(error.statusCode).json({ error: error.message });
+        return;
+      }
+      req.log.error({ err: error, videoId: video.id }, 'Failed to stream computerized verbal analogy video');
+      res.status(503).json({ error: 'تعذر تحميل الفيديو حاليًا' });
     }
   });
 
