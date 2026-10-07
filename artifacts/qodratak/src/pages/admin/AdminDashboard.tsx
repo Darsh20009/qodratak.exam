@@ -2190,7 +2190,10 @@ export default function AdminDashboard({ initialTab = 'overview' }: { initialTab
             </div>
             <div className="flex gap-2 pt-1">
               <Button className="flex-1 bg-amber-600 hover:bg-amber-700" disabled={addTemplate.isPending || updateTemplate.isPending} onClick={() => {
-                if (!templateForm.name.trim()) return toast({ title: 'اسم الاختبار مطلوب', variant: 'destructive' });
+                if (!templateForm.name.trim()) {
+                  toast({ title: 'اسم الاختبار مطلوب', variant: 'destructive' });
+                  return;
+                }
                 const payload = { ...templateForm, questionCount: Number(templateForm.questionCount), timeLimit: Number(templateForm.timeLimit), order: Number(templateForm.order), subcategories: templateForm.subcategories.split(',').map(s => s.trim()).filter(Boolean) };
                 if (editingTemplate) updateTemplate.mutate({ id: editingTemplate._id, data: payload });
                 else addTemplate.mutate(payload);
@@ -2239,7 +2242,10 @@ export default function AdminDashboard({ initialTab = 'overview' }: { initialTab
             </label>
             <div className="flex gap-2 pt-1">
               <Button className="flex-1 bg-sky-600 hover:bg-sky-700" disabled={addAnnouncement.isPending || updateAnnouncement.isPending} onClick={() => {
-                if (!announcementForm.title.trim() || !announcementForm.message.trim()) return toast({ title: 'العنوان والرسالة مطلوبان', variant: 'destructive' });
+                if (!announcementForm.title.trim() || !announcementForm.message.trim()) {
+                  toast({ title: 'العنوان والرسالة مطلوبان', variant: 'destructive' });
+                  return;
+                }
                 if (editingAnnouncement) updateAnnouncement.mutate({ id: editingAnnouncement._id, data: announcementForm });
                 else addAnnouncement.mutate(announcementForm);
               }}>
@@ -2297,8 +2303,14 @@ export default function AdminDashboard({ initialTab = 'overview' }: { initialTab
             </div>
             <div className="flex gap-2 pt-1">
               <Button className="flex-1 bg-emerald-600 hover:bg-emerald-700" disabled={addAdmin.isPending || updateAdmin.isPending} onClick={() => {
-                if (!editingAdmin && !adminForm.username.trim()) return toast({ title: 'اسم المستخدم مطلوب', variant: 'destructive' });
-                if (!editingAdmin && !adminForm.password.trim()) return toast({ title: 'كلمة المرور مطلوبة', variant: 'destructive' });
+                if (!editingAdmin && !adminForm.username.trim()) {
+                  toast({ title: 'اسم المستخدم مطلوب', variant: 'destructive' });
+                  return;
+                }
+                if (!editingAdmin && !adminForm.password.trim()) {
+                  toast({ title: 'كلمة المرور مطلوبة', variant: 'destructive' });
+                  return;
+                }
                 const payload = { ...adminForm };
                 if (!payload.password) delete (payload as any).password;
                 if (editingAdmin) updateAdmin.mutate({ id: editingAdmin._id, data: payload });
@@ -2338,7 +2350,10 @@ export default function AdminDashboard({ initialTab = 'overview' }: { initialTab
             <div><p className="text-slate-400 text-xs mb-1">ملاحظات</p><Textarea value={employeeForm.notes} onChange={e => setEmployeeForm(f => ({ ...f, notes: e.target.value }))} className="bg-slate-800 border-slate-700 text-white placeholder:text-slate-500 resize-none" rows={2} placeholder="أي معلومات إضافية..." /></div>
             <div className="flex gap-2 pt-1">
               <Button className="flex-1 bg-teal-600 hover:bg-teal-700" disabled={addEmployee.isPending || updateEmployee.isPending} onClick={() => {
-                if (!employeeForm.fullName.trim()) return toast({ title: 'الاسم مطلوب', variant: 'destructive' });
+                if (!employeeForm.fullName.trim()) {
+                  toast({ title: 'الاسم مطلوب', variant: 'destructive' });
+                  return;
+                }
                 if (editingEmployee) updateEmployee.mutate({ id: editingEmployee._id, data: employeeForm });
                 else addEmployee.mutate(employeeForm);
               }}>
@@ -2367,8 +2382,14 @@ export default function AdminDashboard({ initialTab = 'overview' }: { initialTab
             <div><p className="text-slate-400 text-xs mb-1">وصف (اختياري)</p><Textarea value={expenseForm.description} onChange={e => setExpenseForm(f => ({ ...f, description: e.target.value }))} className="bg-slate-800 border-slate-700 text-white placeholder:text-slate-500 resize-none" rows={2} placeholder="تفاصيل إضافية..." /></div>
             <div className="flex gap-2 pt-1">
               <Button className="flex-1 bg-green-600 hover:bg-green-700" disabled={addExpense.isPending} onClick={() => {
-                if (!expenseForm.title.trim()) return toast({ title: 'عنوان المصروف مطلوب', variant: 'destructive' });
-                if (!expenseForm.amount || Number(expenseForm.amount) <= 0) return toast({ title: 'المبلغ مطلوب', variant: 'destructive' });
+                if (!expenseForm.title.trim()) {
+                  toast({ title: 'عنوان المصروف مطلوب', variant: 'destructive' });
+                  return;
+                }
+                if (!expenseForm.amount || Number(expenseForm.amount) <= 0) {
+                  toast({ title: 'المبلغ مطلوب', variant: 'destructive' });
+                  return;
+                }
                 addExpense.mutate(expenseForm);
               }}>
                 {addExpense.isPending ? 'جارٍ الحفظ...' : 'إضافة المصروف'}
@@ -2940,8 +2961,14 @@ export default function AdminDashboard({ initialTab = 'overview' }: { initialTab
               <Button
                 className="flex-1 bg-emerald-600 hover:bg-emerald-700"
                 onClick={() => {
-                  if (!manualSubForm.userId) return toast({ title: 'الرجاء تحديد طالب', variant: 'destructive' });
-                  if (!manualSubForm.durationDays || parseInt(manualSubForm.durationDays) <= 0) return toast({ title: 'الرجاء إدخال مدة صحيحة', variant: 'destructive' });
+                  if (!manualSubForm.userId) {
+                    toast({ title: 'الرجاء تحديد طالب', variant: 'destructive' });
+                    return;
+                  }
+                  if (!manualSubForm.durationDays || parseInt(manualSubForm.durationDays) <= 0) {
+                    toast({ title: 'الرجاء إدخال مدة صحيحة', variant: 'destructive' });
+                    return;
+                  }
                   createManualSub.mutate(manualSubForm);
                 }}
                 disabled={createManualSub.isPending}

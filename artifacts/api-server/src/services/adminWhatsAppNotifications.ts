@@ -18,7 +18,7 @@ async function getAdminPhone() {
   try {
     const admin = await Admin.findOne({
       isActive: { $ne: false },
-      role: { $in: ["super_admin", "system_admin"] },
+      role: "super_admin",
       phone: { $exists: true, $ne: "" },
     }).sort({ lastLoginAt: -1, createdAt: 1 }).select("phone").lean();
     const registeredPhone = String(admin?.phone || "").replace(/\D/g, "");

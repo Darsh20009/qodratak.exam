@@ -218,6 +218,7 @@ export function AdvancedQuantitativeTest() {
 
       return () => clearInterval(timer);
     }
+    return undefined;
   }, [testStarted, isPrayerBreak, testCompleted, timeRemaining, sectionTimeRemaining]);
 
   // Prayer break timer effect

@@ -292,6 +292,7 @@ function PinLoginScreen({ email, onSuccess, onBack }: { email: string; onSuccess
       const t = setTimeout(handlePinLogin, 300);
       return () => clearTimeout(t);
     }
+    return undefined;
   }, [pin]);
 
   return (

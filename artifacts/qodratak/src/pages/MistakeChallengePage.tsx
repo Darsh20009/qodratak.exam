@@ -105,6 +105,7 @@ export default function MistakeChallengePage() {
     } else if (timeRemaining === 0 && challengeData?.mode === 'timed' && !isCompleted) {
       handleFinishChallenge();
     }
+    return undefined;
   }, [timeRemaining, isPaused, isCompleted, challengeData]);
 
   const formatTime = (seconds: number) => {

@@ -100,6 +100,7 @@ export function LevelAssessmentPage() {
       }, 1000);
       return () => clearInterval(timer);
     }
+    return undefined;
   }, [state.currentTest, state.isCompleted, timeRemaining]);
 
   const startAssessment = (subcategory: string, type: 'verbal' | 'quantitative') => {

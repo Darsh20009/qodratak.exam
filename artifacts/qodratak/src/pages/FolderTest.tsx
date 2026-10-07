@@ -128,6 +128,7 @@ export default function FolderTest() {
       }, 1000);
       return () => clearInterval(timer);
     }
+    return undefined;
   }, [testStarted, isPrayerBreak, showResults, sectionTimeRemaining, startTime]);
 
   // Prayer break timer

@@ -266,6 +266,7 @@ const AbilitiesTestPage: React.FC = () => {
     } else if (timeLeft === 0 && currentView === "inProgress") {
       endTest();
     }
+    return undefined;
   }, [timeLeft, currentView]);
 
   // Format time from seconds to MM:SS

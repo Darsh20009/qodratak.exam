@@ -3,7 +3,7 @@ import { useLocation } from 'wouter';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion, AnimatePresence, type Variants } from "framer-motion";
 import { 
   BookOpen, 
   GraduationCap, 
@@ -39,7 +39,7 @@ const TahsilikMobileDashboard: React.FC = () => {
   const [selectedCard, setSelectedCard] = useState<string | null>(null);
 
   // Animation variants
-  const containerVariants = {
+  const containerVariants: Variants = {
     hidden: { opacity: 0 },
     visible: {
       opacity: 1,
@@ -50,7 +50,7 @@ const TahsilikMobileDashboard: React.FC = () => {
     }
   };
 
-  const cardVariants = {
+  const cardVariants: Variants = {
     hidden: { y: 30, opacity: 0, scale: 0.9 },
     visible: {
       y: 0,
@@ -64,7 +64,7 @@ const TahsilikMobileDashboard: React.FC = () => {
     }
   };
 
-  const floatingVariants = {
+  const floatingVariants: Variants = {
     animate: {
       y: [-10, 10],
       transition: {

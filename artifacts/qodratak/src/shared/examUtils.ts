@@ -117,7 +117,7 @@ function buildSubcategoryResults(
       ).length;
       const total = matching.length;
       const percentage = total > 0 ? (correct / total) * 100 : 0;
-      const level =
+      const level: SubcategoryResult["level"] =
         percentage >= 85
           ? "ممتاز"
           : percentage >= 70

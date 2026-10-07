@@ -112,6 +112,7 @@ const TahsilikSubjectTestRunner: React.FC = () => {
       
       return () => clearInterval(timer);
     }
+    return undefined;
   }, [isStarted, timeLeft, isFinished]);
 
   const generateMockQuestions = (config: SubjectTestConfig) => {

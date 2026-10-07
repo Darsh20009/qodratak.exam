@@ -263,7 +263,7 @@ export default function ScheduledExamRunner() {
       if (e.key === 'Escape') {
         e.preventDefault();
         e.stopPropagation();
-        return false;
+        return;
       }
       if (e.key === 'F12' || (e.ctrlKey && e.shiftKey && e.key === 'I') ||
           (e.ctrlKey && e.key === 'u') || (e.ctrlKey && e.key === 'c') ||

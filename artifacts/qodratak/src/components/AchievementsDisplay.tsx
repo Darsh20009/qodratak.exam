@@ -1,4 +1,5 @@
 import { useState } from "react";
+import type { ReactElement } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { 
   BookOpenIcon, 
@@ -19,7 +20,7 @@ interface Achievement {
   id: string;
   name: string;
   description: string;
-  icon: JSX.Element;
+  icon: ReactElement;
   category: "test" | "level" | "streak" | "collection";
   requiredPoints: number;
   unlocked: boolean;

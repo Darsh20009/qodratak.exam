@@ -227,6 +227,7 @@ export function AdvancedVerbalTest() {
 
       return () => clearInterval(timer);
     }
+    return undefined;
   }, [testStarted, isPrayerBreak, testCompleted, timeRemaining, sectionTimeRemaining]);
 
   // Prayer break timer effect

@@ -31,6 +31,7 @@ const CreativeSubscriptionCountdown: React.FC<CreativeSubscriptionCountdownProps
         return () => clearInterval(interval);
       }
     }
+    return undefined;
   }, [countdown.days, subscription]);
 
   // Show loading state while data is being fetched or countdown hasn't been calculated yet

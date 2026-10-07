@@ -187,8 +187,14 @@ export default function QuestionsManagementPage() {
   };
 
   const handleSubmit = () => {
-    if (!form.text.trim()) return toast({ title: 'خطأ', description: 'نص السؤال مطلوب', variant: 'destructive' });
-    if (form.options.some(o => !o.trim())) return toast({ title: 'خطأ', description: 'جميع الخيارات مطلوبة', variant: 'destructive' });
+    if (!form.text.trim()) {
+      toast({ title: 'خطأ', description: 'نص السؤال مطلوب', variant: 'destructive' });
+      return;
+    }
+    if (form.options.some(o => !o.trim())) {
+      toast({ title: 'خطأ', description: 'جميع الخيارات مطلوبة', variant: 'destructive' });
+      return;
+    }
 
     const payload = {
       text: form.text,

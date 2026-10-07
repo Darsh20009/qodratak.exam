@@ -1,4 +1,5 @@
-import { Router, Request, Response, NextFunction } from 'express';
+import { Router, Request as ExpressRequest, Response, NextFunction } from 'express';
+type Request = ExpressRequest<Record<string, string>>;
 import bcrypt from 'bcryptjs';
 import multer from 'multer';
 import path from 'path';
@@ -2271,7 +2272,7 @@ const DEFAULT_SETTINGS = [
 router.get('/settings', requireAdminAuth, async (req: Request, res: Response) => {
   try {
     const { PlatformSetting } = await import('./mongodb/models');
-    let settings = await PlatformSetting.find().lean();
+    let settings: Array<Record<string, any>> = await PlatformSetting.find().lean();
     if (settings.length === 0) {
       const adminSession = (req.session as any).admin;
       const docs = DEFAULT_SETTINGS.map(s => ({ ...s, updatedBy: adminSession?.username || 'admin' }));

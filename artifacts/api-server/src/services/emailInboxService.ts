@@ -106,9 +106,12 @@ async function parseMessage(message: any): Promise<InboxMessage> {
 }
 
 export async function listMailboxMessages(mailbox: string): Promise<{ configured: boolean; email: string; folder: string; messages: InboxMessageSummary[] }> {
-  if (!MAIL_PASSWORD) return { configured: false, email: MAIL_USER, messages: [] };
+  if (!MAIL_PASSWORD) return { configured: false, email: MAIL_USER, folder: mailbox, messages: [] };
   return withMailbox(mailbox, async (client) => {
     const uids = await client.search({ all: true }, { uid: true });
+    if (!Array.isArray(uids)) {
+      return { configured: true, email: MAIL_USER, folder: mailbox, messages: [] };
+    }
     const latestUids = uids.slice(-MAX_MESSAGES);
     if (latestUids.length === 0) return { configured: true, email: MAIL_USER, folder: mailbox, messages: [] };
     const messages: InboxMessageSummary[] = [];
@@ -196,6 +199,7 @@ export function startIncomingEmailWatcher(onMessage: (message: InboxMessage) => 
     try {
       await withMailbox("INBOX", async (client) => {
         const uids = await client.search({ all: true }, { uid: true });
+        if (!Array.isArray(uids)) return;
         const latestUids = uids.slice(-MAX_MESSAGES);
         if (!watcherInitialized) {
           latestUids.forEach((uid) => knownInboxUids.add(Number(uid)));

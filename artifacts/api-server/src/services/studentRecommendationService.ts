@@ -382,7 +382,7 @@ function recommendationReviewReasons(
     'LOW_RETENTION_CONFIDENCE',
     'POST_MASTERY_CHECK',
   ];
-  return reasons.filter((reason): reason is RecommendationReasonCode =>
+  return reasons.filter((reason): reason is LearningReviewReasonCode & RecommendationReasonCode =>
     allowed.includes(reason as RecommendationReasonCode),
   );
 }

@@ -3,7 +3,7 @@ import { useLocation } from 'wouter';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion, AnimatePresence, type Variants } from "framer-motion";
 import { 
   BookOpen, 
   Download, 
@@ -46,7 +46,7 @@ const TahsilikStudyCenter: React.FC = () => {
   const prefersReducedMotion = typeof window !== 'undefined' && 
     window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
-  const containerVariants = {
+  const containerVariants: Variants = {
     hidden: { opacity: prefersReducedMotion ? 1 : 0 },
     visible: {
       opacity: 1,
@@ -57,7 +57,7 @@ const TahsilikStudyCenter: React.FC = () => {
     }
   };
 
-  const itemVariants = {
+  const itemVariants: Variants = {
     hidden: { 
       y: prefersReducedMotion ? 0 : 30, 
       opacity: prefersReducedMotion ? 1 : 0, 

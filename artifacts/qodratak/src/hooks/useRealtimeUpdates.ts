@@ -9,7 +9,7 @@ interface RealtimeUpdateOptions {
 
 export function useRealtimeUpdates(queryKey: string, options: RealtimeUpdateOptions = {}) {
   const queryClient = useQueryClient();
-  const intervalRef = useRef<NodeJS.Timeout>();
+  const intervalRef = useRef<NodeJS.Timeout | undefined>(undefined);
   const { enabled = true, interval = 30000 } = options;
 
   const invalidateNow = () => {

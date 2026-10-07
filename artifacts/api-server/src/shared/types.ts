@@ -7,7 +7,7 @@ export interface QuestionItem {
   correctOptionIndex: number;
 }
 
-export type TestDifficulty = "beginner" | "intermediate" | "advanced" | "expert";
+export type TestDifficulty = "beginner" | "intermediate" | "advanced" | "expert" | "mixed";
 export type TestType =
   | "verbal"
   | "quantitative"

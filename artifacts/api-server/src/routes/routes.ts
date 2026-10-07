@@ -1,4 +1,6 @@
-import type { Express, Request, Response } from "express";
+import type { Express, Request as ExpressRequest, Response } from "express";
+type Request = ExpressRequest<Record<string, string>>;
+import type { ISubscription, StudentProgram, TahsiliSubject } from "../mongodb/models";
 import {
   DownloadQudratVerbalBookFileParams,
   GetQudratQuantitativeBookLessonParams,
@@ -40,6 +42,7 @@ import {
   verifyPhoneVerificationToken,
 } from '../services/phoneOtpService';
 import { sendWhatsAppText } from '../services/whatsappService';
+import { readDeviceTrials, writeDeviceTrials } from '../services/deviceTrialStore';
 import { getClientIp } from '../middleware/sessionIp';
 import { sendStudentExamResult } from '../services/whatsappBot';
 import {
@@ -895,8 +898,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         ]),
       ]);
 
-      const subcategoryQuery = subject && subject !== 'الكل' && allowedSubjects.includes(subject)
-        ? { subject }
+      const subcategoryQuery: { subject?: TahsiliSubject } = subject && subject !== 'الكل' && allowedSubjects.includes(subject)
+        ? { subject: subject as TahsiliSubject }
         : {};
       const subcategories = await TahsiliQuestion.distinct('subcategory', subcategoryQuery);
 
@@ -966,13 +969,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // If no active user subscription, check device trials (same as subscription/status)
       if (!hasActiveSubscription) {
         try {
-          let deviceTrials = [];
-          try {
-            const trialsData = fs.readFileSync("attached_assets/device_trials.json", "utf-8");
-            deviceTrials = JSON.parse(trialsData);
-          } catch (error) {
-            deviceTrials = [];
-          }
+          const deviceTrials = readDeviceTrials();
 
           const deviceTrial = deviceTrials.find((trial: any) => trial.deviceId === deviceId);
           const now = new Date();
@@ -5177,15 +5174,7 @@ app.post("/api/auth/register", async (req: Request, res: Response) => {
       }
 
       // Check if device already used trial
-      const filePath = path.join(process.cwd(), 'artifacts/api-server/server/data/device_trials.json');
-      let deviceTrials = [];
-
-      try {
-        const data = fs.readFileSync(filePath, 'utf8');
-        deviceTrials = JSON.parse(data);
-      } catch (error) {
-        deviceTrials = [];
-      }
+      const deviceTrials = readDeviceTrials();
 
       const existingTrial = deviceTrials.find((trial: any) => trial.deviceId === deviceId);
 
@@ -5216,13 +5205,7 @@ app.post("/api/auth/register", async (req: Request, res: Response) => {
 
       deviceTrials.push(newTrial);
 
-      // Ensure directory exists
-      const dirPath = path.dirname(filePath);
-      if (!fs.existsSync(dirPath)) {
-        fs.mkdirSync(dirPath, { recursive: true });
-      }
-
-      fs.writeFileSync(filePath, JSON.stringify(deviceTrials, null, 2));
+      writeDeviceTrials(deviceTrials);
 
       res.json({
         success: true,
@@ -5240,15 +5223,7 @@ app.post("/api/auth/register", async (req: Request, res: Response) => {
     try {
       const { deviceId } = req.params;
 
-      const filePath = path.join(process.cwd(), 'artifacts/api-server/server/data/device_trials.json');
-      let deviceTrials = [];
-
-      try {
-        const data = fs.readFileSync(filePath, 'utf8');
-        deviceTrials = JSON.parse(data);
-      } catch (error) {
-        deviceTrials = [];
-      }
+      const deviceTrials = readDeviceTrials();
 
       const trial = deviceTrials.find((trial: any) => trial.deviceId === deviceId);
 
@@ -5892,14 +5867,7 @@ app.post("/api/auth/register", async (req: Request, res: Response) => {
       // trials are bound to the account so changing devices cannot restart them.
       if (!userId && !isUserSubscribed) {
         try {
-          let deviceTrials = [];
-          try {
-            const trialsData = fs.readFileSync("attached_assets/device_trials.json", "utf-8");
-            deviceTrials = JSON.parse(trialsData);
-          } catch (error) {
-            // Device trials file doesn't exist, create it
-            deviceTrials = [];
-          }
+          const deviceTrials = readDeviceTrials();
 
           let deviceTrial = deviceTrials.find((trial: any) => trial.deviceId === deviceId);
           const now = new Date();
@@ -5917,7 +5885,7 @@ app.post("/api/auth/register", async (req: Request, res: Response) => {
               createdAt: now.toISOString()
             };
             deviceTrials.push(deviceTrial);
-            fs.writeFileSync("attached_assets/device_trials.json", JSON.stringify(deviceTrials, null, 2));
+            writeDeviceTrials(deviceTrials);
           }
 
           if (deviceTrial) {
@@ -5933,8 +5901,7 @@ app.post("/api/auth/register", async (req: Request, res: Response) => {
           }
         } catch (error) {
           console.error("Error handling device trials:", error);
-          // Create empty device trials file
-          fs.writeFileSync("attached_assets/device_trials.json", JSON.stringify([], null, 2));
+          throw error;
         }
       }
 
@@ -6008,15 +5975,8 @@ app.post("/api/auth/register", async (req: Request, res: Response) => {
         });
       }
 
-      // Load device trials
-      let deviceTrials = [];
-      try {
-        const trialsData = fs.readFileSync("attached_assets/device_trials.json", "utf-8");
-        deviceTrials = JSON.parse(trialsData);
-      } catch (error) {
-        // File doesn't exist, create it
-        deviceTrials = [];
-      }
+      // Load device trials from the shared store, including legacy records.
+      const deviceTrials = readDeviceTrials();
 
       // Check if device already used trial
       const existingTrial = deviceTrials.find((trial: any) => trial.deviceId === deviceId);
@@ -6045,7 +6005,7 @@ app.post("/api/auth/register", async (req: Request, res: Response) => {
       };
 
       deviceTrials.push(newTrial);
-      fs.writeFileSync("attached_assets/device_trials.json", JSON.stringify(deviceTrials, null, 2));
+      writeDeviceTrials(deviceTrials);
 
       res.json({
         success: true,
@@ -7780,7 +7740,7 @@ app.post("/api/auth/register", async (req: Request, res: Response) => {
             : String(sessionUserId);
           [subscription] = await Subscription.create([{
             userId: canonicalUserId,
-            type: planType,
+            type: planType as ISubscription["type"],
             status: 'active',
             startDate: baseDate,
             endDate,
@@ -7888,7 +7848,7 @@ app.post("/api/auth/register", async (req: Request, res: Response) => {
 
       const subscription = await mongoStorage.createSubscription({
         userId,
-        type: primaryPlan.type,
+        type: primaryPlan.type as ISubscription["type"],
         status: 'pending',
         startDate: now,
         endDate: endDate,
@@ -8636,7 +8596,7 @@ app.post("/api/auth/register", async (req: Request, res: Response) => {
       const code = generateFourDigitOtp();
       const expiry = new Date(Date.now() + 10 * 60 * 1000);
       await User.findByIdAndUpdate(pending.userId, { $set: { otpCode: code, otpExpiry: expiry } });
-      const sent = await sendOTPEmail(user.email, user.fullName || user.name || '', code);
+      const sent = await sendOTPEmail(user.email, user.fullName || '', code);
       if (!sent) return res.status(500).json({ error: 'فشل إرسال الرمز' });
       res.json({ success: true, message: `تم إرسال الرمز إلى ${user.email.replace(/(.{2}).+(@.+)/, '$1***$2')}` });
     } catch (e) {
@@ -9252,7 +9212,7 @@ app.post("/api/auth/register", async (req: Request, res: Response) => {
 
       // Send transactional WhatsApp confirmation through the central 3-second queue.
       try {
-        const { sendStudentWhatsAppNotification } = await import('./services/studentWhatsAppNotifications');
+        const { sendStudentWhatsAppNotification } = await import('../services/studentWhatsAppNotifications');
         const formattedDate = date.toLocaleString('ar-SA', {
           timeZone: 'Asia/Riyadh',
           dateStyle: 'full',
@@ -11759,7 +11719,7 @@ app.post("/api/auth/register", async (req: Request, res: Response) => {
       .lean() as any[];
     const byId = new Map(documents.map((question) => [String(question._id), question]));
     const completed = test.state === 'completed';
-    const answerByQuestionId = new Map(
+    const answerByQuestionId = new Map<string, any>(
       (test.answers || []).map((answer: any) => [String(answer.questionId), answer]),
     );
     const questions = (test.questionIds || []).flatMap((id: string) => {
@@ -13414,7 +13374,7 @@ app.post("/api/auth/register", async (req: Request, res: Response) => {
   app.get('/api/foundation/learning-state', requireAuth, async (req: Request, res: Response) => {
     const userId = studentOnly(req, res);
     if (!userId) return;
-    const program = String(req.query.program || 'qudrat');
+    const program = String(req.query.program || 'qudrat') as StudentProgram;
     if (!supportedPrograms.has(program)) {
       return res.status(400).json({ error: 'البرنامج المدعوم هو qudrat أو tahsili فقط' });
     }
@@ -13536,7 +13496,7 @@ app.post("/api/auth/register", async (req: Request, res: Response) => {
       const skillTotals = new Map<string, { key: string; label: string; category: 'verbal' | 'quantitative'; totalQuestions: number; correctAnswers: number }>();
       let correctAnswers = 0;
       let answeredQuestions = 0;
-      const questionDetails = allowedQuestionIds.map((questionId) => {
+      const questionDetails = allowedQuestionIds.map((questionId: string) => {
         const question = questionById.get(questionId);
         const selectedOptionIndex = answerMap.get(questionId);
         const answered = !!question && Number.isInteger(selectedOptionIndex);

@@ -5,6 +5,8 @@
     "tsBuildInfoFile": ".tsbuildinfo",
     "outDir": "dist",
     "rootDir": "src",
+    // Express handlers often return Response in some branches; Express ignores handler return values.
+    "noImplicitReturns": false,
     "types": ["node"]
   },
   "include": ["src"],

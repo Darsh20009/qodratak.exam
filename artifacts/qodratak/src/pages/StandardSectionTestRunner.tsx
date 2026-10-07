@@ -262,6 +262,7 @@ export function StandardSectionTestRunner() {
 
       return () => clearInterval(timer);
     }
+    return undefined;
   }, [testStarted, showBreakScreen, showSectionReview, testCompleted, timeRemaining, sectionTimeRemaining]);
 
   // Break screen timer - automatically advances to next section when done
@@ -280,6 +281,7 @@ export function StandardSectionTestRunner() {
 
       return () => clearInterval(timer);
     }
+    return undefined;
   }, [showBreakScreen, breakTimeLeft]);
 
   // Helper function to advance to the next section (called after break ends)

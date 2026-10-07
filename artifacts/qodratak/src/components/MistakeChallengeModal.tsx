@@ -52,6 +52,7 @@ const MistakeChallengeModal: React.FC<MistakeChallengeModalProps> = ({
       }, 2000);
       return () => clearInterval(interval);
     }
+    return undefined;
   }, [isOpen]);
 
   const challengeModes = [

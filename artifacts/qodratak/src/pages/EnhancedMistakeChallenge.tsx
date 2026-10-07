@@ -316,6 +316,7 @@ export default function EnhancedMistakeChallenge() {
       }, 1000);
       return () => clearInterval(timer);
     }
+    return undefined;
   }, [timeRemaining, isPaused, isCompleted, selectedMode]);
 
   const startChallenge = (mode: ChallengeMode) => {

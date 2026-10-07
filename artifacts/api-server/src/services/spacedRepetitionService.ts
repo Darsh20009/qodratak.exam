@@ -127,7 +127,7 @@ function priorityFor(
 }
 
 function reasonCodesFor(
-  item: Pick<ILearningReviewItem, 'nextReviewAt' | 'lastFailureKind' | 'retentionConfidence' | 'lastReviewedAt'>,
+  item: Pick<ILearningReviewItem, 'nextReviewAt' | 'lastFailureKind' | 'retentionConfidence' | 'lastReviewedAt' | 'masteryLevel'>,
   now: Date,
   outcome?: ReviewOutcome,
 ): LearningReviewReasonCode[] {
@@ -186,7 +186,7 @@ export function publicLearningReviewItem(
 ): PublicLearningReviewItem {
   const due = isReviewDue(item as any, now);
   return {
-    id: String(item._id || item.id),
+    id: String(item._id || (item as Record<string, any>).id),
     sourceType: item.sourceType,
     sourceId: item.sourceId,
     programId: item.programId,

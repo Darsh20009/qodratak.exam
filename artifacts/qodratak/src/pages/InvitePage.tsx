@@ -48,10 +48,12 @@ export default function InvitePage() {
 
   const handleSubmit = async () => {
     if (!username.trim() || username.trim().length < 3) {
-      return toast({ title: "خطأ", description: "اسم المستخدم يجب أن يكون 3 أحرف على الأقل", variant: "destructive" });
+      toast({ title: "خطأ", description: "اسم المستخدم يجب أن يكون 3 أحرف على الأقل", variant: "destructive" });
+      return;
     }
     if (password.length < 6) {
-      return toast({ title: "خطأ", description: "كلمة المرور يجب أن تكون 6 أحرف على الأقل", variant: "destructive" });
+      toast({ title: "خطأ", description: "كلمة المرور يجب أن تكون 6 أحرف على الأقل", variant: "destructive" });
+      return;
     }
     setSubmitting(true);
     try {
