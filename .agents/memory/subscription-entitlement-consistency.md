@@ -9,6 +9,12 @@ Premium access must come from an active, currently valid MongoDB subscription ti
 
 **How to apply:** resolve legacy identities only at boundaries, store the canonical account identity for new records, and refresh access from the server after activation or approval.
 
+New student accounts receive one account-bound three-day trial. After it expires, retain only the dashboard, subscription/payment access, and one adaptive Qudrat test per Riyadh calendar day.
+
+**Why:** the product must let a student keep studying and subscribe without leaving paid pages open after the trial.
+
+**How to apply:** enforce the same entitlement in server middleware and the route UI, and key daily test uniqueness to the authenticated student plus the Riyadh day.
+
 Wallet debit, transaction ledger creation, and subscription creation must be one atomic operation with a conditional balance check.
 
 **Why:** a read-then-debit flow allows concurrent purchases to overdraw a wallet or charge without creating access.

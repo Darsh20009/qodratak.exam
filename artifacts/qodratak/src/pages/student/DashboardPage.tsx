@@ -30,6 +30,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import SubscriptionRenewalDialog from "@/components/SubscriptionRenewalDialog";
+import AdaptiveLearningCoach from "@/components/student/AdaptiveLearningCoach";
+import useSubscription from "@/hooks/useSubscription";
 import { foundationHrefForScope, todayLearningHref } from "@/lib/foundationRoutes.mjs";
 
 const SUPPORTED_DASHBOARD_PATHS = new Set([
@@ -97,6 +99,7 @@ const paths = [
 
 export default function DashboardPage() {
   const { user, isLoading: isUserLoading } = useUser();
+  const { subscription, isLoading: isSubscriptionLoading } = useSubscription();
   const isStudent = user?.role === "student";
   const {
     data: dashboard,
@@ -109,7 +112,7 @@ export default function DashboardPage() {
     ?? dashboard?.officialScores?.program
     ?? "qudrat";
   const journeySubjectId = dashboard?.recommendedPlan?.subjectId;
-  const hasJourneyScope = isStudent && Boolean(dashboard);
+  const hasJourneyScope = isStudent && Boolean(dashboard) && !subscription?.isExpired;
   const todayLearning = useTodayLearningSession(hasJourneyScope, journeyProgram, journeySubjectId);
   const adaptiveDecision = useAdaptiveLearningDecision(hasJourneyScope, journeyProgram, journeySubjectId);
   const recommendations = useStudentLearningRecommendations(hasJourneyScope, journeyProgram);
@@ -118,7 +121,7 @@ export default function DashboardPage() {
   const [isExamDialogOpen, setIsExamDialogOpen] = useState(false);
   const [subscriptionDialogOpen, setSubscriptionDialogOpen] = useState(false);
 
-  if (isUserLoading || (isStudent && isLoading)) return <DashboardSkeleton />;
+  if (isUserLoading || (isStudent && (isLoading || isSubscriptionLoading))) return <DashboardSkeleton />;
 
   if (!user) {
     return (
@@ -177,6 +180,22 @@ export default function DashboardPage() {
 
   const userName = user.name || user.username || "طالب";
   const firstName = userName.split(" ")[0];
+  if (subscription?.isExpired) {
+    return (
+      <div className="mx-auto w-full max-w-5xl space-y-6 p-5 md:p-8" dir="rtl">
+        <header className="space-y-2">
+          <p className="text-sm font-bold text-muted-foreground">مرحبًا،</p>
+          <h1 data-testid="text-student-name" className="text-3xl font-black tracking-tight text-foreground md:text-4xl">
+            {firstName}
+          </h1>
+          <p className="text-sm leading-7 text-muted-foreground">
+            انتهت التجربة المجانية. يمكنك متابعة اختبار تكيفي واحد يوميًا أو الاشتراك لفتح بقية المنصة.
+          </p>
+        </header>
+        <AdaptiveLearningCoach trialExpired />
+      </div>
+    );
+  }
   const todayPlan = todayLearning.data?.plan;
   const planProgram = todayPlan?.programId === "program.tahsili"
     ? "tahsili"
@@ -241,6 +260,8 @@ export default function DashboardPage() {
         </h1>
         <p className="text-sm leading-7 text-muted-foreground">خطوة واحدة الآن تكفي لتعرف ما التالي في استعدادك.</p>
       </header>
+
+      <AdaptiveLearningCoach />
 
       <section data-testid="student-next-step" className="overflow-hidden rounded-3xl border border-primary/20 bg-primary/5 shadow-sm">
         <div className="flex flex-col gap-5 p-5 sm:p-7 md:flex-row md:items-center md:justify-between">

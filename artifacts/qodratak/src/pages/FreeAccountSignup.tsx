@@ -204,7 +204,7 @@ export default function FreeAccountSignup() {
                     <div className="flex items-center gap-3 p-3 bg-green-50 dark:bg-green-900/20 rounded-lg">
                       <Gift className="w-5 h-5 text-green-600" />
                       <div>
-                        <p className="font-semibold text-sm">7 أيام مجانية</p>
+                        <p className="font-semibold text-sm">3 أيام مجانية</p>
                         <p className="text-xs text-muted-foreground">جميع المميزات</p>
                       </div>
                     </div>
@@ -258,7 +258,7 @@ export default function FreeAccountSignup() {
             انضم لعائلة قدراتك 🚀
           </h1>
           <p className="text-xl text-gray-600 dark:text-gray-300 mb-6">
-            احصل على 7 أيام مجانية مع جميع المميزات المتقدمة
+            احصل على 3 أيام مجانية مع جميع المميزات المتقدمة
           </p>
           
           {/* New Policy Banner */}
@@ -289,7 +289,7 @@ export default function FreeAccountSignup() {
                   { icon: Zap, text: "تحليل فوري", color: "text-blue-600" },
                   { icon: Shield, text: "أمان عالي", color: "text-green-600" },
                   { icon: Sparkles, text: "مميزات خاصة", color: "text-green-700" },
-                  { icon: Clock, text: "7 أيام كاملة", color: "text-orange-600" },
+                  { icon: Clock, text: "3 أيام كاملة", color: "text-orange-600" },
                   { icon: MessageCircle, text: "دعم مخصص", color: "text-amber-700" }
                 ].map((feature, index) => (
                   <div key={index} className="flex items-center gap-2 p-3 bg-white dark:bg-gray-800 rounded-lg shadow">

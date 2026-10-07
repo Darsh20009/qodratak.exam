@@ -7,6 +7,7 @@ import { QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import NationalDayPopup from "@/components/NationalDayPopup";
+import useSubscription from "@/hooks/useSubscription";
 
 import NotFound from "@/pages/not-found";
 import Home from "@/pages/NewHome";
@@ -211,13 +212,26 @@ function isPublicPath(pathname: string) {
 function AuthenticatedRouteBoundary({ children }: { children: React.ReactNode }) {
   const [location, navigate] = useLocation();
   const { user, isLoading, error, refetch } = useUser();
+  const { subscription, isLoading: isSubscriptionLoading } = useSubscription();
   const needsAuthentication = !isPublicPath(location);
+  const cleanPath = location.split("?")[0].replace(/\/+$/, "") || "/";
+  const isExpiredStudent = user?.role === "student" && Boolean(subscription?.isExpired);
+  const canUseExpiredTrialRoute = [
+    "/",
+    "/subscription",
+    "/enhanced-subscription",
+    "/payment/geidea/return",
+  ].includes(cleanPath);
 
   useEffect(() => {
     if (needsAuthentication && !isLoading && !error && !user) {
       navigate(`/login?return=${encodeURIComponent(location)}`);
     }
   }, [location, navigate, needsAuthentication, isLoading, error, user]);
+
+  useEffect(() => {
+    if (isExpiredStudent && !canUseExpiredTrialRoute) navigate("/");
+  }, [canUseExpiredTrialRoute, isExpiredStudent, navigate]);
 
   if (needsAuthentication && isLoading) {
     return <RouteLoadingFallback />;
@@ -241,6 +255,13 @@ function AuthenticatedRouteBoundary({ children }: { children: React.ReactNode })
   }
 
   if (needsAuthentication && !user) {
+    return <RouteLoadingFallback />;
+  }
+
+  if (user?.role === "student" && isSubscriptionLoading) {
+    return <RouteLoadingFallback />;
+  }
+  if (isExpiredStudent && !canUseExpiredTrialRoute) {
     return <RouteLoadingFallback />;
   }
 

@@ -4,9 +4,10 @@ import { ThemeToggle } from "@/components/ThemeToggle";
 import NotificationBell from "@/components/NotificationBell";
 import { useUser } from "@/hooks/use-user";
 import { cn } from "@/lib/utils";
-import { HomeIcon, BookOpenIcon, BrainCircuitIcon, UserIcon, MenuIcon, XIcon, LogOut } from "lucide-react";
+import { HomeIcon, BookOpenIcon, BrainCircuitIcon, UserIcon, MenuIcon, XIcon, LogOut, CreditCard } from "lucide-react";
 import { BrandMark } from "@/components/BrandMark";
 import { StudentExamChromeContext } from "@/components/student/StudentExamChromeContext";
+import useSubscription from "@/hooks/useSubscription";
 
 const NAV_ITEMS = [
   { name: "لوحتي", href: "/", icon: HomeIcon },
@@ -18,8 +19,15 @@ const NAV_ITEMS = [
 export function StudentShell({ children }: { children: React.ReactNode }) {
   const [location] = useLocation();
   const { user, logout } = useUser();
+  const { subscription } = useSubscription();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const { isActive: isExamLayoutActive } = useContext(StudentExamChromeContext);
+  const visibleNavItems = subscription?.isExpired
+    ? [
+        NAV_ITEMS[0],
+        { name: "الاشتراك", href: "/subscription", icon: CreditCard },
+      ]
+    : NAV_ITEMS;
 
   const userName = user?.name || user?.username || "طالب";
   const userInitial = userName.charAt(0);
@@ -39,7 +47,7 @@ export function StudentShell({ children }: { children: React.ReactNode }) {
         </div>
 
         <nav className="flex-1 px-4 py-6 space-y-2 overflow-y-auto">
-          {NAV_ITEMS.map((item) => {
+          {visibleNavItems.map((item) => {
             const isActive = location === item.href || (item.href !== "/" && location.startsWith(item.href));
             return (
               <Link key={item.href} href={item.href}>
@@ -112,7 +120,7 @@ export function StudentShell({ children }: { children: React.ReactNode }) {
       {/* Mobile Bottom Navigation */}
       {!isExamLayoutActive && <div className="md:hidden fixed bottom-0 left-0 right-0 bg-card border-t border-border z-40 px-2 pb-[env(safe-area-inset-bottom)]">
         <nav className="flex items-center justify-around h-16">
-          {NAV_ITEMS.map((item) => {
+          {visibleNavItems.map((item) => {
             const isActive = location === item.href || (item.href !== "/" && location.startsWith(item.href));
             return (
               <Link key={item.href} href={item.href}>

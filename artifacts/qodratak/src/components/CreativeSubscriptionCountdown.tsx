@@ -88,7 +88,7 @@ const CreativeSubscriptionCountdown: React.FC<CreativeSubscriptionCountdownProps
           <CardTitle className={`${
             variant === 'banner' ? 'text-white text-2xl' : 'text-green-700 dark:text-green-400 text-xl'
           } font-bold`}>
-            🎉 فترة تجريبية مجانية لمدة 7 أيام!
+            🎉 فترة تجريبية مجانية لمدة 3 أيام!
           </CardTitle>
         </CardHeader>
         

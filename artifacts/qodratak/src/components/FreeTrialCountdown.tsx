@@ -87,7 +87,7 @@ export const FreeTrialCountdown: React.FC<FreeTrialCountdownProps> = ({
               <h3 className="text-xl font-bold">انتهت فترة التجربة المجانية</h3>
             </div>
             <p className="text-red-700 dark:text-red-300">
-              لقد انتهت فترة التجربة المجانية البالغة 7 أيام. يرجى الترقية للمتابعة
+              انتهت تجربتك المجانية. اشترك لمتابعة بقية صفحات المنصة أو أكمل اختبارك التكيفي اليومي من لوحة التحكم.
             </p>
             {onUpgrade && (
               <Button onClick={onUpgrade} className="bg-red-600 hover:bg-red-700">
@@ -119,7 +119,7 @@ export const FreeTrialCountdown: React.FC<FreeTrialCountdownProps> = ({
       <CardHeader>
         <CardTitle className="flex items-center gap-2 text-blue-700 dark:text-blue-300">
           <Gift className="w-6 h-6" />
-          التجربة المجانية - 7 أيام
+          التجربة المجانية - 3 أيام
           <Badge variant="secondary" className="ml-auto">
             مفعل
           </Badge>

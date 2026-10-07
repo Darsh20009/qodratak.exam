@@ -297,7 +297,7 @@ export async function sendWelcomeEmail(email: string, fullName: string): Promise
     email,
     'أهلاً بك في منصة قدراتك',
     emailBase('#4f46e5', body),
-    `أهلاً ${fullName}! يسعدنا انضمامك لمنصة قدراتك. تم تفعيل حسابك وحصلت على 7 أيام مجانية.`
+    `أهلاً ${fullName}! يسعدنا انضمامك لمنصة قدراتك. تم تفعيل حسابك وحصلت على 3 أيام مجانية.`
   );
 }
 

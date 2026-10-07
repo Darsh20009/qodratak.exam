@@ -172,7 +172,7 @@ const SubscriptionCountdown: React.FC<SubscriptionCountdownProps> = ({
         </CardHeader>
         <CardContent className="text-center">
           <p className="text-green-600 dark:text-green-300 mb-4">
-            احصل على 7 أيام مجانية من جميع المميزات المتقدمة
+            احصل على 3 أيام مجانية من جميع المميزات المتقدمة
           </p>
           <Button
             onClick={() => startTrial()}

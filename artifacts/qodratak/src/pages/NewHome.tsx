@@ -800,7 +800,7 @@ export default function NewHome() {
                   {
                     step: "01",
                     title: "سجّل حسابك",
-                    desc: "أنشئ حسابك مجاناً خلال دقيقة وابدأ تجربة 7 أيام مجانية بدون بطاقة ائتمانية",
+                    desc: "أنشئ حسابك مجاناً خلال دقيقة وابدأ تجربة 3 أيام مجانية بدون بطاقة ائتمانية",
                     icon: UserIcon,
                     gradient: "from-emerald-500 to-teal-600",
                     bg: "bg-emerald-50 dark:bg-emerald-950/20",

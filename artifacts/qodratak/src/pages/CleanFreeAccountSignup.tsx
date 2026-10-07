@@ -238,7 +238,7 @@ export default function CleanFreeAccountSignup() {
             <div className="space-y-5">
               <div>
                 <h1 className="text-white font-bold text-2xl md:text-3xl mb-1">أنشئ حسابك مجاناً</h1>
-                <p className="text-slate-400 text-sm">7 أيام تجريبية كاملة بدون أي رسوم</p>
+                <p className="text-slate-400 text-sm">3 أيام تجريبية كاملة بدون أي رسوم</p>
               </div>
 
               {/* Full Name */}
@@ -405,7 +405,7 @@ export default function CleanFreeAccountSignup() {
               <div>
                 <h2 className="text-white font-bold text-3xl mb-2">تم إنشاء حسابك!</h2>
                 <p className="text-slate-300">مرحباً {form.fullName.split(' ')[0]}! حسابك جاهز الآن.</p>
-                <p className="text-slate-400 text-sm mt-2">لديك 7 أيام تجريبية كاملة للاستمتاع بجميع المميزات</p>
+                <p className="text-slate-400 text-sm mt-2">لديك 3 أيام تجريبية كاملة للاستمتاع بجميع المميزات</p>
               </div>
 
               <div className="grid grid-cols-2 gap-3">

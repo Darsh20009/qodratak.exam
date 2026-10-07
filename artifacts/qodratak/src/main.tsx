@@ -2,6 +2,7 @@ import { createRoot } from "react-dom/client";
 import { HelmetProvider } from 'react-helmet-async';
 import App from "./App";
 import { ErrorBoundary } from "./components/ErrorBoundary";
+import { reportClientError } from "./lib/clientErrorReporter";
 import "./index.css";
 
 // ── Service Worker registration (Web Push support) ──────────────────────────
@@ -47,6 +48,14 @@ if (import.meta.env.DEV) {
 
   window.addEventListener("unhandledrejection", (event) => {
     logBrowserError("Unhandled rejection", event.reason, "Unhandled promise rejection");
+  });
+}
+else {
+  window.addEventListener("error", (event) => {
+    reportClientError("WindowError", event.error || event.message);
+  });
+  window.addEventListener("unhandledrejection", (event) => {
+    reportClientError("UnhandledRejection", event.reason);
   });
 }
 

@@ -109,7 +109,7 @@ export const useSubscription = () => {
       queryClient.invalidateQueries({ queryKey: ['/api/subscription/status'] });
       toast({
         title: "تم بدء الفترة التجريبية!",
-        description: "يمكنك الآن الاستمتاع بجميع المميزات لمدة 7 أيام مجاناً",
+        description: "يمكنك الآن الاستمتاع بجميع المميزات لمدة 3 أيام مجاناً",
         className: "bg-green-500 text-white"
       });
     },

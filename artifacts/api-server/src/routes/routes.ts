@@ -125,6 +125,18 @@ import {
   updateTodayLearningStep,
 } from '../services/dailyLearningSessionService';
 import {
+  generateAdaptiveQuestionFeedback,
+  getStudentLearningCoachReport,
+  selectAdaptiveQuestions,
+} from '../services/studentLearningCoachService';
+import { StudentDailyAdaptiveTest } from '../mongodb/learningCoachModels';
+import { ensureStudentAccountTrial } from '../middleware/studentTrialAccess';
+import { TRIAL_CONFIG } from '../services/subscriptionEngine';
+import {
+  allowClientTechnicalReport,
+  notifyTechnicalFailure,
+} from '../services/technicalErrorAlerts';
+import {
   QuestionSelectionError,
   publicQuestionSelection,
   selectAndPersistContentForSessionStep,
@@ -4029,6 +4041,9 @@ app.post("/api/auth/register", async (req: Request, res: Response) => {
       }
 
       const today = new Date();
+      const trialEnd = new Date(
+        today.getTime() + TRIAL_CONFIG.TRIAL_DURATION_DAYS * 24 * 60 * 60 * 1000,
+      );
 
       const newUser = {
         id: users.length + 1,
@@ -4037,10 +4052,16 @@ app.post("/api/auth/register", async (req: Request, res: Response) => {
         phone: phone || '',
         password,
         subscription: {
-          type: "free",
-          startDate: today.toISOString().split('T')[0],
-          endDate: new Date(today.getTime() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]
+          type: "free_trial",
+          status: "active",
+          startDate: today.toISOString(),
+          endDate: trialEnd.toISOString(),
+          trialDays: TRIAL_CONFIG.TRIAL_DURATION_DAYS,
         },
+        role: "student",
+        trialUsed: true,
+        trialStartDate: today.toISOString(),
+        trialEndDate: trialEnd.toISOString(),
         points: 100, // نقاط ترحيبية
         level: 1,
         testsTaken: 0,
@@ -4070,6 +4091,7 @@ app.post("/api/auth/register", async (req: Request, res: Response) => {
       // Set user session for the new user
       (req.session as any).userId = newUser.id;
       (req.session as any).userEmail = newUser.email;
+      (req.session as any).userRole = "student";
 
       // Save session and wait for it to complete
       req.session.save((err) => {
@@ -4162,13 +4184,15 @@ app.post("/api/auth/register", async (req: Request, res: Response) => {
       const today = new Date();
       const newUserId = users.length + 1;
 
-      const trialEnd = new Date(today.getTime() + 7 * 24 * 60 * 60 * 1000);
+      const trialEnd = new Date(
+        today.getTime() + TRIAL_CONFIG.TRIAL_DURATION_DAYS * 24 * 60 * 60 * 1000,
+      );
       const subscription = {
         type: "free_trial",
         status: "active",
-        startDate: today.toISOString().split('T')[0],
-        endDate: trialEnd.toISOString().split('T')[0],
-        trialDays: 7,
+        startDate: today.toISOString(),
+        endDate: trialEnd.toISOString(),
+        trialDays: TRIAL_CONFIG.TRIAL_DURATION_DAYS,
       };
 
       // Create user object based on role
@@ -4238,6 +4262,9 @@ app.post("/api/auth/register", async (req: Request, res: Response) => {
         role,
         points: 100,
         level: 1,
+        trialUsed: true,
+        trialStartDate: today,
+        trialEndDate: trialEnd,
         subscription,
       });
       newUser.mongoId = String(mongoUser._id);
@@ -4251,7 +4278,7 @@ app.post("/api/auth/register", async (req: Request, res: Response) => {
         console.error('Local compatibility user copy failed:', localWriteError);
       }
 
-      console.log(`New ${role} account created: ${fullName} (${normalizedUsername}) - ${role === 'student' ? '7-day trial' : 'free forever'}`);
+      console.log(`New ${role} account created: ${fullName} (${normalizedUsername}) - ${role === 'student' ? `${TRIAL_CONFIG.TRIAL_DURATION_DAYS}-day trial` : 'free forever'}`);
       if (role === 'student') {
         void notifyAdminNewStudent({
           fullName,
@@ -4501,7 +4528,9 @@ app.post("/api/auth/register", async (req: Request, res: Response) => {
       }
 
       const today = new Date();
-      const trialEndDate = new Date(today.getTime() + 7 * 24 * 60 * 60 * 1000); // 7 days trial
+      const trialEndDate = new Date(
+        today.getTime() + TRIAL_CONFIG.TRIAL_DURATION_DAYS * 24 * 60 * 60 * 1000,
+      );
 
       // Create pending user record
       const pendingUser = {
@@ -4512,12 +4541,12 @@ app.post("/api/auth/register", async (req: Request, res: Response) => {
         status: "pending_verification",
         requestedAt: today.toISOString(),
         expiresAt: new Date(today.getTime() + 48 * 60 * 60 * 1000).toISOString(), // 48h to confirm
-        trialDuration: 7,
+        trialDuration: TRIAL_CONFIG.TRIAL_DURATION_DAYS,
         trialEndDate: trialEndDate.toISOString(),
         subscription: {
           type: "free_trial",
-          startDate: today.toISOString().split('T')[0],
-          endDate: trialEndDate.toISOString().split('T')[0],
+          startDate: today.toISOString(),
+          endDate: trialEndDate.toISOString(),
           verified: false
         }
       };
@@ -4581,7 +4610,9 @@ app.post("/api/auth/register", async (req: Request, res: Response) => {
         }
 
         const now = new Date();
-        const trialEnd = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
+        const trialEnd = new Date(
+          now.getTime() + TRIAL_CONFIG.TRIAL_DURATION_DAYS * 24 * 60 * 60 * 1000,
+        );
 
         const newUser = {
           id: users.length + 1,
@@ -4591,8 +4622,8 @@ app.post("/api/auth/register", async (req: Request, res: Response) => {
           password: pendingUser.password,
           subscription: {
             type: "free_trial",
-            startDate: now.toISOString().split('T')[0],
-            endDate: trialEnd.toISOString().split('T')[0],
+            startDate: now.toISOString(),
+            endDate: trialEnd.toISOString(),
             verified: true,
             createdViaRequest: true
           },
@@ -4612,7 +4643,7 @@ app.post("/api/auth/register", async (req: Request, res: Response) => {
           freeTrialData: {
             startDate: now.toISOString(),
             endDate: trialEnd.toISOString(),
-            daysRemaining: 7,
+            daysRemaining: TRIAL_CONFIG.TRIAL_DURATION_DAYS,
             isActive: true,
             requestApprovedAt: now.toISOString()
           }
@@ -4700,6 +4731,27 @@ app.post("/api/auth/register", async (req: Request, res: Response) => {
       console.error("Error checking account status:", error);
       res.status(500).json({ message: "خطأ في فحص حالة الحساب" });
     }
+  });
+
+  app.post("/api/diagnostics/client-error", (req: Request, res: Response) => {
+    const clientAddress = getClientIp(req);
+    if (!allowClientTechnicalReport(clientAddress)) {
+      return res.status(202).json({ accepted: false });
+    }
+
+    const rawType = String(req.body?.errorName || req.body?.kind || "BrowserError");
+    const errorName = /^[A-Za-z][A-Za-z0-9_. -]{0,48}$/.test(rawType)
+      ? rawType
+      : "BrowserError";
+    const pathName = String(req.body?.path || "/").split("?")[0].slice(0, 140);
+    const message = String(req.body?.message || "").slice(0, 300);
+    void notifyTechnicalFailure({
+      source: "browser",
+      path: pathName,
+      errorName,
+      message,
+    });
+    return res.status(202).json({ accepted: true });
   });
 
   // Logout route
@@ -5139,7 +5191,7 @@ app.post("/api/auth/register", async (req: Request, res: Response) => {
 
       if (existingTrial) {
         return res.status(400).json({
-          message: "This device has already used its 7-day trial",
+          message: "This device has already used its trial",
           trialUsed: true,
           trialEndDate: existingTrial.trialEndDate
         });
@@ -5148,7 +5200,9 @@ app.post("/api/auth/register", async (req: Request, res: Response) => {
       // Create new trial
       const startDate = new Date();
       const endDate = new Date();
-      endDate.setDate(startDate.getDate() + 7); // 7 days trial
+      endDate.setTime(
+        startDate.getTime() + TRIAL_CONFIG.TRIAL_DURATION_DAYS * 24 * 60 * 60 * 1000,
+      );
 
       const newTrial = {
         id: Date.now(),
@@ -5173,7 +5227,7 @@ app.post("/api/auth/register", async (req: Request, res: Response) => {
       res.json({
         success: true,
         trial: newTrial,
-        message: "7-day trial started successfully"
+        message: "3-day trial started successfully"
       });
 
     } catch (error) {
@@ -5202,7 +5256,7 @@ app.post("/api/auth/register", async (req: Request, res: Response) => {
         return res.json({
           trialAvailable: true,
           trialUsed: false,
-          message: "7-day trial available for this device"
+          message: "3-day trial available for this device"
         });
       }
 
@@ -5766,6 +5820,10 @@ app.post("/api/auth/register", async (req: Request, res: Response) => {
       let subscriptionType = 'Free';
       let subscriptionEndDate = null;
       let isUserSubscribed = false;
+      let isTrialActive = false;
+      let trialEndDate = null;
+      let hasUsedTrial = false;
+      let daysRemaining = 0;
 
       // Check user subscription first (if userId is provided)
       if (userId) {
@@ -5788,12 +5846,20 @@ app.post("/api/auth/register", async (req: Request, res: Response) => {
           if (user && user.subscription) {
             const now = new Date();
             const endDate = new Date(user.subscription.endDate);
+            const isLegacyTrial =
+              user.subscription.type === 'free_trial' ||
+              user.subscription.type === 'trial';
 
-            // Check if subscription is active and not expired
-            if (now < endDate) {
-              // Define all valid premium subscription types
+            if (isLegacyTrial) {
+              hasUsedTrial = true;
+              if (Number.isFinite(endDate.getTime()) && now < endDate) {
+                isTrialActive = true;
+                trialEndDate = endDate;
+                subscriptionType = 'free_trial';
+                isUserSubscribed = true;
+              }
+            } else if (now < endDate) {
               const validPremiumTypes = ['Pro', 'Pro Life', 'Pro Life Plus', 'Pro Live'];
-
               if (validPremiumTypes.includes(user.subscription.type)) {
                 hasActiveSubscription = true;
                 subscriptionType = user.subscription.type;
@@ -5805,15 +5871,26 @@ app.post("/api/auth/register", async (req: Request, res: Response) => {
         } catch (error) {
           console.error("Error reading user data:", error);
         }
+
+        if (!hasActiveSubscription && !isTrialActive) {
+          const accountAccess = await ensureStudentAccountTrial(userId, sessionEmail);
+          if (accountAccess) {
+            hasUsedTrial = accountAccess.trialUsed;
+            if (!accountAccess.paid && accountAccess.active && accountAccess.trialEndDate) {
+              isTrialActive = true;
+              trialEndDate = accountAccess.trialEndDate;
+              subscriptionType = 'free_trial';
+              isUserSubscribed = true;
+            }
+          } else if ((req.session as any)?.userRole === 'student') {
+            hasUsedTrial = true;
+          }
+        }
       }
 
-      // If no active user subscription, automatically start or check device trials
-      let isTrialActive = false;
-      let trialEndDate = null;
-      let hasUsedTrial = false;
-      let daysRemaining = 0;
-
-      if (!isUserSubscribed) {
+      // Device trials are for signed-out visitors only. Authenticated student
+      // trials are bound to the account so changing devices cannot restart them.
+      if (!userId && !isUserSubscribed) {
         try {
           let deviceTrials = [];
           try {
@@ -5829,7 +5906,9 @@ app.post("/api/auth/register", async (req: Request, res: Response) => {
 
           if (!deviceTrial) {
             // Auto-start trial for new devices
-            const trialEndDate = new Date(now.getTime() + (7 * 24 * 60 * 60 * 1000)); // 7 days
+            const trialEndDate = new Date(
+              now.getTime() + TRIAL_CONFIG.TRIAL_DURATION_DAYS * 24 * 60 * 60 * 1000,
+            );
             deviceTrial = {
               deviceId,
               trialStartDate: now.toISOString(),
@@ -5892,10 +5971,41 @@ app.post("/api/auth/register", async (req: Request, res: Response) => {
 
   app.post("/api/subscription/start-trial", async (req: Request, res: Response) => {
     try {
-      const { deviceId, userId } = req.body;
+      const { deviceId } = req.body;
+      const sessionUserId = (req.session as any)?.userId;
+      const sessionEmail = (req.session as any)?.userEmail;
 
       if (!deviceId) {
         return res.status(400).json({ message: "Device ID is required" });
+      }
+
+      if (sessionUserId) {
+        const accountAccess = await ensureStudentAccountTrial(sessionUserId, sessionEmail);
+        if (!accountAccess) {
+          return res.status(403).json({
+            success: false,
+            message: "الفترة التجريبية متاحة لحساب الطالب فقط.",
+          });
+        }
+        if (accountAccess.paid) {
+          return res.json({
+            success: true,
+            trialEndDate: null,
+            message: "اشتراكك المدفوع نشط بالفعل.",
+          });
+        }
+        if (!accountAccess.active) {
+          return res.status(400).json({
+            success: false,
+            trialEndDate: accountAccess.trialEndDate,
+            message: "انتهت الفترة التجريبية لهذا الحساب.",
+          });
+        }
+        return res.json({
+          success: true,
+          trialEndDate: accountAccess.trialEndDate,
+          message: "فترتك التجريبية متاحة بالفعل.",
+        });
       }
 
       // Load device trials
@@ -5920,14 +6030,16 @@ app.post("/api/auth/register", async (req: Request, res: Response) => {
 
       // Create new trial
       const now = new Date();
-      const trialEndDate = new Date(now.getTime() + (7 * 24 * 60 * 60 * 1000)); // 7 days
+      const trialEndDate = new Date(
+        now.getTime() + TRIAL_CONFIG.TRIAL_DURATION_DAYS * 24 * 60 * 60 * 1000,
+      );
 
       const newTrial = {
         id: deviceTrials.length + 1,
         deviceId,
         trialStartDate: now.toISOString(),
         trialEndDate: trialEndDate.toISOString(),
-        userId: userId || null,
+        userId: null,
         isActive: true,
         createdAt: now.toISOString()
       };
@@ -7501,6 +7613,9 @@ app.post("/api/auth/register", async (req: Request, res: Response) => {
         }
         const normalizedEmail = email.trim().toLowerCase();
         const today = new Date();
+        const trialEnd = new Date(
+          today.getTime() + TRIAL_CONFIG.TRIAL_DURATION_DAYS * 24 * 60 * 60 * 1000,
+        );
         user = {
           id: users.length > 0 ? Math.max(...users.map((u: any) => u.id || 0)) + 1 : 1,
           name,
@@ -7508,10 +7623,16 @@ app.post("/api/auth/register", async (req: Request, res: Response) => {
           password,
           phone: phone || '',
           subscription: {
-            type: "free",
-            startDate: today.toISOString().split('T')[0],
-            endDate: new Date(today.getTime() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]
+            type: "free_trial",
+            status: "active",
+            startDate: today.toISOString(),
+            endDate: trialEnd.toISOString(),
+            trialDays: TRIAL_CONFIG.TRIAL_DURATION_DAYS,
           },
+          role: "student",
+          trialUsed: true,
+          trialStartDate: today.toISOString(),
+          trialEndDate: trialEnd.toISOString(),
           points: 100,
           level: 1,
           testsTaken: 0,
@@ -9014,7 +9135,9 @@ app.post("/api/auth/register", async (req: Request, res: Response) => {
 
       const hashedPassword = await bcrypt.hash(password, 10);
       const today = new Date();
-      const trialEndDate = new Date(today.getTime() + 7 * 24 * 60 * 60 * 1000);
+      const trialEndDate = new Date(
+        today.getTime() + TRIAL_CONFIG.TRIAL_DURATION_DAYS * 24 * 60 * 60 * 1000,
+      );
       const newUserId = users.length + 1;
 
       const newUser: any = {
@@ -9030,10 +9153,13 @@ app.post("/api/auth/register", async (req: Request, res: Response) => {
         subscription: {
           type: 'trial',
           status: 'active',
-          startDate: today.toISOString().split('T')[0],
-          endDate: trialEndDate.toISOString().split('T')[0],
-          trialDays: 7
+          startDate: today.toISOString(),
+          endDate: trialEndDate.toISOString(),
+          trialDays: TRIAL_CONFIG.TRIAL_DURATION_DAYS,
         },
+        trialUsed: true,
+        trialStartDate: today.toISOString(),
+        trialEndDate: trialEndDate.toISOString(),
         points: 100,
         level: 1,
         testsTaken: 0,
@@ -11606,6 +11732,311 @@ app.post("/api/auth/register", async (req: Request, res: Response) => {
     return String(user.id);
   };
   const supportedPrograms = new Set(['qudrat', 'tahsili']);
+
+  const getRiyadhDayKey = (date = new Date()) => {
+    const parts = new Intl.DateTimeFormat('en-CA', {
+      timeZone: 'Asia/Riyadh',
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+    }).formatToParts(date);
+    const part = (type: string) => parts.find((entry) => entry.type === type)?.value || '';
+    return `${part('year')}-${part('month')}-${part('day')}`;
+  };
+
+  const getDailyAdaptiveTestView = async (
+    test: any,
+    studentId: string,
+  ) => {
+    const { Question } = await import('../mongodb/models');
+    const ids = (test.questionIds || [])
+      .filter((id: unknown) => mongoose.Types.ObjectId.isValid(String(id)))
+      .map((id: string) => new mongoose.Types.ObjectId(id));
+    const documents = await Question.find({ _id: { $in: ids } })
+      .select(
+        '_id questionId category subcategory text options difficulty explanation studentTip imageUrl imageUrls source',
+      )
+      .lean() as any[];
+    const byId = new Map(documents.map((question) => [String(question._id), question]));
+    const completed = test.state === 'completed';
+    const answerByQuestionId = new Map(
+      (test.answers || []).map((answer: any) => [String(answer.questionId), answer]),
+    );
+    const questions = (test.questionIds || []).flatMap((id: string) => {
+      const question = byId.get(String(id));
+      if (!question) return [];
+      const base = {
+        id: String(question._id),
+        category: question.category,
+        subcategory: question.subcategory || 'عام',
+        text: question.text,
+        options: Array.isArray(question.options) ? question.options : [],
+        difficulty: question.difficulty,
+        imageUrl: question.imageUrl,
+        imageUrls: question.imageUrls,
+        passageText: question.source?.passageText,
+      };
+      if (!completed) return [base];
+      const answer = answerByQuestionId.get(String(id));
+      if (!answer) return [base];
+      return [{
+        ...base,
+        selectedIndex: answer.selectedIndex,
+        correctIndex: answer.correctIndex,
+        isCorrect: answer.isCorrect,
+        explanation: answer.explanation || question.explanation || question.studentTip || '',
+        tailoredFeedback: answer.tailoredFeedback || '',
+      }];
+    });
+    return {
+      id: String(test._id),
+      dayKey: test.dayKey,
+      category: test.category,
+      focusSubcategory: test.focusSubcategory || null,
+      status: test.state,
+      score: test.score ?? null,
+      totalQuestions: test.questionIds?.length || 0,
+      completedAt: test.completedAt || null,
+      questions,
+    };
+  };
+
+  app.get(
+    '/api/student/learning-coach',
+    requireAuth,
+    requireRole('student'),
+    async (req: Request, res: Response) => {
+      const studentId = studentOnly(req, res);
+      if (!studentId) return;
+      try {
+        res.json(await getStudentLearningCoachReport(studentId));
+      } catch (error) {
+        req.log.error({ err: error }, 'Unable to build student learning coach report');
+        res.status(503).json({
+          error: 'تعذر تحليل سجل الإجابات الآن. يمكنك متابعة الاختبار اليومي.',
+          code: 'LEARNING_COACH_UNAVAILABLE',
+        });
+      }
+    },
+  );
+
+  app.get(
+    '/api/student/daily-adaptive-test',
+    requireAuth,
+    requireRole('student'),
+    async (req: Request, res: Response) => {
+      const studentId = studentOnly(req, res);
+      if (!studentId) return;
+      const dayKey = getRiyadhDayKey();
+      try {
+        let test = await StudentDailyAdaptiveTest.findOne({ studentId, dayKey });
+        if (!test) {
+          const selected = await selectAdaptiveQuestions(studentId, 10);
+          if (!selected.questions.length) {
+            return res.status(503).json({
+              error: 'لا توجد أسئلة معتمدة كافية لإنشاء اختبار اليوم.',
+              code: 'ADAPTIVE_QUESTION_POOL_EMPTY',
+            });
+          }
+          try {
+            test = await StudentDailyAdaptiveTest.create({
+              studentId,
+              dayKey,
+              category: selected.category,
+              focusSubcategory: selected.focusSubcategory,
+              questionIds: selected.questions.map((question) => String(question._id)),
+            });
+          } catch (error: any) {
+            if (error?.code !== 11000) throw error;
+            test = await StudentDailyAdaptiveTest.findOne({ studentId, dayKey });
+          }
+        }
+        if (!test) {
+          return res.status(503).json({
+            error: 'تعذر حفظ اختبار اليوم. حاول مرة أخرى.',
+            code: 'ADAPTIVE_TEST_CREATION_FAILED',
+          });
+        }
+        return res.json(await getDailyAdaptiveTestView(test, studentId));
+      } catch (error) {
+        req.log.error({ err: error }, 'Unable to load daily adaptive test');
+        return res.status(503).json({
+          error: 'تعذر تحميل اختبار اليوم. حاول مرة أخرى.',
+          code: 'ADAPTIVE_TEST_UNAVAILABLE',
+        });
+      }
+    },
+  );
+
+  app.post(
+    '/api/student/daily-adaptive-test',
+    requireAuth,
+    requireRole('student'),
+    async (req: Request, res: Response) => {
+      const studentId = studentOnly(req, res);
+      if (!studentId) return;
+      const dayKey = getRiyadhDayKey();
+      try {
+        const test = await StudentDailyAdaptiveTest.findOne({ studentId, dayKey });
+        if (!test) {
+          return res.status(404).json({
+            error: 'ابدأ اختبار اليوم أولًا.',
+            code: 'ADAPTIVE_TEST_NOT_FOUND',
+          });
+        }
+        if (test.state === 'completed') {
+          return res.json(await getDailyAdaptiveTestView(test, studentId));
+        }
+        const submitted = Array.isArray(req.body?.answers) ? req.body.answers : [];
+        const submittedById = new Map<string, number>();
+        for (const answer of submitted) {
+          if (
+            !answer ||
+            typeof answer.questionId !== 'string' ||
+            !Number.isInteger(answer.selectedIndex) ||
+            submittedById.has(answer.questionId)
+          ) {
+            return res.status(400).json({
+              error: 'الإجابات المرسلة غير صالحة.',
+              code: 'INVALID_ADAPTIVE_ANSWERS',
+            });
+          }
+          submittedById.set(answer.questionId, answer.selectedIndex);
+        }
+        const expectedIds: string[] = (test.questionIds as unknown[]).map(
+          (id: unknown) => String(id),
+        );
+        if (
+          submittedById.size !== expectedIds.length ||
+          expectedIds.some((id) => !submittedById.has(id))
+        ) {
+          return res.status(400).json({
+            error: 'أجب عن جميع أسئلة الاختبار قبل الإرسال.',
+            code: 'INCOMPLETE_ADAPTIVE_TEST',
+          });
+        }
+
+        const { Question } = await import('../mongodb/models');
+        const objectIds = expectedIds.map((id) => new mongoose.Types.ObjectId(id));
+        const questionDocuments = await Question.find({ _id: { $in: objectIds } })
+          .select(
+            '_id questionId category subcategory text options correctOptionIndex explanation studentTip difficulty answerStatus',
+          )
+          .lean() as any[];
+        const questionsById = new Map(
+          questionDocuments.map((question) => [String(question._id), question]),
+        );
+        if (questionDocuments.length !== expectedIds.length) {
+          return res.status(409).json({
+            error: 'تغيرت أسئلة الاختبار. أعد تحميل اختبار اليوم.',
+            code: 'ADAPTIVE_TEST_QUESTIONS_CHANGED',
+          });
+        }
+
+        const results: Array<{
+          questionId: string;
+          selectedIndex: number;
+          correctIndex: number;
+          isCorrect: boolean;
+          explanation: string;
+          tailoredFeedback?: string;
+        }> = [];
+        for (const questionId of expectedIds) {
+          const question = questionsById.get(questionId);
+          if (
+            !question ||
+            question.answerStatus !== 'approved' ||
+            !Array.isArray(question.options)
+          ) {
+            return res.status(409).json({
+              error: 'يوجد سؤال لم يعد متاحًا في بنك الأسئلة.',
+              code: 'ADAPTIVE_TEST_QUESTION_UNAVAILABLE',
+            });
+          }
+          const selectedIndex = submittedById.get(questionId)!;
+          if (selectedIndex < 0 || selectedIndex >= question.options.length) {
+            return res.status(400).json({
+              error: 'أحد الاختيارات خارج خيارات السؤال.',
+              code: 'INVALID_ADAPTIVE_ANSWER',
+            });
+          }
+          await recordVerifiedLearningAttempt(studentId, {
+            questionId,
+            sourceType: 'mongo_question',
+            sourceKey: `daily-adaptive:${test._id}`,
+            programId: 'program.qudrat',
+            subjectId: question.category === 'quantitative'
+              ? 'subject.qudrat.quantitative'
+              : 'subject.qudrat.verbal',
+            selectedAnswer: selectedIndex,
+            idempotencyKey: `daily-adaptive:${test._id}:${questionId}`,
+            metadata: {
+              adaptiveTestId: String(test._id),
+              category: question.category,
+              subcategory: question.subcategory,
+              difficulty: question.difficulty,
+            },
+          }, {
+            correctOptionIndex: Number(question.correctOptionIndex),
+            optionsCount: question.options.length,
+          });
+          results.push({
+            questionId,
+            selectedIndex,
+            correctIndex: Number(question.correctOptionIndex),
+            isCorrect: selectedIndex === Number(question.correctOptionIndex),
+            explanation: String(question.explanation || question.studentTip || ''),
+          });
+        }
+
+        const feedbackById = await generateAdaptiveQuestionFeedback(
+          results.filter((result) => !result.isCorrect).map((result) => {
+            const question = questionsById.get(result.questionId)!;
+            return {
+              questionId: result.questionId,
+              category: question.category,
+              subcategory: String(question.subcategory || 'عام'),
+              text: question.text,
+              options: question.options,
+              selectedIndex: result.selectedIndex,
+              correctIndex: result.correctIndex,
+              explanation: result.explanation,
+            };
+          }),
+        );
+        const reviewedResults = results.map((result) => ({
+          ...result,
+          tailoredFeedback: feedbackById.get(result.questionId) || '',
+        }));
+        const score = reviewedResults.filter((result) => result.isCorrect).length;
+        await StudentDailyAdaptiveTest.updateOne(
+          { _id: test._id, studentId, state: 'ready' },
+          {
+            $set: {
+              state: 'completed',
+              answers: reviewedResults,
+              score,
+              completedAt: new Date(),
+            },
+          },
+        );
+        const completedTest = await StudentDailyAdaptiveTest.findById(test._id);
+        if (!completedTest) {
+          return res.status(503).json({
+            error: 'تم حفظ الإجابات لكن تعذر تحميل النتيجة.',
+            code: 'ADAPTIVE_TEST_RESULT_UNAVAILABLE',
+          });
+        }
+        return res.json(await getDailyAdaptiveTestView(completedTest, studentId));
+      } catch (error) {
+        req.log.error({ err: error }, 'Unable to submit daily adaptive test');
+        return res.status(503).json({
+          error: 'تعذر حفظ الاختبار الآن. إجاباتك لم تُعرض كأنها صُححت؛ أعد المحاولة.',
+          code: 'ADAPTIVE_TEST_SUBMIT_FAILED',
+        });
+      }
+    },
+  );
 
   const publicLearningAttempt = (attempt: any) => ({
     id: String(attempt?._id),

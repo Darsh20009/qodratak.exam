@@ -11,7 +11,7 @@ export type PaymentMethod = 'bank' | 'stc' | 'manual' | 'free';
 
 // إعدادات الفترة التجريبية
 export const TRIAL_CONFIG = {
-  TRIAL_DURATION_DAYS: 7,
+  TRIAL_DURATION_DAYS: 3,
   MAX_TRIALS_PER_DEVICE: 1,
   TRIAL_COOLDOWN_DAYS: 365,
   GRACE_PERIOD_DAYS: 3,

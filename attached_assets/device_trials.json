@@ -12,5 +12,12 @@
     "trialEndDate": "2026-09-17T03:33:47.461Z",
     "isActive": true,
     "createdAt": "2026-09-10T03:33:47.461Z"
+  },
+  {
+    "deviceId": "7o7on9",
+    "trialStartDate": "2026-10-07T13:31:48.190Z",
+    "trialEndDate": "2026-10-10T13:31:48.190Z",
+    "isActive": true,
+    "createdAt": "2026-10-07T13:31:48.190Z"
   }
 ]

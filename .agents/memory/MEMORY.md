@@ -9,7 +9,7 @@
 - [Unified plans and WhatsApp care](unified-plans-whatsapp-care.md) — purchase values use one plan setting; WhatsApp is restricted to queued OTP and essential transactional alerts.
 - [Geidea KSA checkout prerequisites](geidea-ksa-checkout.md) — keep KSA HPP hosts separate from Egypt examples; sandbox code 110/080 indicates online payments need merchant-side enablement.
 - [Dark-mode page contrast](dark-mode-page-contrast.md) — legacy pages use fixed light colors; keep contrast overrides scoped to the shared app surface.
-- [Subscription entitlement consistency](subscription-entitlement-consistency.md) — derive access from active Mongo records; make wallet activation atomic and invoices transaction-truthful.
+- [Subscription entitlement consistency](subscription-entitlement-consistency.md) — keep paid access server-derived; trials are account-bound and expire into one daily Qudrat test.
 - [Question image import compatibility](question-image-import.md) — keep the first-image fields for legacy consumers while treating multi-image extraction as optional and reviewable.
 - [Question-number badge cleanup](question-number-badge-cleanup.md) — badge positions vary; locate the capsule geometry and mask only digit ink inside the number disc.
 - [Public Forms answer-key boundary](public-forms-answer-key.md) — public respondent HTML can expose prompts and options, but its numeric metadata is not a reliable answer key.

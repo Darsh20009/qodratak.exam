@@ -10,6 +10,8 @@ import multiplayerRouter from "./multiplayerRoutes";
 import notificationRouter from "./notificationRoutes";
 import { logger } from "./lib/logger";
 import { enforceSessionIp } from "./middleware/sessionIp";
+import { enforceStudentTrialAccess } from "./middleware/studentTrialAccess";
+import { notifyTechnicalFailure } from "./services/technicalErrorAlerts";
 
 const app: Express = express();
 const sessionSecret = process.env.SESSION_SECRET;
@@ -87,6 +89,26 @@ app.use(
   }),
 );
 app.use(enforceSessionIp);
+app.use("/api", enforceStudentTrialAccess);
+app.use("/api", (request, response, next) => {
+  response.once("finish", () => {
+    const requestPath = request.originalUrl.split("?")[0];
+    if (
+      response.statusCode >= 500 &&
+      requestPath !== "/api/diagnostics/client-error"
+    ) {
+      void notifyTechnicalFailure({
+        source: "api",
+        method: request.method,
+        path: requestPath,
+        statusCode: response.statusCode,
+        errorName: "HttpServerError",
+        requestId: String((request as any).id || ""),
+      });
+    }
+  });
+  next();
+});
 
 app.use("/api/uploads", express.static("uploads"));
 app.use("/api/admin", adminRouter);

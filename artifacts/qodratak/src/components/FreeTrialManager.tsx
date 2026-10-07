@@ -102,13 +102,13 @@ export const FreeTrialManagerComponent: React.FC<FreeTrialManagerProps> = ({
         </CardHeader>
         <CardContent className="text-center space-y-4">
           <p className="text-gray-700 dark:text-gray-300 text-lg leading-relaxed">
-            احصل على <span className="font-bold text-blue-600">7 أيام مجانية</span> كاملة للوصول إلى جميع المميزات المتقدمة
+            احصل على <span className="font-bold text-blue-600">3 أيام مجانية</span> كاملة للوصول إلى جميع المميزات المتقدمة
           </p>
           
           <div className="bg-white dark:bg-gray-800 rounded-lg p-4 space-y-2">
             <div className="flex items-center justify-center gap-2 text-green-600">
               <Clock className="h-4 w-4" />
-              <span className="text-sm font-medium">7 أيام كاملة مجاناً</span>
+              <span className="text-sm font-medium">3 أيام كاملة مجاناً</span>
             </div>
             <div className="text-xs text-gray-500 dark:text-gray-400">
               * تجربة واحدة فقط لكل جهاز
@@ -134,7 +134,7 @@ export const FreeTrialManagerComponent: React.FC<FreeTrialManagerProps> = ({
           <div className="mt-4 p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-700">
             <p className="text-xs text-blue-700 dark:text-blue-300 text-center leading-relaxed">
               ⚠️ تجربة واحدة فقط لكل جهاز/مستخدم<br />
-              📱 سيتم منع الوصول نهائياً بعد 7 أيام<br />
+              بعد انتهاء 3 أيام، يبقى الاختبار التكيفي اليومي وصفحة الاشتراك متاحين<br />
               💎 للاستمرار: اختر إحدى خططنا المدفوعة
             </p>
           </div>
@@ -225,7 +225,7 @@ export const FreeTrialManagerComponent: React.FC<FreeTrialManagerProps> = ({
               تم حظر الوصول نهائياً!
             </p>
             <p className="text-xs text-red-600 dark:text-red-400">
-              لا يمكن استخدام الموقع بعد انتهاء فترة الـ 7 أيام
+              بعد انتهاء التجربة يمكنك استخدام لوحة التحكم والاختبار التكيفي اليومي فقط حتى الاشتراك
             </p>
           </div>
           
