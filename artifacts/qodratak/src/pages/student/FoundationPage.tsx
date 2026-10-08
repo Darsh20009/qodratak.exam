@@ -5,6 +5,7 @@ import {
   FoundationDiagnosticQuestion,
   FoundationLearningPath,
   FoundationLearningState,
+  FoundationPlacementResult,
   StudentDashboard,
   useFoundationContent,
   useFoundationLearningPath,
@@ -226,23 +227,32 @@ function DashboardProgressCard({
 function FoundationDiagnosticDialog({
   open,
   onOpenChange,
+  program,
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  program: FoundationProgram;
 }) {
+  const [, setLocation] = useLocation();
   const [diagnostic, setDiagnostic] = useState<FoundationDiagnostic | null>(null);
   const [answers, setAnswers] = useState<Record<string, number>>({});
-  const [result, setResult] = useState<{ percentage: number; correctAnswers: number; totalQuestions: number; skippedQuestions: number } | null>(null);
+  const [result, setResult] = useState<FoundationPlacementResult | null>(null);
+  const [activeIndex, setActiveIndex] = useState(0);
+  const [startedAt, setStartedAt] = useState<number | null>(null);
   const startDiagnostic = useStartFoundationDiagnostic();
   const submitDiagnostic = useSubmitFoundationDiagnostic();
 
   useEffect(() => {
     if (open && !diagnostic && !startDiagnostic.isPending && !startDiagnostic.isSuccess && !startDiagnostic.isError) {
-      startDiagnostic.mutate("qudrat", {
-        onSuccess: (data) => setDiagnostic(data),
+      startDiagnostic.mutate(program, {
+        onSuccess: (data) => {
+          setDiagnostic(data);
+          setStartedAt(Date.now());
+          setActiveIndex(0);
+        },
       });
     }
-  }, [open, diagnostic, startDiagnostic.isPending, startDiagnostic.isSuccess, startDiagnostic.isError, startDiagnostic.mutate]);
+  }, [open, program, diagnostic, startDiagnostic.isPending, startDiagnostic.isSuccess, startDiagnostic.isError, startDiagnostic.mutate]);
 
   const handleOpenChange = (nextOpen: boolean) => {
     onOpenChange(nextOpen);
@@ -250,6 +260,8 @@ function FoundationDiagnosticDialog({
       setDiagnostic(null);
       setAnswers({});
       setResult(null);
+      setActiveIndex(0);
+      setStartedAt(null);
       startDiagnostic.reset();
       submitDiagnostic.reset();
     }
@@ -260,20 +272,35 @@ function FoundationDiagnosticDialog({
   };
 
   const submit = () => {
-    if (!diagnostic) return;
+    if (!diagnostic || Object.keys(answers).length !== diagnostic.questions.length) return;
     submitDiagnostic.mutate({
+      program,
       attemptId: diagnostic.attemptId,
       answers: Object.entries(answers).map(([questionId, selectedOptionIndex]) => ({ questionId, selectedOptionIndex })),
+      timeTakenSeconds: startedAt ? Math.round((Date.now() - startedAt) / 1000) : 0,
     }, {
       onSuccess: (data) => setResult(data.result),
     });
+  };
+
+  const answeredCount = Object.keys(answers).length;
+  const currentQuestion = diagnostic?.questions[activeIndex] || null;
+  const moveToNextQuestion = () => {
+    if (!diagnostic) return;
+    if (activeIndex < diagnostic.questions.length - 1) {
+      setActiveIndex((current) => current + 1);
+      return;
+    }
+    if (answeredCount === diagnostic.questions.length) submit();
   };
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogContent className="max-h-[90vh] max-w-3xl overflow-y-auto" dir="rtl">
         <DialogHeader>
-          <DialogTitle className="text-xl font-black">تقييم البداية — ٨ أسئلة قصيرة</DialogTitle>
+          <DialogTitle className="text-xl font-black">
+            تقييم تحديد المستوى — {program === "qudrat" ? "القدرات" : "التحصيلي"}
+          </DialogTitle>
         </DialogHeader>
         {startDiagnostic.isPending ? (
           <div className="flex items-center justify-center py-16">
@@ -282,42 +309,118 @@ function FoundationDiagnosticDialog({
         ) : startDiagnostic.isError ? (
           <div className="rounded-2xl border border-dashed border-destructive/40 bg-destructive/5 p-6 text-center">
             <p className="font-bold text-foreground">{startDiagnostic.error.message}</p>
-            <Button type="button" variant="outline" className="mt-4 rounded-xl" onClick={() => startDiagnostic.mutate("qudrat", { onSuccess: setDiagnostic })}>
+            <Button
+              type="button"
+              variant="outline"
+              className="mt-4 rounded-xl"
+              onClick={() => startDiagnostic.mutate(program, {
+                onSuccess: (data) => {
+                  setDiagnostic(data);
+                  setStartedAt(Date.now());
+                  setActiveIndex(0);
+                },
+              })}
+            >
               حاول مرة أخرى
             </Button>
           </div>
         ) : result ? (
-          <div className="rounded-2xl bg-primary/5 p-6 text-center">
-            <Trophy className="mx-auto h-10 w-10 text-primary" />
-            <p className="mt-3 text-3xl font-black text-foreground">{result.percentage}%</p>
-            <p className="mt-2 text-sm text-muted-foreground">
-              أجبت عن {result.correctAnswers} من {result.totalQuestions} بشكل صحيح
-              {result.skippedQuestions ? `، وتركت ${result.skippedQuestions} دون إجابة.` : "."}
-            </p>
-            <p className="mt-4 text-sm leading-7 text-muted-foreground">تم بناء ملفك الأولي. ستجد مهمة اليوم وسبب التوصية في صفحة التأسيس.</p>
-            <Button type="button" className="mt-5 rounded-xl" onClick={() => onOpenChange(false)}>عرض مهمتي اليوم</Button>
+          <div className="space-y-4">
+            <section className="rounded-2xl bg-primary/5 p-5 text-center">
+              <Trophy className="mx-auto h-9 w-9 text-primary" />
+              <p className="mt-2 text-sm font-bold text-muted-foreground">نتيجتك في تقييم البداية</p>
+              <p className="mt-1 text-3xl font-black text-foreground">{result.percentage}%</p>
+              <p className="mt-1 text-sm text-muted-foreground">
+                {result.correctAnswers} إجابة صحيحة من {result.totalQuestions}
+              </p>
+            </section>
+            <section className="rounded-2xl border border-border bg-card p-4">
+              <p className="font-black text-foreground">درجة الثقة: {result.confidence.label}</p>
+              <p className="mt-1 text-sm leading-6 text-muted-foreground">{result.confidence.note}</p>
+            </section>
+            <section className="grid gap-3 sm:grid-cols-2">
+              {result.areas.map((area) => (
+                <div key={area.key} className="rounded-2xl border border-border bg-card p-4">
+                  <div className="flex items-center justify-between gap-3">
+                    <h3 className="font-black text-foreground">{area.label}</h3>
+                    <span className="text-sm font-black text-primary">{area.percentage}%</span>
+                  </div>
+                  <Progress value={area.percentage} className="mt-3 h-2" />
+                  <p className="mt-2 text-xs text-muted-foreground">
+                    {area.correctAnswers} من {area.totalQuestions} إجابات صحيحة
+                  </p>
+                </div>
+              ))}
+            </section>
+            <section className="rounded-2xl border border-primary/20 bg-primary/5 p-4">
+              <h3 className="font-black text-foreground">{result.recommendation.title}</h3>
+              <p className="mt-1 text-sm leading-6 text-muted-foreground">{result.recommendation.reason}</p>
+              <p className="mt-2 text-xs leading-5 text-muted-foreground">
+                هذا تقدير لبداية الدراسة، وليس درجة رسمية أو ضمانًا لنتيجة الاختبار.
+              </p>
+            </section>
+            <div className="flex flex-wrap justify-center gap-2">
+              <Button
+                type="button"
+                className="rounded-xl font-black"
+                onClick={() => {
+                  setLocation(result.recommendation.href);
+                  handleOpenChange(false);
+                }}
+              >
+                ابدأ المسار المقترح
+              </Button>
+              <Button type="button" variant="outline" className="rounded-xl" onClick={() => handleOpenChange(false)}>
+                إغلاق
+              </Button>
+            </div>
           </div>
         ) : diagnostic ? (
           <div className="space-y-4">
             <p className="rounded-xl bg-muted/60 px-4 py-3 text-sm leading-6 text-muted-foreground">
-              لا نبحث عن درجة نهائية هنا. نستخدم إجاباتك لمعرفة المهارة التي تستحق أن تبدأ بها.
+              أسئلة متدرجة في أقسام البرنامج. النتيجة تقدير بداية، ويمكنك التنقل بين الأسئلة قبل الحفظ.
             </p>
-            {diagnostic.questions.map((question, index) => (
+            <div className="flex items-center justify-between gap-3">
+              <span className="text-sm font-black text-foreground">
+                السؤال {activeIndex + 1} من {diagnostic.questions.length}
+              </span>
+              <span className="text-xs text-muted-foreground">
+                {answeredCount} من {diagnostic.questions.length} مجاب
+              </span>
+            </div>
+            <Progress value={((activeIndex + 1) / diagnostic.questions.length) * 100} className="h-2" />
+            {currentQuestion && (
               <DiagnosticQuestionCard
-                key={question._id}
-                question={question}
-                index={index}
-                selected={answers[question._id]}
+                key={currentQuestion._id}
+                question={currentQuestion}
+                index={activeIndex}
+                selected={answers[currentQuestion._id]}
                 onSelect={chooseAnswer}
               />
-            ))}
-            <div className="sticky bottom-0 flex items-center justify-between gap-3 border-t border-border bg-background pt-4">
-              <span className="text-xs text-muted-foreground">{Object.keys(answers).length} من {diagnostic.questions.length} مجاب</span>
-              <Button type="button" className="rounded-xl font-black" disabled={submitDiagnostic.isPending} onClick={submit}>
+            )}
+            <div className="flex items-center justify-between gap-3 border-t border-border pt-4">
+              <Button
+                type="button"
+                variant="outline"
+                className="rounded-xl"
+                disabled={activeIndex === 0 || submitDiagnostic.isPending}
+                onClick={() => setActiveIndex((current) => Math.max(0, current - 1))}
+              >
+                السابق
+              </Button>
+              <Button
+                type="button"
+                className="rounded-xl font-black"
+                disabled={submitDiagnostic.isPending || (activeIndex === diagnostic.questions.length - 1 && answeredCount !== diagnostic.questions.length)}
+                onClick={moveToNextQuestion}
+              >
                 {submitDiagnostic.isPending ? <Loader2 className="ml-2 h-4 w-4 animate-spin" /> : null}
-                حفظ النتيجة وبناء المهمة
+                {activeIndex === diagnostic.questions.length - 1 ? "احفظ النتيجة" : "السؤال التالي"}
               </Button>
             </div>
+            {activeIndex === diagnostic.questions.length - 1 && answeredCount !== diagnostic.questions.length && (
+              <p className="text-xs leading-5 text-muted-foreground">أكمل جميع الأسئلة؛ يمكنك الرجوع للأسئلة السابقة وتعديل إجاباتك.</p>
+            )}
             {submitDiagnostic.isError && <p className="text-sm font-bold text-destructive">{submitDiagnostic.error.message}</p>}
           </div>
         ) : null}
@@ -340,7 +443,7 @@ function DiagnosticQuestionCard({
   const questionImages = getQuestionImageUrls(question);
   return (
     <fieldset className="rounded-2xl border border-border bg-card p-4">
-      <legend className="px-1 text-sm font-black text-foreground">السؤال {index + 1} · {question.category === "verbal" ? "لفظي" : "كمي"}</legend>
+      <legend className="px-1 text-sm font-black text-foreground">السؤال {index + 1} · {question.areaLabel}</legend>
       {questionImages.length ? (
         <div className="mt-2 space-y-2">
           {questionImages.map((imageUrl) => (
@@ -350,7 +453,6 @@ function DiagnosticQuestionCard({
       ) : (
         <p className="mt-2 text-sm font-bold leading-7 text-foreground">{question.text}</p>
       )}
-      <p className="mt-1 text-xs text-muted-foreground">{question.subcategory}</p>
       <div className="mt-3 grid gap-2 sm:grid-cols-2">
         {question.options.map((option, optionIndex) => (
           <button
@@ -634,6 +736,7 @@ function JourneyHome({
     refetch: refetchQuantitativePath,
   } = useFoundationLearningPath("subject.qudrat.quantitative");
   const [diagnosticOpen, setDiagnosticOpen] = useState(false);
+  const [diagnosticProgram, setDiagnosticProgram] = useState<FoundationProgram>("qudrat");
   const diagnosticComplete = learningState?.status === "diagnostic_completed";
   const qudratProgress = progress?.qudrat?.percentage || 0;
   const recommendation = learningState?.recommendation;
@@ -679,7 +782,12 @@ function JourneyHome({
           </p>
         </header>
 
-        <FoundationProgramChoices />
+        <FoundationProgramChoices
+          onStartDiagnostic={(program) => {
+            setDiagnosticProgram(program);
+            setDiagnosticOpen(true);
+          }}
+        />
 
         {isLearningContentError && diagnosticComplete && (
           <section role="alert" className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-amber-500/30 bg-amber-500/5 p-4">
@@ -706,7 +814,10 @@ function JourneyHome({
               data-testid="button-start-foundation-diagnostic"
               className="shrink-0 rounded-xl font-black"
               disabled={isLoading || isLearningStateLoading}
-              onClick={() => setDiagnosticOpen(true)}
+              onClick={() => {
+                setDiagnosticProgram("qudrat");
+                setDiagnosticOpen(true);
+              }}
             >
               {isLoading || isLearningStateLoading ? "جارٍ التحميل" : "ابدأ التقييم"}
               <ListChecks className="mr-2 h-4 w-4" />
@@ -744,12 +855,20 @@ function JourneyHome({
           onRetryQuantitativePath={() => void refetchQuantitativePath()}
         />
       </div>
-      <FoundationDiagnosticDialog open={diagnosticOpen} onOpenChange={setDiagnosticOpen} />
+      <FoundationDiagnosticDialog
+        open={diagnosticOpen}
+        program={diagnosticProgram}
+        onOpenChange={setDiagnosticOpen}
+      />
     </>
   );
 }
 
-function FoundationProgramChoices() {
+function FoundationProgramChoices({
+  onStartDiagnostic,
+}: {
+  onStartDiagnostic: (program: FoundationProgram) => void;
+}) {
   return (
     <section aria-labelledby="foundation-program-choices-title" className="rounded-3xl border border-primary/20 bg-primary/5 p-4 sm:p-5">
       <div className="mb-4">
@@ -770,6 +889,15 @@ function FoundationProgramChoices() {
                   عرض المواد <ArrowLeft className="h-4 w-4" />
                 </Link>
               </div>
+              <Button
+                type="button"
+                variant="outline"
+                className="mt-3 w-full rounded-xl font-black"
+                onClick={() => onStartDiagnostic(program)}
+              >
+                ابدأ تقييم تحديد المستوى
+                <ListChecks className="mr-2 h-4 w-4" />
+              </Button>
               <div className="mt-3 flex flex-wrap gap-2">
                 {foundationSections[program].map((section) => (
                   <Link
@@ -1112,7 +1240,7 @@ function FoundationHome({
         </div>
       </section>
       </div>
-      <FoundationDiagnosticDialog open={diagnosticOpen} onOpenChange={setDiagnosticOpen} />
+      <FoundationDiagnosticDialog open={diagnosticOpen} program="qudrat" onOpenChange={setDiagnosticOpen} />
     </>
   );
 }

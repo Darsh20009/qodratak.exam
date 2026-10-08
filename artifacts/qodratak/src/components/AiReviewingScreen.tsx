@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import ExamLearningReport from '@/components/exam-results/ExamLearningReport';
 import { useMutation } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import { Mail, Eye, ClipboardCheck, CheckCircle, ArrowRight } from "lucide-react";
@@ -112,10 +113,11 @@ export default function AiReviewingScreen({
 
   return (
     <div
-      className="fixed inset-0 z-50 flex flex-col items-center justify-center overflow-hidden"
+      className="fixed inset-0 z-50 flex flex-col items-center overflow-y-auto py-8 px-4"
       style={{ background: 'linear-gradient(160deg, #0d1b2a 0%, #1b2a3b 50%, #0f1c2e 100%)' }}
       dir="rtl"
     >
+      <div className="w-full max-w-4xl relative z-10"><ExamLearningReport /></div>
       {/* Subtle grid pattern */}
       <div
         className="absolute inset-0 pointer-events-none opacity-5"

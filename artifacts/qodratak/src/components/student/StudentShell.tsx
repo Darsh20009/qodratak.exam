@@ -1,10 +1,11 @@
-import React, { useContext, useState } from "react";
+import React, { useContext, useState, useLayoutEffect } from "react";
+import { resetExamTiming, bindExamTimingOwner } from '@/lib/examTiming';
 import { Link, useLocation } from "wouter";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import NotificationBell from "@/components/NotificationBell";
 import { useUser } from "@/hooks/use-user";
 import { cn } from "@/lib/utils";
-import { HomeIcon, BookOpenIcon, BrainCircuitIcon, UserIcon, MenuIcon, XIcon, LogOut, CreditCard } from "lucide-react";
+import { HomeIcon, BookOpenIcon, BrainCircuitIcon, UserIcon, MenuIcon, XIcon, LogOut, CreditCard, ClipboardList } from "lucide-react";
 import { BrandMark } from "@/components/BrandMark";
 import { StudentExamChromeContext } from "@/components/student/StudentExamChromeContext";
 import useSubscription from "@/hooks/useSubscription";
@@ -13,18 +14,21 @@ const NAV_ITEMS = [
   { name: "لوحتي", href: "/", icon: HomeIcon },
   { name: "رحلتي", href: "/foundation", icon: BookOpenIcon },
   { name: "المحوسب", href: "/computerized", icon: BrainCircuitIcon },
+  { name: "نتائجي", href: "/records", icon: ClipboardList },
   { name: "حسابي", href: "/account", icon: UserIcon },
 ];
 
 export function StudentShell({ children }: { children: React.ReactNode }) {
   const [location] = useLocation();
   const { user, logout } = useUser();
+  useLayoutEffect(() => { bindExamTimingOwner(user?.id ? String(user.id) : null); }, [user?.id]);
   const { subscription } = useSubscription();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const { isActive: isExamLayoutActive } = useContext(StudentExamChromeContext);
   const visibleNavItems = subscription?.isExpired
     ? [
         NAV_ITEMS[0],
+        NAV_ITEMS.find((item) => item.href === "/records")!,
         { name: "الاشتراك", href: "/subscription", icon: CreditCard },
       ]
     : NAV_ITEMS;
@@ -33,6 +37,7 @@ export function StudentShell({ children }: { children: React.ReactNode }) {
   const userInitial = userName.charAt(0);
 
   const handleLogout = () => {
+    resetExamTiming();
     logout();
   };
 
@@ -123,8 +128,8 @@ export function StudentShell({ children }: { children: React.ReactNode }) {
           {visibleNavItems.map((item) => {
             const isActive = location === item.href || (item.href !== "/" && location.startsWith(item.href));
             return (
-              <Link key={item.href} href={item.href}>
-                <div className="flex flex-col items-center justify-center w-16 h-full qodratak-focus-ring cursor-pointer">
+              <Link key={item.href} href={item.href} className="min-w-0 flex-1">
+                <div className="flex flex-col items-center justify-center w-full h-full qodratak-focus-ring cursor-pointer">
                   <div className={cn(
                     "flex items-center justify-center h-8 w-12 rounded-full transition-colors",
                     isActive ? "bg-[#0D1B2A] text-white dark:bg-primary dark:text-primary-foreground" : "text-muted-foreground"

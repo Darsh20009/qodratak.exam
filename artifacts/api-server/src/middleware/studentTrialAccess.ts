@@ -244,6 +244,10 @@ export function isAllowedAfterTrial(path: string, method: string) {
   if (path === "/api/subscription/start-trial" && normalizedMethod === "POST") return true;
   if (path === "/api/student/dashboard" && normalizedMethod === "GET") return true;
   if (path === "/api/student/learning-coach" && normalizedMethod === "GET") return true;
+  // Reports review the already permitted daily attempt; they do not unlock
+  // further bank questions. /practice remains gated by active entitlement.
+  if (path === "/api/student/exam-reports" && ["GET", "POST"].includes(normalizedMethod)) return true;
+  if (path === "/api/student/exam-explanation" && normalizedMethod === "POST") return true;
   if (
     path === "/api/student/daily-adaptive-test" &&
     (normalizedMethod === "GET" || normalizedMethod === "POST")

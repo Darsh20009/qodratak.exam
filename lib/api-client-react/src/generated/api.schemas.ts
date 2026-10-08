@@ -5,6 +5,179 @@
  * API specification
  * OpenAPI spec version: 0.1.0
  */
+export interface RemedialPracticeInput {
+  /**
+     * @minLength 8
+     * @maxLength 150
+     */
+  runId: string;
+}
+
+export interface RemedialPracticeQuestion {
+  id: string;
+  text: string;
+  category: string;
+  subcategory: string;
+  options: string[];
+  imageUrl?: string;
+  passageText?: string;
+  imageUrls?: string[];
+}
+
+export interface RemedialPracticeStart {
+  attemptId: string;
+  questions: RemedialPracticeQuestion[];
+}
+
+export interface RemedialPracticeAnswer {
+  questionId: string;
+  /**
+     * @minimum 0
+     * @maximum 9
+     * @nullable
+     */
+  selectedOptionIndex: number | null;
+  /**
+     * @minimum 0
+     * @maximum 7200
+     */
+  responseTime?: number;
+}
+
+export interface RemedialPracticeSubmission {
+  attemptId: string;
+  /** @maxItems 8 */
+  answers: RemedialPracticeAnswer[];
+}
+
+export type RemedialPracticeResultQuestionsItem = {
+  id: string;
+  correctOptionIndex: number;
+  isCorrect: boolean;
+  explanation: string;
+};
+
+export interface RemedialPracticeResult {
+  totalQuestions: number;
+  correctAnswers: number;
+  questions: RemedialPracticeResultQuestionsItem[];
+}
+
+export interface ExamTimingQuestionInput {
+  /** @maxLength 150 */
+  id: string;
+  /** @maxLength 12000 */
+  text: string;
+  /**
+     * @maxItems 10
+     * @items.maxLength 4000
+     */
+  options: string[];
+  /**
+     * @minimum 0
+     * @maximum 9
+     * @nullable
+     */
+  selectedOptionIndex: number | null;
+  /**
+     * @minimum 0
+     * @maximum 7200
+     */
+  seconds: number;
+  /** @maxLength 200 */
+  category?: string;
+  /** @maxLength 200 */
+  subcategory?: string;
+}
+
+export interface ExamReportInput {
+  /**
+     * @minLength 8
+     * @maxLength 150
+     */
+  runId: string;
+  /**
+     * @minLength 1
+     * @maxLength 200
+     */
+  title: string;
+  /**
+     * @minItems 1
+     * @maxItems 250
+     */
+  questions: ExamTimingQuestionInput[];
+}
+
+export interface ExamReportTiming {
+  measuredQuestions: number;
+  totalSeconds: number;
+  /** @nullable */
+  medianSeconds: number | null;
+  /** @nullable */
+  slowThresholdSeconds: number | null;
+}
+
+export type ExamReportQuestionViewBaselineSource = typeof ExamReportQuestionViewBaselineSource[keyof typeof ExamReportQuestionViewBaselineSource];
+
+
+export const ExamReportQuestionViewBaselineSource = {
+  student_history: 'student_history',
+  this_exam: 'this_exam',
+} as const;
+
+export type ExamReportQuestionView = ExamTimingQuestionInput & ({
+  sourceQuestionId?: string;
+  imageUrl?: string;
+  passageText?: string;
+  imageUrls?: string[];
+  /** @nullable */
+  isCorrect: boolean | null;
+  /** @nullable */
+  correctOptionIndex: number | null;
+  explanation: string;
+  explanationStatus: string;
+  speedTip: string;
+  /** @nullable */
+  baselineSeconds: number | null;
+  baselineSource: ExamReportQuestionViewBaselineSource;
+  isSlow: boolean;
+});
+
+export interface ExamReportRecord {
+  runId: string;
+  title: string;
+  createdAt?: string;
+  questions: ExamReportQuestionView[];
+  timing: ExamReportTiming;
+}
+
+export interface ExamReportSaveOutput {
+  report: ExamReportRecord;
+}
+
+export interface ExamReportCollection {
+  /** @nullable */
+  nextCursor?: string | null;
+  /** @minimum 0 */
+  totalCount?: number;
+  reports: ExamReportRecord[];
+}
+
+export interface ExamExplanationInput {
+  /**
+     * @minLength 1
+     * @maxLength 150
+     */
+  questionId: string;
+}
+
+export interface ExamExplanationOutput {
+  explanation: string;
+  tip: string;
+  status: string;
+  generated: boolean;
+}
+
 export type GeideaCheckoutSessionInputPlanKey = typeof GeideaCheckoutSessionInputPlanKey[keyof typeof GeideaCheckoutSessionInputPlanKey];
 
 
@@ -126,6 +299,426 @@ export interface GeideaRefundResult {
   status: GeideaRefundResultStatus;
 }
 
+export type CoachAreaStatProgram = typeof CoachAreaStatProgram[keyof typeof CoachAreaStatProgram];
+
+
+export const CoachAreaStatProgram = {
+  qudrat: 'qudrat',
+  tahsili: 'tahsili',
+} as const;
+
+export type CoachAreaStatConfidence = typeof CoachAreaStatConfidence[keyof typeof CoachAreaStatConfidence];
+
+
+export const CoachAreaStatConfidence = {
+  low: 'low',
+  medium: 'medium',
+  high: 'high',
+} as const;
+
+export interface CoachAreaStat {
+  program: CoachAreaStatProgram;
+  subjectId: string;
+  subjectLabel: string;
+  category: string;
+  subcategory: string;
+  /** @minimum 0 */
+  totalAttempts: number;
+  /** @minimum 0 */
+  correctAttempts: number;
+  /**
+     * @minimum 0
+     * @maximum 100
+     */
+  accuracy: number;
+  /** @minimum 0 */
+  repeatedWrongQuestions: number;
+  /** @minimum 0 */
+  distinctDays: number;
+  confidence: CoachAreaStatConfidence;
+  reason: string;
+}
+
+export type CoachStudyPlanProgram = typeof CoachStudyPlanProgram[keyof typeof CoachStudyPlanProgram];
+
+
+export const CoachStudyPlanProgram = {
+  qudrat: 'qudrat',
+  tahsili: 'tahsili',
+} as const;
+
+export type CoachStudyPlanConfidence = typeof CoachStudyPlanConfidence[keyof typeof CoachStudyPlanConfidence];
+
+
+export const CoachStudyPlanConfidence = {
+  low: 'low',
+  medium: 'medium',
+  high: 'high',
+} as const;
+
+export type CoachStudyPlanNextLesson = {
+  title: string;
+  href: string;
+};
+
+export type CoachStudyPlanNextPractice = {
+  title: string;
+  href: string;
+};
+
+export interface CoachStudyPlan {
+  program: CoachStudyPlanProgram;
+  programLabel: string;
+  subjectId?: string;
+  subjectLabel?: string;
+  reason: string;
+  confidence: CoachStudyPlanConfidence;
+  nextLesson?: CoachStudyPlanNextLesson;
+  nextPractice?: CoachStudyPlanNextPractice;
+  nextRetestAt?: string;
+  retestDue: boolean;
+  availabilityNote?: string;
+}
+
+export interface CoachPerformancePeriod {
+  label: string;
+  /** @minimum 0 */
+  totalAttempts: number;
+  /** @minimum 0 */
+  correctAttempts: number;
+  /**
+     * @minimum 0
+     * @maximum 100
+     */
+  accuracy: number;
+}
+
+export type CoachSubjectPerformanceTrendProgram = typeof CoachSubjectPerformanceTrendProgram[keyof typeof CoachSubjectPerformanceTrendProgram];
+
+
+export const CoachSubjectPerformanceTrendProgram = {
+  qudrat: 'qudrat',
+  tahsili: 'tahsili',
+} as const;
+
+export interface CoachSubjectPerformanceTrend {
+  program: CoachSubjectPerformanceTrendProgram;
+  subjectId: string;
+  subjectLabel: string;
+  periods: CoachPerformancePeriod[];
+}
+
+export type CoachAssessmentHistoryItemProgram = typeof CoachAssessmentHistoryItemProgram[keyof typeof CoachAssessmentHistoryItemProgram];
+
+
+export const CoachAssessmentHistoryItemProgram = {
+  qudrat: 'qudrat',
+  tahsili: 'tahsili',
+} as const;
+
+export interface CoachAssessmentHistoryItem {
+  program: CoachAssessmentHistoryItemProgram;
+  testName: string;
+  testType: string;
+  /**
+     * @minimum 0
+     * @maximum 100
+     */
+  percentage: number;
+  /** @minimum 0 */
+  totalQuestions: number;
+  completedAt: string;
+}
+
+export type StudentLearningCoachReportEvidenceConfidence = typeof StudentLearningCoachReportEvidenceConfidence[keyof typeof StudentLearningCoachReportEvidenceConfidence];
+
+
+export const StudentLearningCoachReportEvidenceConfidence = {
+  low: 'low',
+  medium: 'medium',
+  high: 'high',
+} as const;
+
+export type StudentLearningCoachReportEvidence = {
+  /** @minimum 0 */
+  trustedAttempts: number;
+  /** @minimum 0 */
+  repeatedWrongAnswers: number;
+  confidence: StudentLearningCoachReportEvidenceConfidence;
+};
+
+export type StudentLearningCoachReportGuide = {
+  title: string;
+  summary: string;
+  steps: string[];
+  markdown: string;
+};
+
+export interface StudentLearningCoachReport {
+  generatedAt: string;
+  evidence: StudentLearningCoachReportEvidence;
+  strengths: CoachAreaStat[];
+  focusAreas: CoachAreaStat[];
+  studyPlans: CoachStudyPlan[];
+  performanceTrend: CoachSubjectPerformanceTrend[];
+  assessmentHistory: CoachAssessmentHistoryItem[];
+  guide: StudentLearningCoachReportGuide;
+  aiAvailable: boolean;
+  note: string;
+}
+
+export type TahsiliSubjectTestsOverviewSubjectsItemSubject = typeof TahsiliSubjectTestsOverviewSubjectsItemSubject[keyof typeof TahsiliSubjectTestsOverviewSubjectsItemSubject];
+
+
+export const TahsiliSubjectTestsOverviewSubjectsItemSubject = {
+  math: 'math',
+  physics: 'physics',
+  chemistry: 'chemistry',
+  biology: 'biology',
+  environment: 'environment',
+} as const;
+
+export type TahsiliSubjectTestsOverviewSubjectsItemFocusAreasItem = {
+  subcategory: string;
+  /** @minimum 0 */
+  attempts: number;
+  /**
+     * @minimum 0
+     * @maximum 100
+     */
+  accuracy: number;
+};
+
+export type TahsiliSubjectTestsOverviewSubjectsItem = {
+  subject: TahsiliSubjectTestsOverviewSubjectsItemSubject;
+  label: string;
+  /** @minimum 0 */
+  verifiedQuestionCount: number;
+  /** @minimum 0 */
+  attempts: number;
+  /** @minimum 0 */
+  correctAttempts: number;
+  /**
+     * @minimum 0
+     * @maximum 100
+     * @nullable
+     */
+  accuracy: number | null;
+  focusAreas: TahsiliSubjectTestsOverviewSubjectsItemFocusAreasItem[];
+};
+
+export interface TahsiliSubjectTestsOverview {
+  subjects: TahsiliSubjectTestsOverviewSubjectsItem[];
+}
+
+export type TahsiliSubjectTestStartInputSubject = typeof TahsiliSubjectTestStartInputSubject[keyof typeof TahsiliSubjectTestStartInputSubject];
+
+
+export const TahsiliSubjectTestStartInputSubject = {
+  math: 'math',
+  physics: 'physics',
+  chemistry: 'chemistry',
+  biology: 'biology',
+  environment: 'environment',
+} as const;
+
+export interface TahsiliSubjectTestStartInput {
+  subject: TahsiliSubjectTestStartInputSubject;
+  /**
+     * @minimum 5
+     * @maximum 30
+     */
+  questionCount?: number;
+}
+
+export type TahsiliSubjectTestStartOutputSubject = typeof TahsiliSubjectTestStartOutputSubject[keyof typeof TahsiliSubjectTestStartOutputSubject];
+
+
+export const TahsiliSubjectTestStartOutputSubject = {
+  math: 'math',
+  physics: 'physics',
+  chemistry: 'chemistry',
+  biology: 'biology',
+  environment: 'environment',
+} as const;
+
+export type TahsiliSubjectTestStartOutputPersonalizationMode = typeof TahsiliSubjectTestStartOutputPersonalizationMode[keyof typeof TahsiliSubjectTestStartOutputPersonalizationMode];
+
+
+export const TahsiliSubjectTestStartOutputPersonalizationMode = {
+  diagnostic: 'diagnostic',
+  weakness_focus: 'weakness_focus',
+} as const;
+
+export type TahsiliSubjectTestStartOutputQuestionsItemDifficulty = typeof TahsiliSubjectTestStartOutputQuestionsItemDifficulty[keyof typeof TahsiliSubjectTestStartOutputQuestionsItemDifficulty];
+
+
+export const TahsiliSubjectTestStartOutputQuestionsItemDifficulty = {
+  beginner: 'beginner',
+  intermediate: 'intermediate',
+  advanced: 'advanced',
+} as const;
+
+export type TahsiliSubjectTestStartOutputQuestionsItem = {
+  id: string;
+  text: string;
+  /** @minItems 2 */
+  options: string[];
+  subcategory: string;
+  topic: string;
+  difficulty: TahsiliSubjectTestStartOutputQuestionsItemDifficulty;
+  /** @nullable */
+  imageUrl?: string | null;
+};
+
+export interface TahsiliSubjectTestStartOutput {
+  attemptId: string;
+  subject: TahsiliSubjectTestStartOutputSubject;
+  label: string;
+  /** @minimum 1 */
+  questionCount: number;
+  /** @minimum 1 */
+  timeLimitMinutes: number;
+  personalizationMode: TahsiliSubjectTestStartOutputPersonalizationMode;
+  rationale: string;
+  focusSubcategories: string[];
+  questions: TahsiliSubjectTestStartOutputQuestionsItem[];
+}
+
+export type TahsiliSubjectTestSubmitInputAnswersItem = {
+  /** @minLength 1 */
+  questionId: string;
+  /**
+     * @minimum 0
+     * @maximum 3
+     * @nullable
+     */
+  selectedOptionIndex: number | null;
+  /**
+     * @minimum 0
+     * @maximum 7200
+     */
+  responseTime?: number;
+};
+
+export interface TahsiliSubjectTestSubmitInput {
+  /** @minLength 1 */
+  attemptId: string;
+  /** @maxItems 30 */
+  answers: TahsiliSubjectTestSubmitInputAnswersItem[];
+  /**
+     * @minimum 0
+     * @maximum 7200
+     */
+  timeTakenSeconds?: number;
+}
+
+export type TahsiliSubjectTestSubmitOutputSubject = typeof TahsiliSubjectTestSubmitOutputSubject[keyof typeof TahsiliSubjectTestSubmitOutputSubject];
+
+
+export const TahsiliSubjectTestSubmitOutputSubject = {
+  math: 'math',
+  physics: 'physics',
+  chemistry: 'chemistry',
+  biology: 'biology',
+  environment: 'environment',
+} as const;
+
+export type TahsiliSubjectTestSubmitOutputPersonalizationMode = typeof TahsiliSubjectTestSubmitOutputPersonalizationMode[keyof typeof TahsiliSubjectTestSubmitOutputPersonalizationMode];
+
+
+export const TahsiliSubjectTestSubmitOutputPersonalizationMode = {
+  diagnostic: 'diagnostic',
+  weakness_focus: 'weakness_focus',
+} as const;
+
+export type TahsiliSubjectTestSubmitOutputQuestionsItemDifficulty = typeof TahsiliSubjectTestSubmitOutputQuestionsItemDifficulty[keyof typeof TahsiliSubjectTestSubmitOutputQuestionsItemDifficulty];
+
+
+export const TahsiliSubjectTestSubmitOutputQuestionsItemDifficulty = {
+  beginner: 'beginner',
+  intermediate: 'intermediate',
+  advanced: 'advanced',
+} as const;
+
+export type TahsiliSubjectTestSubmitOutputQuestionsItem = {
+  id: string;
+  text: string;
+  options: string[];
+  subcategory: string;
+  topic: string;
+  difficulty: TahsiliSubjectTestSubmitOutputQuestionsItemDifficulty;
+  /**
+     * @minimum 0
+     * @maximum 3
+     * @nullable
+     */
+  selectedOptionIndex: number | null;
+  /**
+     * @minimum 0
+     * @maximum 3
+     */
+  correctOptionIndex: number;
+  /** @nullable */
+  isCorrect: boolean | null;
+  explanation: string;
+};
+
+export interface TahsiliSubjectTestSubmitOutput {
+  attemptId: string;
+  subject: TahsiliSubjectTestSubmitOutputSubject;
+  label: string;
+  /** @minimum 1 */
+  totalQuestions: number;
+  /** @minimum 0 */
+  answeredQuestions: number;
+  /** @minimum 0 */
+  correctAnswers: number;
+  /** @minimum 0 */
+  wrongAnswers: number;
+  /** @minimum 0 */
+  skippedQuestions: number;
+  /**
+     * @minimum 0
+     * @maximum 100
+     */
+  percentage: number;
+  grade: string;
+  personalizationMode: TahsiliSubjectTestSubmitOutputPersonalizationMode;
+  focusSubcategories: string[];
+  questions: TahsiliSubjectTestSubmitOutputQuestionsItem[];
+}
+
+export type StudentLearningCoachChatMessageRole = typeof StudentLearningCoachChatMessageRole[keyof typeof StudentLearningCoachChatMessageRole];
+
+
+export const StudentLearningCoachChatMessageRole = {
+  user: 'user',
+  assistant: 'assistant',
+} as const;
+
+export interface StudentLearningCoachChatMessage {
+  role: StudentLearningCoachChatMessageRole;
+  /** @maxLength 500 */
+  content: string;
+}
+
+export interface StudentLearningCoachChatRequest {
+  /**
+     * @minLength 1
+     * @maxLength 800
+     */
+  message: string;
+  /** @maxItems 12 */
+  history?: StudentLearningCoachChatMessage[];
+}
+
+export interface StudentLearningCoachChatResponse {
+  reply: string;
+  aiAvailable: boolean;
+  fallback: boolean;
+}
+
 export type HealthStatusStatus = typeof HealthStatusStatus[keyof typeof HealthStatusStatus];
 
 
@@ -145,6 +738,320 @@ export const HealthStatusMongodb = {
 export interface HealthStatus {
   status: HealthStatusStatus;
   mongodb: HealthStatusMongodb;
+}
+
+export type FoundationLearningStateStatus = typeof FoundationLearningStateStatus[keyof typeof FoundationLearningStateStatus];
+
+
+export const FoundationLearningStateStatus = {
+  needs_diagnostic: 'needs_diagnostic',
+  diagnostic_completed: 'diagnostic_completed',
+} as const;
+
+export type FoundationLearningStateProgram = typeof FoundationLearningStateProgram[keyof typeof FoundationLearningStateProgram];
+
+
+export const FoundationLearningStateProgram = {
+  qudrat: 'qudrat',
+  tahsili: 'tahsili',
+} as const;
+
+/**
+ * @nullable
+ */
+export type FoundationLearningStateBaseline = {
+  /**
+     * @minimum 0
+     * @maximum 100
+     */
+  overall?: number;
+  /**
+     * @minimum 0
+     * @maximum 100
+     */
+  verbal?: number;
+  /**
+     * @minimum 0
+     * @maximum 100
+     */
+  quantitative?: number;
+} | null;
+
+export type FoundationLearningStateFocusCategory = typeof FoundationLearningStateFocusCategory[keyof typeof FoundationLearningStateFocusCategory];
+
+
+export const FoundationLearningStateFocusCategory = {
+  verbal: 'verbal',
+  quantitative: 'quantitative',
+} as const;
+
+/**
+ * @nullable
+ */
+export type FoundationLearningStateFocus = {
+  category?: FoundationLearningStateFocusCategory;
+  skill?: string;
+  label?: string;
+} | null;
+
+export type FoundationPlacementResultProgram = typeof FoundationPlacementResultProgram[keyof typeof FoundationPlacementResultProgram];
+
+
+export const FoundationPlacementResultProgram = {
+  qudrat: 'qudrat',
+  tahsili: 'tahsili',
+} as const;
+
+export type FoundationPlacementConfidenceLevel = typeof FoundationPlacementConfidenceLevel[keyof typeof FoundationPlacementConfidenceLevel];
+
+
+export const FoundationPlacementConfidenceLevel = {
+  LOW: 'LOW',
+  MEDIUM: 'MEDIUM',
+  HIGH: 'HIGH',
+} as const;
+
+export interface FoundationPlacementConfidence {
+  level: FoundationPlacementConfidenceLevel;
+  label: string;
+  note: string;
+}
+
+export type FoundationPlacementDifficultyCoverageDifficulty = typeof FoundationPlacementDifficultyCoverageDifficulty[keyof typeof FoundationPlacementDifficultyCoverageDifficulty];
+
+
+export const FoundationPlacementDifficultyCoverageDifficulty = {
+  beginner: 'beginner',
+  intermediate: 'intermediate',
+  advanced: 'advanced',
+} as const;
+
+export interface FoundationPlacementDifficultyCoverage {
+  difficulty: FoundationPlacementDifficultyCoverageDifficulty;
+  /** @minimum 0 */
+  totalQuestions: number;
+  /** @minimum 0 */
+  correctAnswers: number;
+}
+
+export interface FoundationPlacementArea {
+  key: string;
+  label: string;
+  subjectId: string;
+  /** @minimum 0 */
+  totalQuestions: number;
+  /** @minimum 0 */
+  correctAnswers: number;
+  /**
+     * @minimum 0
+     * @maximum 100
+     */
+  percentage: number;
+  difficultyCoverage: FoundationPlacementDifficultyCoverage[];
+}
+
+export type FoundationPlacementRecommendationStartingLevel = typeof FoundationPlacementRecommendationStartingLevel[keyof typeof FoundationPlacementRecommendationStartingLevel];
+
+
+export const FoundationPlacementRecommendationStartingLevel = {
+  foundation: 'foundation',
+  practice: 'practice',
+  program_overview: 'program_overview',
+} as const;
+
+export interface FoundationPlacementRecommendation {
+  title: string;
+  reason: string;
+  href: string;
+  startingLevel: FoundationPlacementRecommendationStartingLevel;
+}
+
+export interface FoundationPlacementResult {
+  program: FoundationPlacementResultProgram;
+  /**
+     * @minimum 0
+     * @maximum 100
+     */
+  percentage: number;
+  /** @minimum 0 */
+  correctAnswers: number;
+  /** @minimum 1 */
+  totalQuestions: number;
+  /** @minimum 0 */
+  answeredQuestions: number;
+  confidence: FoundationPlacementConfidence;
+  areas: FoundationPlacementArea[];
+  focusArea: FoundationPlacementArea | null;
+  recommendation: FoundationPlacementRecommendation;
+}
+
+export type FoundationPlacementProfile = FoundationPlacementResult & {
+  version: string;
+  completedAt: string;
+};
+
+export type FoundationLearningSkillSummaryCategory = typeof FoundationLearningSkillSummaryCategory[keyof typeof FoundationLearningSkillSummaryCategory];
+
+
+export const FoundationLearningSkillSummaryCategory = {
+  verbal: 'verbal',
+  quantitative: 'quantitative',
+} as const;
+
+export interface FoundationLearningSkillSummary {
+  key: string;
+  label: string;
+  category: FoundationLearningSkillSummaryCategory;
+  /** @minimum 0 */
+  totalQuestions: number;
+  /** @minimum 0 */
+  correctAnswers: number;
+  /**
+     * @minimum 0
+     * @maximum 100
+     */
+  percentage: number;
+}
+
+export interface FoundationLearningState {
+  status: FoundationLearningStateStatus;
+  program: FoundationLearningStateProgram;
+  /** @nullable */
+  baseline: FoundationLearningStateBaseline;
+  /** @nullable */
+  focus: FoundationLearningStateFocus;
+  placementAssessment: FoundationPlacementProfile | null;
+  recommendation: FoundationPlacementRecommendation;
+  skillSummaries: FoundationLearningSkillSummary[];
+  /** @nullable */
+  lastDiagnosticAt?: string | null;
+}
+
+export type FoundationDiagnosticStartProgram = typeof FoundationDiagnosticStartProgram[keyof typeof FoundationDiagnosticStartProgram];
+
+
+export const FoundationDiagnosticStartProgram = {
+  qudrat: 'qudrat',
+  tahsili: 'tahsili',
+} as const;
+
+export type FoundationDiagnosticQuestionCategory = typeof FoundationDiagnosticQuestionCategory[keyof typeof FoundationDiagnosticQuestionCategory];
+
+
+export const FoundationDiagnosticQuestionCategory = {
+  verbal: 'verbal',
+  quantitative: 'quantitative',
+  tahsili: 'tahsili',
+} as const;
+
+export type FoundationDiagnosticQuestionDifficulty = typeof FoundationDiagnosticQuestionDifficulty[keyof typeof FoundationDiagnosticQuestionDifficulty];
+
+
+export const FoundationDiagnosticQuestionDifficulty = {
+  beginner: 'beginner',
+  intermediate: 'intermediate',
+  advanced: 'advanced',
+} as const;
+
+export interface FoundationDiagnosticQuestion {
+  _id: string;
+  text: string;
+  /** @minItems 2 */
+  options: string[];
+  category: FoundationDiagnosticQuestionCategory;
+  subcategory: string;
+  areaKey: string;
+  areaLabel: string;
+  difficulty: FoundationDiagnosticQuestionDifficulty;
+  /** @nullable */
+  imageUrl?: string | null;
+  imageUrls?: string[];
+}
+
+export interface FoundationDiagnosticStart {
+  attemptId: string;
+  program: FoundationDiagnosticStartProgram;
+  expiresAt: string;
+  questions: FoundationDiagnosticQuestion[];
+}
+
+export type FoundationDiagnosticSubmitRequestAnswersItem = {
+  /** @minLength 1 */
+  questionId: string;
+  /** @minimum 0 */
+  selectedOptionIndex: number;
+};
+
+export interface FoundationDiagnosticSubmitRequest {
+  /** @minLength 1 */
+  attemptId: string;
+  answers: FoundationDiagnosticSubmitRequestAnswersItem[];
+  /**
+     * @minimum 0
+     * @maximum 7200
+     */
+  timeTakenSeconds?: number;
+}
+
+export type FoundationDiagnosticSubmissionProfileStatus = typeof FoundationDiagnosticSubmissionProfileStatus[keyof typeof FoundationDiagnosticSubmissionProfileStatus];
+
+
+export const FoundationDiagnosticSubmissionProfileStatus = {
+  needs_diagnostic: 'needs_diagnostic',
+  diagnostic_completed: 'diagnostic_completed',
+} as const;
+
+/**
+ * @nullable
+ */
+export type FoundationDiagnosticSubmissionProfileBaseline = {
+  /**
+     * @minimum 0
+     * @maximum 100
+     */
+  overall?: number;
+  /**
+     * @minimum 0
+     * @maximum 100
+     */
+  verbal?: number;
+  /**
+     * @minimum 0
+     * @maximum 100
+     */
+  quantitative?: number;
+} | null;
+
+export type FoundationDiagnosticSubmissionProfileFocusCategory = typeof FoundationDiagnosticSubmissionProfileFocusCategory[keyof typeof FoundationDiagnosticSubmissionProfileFocusCategory];
+
+
+export const FoundationDiagnosticSubmissionProfileFocusCategory = {
+  verbal: 'verbal',
+  quantitative: 'quantitative',
+} as const;
+
+/**
+ * @nullable
+ */
+export type FoundationDiagnosticSubmissionProfileFocus = {
+  category?: FoundationDiagnosticSubmissionProfileFocusCategory;
+  skill?: string;
+  label?: string;
+} | null;
+
+export type FoundationDiagnosticSubmissionProfile = {
+  status: FoundationDiagnosticSubmissionProfileStatus;
+  /** @nullable */
+  baseline: FoundationDiagnosticSubmissionProfileBaseline;
+  /** @nullable */
+  focus: FoundationDiagnosticSubmissionProfileFocus;
+  placementAssessment: FoundationPlacementProfile;
+  recommendation: FoundationPlacementRecommendation;
+};
+
+export interface FoundationDiagnosticSubmission {
+  result: FoundationPlacementResult;
+  profile: FoundationDiagnosticSubmissionProfile;
 }
 
 export type FoundationLearningPathBook = {
@@ -432,6 +1339,57 @@ export interface VerbalBookLesson {
   focusSkills: QuantitativeBookSkillFocus[];
 }
 
+export type QudratVerbalVideoProgressInputEvent = typeof QudratVerbalVideoProgressInputEvent[keyof typeof QudratVerbalVideoProgressInputEvent];
+
+
+export const QudratVerbalVideoProgressInputEvent = {
+  play: 'play',
+  tick: 'tick',
+  seek: 'seek',
+  pause: 'pause',
+  ended: 'ended',
+} as const;
+
+export interface QudratVerbalVideoProgressInput {
+  event: QudratVerbalVideoProgressInputEvent;
+  /**
+     * @minimum 0
+     * @maximum 4000
+     */
+  positionSeconds: number;
+}
+
+export type QudratVerbalVideoProgressState = typeof QudratVerbalVideoProgressState[keyof typeof QudratVerbalVideoProgressState];
+
+
+export const QudratVerbalVideoProgressState = {
+  NOT_STARTED: 'NOT_STARTED',
+  IN_PROGRESS: 'IN_PROGRESS',
+  COMPLETED: 'COMPLETED',
+} as const;
+
+export interface QudratVerbalVideoProgress {
+  videoId: string;
+  /** @minimum 1 */
+  durationSeconds: number;
+  /** @minimum 0 */
+  watchedSeconds: number;
+  /**
+     * @minimum 0
+     * @maximum 100
+     */
+  progressPercent: number;
+  /** @minimum 0 */
+  resumePositionSeconds: number;
+  state: QudratVerbalVideoProgressState;
+  /** @nullable */
+  completedAt: string | null;
+}
+
+export interface QudratVerbalVideoProgressSummary {
+  items: QudratVerbalVideoProgress[];
+}
+
 export interface QuantitativeBookQuizAnswer {
   /**
      * @minLength 1
@@ -493,6 +1451,38 @@ export interface QuantitativeBookQuizResult {
   /** @nullable */
   unlockedNextLessonId: string | null;
 }
+
+export type GetStudentExamReportsParams = {
+/**
+ * @minLength 24
+ * @maxLength 24
+ */
+before?: string;
+};
+
+export type GetFoundationLearningStateParams = {
+program?: GetFoundationLearningStateProgram;
+};
+
+export type GetFoundationLearningStateProgram = typeof GetFoundationLearningStateProgram[keyof typeof GetFoundationLearningStateProgram];
+
+
+export const GetFoundationLearningStateProgram = {
+  qudrat: 'qudrat',
+  tahsili: 'tahsili',
+} as const;
+
+export type StartFoundationPlacementAssessmentParams = {
+program?: StartFoundationPlacementAssessmentProgram;
+};
+
+export type StartFoundationPlacementAssessmentProgram = typeof StartFoundationPlacementAssessmentProgram[keyof typeof StartFoundationPlacementAssessmentProgram];
+
+
+export const StartFoundationPlacementAssessmentProgram = {
+  qudrat: 'qudrat',
+  tahsili: 'tahsili',
+} as const;
 
 export type ListGeideaTransactionsParams = {
 /**

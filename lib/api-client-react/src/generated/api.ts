@@ -20,8 +20,17 @@ import type {
 } from '@tanstack/react-query';
 
 import type {
+  ExamExplanationInput,
+  ExamExplanationOutput,
+  ExamReportCollection,
+  ExamReportInput,
+  ExamReportSaveOutput,
   FoundationCoverageTestInput,
+  FoundationDiagnosticStart,
+  FoundationDiagnosticSubmission,
+  FoundationDiagnosticSubmitRequest,
   FoundationLearningPath,
+  FoundationLearningState,
   FreeTestSession,
   GeideaCallbackPayload,
   GeideaCheckoutSession,
@@ -30,6 +39,8 @@ import type {
   GeideaRefundInput,
   GeideaRefundResult,
   GeideaTransactionList,
+  GetFoundationLearningStateParams,
+  GetStudentExamReportsParams,
   HealthStatus,
   ListGeideaTransactionsParams,
   MobileFreeTestResult,
@@ -38,6 +49,22 @@ import type {
   QuantitativeBookOverview,
   QuantitativeBookQuizInput,
   QuantitativeBookQuizResult,
+  QudratVerbalVideoProgress,
+  QudratVerbalVideoProgressInput,
+  QudratVerbalVideoProgressSummary,
+  RemedialPracticeInput,
+  RemedialPracticeResult,
+  RemedialPracticeStart,
+  RemedialPracticeSubmission,
+  StartFoundationPlacementAssessmentParams,
+  StudentLearningCoachChatRequest,
+  StudentLearningCoachChatResponse,
+  StudentLearningCoachReport,
+  TahsiliSubjectTestStartInput,
+  TahsiliSubjectTestStartOutput,
+  TahsiliSubjectTestSubmitInput,
+  TahsiliSubjectTestSubmitOutput,
+  TahsiliSubjectTestsOverview,
   VerbalBookLesson
 } from './api.schemas';
 
@@ -67,6 +94,344 @@ const withQueryKey = <T extends object, K>(query: T, queryKey: K): T & { queryKe
   }
   return result;
 };
+
+export const getStartRemedialPracticeUrl = () => {
+
+
+
+
+  return `/api/student/exam-reports/practice`
+}
+
+export const startRemedialPractice = async (remedialPracticeInput: RemedialPracticeInput, options?: Parameters<typeof customFetch>[1]): Promise<RemedialPracticeStart> => {
+
+  return customFetch<RemedialPracticeStart>(getStartRemedialPracticeUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(remedialPracticeInput)
+  }
+);}
+
+
+
+
+
+export const getStartRemedialPracticeMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof startRemedialPractice>>, TError,{data: BodyType<RemedialPracticeInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof startRemedialPractice>>, TError,{data: BodyType<RemedialPracticeInput>}, TContext> => {
+
+const mutationKey = ['startRemedialPractice'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof startRemedialPractice>>, {data: BodyType<RemedialPracticeInput>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  startRemedialPractice(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type StartRemedialPracticeMutationResult = NonNullable<Awaited<ReturnType<typeof startRemedialPractice>>>
+    export type StartRemedialPracticeMutationBody = BodyType<RemedialPracticeInput>
+    export type StartRemedialPracticeMutationError = ErrorType<unknown>
+
+    export const useStartRemedialPractice = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof startRemedialPractice>>, TError,{data: BodyType<RemedialPracticeInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof startRemedialPractice>>,
+        TError,
+        {data: BodyType<RemedialPracticeInput>},
+        TContext
+      > => {
+      return useMutation(getStartRemedialPracticeMutationOptions(options));
+    }
+
+export const getSubmitRemedialPracticeUrl = () => {
+
+
+
+
+  return `/api/student/exam-reports/practice/submit`
+}
+
+export const submitRemedialPractice = async (remedialPracticeSubmission: RemedialPracticeSubmission, options?: Parameters<typeof customFetch>[1]): Promise<RemedialPracticeResult> => {
+
+  return customFetch<RemedialPracticeResult>(getSubmitRemedialPracticeUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(remedialPracticeSubmission)
+  }
+);}
+
+
+
+
+
+export const getSubmitRemedialPracticeMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof submitRemedialPractice>>, TError,{data: BodyType<RemedialPracticeSubmission>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof submitRemedialPractice>>, TError,{data: BodyType<RemedialPracticeSubmission>}, TContext> => {
+
+const mutationKey = ['submitRemedialPractice'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof submitRemedialPractice>>, {data: BodyType<RemedialPracticeSubmission>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  submitRemedialPractice(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type SubmitRemedialPracticeMutationResult = NonNullable<Awaited<ReturnType<typeof submitRemedialPractice>>>
+    export type SubmitRemedialPracticeMutationBody = BodyType<RemedialPracticeSubmission>
+    export type SubmitRemedialPracticeMutationError = ErrorType<unknown>
+
+    export const useSubmitRemedialPractice = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof submitRemedialPractice>>, TError,{data: BodyType<RemedialPracticeSubmission>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof submitRemedialPractice>>,
+        TError,
+        {data: BodyType<RemedialPracticeSubmission>},
+        TContext
+      > => {
+      return useMutation(getSubmitRemedialPracticeMutationOptions(options));
+    }
+
+export const getGetStudentExamReportsUrl = (params?: GetStudentExamReportsParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/student/exam-reports?${stringifiedParams}` : `/api/student/exam-reports`
+}
+
+export const getStudentExamReports = async (params?: GetStudentExamReportsParams, options?: Parameters<typeof customFetch>[1]): Promise<ExamReportCollection> => {
+
+  return customFetch<ExamReportCollection>(getGetStudentExamReportsUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetStudentExamReportsQueryKey = (params?: GetStudentExamReportsParams,) => {
+    return [
+    `/api/student/exam-reports`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getGetStudentExamReportsQueryOptions = <TData = Awaited<ReturnType<typeof getStudentExamReports>>, TError = ErrorType<unknown>>(params?: GetStudentExamReportsParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getStudentExamReports>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetStudentExamReportsQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getStudentExamReports>>> = ({ signal }) => getStudentExamReports(params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getStudentExamReports>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetStudentExamReportsQueryResult = NonNullable<Awaited<ReturnType<typeof getStudentExamReports>>>
+export type GetStudentExamReportsQueryError = ErrorType<unknown>
+
+
+
+export function useGetStudentExamReports<TData = Awaited<ReturnType<typeof getStudentExamReports>>, TError = ErrorType<unknown>>(
+ params?: GetStudentExamReportsParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getStudentExamReports>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetStudentExamReportsQueryOptions(params,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getSaveStudentExamReportUrl = () => {
+
+
+
+
+  return `/api/student/exam-reports`
+}
+
+export const saveStudentExamReport = async (examReportInput: ExamReportInput, options?: Parameters<typeof customFetch>[1]): Promise<ExamReportSaveOutput> => {
+
+  return customFetch<ExamReportSaveOutput>(getSaveStudentExamReportUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(examReportInput)
+  }
+);}
+
+
+
+
+
+export const getSaveStudentExamReportMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof saveStudentExamReport>>, TError,{data: BodyType<ExamReportInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof saveStudentExamReport>>, TError,{data: BodyType<ExamReportInput>}, TContext> => {
+
+const mutationKey = ['saveStudentExamReport'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof saveStudentExamReport>>, {data: BodyType<ExamReportInput>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  saveStudentExamReport(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type SaveStudentExamReportMutationResult = NonNullable<Awaited<ReturnType<typeof saveStudentExamReport>>>
+    export type SaveStudentExamReportMutationBody = BodyType<ExamReportInput>
+    export type SaveStudentExamReportMutationError = ErrorType<unknown>
+
+    export const useSaveStudentExamReport = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof saveStudentExamReport>>, TError,{data: BodyType<ExamReportInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof saveStudentExamReport>>,
+        TError,
+        {data: BodyType<ExamReportInput>},
+        TContext
+      > => {
+      return useMutation(getSaveStudentExamReportMutationOptions(options));
+    }
+
+export const getPrepareExamQuestionExplanationUrl = () => {
+
+
+
+
+  return `/api/student/exam-explanation`
+}
+
+export const prepareExamQuestionExplanation = async (examExplanationInput: ExamExplanationInput, options?: Parameters<typeof customFetch>[1]): Promise<ExamExplanationOutput> => {
+
+  return customFetch<ExamExplanationOutput>(getPrepareExamQuestionExplanationUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(examExplanationInput)
+  }
+);}
+
+
+
+
+
+export const getPrepareExamQuestionExplanationMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof prepareExamQuestionExplanation>>, TError,{data: BodyType<ExamExplanationInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof prepareExamQuestionExplanation>>, TError,{data: BodyType<ExamExplanationInput>}, TContext> => {
+
+const mutationKey = ['prepareExamQuestionExplanation'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof prepareExamQuestionExplanation>>, {data: BodyType<ExamExplanationInput>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  prepareExamQuestionExplanation(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type PrepareExamQuestionExplanationMutationResult = NonNullable<Awaited<ReturnType<typeof prepareExamQuestionExplanation>>>
+    export type PrepareExamQuestionExplanationMutationBody = BodyType<ExamExplanationInput>
+    export type PrepareExamQuestionExplanationMutationError = ErrorType<void>
+
+    export const usePrepareExamQuestionExplanation = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof prepareExamQuestionExplanation>>, TError,{data: BodyType<ExamExplanationInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof prepareExamQuestionExplanation>>,
+        TError,
+        {data: BodyType<ExamExplanationInput>},
+        TContext
+      > => {
+      return useMutation(getPrepareExamQuestionExplanationMutationOptions(options));
+    }
 
 export const getHealthCheckUrl = () => {
 
@@ -145,6 +510,612 @@ export function useHealthCheck<TData = Awaited<ReturnType<typeof healthCheck>>, 
 
 
 
+
+export const getGetFoundationLearningStateUrl = (params?: GetFoundationLearningStateParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/foundation/learning-state?${stringifiedParams}` : `/api/foundation/learning-state`
+}
+
+/**
+ * @summary Get a student's starting-level assessment and recommendation
+ */
+export const getFoundationLearningState = async (params?: GetFoundationLearningStateParams, options?: Parameters<typeof customFetch>[1]): Promise<FoundationLearningState> => {
+
+  return customFetch<FoundationLearningState>(getGetFoundationLearningStateUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetFoundationLearningStateQueryKey = (params?: GetFoundationLearningStateParams,) => {
+    return [
+    `/api/foundation/learning-state`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getGetFoundationLearningStateQueryOptions = <TData = Awaited<ReturnType<typeof getFoundationLearningState>>, TError = ErrorType<void>>(params?: GetFoundationLearningStateParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getFoundationLearningState>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetFoundationLearningStateQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getFoundationLearningState>>> = ({ signal }) => getFoundationLearningState(params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getFoundationLearningState>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetFoundationLearningStateQueryResult = NonNullable<Awaited<ReturnType<typeof getFoundationLearningState>>>
+export type GetFoundationLearningStateQueryError = ErrorType<void>
+
+
+/**
+ * @summary Get a student's starting-level assessment and recommendation
+ */
+
+export function useGetFoundationLearningState<TData = Awaited<ReturnType<typeof getFoundationLearningState>>, TError = ErrorType<void>>(
+ params?: GetFoundationLearningStateParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getFoundationLearningState>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetFoundationLearningStateQueryOptions(params,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getStartFoundationPlacementAssessmentUrl = (params?: StartFoundationPlacementAssessmentParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/foundation/diagnostic?${stringifiedParams}` : `/api/foundation/diagnostic`
+}
+
+/**
+ * @summary Start a separate Qudrat or Tahsili placement assessment
+ */
+export const startFoundationPlacementAssessment = async (params?: StartFoundationPlacementAssessmentParams, options?: Parameters<typeof customFetch>[1]): Promise<FoundationDiagnosticStart> => {
+
+  return customFetch<FoundationDiagnosticStart>(getStartFoundationPlacementAssessmentUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getStartFoundationPlacementAssessmentQueryKey = (params?: StartFoundationPlacementAssessmentParams,) => {
+    return [
+    `/api/foundation/diagnostic`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getStartFoundationPlacementAssessmentQueryOptions = <TData = Awaited<ReturnType<typeof startFoundationPlacementAssessment>>, TError = ErrorType<void>>(params?: StartFoundationPlacementAssessmentParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof startFoundationPlacementAssessment>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getStartFoundationPlacementAssessmentQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof startFoundationPlacementAssessment>>> = ({ signal }) => startFoundationPlacementAssessment(params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof startFoundationPlacementAssessment>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type StartFoundationPlacementAssessmentQueryResult = NonNullable<Awaited<ReturnType<typeof startFoundationPlacementAssessment>>>
+export type StartFoundationPlacementAssessmentQueryError = ErrorType<void>
+
+
+/**
+ * @summary Start a separate Qudrat or Tahsili placement assessment
+ */
+
+export function useStartFoundationPlacementAssessment<TData = Awaited<ReturnType<typeof startFoundationPlacementAssessment>>, TError = ErrorType<void>>(
+ params?: StartFoundationPlacementAssessmentParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof startFoundationPlacementAssessment>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getStartFoundationPlacementAssessmentQueryOptions(params,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getSubmitFoundationPlacementAssessmentUrl = () => {
+
+
+
+
+  return `/api/foundation/diagnostic/submit`
+}
+
+/**
+ * @summary Score and save a completed placement assessment
+ */
+export const submitFoundationPlacementAssessment = async (foundationDiagnosticSubmitRequest: FoundationDiagnosticSubmitRequest, options?: Parameters<typeof customFetch>[1]): Promise<FoundationDiagnosticSubmission> => {
+
+  return customFetch<FoundationDiagnosticSubmission>(getSubmitFoundationPlacementAssessmentUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(foundationDiagnosticSubmitRequest)
+  }
+);}
+
+
+
+
+
+export const getSubmitFoundationPlacementAssessmentMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof submitFoundationPlacementAssessment>>, TError,{data: BodyType<FoundationDiagnosticSubmitRequest>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof submitFoundationPlacementAssessment>>, TError,{data: BodyType<FoundationDiagnosticSubmitRequest>}, TContext> => {
+
+const mutationKey = ['submitFoundationPlacementAssessment'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof submitFoundationPlacementAssessment>>, {data: BodyType<FoundationDiagnosticSubmitRequest>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  submitFoundationPlacementAssessment(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type SubmitFoundationPlacementAssessmentMutationResult = NonNullable<Awaited<ReturnType<typeof submitFoundationPlacementAssessment>>>
+    export type SubmitFoundationPlacementAssessmentMutationBody = BodyType<FoundationDiagnosticSubmitRequest>
+    export type SubmitFoundationPlacementAssessmentMutationError = ErrorType<void>
+
+    /**
+ * @summary Score and save a completed placement assessment
+ */
+export const useSubmitFoundationPlacementAssessment = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof submitFoundationPlacementAssessment>>, TError,{data: BodyType<FoundationDiagnosticSubmitRequest>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof submitFoundationPlacementAssessment>>,
+        TError,
+        {data: BodyType<FoundationDiagnosticSubmitRequest>},
+        TContext
+      > => {
+      return useMutation(getSubmitFoundationPlacementAssessmentMutationOptions(options));
+    }
+
+export const getGetStudentLearningCoachReportUrl = () => {
+
+
+
+
+  return `/api/student/learning-coach`
+}
+
+/**
+ * @summary Get trusted Qudrat and Tahsili evidence, study steps, and performance history
+ */
+export const getStudentLearningCoachReport = async ( options?: Parameters<typeof customFetch>[1]): Promise<StudentLearningCoachReport> => {
+
+  return customFetch<StudentLearningCoachReport>(getGetStudentLearningCoachReportUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetStudentLearningCoachReportQueryKey = () => {
+    return [
+    `/api/student/learning-coach`
+    ] as const;
+    }
+
+
+export const getGetStudentLearningCoachReportQueryOptions = <TData = Awaited<ReturnType<typeof getStudentLearningCoachReport>>, TError = ErrorType<void>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getStudentLearningCoachReport>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetStudentLearningCoachReportQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getStudentLearningCoachReport>>> = ({ signal }) => getStudentLearningCoachReport({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getStudentLearningCoachReport>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetStudentLearningCoachReportQueryResult = NonNullable<Awaited<ReturnType<typeof getStudentLearningCoachReport>>>
+export type GetStudentLearningCoachReportQueryError = ErrorType<void>
+
+
+/**
+ * @summary Get trusted Qudrat and Tahsili evidence, study steps, and performance history
+ */
+
+export function useGetStudentLearningCoachReport<TData = Awaited<ReturnType<typeof getStudentLearningCoachReport>>, TError = ErrorType<void>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getStudentLearningCoachReport>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetStudentLearningCoachReportQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getGetTahsiliSubjectTestsOverviewUrl = () => {
+
+
+
+
+  return `/api/tahsili/subject-tests/overview`
+}
+
+/**
+ * @summary Get verified Tahsili question coverage and the student's real subject performance
+ */
+export const getTahsiliSubjectTestsOverview = async ( options?: Parameters<typeof customFetch>[1]): Promise<TahsiliSubjectTestsOverview> => {
+
+  return customFetch<TahsiliSubjectTestsOverview>(getGetTahsiliSubjectTestsOverviewUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetTahsiliSubjectTestsOverviewQueryKey = () => {
+    return [
+    `/api/tahsili/subject-tests/overview`
+    ] as const;
+    }
+
+
+export const getGetTahsiliSubjectTestsOverviewQueryOptions = <TData = Awaited<ReturnType<typeof getTahsiliSubjectTestsOverview>>, TError = ErrorType<void>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getTahsiliSubjectTestsOverview>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetTahsiliSubjectTestsOverviewQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getTahsiliSubjectTestsOverview>>> = ({ signal }) => getTahsiliSubjectTestsOverview({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getTahsiliSubjectTestsOverview>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetTahsiliSubjectTestsOverviewQueryResult = NonNullable<Awaited<ReturnType<typeof getTahsiliSubjectTestsOverview>>>
+export type GetTahsiliSubjectTestsOverviewQueryError = ErrorType<void>
+
+
+/**
+ * @summary Get verified Tahsili question coverage and the student's real subject performance
+ */
+
+export function useGetTahsiliSubjectTestsOverview<TData = Awaited<ReturnType<typeof getTahsiliSubjectTestsOverview>>, TError = ErrorType<void>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getTahsiliSubjectTestsOverview>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetTahsiliSubjectTestsOverviewQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getStartTahsiliSubjectTestUrl = () => {
+
+
+
+
+  return `/api/tahsili/subject-tests/start`
+}
+
+/**
+ * @summary Start a subject-specific adaptive Tahsili test without exposing answer keys
+ */
+export const startTahsiliSubjectTest = async (tahsiliSubjectTestStartInput: TahsiliSubjectTestStartInput, options?: Parameters<typeof customFetch>[1]): Promise<TahsiliSubjectTestStartOutput> => {
+
+  return customFetch<TahsiliSubjectTestStartOutput>(getStartTahsiliSubjectTestUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(tahsiliSubjectTestStartInput)
+  }
+);}
+
+
+
+
+
+export const getStartTahsiliSubjectTestMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof startTahsiliSubjectTest>>, TError,{data: BodyType<TahsiliSubjectTestStartInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof startTahsiliSubjectTest>>, TError,{data: BodyType<TahsiliSubjectTestStartInput>}, TContext> => {
+
+const mutationKey = ['startTahsiliSubjectTest'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof startTahsiliSubjectTest>>, {data: BodyType<TahsiliSubjectTestStartInput>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  startTahsiliSubjectTest(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type StartTahsiliSubjectTestMutationResult = NonNullable<Awaited<ReturnType<typeof startTahsiliSubjectTest>>>
+    export type StartTahsiliSubjectTestMutationBody = BodyType<TahsiliSubjectTestStartInput>
+    export type StartTahsiliSubjectTestMutationError = ErrorType<void>
+
+    /**
+ * @summary Start a subject-specific adaptive Tahsili test without exposing answer keys
+ */
+export const useStartTahsiliSubjectTest = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof startTahsiliSubjectTest>>, TError,{data: BodyType<TahsiliSubjectTestStartInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof startTahsiliSubjectTest>>,
+        TError,
+        {data: BodyType<TahsiliSubjectTestStartInput>},
+        TContext
+      > => {
+      return useMutation(getStartTahsiliSubjectTestMutationOptions(options));
+    }
+
+export const getSubmitTahsiliSubjectTestUrl = () => {
+
+
+
+
+  return `/api/tahsili/subject-tests/submit`
+}
+
+/**
+ * @summary Score a subject test using server-owned answer keys and save trusted attempts
+ */
+export const submitTahsiliSubjectTest = async (tahsiliSubjectTestSubmitInput: TahsiliSubjectTestSubmitInput, options?: Parameters<typeof customFetch>[1]): Promise<TahsiliSubjectTestSubmitOutput> => {
+
+  return customFetch<TahsiliSubjectTestSubmitOutput>(getSubmitTahsiliSubjectTestUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(tahsiliSubjectTestSubmitInput)
+  }
+);}
+
+
+
+
+
+export const getSubmitTahsiliSubjectTestMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof submitTahsiliSubjectTest>>, TError,{data: BodyType<TahsiliSubjectTestSubmitInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof submitTahsiliSubjectTest>>, TError,{data: BodyType<TahsiliSubjectTestSubmitInput>}, TContext> => {
+
+const mutationKey = ['submitTahsiliSubjectTest'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof submitTahsiliSubjectTest>>, {data: BodyType<TahsiliSubjectTestSubmitInput>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  submitTahsiliSubjectTest(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type SubmitTahsiliSubjectTestMutationResult = NonNullable<Awaited<ReturnType<typeof submitTahsiliSubjectTest>>>
+    export type SubmitTahsiliSubjectTestMutationBody = BodyType<TahsiliSubjectTestSubmitInput>
+    export type SubmitTahsiliSubjectTestMutationError = ErrorType<void>
+
+    /**
+ * @summary Score a subject test using server-owned answer keys and save trusted attempts
+ */
+export const useSubmitTahsiliSubjectTest = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof submitTahsiliSubjectTest>>, TError,{data: BodyType<TahsiliSubjectTestSubmitInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof submitTahsiliSubjectTest>>,
+        TError,
+        {data: BodyType<TahsiliSubjectTestSubmitInput>},
+        TContext
+      > => {
+      return useMutation(getSubmitTahsiliSubjectTestMutationOptions(options));
+    }
+
+export const getAskStudentLearningCoachUrl = () => {
+
+
+
+
+  return `/api/student/learning-coach/chat`
+}
+
+/**
+ * @summary Ask an optional AI tutor using server-verified study context
+ */
+export const askStudentLearningCoach = async (studentLearningCoachChatRequest: StudentLearningCoachChatRequest, options?: Parameters<typeof customFetch>[1]): Promise<StudentLearningCoachChatResponse> => {
+
+  return customFetch<StudentLearningCoachChatResponse>(getAskStudentLearningCoachUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(studentLearningCoachChatRequest)
+  }
+);}
+
+
+
+
+
+export const getAskStudentLearningCoachMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof askStudentLearningCoach>>, TError,{data: BodyType<StudentLearningCoachChatRequest>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof askStudentLearningCoach>>, TError,{data: BodyType<StudentLearningCoachChatRequest>}, TContext> => {
+
+const mutationKey = ['askStudentLearningCoach'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof askStudentLearningCoach>>, {data: BodyType<StudentLearningCoachChatRequest>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  askStudentLearningCoach(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type AskStudentLearningCoachMutationResult = NonNullable<Awaited<ReturnType<typeof askStudentLearningCoach>>>
+    export type AskStudentLearningCoachMutationBody = BodyType<StudentLearningCoachChatRequest>
+    export type AskStudentLearningCoachMutationError = ErrorType<void>
+
+    /**
+ * @summary Ask an optional AI tutor using server-verified study context
+ */
+export const useAskStudentLearningCoach = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof askStudentLearningCoach>>, TError,{data: BodyType<StudentLearningCoachChatRequest>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof askStudentLearningCoach>>,
+        TError,
+        {data: BodyType<StudentLearningCoachChatRequest>},
+        TContext
+      > => {
+      return useMutation(getAskStudentLearningCoachMutationOptions(options));
+    }
 
 export const getGetVerbalFoundationLearningPathUrl = () => {
 
@@ -827,6 +1798,155 @@ export const useSubmitQudratVerbalBookLesson = <TError = ErrorType<void>,
         TContext
       > => {
       return useMutation(getSubmitQudratVerbalBookLessonMutationOptions(options));
+    }
+
+export const getGetQudratVerbalVideoProgressUrl = () => {
+
+
+
+
+  return `/api/learning/computerized/verbal/video-progress`
+}
+
+/**
+ * @summary Get the signed-in student's progress for the 23 verbal videos
+ */
+export const getQudratVerbalVideoProgress = async ( options?: Parameters<typeof customFetch>[1]): Promise<QudratVerbalVideoProgressSummary> => {
+
+  return customFetch<QudratVerbalVideoProgressSummary>(getGetQudratVerbalVideoProgressUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetQudratVerbalVideoProgressQueryKey = () => {
+    return [
+    `/api/learning/computerized/verbal/video-progress`
+    ] as const;
+    }
+
+
+export const getGetQudratVerbalVideoProgressQueryOptions = <TData = Awaited<ReturnType<typeof getQudratVerbalVideoProgress>>, TError = ErrorType<void>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getQudratVerbalVideoProgress>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetQudratVerbalVideoProgressQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getQudratVerbalVideoProgress>>> = ({ signal }) => getQudratVerbalVideoProgress({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getQudratVerbalVideoProgress>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetQudratVerbalVideoProgressQueryResult = NonNullable<Awaited<ReturnType<typeof getQudratVerbalVideoProgress>>>
+export type GetQudratVerbalVideoProgressQueryError = ErrorType<void>
+
+
+/**
+ * @summary Get the signed-in student's progress for the 23 verbal videos
+ */
+
+export function useGetQudratVerbalVideoProgress<TData = Awaited<ReturnType<typeof getQudratVerbalVideoProgress>>, TError = ErrorType<void>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getQudratVerbalVideoProgress>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetQudratVerbalVideoProgressQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getRecordQudratVerbalVideoProgressUrl = (videoId: string,) => {
+
+
+
+
+  return `/api/learning/computerized/verbal/videos/${videoId}/progress`
+}
+
+/**
+ * @summary Record playback progress for one computerized verbal video
+ */
+export const recordQudratVerbalVideoProgress = async (videoId: string,
+    qudratVerbalVideoProgressInput: QudratVerbalVideoProgressInput, options?: Parameters<typeof customFetch>[1]): Promise<QudratVerbalVideoProgress> => {
+
+  return customFetch<QudratVerbalVideoProgress>(getRecordQudratVerbalVideoProgressUrl(videoId),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(qudratVerbalVideoProgressInput)
+  }
+);}
+
+
+
+
+
+export const getRecordQudratVerbalVideoProgressMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof recordQudratVerbalVideoProgress>>, TError,{videoId: string;data: BodyType<QudratVerbalVideoProgressInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof recordQudratVerbalVideoProgress>>, TError,{videoId: string;data: BodyType<QudratVerbalVideoProgressInput>}, TContext> => {
+
+const mutationKey = ['recordQudratVerbalVideoProgress'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof recordQudratVerbalVideoProgress>>, {videoId: string;data: BodyType<QudratVerbalVideoProgressInput>}> = (props) => {
+          const {videoId,data} = props ?? {};
+
+          return  recordQudratVerbalVideoProgress(videoId,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type RecordQudratVerbalVideoProgressMutationResult = NonNullable<Awaited<ReturnType<typeof recordQudratVerbalVideoProgress>>>
+    export type RecordQudratVerbalVideoProgressMutationBody = BodyType<QudratVerbalVideoProgressInput>
+    export type RecordQudratVerbalVideoProgressMutationError = ErrorType<void>
+
+    /**
+ * @summary Record playback progress for one computerized verbal video
+ */
+export const useRecordQudratVerbalVideoProgress = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof recordQudratVerbalVideoProgress>>, TError,{videoId: string;data: BodyType<QudratVerbalVideoProgressInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof recordQudratVerbalVideoProgress>>,
+        TError,
+        {videoId: string;data: BodyType<QudratVerbalVideoProgressInput>},
+        TContext
+      > => {
+      return useMutation(getRecordQudratVerbalVideoProgressMutationOptions(options));
     }
 
 export const getCreateFoundationCoverageTestUrl = () => {

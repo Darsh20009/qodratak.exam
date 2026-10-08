@@ -1733,17 +1733,35 @@ export interface IDiagnosticAttempt extends Document {
   userId: string;
   program: StudentProgram;
   questionIds: mongoose.Types.ObjectId[];
-  status: 'active' | 'completed' | 'expired';
+  questionRefs?: Array<{
+    questionId: string;
+    sourceType: 'legacy_json';
+    areaKey: string;
+    areaLabel: string;
+    subjectId: string;
+    difficulty: 'beginner' | 'intermediate' | 'advanced';
+  }>;
+  status: 'active' | 'submitting' | 'completed' | 'expired';
   expiresAt: Date;
   startedAt: Date;
   completedAt?: Date;
 }
 
+const diagnosticQuestionRefSchema = new Schema({
+  questionId: { type: String, required: true },
+  sourceType: { type: String, enum: ['legacy_json'], required: true },
+  areaKey: { type: String, required: true },
+  areaLabel: { type: String, required: true },
+  subjectId: { type: String, required: true },
+  difficulty: { type: String, enum: ['beginner', 'intermediate', 'advanced'], required: true },
+}, { _id: false });
+
 const diagnosticAttemptSchema = new Schema<IDiagnosticAttempt>({
   userId: { type: String, required: true, index: true },
   program: { type: String, enum: ['qudrat', 'tahsili'], required: true, index: true },
   questionIds: [{ type: Schema.Types.ObjectId, ref: 'Question', required: true }],
-  status: { type: String, enum: ['active', 'completed', 'expired'], default: 'active', index: true },
+  questionRefs: { type: [diagnosticQuestionRefSchema], default: [] },
+  status: { type: String, enum: ['active', 'submitting', 'completed', 'expired'], default: 'active', index: true },
   expiresAt: { type: Date, required: true },
   startedAt: { type: Date, default: Date.now },
   completedAt: { type: Date },
@@ -1775,6 +1793,42 @@ export interface ILearningSkillSummary {
   percentage: number;
 }
 
+export interface IFoundationPlacementAreaResult {
+  key: string;
+  label: string;
+  subjectId: string;
+  totalQuestions: number;
+  correctAnswers: number;
+  percentage: number;
+  difficultyCoverage: Array<{
+    difficulty: 'beginner' | 'intermediate' | 'advanced';
+    totalQuestions: number;
+    correctAnswers: number;
+  }>;
+}
+
+export interface IFoundationPlacementAssessment {
+  version: string;
+  percentage: number;
+  correctAnswers: number;
+  totalQuestions: number;
+  answeredQuestions: number;
+  confidence: {
+    level: LearningDataConfidence;
+    label: string;
+    note: string;
+  };
+  areas: IFoundationPlacementAreaResult[];
+  focusArea: IFoundationPlacementAreaResult | null;
+  recommendation: {
+    title: string;
+    reason: string;
+    href: string;
+    startingLevel: 'foundation' | 'practice' | 'program_overview';
+  };
+  completedAt: Date;
+}
+
 export interface IStudentLearningProfile extends Document {
   userId: string;
   studentId?: string;
@@ -1793,6 +1847,7 @@ export interface IStudentLearningProfile extends Document {
     quantitative: number;
   };
   skillSummaries: ILearningSkillSummary[];
+  placementAssessment?: IFoundationPlacementAssessment;
   focus: {
     category: 'verbal' | 'quantitative';
     skill: string;
@@ -1815,6 +1870,43 @@ const learningSkillSummarySchema = new Schema<ILearningSkillSummary>({
   totalQuestions: { type: Number, required: true, min: 0 },
   correctAnswers: { type: Number, required: true, min: 0 },
   percentage: { type: Number, required: true, min: 0, max: 100 },
+}, { _id: false });
+
+const foundationPlacementAreaResultSchema = new Schema<IFoundationPlacementAreaResult>({
+  key: { type: String, required: true },
+  label: { type: String, required: true },
+  subjectId: { type: String, required: true },
+  totalQuestions: { type: Number, required: true, min: 0 },
+  correctAnswers: { type: Number, required: true, min: 0 },
+  percentage: { type: Number, required: true, min: 0, max: 100 },
+  difficultyCoverage: [{
+    _id: false,
+    difficulty: { type: String, enum: ['beginner', 'intermediate', 'advanced'], required: true },
+    totalQuestions: { type: Number, required: true, min: 0 },
+    correctAnswers: { type: Number, required: true, min: 0 },
+  }],
+}, { _id: false });
+
+const foundationPlacementAssessmentSchema = new Schema<IFoundationPlacementAssessment>({
+  version: { type: String, required: true },
+  percentage: { type: Number, required: true, min: 0, max: 100 },
+  correctAnswers: { type: Number, required: true, min: 0 },
+  totalQuestions: { type: Number, required: true, min: 1 },
+  answeredQuestions: { type: Number, required: true, min: 0 },
+  confidence: {
+    level: { type: String, enum: ['LOW', 'MEDIUM', 'HIGH'], required: true },
+    label: { type: String, required: true },
+    note: { type: String, required: true },
+  },
+  areas: { type: [foundationPlacementAreaResultSchema], default: [] },
+  focusArea: { type: foundationPlacementAreaResultSchema, default: null },
+  recommendation: {
+    title: { type: String, required: true },
+    reason: { type: String, required: true },
+    href: { type: String, required: true },
+    startingLevel: { type: String, enum: ['foundation', 'practice', 'program_overview'], required: true },
+  },
+  completedAt: { type: Date, required: true },
 }, { _id: false });
 
 const observedPerformanceSchema = new Schema<IObservedPerformance>({
@@ -1847,6 +1939,7 @@ const studentLearningProfileSchema = new Schema<IStudentLearningProfile>({
     quantitative: { type: Number, default: 0, min: 0, max: 100 },
   },
   skillSummaries: { type: [learningSkillSummarySchema], default: [] },
+  placementAssessment: { type: foundationPlacementAssessmentSchema },
   focus: {
     category: { type: String, enum: ['verbal', 'quantitative'], default: 'verbal' },
     skill: { type: String, default: 'general' },

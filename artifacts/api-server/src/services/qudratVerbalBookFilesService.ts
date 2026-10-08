@@ -35,6 +35,7 @@ export const QUDRAT_VERBAL_ANALOGY_VIDEOS = [
   {
     id: "analogy-01",
     lesson: 1,
+    durationSeconds: 3573,
     title: "التناظر اللفظي — الدرس ١",
     downloadName: "التناظر اللفظي - الدرس ١.mp4",
     objectKey: "foundation/verbal/computerized-videos/analogy/lesson-01.mp4",
@@ -42,6 +43,7 @@ export const QUDRAT_VERBAL_ANALOGY_VIDEOS = [
   {
     id: "analogy-02",
     lesson: 2,
+    durationSeconds: 3040,
     title: "التناظر اللفظي — الدرس ٢",
     downloadName: "التناظر اللفظي - الدرس ٢.mp4",
     objectKey: "foundation/verbal/computerized-videos/analogy/lesson-02.mp4",
@@ -49,6 +51,7 @@ export const QUDRAT_VERBAL_ANALOGY_VIDEOS = [
   {
     id: "analogy-03",
     lesson: 3,
+    durationSeconds: 2509,
     title: "التناظر اللفظي — الدرس ٣",
     downloadName: "التناظر اللفظي - الدرس ٣.mp4",
     objectKey: "foundation/verbal/computerized-videos/analogy/lesson-03.mp4",
@@ -56,6 +59,7 @@ export const QUDRAT_VERBAL_ANALOGY_VIDEOS = [
   {
     id: "analogy-04",
     lesson: 4,
+    durationSeconds: 2638,
     title: "التناظر اللفظي — الدرس ٤",
     downloadName: "التناظر اللفظي - الدرس ٤.mp4",
     objectKey: "foundation/verbal/computerized-videos/analogy/lesson-04.mp4",
@@ -63,6 +67,7 @@ export const QUDRAT_VERBAL_ANALOGY_VIDEOS = [
   {
     id: "analogy-05",
     lesson: 5,
+    durationSeconds: 2443,
     title: "التناظر اللفظي — الدرس ٥",
     downloadName: "التناظر اللفظي - الدرس ٥.mp4",
     objectKey: "foundation/verbal/computerized-videos/analogy/lesson-05.mp4",
@@ -70,6 +75,7 @@ export const QUDRAT_VERBAL_ANALOGY_VIDEOS = [
   {
     id: "analogy-06",
     lesson: 6,
+    durationSeconds: 2016,
     title: "التناظر اللفظي — الدرس ٦",
     downloadName: "التناظر اللفظي - الدرس ٦.mp4",
     objectKey: "foundation/verbal/computerized-videos/analogy/lesson-06.mp4",
@@ -80,6 +86,7 @@ export const QUDRAT_VERBAL_SENTENCE_COMPLETION_VIDEOS = [
   {
     id: "sentence-completion-01",
     lesson: 1,
+    durationSeconds: 2998,
     title: "إكمال الجمل — الدرس ١",
     downloadName: "إكمال الجمل - الدرس ١.mp4",
     objectKey: "foundation/verbal/computerized-videos/sentence-completion/lesson-01.mp4",
@@ -87,6 +94,7 @@ export const QUDRAT_VERBAL_SENTENCE_COMPLETION_VIDEOS = [
   {
     id: "sentence-completion-02",
     lesson: 2,
+    durationSeconds: 2764,
     title: "إكمال الجمل — الدرس ٢",
     downloadName: "إكمال الجمل - الدرس ٢.mp4",
     objectKey: "foundation/verbal/computerized-videos/sentence-completion/lesson-02.mp4",
@@ -94,6 +102,7 @@ export const QUDRAT_VERBAL_SENTENCE_COMPLETION_VIDEOS = [
   {
     id: "sentence-completion-03",
     lesson: 3,
+    durationSeconds: 2525,
     title: "إكمال الجمل — الدرس ٣",
     downloadName: "إكمال الجمل - الدرس ٣.mp4",
     objectKey: "foundation/verbal/computerized-videos/sentence-completion/lesson-03.mp4",
@@ -101,6 +110,7 @@ export const QUDRAT_VERBAL_SENTENCE_COMPLETION_VIDEOS = [
   {
     id: "sentence-completion-04",
     lesson: 4,
+    durationSeconds: 2144,
     title: "إكمال الجمل — الدرس ٤",
     downloadName: "إكمال الجمل - الدرس ٤.mp4",
     objectKey: "foundation/verbal/computerized-videos/sentence-completion/lesson-04.mp4",
@@ -108,6 +118,7 @@ export const QUDRAT_VERBAL_SENTENCE_COMPLETION_VIDEOS = [
   {
     id: "sentence-completion-05",
     lesson: 5,
+    durationSeconds: 1786,
     title: "إكمال الجمل — الدرس ٥",
     downloadName: "إكمال الجمل - الدرس ٥.mp4",
     objectKey: "foundation/verbal/computerized-videos/sentence-completion/lesson-05.mp4",
@@ -118,6 +129,7 @@ export const QUDRAT_VERBAL_CONTEXTUAL_ERROR_VIDEOS = [
   {
     id: "contextual-error-01",
     lesson: 1,
+    durationSeconds: 2041,
     title: "الخطأ السياقي — الدرس ١",
     downloadName: "الخطأ السياقي - الدرس ١.mp4",
     objectKey: "foundation/verbal/computerized-videos/contextual-error/lesson-01.mp4",
@@ -125,6 +137,7 @@ export const QUDRAT_VERBAL_CONTEXTUAL_ERROR_VIDEOS = [
   {
     id: "contextual-error-02",
     lesson: 2,
+    durationSeconds: 2122,
     title: "الخطأ السياقي — الدرس ٢",
     downloadName: "الخطأ السياقي - الدرس ٢.mp4",
     objectKey: "foundation/verbal/computerized-videos/contextual-error/lesson-02.mp4",
@@ -132,6 +145,7 @@ export const QUDRAT_VERBAL_CONTEXTUAL_ERROR_VIDEOS = [
   {
     id: "contextual-error-03",
     lesson: 3,
+    durationSeconds: 1858,
     title: "الخطأ السياقي — الدرس ٣",
     downloadName: "الخطأ السياقي - الدرس ٣.mp4",
     objectKey: "foundation/verbal/computerized-videos/contextual-error/lesson-03.mp4",
@@ -142,6 +156,7 @@ export const QUDRAT_VERBAL_READING_COMPREHENSION_VIDEOS = [
   {
     id: "reading-comprehension-01",
     lesson: 1,
+    durationSeconds: 3336,
     title: "استيعاب المقروء — الدرس ١",
     downloadName: "استيعاب المقروء - الدرس ١.mp4",
     objectKey: "foundation/verbal/computerized-videos/reading-comprehension/lesson-01.mp4",
@@ -149,6 +164,7 @@ export const QUDRAT_VERBAL_READING_COMPREHENSION_VIDEOS = [
   {
     id: "reading-comprehension-02",
     lesson: 2,
+    durationSeconds: 3008,
     title: "استيعاب المقروء — الدرس ٢",
     downloadName: "استيعاب المقروء - الدرس ٢.mp4",
     objectKey: "foundation/verbal/computerized-videos/reading-comprehension/lesson-02.mp4",
@@ -156,6 +172,7 @@ export const QUDRAT_VERBAL_READING_COMPREHENSION_VIDEOS = [
   {
     id: "reading-comprehension-03",
     lesson: 3,
+    durationSeconds: 2786,
     title: "استيعاب المقروء — الدرس ٣",
     downloadName: "استيعاب المقروء - الدرس ٣.mp4",
     objectKey: "foundation/verbal/computerized-videos/reading-comprehension/lesson-03.mp4",
@@ -163,6 +180,7 @@ export const QUDRAT_VERBAL_READING_COMPREHENSION_VIDEOS = [
   {
     id: "reading-comprehension-04",
     lesson: 4,
+    durationSeconds: 2999,
     title: "استيعاب المقروء — الدرس ٤",
     downloadName: "استيعاب المقروء - الدرس ٤.mp4",
     objectKey: "foundation/verbal/computerized-videos/reading-comprehension/lesson-04.mp4",
@@ -170,6 +188,7 @@ export const QUDRAT_VERBAL_READING_COMPREHENSION_VIDEOS = [
   {
     id: "reading-comprehension-05",
     lesson: 5,
+    durationSeconds: 2465,
     title: "استيعاب المقروء — الدرس ٥",
     downloadName: "استيعاب المقروء - الدرس ٥.mp4",
     objectKey: "foundation/verbal/computerized-videos/reading-comprehension/lesson-05.mp4",
@@ -177,6 +196,7 @@ export const QUDRAT_VERBAL_READING_COMPREHENSION_VIDEOS = [
   {
     id: "reading-comprehension-06",
     lesson: 6,
+    durationSeconds: 2595,
     title: "استيعاب المقروء — الدرس ٦",
     downloadName: "استيعاب المقروء - الدرس ٦.mp4",
     objectKey: "foundation/verbal/computerized-videos/reading-comprehension/lesson-06.mp4",
@@ -184,6 +204,7 @@ export const QUDRAT_VERBAL_READING_COMPREHENSION_VIDEOS = [
   {
     id: "reading-comprehension-07",
     lesson: 7,
+    durationSeconds: 2564,
     title: "استيعاب المقروء — الدرس ٧",
     downloadName: "استيعاب المقروء - الدرس ٧.mp4",
     objectKey: "foundation/verbal/computerized-videos/reading-comprehension/lesson-07.mp4",
@@ -191,6 +212,7 @@ export const QUDRAT_VERBAL_READING_COMPREHENSION_VIDEOS = [
   {
     id: "reading-comprehension-08",
     lesson: 8,
+    durationSeconds: 2577,
     title: "استيعاب المقروء — الدرس ٨",
     downloadName: "استيعاب المقروء - الدرس ٨.mp4",
     objectKey: "foundation/verbal/computerized-videos/reading-comprehension/lesson-08.mp4",
@@ -198,11 +220,28 @@ export const QUDRAT_VERBAL_READING_COMPREHENSION_VIDEOS = [
   {
     id: "reading-comprehension-09",
     lesson: 9,
+    durationSeconds: 3910,
     title: "استيعاب المقروء — الدرس ٩",
     downloadName: "استيعاب المقروء - الدرس ٩.mp4",
     objectKey: "foundation/verbal/computerized-videos/reading-comprehension/lesson-09.mp4",
   },
 ] as const;
+
+export const QUDRAT_VERBAL_COMPUTERIZED_VIDEOS = [
+  ...QUDRAT_VERBAL_ANALOGY_VIDEOS,
+  ...QUDRAT_VERBAL_SENTENCE_COMPLETION_VIDEOS,
+  ...QUDRAT_VERBAL_CONTEXTUAL_ERROR_VIDEOS,
+  ...QUDRAT_VERBAL_READING_COMPREHENSION_VIDEOS,
+] as const;
+
+export type QudratVerbalComputerizedVideo =
+  (typeof QUDRAT_VERBAL_COMPUTERIZED_VIDEOS)[number];
+
+export function getQudratVerbalComputerizedVideo(
+  videoId: string,
+): QudratVerbalComputerizedVideo | undefined {
+  return QUDRAT_VERBAL_COMPUTERIZED_VIDEOS.find((video) => video.id === videoId);
+}
 
 export type QudratVerbalBookFileId = (typeof QUDRAT_VERBAL_BOOK_FILES)[number]["id"];
 export type QudratVerbalBookFile = (typeof QUDRAT_VERBAL_BOOK_FILES)[number];

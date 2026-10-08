@@ -46,6 +46,7 @@ const SUPPORTED_DASHBOARD_PATHS = new Set([
   "/qiyas",
   "/book-exam",
   "/account",
+  "/records",
 ]);
 
 function getSafeInternalHref(value: unknown) {
@@ -193,6 +194,10 @@ export default function DashboardPage() {
           </p>
         </header>
         <AdaptiveLearningCoach trialExpired />
+        <Link href="/records" data-testid="link-my-results" className="flex items-center justify-between gap-4 rounded-2xl border border-border bg-card p-5 text-foreground hover:border-primary/40">
+          <span className="flex items-center gap-3"><FileText className="h-6 w-6 text-primary" /><span><strong className="block">نتائجي</strong><span className="text-sm text-muted-foreground">عرض نتائج الاختبارات والتقارير التفصيلية المحفوظة</span></span></span>
+          <ChevronLeft className="h-5 w-5 shrink-0" />
+        </Link>
       </div>
     );
   }
@@ -253,6 +258,10 @@ export default function DashboardPage() {
 
   return (
     <div className="mx-auto w-full max-w-5xl space-y-7 p-5 md:p-8" dir="rtl">
+      <Link href="/records" data-testid="link-my-results" className="flex items-center justify-between gap-4 rounded-2xl border border-border bg-card p-5 text-foreground hover:border-primary/40">
+        <span className="flex items-center gap-3"><FileText className="h-6 w-6 text-primary" /><span><strong className="block">نتائجي</strong><span className="text-sm text-muted-foreground">عرض نتائج الاختبارات والتقارير التفصيلية المحفوظة</span></span></span>
+        <ChevronLeft className="h-5 w-5 shrink-0" />
+      </Link>
       <header className="space-y-2">
         <p className="text-sm font-bold text-muted-foreground">{new Date().getHours() < 17 ? "مرحبًا" : "مساء الخير"}،</p>
         <h1 data-testid="text-student-name" className="text-3xl font-black tracking-tight text-foreground md:text-4xl">

@@ -3,6 +3,7 @@ import { useLocation, useSearch } from "wouter";
 import { useQueryClient } from "@tanstack/react-query";
 import { ArrowLeft, BookOpen, CheckCircle2, CircleAlert, Clock3, Loader2, RotateCcw, Target, Trophy } from "lucide-react";
 import { QiyasExamLayout } from "@/components/QiyasExamLayout";
+import ExamLearningReport from '@/components/exam-results/ExamLearningReport';
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import {
@@ -240,6 +241,7 @@ export default function FoundationCoverageTestPage() {
   if (result) {
     return (
       <main className="mx-auto max-w-3xl p-5 md:p-8" dir="rtl">
+        <ExamLearningReport />
         <section className="rounded-3xl border border-border bg-card p-6 text-center shadow-sm sm:p-9">
           <span className="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-primary/10 text-primary">
             <Trophy className="h-8 w-8" />

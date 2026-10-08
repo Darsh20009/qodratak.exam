@@ -2,6 +2,8 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { useAntiCheat } from '@/hooks/useAntiCheat';
 import { AntiCheatWarning } from '@/components/AntiCheatWarning';
 import AiReviewingScreen, { WrongQuestion } from '@/components/AiReviewingScreen';
+import ExamLearningReport from '@/components/exam-results/ExamLearningReport';
+import { examQuestionSeconds } from '@/lib/examTiming';
 import { useParams, useLocation } from 'wouter';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -393,6 +395,7 @@ export default function QuestionBankTestRunner() {
               questionId: (answer.question as any)._id || answer.question.id || (answer.question as any).questionId,
               selectedAnswer: answer.selectedAnswer >= 0 ? answer.selectedAnswer : null,
               sourceType: 'mongo_question',
+              responseTime: examQuestionSeconds((answer.question as any)._id || answer.question.id || (answer.question as any).questionId),
             })),
             idempotencyKey: idempotencyKeyRef.current,
           })
@@ -717,6 +720,7 @@ export default function QuestionBankTestRunner() {
       <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50 dark:from-gray-900 dark:to-slate-900">
         <div className="container mx-auto px-4 py-8">
           <div className="max-w-4xl mx-auto">
+            <ExamLearningReport />
             {/* Header */}
             <div className="text-center mb-8">
               <div className="flex items-center justify-center gap-3 mb-4">

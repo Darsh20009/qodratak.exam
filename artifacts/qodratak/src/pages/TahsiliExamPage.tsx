@@ -1,4 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
+import ExamLearningReport from '@/components/exam-results/ExamLearningReport';
+import { examQuestionSeconds } from '@/lib/examTiming';
+import { useQueryClient } from "@tanstack/react-query";
 import AiReviewingScreen, { WrongQuestion } from '@/components/AiReviewingScreen';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -139,6 +142,7 @@ const tahsiliExams: TahsiliExam[] = [
 ];
 
 const TahsiliExamPage: React.FC = () => {
+  const queryClient = useQueryClient();
   // حالات الصفحة الرئيسية
   const [currentView, setCurrentView] = useState<'selection' | 'exam' | 'results'>('selection');
   const [selectedExam, setSelectedExam] = useState<TahsiliExam | null>(null);
@@ -400,6 +404,7 @@ const TahsiliExamPage: React.FC = () => {
           answers: selectedExam.questions.map((question) => ({
             questionId: String(question.id),
             selectedOptionIndex: answerSnapshot[question.id] ?? null,
+            responseTime: examQuestionSeconds(question.id),
           })),
           timeTakenSeconds,
           idempotencyKey: `tahsili:${learningAttemptId}`,
@@ -416,6 +421,7 @@ const TahsiliExamPage: React.FC = () => {
         throw new Error(message);
       }
       serverResult = await response.json();
+      await queryClient.invalidateQueries({ queryKey: ["/api/student/learning-coach"] });
     } catch (error) {
       console.error('Error recording Tahsili learning attempts:', error);
       toast({
@@ -1031,6 +1037,7 @@ const TahsiliExamPage: React.FC = () => {
     return (
       <div className="qodratak-tahsili-surface min-h-[100dvh] py-8" dir="rtl">
         <div className="container mx-auto px-4 max-w-4xl">
+          <ExamLearningReport />
           
           {/* العنوان والنتيجة الرئيسية */}
           <motion.div 

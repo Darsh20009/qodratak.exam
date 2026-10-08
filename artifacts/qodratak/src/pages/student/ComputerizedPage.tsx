@@ -1,4 +1,5 @@
-import { useState, type FormEvent } from "react";
+import { useCallback, useRef, useState, type FormEvent } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import { Link } from "wouter";
 import {
   ArrowLeft,
@@ -12,16 +13,24 @@ import {
   Flag,
   Layers3,
   Library,
-  Play,
   Search,
   Sparkles,
   Target,
   Trophy,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
+import {
+  getGetQudratVerbalVideoProgressQueryKey,
+  useGetQudratVerbalVideoProgress,
+  useRecordQudratVerbalVideoProgress,
+  type QudratVerbalVideoProgress,
+  type QudratVerbalVideoProgressInput,
+  type QudratVerbalVideoProgressSummary,
+} from "@workspace/api-client-react";
 import { useFoundationContent, useStudentDashboard, type FoundationContent } from "@/hooks/use-student";
 import { StudentWorkflow } from "@/components/student/StudentWorkflow";
 import { isDirectFoundationVideo, resolveFoundationAssetUrl } from "@/lib/foundationVideoUrl";
+import { VerbalVideoProgressCard } from "@/components/student/VerbalVideoProgressCard";
 
 type ComputerizedMode = "quantitative" | "verbal" | "mixed" | "search";
 type ComputerizedTrack = "qudrat" | "tahsili";
@@ -399,7 +408,152 @@ function ListChecksIcon() {
   return <CheckCircle2 className="h-4 w-4" />;
 }
 
+type VerbalVideoCatalogEntry = {
+  id: string;
+  lesson: number;
+  duration: string;
+};
+
+type VerbalVideoCategoryConfig = {
+  label: string;
+  section: string;
+  routeSegment: string;
+  testIdPrefix: string;
+  videos: readonly VerbalVideoCatalogEntry[];
+};
+
+function VerbalVideoCategorySection({
+  category,
+  progressById,
+  progressLoaded,
+  onProgressEvent,
+}: {
+  category: VerbalVideoCategoryConfig;
+  progressById: ReadonlyMap<string, QudratVerbalVideoProgress>;
+  progressLoaded: boolean;
+  onProgressEvent: (
+    videoId: string,
+    input: QudratVerbalVideoProgressInput,
+  ) => Promise<QudratVerbalVideoProgress>;
+}) {
+  return (
+    <div className="mt-6 border-t border-[#DDE6E2] pt-5">
+      <div className="flex flex-wrap items-end justify-between gap-3">
+        <div>
+          <p className="text-xs font-black text-[#147D68]">{category.label} · المحوسب</p>
+          <h4 className="mt-1 text-lg font-black text-[#0D1B2A]">دروس ملخص الـ95</h4>
+          <p className="mt-1 text-xs leading-5 text-[#64748B]">
+            شاهد كل درس ثم ابدأ اختبارًا من ١٠ أسئلة في {category.label}.
+          </p>
+        </div>
+        <span className="rounded-full bg-white px-3 py-1 text-xs font-black text-[#147D68]">
+          {category.videos.length} دروس · {category.videos.length} اختبارات
+        </span>
+      </div>
+      <div className="mt-4 grid gap-4 lg:grid-cols-2">
+        {category.videos.map((video) => (
+          <VerbalVideoProgressCard
+            key={video.id}
+            videoId={video.id}
+            lesson={video.lesson}
+            duration={video.duration}
+            categoryLabel={category.label}
+            videoUrl={`/api/learning/computerized/verbal/${category.routeSegment}/${video.id}`}
+            quizUrl={`/verbal-lesson-quiz/verbal/${video.lesson}?section=${category.section}&count=10`}
+            quizLabel={`اختبار ${category.label} بعد الدرس · ١٠ أسئلة`}
+            testIdPrefix={category.testIdPrefix}
+            progress={progressById.get(video.id)}
+            progressLoaded={progressLoaded}
+            onProgressEvent={onProgressEvent}
+          />
+        ))}
+      </div>
+    </div>
+  );
+}
+
 function VerbalFilesSection() {
+  const queryClient = useQueryClient();
+  const progressQuery = useGetQudratVerbalVideoProgress({
+    query: {
+      queryKey: getGetQudratVerbalVideoProgressQueryKey(),
+      staleTime: 30_000,
+      refetchOnWindowFocus: true,
+    },
+  });
+  const progressMutation = useRecordQudratVerbalVideoProgress({
+    mutation: {
+      onSuccess: (progress) => {
+        queryClient.setQueryData<QudratVerbalVideoProgressSummary>(
+          getGetQudratVerbalVideoProgressQueryKey(),
+          (current) => current
+            ? {
+                ...current,
+                items: current.items.map((item) =>
+                  item.videoId === progress.videoId ? progress : item,
+                ),
+              }
+            : current,
+        );
+      },
+    },
+  });
+  const progressQueueRef = useRef(new Map<string, Promise<QudratVerbalVideoProgress>>());
+  const onProgressEvent = useCallback(
+    (videoId: string, input: QudratVerbalVideoProgressInput) => {
+      const previous = progressQueueRef.current.get(videoId);
+      const request = previous
+        ? previous.catch(() => undefined).then(() => progressMutation.mutateAsync({ videoId, data: input }))
+        : progressMutation.mutateAsync({ videoId, data: input });
+      progressQueueRef.current.set(videoId, request);
+      void request.finally(() => {
+        if (progressQueueRef.current.get(videoId) === request) {
+          progressQueueRef.current.delete(videoId);
+        }
+      }).catch(() => undefined);
+      return request;
+    },
+    [progressMutation.mutateAsync],
+  );
+  const progressById = new Map(
+    (progressQuery.data?.items || []).map((item) => [item.videoId, item] as const),
+  );
+  const completedVideoCount = progressQuery.data?.items.filter((item) => item.state === "COMPLETED").length || 0;
+  const completionPercent = progressQuery.data?.items.length
+    ? Math.round((completedVideoCount / progressQuery.data.items.length) * 100)
+    : 0;
+  const progressLoaded = progressQuery.isSuccess || progressQuery.isError;
+  const categories: VerbalVideoCategoryConfig[] = [
+    {
+      label: "استيعاب المقروء",
+      section: "reading-comprehension",
+      routeSegment: "reading-comprehension-videos",
+      testIdPrefix: "verbal-reading-comprehension",
+      videos: VERBAL_READING_COMPREHENSION_VIDEOS,
+    },
+    {
+      label: "الخطأ السياقي",
+      section: "contextual-error",
+      routeSegment: "contextual-error-videos",
+      testIdPrefix: "verbal-contextual-error",
+      videos: VERBAL_CONTEXTUAL_ERROR_VIDEOS,
+    },
+    {
+      label: "إكمال الجمل",
+      section: "sentence-completion",
+      routeSegment: "sentence-completion-videos",
+      testIdPrefix: "verbal-sentence-completion",
+      videos: VERBAL_SENTENCE_COMPLETION_VIDEOS,
+    },
+    {
+      label: "التناظر اللفظي",
+      section: "analogy",
+      routeSegment: "analogy-videos",
+      testIdPrefix: "verbal-analogy",
+      videos: VERBAL_ANALOGY_VIDEOS,
+    },
+  ];
+
   return (
     <section
       className="rounded-3xl border border-[#DDE6E2] bg-[#F8FBFA] p-5 md:p-6"
@@ -422,6 +576,45 @@ function VerbalFilesSection() {
         <span className="rounded-full bg-white px-3 py-1 text-xs font-black text-[#3B67A5]">
           ٤ ملفات · ٢٣ درسًا واختبارًا
         </span>
+      </div>
+      <div className="mt-4 rounded-2xl border border-[#DDE6E2] bg-white p-4" data-testid="verbal-video-progress-summary">
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <p className="text-sm font-black text-[#0D1B2A]">تقدم مشاهدة دروس اللفظي</p>
+          {progressQuery.data ? (
+            <p className="text-xs font-bold text-[#147D68]">
+              {completedVideoCount} من {progressQuery.data.items.length} فيديو مكتمل المشاهدة
+            </p>
+          ) : (
+            <p className="text-xs font-bold text-[#64748B]">
+              {progressQuery.isError ? "تعذر تحميل التقدم المحفوظ" : "جارٍ تحميل تقدم المشاهدة…"}
+            </p>
+          )}
+        </div>
+        <div
+          className="mt-2 h-2 overflow-hidden rounded-full bg-[#E2E8F0]"
+          role="progressbar"
+          aria-label="عدد فيديوهات اللفظي المكتملة"
+          aria-valuemin={0}
+          aria-valuemax={progressQuery.data?.items.length || 23}
+          aria-valuenow={completedVideoCount}
+        >
+          <div
+            className="h-full rounded-full bg-[#147D68] transition-[width]"
+            style={{ width: `${completionPercent}%` }}
+          />
+        </div>
+        <p className="mt-2 text-[11px] leading-5 text-[#64748B]">
+          يُستأنف الفيديو من آخر موضع محفوظ، ويُسجّل مكتملًا بعد مشاهدة ٩٠٪ من محتواه. نتيجة الاختبار منفصلة عن تقدم المشاهدة.
+        </p>
+        {progressQuery.isError ? (
+          <button
+            type="button"
+            className="mt-2 text-xs font-black text-[#3B67A5] hover:underline"
+            onClick={() => void progressQuery.refetch()}
+          >
+            إعادة تحميل التقدم
+          </button>
+        ) : null}
       </div>
       <div className="mt-4 grid gap-3 sm:grid-cols-2">
         {VERBAL_COMPUTERIZED_FILES.map((file) => (
@@ -450,254 +643,15 @@ function VerbalFilesSection() {
           </a>
         ))}
       </div>
-      <div className="mt-6 border-t border-[#DDE6E2] pt-5">
-        <div className="flex flex-wrap items-end justify-between gap-3">
-          <div>
-            <p className="text-xs font-black text-[#147D68]">استيعاب المقروء · المحوسب</p>
-            <h4 className="mt-1 text-lg font-black text-[#0D1B2A]">دروس ملخص الـ95</h4>
-            <p className="mt-1 text-xs leading-5 text-[#64748B]">
-              شاهد كل درس ثم ابدأ اختبارًا من ١٠ أسئلة في استيعاب المقروء.
-            </p>
-          </div>
-          <span className="rounded-full bg-white px-3 py-1 text-xs font-black text-[#147D68]">
-            ٩ دروس · ٩ اختبارات
-          </span>
-        </div>
-        <div className="mt-4 grid gap-4 lg:grid-cols-2">
-          {VERBAL_READING_COMPREHENSION_VIDEOS.map((video) => {
-            const title = `استيعاب المقروء — الدرس ${video.lesson}`;
-            return (
-              <article
-                key={video.id}
-                className="overflow-hidden rounded-2xl border border-[#DDE6E2] bg-white"
-                data-testid={`verbal-reading-comprehension-video-${video.lesson}`}
-              >
-                <div className="aspect-video bg-[#07111f]">
-                  <video
-                    src={`/api/learning/computerized/verbal/reading-comprehension-videos/${video.id}`}
-                    title={title}
-                    className="h-full w-full"
-                    controls
-                    playsInline
-                    preload="none"
-                    controlsList="nodownload"
-                  />
-                </div>
-                <div className="space-y-3 p-4">
-                  <div className="flex items-center justify-between gap-3">
-                    <div className="flex min-w-0 items-center gap-3">
-                      <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#EAF8F3] text-[#147D68]">
-                        <Play className="h-4 w-4" />
-                      </span>
-                      <div className="min-w-0">
-                        <h5 className="truncate text-sm font-black text-[#0D1B2A]">{title}</h5>
-                        <p className="mt-1 text-xs font-bold text-[#64748B]">ملخص الـ95 · استيعاب المقروء</p>
-                      </div>
-                    </div>
-                    <span className="shrink-0 rounded-full bg-[#F1F5F9] px-2.5 py-1 text-xs font-black text-[#475569]">
-                      {video.duration}
-                    </span>
-                  </div>
-                  <Link
-                    href={`/verbal-lesson-quiz/verbal/${video.lesson}?section=reading-comprehension&count=10`}
-                    className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-[#0D1B2A] px-3 py-2.5 text-xs font-black text-white hover:bg-[#18334D]"
-                    data-testid={`verbal-reading-comprehension-quiz-${video.lesson}`}
-                  >
-                    <CheckCircle2 className="h-4 w-4" />
-                    اختبار استيعاب المقروء بعد الدرس · ١٠ أسئلة
-                  </Link>
-                </div>
-              </article>
-            );
-          })}
-        </div>
-      </div>
-      <div className="mt-6 border-t border-[#DDE6E2] pt-5">
-        <div className="flex flex-wrap items-end justify-between gap-3">
-          <div>
-            <p className="text-xs font-black text-[#147D68]">الخطأ السياقي · المحوسب</p>
-            <h4 className="mt-1 text-lg font-black text-[#0D1B2A]">دروس ملخص الـ95</h4>
-            <p className="mt-1 text-xs leading-5 text-[#64748B]">
-              شاهد كل درس ثم ابدأ اختبارًا من ١٠ أسئلة في الخطأ السياقي.
-            </p>
-          </div>
-          <span className="rounded-full bg-white px-3 py-1 text-xs font-black text-[#147D68]">
-            ٣ دروس · ٣ اختبارات
-          </span>
-        </div>
-        <div className="mt-4 grid gap-4 lg:grid-cols-2">
-          {VERBAL_CONTEXTUAL_ERROR_VIDEOS.map((video) => {
-            const title = `الخطأ السياقي — الدرس ${video.lesson}`;
-            return (
-              <article
-                key={video.id}
-                className="overflow-hidden rounded-2xl border border-[#DDE6E2] bg-white"
-                data-testid={`verbal-contextual-error-video-${video.lesson}`}
-              >
-                <div className="aspect-video bg-[#07111f]">
-                  <video
-                    src={`/api/learning/computerized/verbal/contextual-error-videos/${video.id}`}
-                    title={title}
-                    className="h-full w-full"
-                    controls
-                    playsInline
-                    preload="none"
-                    controlsList="nodownload"
-                  />
-                </div>
-                <div className="space-y-3 p-4">
-                  <div className="flex items-center justify-between gap-3">
-                    <div className="flex min-w-0 items-center gap-3">
-                      <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#EAF8F3] text-[#147D68]">
-                        <Play className="h-4 w-4" />
-                      </span>
-                      <div className="min-w-0">
-                        <h5 className="truncate text-sm font-black text-[#0D1B2A]">{title}</h5>
-                        <p className="mt-1 text-xs font-bold text-[#64748B]">ملخص الـ95 · الخطأ السياقي</p>
-                      </div>
-                    </div>
-                    <span className="shrink-0 rounded-full bg-[#F1F5F9] px-2.5 py-1 text-xs font-black text-[#475569]">
-                      {video.duration}
-                    </span>
-                  </div>
-                  <Link
-                    href={`/verbal-lesson-quiz/verbal/${video.lesson}?section=contextual-error&count=10`}
-                    className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-[#0D1B2A] px-3 py-2.5 text-xs font-black text-white hover:bg-[#18334D]"
-                    data-testid={`verbal-contextual-error-quiz-${video.lesson}`}
-                  >
-                    <CheckCircle2 className="h-4 w-4" />
-                    اختبار الخطأ السياقي بعد الدرس · ١٠ أسئلة
-                  </Link>
-                </div>
-              </article>
-            );
-          })}
-        </div>
-      </div>
-      <div className="mt-6 border-t border-[#DDE6E2] pt-5">
-        <div className="flex flex-wrap items-end justify-between gap-3">
-          <div>
-            <p className="text-xs font-black text-[#147D68]">إكمال الجمل · المحوسب</p>
-            <h4 className="mt-1 text-lg font-black text-[#0D1B2A]">دروس ملخص الـ95</h4>
-            <p className="mt-1 text-xs leading-5 text-[#64748B]">
-              شاهد كل درس ثم ابدأ اختبارًا من ١٠ أسئلة في إكمال الجمل.
-            </p>
-          </div>
-          <span className="rounded-full bg-white px-3 py-1 text-xs font-black text-[#147D68]">
-            ٥ دروس · ٥ اختبارات
-          </span>
-        </div>
-        <div className="mt-4 grid gap-4 lg:grid-cols-2">
-          {VERBAL_SENTENCE_COMPLETION_VIDEOS.map((video) => {
-            const title = `إكمال الجمل — الدرس ${video.lesson}`;
-            return (
-              <article
-                key={video.id}
-                className="overflow-hidden rounded-2xl border border-[#DDE6E2] bg-white"
-                data-testid={`verbal-sentence-completion-video-${video.lesson}`}
-              >
-                <div className="aspect-video bg-[#07111f]">
-                  <video
-                    src={`/api/learning/computerized/verbal/sentence-completion-videos/${video.id}`}
-                    title={title}
-                    className="h-full w-full"
-                    controls
-                    playsInline
-                    preload="none"
-                    controlsList="nodownload"
-                  />
-                </div>
-                <div className="space-y-3 p-4">
-                  <div className="flex items-center justify-between gap-3">
-                    <div className="flex min-w-0 items-center gap-3">
-                      <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#EAF8F3] text-[#147D68]">
-                        <Play className="h-4 w-4" />
-                      </span>
-                      <div className="min-w-0">
-                        <h5 className="truncate text-sm font-black text-[#0D1B2A]">{title}</h5>
-                        <p className="mt-1 text-xs font-bold text-[#64748B]">ملخص الـ95 · إكمال الجمل</p>
-                      </div>
-                    </div>
-                    <span className="shrink-0 rounded-full bg-[#F1F5F9] px-2.5 py-1 text-xs font-black text-[#475569]">
-                      {video.duration}
-                    </span>
-                  </div>
-                  <Link
-                    href={`/verbal-lesson-quiz/verbal/${video.lesson}?section=sentence-completion&count=10`}
-                    className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-[#0D1B2A] px-3 py-2.5 text-xs font-black text-white hover:bg-[#18334D]"
-                    data-testid={`verbal-sentence-completion-quiz-${video.lesson}`}
-                  >
-                    <CheckCircle2 className="h-4 w-4" />
-                    اختبار إكمال الجمل بعد الدرس · ١٠ أسئلة
-                  </Link>
-                </div>
-              </article>
-            );
-          })}
-        </div>
-      </div>
-      <div className="mt-6 border-t border-[#DDE6E2] pt-5">
-        <div className="flex flex-wrap items-end justify-between gap-3">
-          <div>
-            <p className="text-xs font-black text-[#147D68]">التناظر اللفظي · المحوسب</p>
-            <h4 className="mt-1 text-lg font-black text-[#0D1B2A]">دروس ملخص الـ95</h4>
-            <p className="mt-1 text-xs leading-5 text-[#64748B]">
-              شاهد كل درس ثم ابدأ اختبارًا من ١٠ أسئلة في التناظر اللفظي.
-            </p>
-          </div>
-          <span className="rounded-full bg-white px-3 py-1 text-xs font-black text-[#147D68]">
-            ٦ دروس · ٦ اختبارات
-          </span>
-        </div>
-        <div className="mt-4 grid gap-4 lg:grid-cols-2">
-          {VERBAL_ANALOGY_VIDEOS.map((video) => {
-            const title = `التناظر اللفظي — الدرس ${video.lesson}`;
-            return (
-              <article
-                key={video.id}
-                className="overflow-hidden rounded-2xl border border-[#DDE6E2] bg-white"
-                data-testid={`verbal-analogy-video-${video.lesson}`}
-              >
-                <div className="aspect-video bg-[#07111f]">
-                  <video
-                    src={`/api/learning/computerized/verbal/analogy-videos/${video.id}`}
-                    title={title}
-                    className="h-full w-full"
-                    controls
-                    playsInline
-                    preload="none"
-                    controlsList="nodownload"
-                  />
-                </div>
-                <div className="space-y-3 p-4">
-                  <div className="flex items-center justify-between gap-3">
-                  <div className="flex min-w-0 items-center gap-3">
-                    <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#EAF8F3] text-[#147D68]">
-                      <Play className="h-4 w-4" />
-                    </span>
-                    <div className="min-w-0">
-                      <h5 className="truncate text-sm font-black text-[#0D1B2A]">{title}</h5>
-                      <p className="mt-1 text-xs font-bold text-[#64748B]">ملخص الـ95 · التناظر اللفظي</p>
-                    </div>
-                  </div>
-                  <span className="shrink-0 rounded-full bg-[#F1F5F9] px-2.5 py-1 text-xs font-black text-[#475569]">
-                    {video.duration}
-                  </span>
-                  </div>
-                  <Link
-                    href={`/verbal-lesson-quiz/verbal/${video.lesson}?section=analogy&count=10`}
-                    className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-[#0D1B2A] px-3 py-2.5 text-xs font-black text-white hover:bg-[#18334D]"
-                    data-testid={`verbal-analogy-quiz-${video.lesson}`}
-                  >
-                    <CheckCircle2 className="h-4 w-4" />
-                    اختبار التناظر بعد الدرس · ١٠ أسئلة
-                  </Link>
-                </div>
-              </article>
-            );
-          })}
-        </div>
-      </div>
+      {categories.map((category) => (
+        <VerbalVideoCategorySection
+          key={category.section}
+          category={category}
+          progressById={progressById}
+          progressLoaded={progressLoaded}
+          onProgressEvent={onProgressEvent}
+        />
+      ))}
     </section>
   );
 }

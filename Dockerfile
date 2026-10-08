@@ -24,7 +24,7 @@ COPY lib/ ./lib/
 COPY scripts/ ./scripts/
 COPY attached_assets/ ./attached_assets/
 
-RUN pnpm install --frozen-lockfile
+RUN pnpm install --frozen-lockfile --prod=false
 RUN pnpm --filter @workspace/qodratak run build
 RUN pnpm --filter @workspace/api-server run build
 

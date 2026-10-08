@@ -28,3 +28,16 @@ parallel writes can overload the database.
 **How to apply:** Keep each answer's learning record idempotent, skip unanswered
 items, and process the remaining records in small batches before saving the
 final assessment result.
+
+For computerized Qiyas exams, keep the existing aggregate result separate from
+skill evidence: the server must load each Mongo question, accept only approved
+questions, and derive the Qudrat subject from its stored category. Never use
+client-supplied correctness, category, or answer keys as learning evidence.
+
+**Why:** The legacy Qiyas exam still calculates its displayed aggregate in the
+browser, while the learning coach requires server-verifiable per-question
+evidence.
+
+**How to apply:** Send question IDs and selected option indices; verify against
+the server's approved question bank before recording attempts. Keep Tahsili
+answer keys session-owned and record only answered questions.

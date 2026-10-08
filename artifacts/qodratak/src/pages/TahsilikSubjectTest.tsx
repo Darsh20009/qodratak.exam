@@ -1,412 +1,256 @@
-import React, { useState } from 'react';
-import { useLocation } from 'wouter';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { useMemo, useState } from "react";
+import { useLocation } from "wouter";
+import { useMutation, useQuery } from "@tanstack/react-query";
+import { apiRequest } from "@/lib/queryClient";
+import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Progress } from "@/components/ui/progress";
-import { motion, AnimatePresence } from "framer-motion";
-import { 
-  Target,
-  Calculator,
-  Atom,
-  FlaskConical,
-  Dna,
-  Globe,
-  Clock,
-  Brain,
-  Play,
+import {
   ArrowRight,
-  Star,
-  Award,
-  CheckCircle,
-  Timer,
-  TrendingUp,
-  Users,
-  BookOpen,
-  Lightbulb,
-  Zap,
-  Trophy,
-  Eye,
-  ChevronRight
-} from 'lucide-react';
+  Atom,
+  BookOpenCheck,
+  Calculator,
+  CheckCircle2,
+  ChevronLeft,
+  Dna,
+  FlaskConical,
+  Globe2,
+  Loader2,
+  Target,
+} from "lucide-react";
 
-const TahsilikSubjectTest: React.FC = () => {
+const subjectPresentation = {
+  math: { label: "الرياضيات", icon: Calculator, color: "text-emerald-600" },
+  physics: { label: "الفيزياء", icon: Atom, color: "text-sky-600" },
+  chemistry: { label: "الكيمياء", icon: FlaskConical, color: "text-violet-600" },
+  biology: { label: "الأحياء", icon: Dna, color: "text-rose-600" },
+  environment: { label: "علم الأرض", icon: Globe2, color: "text-teal-600" },
+} as const;
+
+type SubjectKey = keyof typeof subjectPresentation;
+interface SubjectOverview {
+  subject: SubjectKey;
+  label: string;
+  verifiedQuestionCount: number;
+  attempts: number;
+  correctAttempts: number;
+  accuracy: number | null;
+  focusAreas: Array<{ subcategory: string; attempts: number; accuracy: number }>;
+}
+interface OverviewResponse {
+  subjects: SubjectOverview[];
+}
+interface SubjectTestStartResponse {
+  attemptId: string;
+  subject: SubjectKey;
+  label: string;
+  questionCount: number;
+  timeLimitMinutes: number;
+  personalizationMode: "diagnostic" | "weakness_focus";
+  rationale: string;
+  focusSubcategories: string[];
+  questions: Array<{
+    id: string;
+    text: string;
+    options: string[];
+    subcategory: string;
+    topic: string;
+    difficulty: "beginner" | "intermediate" | "advanced";
+  }>;
+}
+
+function errorText(error: unknown): string {
+  if (!(error instanceof Error)) return "تعذر تنفيذ الطلب. حاول مرة أخرى.";
+  try {
+    const body = JSON.parse(error.message.slice(error.message.indexOf(":") + 1).trim());
+    return body.error || error.message;
+  } catch {
+    return error.message;
+  }
+}
+
+export default function TahsilikSubjectTest() {
   const [, setLocation] = useLocation();
-  const [selectedSubject, setSelectedSubject] = useState<string | null>(null);
+  const { toast } = useToast();
+  const [selectedSubject, setSelectedSubject] = useState<SubjectKey | null>(null);
 
-  const subjects = [
-    {
-      id: 'math',
-      name: 'الرياضيات',
-      title: 'اختبار الرياضيات التخصصي',
-      icon: Calculator,
-      color: 'from-green-600 to-emerald-500',
-      bgColor: 'from-green-600 to-emerald-500 dark:from-green-600/20 dark:to-emerald-500/20',
-      description: 'تركيز كامل على المفاهيم الرياضية الأساسية والمتقدمة',
-      questionsCount: 20,
-      timeLimit: 25,
-      difficulty: 'متقدم',
-      topics: ['الجبر المتقدم', 'الهندسة التحليلية', 'التفاضل والتكامل', 'الإحصاء والاحتمالات'],
-      avgScore: 76,
-      totalAttempts: 1850,
-      skillAreas: [
-        { name: 'حل المعادلات', difficulty: 'متوسط', questions: 5 },
-        { name: 'الهندسة', difficulty: 'متقدم', questions: 4 },
-        { name: 'التفاضل', difficulty: 'متقدم', questions: 6 },
-        { name: 'الإحصاء', difficulty: 'متوسط', questions: 5 }
-      ]
+  const overviewQuery = useQuery<OverviewResponse>({
+    queryKey: ["/api/tahsili/subject-tests/overview"],
+    queryFn: async () => {
+      const response = await apiRequest("GET", "/api/tahsili/subject-tests/overview");
+      return response.json();
     },
-    {
-      id: 'physics',
-      name: 'الفيزياء',
-      title: 'اختبار الفيزياء التخصصي',
-      icon: Atom,
-      color: 'from-blue-500 to-teal-500',
-      bgColor: 'from-blue-50 to-teal-500 dark:from-blue-900/20 dark:to-teal-500/20',
-      description: 'استكشاف شامل لقوانين الفيزياء والظواهر الطبيعية',
-      questionsCount: 20,
-      timeLimit: 22,
-      difficulty: 'متقدم',
-      topics: ['الميكانيكا الكلاسيكية', 'الكهرباء والمغناطيسية', 'البصريات', 'الفيزياء الحديثة'],
-      avgScore: 73,
-      totalAttempts: 1420,
-      skillAreas: [
-        { name: 'الحركة والقوى', difficulty: 'متوسط', questions: 6 },
-        { name: 'الكهرباء', difficulty: 'متقدم', questions: 5 },
-        { name: 'الضوء والبصريات', difficulty: 'متوسط', questions: 4 },
-        { name: 'الفيزياء الحديثة', difficulty: 'متقدم', questions: 5 }
-      ]
-    },
-    {
-      id: 'chemistry',
-      name: 'الكيمياء',
-      title: 'اختبار الكيمياء التخصصي',
-      icon: FlaskConical,
-      color: 'from-green-500 to-emerald-600',
-      bgColor: 'from-green-50 to-emerald-50 dark:from-green-900/20 dark:to-emerald-900/20',
-      description: 'تطبيقات شاملة للمفاهيم الكيميائية والتفاعلات',
-      questionsCount: 20,
-      timeLimit: 20,
-      difficulty: 'متوسط',
-      topics: ['الكيمياء العضوية', 'الكيمياء غير العضوية', 'الكيمياء الفيزيائية', 'التحليل الكيميائي'],
-      avgScore: 79,
-      totalAttempts: 1630,
-      skillAreas: [
-        { name: 'التفاعلات الكيميائية', difficulty: 'متوسط', questions: 6 },
-        { name: 'الكيمياء العضوية', difficulty: 'متقدم', questions: 5 },
-        { name: 'الحسابات الكيميائية', difficulty: 'متوسط', questions: 4 },
-        { name: 'التوازن الكيميائي', difficulty: 'متقدم', questions: 5 }
-      ]
-    },
-    {
-      id: 'biology',
-      name: 'الأحياء',
-      title: 'اختبار الأحياء التخصصي',
-      icon: Dna,
-      color: 'from-amber-500 to-rose-600',
-      bgColor: 'from-amber-500 to-rose-50 dark:from-amber-500/20 dark:to-rose-900/20',
-      description: 'دراسة معمقة للحياة والعمليات البيولوجية',
-      questionsCount: 20,
-      timeLimit: 18,
-      difficulty: 'متوسط',
-      topics: ['علم الخلية والجزيئات', 'علم الوراثة', 'علم التشريح ووظائف الأعضاء', 'علم البيئة'],
-      avgScore: 81,
-      totalAttempts: 1390,
-      skillAreas: [
-        { name: 'الخلية والوراثة', difficulty: 'متوسط', questions: 6 },
-        { name: 'التشريح', difficulty: 'متوسط', questions: 5 },
-        { name: 'وظائف الأعضاء', difficulty: 'متقدم', questions: 4 },
-        { name: 'البيئة والتطور', difficulty: 'متوسط', questions: 5 }
-      ]
-    },
-    {
-      id: 'environmental',
-      name: 'علوم البيئة',
-      title: 'اختبار علوم البيئة التخصصي',
-      icon: Globe,
-      color: 'from-teal-500 to-cyan-600',
-      bgColor: 'from-teal-50 to-cyan-50 dark:from-teal-900/20 dark:to-cyan-900/20',
-      description: 'فهم النظم البيئية والتفاعل مع البيئة المحيطة',
-      questionsCount: 20,
-      timeLimit: 15,
-      difficulty: 'مبتدئ',
-      topics: ['النظم البيئية', 'التنوع الحيوي', 'التلوث البيئي', 'الاستدامة'],
-      avgScore: 84,
-      totalAttempts: 890,
-      skillAreas: [
-        { name: 'النظم البيئية', difficulty: 'مبتدئ', questions: 7 },
-        { name: 'التنوع الحيوي', difficulty: 'متوسط', questions: 5 },
-        { name: 'التلوث البيئي', difficulty: 'متوسط', questions: 4 },
-        { name: 'الاستدامة', difficulty: 'مبتدئ', questions: 4 }
-      ]
-    }
-  ];
+  });
 
-  const selectedSubjectData = subjects.find(s => s.id === selectedSubject);
+  const startMutation = useMutation({
+    mutationFn: async (subject: SubjectKey) => {
+      const response = await apiRequest("POST", "/api/tahsili/subject-tests/start", { subject });
+      return response.json() as Promise<SubjectTestStartResponse>;
+    },
+    onSuccess: (test) => {
+      sessionStorage.setItem("tahsiliSubjectTestStart", JSON.stringify(test));
+      setLocation("/tahsilik/test-runner/subject");
+    },
+    onError: (error) => {
+      toast({
+        title: "تعذر بدء الاختبار",
+        description: errorText(error),
+        variant: "destructive",
+      });
+    },
+  });
 
-  const startSubjectTest = () => {
-    if (selectedSubjectData) {
-      const testConfig = {
-        type: 'subject',
-        subject: selectedSubjectData,
-        totalQuestions: 20,
-        timeLimit: selectedSubjectData.timeLimit
-      };
-      
-      localStorage.setItem('subjectTestConfig', JSON.stringify(testConfig));
-      setLocation('/tahsilik/test-runner/subject');
-    }
-  };
+  const selected = useMemo(
+    () => overviewQuery.data?.subjects.find((item) => item.subject === selectedSubject),
+    [overviewQuery.data, selectedSubject],
+  );
 
   return (
-    <div className="qodratak-tahsili-surface min-h-[100dvh]" dir="rtl">
-      <div className="container mx-auto px-4 py-8">
-        {/* Header */}
-        <motion.div
-          initial={{ opacity: 0, y: -20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="text-center mb-8"
-        >
-          <div className="inline-flex items-center gap-4 mb-4">
-            <div className="w-16 h-16 bg-primary/10 border border-primary/20 rounded-2xl flex items-center justify-center">
-              <Target className="w-8 h-8 text-white" />
-            </div>
-            <div className="text-right">
-              <h1 className="text-4xl font-black bg-gradient-to-r from-emerald-500 to-teal-600 bg-clip-text text-transparent">
-                20 سؤال موضوعي
-              </h1>
-              <p className="text-slate-600 dark:text-slate-300">اختبار تخصصي في مادة واحدة</p>
-            </div>
+    <main className="qodratak-tahsili-surface min-h-[100dvh] px-4 py-8" dir="rtl">
+      <div className="mx-auto max-w-5xl space-y-7">
+        <header className="text-center">
+          <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-primary/10 text-primary">
+            <Target className="h-7 w-7" />
           </div>
+          <h1 className="text-3xl font-black text-foreground">اختبار تحصيلي شخصي لكل مادة</h1>
+          <p className="mx-auto mt-2 max-w-2xl text-muted-foreground">
+            الأسئلة تأتي من البنك المعتمد. ومع كل اختبار محفوظ، يتجه التدريب تدريجيًا إلى المجالات التي تحتاج مراجعة.
+          </p>
+        </header>
 
-          <motion.p
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: 0.2 }}
-            className="text-lg text-slate-700 dark:text-slate-300 max-w-2xl mx-auto leading-relaxed mb-6"
-          >
-            اختر المادة التي تريد التخصص فيها واختبر معرفتك بـ 20 سؤالاً مركزاً
-          </motion.p>
-        </motion.div>
+        {overviewQuery.isLoading && (
+          <div className="flex items-center justify-center gap-3 py-16 text-muted-foreground">
+            <Loader2 className="h-5 w-5 animate-spin" />
+            جاري تحميل المواد والأسئلة المعتمدة…
+          </div>
+        )}
 
-        <div className="max-w-6xl mx-auto">
-          {/* Subject Selection */}
-          <AnimatePresence mode="wait">
-            {!selectedSubject ? (
-              <motion.div
-                key="selection"
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -20 }}
-                className="space-y-6"
-              >
-                <div className="text-center mb-8">
-                  <h2 className="text-2xl font-bold text-slate-800 dark:text-slate-200 mb-2">اختر المادة الدراسية</h2>
-                  <p className="text-slate-600 dark:text-slate-400">اختر المادة التي تريد التركيز عليها في الاختبار</p>
-                </div>
+        {overviewQuery.isError && (
+          <Card role="alert" className="border-destructive/40">
+            <CardContent className="flex flex-col items-center gap-4 py-8 text-center">
+              <p className="text-destructive">{errorText(overviewQuery.error)}</p>
+              <Button variant="outline" onClick={() => void overviewQuery.refetch()}>إعادة المحاولة</Button>
+            </CardContent>
+          </Card>
+        )}
 
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                  {subjects.map((subject, index) => (
-                    <motion.div
-                      key={subject.id}
-                      initial={{ opacity: 0, y: 20 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ delay: 0.4 + index * 0.1 }}
-                      whileHover={{ scale: 1.02, y: -5 }}
-                      whileTap={{ scale: 0.98 }}
-                      className="cursor-pointer"
-                      data-testid={`card-subject-${subject.id}`}
-                      onClick={() => setSelectedSubject(subject.id)}
-                    >
-                    <Card className="h-full bg-card border-border shadow-sm hover:shadow-lg transition-all duration-300 group overflow-hidden">
-                        {/* Background gradient */}
-                        <div className={`absolute inset-0 bg-gradient-to-r ${subject.color} opacity-0 group-hover:opacity-10 transition-opacity duration-300`} />
-                        
-                        <CardHeader className="relative z-10 pb-3">
-                          <div className="flex items-center gap-3 mb-3">
-                            <div className={`w-14 h-14 bg-gradient-to-r ${subject.color} rounded-xl flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform duration-300`}>
-                              <subject.icon className="w-7 h-7 text-white" />
-                            </div>
-                            <div className="flex-1">
-                              <CardTitle className="text-lg font-bold text-slate-800 dark:text-slate-200 group-hover:text-transparent group-hover:bg-gradient-to-r group-hover:bg-clip-text group-hover:from-slate-700 group-hover:to-slate-900 dark:group-hover:from-slate-200 dark:group-hover:to-slate-400 transition-all">
-                                {subject.name}
-                              </CardTitle>
-                              <div className="flex items-center gap-2 mt-1">
-                                <Badge variant="outline" className={`text-xs ${
-                                  subject.difficulty === 'متقدم' ? 'border-red-500 text-red-600' :
-                                  subject.difficulty === 'متوسط' ? 'border-yellow-500 text-yellow-600' :
-                                  'border-green-500 text-green-600'
-                                }`}>
-                                  {subject.difficulty}
-                                </Badge>
-                                <Badge variant="secondary" className="text-xs">
-                                  {subject.timeLimit} دقيقة
-                                </Badge>
-                              </div>
-                            </div>
-                            <ChevronRight className="w-5 h-5 text-slate-400 group-hover:text-slate-600 group-hover:translate-x-1 transition-all" />
+        {overviewQuery.data && !selected && (
+          <section className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3" aria-label="مواد التحصيلي">
+            {overviewQuery.data.subjects.map((subject) => {
+              const display = subjectPresentation[subject.subject];
+              const Icon = display.icon;
+              return (
+                <button
+                  type="button"
+                  key={subject.subject}
+                  onClick={() => setSelectedSubject(subject.subject)}
+                  disabled={subject.verifiedQuestionCount === 0}
+                  className="text-right disabled:cursor-not-allowed disabled:opacity-60"
+                  data-testid={`card-subject-${subject.subject}`}
+                >
+                  <Card className="h-full border-border transition hover:-translate-y-0.5 hover:border-primary/40 hover:shadow-md">
+                    <CardHeader className="pb-3">
+                      <div className="flex items-center gap-3">
+                        <span className={`flex h-12 w-12 items-center justify-center rounded-xl bg-muted ${display.color}`}>
+                          <Icon className="h-6 w-6" />
+                        </span>
+                        <div className="min-w-0 flex-1">
+                          <CardTitle className="text-lg">{subject.label}</CardTitle>
+                          <CardDescription>
+                            {subject.verifiedQuestionCount > 0
+                              ? `${subject.verifiedQuestionCount} سؤالًا معتمدًا متاحًا`
+                              : "لا توجد أسئلة معتمدة متاحة حاليًا"}
+                          </CardDescription>
+                        </div>
+                        <ChevronLeft className="h-5 w-5 text-muted-foreground" />
+                      </div>
+                    </CardHeader>
+                    <CardContent>
+                      {subject.attempts > 0 ? (
+                        <div className="space-y-3">
+                          <div className="flex items-center justify-between rounded-lg bg-muted/60 px-3 py-2 text-sm">
+                            <span className="text-muted-foreground">دقتك من إجاباتك المعتمدة</span>
+                            <strong>{subject.accuracy ?? 0}%</strong>
                           </div>
-                        </CardHeader>
-
-                        <CardContent className="relative z-10 pt-0">
-                          <p className="text-slate-600 dark:text-slate-400 text-sm mb-4 leading-relaxed">
-                            {subject.description}
-                          </p>
-
-                          {/* Stats */}
-                          <div className="grid grid-cols-3 gap-3 mb-4">
-                            <div className="text-center p-2 bg-white/50 dark:bg-slate-800/50 rounded-lg">
-                              <div className="text-lg font-bold text-slate-800 dark:text-slate-200">{subject.questionsCount}</div>
-                              <div className="text-xs text-slate-600 dark:text-slate-400">سؤال</div>
-                            </div>
-                            <div className="text-center p-2 bg-white/50 dark:bg-slate-800/50 rounded-lg">
-                              <div className="text-lg font-bold text-slate-800 dark:text-slate-200">{subject.avgScore}%</div>
-                              <div className="text-xs text-slate-600 dark:text-slate-400">متوسط النتائج</div>
-                            </div>
-                            <div className="text-center p-2 bg-white/50 dark:bg-slate-800/50 rounded-lg">
-                              <div className="text-lg font-bold text-slate-800 dark:text-slate-200">{subject.totalAttempts.toLocaleString()}</div>
-                              <div className="text-xs text-slate-600 dark:text-slate-400">مشارك</div>
-                            </div>
-                          </div>
-
-                          {/* Topics Preview */}
-                          <div className="space-y-2">
-                            <div className="text-xs font-medium text-slate-700 dark:text-slate-300">المواضيع الرئيسية:</div>
-                            <div className="flex flex-wrap gap-1">
-                              {subject.topics.slice(0, 2).map((topic, idx) => (
-                                <Badge key={idx} variant="secondary" className="text-xs bg-white/60 dark:bg-slate-800/60">
-                                  {topic}
+                          {subject.focusAreas.length > 0 ? (
+                            <div className="flex flex-wrap gap-2">
+                              {subject.focusAreas.map((area) => (
+                                <Badge key={area.subcategory} variant="secondary">
+                                  مراجعة: {area.subcategory} ({area.accuracy}%)
                                 </Badge>
                               ))}
-                              {subject.topics.length > 2 && (
-                                <Badge variant="secondary" className="text-xs bg-white/60 dark:bg-slate-800/60">
-                                  +{subject.topics.length - 2}
-                                </Badge>
-                              )}
                             </div>
-                          </div>
-                        </CardContent>
-                      </Card>
-                    </motion.div>
-                  ))}
+                          ) : (
+                            <p className="text-xs text-muted-foreground">
+                              لا تظهر فجوة متكررة في سجل الإجابات الحالي.
+                            </p>
+                          )}
+                        </div>
+                      ) : (
+                        <div className="flex items-start gap-2 text-sm text-muted-foreground">
+                          <BookOpenCheck className="mt-0.5 h-4 w-4 shrink-0" />
+                          اختبار تشخيصي متوازن؛ يبدأ التخصيص بعد حفظ إجاباتك.
+                        </div>
+                      )}
+                    </CardContent>
+                  </Card>
+                </button>
+              );
+            })}
+          </section>
+        )}
+
+        {selected && (
+          <Card>
+            <CardHeader>
+              <div className="flex items-start gap-3">
+                <CheckCircle2 className="mt-1 h-6 w-6 text-primary" />
+                <div>
+                  <CardTitle>اختبار {selected.label}</CardTitle>
+                  <CardDescription className="mt-2">
+                    يحتوي الاختبار على ما يصل إلى 20 سؤالًا حقيقيًا من الأسئلة التي تم اعتماد إجاباتها.
+                    {selected.attempts > 0
+                      ? " سنستخدم سجل إجاباتك السابقة لتوجيه جزء أكبر من الأسئلة نحو نقاط المراجعة."
+                      : " هذا اختبار تشخيصي أولي متوازن."}
+                  </CardDescription>
                 </div>
-              </motion.div>
-            ) : (
-              /* Selected Subject Details */
-              <motion.div
-                key="details"
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: 20 }}
-                className="space-y-8"
-              >
-                {selectedSubjectData && (
-                  <>
-                    {/* Subject Header */}
-                    <Card className="bg-card border-border shadow-sm overflow-hidden">
-                      <div className="absolute inset-0 opacity-20">
-                        <selectedSubjectData.icon className="w-64 h-64 absolute -bottom-16 -right-16" />
-                      </div>
-                      <CardContent className="relative z-10 py-8">
-                        <div className="flex items-center gap-6">
-                          <div className="w-20 h-20 bg-white/20 rounded-2xl flex items-center justify-center backdrop-blur-sm">
-                            <selectedSubjectData.icon className="w-10 h-10 text-white" />
-                          </div>
-                          <div className="flex-1">
-                            <h2 className="text-3xl font-black mb-2">{selectedSubjectData.title}</h2>
-                            <p className="text-lg opacity-90 mb-4">{selectedSubjectData.description}</p>
-                            <div className="flex gap-4">
-                              <Badge className="bg-white/20 text-white border-white/30 px-4 py-2">
-                                <Clock className="w-4 h-4 mr-2" />
-                                {selectedSubjectData.timeLimit} دقيقة
-                              </Badge>
-                              <Badge className="bg-white/20 text-white border-white/30 px-4 py-2">
-                                <Target className="w-4 h-4 mr-2" />
-                                {selectedSubjectData.questionsCount} سؤال
-                              </Badge>
-                              <Badge className="bg-white/20 text-white border-white/30 px-4 py-2">
-                                <TrendingUp className="w-4 h-4 mr-2" />
-                                {selectedSubjectData.avgScore}% متوسط
-                              </Badge>
-                            </div>
-                          </div>
-                        </div>
-                      </CardContent>
-                    </Card>
-
-                    {/* Skill Areas Breakdown */}
-                    <Card className="bg-card border-border shadow-sm">
-                      <CardHeader>
-                        <CardTitle className="text-xl text-slate-800 dark:text-slate-200">توزيع الأسئلة حسب المهارات</CardTitle>
-                        <CardDescription>
-                          توزيع الأسئلة الـ{selectedSubjectData.questionsCount} على المهارات والمفاهيم الأساسية
-                        </CardDescription>
-                      </CardHeader>
-                      <CardContent>
-                        <div className="space-y-4">
-                          {selectedSubjectData.skillAreas.map((skill, index) => (
-                            <motion.div
-                              key={skill.name}
-                              initial={{ opacity: 0, x: -20 }}
-                              animate={{ opacity: 1, x: 0 }}
-                              transition={{ delay: index * 0.1 }}
-                              className="flex items-center justify-between p-4 bg-slate-50 dark:bg-slate-800 rounded-lg"
-                            >
-                              <div className="flex items-center gap-3">
-                                <div className={`w-10 h-10 rounded-lg bg-gradient-to-r ${selectedSubjectData.color} flex items-center justify-center`}>
-                                  <span className="text-white font-bold text-sm">{skill.questions}</span>
-                                </div>
-                                <div>
-                                  <h3 className="font-semibold text-slate-800 dark:text-slate-200">{skill.name}</h3>
-                                  <p className="text-sm text-slate-600 dark:text-slate-400">{skill.questions} أسئلة</p>
-                                </div>
-                              </div>
-                              <Badge 
-                                variant="outline"
-                                className={`${
-                                  skill.difficulty === 'متقدم' ? 'border-red-500 text-red-600' :
-                                  skill.difficulty === 'متوسط' ? 'border-yellow-500 text-yellow-600' :
-                                  'border-green-500 text-green-600'
-                                }`}
-                              >
-                                {skill.difficulty}
-                              </Badge>
-                            </motion.div>
-                          ))}
-                        </div>
-                      </CardContent>
-                    </Card>
-
-                    {/* Action Buttons */}
-                    <div className="flex gap-4 justify-center">
-                      <Button
-                        variant="outline"
-                        data-testid="button-select-another-subject"
-                        onClick={() => setSelectedSubject(null)}
-                        className="bg-white/50 dark:bg-slate-700/50 px-6 py-3"
-                      >
-                        اختيار مادة أخرى
-                      </Button>
-                      
-                      <Button
-                        data-testid="button-start-subject-test"
-                        onClick={startSubjectTest}
-                        className={`bg-gradient-to-r ${selectedSubjectData.color} hover:opacity-90 text-white shadow-lg hover:shadow-xl px-8 py-3 font-semibold transition-all`}
-                      >
-                        <Play className="w-5 h-5 mr-2" />
-                        بدء اختبار {selectedSubjectData.name}
-                        <ArrowRight className="w-4 h-4 ml-2" />
-                      </Button>
-                    </div>
-                  </>
+              </div>
+            </CardHeader>
+            <CardContent className="space-y-5">
+              <div className="flex flex-wrap gap-3 text-sm">
+                <Badge variant="secondary">{selected.verifiedQuestionCount} سؤالًا معتمدًا</Badge>
+                <Badge variant="secondary">حتى 20 سؤالًا في الاختبار</Badge>
+                {selected.accuracy !== null && (
+                  <Badge variant="outline">الدقة السابقة {selected.accuracy}%</Badge>
                 )}
-              </motion.div>
-            )}
-          </AnimatePresence>
-        </div>
+              </div>
+              {selected.focusAreas.length > 0 && (
+                <div className="rounded-xl border border-amber-500/30 bg-amber-500/5 p-4">
+                  <p className="mb-2 font-semibold">مجالات ظهرت فيها أخطاء متكررة:</p>
+                  <ul className="list-inside list-disc space-y-1 text-sm text-muted-foreground">
+                    {selected.focusAreas.map((area) => (
+                      <li key={area.subcategory}>
+                        {area.subcategory}: دقة {area.accuracy}% عبر {area.attempts} إجابات
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+              <div className="flex flex-wrap gap-3">
+                <Button
+                  onClick={() => startMutation.mutate(selected.subject)}
+                  disabled={startMutation.isPending || selected.verifiedQuestionCount === 0}
+                >
+                  {startMutation.isPending ? <Loader2 className="ml-2 h-4 w-4 animate-spin" /> : <ArrowRight className="ml-2 h-4 w-4" />}
+                  ابدأ الاختبار
+                </Button>
+                <Button variant="outline" onClick={() => setSelectedSubject(null)}>اختيار مادة أخرى</Button>
+              </div>
+            </CardContent>
+          </Card>
+        )}
       </div>
-    </div>
+    </main>
   );
-};
-
-export default TahsilikSubjectTest;
+}

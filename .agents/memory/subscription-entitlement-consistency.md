@@ -9,11 +9,17 @@ Premium access must come from an active, currently valid MongoDB subscription ti
 
 **How to apply:** resolve legacy identities only at boundaries, store the canonical account identity for new records, and refresh access from the server after activation or approval.
 
-New student accounts receive one account-bound three-day trial. After it expires, retain only the dashboard, subscription/payment access, and one adaptive Qudrat test per Riyadh calendar day.
+New student accounts receive one account-bound three-day trial. After it expires, retain the dashboard, subscription/payment access, one adaptive Qudrat test per Riyadh calendar day, and read-only access to the student's own saved results.
 
 **Why:** the product must let a student keep studying and subscribe without leaving paid pages open after the trial.
 
 **How to apply:** enforce the same entitlement in server middleware and the route UI, and key daily test uniqueness to the authenticated student plus the Riyadh day.
+
+The dashboard's «نتائجي» link must remain usable for reviewing the student's own saved results after expiry, without unlocking paid materials or additional training.
+
+**Why:** reviewing completed work is separate from starting paid learning; the user requested a dashboard link to all saved detailed results.
+
+**How to apply:** keep results private to the server-authenticated student and retain entitlement checks on remedial training and other premium actions.
 
 Wallet debit, transaction ledger creation, and subscription creation must be one atomic operation with a conditional balance check.
 

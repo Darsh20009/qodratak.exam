@@ -1,497 +1,336 @@
-import React, { useState, useEffect } from 'react';
-import { useLocation } from 'wouter';
-import AiReviewingScreen, { WrongQuestion, QuestionExplanation } from '@/components/AiReviewingScreen';
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { Progress } from "@/components/ui/progress";
-import { motion, AnimatePresence } from "framer-motion";
+import { useEffect, useRef, useState } from "react";
+import ExamLearningReport from '@/components/exam-results/ExamLearningReport';
+import { useExamQuestionTiming, examQuestionSeconds } from '@/lib/examTiming';
+import { useLocation } from "wouter";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
-import { 
-  ArrowRight,
-  ArrowLeft,
-  Clock,
-  CheckCircle,
-  Trophy,
-  RotateCcw,
-  ChevronRight,
-  Timer,
-  Brain,
-  Calculator,
-  Atom,
-  FlaskConical,
-  Dna,
-  Globe
-} from 'lucide-react';
-import { QiyasExamLayout } from '@/components/QiyasExamLayout';
-import { useUser } from '@/hooks/use-user';
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Progress } from "@/components/ui/progress";
+import { ArrowLeft, ArrowRight, CheckCircle2, Clock3, Loader2, Trophy } from "lucide-react";
 
-interface Question {
-  id: number;
-  question: string;
-  options: string[];
-  correctAnswer: number;
-  category: string;
-  explanation?: string;
-  hint?: string;
-  imageUrl?: string;
-  imageUrls?: string[];
-}
-
-interface SubjectTestConfig {
-  type: string;
-  subject: {
+interface SubjectTestStart {
+  attemptId: string;
+  subject: string;
+  label: string;
+  questionCount: number;
+  timeLimitMinutes: number;
+  personalizationMode: "diagnostic" | "weakness_focus";
+  rationale: string;
+  focusSubcategories: string[];
+  questions: Array<{
     id: string;
-    name: string;
-    title: string;
-    timeLimit: number;
-    questionsCount: number;
-    color: string;
-    icon: any;
-  };
+    text: string;
+    options: string[];
+    subcategory: string;
+    topic: string;
+    difficulty: string;
+  }>;
+}
+interface SubjectTestResult {
+  attemptId: string;
+  subject: string;
+  label: string;
   totalQuestions: number;
-  timeLimit: number;
+  answeredQuestions: number;
+  correctAnswers: number;
+  wrongAnswers: number;
+  skippedQuestions: number;
+  percentage: number;
+  grade: string;
+  personalizationMode: "diagnostic" | "weakness_focus";
+  focusSubcategories: string[];
+  questions: Array<{
+    id: string;
+    text: string;
+    options: string[];
+    subcategory: string;
+    topic: string;
+    difficulty: string;
+    selectedOptionIndex: number | null;
+    correctOptionIndex: number;
+    isCorrect: boolean | null;
+    explanation: string;
+  }>;
 }
 
-const TahsilikSubjectTestRunner: React.FC = () => {
+function errorMessage(error: unknown): string {
+  if (!(error instanceof Error)) return "تعذر إرسال الاختبار.";
+  try {
+    const payload = JSON.parse(error.message.slice(error.message.indexOf(":") + 1).trim());
+    return payload.error || error.message;
+  } catch {
+    return error.message;
+  }
+}
+
+function formatTime(seconds: number) {
+  return `${Math.floor(seconds / 60)}:${String(seconds % 60).padStart(2, "0")}`;
+}
+
+export default function TahsilikSubjectTestRunner() {
   const [, setLocation] = useLocation();
+  const queryClient = useQueryClient();
   const { toast } = useToast();
-  const { user } = useUser();
-  
-  const [testConfig, setTestConfig] = useState<SubjectTestConfig | null>(null);
-  const [questions, setQuestions] = useState<Question[]>([]);
-  const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
-  const [selectedAnswer, setSelectedAnswer] = useState<number | null>(null);
-  const [answers, setAnswers] = useState<{ [key: number]: number }>({});
-  const [bookmarkedQuestions, setBookmarkedQuestions] = useState<Set<number>>(new Set());
+  const [test, setTest] = useState<SubjectTestStart | null>(null);
+  const [answers, setAnswers] = useState<Record<string, number>>({});
+  const [currentIndex, setCurrentIndex] = useState(0);
   const [timeLeft, setTimeLeft] = useState(0);
-  const [isStarted, setIsStarted] = useState(false);
-  const [isFinished, setIsFinished] = useState(false);
-  const [showAiReview, setShowAiReview] = useState(false);
-  const [wrongQuestionsForAI, setWrongQuestionsForAI] = useState<WrongQuestion[]>([]);
-  const [aiExplanations, setAiExplanations] = useState<QuestionExplanation[]>([]);
-  const [results, setResults] = useState<any>(null);
+  const [started, setStarted] = useState(false);
+  const [result, setResult] = useState<SubjectTestResult | null>(null);
+  const submitLock = useRef(false);
+  const timeoutHandled = useRef(false);
+  const timedQuestion = test?.questions[currentIndex];
+  useExamQuestionTiming(timedQuestion, timedQuestion ? answers[timedQuestion.id] ?? null : null, started && !result, test?.label || 'اختبار مادة');
+
+  const submitMutation = useMutation({
+    mutationFn: async () => {
+      if (!test) throw new Error("جلسة الاختبار غير موجودة.");
+      const response = await apiRequest("POST", "/api/tahsili/subject-tests/submit", {
+        attemptId: test.attemptId,
+        timeTakenSeconds: Math.max(0, test.timeLimitMinutes * 60 - timeLeft),
+        answers: test.questions.map((question) => ({
+          questionId: question.id,
+          selectedOptionIndex: answers[question.id] ?? null,
+          responseTime: examQuestionSeconds(question.id),
+        })),
+      });
+      return response.json() as Promise<SubjectTestResult>;
+    },
+    onSuccess: (saved) => {
+      setResult(saved);
+      setStarted(false);
+      sessionStorage.removeItem("tahsiliSubjectTestStart");
+      void queryClient.invalidateQueries({ queryKey: ["/api/student/learning-coach"] });
+      void queryClient.invalidateQueries({ queryKey: ["/api/tahsili/subject-tests/overview"] });
+      toast({
+        title: "تم حفظ الاختبار",
+        description: `نتيجتك ${saved.percentage}%، وأضيفت الإجابات إلى سجل تعلمك.`,
+      });
+    },
+    onError: (error) => {
+      submitLock.current = false;
+      toast({ title: "تعذر حفظ الاختبار", description: errorMessage(error), variant: "destructive" });
+    },
+  });
 
   useEffect(() => {
-    // تحميل إعدادات الاختبار من localStorage
-    const storedConfig = localStorage.getItem('subjectTestConfig');
-    if (storedConfig) {
-      try {
-        const config = JSON.parse(storedConfig);
-        setTestConfig(config);
-        setTimeLeft(config.timeLimit * 60); // تحويل إلى ثواني
-        
-        // إنشاء أسئلة تجريبية للاختبار (في التطبيق الحقيقي ستأتي من API)
-        generateMockQuestions(config);
-      } catch (error) {
-        console.error('Error parsing test config:', error);
-        toast({
-          title: "خطأ",
-          description: "حدث خطأ في تحميل إعدادات الاختبار",
-          variant: "destructive"
-        });
-        setLocation('/tahsilik/tests/subject');
+    try {
+      const raw = sessionStorage.getItem("tahsiliSubjectTestStart");
+      if (!raw) return;
+      const saved = JSON.parse(raw) as SubjectTestStart;
+      if (!saved.attemptId || !Array.isArray(saved.questions) || saved.questions.length === 0) {
+        throw new Error("Invalid test.");
       }
-    } else {
-      setLocation('/tahsilik/tests/subject');
+      setTest(saved);
+      setTimeLeft(saved.timeLimitMinutes * 60);
+    } catch {
+      sessionStorage.removeItem("tahsiliSubjectTestStart");
     }
   }, []);
 
-  // مؤقت العد التنازلي
+  const submitTest = () => {
+    if (!test || submitLock.current || result) return;
+    submitLock.current = true;
+    submitMutation.mutate();
+  };
+
   useEffect(() => {
-    if (isStarted && timeLeft > 0 && !isFinished) {
-      const timer = setInterval(() => {
-        setTimeLeft(prev => {
-          if (prev <= 1) {
-            finishTest();
-            return 0;
-          }
-          return prev - 1;
-        });
-      }, 1000);
-      
-      return () => clearInterval(timer);
+    if (!started || result || submitMutation.isPending || timeLeft <= 0) return;
+    const timer = window.setInterval(() => setTimeLeft((value) => Math.max(0, value - 1)), 1000);
+    return () => window.clearInterval(timer);
+  }, [started, result, submitMutation.isPending, timeLeft]);
+
+  useEffect(() => {
+    if (started && timeLeft === 0 && !timeoutHandled.current && !result && !submitMutation.isPending) {
+      timeoutHandled.current = true;
+      submitTest();
     }
-    return undefined;
-  }, [isStarted, timeLeft, isFinished]);
+  }, [started, timeLeft, result, submitMutation.isPending]);
 
-  const generateMockQuestions = (config: SubjectTestConfig) => {
-    const subjectQuestions: { [key: string]: Partial<Question>[] } = {
-      'math': [
-        { question: 'ما هو ناتج 2 + 2؟', options: ['3', '4', '5', '6'], correctAnswer: 1, explanation: 'الناتج الصحيح هو 4' },
-        { question: 'ما هو جذر العدد 16؟', options: ['2', '3', '4', '5'], correctAnswer: 2, explanation: 'جذر 16 يساوي 4' },
-        { question: 'ما هو 15% من 200؟', options: ['25', '30', '35', '40'], correctAnswer: 1, explanation: '15% من 200 = 0.15 × 200 = 30' }
-      ],
-      'physics': [
-        { question: 'ما هي وحدة قياس القوة؟', options: ['جول', 'نيوتن', 'واط', 'فولت'], correctAnswer: 1, explanation: 'النيوتن هو وحدة قياس القوة' },
-        { question: 'ما هي سرعة الضوء تقريباً؟', options: ['300,000 كم/ث', '3,000,000 كم/ث', '30,000 كم/ث', '3,000 كم/ث'], correctAnswer: 0, explanation: 'سرعة الضوء حوالي 300,000 كم/ث' }
-      ],
-      'chemistry': [
-        { question: 'ما هو رمز عنصر الذهب؟', options: ['Go', 'Au', 'Ag', 'Gd'], correctAnswer: 1, explanation: 'رمز الذهب هو Au من الكلمة اللاتينية Aurum' },
-        { question: 'كم عدد البروتونات في ذرة الهيدروجين؟', options: ['0', '1', '2', '3'], correctAnswer: 1, explanation: 'ذرة الهيدروجين تحتوي على بروتون واحد فقط' }
-      ],
-      'biology': [
-        { question: 'ما هو أصغر وحدة في الكائن الحي؟', options: ['النسيج', 'العضو', 'الخلية', 'الجهاز'], correctAnswer: 2, explanation: 'الخلية هي أصغر وحدة حية في الكائن الحي' },
-        { question: 'ما هو عدد كروموسومات الإنسان؟', options: ['44', '46', '48', '50'], correctAnswer: 1, explanation: 'الإنسان لديه 46 كروموسوماً (23 زوج)' }
-      ],
-      'environmental': [
-        { question: 'ما هو المصدر الرئيسي للطاقة المتجددة؟', options: ['النفط', 'الفحم', 'الشمس', 'الغاز الطبيعي'], correctAnswer: 2, explanation: 'الشمس هي المصدر الرئيسي للطاقة المتجددة' },
-        { question: 'ما هو غاز الدفيئة الرئيسي؟', options: ['الأكسجين', 'النيتروجين', 'ثاني أكسيد الكربون', 'الهيليوم'], correctAnswer: 2, explanation: 'ثاني أكسيد الكربون هو أهم غازات الدفيئة' }
-      ]
-    };
-
-    const subjectKey = config.subject.id;
-    const baseQuestions = subjectQuestions[subjectKey] || subjectQuestions['math'];
-    
-    // إنشاء أسئلة كافية للاختبار
-    const mockQuestions: Question[] = [];
-    for (let i = 0; i < config.totalQuestions; i++) {
-      const baseQuestion = baseQuestions[i % baseQuestions.length];
-      mockQuestions.push({
-        id: i + 1,
-        question: baseQuestion.question || `سؤال ${i + 1} في ${config.subject.name}`,
-        options: baseQuestion.options || ['الخيار الأول', 'الخيار الثاني', 'الخيار الثالث', 'الخيار الرابع'],
-        correctAnswer: baseQuestion.correctAnswer || 0,
-        category: config.subject.name,
-        explanation: baseQuestion.explanation || 'تفسير الإجابة الصحيحة',
-        hint: `تلميح لسؤال ${i + 1}`
-      });
-    }
-    
-    setQuestions(mockQuestions);
-  };
-
-  const startTest = () => {
-    setIsStarted(true);
-    toast({
-      title: "بدء الاختبار",
-      description: `${testConfig?.subject.name} - ${testConfig?.totalQuestions} سؤال في ${testConfig?.timeLimit} دقيقة`,
-    });
-  };
-
-  const handleAnswerSelect = (answerIndex: number) => {
-    setSelectedAnswer(answerIndex);
-  };
-
-  const handleNextQuestion = () => {
-    if (selectedAnswer !== null) {
-      setAnswers(prev => ({
-        ...prev,
-        [currentQuestionIndex]: selectedAnswer
-      }));
-    }
-
-    if (currentQuestionIndex < questions.length - 1) {
-      setCurrentQuestionIndex(prev => prev + 1);
-      setSelectedAnswer(answers[currentQuestionIndex + 1] || null);
-    } else {
-      finishTest();
-    }
-  };
-
-  const handlePreviousQuestion = () => {
-    if (currentQuestionIndex > 0) {
-      setCurrentQuestionIndex(prev => prev - 1);
-      setSelectedAnswer(answers[currentQuestionIndex - 1] || null);
-    }
-  };
-
-  const finishTest = () => {
-    // إنهاء الاختبار حتى لو لم يجب على السؤال الحالي
-    if (selectedAnswer !== null) {
-      setAnswers(prev => ({
-        ...prev,
-        [currentQuestionIndex]: selectedAnswer
-      }));
-    }
-
-    let correctAnswers = 0;
-    questions.forEach((question, index) => {
-      if (answers[index] === question.correctAnswer) {
-        correctAnswers++;
-      }
-    });
-
-    const percentage = (correctAnswers / questions.length) * 100;
-    const testResults = {
-      subject: testConfig?.subject.name,
-      totalQuestions: questions.length,
-      correctAnswers,
-      percentage: Math.round(percentage * 100) / 100,
-      timeUsed: (testConfig!.timeLimit * 60) - timeLeft,
-      grade: getGrade(percentage)
-    };
-
-    setResults(testResults);
-
-    // Build wrong questions for AI review
-    const wrongs: WrongQuestion[] = [];
-    questions.forEach((question, index) => {
-      const studentAnswer = answers[index];
-      if (studentAnswer === undefined || studentAnswer !== question.correctAnswer) {
-        wrongs.push({
-          questionText: question.question,
-          options: question.options,
-          studentAnswerIndex: studentAnswer ?? null,
-          correctAnswerIndex: question.correctAnswer,
-          category: 'تحصيلي',
-          subcategory: testConfig?.subject?.name,
-        });
-      }
-    });
-    setWrongQuestionsForAI(wrongs);
-    setShowAiReview(true);
-
-    // حفظ النتائج في localStorage
-    try {
-      const savedResults = localStorage.getItem('subjectTestResults') || '[]';
-      const resultsArray = JSON.parse(savedResults);
-      resultsArray.push({ ...testResults, date: new Date().toISOString() });
-      localStorage.setItem('subjectTestResults', JSON.stringify(resultsArray));
-    } catch (error) {
-      console.error('Error saving results:', error);
-    }
-
-    toast({
-      title: "تم إنهاء الاختبار!",
-      description: `درجتك: ${Math.round(percentage)}% (${correctAnswers}/${questions.length})`,
-    });
-  };
-
-  const getGrade = (percentage: number): string => {
-    if (percentage >= 90) return 'ممتاز';
-    if (percentage >= 80) return 'جيد جداً';
-    if (percentage >= 70) return 'جيد';
-    if (percentage >= 60) return 'مقبول';
-    return 'ضعيف';
-  };
-
-  const formatTime = (seconds: number): string => {
-    const minutes = Math.floor(seconds / 60);
-    const remainingSeconds = seconds % 60;
-    return `${minutes}:${remainingSeconds.toString().padStart(2, '0')}`;
-  };
-
-  const resetTest = () => {
-    setCurrentQuestionIndex(0);
-    setSelectedAnswer(null);
-    setAnswers({});
-    setTimeLeft(testConfig!.timeLimit * 60);
-    setIsStarted(false);
-    setIsFinished(false);
-    setResults(null);
-  };
-
-  const getSubjectIcon = (subjectId: string) => {
-    switch (subjectId) {
-      case 'math': return Calculator;
-      case 'physics': return Atom;
-      case 'chemistry': return FlaskConical;
-      case 'biology': return Dna;
-      case 'environmental': return Globe;
-      default: return Brain;
-    }
-  };
-
-  if (!testConfig) {
+  if (!test) {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center" dir="rtl">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-4 border-primary/20 border-t-primary mx-auto mb-4"></div>
-          <p className="text-lg text-muted-foreground">جاري تحميل الاختبار...</p>
+      <main className="qodratak-tahsili-surface flex min-h-[70vh] items-center justify-center px-4" dir="rtl">
+        <Card className="w-full max-w-lg">
+          <CardHeader>
+            <CardTitle>لا توجد جلسة اختبار مفتوحة</CardTitle>
+            <CardDescription>
+              ارجع لاختيار المادة وابدأ اختبارًا جديدًا. لا تُحفظ مفاتيح الإجابة في المتصفح.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Button onClick={() => setLocation("/tahsilik/tests/subject")}>
+              <ArrowRight className="ml-2 h-4 w-4" /> اختيار المادة
+            </Button>
+          </CardContent>
+        </Card>
+      </main>
+    );
+  }
+
+  if (result) {
+    return (
+      <main className="qodratak-tahsili-surface min-h-[100dvh] px-4 py-8" dir="rtl">
+        <div className="mx-auto max-w-4xl space-y-6">
+          <ExamLearningReport />
+          <Card>
+            <CardContent className="py-8 text-center">
+              <Trophy className="mx-auto mb-3 h-12 w-12 text-amber-500" />
+              <h1 className="text-2xl font-black">نتيجة اختبار {result.label}</h1>
+              <div className="mx-auto my-5 flex h-28 w-28 items-center justify-center rounded-full border-8 border-primary/20 text-3xl font-black text-primary">
+                {Math.round(result.percentage)}%
+              </div>
+              <p className="text-xl font-bold">{result.grade}</p>
+              <p className="mt-2 text-muted-foreground">
+                {result.correctAnswers} صحيحة، {result.wrongAnswers} خاطئة، {result.skippedQuestions} دون إجابة من أصل {result.totalQuestions}
+              </p>
+              {result.focusSubcategories.length > 0 && (
+                <p className="mx-auto mt-4 max-w-2xl text-sm text-muted-foreground">
+                  ركّز الاختبار على المجالات التي ظهرت فيها أخطاء متكررة: {result.focusSubcategories.join("، ")}.
+                </p>
+              )}
+            </CardContent>
+          </Card>
+          <section className="space-y-3" aria-label="مراجعة الإجابات">
+            <h2 className="text-xl font-bold">مراجعة الإجابات</h2>
+            {result.questions.map((question, index) => (
+              <Card key={question.id}>
+                <CardHeader className="pb-3">
+                  <div className="flex flex-wrap items-start justify-between gap-2">
+                    <CardTitle className="text-base leading-7">{index + 1}. {question.text}</CardTitle>
+                    <Badge variant={question.isCorrect ? "default" : question.isCorrect === false ? "destructive" : "secondary"}>
+                      {question.isCorrect ? "صحيحة" : question.isCorrect === false ? "تحتاج مراجعة" : "لم تتم الإجابة"}
+                    </Badge>
+                  </div>
+                  <CardDescription>{question.subcategory} · {question.topic}</CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-2">
+                  {question.options.map((option, optionIndex) => (
+                    <div
+                      key={`${question.id}-${optionIndex}`}
+                      className={`rounded-lg border px-3 py-2 text-sm ${
+                        optionIndex === question.correctOptionIndex
+                          ? "border-emerald-500 bg-emerald-500/10 font-semibold"
+                          : optionIndex === question.selectedOptionIndex
+                            ? "border-destructive bg-destructive/5"
+                            : "border-border"
+                      }`}
+                    >
+                      {option}
+                      {optionIndex === question.correctOptionIndex && " — الإجابة الصحيحة"}
+                      {optionIndex === question.selectedOptionIndex && optionIndex !== question.correctOptionIndex && " — إجابتك"}
+                    </div>
+                  ))}
+                  {question.explanation && <p className="rounded-lg bg-muted p-3 text-sm leading-6">{question.explanation}</p>}
+                </CardContent>
+              </Card>
+            ))}
+          </section>
+          <div className="flex flex-wrap gap-3">
+            <Button onClick={() => setLocation("/tahsilik/tests/subject")}>اختبار مادة أخرى</Button>
+            <Button variant="outline" onClick={() => setLocation("/tahsilik")}>العودة للتحصيلي</Button>
+          </div>
         </div>
-      </div>
+      </main>
     );
   }
 
-  // شاشة البداية
-  if (!isStarted) {
-    const SubjectIcon = getSubjectIcon(testConfig.subject.id);
-    
+  if (!started) {
     return (
-      <div className="min-h-screen bg-background py-8" dir="rtl">
-        <div className="container mx-auto px-4 max-w-2xl">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="text-center"
-          >
-            <Card className="bg-card text-foreground border-border shadow-sm mb-8">
-              <CardContent className="py-12">
-                <div className="w-20 h-20 bg-primary/10 border border-primary/20 rounded-2xl flex items-center justify-center mx-auto mb-6">
-                  <SubjectIcon className="w-10 h-10 text-primary" />
-                </div>
-                <h1 className="text-3xl font-bold mb-4">{testConfig.subject.title}</h1>
-                <div className="flex justify-center gap-4 text-lg text-muted-foreground">
-                  <div className="flex items-center gap-2">
-                    <Clock className="w-5 h-5" />
-                    {testConfig.timeLimit} دقيقة
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <Brain className="w-5 h-5" />
-                    {testConfig.totalQuestions} سؤال
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-
-            <div className="space-y-4">
-              <Button
-                data-testid="button-start-test"
-                onClick={startTest}
-                size="lg"
-                className="bg-primary text-primary-foreground hover:bg-primary/90 shadow-sm px-8 py-4 font-semibold text-lg"
-              >
-                <CheckCircle className="w-6 h-6 mr-3" />
-                بدء الاختبار
-                <ArrowRight className="w-5 h-5 ml-3" />
-              </Button>
-              
-              <Button
-                variant="outline"
-                onClick={() => setLocation('/tahsilik/tests/subject')}
-                className="border-2"
-              >
-                <ArrowLeft className="w-4 h-4 mr-2" />
-                العودة لاختيار المادة
-              </Button>
+      <main className="qodratak-tahsili-surface flex min-h-[70vh] items-center justify-center px-4 py-8" dir="rtl">
+        <Card className="w-full max-w-2xl">
+          <CardHeader>
+            <CardTitle className="text-2xl">{test.label}</CardTitle>
+            <CardDescription>{test.rationale}</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-5">
+            <div className="flex flex-wrap gap-2">
+              <Badge variant="secondary">{test.questionCount} سؤالًا معتمدًا</Badge>
+              <Badge variant="secondary">{test.timeLimitMinutes} دقيقة</Badge>
+              {test.focusSubcategories.map((area) => <Badge key={area} variant="outline">{area}</Badge>)}
             </div>
-          </motion.div>
-        </div>
-      </div>
+            <p className="text-sm text-muted-foreground">
+              لن تظهر الإجابات الصحيحة إلا بعد إرسال الاختبار. يمكنك تخطي أي سؤال وسيُحتسب ضمن الأسئلة غير المجابة.
+            </p>
+            <div className="flex flex-wrap gap-3">
+              <Button size="lg" onClick={() => setStarted(true)}>
+                <ArrowRight className="ml-2 h-4 w-4" /> ابدأ الاختبار
+              </Button>
+              <Button variant="outline" onClick={() => setLocation("/tahsilik/tests/subject")}>العودة للمواد</Button>
+            </div>
+          </CardContent>
+        </Card>
+      </main>
     );
   }
 
-  // AI Review Screen
-  if (showAiReview) {
-    return (
-      <AiReviewingScreen
-        wrongQuestions={wrongQuestionsForAI}
-        totalQuestions={questions.length}
-        score={results?.correctAnswers ?? 0}
-        userEmail={user?.email}
-        onShowResults={(explanations) => {
-          setAiExplanations(explanations || []);
-          setShowAiReview(false);
-          setIsFinished(true);
-        }}
-      />
-    );
-  }
-
-  // شاشة النتائج
-  if (isFinished && results) {
-    return (
-      <div className="min-h-screen bg-background py-8" dir="rtl">
-        <div className="container mx-auto px-4 max-w-3xl">
-          <motion.div
-            initial={{ opacity: 0, scale: 0.9 }}
-            animate={{ opacity: 1, scale: 1 }}
-            className="text-center"
-          >
-            <div className="mb-8">
-              <Trophy className="w-16 h-16 text-yellow-500 mx-auto mb-4" />
-              <h1 className="text-4xl font-bold text-slate-800 dark:text-slate-100 mb-2">
-                نتائج الاختبار
-              </h1>
-              <p className="text-slate-600 dark:text-slate-300">{results.subject}</p>
-            </div>
-
-            <Card className="bg-card border-border shadow-sm mb-8">
-              <CardContent className="p-8">
-                <div className={`w-32 h-32 mx-auto mb-6 rounded-full flex items-center justify-center text-4xl font-bold text-primary-foreground ${
-                  results.percentage >= 80 ? 'bg-emerald-600' :
-                  results.percentage >= 60 ? 'bg-primary' :
-                  'bg-amber-500'
-                }`}>
-                  {Math.round(results.percentage)}%
-                </div>
-                
-                <h2 className="text-3xl font-bold text-foreground mb-4">
-                  {results.grade}
-                </h2>
-                
-                <div className="grid grid-cols-2 gap-6 text-center">
-                  <div>
-                    <p className="text-2xl font-bold text-green-600">{results.correctAnswers}</p>
-                    <p className="text-sm text-slate-600 dark:text-slate-400">إجابة صحيحة</p>
-                  </div>
-                  <div>
-                    <p className="text-2xl font-bold text-slate-600">{results.totalQuestions - results.correctAnswers}</p>
-                    <p className="text-sm text-slate-600 dark:text-slate-400">إجابة خاطئة</p>
-                  </div>
-                </div>
-                
-                  <div className="mt-6 p-4 bg-muted rounded-lg">
-                  <p className="text-sm text-muted-foreground">
-                    الوقت المستغرق: {Math.floor(results.timeUsed / 60)} دقيقة و {results.timeUsed % 60} ثانية
-                  </p>
-                </div>
-              </CardContent>
-            </Card>
-
-            <div className="flex gap-4 justify-center">
-              <Button
-                onClick={resetTest}
-                className="bg-primary text-primary-foreground hover:bg-primary/90"
-              >
-                <RotateCcw className="w-4 h-4 mr-2" />
-                إعادة الاختبار
-              </Button>
-              
-              <Button
-                variant="outline"
-                onClick={() => setLocation('/tahsilik/tests/subject')}
-              >
-                اختبار مادة أخرى
-              </Button>
-            </div>
-          </motion.div>
-        </div>
-      </div>
-    );
-  }
-
-  // شاشة الاختبار
-  const currentQuestion = questions[currentQuestionIndex];
-  
+  const question = test.questions[currentIndex];
   return (
-    <QiyasExamLayout
-      examTitle={testConfig.subject.name}
-      enableQuantitativeTools={/رياضيات|math/i.test(`${testConfig?.subject.id ?? ""} ${testConfig?.subject.name ?? ""}`)}
-      questionNumber={currentQuestionIndex + 1}
-      totalQuestions={questions.length}
-      timeLeft={timeLeft}
-      isTimeUrgent={timeLeft < 300}
-      questionText={currentQuestion?.question || ""}
-      questionImageUrl={currentQuestion?.imageUrl}
-      questionImageUrls={currentQuestion?.imageUrls}
-      options={currentQuestion?.options || []}
-      selectedAnswer={answers[currentQuestionIndex] ?? selectedAnswer ?? null}
-      onSelectAnswer={handleAnswerSelect}
-      onNext={handleNextQuestion}
-      onPrev={handlePreviousQuestion}
-      onFinish={finishTest}
-      canGoPrev={currentQuestionIndex > 0}
-      canGoNext={true}
-      isLastQuestion={currentQuestionIndex === questions.length - 1}
-      userName={user?.username || user?.name}
-      userId={user?.id?.toString()}
-      questionsStatus={questions.map((_, i) => ({
-        answered: answers[i] !== undefined,
-        bookmarked: bookmarkedQuestions.has(i)
-      }))}
-      currentQuestionIndex={currentQuestionIndex}
-      onJumpToQuestion={setCurrentQuestionIndex}
-      answeredCount={Object.keys(answers).length}
-      isBookmarked={bookmarkedQuestions.has(currentQuestionIndex)}
-      onToggleBookmark={() => setBookmarkedQuestions(prev => {
-        const next = new Set(prev);
-        if (next.has(currentQuestionIndex)) next.delete(currentQuestionIndex); else next.add(currentQuestionIndex);
-        return next;
-      })}
-    />
+    <main className="qodratak-tahsili-surface min-h-[100dvh] px-4 py-8" dir="rtl">
+      <div className="mx-auto max-w-3xl space-y-5">
+        <header className="flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <h1 className="text-2xl font-black">{test.label}</h1>
+            <p className="text-sm text-muted-foreground">
+              السؤال {currentIndex + 1} من {test.questions.length} · تمت الإجابة عن {Object.keys(answers).length}
+            </p>
+          </div>
+          <Badge variant={timeLeft < 120 ? "destructive" : "secondary"} className="px-3 py-2 text-base">
+            <Clock3 className="ml-2 h-4 w-4" /> {formatTime(timeLeft)}
+          </Badge>
+        </header>
+        <Progress value={((currentIndex + 1) / test.questions.length) * 100} />
+        <Card>
+          <CardHeader>
+            <div className="flex items-start justify-between gap-3">
+              <CardTitle className="text-xl leading-8">{question.text}</CardTitle>
+              <Badge variant="outline">{question.subcategory}</Badge>
+            </div>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            {question.options.map((option, optionIndex) => {
+              const selected = answers[question.id] === optionIndex;
+              return (
+                <button
+                  key={`${question.id}-${optionIndex}`}
+                  type="button"
+                  aria-pressed={selected}
+                  onClick={() => setAnswers((previous) => ({ ...previous, [question.id]: optionIndex }))}
+                  className={`w-full rounded-xl border p-4 text-right transition ${
+                    selected ? "border-primary bg-primary/5 ring-1 ring-primary" : "border-border hover:border-primary/50 hover:bg-muted/50"
+                  }`}
+                >
+                  <span className="ml-3 inline-flex h-7 w-7 items-center justify-center rounded-full bg-muted text-sm font-bold">
+                    {String.fromCharCode(65 + optionIndex)}
+                  </span>
+                  {option}
+                </button>
+              );
+            })}
+          </CardContent>
+        </Card>
+        <div className="flex flex-wrap justify-between gap-3">
+          <Button variant="outline" disabled={currentIndex === 0 || submitMutation.isPending} onClick={() => setCurrentIndex((index) => Math.max(0, index - 1))}>
+            السابق
+          </Button>
+          {currentIndex < test.questions.length - 1 ? (
+            <Button disabled={submitMutation.isPending} onClick={() => setCurrentIndex((index) => index + 1)}>
+              التالي <ArrowLeft className="mr-2 h-4 w-4" />
+            </Button>
+          ) : (
+            <Button disabled={submitMutation.isPending} onClick={submitTest}>
+              {submitMutation.isPending ? <Loader2 className="ml-2 h-4 w-4 animate-spin" /> : <CheckCircle2 className="ml-2 h-4 w-4" />}
+              إنهاء الاختبار
+            </Button>
+          )}
+        </div>
+        {timeLeft === 0 && submitMutation.isError && (
+          <Button className="w-full" onClick={submitTest} disabled={submitMutation.isPending}>إعادة محاولة حفظ النتيجة</Button>
+        )}
+        {submitMutation.isError && <p role="alert" className="text-sm text-destructive">{errorMessage(submitMutation.error)}</p>}
+      </div>
+    </main>
   );
-};
-
-export default TahsilikSubjectTestRunner;
+}

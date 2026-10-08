@@ -194,7 +194,7 @@ export interface FoundationLearningState {
   program: "qudrat" | "tahsili";
   baseline: { overall: number; verbal: number; quantitative: number } | null;
   focus: { category: "verbal" | "quantitative"; skill: string; label: string } | null;
-  recommendation: { title: string; reason: string; href: string };
+  recommendation: { title: string; reason: string; href: string; startingLevel?: "foundation" | "practice" | "program_overview" };
   skillSummaries?: Array<{
     key: string;
     label: string;
@@ -203,14 +203,56 @@ export interface FoundationLearningState {
     correctAnswers: number;
     percentage: number;
   }>;
+  placementAssessment?: FoundationPlacementResult & {
+    version: string;
+    completedAt: string;
+  } | null;
+}
+
+export interface FoundationPlacementAreaResult {
+  key: string;
+  label: string;
+  subjectId: string;
+  totalQuestions: number;
+  correctAnswers: number;
+  percentage: number;
+  difficultyCoverage: Array<{
+    difficulty: "beginner" | "intermediate" | "advanced";
+    totalQuestions: number;
+    correctAnswers: number;
+  }>;
+}
+
+export interface FoundationPlacementResult {
+  program: "qudrat" | "tahsili";
+  percentage: number;
+  correctAnswers: number;
+  totalQuestions: number;
+  answeredQuestions: number;
+  confidence: {
+    level: "LOW" | "MEDIUM" | "HIGH";
+    label: string;
+    note: string;
+  };
+  areas: FoundationPlacementAreaResult[];
+  focusArea: FoundationPlacementAreaResult | null;
+  recommendation: {
+    title: string;
+    reason: string;
+    href: string;
+    startingLevel: "foundation" | "practice" | "program_overview";
+  };
 }
 
 export interface FoundationDiagnosticQuestion {
   _id: string;
   text: string;
   options: string[];
-  category: "verbal" | "quantitative";
+  category: "verbal" | "quantitative" | "tahsili";
   subcategory: string;
+  areaKey: string;
+  areaLabel: string;
+  difficulty: "beginner" | "intermediate" | "advanced";
   imageUrl?: string;
   imageUrls?: string[];
 }
@@ -218,6 +260,7 @@ export interface FoundationDiagnosticQuestion {
 export interface FoundationDiagnostic {
   attemptId: string;
   expiresAt: string;
+  program: "qudrat" | "tahsili";
   questions: FoundationDiagnosticQuestion[];
 }
 
@@ -939,25 +982,30 @@ export function useFoundationLearningState(program: 'qudrat' | 'tahsili' = 'qudr
 }
 
 export function useStartFoundationDiagnostic() {
-  return useMutation<FoundationDiagnostic, Error, 'qudrat'>({
+  return useMutation<FoundationDiagnostic, Error, 'qudrat' | 'tahsili'>({
     mutationFn: (program) => fetchJson<FoundationDiagnostic>(`/api/foundation/diagnostic?program=${program}`),
   });
 }
 
 export function useSubmitFoundationDiagnostic() {
   const queryClient = useQueryClient();
-  return useMutation({
-    mutationFn: (payload: {
+  return useMutation<
+    { result: FoundationPlacementResult; profile: Record<string, unknown> },
+    Error,
+    {
+      program: "qudrat" | "tahsili";
       attemptId: string;
       answers: Array<{ questionId: string; selectedOptionIndex: number }>;
       timeTakenSeconds?: number;
-    }) => fetchJson<any>("/api/foundation/diagnostic/submit", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(payload),
-    }),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/foundation/learning-state", "qudrat"] });
+    }
+  >({
+    mutationFn: ({ program: _program, ...payload }) => fetchJson("/api/foundation/diagnostic/submit", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      }),
+    onSuccess: (_data, variables) => {
+      queryClient.invalidateQueries({ queryKey: ["/api/foundation/learning-state", variables.program] });
       queryClient.invalidateQueries({ queryKey: ["/api/student/dashboard"] });
       queryClient.invalidateQueries({ queryKey: ["/api/learning/today"] });
       queryClient.invalidateQueries({ queryKey: ["/api/learning/adaptive/decision"] });

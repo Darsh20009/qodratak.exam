@@ -1,5 +1,6 @@
 
 import React, { useEffect, useState, useMemo } from 'react';
+import { ExamReportHistory } from '@/components/exam-results/ExamLearningReport';
 import { useLocation } from 'wouter';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -249,10 +250,12 @@ const formatTimeTaken = (minutes: number): string => {
 };
 
 // دالة لتوحيد تنسيق السجلات من مصادر مختلفة
-const normalizeRecord = (record: any, source: string): ExamRecord | null => {
+const normalizeRecord = (record: any, source: string, ownerId: string): ExamRecord | null => {
   try {
     // التحقق من وجود البيانات الأساسية
     if (!record) return null;
+    const recordOwner = record.studentId ?? record.userId ?? record.ownerId;
+    if (!ownerId || recordOwner === undefined || String(recordOwner) !== ownerId) return null;
 
     // استخراج البيانات حسب التنسيق
     let examType = record.examType || record.testName || record.testType || source;
@@ -365,13 +368,13 @@ export default function EnhancedExamRecordsPage() {
               // التعامل مع التنسيقات المختلفة وتوحيدها
               if (Array.isArray(parsedData)) {
                 parsedData.forEach(item => {
-                  const normalizedRecord = normalizeRecord(item, source);
+                  const normalizedRecord = normalizeRecord(item, source, String(user?.id ?? user?._id ?? ''));
                   if (normalizedRecord) {
                     allStoredRecords.push(normalizedRecord);
                   }
                 });
               } else if (parsedData && typeof parsedData === 'object') {
-                const normalizedRecord = normalizeRecord(parsedData, source);
+                const normalizedRecord = normalizeRecord(parsedData, source, String(user?.id ?? user?._id ?? ''));
                 if (normalizedRecord) {
                   allStoredRecords.push(normalizedRecord);
                 }
@@ -427,7 +430,7 @@ export default function EnhancedExamRecordsPage() {
     };
 
     loadExamRecords();
-  }, [toast]);
+  }, [toast, user?.id, user?._id]);
 
   // Enhanced filtering and sorting
   useEffect(() => {
@@ -552,7 +555,7 @@ export default function EnhancedExamRecordsPage() {
               <div className="flex gap-2">
                 <AlertCircle className="h-4 w-4 mt-0.5 shrink-0 text-blue-600" />
                 <span>
-                  تعرض هذه الصفحة نتيجة المتقدم في الاختبار وليست للاستخدام الرسمي، ويعتبر أي تعديل عليها جريمة تزوير، ويحق للهيئة تطبيق العقوبات الواردة بلائحة تنظيم الاختبارات
+                  هذا تقرير تدريبي صادر من منصة قدراتك لعرض نتيجة الاختبار ومراجعتها، وليس نتيجة رسمية أو شهادة صادرة من هيئة تقويم التعليم والتدريب.
                 </span>
               </div>
             </div>
@@ -651,12 +654,19 @@ export default function EnhancedExamRecordsPage() {
 
     <div className="min-h-screen bg-background pb-24">
       <div className="container mx-auto py-6 sm:py-12 px-4 max-w-7xl">
+        <header className="rounded-2xl border border-border bg-card p-5 sm:p-7" dir="rtl">
+          <p className="text-xs font-bold tracking-wide text-primary">منصة قدراتك — سجل نتائج الطالب</p>
+          <h1 className="mt-2 text-3xl font-bold text-foreground" data-testid="heading-my-results">نتائجي</h1>
+          <p className="mt-3 text-sm leading-7 text-muted-foreground">نتائج اختباراتك المحفوظة، وتفاصيل الإجابات والوقت والشروح وخطة المراجعة. هذه نتائج تدريبية من المنصة وليست نتائج رسمية من قياس.</p>
+        </header>
+        <ExamReportHistory />
+        {allRecords.length > 0 && <>
         {/* ===== قسم الاختبارات الرسمية - النمط الرسمي لقياس ===== */}
         {qiyasRecords.length > 0 && (
           <section className="mb-12">
             <div className="flex items-center gap-3 mb-6">
               <div className="w-1 h-6 bg-primary rounded-full"></div>
-              <h2 className="text-xl font-bold text-gray-800">نتائج الاختبارات الرسمية المسجلة</h2>
+              <h2 className="text-xl font-bold text-foreground">نتائج اختبارات المحاكاة المسجلة</h2>
               <Badge className="bg-primary/10 text-primary border-primary/20 font-medium">{qiyasRecords.length}</Badge>
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
@@ -717,9 +727,9 @@ export default function EnhancedExamRecordsPage() {
             <div className="inline-flex items-center justify-center w-20 h-20 rounded-full mb-6 shadow-xl animate-pulse" style={{ background: '#1a7c3e' }}>
               <Sparkles className="h-10 w-10 text-white" />
             </div>
-            <h1 className="text-5xl font-extrabold text-gray-800 dark:text-white mb-4">
+            <h2 className="text-3xl font-bold text-foreground mb-4">
               مركز إنجازاتك الاختبارية
-            </h1>
+            </h2>
             <p className="text-xl text-slate-600 dark:text-slate-400 max-w-3xl mx-auto leading-relaxed">
               تابع تطورك الأكاديمي، حلل أداءك، واكتشف نقاط قوتك في رحلتك التعليمية
             </p>
@@ -1026,6 +1036,7 @@ export default function EnhancedExamRecordsPage() {
             © {new Date().getFullYear()} جميع الحقوق محفوظة - نحو مستقبل أكاديمي مشرق
           </p>
         </footer>
+        </>}
       </div>
     </div>
     </>

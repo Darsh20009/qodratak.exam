@@ -1,4 +1,5 @@
 import { useState, useEffect, useContext } from "react";
+import { useExamQuestionTiming } from '@/lib/examTiming';
 import { X, BookmarkCheck, Bookmark, Flag, AlertTriangle, CheckCircle2, LayoutGrid, ChevronRight, ChevronLeft, BookOpen, Calculator } from "lucide-react";
 import ImageZoom from "@/components/ImageZoom";
 import { getQuestionImageUrls } from "@/lib/questionImages";
@@ -143,6 +144,11 @@ export function QiyasExamLayout({
   enableQuantitativeTools = false,
   questionId,
 }: QiyasExamLayoutProps) {
+  useExamQuestionTiming({
+    ...(questionData && typeof questionData === 'object' ? questionData : {}),
+    id: questionId ?? (questionData as any)?.id ?? `${sectionNumber}:${questionNumber}`,
+    text: questionText, options, imageUrl: questionImageUrl,
+  }, selectedAnswer, !isFinishing, examTitle || 'اختبار');
   const { passageText, passageLabel, displayQuestionText } = getQuestionDisplayParts(questionData, questionText);
   const { setActive: setStudentExamChromeActive } = useContext(StudentExamChromeContext);
   const [fontSize, setFontSize] = useState<'sm' | 'base' | 'lg'>('base');

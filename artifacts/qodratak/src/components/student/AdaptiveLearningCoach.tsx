@@ -1,4 +1,6 @@
 import { useState } from "react";
+import { useExamQuestionTiming, examQuestionSeconds } from '@/lib/examTiming';
+import ExamLearningReport from '@/components/exam-results/ExamLearningReport';
 import { Link } from "wouter";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
@@ -15,12 +17,53 @@ import {
 import { Button } from "@/components/ui/button";
 
 type AreaStat = {
-  category: "verbal" | "quantitative";
+  program: "qudrat" | "tahsili";
+  subjectId: string;
+  subjectLabel: string;
+  category: string;
   subcategory: string;
   totalAttempts: number;
   correctAttempts: number;
   accuracy: number;
   repeatedWrongQuestions: number;
+  distinctDays: number;
+  confidence: "low" | "medium" | "high";
+  reason: string;
+};
+
+type CoachStudyPlan = {
+  program: "qudrat" | "tahsili";
+  programLabel: string;
+  subjectId?: string;
+  subjectLabel?: string;
+  reason: string;
+  confidence: "low" | "medium" | "high";
+  nextLesson?: { title: string; href: string };
+  nextPractice?: { title: string; href: string };
+  nextRetestAt?: string;
+  retestDue: boolean;
+  availabilityNote?: string;
+};
+
+type SubjectPerformanceTrend = {
+  program: "qudrat" | "tahsili";
+  subjectId: string;
+  subjectLabel: string;
+  periods: Array<{
+    label: string;
+    totalAttempts: number;
+    correctAttempts: number;
+    accuracy: number;
+  }>;
+};
+
+type AssessmentHistoryItem = {
+  program: "qudrat" | "tahsili";
+  testName: string;
+  testType: string;
+  percentage: number;
+  totalQuestions: number;
+  completedAt: string;
 };
 
 type CoachReport = {
@@ -32,6 +75,9 @@ type CoachReport = {
   };
   strengths: AreaStat[];
   focusAreas: AreaStat[];
+  studyPlans: CoachStudyPlan[];
+  performanceTrend: SubjectPerformanceTrend[];
+  assessmentHistory: AssessmentHistoryItem[];
   guide: {
     title: string;
     summary: string;
@@ -41,6 +87,9 @@ type CoachReport = {
   aiAvailable: boolean;
   note: string;
 };
+
+type CoachChatMessage = { role: "user" | "assistant"; content: string };
+type CoachChatReply = { reply: string; aiAvailable: boolean; fallback: boolean };
 
 type TestQuestion = {
   id: string;
@@ -85,13 +134,23 @@ async function getJson<T>(url: string, init?: RequestInit): Promise<T> {
 function categoryName(category: string) {
   if (category === "verbal") return "اللفظي";
   if (category === "quantitative") return "الكمي";
-  return "الكمي واللفظي";
+  return category;
 }
 
-function confidenceName(confidence: CoachReport["evidence"]["confidence"]) {
+function confidenceName(confidence: "low" | "medium" | "high") {
   if (confidence === "high") return "بيانات كافية";
   if (confidence === "medium") return "بيانات أولية";
   return "بيانات قليلة";
+}
+
+function areaTitle(area: AreaStat) {
+  return area.program === "qudrat"
+    ? `${area.subcategory} · ${categoryName(area.category)}`
+    : `${area.subjectLabel} · ${area.subcategory}`;
+}
+
+function programName(program: "qudrat" | "tahsili") {
+  return program === "qudrat" ? "القدرات" : "التحصيلي";
 }
 
 function downloadGuide(report: CoachReport) {
@@ -114,6 +173,10 @@ export default function AdaptiveLearningCoach({
   const queryClient = useQueryClient();
   const [isTestOpen, setIsTestOpen] = useState(false);
   const [answers, setAnswers] = useState<Record<string, number>>({});
+  const [activeQuestion, setActiveQuestion] = useState(0);
+  const [chatDraft, setChatDraft] = useState("");
+  const [chatHistory, setChatHistory] = useState<CoachChatMessage[]>([]);
+  const [chatStatus, setChatStatus] = useState("");
   const report = useQuery<CoachReport>({
     queryKey: ["/api/student/learning-coach"],
     queryFn: () => getJson("/api/student/learning-coach"),
@@ -135,6 +198,7 @@ export default function AdaptiveLearningCoach({
           answers: Object.entries(answers).map(([questionId, selectedIndex]) => ({
             questionId,
             selectedIndex,
+            responseTime: examQuestionSeconds(questionId),
           })),
         }),
       }),
@@ -143,9 +207,30 @@ export default function AdaptiveLearningCoach({
       queryClient.invalidateQueries({ queryKey: ["/api/student/learning-coach"] });
     },
   });
+  const askCoach = useMutation({
+    mutationFn: (input: { message: string; history: CoachChatMessage[] }) =>
+      getJson<CoachChatReply>("/api/student/learning-coach/chat", {
+        method: "POST",
+        body: JSON.stringify(input),
+      }),
+    onSuccess: (result, input) => {
+      const exchange: CoachChatMessage[] = [
+        { role: "user", content: input.message },
+        { role: "assistant", content: result.reply },
+      ];
+      setChatHistory((current) => [...current, ...exchange].slice(-12));
+      setChatDraft("");
+      setChatStatus(result.fallback
+        ? "الدرس والاختبار مستمران؛ الرد الذكي غير متاح مؤقتًا."
+        : "هذا شرح مساعد، ولا يغيّر التصحيح أو الدرجة.");
+    },
+  });
 
   const currentTest = submitTest.data || dailyTest.data;
   const isCompleted = currentTest?.status === "completed";
+  const timedQuestion = currentTest?.questions[activeQuestion];
+  useExamQuestionTiming(timedQuestion, timedQuestion ? answers[timedQuestion.id] ?? null : null,
+    isTestOpen && !isCompleted && Boolean(timedQuestion), 'اختبار نقاط ضعفي اليوم');
   const canSubmit =
     currentTest?.questions.length &&
     currentTest.questions.every((question) => Number.isInteger(answers[question.id]));
@@ -168,7 +253,7 @@ export default function AdaptiveLearningCoach({
                 نتعلم من إجاباتك، لا من التخمين
               </h2>
               <p className="mt-2 max-w-2xl text-sm leading-7 text-muted-foreground">
-                نستخدم إجاباتك المحفوظة لتحديد المجالات التي تحتاج مراجعة، ثم نختار أسئلة قدرات من بنك المنصة.
+                نحلل إجاباتك الموثقة في القدرات والتحصيلي، ونربط المجالات المرصودة بدرس منشور وتدريب متاح عند توفرهما.
               </p>
             </div>
           </div>
@@ -250,10 +335,10 @@ export default function AdaptiveLearningCoach({
                     >
                       <div className="min-w-0">
                         <p className="truncate text-sm font-black text-foreground">
-                          {area.subcategory} · {categoryName(area.category)}
+                           {areaTitle(area)}
                         </p>
                         <p className="mt-1 text-xs text-muted-foreground">
-                          {area.totalAttempts} إجابات، ودقة {area.accuracy}٪
+                           {area.reason}
                         </p>
                       </div>
                       <span className="shrink-0 rounded-lg bg-rose-500/10 px-2.5 py-1.5 text-xs font-black text-rose-700 dark:text-rose-300">
@@ -269,7 +354,7 @@ export default function AdaptiveLearningCoach({
               )}
               {report.data.strengths.length > 0 && (
                 <p className="text-sm leading-6 text-emerald-700 dark:text-emerald-300">
-                  نقاط قوة ظاهرة: {report.data.strengths.map((area) => area.subcategory).join("، ")}.
+                   نقاط قوة ظاهرة: {report.data.strengths.map(areaTitle).join("، ")}.
                 </p>
               )}
               <p className="text-xs leading-5 text-muted-foreground">{report.data.note}</p>
@@ -311,6 +396,212 @@ export default function AdaptiveLearningCoach({
           )}
         </aside>
       </div>
+
+      {report.data && (
+        <div className="space-y-5 border-t border-border p-5 sm:p-7">
+          <section>
+            <div className="mb-4">
+              <h3 className="font-black text-foreground">الدرس والتدريب التالي</h3>
+              <p className="mt-1 text-sm leading-6 text-muted-foreground">
+                الاختيار مبني على أضعف مجال مرصود لكل برنامج. لا نعرض درسًا أو تدريبًا غير منشور أو غير معتمد.
+              </p>
+            </div>
+            <div className="grid gap-3 lg:grid-cols-2">
+              {report.data.studyPlans.map((plan) => (
+                <article
+                  key={plan.program}
+                  className="rounded-2xl border border-border bg-background p-4 sm:p-5"
+                >
+                  <div className="flex flex-wrap items-center justify-between gap-2">
+                    <h4 className="font-black text-foreground">{plan.programLabel}</h4>
+                    <span className="rounded-full bg-muted px-3 py-1 text-xs font-bold text-muted-foreground">
+                      {confidenceName(plan.confidence)}
+                    </span>
+                  </div>
+                  {plan.subjectLabel && (
+                    <p className="mt-2 text-sm font-bold text-primary">{plan.subjectLabel}</p>
+                  )}
+                  <p className="mt-2 text-sm leading-6 text-muted-foreground">{plan.reason}</p>
+                  <div className="mt-4 flex flex-wrap gap-2">
+                    {plan.nextLesson ? (
+                      <Link
+                        href={trialExpired ? "/subscription" : plan.nextLesson.href}
+                        className="inline-flex min-h-10 items-center justify-center rounded-xl border border-border px-3 text-sm font-bold text-foreground hover:bg-muted"
+                      >
+                        {trialExpired ? "اشترك لفتح الدرس" : `الدرس: ${plan.nextLesson.title}`}
+                      </Link>
+                    ) : !plan.subjectId ? (
+                      <Link
+                        href={trialExpired ? "/subscription" : `/foundation?program=${plan.program}`}
+                        className="inline-flex min-h-10 items-center justify-center rounded-xl border border-border px-3 text-sm font-bold text-foreground hover:bg-muted"
+                      >
+                        {trialExpired ? "عرض الاشتراكات" : "ابدأ تقييم تحديد المستوى"}
+                      </Link>
+                    ) : (
+                      <span className="inline-flex min-h-10 items-center rounded-xl bg-muted px-3 text-xs font-bold text-muted-foreground">
+                        لا يوجد درس منشور مطابق الآن
+                      </span>
+                    )}
+                    {plan.nextPractice && (
+                      <Link
+                        href={trialExpired ? "/subscription" : plan.nextPractice.href}
+                        className="inline-flex min-h-10 items-center justify-center rounded-xl bg-primary px-3 text-sm font-black text-primary-foreground hover:opacity-90"
+                      >
+                        {trialExpired ? "اشترك لفتح التدريب" : plan.nextPractice.title}
+                      </Link>
+                    )}
+                  </div>
+                  {plan.nextRetestAt && (
+                    <p className="mt-3 text-xs leading-5 text-muted-foreground">
+                      {plan.retestDue ? "موعد المراجعة وإعادة القياس مستحق الآن." : "موعد المراجعة وإعادة القياس المقترح:"}{" "}
+                      {new Date(plan.nextRetestAt).toLocaleDateString("ar-SA")}
+                    </p>
+                  )}
+                  {plan.availabilityNote && (
+                    <p className="mt-3 text-xs leading-5 text-muted-foreground">{plan.availabilityNote}</p>
+                  )}
+                </article>
+              ))}
+            </div>
+          </section>
+
+          <section className="rounded-2xl border border-border bg-background p-4 sm:p-5">
+            <div className="mb-4">
+              <h3 className="font-black text-foreground">تغيّر الأداء بمرور الوقت</h3>
+              <p className="mt-1 text-sm leading-6 text-muted-foreground">
+                نقارن الإجابات المسجلة في الأسابيع الأربعة الأخيرة، ونُظهر الاختبارات السابقة عند توفرها.
+              </p>
+            </div>
+            <div className="grid gap-4 lg:grid-cols-2">
+              {(["qudrat", "tahsili"] as const).map((program) => {
+                const trends = report.data!.performanceTrend.filter((item) => item.program === program);
+                const history = report.data!.assessmentHistory
+                  .filter((item) => item.program === program)
+                  .slice(0, 5);
+                return (
+                  <div key={program} className="rounded-xl bg-muted/40 p-4">
+                    <h4 className="font-black text-foreground">{programName(program)}</h4>
+                    {trends.length > 0 ? (
+                      <div className="mt-3 space-y-3">
+                        {trends.map((trend) => (
+                          <div key={trend.subjectId}>
+                            <p className="text-sm font-bold text-foreground">{trend.subjectLabel}</p>
+                            <div className="mt-1 flex flex-wrap gap-2">
+                              {trend.periods.filter((period) => period.totalAttempts > 0).map((period) => (
+                                <span
+                                  key={period.label}
+                                  className="rounded-lg border border-border bg-background px-2.5 py-1.5 text-xs text-muted-foreground"
+                                >
+                                  {period.label}: {period.correctAttempts}/{period.totalAttempts} ({period.accuracy}٪)
+                                </span>
+                              ))}
+                              {!trend.periods.some((period) => period.totalAttempts > 0) && (
+                                <span className="text-xs text-muted-foreground">لا توجد محاولات خلال آخر أربعة أسابيع.</span>
+                              )}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <p className="mt-2 text-sm text-muted-foreground">لا توجد محاولات حديثة كافية لهذا البرنامج.</p>
+                    )}
+                    {history.length > 0 && (
+                      <div className="mt-4 border-t border-border pt-3">
+                        <p className="text-xs font-black text-muted-foreground">آخر الاختبارات المحفوظة</p>
+                        <ul className="mt-2 space-y-2">
+                          {history.map((item) => (
+                            <li
+                              key={`${item.testName}-${item.completedAt}`}
+                              className="flex flex-wrap items-center justify-between gap-2 text-xs"
+                            >
+                              <span className="text-muted-foreground">
+                                {item.testName} · {new Date(item.completedAt).toLocaleDateString("ar-SA")}
+                              </span>
+                              <span className="font-black text-foreground">
+                                {item.percentage}٪ · {item.totalQuestions} سؤالًا
+                              </span>
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          </section>
+
+          <section className="rounded-2xl border border-primary/15 bg-background p-4 sm:p-5">
+            <div className="mb-3">
+              <h3 className="font-black text-foreground">اسأل مدربك عن الدراسة</h3>
+              <p className="mt-1 text-sm leading-6 text-muted-foreground">
+                الشرح الذكي مساعد فقط؛ مفاتيح الإجابة والتصحيح يظل مصدرها المعتمد في المنصة.
+              </p>
+            </div>
+            {trialExpired ? (
+              <div className="rounded-xl bg-muted/60 p-3 text-sm text-muted-foreground">
+                اشترك لفتح المحادثة. يظل اختبار القدرات اليومي المتاح في لوحة التحكم مستقلًا عن الذكاء الاصطناعي.
+              </div>
+            ) : (
+              <>
+                {chatHistory.length > 0 && (
+                  <div className="mb-3 max-h-72 space-y-2 overflow-y-auto rounded-xl bg-muted/40 p-3" aria-live="polite">
+                    {chatHistory.map((item, index) => (
+                      <div
+                        key={`${index}-${item.role}`}
+                        className={[
+                          "max-w-[90%] rounded-xl px-3 py-2 text-sm leading-6",
+                          item.role === "user"
+                            ? "mr-auto bg-primary text-primary-foreground"
+                            : "ml-auto bg-background text-foreground",
+                        ].join(" ")}
+                      >
+                        {item.content}
+                      </div>
+                    ))}
+                  </div>
+                )}
+                <form
+                  className="space-y-3"
+                  onSubmit={(event) => {
+                    event.preventDefault();
+                    const message = chatDraft.trim();
+                    if (!message || askCoach.isPending) return;
+                    askCoach.mutate({ message, history: chatHistory });
+                  }}
+                >
+                  <textarea
+                    value={chatDraft}
+                    onChange={(event) => setChatDraft(event.target.value)}
+                    maxLength={800}
+                    rows={3}
+                    placeholder="اكتب سؤالك عن درس أو سؤال أخطأت فيه..."
+                    aria-label="سؤالك للمدرب"
+                    className="w-full resize-y rounded-xl border border-border bg-background p-3 text-sm leading-6 text-foreground outline-none focus:ring-2 focus:ring-primary/50"
+                  />
+                  <div className="flex flex-wrap items-center justify-between gap-3">
+                    <p className="text-xs leading-5 text-muted-foreground">
+                      {chatStatus || "إذا تعذر الذكاء الاصطناعي، لا يتوقف الدرس أو الاختبار."}
+                    </p>
+                    <Button
+                      type="submit"
+                      disabled={!chatDraft.trim() || askCoach.isPending}
+                      className="min-h-10 rounded-xl font-black"
+                    >
+                      {askCoach.isPending ? "جارٍ إعداد الشرح..." : "إرسال السؤال"}
+                    </Button>
+                  </div>
+                  {askCoach.isError && (
+                    <p role="alert" className="text-sm font-bold text-destructive">
+                      {askCoach.error instanceof Error ? askCoach.error.message : "تعذر إرسال السؤال الآن."}
+                    </p>
+                  )}
+                </form>
+              </>
+            )}
+          </section>
+        </div>
+      )}
 
       {isTestOpen && (
         <div className="border-t border-border p-5 sm:p-7">
@@ -357,7 +648,7 @@ export default function AdaptiveLearningCoach({
               )}
 
               <div className="space-y-4">
-                {currentTest.questions.map((question, questionIndex) => (
+                {(isCompleted ? currentTest.questions : currentTest.questions.slice(activeQuestion, activeQuestion + 1)).map((question, questionIndex) => (
                   <article
                     key={question.id}
                     className="rounded-2xl border border-border bg-background p-4 sm:p-5"
@@ -365,7 +656,7 @@ export default function AdaptiveLearningCoach({
                   >
                     <div className="flex items-start justify-between gap-3">
                       <p className="text-xs font-black text-primary">
-                        {questionIndex + 1}. {question.subcategory} · {categoryName(question.category)}
+                        {(isCompleted ? questionIndex : activeQuestion) + 1}. {question.subcategory} · {categoryName(question.category)}
                       </p>
                       {isCompleted && (
                         question.isCorrect
@@ -433,6 +724,14 @@ export default function AdaptiveLearningCoach({
                 ))}
               </div>
 
+              {!isCompleted && (
+                <div className="flex justify-between gap-2 my-3">
+                  <Button variant="outline" disabled={activeQuestion === 0} onClick={() => setActiveQuestion(activeQuestion - 1)}>السابق</Button>
+                  <span className="text-sm">السؤال {activeQuestion + 1} من {currentTest.questions.length}</span>
+                  <Button variant="outline" disabled={activeQuestion + 1 >= currentTest.questions.length} onClick={() => setActiveQuestion(activeQuestion + 1)}>التالي</Button>
+                </div>
+              )}
+              {isCompleted && submitTest.isSuccess && <ExamLearningReport />}
               {!isCompleted && (
                 <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                   <p className="text-xs leading-5 text-muted-foreground">

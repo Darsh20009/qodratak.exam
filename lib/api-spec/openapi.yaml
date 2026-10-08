@@ -15,6 +15,91 @@ tags:
   - name: payments
     description: Sandbox Geidea checkout, reconciliation, and admin refunds
 paths:
+  /student/exam-reports/practice:
+    post:
+      operationId: startRemedialPractice
+      tags: [learning]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RemedialPracticeInput"
+      responses:
+        "200":
+          description: Source-approved remedial questions without answer keys
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RemedialPracticeStart"
+  /student/exam-reports/practice/submit:
+    post:
+      operationId: submitRemedialPractice
+      tags: [learning]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RemedialPracticeSubmission"
+      responses:
+        "200":
+          description: Server-owned correction and persisted learning evidence
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RemedialPracticeResult"
+  /student/exam-reports:
+    get:
+      operationId: getStudentExamReports
+      tags: [learning]
+      parameters:
+        - name: before
+          in: query
+          required: false
+          schema: { type: string, minLength: 24, maxLength: 24 }
+      responses:
+        "200":
+          description: Student-owned recent exam reports
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ExamReportCollection"
+    post:
+      operationId: saveStudentExamReport
+      tags: [learning]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ExamReportInput"
+      responses:
+        "200":
+          description: Idempotent student report with source-verified correctness
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ExamReportSaveOutput"
+  /student/exam-explanation:
+    post:
+      operationId: prepareExamQuestionExplanation
+      tags: [learning]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ExamExplanationInput"
+      responses:
+        "200":
+          description: Saved explanation or explicit unavailable state
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ExamExplanationOutput"
+        "429":
+          description: Generation budget reached; existing explanations are still available
   /healthz:
     get:
       operationId: healthCheck
@@ -34,6 +119,194 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/HealthStatus"
+  /foundation/learning-state:
+    get:
+      operationId: getFoundationLearningState
+      tags: [learning]
+      summary: Get a student's starting-level assessment and recommendation
+      parameters:
+        - name: program
+          in: query
+          required: false
+          schema: { type: string, enum: [qudrat, tahsili], default: qudrat }
+      responses:
+        "200":
+          description: Current placement state for the selected program
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/FoundationLearningState"
+        "400":
+          description: Unsupported program
+        "401":
+          description: Authentication required
+  /foundation/diagnostic:
+    get:
+      operationId: startFoundationPlacementAssessment
+      tags: [learning]
+      summary: Start a separate Qudrat or Tahsili placement assessment
+      parameters:
+        - name: program
+          in: query
+          required: false
+          schema: { type: string, enum: [qudrat, tahsili], default: qudrat }
+      responses:
+        "200":
+          description: Shuffled assessment questions without answer keys
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/FoundationDiagnosticStart"
+        "400":
+          description: Unsupported program
+        "401":
+          description: Authentication required
+        "503":
+          description: Assessment content is unavailable
+  /foundation/diagnostic/submit:
+    post:
+      operationId: submitFoundationPlacementAssessment
+      tags: [learning]
+      summary: Score and save a completed placement assessment
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/FoundationDiagnosticSubmitRequest"
+      responses:
+        "201":
+          description: Assessment result, confidence, and recommended starting path
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/FoundationDiagnosticSubmission"
+        "400":
+          description: Invalid attempt or answer data
+        "401":
+          description: Authentication required
+        "409":
+          description: Attempt was already submitted or its question references do not match
+        "410":
+          description: Attempt expired or uses an obsolete assessment version
+        "422":
+          description: All assessment questions must be answered
+  /student/learning-coach:
+    get:
+      operationId: getStudentLearningCoachReport
+      tags: [learning]
+      summary: Get trusted Qudrat and Tahsili evidence, study steps, and performance history
+      responses:
+        "200":
+          description: Student-specific report based on approved question sources
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/StudentLearningCoachReport"
+        "401":
+          description: Authentication required
+        "403":
+          description: Students only
+        "503":
+          description: Report could not be prepared
+  /tahsili/subject-tests/overview:
+    get:
+      operationId: getTahsiliSubjectTestsOverview
+      tags: [learning]
+      summary: Get verified Tahsili question coverage and the student's real subject performance
+      responses:
+        "200":
+          description: Per-subject verified question counts and trusted student history
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TahsiliSubjectTestsOverview"
+        "401":
+          description: Authentication required
+        "403":
+          description: Students only
+        "503":
+          description: Subject test information could not be loaded
+  /tahsili/subject-tests/start:
+    post:
+      operationId: startTahsiliSubjectTest
+      tags: [learning]
+      summary: Start a subject-specific adaptive Tahsili test without exposing answer keys
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+                $ref: "#/components/schemas/TahsiliSubjectTestStartInput"
+      responses:
+        "200":
+          description: Server-selected questions and personalization rationale
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TahsiliSubjectTestStartOutput"
+        "400":
+          description: Unsupported subject or invalid question count
+        "401":
+          description: Authentication required
+        "403":
+          description: Students only
+        "503":
+          description: No verified questions are available for this subject
+  /tahsili/subject-tests/submit:
+    post:
+      operationId: submitTahsiliSubjectTest
+      tags: [learning]
+      summary: Score a subject test using server-owned answer keys and save trusted attempts
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+                $ref: "#/components/schemas/TahsiliSubjectTestSubmitInput"
+      responses:
+        "200":
+          description: Server-scored result and answer review
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TahsiliSubjectTestSubmitOutput"
+        "400":
+          description: Invalid answers or test reference
+        "401":
+          description: Authentication required
+        "403":
+          description: Students only
+        "409":
+          description: Test questions have changed or are no longer verified
+        "410":
+          description: Test expired
+  /student/learning-coach/chat:
+    post:
+      operationId: askStudentLearningCoach
+      tags: [learning]
+      summary: Ask an optional AI tutor using server-verified study context
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/StudentLearningCoachChatRequest"
+      responses:
+        "200":
+          description: Explanation or a safe fallback when AI is unavailable
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/StudentLearningCoachChatResponse"
+        "400":
+          description: Message is missing or too long
+        "401":
+          description: Authentication required
+        "403":
+          description: Students only
+        "503":
+          description: Trusted study context could not be loaded
   /learning/foundation-path/verbal:
     get:
       operationId: getVerbalFoundationLearningPath
@@ -267,6 +540,60 @@ paths:
           description: The quiz submission conflicts with an earlier request
         "503":
           description: Quiz progress could not be stored
+  /learning/computerized/verbal/video-progress:
+    get:
+      operationId: getQudratVerbalVideoProgress
+      tags: [learning]
+      summary: Get the signed-in student's progress for the 23 verbal videos
+      responses:
+        "200":
+          description: Saved video watch progress, including not-started videos
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/QudratVerbalVideoProgressSummary"
+        "401":
+          description: Authentication required
+        "403":
+          description: Students only
+        "503":
+          description: Video progress is unavailable
+  /learning/computerized/verbal/videos/{videoId}/progress:
+    post:
+      operationId: recordQudratVerbalVideoProgress
+      tags: [learning]
+      summary: Record playback progress for one computerized verbal video
+      parameters:
+        - name: videoId
+          in: path
+          required: true
+          schema:
+            type: string
+            minLength: 1
+            maxLength: 80
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/QudratVerbalVideoProgressInput"
+      responses:
+        "200":
+          description: Updated student-specific playback progress
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/QudratVerbalVideoProgress"
+        "400":
+          description: Invalid playback progress
+        "401":
+          description: Authentication required
+        "403":
+          description: Students only
+        "404":
+          description: Video is not in the published verbal video catalog
+        "503":
+          description: Video progress could not be saved
   /learning/foundation-test:
     post:
       operationId: createFoundationCoverageTest
@@ -432,6 +759,165 @@ paths:
           description: Payment not found
 components:
   schemas:
+    RemedialPracticeInput:
+      type: object
+      required: [runId]
+      properties:
+        runId: { type: string, minLength: 8, maxLength: 150 }
+    RemedialPracticeQuestion:
+      type: object
+      required: [id, text, options, category, subcategory]
+      properties:
+        id: { type: string }
+        text: { type: string }
+        category: { type: string }
+        subcategory: { type: string }
+        options:
+          type: array
+          items: { type: string }
+        imageUrl: { type: string }
+        passageText: { type: string }
+        imageUrls:
+          type: array
+          items: { type: string }
+    RemedialPracticeStart:
+      type: object
+      required: [attemptId, questions]
+      properties:
+        attemptId: { type: string }
+        questions:
+          type: array
+          items:
+            $ref: "#/components/schemas/RemedialPracticeQuestion"
+    RemedialPracticeAnswer:
+      type: object
+      required: [questionId, selectedOptionIndex]
+      properties:
+        questionId: { type: string }
+        selectedOptionIndex: { type: ["number", "null"], minimum: 0, maximum: 9 }
+        responseTime: { type: number, minimum: 0, maximum: 7200 }
+    RemedialPracticeSubmission:
+      type: object
+      required: [attemptId, answers]
+      properties:
+        attemptId: { type: string }
+        answers:
+          type: array
+          maxItems: 8
+          items:
+            $ref: "#/components/schemas/RemedialPracticeAnswer"
+    RemedialPracticeResult:
+      type: object
+      required: [totalQuestions, correctAnswers, questions]
+      properties:
+        totalQuestions: { type: number }
+        correctAnswers: { type: number }
+        questions:
+          type: array
+          items:
+            type: object
+            required: [id, correctOptionIndex, isCorrect, explanation]
+            properties:
+              id: { type: string }
+              correctOptionIndex: { type: number }
+              isCorrect: { type: boolean }
+              explanation: { type: string }
+    ExamTimingQuestionInput:
+      type: object
+      required: [id, text, options, selectedOptionIndex, seconds]
+      properties:
+        id: { type: string, maxLength: 150 }
+        text: { type: string, maxLength: 12000 }
+        options:
+          type: array
+          maxItems: 10
+          items: { type: string, maxLength: 4000 }
+        selectedOptionIndex: { type: ["number", "null"], minimum: 0, maximum: 9 }
+        seconds: { type: number, minimum: 0, maximum: 7200 }
+        category: { type: string, maxLength: 200 }
+        subcategory: { type: string, maxLength: 200 }
+    ExamReportInput:
+      type: object
+      required: [runId, title, questions]
+      properties:
+        runId: { type: string, minLength: 8, maxLength: 150 }
+        title: { type: string, minLength: 1, maxLength: 200 }
+        questions:
+          type: array
+          minItems: 1
+          maxItems: 250
+          items:
+            $ref: "#/components/schemas/ExamTimingQuestionInput"
+    ExamReportTiming:
+      type: object
+      required: [measuredQuestions, totalSeconds, medianSeconds, slowThresholdSeconds]
+      properties:
+        measuredQuestions: { type: number }
+        totalSeconds: { type: number }
+        medianSeconds: { type: ["number", "null"] }
+        slowThresholdSeconds: { type: ["number", "null"] }
+    ExamReportQuestionView:
+      allOf:
+        - $ref: "#/components/schemas/ExamTimingQuestionInput"
+        - type: object
+          required: [isCorrect, correctOptionIndex, explanation, explanationStatus, speedTip, baselineSeconds, baselineSource, isSlow]
+          properties:
+            sourceQuestionId: { type: string }
+            imageUrl: { type: string }
+            passageText: { type: string }
+            imageUrls:
+              type: array
+              items: { type: string }
+            isCorrect: { type: ["boolean", "null"] }
+            correctOptionIndex: { type: ["number", "null"] }
+            explanation: { type: string }
+            explanationStatus: { type: string }
+            speedTip: { type: string }
+            baselineSeconds: { type: ["number", "null"] }
+            baselineSource: { type: string, enum: [student_history, this_exam] }
+            isSlow: { type: boolean }
+    ExamReportRecord:
+      type: object
+      required: [runId, title, questions, timing]
+      properties:
+        runId: { type: string }
+        title: { type: string }
+        createdAt: { type: string }
+        questions:
+          type: array
+          items:
+            $ref: "#/components/schemas/ExamReportQuestionView"
+        timing:
+          $ref: "#/components/schemas/ExamReportTiming"
+    ExamReportSaveOutput:
+      type: object
+      required: [report]
+      properties:
+        report:
+          $ref: "#/components/schemas/ExamReportRecord"
+    ExamReportCollection:
+      type: object
+      required: [reports]
+      properties:
+        nextCursor: { type: ["string", "null"] }
+        totalCount: { type: number, minimum: 0 }
+        reports:
+          type: array
+          items:
+            $ref: "#/components/schemas/ExamReportRecord"
+    ExamExplanationInput:
+      type: object
+      required: [questionId]
+      properties:
+        questionId: { type: string, minLength: 1, maxLength: 150 }
+    ExamExplanationOutput:
+      type: object
+      required: [explanation, tip, status, generated]
+      properties:
+        explanation: { type: string }
+        tip: { type: string }
+        status: { type: string }
+        generated: { type: boolean }
     GeideaCheckoutSessionInput:
       type: object
       additionalProperties: false
@@ -523,6 +1009,276 @@ components:
         paymentId: { type: string }
         refundedAmount: { type: number }
         status: { type: string, enum: [refunded] }
+    CoachAreaStat:
+      type: object
+      additionalProperties: false
+      required: [program, subjectId, subjectLabel, category, subcategory, totalAttempts, correctAttempts, accuracy, repeatedWrongQuestions, distinctDays, confidence, reason]
+      properties:
+        program: { type: string, enum: [qudrat, tahsili] }
+        subjectId: { type: string }
+        subjectLabel: { type: string }
+        category: { type: string }
+        subcategory: { type: string }
+        totalAttempts: { type: number, minimum: 0 }
+        correctAttempts: { type: number, minimum: 0 }
+        accuracy: { type: number, minimum: 0, maximum: 100 }
+        repeatedWrongQuestions: { type: number, minimum: 0 }
+        distinctDays: { type: number, minimum: 0 }
+        confidence: { type: string, enum: [low, medium, high] }
+        reason: { type: string }
+    CoachStudyPlan:
+      type: object
+      additionalProperties: false
+      required: [program, programLabel, reason, confidence, retestDue]
+      properties:
+        program: { type: string, enum: [qudrat, tahsili] }
+        programLabel: { type: string }
+        subjectId: { type: string }
+        subjectLabel: { type: string }
+        reason: { type: string }
+        confidence: { type: string, enum: [low, medium, high] }
+        nextLesson:
+          type: object
+          additionalProperties: false
+          required: [title, href]
+          properties:
+            title: { type: string }
+            href: { type: string }
+        nextPractice:
+          type: object
+          additionalProperties: false
+          required: [title, href]
+          properties:
+            title: { type: string }
+            href: { type: string }
+        nextRetestAt: { type: string, format: date-time }
+        retestDue: { type: boolean }
+        availabilityNote: { type: string }
+    CoachPerformancePeriod:
+      type: object
+      additionalProperties: false
+      required: [label, totalAttempts, correctAttempts, accuracy]
+      properties:
+        label: { type: string }
+        totalAttempts: { type: number, minimum: 0 }
+        correctAttempts: { type: number, minimum: 0 }
+        accuracy: { type: number, minimum: 0, maximum: 100 }
+    CoachSubjectPerformanceTrend:
+      type: object
+      additionalProperties: false
+      required: [program, subjectId, subjectLabel, periods]
+      properties:
+        program: { type: string, enum: [qudrat, tahsili] }
+        subjectId: { type: string }
+        subjectLabel: { type: string }
+        periods:
+          type: array
+          items: { $ref: "#/components/schemas/CoachPerformancePeriod" }
+    CoachAssessmentHistoryItem:
+      type: object
+      additionalProperties: false
+      required: [program, testName, testType, percentage, totalQuestions, completedAt]
+      properties:
+        program: { type: string, enum: [qudrat, tahsili] }
+        testName: { type: string }
+        testType: { type: string }
+        percentage: { type: number, minimum: 0, maximum: 100 }
+        totalQuestions: { type: number, minimum: 0 }
+        completedAt: { type: string, format: date-time }
+    StudentLearningCoachReport:
+      type: object
+      additionalProperties: false
+      required: [generatedAt, evidence, strengths, focusAreas, studyPlans, performanceTrend, assessmentHistory, guide, aiAvailable, note]
+      properties:
+        generatedAt: { type: string, format: date-time }
+        evidence:
+          type: object
+          additionalProperties: false
+          required: [trustedAttempts, repeatedWrongAnswers, confidence]
+          properties:
+            trustedAttempts: { type: number, minimum: 0 }
+            repeatedWrongAnswers: { type: number, minimum: 0 }
+            confidence: { type: string, enum: [low, medium, high] }
+        strengths:
+          type: array
+          items: { $ref: "#/components/schemas/CoachAreaStat" }
+        focusAreas:
+          type: array
+          items: { $ref: "#/components/schemas/CoachAreaStat" }
+        studyPlans:
+          type: array
+          items: { $ref: "#/components/schemas/CoachStudyPlan" }
+        performanceTrend:
+          type: array
+          items: { $ref: "#/components/schemas/CoachSubjectPerformanceTrend" }
+        assessmentHistory:
+          type: array
+          items: { $ref: "#/components/schemas/CoachAssessmentHistoryItem" }
+        guide:
+          type: object
+          additionalProperties: false
+          required: [title, summary, steps, markdown]
+          properties:
+            title: { type: string }
+            summary: { type: string }
+            steps:
+              type: array
+              items: { type: string }
+            markdown: { type: string }
+        aiAvailable: { type: boolean }
+        note: { type: string }
+    TahsiliSubjectTestsOverview:
+      type: object
+      additionalProperties: false
+      required: [subjects]
+      properties:
+        subjects:
+          type: array
+          items:
+            type: object
+            additionalProperties: false
+            required: [subject, label, verifiedQuestionCount, attempts, correctAttempts, accuracy, focusAreas]
+            properties:
+              subject:
+                type: string
+                enum: [math, physics, chemistry, biology, environment]
+              label: { type: string }
+              verifiedQuestionCount: { type: number, multipleOf: 1, minimum: 0 }
+              attempts: { type: number, multipleOf: 1, minimum: 0 }
+              correctAttempts: { type: number, multipleOf: 1, minimum: 0 }
+              accuracy: { type: ["number", "null"], minimum: 0, maximum: 100 }
+              focusAreas:
+                type: array
+                items:
+                  type: object
+                  additionalProperties: false
+                  required: [subcategory, attempts, accuracy]
+                  properties:
+                    subcategory: { type: string }
+                    attempts: { type: number, multipleOf: 1, minimum: 0 }
+                    accuracy: { type: number, minimum: 0, maximum: 100 }
+    TahsiliSubjectTestStartInput:
+      type: object
+      additionalProperties: false
+      required: [subject]
+      properties:
+        subject:
+          type: string
+          enum: [math, physics, chemistry, biology, environment]
+        questionCount: { type: number, multipleOf: 1, minimum: 5, maximum: 30, default: 20 }
+    TahsiliSubjectTestStartOutput:
+      type: object
+      additionalProperties: false
+      required: [attemptId, subject, label, questionCount, timeLimitMinutes, personalizationMode, rationale, focusSubcategories, questions]
+      properties:
+        attemptId: { type: string }
+        subject: { type: string, enum: [math, physics, chemistry, biology, environment] }
+        label: { type: string }
+        questionCount: { type: number, multipleOf: 1, minimum: 1 }
+        timeLimitMinutes: { type: number, multipleOf: 1, minimum: 1 }
+        personalizationMode: { type: string, enum: [diagnostic, weakness_focus] }
+        rationale: { type: string }
+        focusSubcategories:
+          type: array
+          items: { type: string }
+        questions:
+          type: array
+          items:
+            type: object
+            additionalProperties: false
+            required: [id, text, options, subcategory, topic, difficulty]
+            properties:
+              id: { type: string }
+              text: { type: string }
+              options:
+                type: array
+                items: { type: string }
+                minItems: 2
+              subcategory: { type: string }
+              topic: { type: string }
+              difficulty: { type: string, enum: [beginner, intermediate, advanced] }
+              imageUrl: { type: ["string", "null"] }
+    TahsiliSubjectTestSubmitInput:
+      type: object
+      additionalProperties: false
+      required: [attemptId, answers]
+      properties:
+        attemptId: { type: string, minLength: 1 }
+        answers:
+          type: array
+          maxItems: 30
+          items:
+            type: object
+            additionalProperties: false
+            required: [questionId, selectedOptionIndex]
+            properties:
+              questionId: { type: string, minLength: 1 }
+              selectedOptionIndex: { type: ["number", "null"], multipleOf: 1, minimum: 0, maximum: 3 }
+              responseTime: { type: number, minimum: 0, maximum: 7200 }
+        timeTakenSeconds: { type: number, multipleOf: 1, minimum: 0, maximum: 7200 }
+    TahsiliSubjectTestSubmitOutput:
+      type: object
+      additionalProperties: false
+      required: [attemptId, subject, label, totalQuestions, answeredQuestions, correctAnswers, wrongAnswers, skippedQuestions, percentage, grade, personalizationMode, focusSubcategories, questions]
+      properties:
+        attemptId: { type: string }
+        subject: { type: string, enum: [math, physics, chemistry, biology, environment] }
+        label: { type: string }
+        totalQuestions: { type: number, multipleOf: 1, minimum: 1 }
+        answeredQuestions: { type: number, multipleOf: 1, minimum: 0 }
+        correctAnswers: { type: number, multipleOf: 1, minimum: 0 }
+        wrongAnswers: { type: number, multipleOf: 1, minimum: 0 }
+        skippedQuestions: { type: number, multipleOf: 1, minimum: 0 }
+        percentage: { type: number, minimum: 0, maximum: 100 }
+        grade: { type: string }
+        personalizationMode: { type: string, enum: [diagnostic, weakness_focus] }
+        focusSubcategories:
+          type: array
+          items: { type: string }
+        questions:
+          type: array
+          items:
+            type: object
+            additionalProperties: false
+            required: [id, text, options, subcategory, topic, difficulty, selectedOptionIndex, correctOptionIndex, isCorrect, explanation]
+            properties:
+              id: { type: string }
+              text: { type: string }
+              options:
+                type: array
+                items: { type: string }
+              subcategory: { type: string }
+              topic: { type: string }
+              difficulty: { type: string, enum: [beginner, intermediate, advanced] }
+              selectedOptionIndex: { type: ["number", "null"], multipleOf: 1, minimum: 0, maximum: 3 }
+              correctOptionIndex: { type: number, multipleOf: 1, minimum: 0, maximum: 3 }
+              isCorrect: { type: ["boolean", "null"] }
+              explanation: { type: string }
+    StudentLearningCoachChatMessage:
+      type: object
+      additionalProperties: false
+      required: [role, content]
+      properties:
+        role: { type: string, enum: [user, assistant] }
+        content: { type: string, maxLength: 500 }
+    StudentLearningCoachChatRequest:
+      type: object
+      additionalProperties: false
+      required: [message]
+      properties:
+        message: { type: string, minLength: 1, maxLength: 800 }
+        history:
+          type: array
+          maxItems: 12
+          items: { $ref: "#/components/schemas/StudentLearningCoachChatMessage" }
+    StudentLearningCoachChatResponse:
+      type: object
+      additionalProperties: false
+      required: [reply, aiAvailable, fallback]
+      properties:
+        reply: { type: string }
+        aiAvailable: { type: boolean }
+        fallback: { type: boolean }
     HealthStatus:
       type: object
       properties:
@@ -535,6 +1291,183 @@ components:
       required:
         - status
         - mongodb
+    FoundationLearningState:
+      type: object
+      required: [status, program, baseline, focus, skillSummaries, placementAssessment, recommendation]
+      properties:
+        status: { type: string, enum: [needs_diagnostic, diagnostic_completed] }
+        program: { type: string, enum: [qudrat, tahsili] }
+        baseline:
+          type: ["object", "null"]
+          properties:
+            overall: { type: number, minimum: 0, maximum: 100 }
+            verbal: { type: number, minimum: 0, maximum: 100 }
+            quantitative: { type: number, minimum: 0, maximum: 100 }
+        focus:
+          type: ["object", "null"]
+          properties:
+            category: { type: string, enum: [verbal, quantitative] }
+            skill: { type: string }
+            label: { type: string }
+        placementAssessment:
+          oneOf:
+            - $ref: "#/components/schemas/FoundationPlacementProfile"
+            - type: "null"
+        recommendation:
+          $ref: "#/components/schemas/FoundationPlacementRecommendation"
+        skillSummaries:
+          type: array
+          items:
+            $ref: "#/components/schemas/FoundationLearningSkillSummary"
+        lastDiagnosticAt: { type: ["string", "null"], format: date-time }
+    FoundationLearningSkillSummary:
+      type: object
+      required: [key, label, category, totalQuestions, correctAnswers, percentage]
+      properties:
+        key: { type: string }
+        label: { type: string }
+        category: { type: string, enum: [verbal, quantitative] }
+        totalQuestions: { type: number, minimum: 0 }
+        correctAnswers: { type: number, minimum: 0 }
+        percentage: { type: number, minimum: 0, maximum: 100 }
+    FoundationDiagnosticStart:
+      type: object
+      required: [attemptId, program, expiresAt, questions]
+      properties:
+        attemptId: { type: string }
+        program: { type: string, enum: [qudrat, tahsili] }
+        expiresAt: { type: string, format: date-time }
+        questions:
+          type: array
+          items:
+            $ref: "#/components/schemas/FoundationDiagnosticQuestion"
+    FoundationDiagnosticQuestion:
+      type: object
+      required: [_id, text, options, category, subcategory, areaKey, areaLabel, difficulty]
+      properties:
+        _id: { type: string }
+        text: { type: string }
+        options:
+          type: array
+          minItems: 2
+          items: { type: string }
+        category: { type: string, enum: [verbal, quantitative, tahsili] }
+        subcategory: { type: string }
+        areaKey: { type: string }
+        areaLabel: { type: string }
+        difficulty: { type: string, enum: [beginner, intermediate, advanced] }
+        imageUrl: { type: ["string", "null"] }
+        imageUrls:
+          type: array
+          items: { type: string }
+    FoundationDiagnosticSubmitRequest:
+      type: object
+      additionalProperties: false
+      required: [attemptId, answers]
+      properties:
+        attemptId: { type: string, minLength: 1 }
+        answers:
+          type: array
+          items:
+            type: object
+            additionalProperties: false
+            required: [questionId, selectedOptionIndex]
+            properties:
+              questionId: { type: string, minLength: 1 }
+              selectedOptionIndex: { type: number, minimum: 0 }
+        timeTakenSeconds: { type: number, minimum: 0, maximum: 7200 }
+    FoundationPlacementDifficultyCoverage:
+      type: object
+      required: [difficulty, totalQuestions, correctAnswers]
+      properties:
+        difficulty: { type: string, enum: [beginner, intermediate, advanced] }
+        totalQuestions: { type: number, minimum: 0 }
+        correctAnswers: { type: number, minimum: 0 }
+    FoundationPlacementArea:
+      type: object
+      required: [key, label, subjectId, totalQuestions, correctAnswers, percentage, difficultyCoverage]
+      properties:
+        key: { type: string }
+        label: { type: string }
+        subjectId: { type: string }
+        totalQuestions: { type: number, minimum: 0 }
+        correctAnswers: { type: number, minimum: 0 }
+        percentage: { type: number, minimum: 0, maximum: 100 }
+        difficultyCoverage:
+          type: array
+          items:
+            $ref: "#/components/schemas/FoundationPlacementDifficultyCoverage"
+    FoundationPlacementConfidence:
+      type: object
+      required: [level, label, note]
+      properties:
+        level: { type: string, enum: [LOW, MEDIUM, HIGH] }
+        label: { type: string }
+        note: { type: string }
+    FoundationPlacementRecommendation:
+      type: object
+      required: [title, reason, href, startingLevel]
+      properties:
+        title: { type: string }
+        reason: { type: string }
+        href: { type: string }
+        startingLevel: { type: string, enum: [foundation, practice, program_overview] }
+    FoundationPlacementResult:
+      type: object
+      required: [program, percentage, correctAnswers, totalQuestions, answeredQuestions, confidence, areas, focusArea, recommendation]
+      properties:
+        program: { type: string, enum: [qudrat, tahsili] }
+        percentage: { type: number, minimum: 0, maximum: 100 }
+        correctAnswers: { type: number, minimum: 0 }
+        totalQuestions: { type: number, minimum: 1 }
+        answeredQuestions: { type: number, minimum: 0 }
+        confidence:
+          $ref: "#/components/schemas/FoundationPlacementConfidence"
+        areas:
+          type: array
+          items:
+            $ref: "#/components/schemas/FoundationPlacementArea"
+        focusArea:
+          oneOf:
+            - $ref: "#/components/schemas/FoundationPlacementArea"
+            - type: "null"
+        recommendation:
+          $ref: "#/components/schemas/FoundationPlacementRecommendation"
+    FoundationPlacementProfile:
+      allOf:
+        - $ref: "#/components/schemas/FoundationPlacementResult"
+        - type: object
+          required: [version, completedAt]
+          properties:
+            version: { type: string }
+            completedAt: { type: string, format: date-time }
+    FoundationDiagnosticSubmission:
+      type: object
+      required: [result, profile]
+      properties:
+        result:
+          $ref: "#/components/schemas/FoundationPlacementResult"
+        profile:
+          type: object
+          required: [status, baseline, focus, placementAssessment, recommendation]
+          properties:
+            status: { type: string, enum: [needs_diagnostic, diagnostic_completed] }
+            baseline:
+              type: ["object", "null"]
+              properties:
+                overall: { type: number, minimum: 0, maximum: 100 }
+                verbal: { type: number, minimum: 0, maximum: 100 }
+                quantitative: { type: number, minimum: 0, maximum: 100 }
+            focus:
+              type: ["object", "null"]
+              properties:
+                category: { type: string, enum: [verbal, quantitative] }
+                skill: { type: string }
+                label: { type: string }
+            placementAssessment:
+              $ref: "#/components/schemas/FoundationPlacementProfile"
+            recommendation:
+              $ref: "#/components/schemas/FoundationPlacementRecommendation"
     FoundationLearningPath:
       type: object
       required: [programId, subjectId, book, attemptsUsed, level, modelVersion, recommendations, coverage]
@@ -821,6 +1754,41 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/QuantitativeBookSkillFocus"
+    QudratVerbalVideoProgressInput:
+      type: object
+      additionalProperties: false
+      required: [event, positionSeconds]
+      properties:
+        event:
+          type: string
+          enum: [play, tick, seek, pause, ended]
+        positionSeconds:
+          type: number
+          minimum: 0
+          maximum: 4000
+    QudratVerbalVideoProgress:
+      type: object
+      additionalProperties: false
+      required: [videoId, durationSeconds, watchedSeconds, progressPercent, resumePositionSeconds, state, completedAt]
+      properties:
+        videoId: { type: string }
+        durationSeconds: { type: number, minimum: 1 }
+        watchedSeconds: { type: number, minimum: 0 }
+        progressPercent: { type: number, minimum: 0, maximum: 100 }
+        resumePositionSeconds: { type: number, minimum: 0 }
+        state:
+          type: string
+          enum: [NOT_STARTED, IN_PROGRESS, COMPLETED]
+        completedAt: { type: ["string", "null"], format: date-time }
+    QudratVerbalVideoProgressSummary:
+      type: object
+      additionalProperties: false
+      required: [items]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/QudratVerbalVideoProgress"
     QuantitativeBookQuizAnswer:
       type: object
       additionalProperties: false

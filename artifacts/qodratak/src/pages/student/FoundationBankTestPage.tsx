@@ -3,6 +3,7 @@ import { useLocation } from "wouter";
 import { ArrowLeft, Clock3, Loader2, PlayCircle, Trophy } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { QiyasExamLayout } from "@/components/QiyasExamLayout";
+import ExamLearningReport from '@/components/exam-results/ExamLearningReport';
 import { useFoundationContent } from "@/hooks/use-student";
 import {
   foundationVideoUrlAt,
@@ -143,6 +144,7 @@ export default function FoundationBankTestPage({ contentId }: { contentId: strin
 
     return (
       <main className="mx-auto max-w-5xl space-y-5 px-4 py-6 sm:py-10" dir="rtl">
+        <ExamLearningReport />
         <section className="rounded-3xl border border-primary/20 bg-card p-5 shadow-sm sm:p-7">
           <div className="text-center">
             <Trophy className="mx-auto h-10 w-10 text-primary" />

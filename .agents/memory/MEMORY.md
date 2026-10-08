@@ -18,6 +18,7 @@
 - [Persistent media boundary](persistent-media-boundary.md) — production uploads must fail clearly without a persistent provider; local disk is development-only.
 - [Scanned exam OCR review boundary](tahsili-ocr-review-boundary.md) — preserve source images, use OCR as supporting text, and keep ambiguous answer-key glyphs out of scored quizzes.
 - [Foundation progress metrics](foundation-progress-metrics.md) — current percentages reflect saved test performance; lesson completion needs separate persistence.
+- [Computerized verbal video progress](computerized-verbal-video-progress.md) — keep watched coverage student-scoped and separate from quizzes, mastery, and foundation completion.
 - [Authenticated preview checks](authenticated-preview-checks.md) — a public preview can show an expected 401 for session-only APIs; validate protected flows with an authenticated browser session.
 - [Official score planning](official-score-planning.md) — keep externally reported verbal/quantitative scores separate from training results and use them to focus the next plan.
 - [Wouter query navigation](wouter-query-navigation.md) — use `useSearch()` for query state; `useLocation()` returns pathname only in the installed wouter version.
@@ -44,3 +45,4 @@
 - [OpenAPI codegen constraints](openapi-codegen-constraints.md) — use the generator-compatible schema and route shapes that keep Zod and client types compiling.
 - [React runtime error stacks](react-runtime-error-stack.md) — format JavaScript and React component stacks as strings in development logs so browser collectors preserve them.
 - [Large attachment staging](large-attachment-staging.md) — keep temporary hard links on the workspace filesystem; `/tmp` is mounted separately.
+- [Reusable explanations and reports](reusable-explanations-and-reports.md) — deterministic reporting, AI only for missing explanations, reusable content-aware caches with generated text clearly labeled.

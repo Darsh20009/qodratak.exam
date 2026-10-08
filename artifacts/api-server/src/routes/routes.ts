@@ -1,10 +1,17 @@
 import type { Express, Request as ExpressRequest, Response } from "express";
 type Request = ExpressRequest<Record<string, string>>;
 import type { ISubscription, StudentProgram, TahsiliSubject } from "../mongodb/models";
+import { Question, TahsiliQuestion } from "../mongodb/models";
 import {
   DownloadQudratVerbalBookFileParams,
+  StartTahsiliSubjectTestBody,
+  SubmitTahsiliSubjectTestBody,
   GetQudratQuantitativeBookLessonParams,
   GetQudratVerbalBookLessonParams,
+  GetQudratVerbalVideoProgressResponse,
+  RecordQudratVerbalVideoProgressBody,
+  RecordQudratVerbalVideoProgressParams,
+  RecordQudratVerbalVideoProgressResponse,
   SubmitQudratQuantitativeBookLessonBody,
   SubmitQudratQuantitativeBookLessonParams,
   SubmitQudratVerbalBookLessonBody,
@@ -16,6 +23,8 @@ import mongoose from 'mongoose';
 import passport from 'passport';
 import { Strategy as GoogleStrategy } from 'passport-google-oauth20';
 import { storage } from "../storage";
+import { registerExamLearningReportRoutes } from './examLearningReportRoutes';
+import { registerRemedialPracticeRoutes } from './remedialPracticeRoutes';
 import { mongoStorage } from "../mongodb/mongoStorage";
 import path from "path";
 import fs from "fs";
@@ -62,6 +71,15 @@ import {
   LearningAttemptError,
   recordVerifiedLearningAttempt,
 } from '../services/learningProfileService';
+import {
+  FOUNDATION_PLACEMENT_VERSION,
+  getFoundationPlacementQuestion,
+  getFoundationPlacementQuestions,
+  scoreFoundationPlacementAssessment,
+  shuffleFoundationPlacementQuestions,
+  toPublicFoundationPlacementQuestion,
+  type FoundationPlacementProgram,
+} from '../services/foundationPlacementAssessment';
 import {
   LearningErrorEvidence,
   LearningAttempt,
@@ -128,6 +146,7 @@ import {
   updateTodayLearningStep,
 } from '../services/dailyLearningSessionService';
 import {
+  answerLearningCoachQuestion,
   generateAdaptiveQuestionFeedback,
   getStudentLearningCoachReport,
   selectAdaptiveQuestions,
@@ -160,6 +179,11 @@ import {
   submitFoundationPractice,
   updateLearningContentProgress,
 } from '../services/learningContentService';
+import {
+  getQudratVerbalVideoProgressSummary,
+  recordQudratVerbalVideoProgress,
+  VerbalVideoProgressError,
+} from '../services/verbalVideoProgressService';
 import {
   getFoundationLearningPath,
   isFoundationQuestionDifficulty,
@@ -687,6 +711,26 @@ async function recoverPendingAiReviews(): Promise<void> {
   }
 }
 
+async function mapWithConcurrency<T, R>(
+  items: T[],
+  concurrency: number,
+  mapper: (item: T, index: number) => Promise<R>,
+): Promise<R[]> {
+  const results = new Array<R>(items.length);
+  let nextIndex = 0;
+  const workerCount = Math.min(Math.max(1, concurrency), items.length);
+  await Promise.all(
+    Array.from({ length: workerCount }, async () => {
+      while (true) {
+        const index = nextIndex++;
+        if (index >= items.length) return;
+        results[index] = await mapper(items[index], index);
+      }
+    }),
+  );
+  return results;
+}
+
 export async function registerRoutes(app: Express): Promise<Server> {
   const emailProvider = process.env.SMTP2GO_API_KEY
     ? 'SMTP2Go'
@@ -1093,27 +1137,35 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ error: 'الإجابة لا تنتمي إلى جلسة الاختبار' });
       }
 
-      const recorded = [];
-      for (const question of attempt.questions) {
-        recorded.push(await recordVerifiedLearningAttempt(userId, {
+      const answeredQuestions = attempt.questions.filter((question: any) => {
+        const selectedAnswer = answerMap.get(question.questionId);
+        return selectedAnswer !== null && selectedAnswer !== undefined;
+      });
+      const recorded = await mapWithConcurrency(answeredQuestions, 8, (question: any) =>
+        recordVerifiedLearningAttempt(userId, {
           questionId: question.questionId,
           sourceType: 'legacy_json',
           sourceKey: attempt.sourceKey,
           programId: 'program.tahsili',
           selectedAnswer: answerMap.get(question.questionId) ?? null,
-          responseTime: 0,
+          responseTime: Math.max(0, Math.min(7200, Number(submitted.find((answer: any) => String(answer.questionId) === question.questionId)?.responseTime) || 0)),
           idempotencyKey: `${String(req.body?.idempotencyKey || attemptId)}:${question.questionId}`,
           metadata: { flow: 'tahsili-file-exam', examId: req.params.examId },
         }, {
           correctOptionIndex: question.correctOptionIndex,
           optionsCount: question.optionsCount,
         }));
-      }
-      const totalQuestions = recorded.length;
-      const answeredQuestions = recorded.filter((result: any) => result.attempt?.isAnswered).length;
+      const recordedByQuestionId = new Map(
+        answeredQuestions.map((question: any, index: number) => [
+          question.questionId,
+          recorded[index],
+        ]),
+      );
+      const totalQuestions = attempt.questions.length;
+      const answeredCount = answeredQuestions.length;
       const correctAnswers = recorded.filter((result: any) => result.attempt?.isCorrect).length;
-      const wrongAnswers = answeredQuestions - correctAnswers;
-      const skippedQuestions = totalQuestions - answeredQuestions;
+      const wrongAnswers = answeredCount - correctAnswers;
+      const skippedQuestions = totalQuestions - answeredCount;
       const percentage = totalQuestions > 0 ? (correctAnswers / totalQuestions) * 100 : 0;
       let savedResult: any;
       if (mongoose.connection.readyState === 1 && mongoose.Types.ObjectId.isValid(userId)) {
@@ -1141,13 +1193,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
         wrongAnswers,
         skippedQuestions,
         percentage,
-        questionResults: recorded.map((record: any, index: number) => ({
-          questionId: attempt.questions[index].questionId,
-          selectedOptionIndex: answerMap.get(attempt.questions[index].questionId) ?? null,
-          correctOptionIndex: attempt.questions[index].correctOptionIndex,
-          isAnswered: Boolean(record.attempt?.isAnswered),
-          isCorrect: Boolean(record.attempt?.isCorrect),
-        })),
+        questionResults: attempt.questions.map((question: any) => {
+          const record = recordedByQuestionId.get(question.questionId) as any;
+          return {
+            questionId: question.questionId,
+            selectedOptionIndex: answerMap.get(question.questionId) ?? null,
+            correctOptionIndex: question.correctOptionIndex,
+            isAnswered: Boolean(record?.attempt?.isAnswered),
+            isCorrect: Boolean(record?.attempt?.isCorrect),
+          };
+        }),
         savedResultId: savedResult?._id ? String(savedResult._id) : undefined,
       };
       attempt.status = 'completed';
@@ -1708,6 +1763,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // Save test result - نظام النقاط الموحد: +10 صح، -1 خطأ، -0.5 متروك - Protected by RBAC
   app.post("/api/test-results", requireAuth, async (req: Request, res: Response) => {
+    let learningAttemptsRecorded = 0;
     try {
       const {
         userId,
@@ -1719,6 +1775,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         skippedQuestions,
         questionIds,
         answers,
+        learningAnswers,
         idempotencyKey,
         sourceKey,
         programId = 'program.qudrat',
@@ -1740,6 +1797,74 @@ export async function registerRoutes(app: Express): Promise<Server> {
       let resolvedSkippedQuestions = Number(skippedQuestions || 0);
       let resolvedWrongAnswers = resolvedTotalQuestions - resolvedScore - resolvedSkippedQuestions;
       let resolvedQuestionIds = Array.isArray(questionIds) ? questionIds.map(String) : [];
+      if (Array.isArray(learningAnswers)) {
+        const evidenceQuestionIds = learningAnswers.map(
+          (answer: any) => String(answer?.questionId || answer?.id || ''),
+        );
+        if (
+          evidenceQuestionIds.some((questionId: string) => !questionId) ||
+          new Set(evidenceQuestionIds).size !== evidenceQuestionIds.length
+        ) {
+          return res.status(400).json({ message: "قائمة أدلة الإجابات تحتوي على أسئلة غير صالحة أو مكررة" });
+        }
+
+        const answeredEvidence = learningAnswers.filter((answer: any) => {
+          const selected = answer?.selectedAnswer ?? answer?.selectedOptionIndex;
+          return selected !== null && selected !== undefined && selected !== '' &&
+            selected !== -1 && selected !== '-1';
+        });
+        const verifiedQuestions = await mapWithConcurrency(answeredEvidence, 8, async (answer: any) => {
+          const questionId = String(answer.questionId || answer.id);
+          if (!mongoose.Types.ObjectId.isValid(questionId)) return null;
+          const question = await Question.findById(questionId)
+            .select('_id questionId correctOptionIndex category subcategory difficulty options answerStatus')
+            .lean();
+          if (
+            !question ||
+            question.answerStatus !== 'approved' ||
+            (question.category !== 'verbal' && question.category !== 'quantitative') ||
+            !Array.isArray(question.options)
+          ) {
+            return null;
+          }
+          return { answer, question };
+        });
+        const trustedQuestions = verifiedQuestions.filter(
+          (entry): entry is NonNullable<typeof entry> => entry !== null,
+        );
+        const examSourceKey = String(
+          sourceKey || `qiyas-exam:${testType}:${idempotencyKey || crypto.randomUUID()}`,
+        );
+        const recordedEvidence = await mapWithConcurrency(trustedQuestions, 8, ({ answer, question }) => {
+          const subjectId = question.category === 'verbal'
+            ? 'subject.qudrat.verbal'
+            : 'subject.qudrat.quantitative';
+          return recordVerifiedLearningAttempt(sessionUserId, {
+            questionId: String(question._id),
+            sourceType: 'mongo_question',
+            sourceKey: String(answer.sourceKey || examSourceKey),
+            programId: 'program.qudrat',
+            subjectId,
+            selectedAnswer: answer.selectedAnswer ?? answer.selectedOptionIndex,
+            responseTime: answer.responseTime ?? 0,
+            idempotencyKey: idempotencyKey
+              ? `${String(idempotencyKey)}:${String(question._id)}`
+              : undefined,
+            metadata: {
+              flow: 'qiyas-computerized-exam',
+              testType,
+              examId: answer.examId ?? null,
+              questionCategory: question.category,
+              subcategory: question.subcategory,
+              difficulty: question.difficulty,
+            },
+          }, {
+            correctOptionIndex: question.correctOptionIndex,
+            optionsCount: question.options.length,
+          });
+        });
+        learningAttemptsRecorded = recordedEvidence.length;
+      }
       if (Array.isArray(answers)) {
         const answerQuestionIds = answers.map((answer: any) => String(answer?.questionId || answer?.id || ''));
         if (
@@ -1754,16 +1879,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
             : String(testType).toLowerCase().includes('quant') || String(testType).includes('كم')
               ? 'subject.qudrat.quantitative'
               : undefined;
-        const resolvedAttempts = [];
+        const answeredAnswers = answers.filter((answer: any) => {
+          const rawSelectedAnswer = answer?.selectedAnswer ?? answer?.selectedOptionIndex;
+          return rawSelectedAnswer !== null && rawSelectedAnswer !== undefined &&
+            rawSelectedAnswer !== '' && rawSelectedAnswer !== -1 && rawSelectedAnswer !== '-1';
+        });
         const submissionSourceKey = String(
           sourceKey || `test-result:${idempotencyKey || crypto.randomUUID()}`,
         );
-        for (const answer of answers) {
-          const rawSelectedAnswer = answer?.selectedAnswer ?? answer?.selectedOptionIndex ?? null;
-          const selectedAnswer = rawSelectedAnswer === -1 || rawSelectedAnswer === '-1'
-            ? null
-            : rawSelectedAnswer;
-          resolvedAttempts.push(await recordVerifiedLearningAttempt(sessionUserId, {
+        const resolvedAttempts = await mapWithConcurrency(answeredAnswers, 8, (answer: any) => {
+          const selectedAnswer = answer?.selectedAnswer ?? answer?.selectedOptionIndex;
+          return recordVerifiedLearningAttempt(sessionUserId, {
             questionId: String(answer.questionId || answer.id),
             sourceType: answer.sourceType || 'mongo_question',
             sourceKey: String(answer.sourceKey || submissionSourceKey),
@@ -1780,8 +1906,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
               testType,
               ...(answer.metadata || {}),
             },
-          }));
-        }
+          });
+        });
+        learningAttemptsRecorded = resolvedAttempts.length;
         resolvedScore = resolvedAttempts.filter((result: any) => result.attempt?.isCorrect).length;
         const answeredCount = resolvedAttempts.filter((result: any) => result.attempt?.isAnswered).length;
         resolvedTotalQuestions = Number(totalQuestions) || answers.length;
@@ -1898,6 +2025,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(201).json({
           ...serializedResult,
           pointsEarned: totalPoints,
+          learningAttemptsRecorded,
           badges,
           parentNotification,
         });
@@ -1906,6 +2034,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(201).json({
           ...serializedResult,
           pointsEarned: totalPoints,
+          learningAttemptsRecorded,
           parentNotification,
         });
       }
@@ -9519,9 +9648,10 @@ app.post("/api/auth/register", async (req: Request, res: Response) => {
     try {
       const { questionText, options, correctOptionIndex, studentOptionIndex, category, explanation, imageUrl } = req.body;
       if (!questionText || !Array.isArray(options)) return res.status(400).json({ error: 'بيانات السؤال مطلوبة' });
-      const { explainQuestion } = await import('./services/aiService');
-      const reply = await explainQuestion({ questionText, options, correctOptionIndex, studentOptionIndex, category, explanation, imageUrl });
-      res.json({ reply });
+      if (!(req.session as any)?.userId) return res.status(401).json({ error: 'سجل الدخول أولًا.' });
+      const { cachedQuestionExplanation } = await import('../services/cachedQuestionExplanation');
+      const saved = await cachedQuestionExplanation(String((req.session as any).userId), req.body, false);
+      res.json({ reply: saved.explanation || 'لا يوجد شرح موثق محفوظ لهذا السؤال بعد.', status: saved.status });
     } catch (err) {
       console.error('/api/ai/explain-question error:', err);
       res.status(500).json({ error: 'فشل في شرح السؤال' });
@@ -9564,8 +9694,12 @@ app.post("/api/auth/register", async (req: Request, res: Response) => {
       // Build explanations for email
       let explanationHtml = '';
       if (wrongCount > 0) {
-        const { explainMistakes } = await import('./services/aiService');
-        const explanations = await explainMistakes({ wrongQuestions, totalQuestions, score });
+        const { cachedQuestionExplanation } = await import('../services/cachedQuestionExplanation');
+        const studentId = String((req.session as any)?.userId || '');
+        if (!studentId) return res.status(401).json({ error: 'يجب تسجيل الدخول' });
+        const explanations = await Promise.all(wrongQuestions.slice(0, 250).map(async (question: any, questionIndex: number) => ({
+          ...await cachedQuestionExplanation(studentId, question, false), questionIndex, conceptError: '',
+        })));
         if (explanations.length > 0) {
           explanationHtml = `<h2 style="color:#6d28d9;margin-top:24px">🤖 شروحات الذكاء الاصطناعي لأخطائك</h2>`;
           explanations.forEach((exp: any, i: number) => {
@@ -9615,8 +9749,14 @@ app.post("/api/auth/register", async (req: Request, res: Response) => {
     try {
       const { wrongQuestions, totalQuestions, score } = req.body;
       if (!Array.isArray(wrongQuestions)) return res.status(400).json({ error: 'wrongQuestions required' });
-      const { explainMistakes } = await import('./services/aiService');
-      const explanations = await explainMistakes({ wrongQuestions, totalQuestions: totalQuestions || 0, score: score || 0 });
+      if (!(req.session as any)?.userId) return res.status(401).json({ error: 'سجل الدخول أولًا.' });
+      if (wrongQuestions.length > 250) return res.status(400).json({ error: 'عدد الأسئلة كبير.' });
+      const { cachedQuestionExplanation } = await import('../services/cachedQuestionExplanation');
+      const explanations = [];
+      for (let questionIndex = 0; questionIndex < wrongQuestions.length; questionIndex++) {
+        const saved = await cachedQuestionExplanation(String((req.session as any).userId), wrongQuestions[questionIndex], false);
+        explanations.push({ questionIndex, explanation: saved.explanation, tip: saved.tip, conceptError: '', status: saved.status });
+      }
       res.json({ explanations });
     } catch (err) {
       console.error('/api/ai/explain-mistakes error:', err);
@@ -11682,6 +11822,8 @@ app.post("/api/auth/register", async (req: Request, res: Response) => {
   });
 
   // ── Redesigned student product ───────────────────────────────────────────
+  registerExamLearningReportRoutes(app, [requireAuth, requireRole('student')]);
+  registerRemedialPracticeRoutes(app, [requireAuth, requireRole('student')]);
   // These endpoints always derive the subject from the authenticated session.
   const studentOnly = (req: Request, res: Response): string | null => {
     const user = (req as any).rbacUser;
@@ -11692,6 +11834,387 @@ app.post("/api/auth/register", async (req: Request, res: Response) => {
     return String(user.id);
   };
   const supportedPrograms = new Set(['qudrat', 'tahsili']);
+  const tahsiliSubjectTests = {
+    math: { label: 'الرياضيات', sourceLabel: 'رياضيات', subjectId: 'subject.tahsili.math', minutes: 30 },
+    physics: { label: 'الفيزياء', sourceLabel: 'فيزياء', subjectId: 'subject.tahsili.physics', minutes: 30 },
+    chemistry: { label: 'الكيمياء', sourceLabel: 'كيمياء', subjectId: 'subject.tahsili.chemistry', minutes: 25 },
+    biology: { label: 'الأحياء', sourceLabel: 'أحياء', subjectId: 'subject.tahsili.biology', minutes: 25 },
+    environment: { label: 'علم الأرض', sourceLabel: 'علم الأرض', subjectId: 'subject.tahsili.environment', minutes: 20 },
+  } as const;
+  type TahsiliSubjectTestKey = keyof typeof tahsiliSubjectTests;
+
+  const subjectLearningHistory = async (studentId: string, subjectId: string) => {
+    const attempts = await LearningAttempt.find({
+      studentId,
+      programId: 'program.tahsili',
+      subjectId,
+      sourceType: 'mongo_tahsili_question',
+      isAnswered: true,
+    }).select('questionId isCorrect metadata').lean() as any[];
+    const bySubcategory = new Map<string, { attempts: number; correct: number }>();
+    for (const attempt of attempts) {
+      const metadata = attempt.metadata && typeof attempt.metadata === 'object' ? attempt.metadata : {};
+      const subcategory = String(metadata.subcategory || metadata.topic || 'عام').trim() || 'عام';
+      const current = bySubcategory.get(subcategory) || { attempts: 0, correct: 0 };
+      current.attempts += 1;
+      current.correct += attempt.isCorrect ? 1 : 0;
+      bySubcategory.set(subcategory, current);
+    }
+    return { attempts, bySubcategory };
+  };
+
+  app.get(
+    '/api/tahsili/subject-tests/overview',
+    requireAuth,
+    requireRole('student'),
+    async (req: Request, res: Response) => {
+      const studentId = studentOnly(req, res);
+      if (!studentId) return;
+      try {
+        const subjects = await Promise.all(
+          Object.entries(tahsiliSubjectTests).map(async ([subject, config]) => {
+            const [verifiedQuestionCount, history] = await Promise.all([
+              TahsiliQuestion.countDocuments({ subject: config.sourceLabel, answerConfidence: 'verified' }),
+              subjectLearningHistory(studentId, config.subjectId),
+            ]);
+            const attempts = history.attempts.length;
+            const correctAttempts = history.attempts.filter((attempt: any) => attempt.isCorrect).length;
+            const focusAreas = Array.from(history.bySubcategory.entries())
+              .map(([subcategory, stats]) => ({
+                subcategory,
+                attempts: stats.attempts,
+                accuracy: stats.attempts ? Math.round((stats.correct / stats.attempts) * 100) : 0,
+              }))
+              .filter((area) => area.attempts >= 2 && area.accuracy < 70)
+              .sort((a, b) => a.accuracy - b.accuracy || b.attempts - a.attempts)
+              .slice(0, 3);
+            return {
+              subject,
+              label: config.label,
+              verifiedQuestionCount,
+              attempts,
+              correctAttempts,
+              accuracy: attempts ? Math.round((correctAttempts / attempts) * 100) : null,
+              focusAreas,
+            };
+          }),
+        );
+        return res.json({ subjects });
+      } catch (error) {
+        req.log.error({ err: error }, 'Unable to load Tahsili subject test overview');
+        return res.status(503).json({
+          error: 'تعذر تحميل مواد التحصيلي الآن.',
+          code: 'TAHSILI_SUBJECT_TEST_OVERVIEW_UNAVAILABLE',
+        });
+      }
+    },
+  );
+
+  app.post(
+    '/api/tahsili/subject-tests/start',
+    requireAuth,
+    requireRole('student'),
+    async (req: Request, res: Response) => {
+      const studentId = studentOnly(req, res);
+      if (!studentId) return;
+      const parsed = StartTahsiliSubjectTestBody.safeParse(req.body);
+      if (!parsed.success) {
+        return res.status(400).json({
+          error: 'المادة أو عدد الأسئلة غير صالح.',
+          code: 'INVALID_TAHSILI_SUBJECT_TEST',
+        });
+      }
+      const subject = parsed.data.subject as TahsiliSubjectTestKey;
+      const config = tahsiliSubjectTests[subject];
+      if (!config) {
+        return res.status(400).json({
+          error: 'المادة المحددة غير مدعومة.',
+          code: 'INVALID_TAHSILI_SUBJECT',
+        });
+      }
+      try {
+        const [questions, history] = await Promise.all([
+          TahsiliQuestion.find({
+            subject: config.sourceLabel,
+            answerConfidence: 'verified',
+          })
+            .select('questionId subject subcategory text options correctOptionIndex difficulty topic explanation sourcePage sourceQuestionNumber sourceBook')
+            .lean() as any,
+          subjectLearningHistory(studentId, config.subjectId),
+        ]);
+        const eligible = questions.filter((question: any) =>
+          typeof question.text === 'string' &&
+          Array.isArray(question.options) &&
+          question.options.length >= 2 &&
+          Number.isInteger(question.correctOptionIndex) &&
+          question.correctOptionIndex >= 0 &&
+          question.correctOptionIndex < question.options.length,
+        );
+        if (!eligible.length) {
+          return res.status(503).json({
+            error: `لا توجد أسئلة معتمدة كافية لمادة ${config.label} حتى الآن.`,
+            code: 'TAHSILI_SUBJECT_QUESTION_POOL_EMPTY',
+          });
+        }
+        const requestedCount = parsed.data.questionCount ?? 20;
+        const questionCount = Math.min(requestedCount, eligible.length);
+        const attemptedIds = new Set(history.attempts.map((attempt: any) => String(attempt.questionId)));
+        const unseen = eligible.filter((question: any) => !attemptedIds.has(String(question.questionId)));
+        const candidates = unseen.length >= questionCount ? unseen : eligible;
+        const weakSubcategories = Array.from(history.bySubcategory.entries())
+          .filter(([, stats]) => stats.attempts >= 2 && stats.correct / stats.attempts < 0.7)
+          .sort((a, b) => a[1].correct / a[1].attempts - b[1].correct / b[1].attempts)
+          .slice(0, 3)
+          .map(([subcategory]) => subcategory);
+        const weakSet = new Set(weakSubcategories);
+        const jitter = new Map<number, number>();
+        for (const question of candidates) jitter.set(question.questionId, Math.random());
+        const sorted = [...candidates].sort((a: any, b: any) => {
+          const aSubcategory = String(a.subcategory || a.topic || 'عام');
+          const bSubcategory = String(b.subcategory || b.topic || 'عام');
+          const aWeakness = weakSet.has(aSubcategory) ? 1 : 0;
+          const bWeakness = weakSet.has(bSubcategory) ? 1 : 0;
+          return bWeakness - aWeakness ||
+            Number(attemptedIds.has(String(a.questionId))) - Number(attemptedIds.has(String(b.questionId))) ||
+            (jitter.get(b.questionId)! - jitter.get(a.questionId)!);
+        });
+        const selected: any[] = [];
+        const selectedBySubcategory = new Map<string, number>();
+        const categoryLimit = Math.max(1, Math.ceil(questionCount * 0.5));
+        for (const question of sorted) {
+          const subcategory = String(question.subcategory || question.topic || 'عام');
+          if ((selectedBySubcategory.get(subcategory) || 0) >= categoryLimit) continue;
+          selected.push(question);
+          selectedBySubcategory.set(subcategory, (selectedBySubcategory.get(subcategory) || 0) + 1);
+          if (selected.length >= questionCount) break;
+        }
+        if (selected.length < questionCount) {
+          const selectedIds = new Set(selected.map((question) => question.questionId));
+          for (const question of sorted) {
+            if (selectedIds.has(question.questionId)) continue;
+            selected.push(question);
+            if (selected.length >= questionCount) break;
+          }
+        }
+        const attemptId = crypto.randomUUID();
+        const personalizationMode = weakSubcategories.length ? 'weakness_focus' : 'diagnostic';
+        const questionsForClient = selected.map((question: any) => ({
+          id: String(question.questionId),
+          text: question.text,
+          options: question.options,
+          subcategory: String(question.subcategory || 'عام'),
+          topic: String(question.topic || question.subcategory || 'عام'),
+          difficulty: question.difficulty || 'intermediate',
+          imageUrl: null,
+        }));
+        const attempts = (req.session as any).tahsiliSubjectTestAttempts || {};
+        const now = Date.now();
+        for (const [oldId, oldAttempt] of Object.entries(attempts) as Array<[string, any]>) {
+          if (now - Number(oldAttempt.createdAt || 0) > 2 * 60 * 60 * 1000 || oldAttempt.userId !== studentId) {
+            delete attempts[oldId];
+          }
+        }
+        attempts[attemptId] = {
+          userId: studentId,
+          subject,
+          createdAt: now,
+          questionIds: selected.map((question: any) => String(question.questionId)),
+          personalizationMode,
+          focusSubcategories: weakSubcategories,
+        };
+        (req.session as any).tahsiliSubjectTestAttempts = attempts;
+        await new Promise<void>((resolve, reject) =>
+          req.session.save((error) => error ? reject(error) : resolve()),
+        );
+        return res.json({
+          attemptId,
+          subject,
+          label: config.label,
+          questionCount: selected.length,
+          timeLimitMinutes: config.minutes,
+          personalizationMode,
+          rationale: weakSubcategories.length
+            ? `زادت أسئلة ${weakSubcategories.join('، ')} لأنها أظهرت دقة أقل من 70% في إجاباتك السابقة.`
+            : 'اختبار تشخيصي متوازن؛ سيبدأ تخصيصه بعد حفظ إجاباتك المعتمدة.',
+          focusSubcategories: weakSubcategories,
+          questions: questionsForClient,
+        });
+      } catch (error) {
+        req.log.error({ err: error, subject }, 'Unable to start Tahsili subject test');
+        return res.status(503).json({
+          error: 'تعذر إنشاء اختبار المادة الآن.',
+          code: 'TAHSILI_SUBJECT_TEST_START_FAILED',
+        });
+      }
+    },
+  );
+
+  app.post(
+    '/api/tahsili/subject-tests/submit',
+    requireAuth,
+    requireRole('student'),
+    async (req: Request, res: Response) => {
+      const studentId = studentOnly(req, res);
+      if (!studentId) return;
+      const parsed = SubmitTahsiliSubjectTestBody.safeParse(req.body);
+      if (!parsed.success) {
+        return res.status(400).json({
+          error: 'إجابات الاختبار غير صالحة.',
+          code: 'INVALID_TAHSILI_SUBJECT_TEST_SUBMISSION',
+        });
+      }
+      const attemptId = parsed.data.attemptId;
+      const attempts = (req.session as any).tahsiliSubjectTestAttempts || {};
+      const attempt = attempts[attemptId];
+      if (!attempt || attempt.userId !== studentId) {
+        return res.status(400).json({
+          error: 'جلسة الاختبار غير موجودة أو لا تخص هذا الحساب.',
+          code: 'TAHSILI_SUBJECT_TEST_NOT_FOUND',
+        });
+      }
+      if (attempt.result) return res.json(attempt.result);
+      if (Date.now() - Number(attempt.createdAt) > 2 * 60 * 60 * 1000) {
+        delete attempts[attemptId];
+        (req.session as any).tahsiliSubjectTestAttempts = attempts;
+        await new Promise<void>((resolve) => req.session.save(() => resolve()));
+        return res.status(410).json({
+          error: 'انتهت صلاحية الاختبار؛ ابدأ اختبارًا جديدًا.',
+          code: 'TAHSILI_SUBJECT_TEST_EXPIRED',
+        });
+      }
+      const submittedAnswers = new Map<string, number | null>();
+      for (const answer of parsed.data.answers) {
+        if (submittedAnswers.has(answer.questionId)) {
+          return res.status(400).json({
+            error: 'تم إرسال إجابة مكررة للسؤال نفسه.',
+            code: 'DUPLICATE_TAHSILI_SUBJECT_TEST_ANSWER',
+          });
+        }
+        submittedAnswers.set(answer.questionId, answer.selectedOptionIndex);
+      }
+      const allowedIds = new Set<string>(attempt.questionIds);
+      if (
+        submittedAnswers.size !== allowedIds.size ||
+        [...allowedIds].some((id) => !submittedAnswers.has(id)) ||
+        [...submittedAnswers.keys()].some((id) => !allowedIds.has(id))
+      ) {
+        return res.status(400).json({
+          error: 'إجاباتك لا تطابق أسئلة جلسة الاختبار.',
+          code: 'TAHSILI_SUBJECT_TEST_QUESTION_MISMATCH',
+        });
+      }
+      const config = tahsiliSubjectTests[attempt.subject as TahsiliSubjectTestKey];
+      if (!config) return res.status(400).json({ error: 'المادة غير صالحة.' });
+      try {
+        const questionIds = attempt.questionIds.map((id: string) => Number(id));
+        const questions = await TahsiliQuestion.find({
+          questionId: { $in: questionIds },
+          subject: config.sourceLabel,
+          answerConfidence: 'verified',
+        })
+          .select('questionId subject subcategory text options correctOptionIndex difficulty topic explanation sourcePage sourceQuestionNumber sourceBook')
+          .lean() as any[];
+        const byId = new Map(questions.map((question) => [String(question.questionId), question]));
+        if (questions.length !== attempt.questionIds.length) {
+          return res.status(409).json({
+            error: 'تغيرت بعض أسئلة الاختبار أو لم تعد إجاباتها معتمدة.',
+            code: 'TAHSILI_SUBJECT_TEST_QUESTIONS_CHANGED',
+          });
+        }
+        const ordered = attempt.questionIds.map((id: string) => byId.get(id));
+        if (ordered.some((question: any) =>
+          !question ||
+          !Array.isArray(question.options) ||
+          !Number.isInteger(question.correctOptionIndex) ||
+          question.correctOptionIndex < 0 ||
+          question.correctOptionIndex >= question.options.length,
+        )) {
+          return res.status(409).json({
+            error: 'تعذر التحقق من إجابات الاختبار.',
+            code: 'TAHSILI_SUBJECT_TEST_ANSWER_KEY_INVALID',
+          });
+        }
+        const answered = ordered
+          .map((question: any) => ({ question, selected: submittedAnswers.get(String(question.questionId)) }))
+          .filter((item: any) => item.selected !== null);
+        await mapWithConcurrency(answered, 8, ({ question, selected }: any) =>
+          recordVerifiedLearningAttempt(studentId, {
+            questionId: String(question.questionId),
+            sourceType: 'mongo_tahsili_question',
+            sourceKey: `tahsili-subject-test:${attemptId}`,
+            programId: 'program.tahsili',
+            subjectId: config.subjectId,
+            selectedAnswer: selected,
+            responseTime: parsed.data.answers.find((answer) => answer.questionId === String(question.questionId))?.responseTime || 0,
+            idempotencyKey: `${attemptId}:${question.questionId}`,
+            metadata: {
+              category: config.label,
+              subcategory: String(question.subcategory || 'عام'),
+              topic: String(question.topic || question.subcategory || 'عام'),
+              difficulty: question.difficulty || 'intermediate',
+              flow: 'tahsili-subject-adaptive-test',
+            },
+          }, {
+            correctOptionIndex: Number(question.correctOptionIndex),
+            optionsCount: question.options.length,
+          }),
+        );
+        const correctAnswers = answered.filter(({ question, selected }: any) =>
+          Number(question.correctOptionIndex) === selected,
+        ).length;
+        const answeredQuestions = answered.length;
+        const totalQuestions = ordered.length;
+        const wrongAnswers = answeredQuestions - correctAnswers;
+        const result = {
+          attemptId,
+          subject: attempt.subject,
+          label: config.label,
+          totalQuestions,
+          answeredQuestions,
+          correctAnswers,
+          wrongAnswers,
+          skippedQuestions: totalQuestions - answeredQuestions,
+          percentage: totalQuestions ? Math.round((correctAnswers / totalQuestions) * 10000) / 100 : 0,
+          grade: correctAnswers / totalQuestions >= 0.9 ? 'ممتاز'
+            : correctAnswers / totalQuestions >= 0.8 ? 'جيد جداً'
+              : correctAnswers / totalQuestions >= 0.7 ? 'جيد'
+                : correctAnswers / totalQuestions >= 0.6 ? 'مقبول' : 'يحتاج إلى مراجعة',
+          personalizationMode: attempt.personalizationMode,
+          focusSubcategories: attempt.focusSubcategories,
+          questions: ordered.map((question: any) => {
+            const selectedOptionIndex = submittedAnswers.get(String(question.questionId)) ?? null;
+            return {
+              id: String(question.questionId),
+              text: question.text,
+              options: question.options,
+              subcategory: String(question.subcategory || 'عام'),
+              topic: String(question.topic || question.subcategory || 'عام'),
+              difficulty: question.difficulty || 'intermediate',
+              selectedOptionIndex,
+              correctOptionIndex: Number(question.correctOptionIndex),
+              isCorrect: selectedOptionIndex === null
+                ? null
+                : selectedOptionIndex === Number(question.correctOptionIndex),
+              explanation: String(question.explanation || ''),
+            };
+          }),
+        };
+        attempt.result = result;
+        attempts[attemptId] = attempt;
+        (req.session as any).tahsiliSubjectTestAttempts = attempts;
+        await new Promise<void>((resolve, reject) =>
+          req.session.save((error) => error ? reject(error) : resolve()),
+        );
+        return res.json(result);
+      } catch (error) {
+        req.log.error({ err: error, attemptId }, 'Unable to submit Tahsili subject test');
+        return res.status(503).json({
+          error: 'تعذر حفظ نتيجة الاختبار الآن. إجاباتك لم تُعتمد؛ حاول الإرسال مرة أخرى.',
+          code: 'TAHSILI_SUBJECT_TEST_SUBMIT_FAILED',
+        });
+      }
+    },
+  );
 
   const getRiyadhDayKey = (date = new Date()) => {
     const parts = new Intl.DateTimeFormat('en-CA', {
@@ -11775,6 +12298,38 @@ app.post("/api/auth/register", async (req: Request, res: Response) => {
         res.status(503).json({
           error: 'تعذر تحليل سجل الإجابات الآن. يمكنك متابعة الاختبار اليومي.',
           code: 'LEARNING_COACH_UNAVAILABLE',
+        });
+      }
+    },
+  );
+
+  app.post(
+    '/api/student/learning-coach/chat',
+    requireAuth,
+    requireRole('student'),
+    async (req: Request, res: Response) => {
+      const studentId = studentOnly(req, res);
+      if (!studentId) return;
+      const message = typeof req.body?.message === 'string'
+        ? req.body.message.trim()
+        : '';
+      if (!message || message.length > 800) {
+        return res.status(400).json({
+          error: 'اكتب سؤالًا لا يتجاوز 800 حرف.',
+          code: 'INVALID_COACH_MESSAGE',
+        });
+      }
+      try {
+        return res.json(await answerLearningCoachQuestion(
+          studentId,
+          message,
+          req.body?.history,
+        ));
+      } catch (error) {
+        req.log.error({ err: error }, 'Unable to answer student learning-coach question');
+        return res.status(503).json({
+          error: 'تعذر تحميل سياق الشرح الآن. يمكنك متابعة الدرس والاختبار.',
+          code: 'LEARNING_COACH_CHAT_UNAVAILABLE',
         });
       }
     },
@@ -11930,6 +12485,7 @@ app.post("/api/auth/register", async (req: Request, res: Response) => {
               : 'subject.qudrat.verbal',
             selectedAnswer: selectedIndex,
             idempotencyKey: `daily-adaptive:${test._id}:${questionId}`,
+            responseTime: Math.max(0, Math.min(7200, Number(submitted.find((answer: any) => answer.questionId === questionId)?.responseTime) || 0)),
             metadata: {
               adaptiveTestId: String(test._id),
               category: question.category,
@@ -11949,21 +12505,11 @@ app.post("/api/auth/register", async (req: Request, res: Response) => {
           });
         }
 
-        const feedbackById = await generateAdaptiveQuestionFeedback(
-          results.filter((result) => !result.isCorrect).map((result) => {
-            const question = questionsById.get(result.questionId)!;
-            return {
-              questionId: result.questionId,
-              category: question.category,
-              subcategory: String(question.subcategory || 'عام'),
-              text: question.text,
-              options: question.options,
-              selectedIndex: result.selectedIndex,
-              correctIndex: result.correctIndex,
-              explanation: result.explanation,
-            };
-          }),
-        );
+        const { speedAdvice } = await import('../services/examReportMath');
+        const feedbackById = new Map(results.filter((result) => !result.isCorrect).map((result) => {
+          const question = questionsById.get(result.questionId)!;
+          return [result.questionId, `${result.explanation} ${speedAdvice(question.category, question.subcategory || '')}`];
+        }));
         const reviewedResults = results.map((result) => ({
           ...result,
           tailoredFeedback: feedbackById.get(result.questionId) || '',
@@ -12567,6 +13113,49 @@ app.post("/api/auth/register", async (req: Request, res: Response) => {
           error.code === 'STUDENT_REQUIRED' ? 401 : 400;
     return res.status(status).json({ error: error.message, code: error.code });
   };
+
+  app.get('/api/learning/computerized/verbal/video-progress', requireAuth, async (req: Request, res: Response) => {
+    const studentId = studentOnly(req, res);
+    if (!studentId) return;
+    try {
+      const summary = await getQudratVerbalVideoProgressSummary(studentId);
+      return res.json(GetQudratVerbalVideoProgressResponse.parse(summary));
+    } catch (error) {
+      req.log.error({ err: error }, 'Qudrat verbal video progress retrieval failed');
+      return res.status(503).json({ error: 'تعذر تحميل تقدم مشاهدة فيديوهات اللفظي' });
+    }
+  });
+
+  app.post('/api/learning/computerized/verbal/videos/:videoId/progress', requireAuth, async (req: Request, res: Response) => {
+    const studentId = studentOnly(req, res);
+    if (!studentId) return;
+
+    const params = RecordQudratVerbalVideoProgressParams.safeParse(req.params);
+    if (!params.success) {
+      return res.status(400).json({ error: 'معرف الفيديو غير صالح' });
+    }
+    const body = RecordQudratVerbalVideoProgressBody.safeParse(req.body);
+    if (!body.success) {
+      return res.status(400).json({ error: 'بيانات تقدم الفيديو غير صالحة' });
+    }
+
+    try {
+      const progress = await recordQudratVerbalVideoProgress(
+        studentId,
+        params.data.videoId,
+        body.data,
+      );
+      return res.json(RecordQudratVerbalVideoProgressResponse.parse(progress));
+    } catch (error) {
+      if (error instanceof VerbalVideoProgressError) {
+        const status = error.code === 'VIDEO_NOT_FOUND' ? 404 :
+          error.code === 'STUDENT_REQUIRED' ? 401 : 400;
+        return res.status(status).json({ error: error.message, code: error.code });
+      }
+      req.log.error({ err: error, videoId: params.data.videoId }, 'Qudrat verbal video progress update failed');
+      return res.status(503).json({ error: 'تعذر حفظ تقدم مشاهدة الفيديو' });
+    }
+  });
 
   app.get('/api/learning/content-progress-summary', requireAuth, async (req: Request, res: Response) => {
     const studentId = studentOnly(req, res);
@@ -13387,19 +13976,25 @@ app.post("/api/auth/register", async (req: Request, res: Response) => {
           program,
           baseline: null,
           focus: null,
+          skillSummaries: [],
+          placementAssessment: null,
           recommendation: {
             title: 'حدد نقطة بدايتك',
-            reason: 'أجب عن تقييم قصير من أسئلة معتمدة لنقترح عليك أول مهمة مناسبة.',
-            href: '/foundation?program=qudrat',
+            reason: 'أجب عن تقييم بداية متدرج لنقترح نقطة الانطلاق المناسبة للبرنامج.',
+            href: `/foundation?program=${program}`,
+            startingLevel: 'program_overview',
           },
         });
       }
       return res.json({
         status: profile.status,
         program: profile.program,
-        baseline: profile.baseline,
+        baseline: program === 'qudrat' ? profile.baseline : null,
         skillSummaries: profile.skillSummaries,
-        focus: profile.focus,
+        focus: program === 'qudrat' && profile.placementAssessment?.focusArea
+          ? profile.focus
+          : null,
+        placementAssessment: profile.placementAssessment || null,
         recommendation: profile.recommendation,
         lastDiagnosticAt: profile.lastDiagnosticAt,
       });
@@ -13412,45 +14007,43 @@ app.post("/api/auth/register", async (req: Request, res: Response) => {
   app.get('/api/foundation/diagnostic', requireAuth, async (req: Request, res: Response) => {
     const userId = studentOnly(req, res);
     if (!userId) return;
-    const program = String(req.query.program || 'qudrat');
-    if (program !== 'qudrat') {
-      return res.status(400).json({ error: 'التقييم التشخيصي متاح حاليًا لمسار القدرات فقط' });
+    const requestedProgram = String(req.query.program || 'qudrat');
+    if (requestedProgram !== 'qudrat' && requestedProgram !== 'tahsili') {
+      return res.status(400).json({ error: 'البرنامج المدعوم هو qudrat أو tahsili فقط' });
     }
     try {
-      const { DiagnosticAttempt, Question } = await import('../mongodb/models');
-      const [verbalQuestions, quantitativeQuestions] = await Promise.all([
-        Question.aggregate([
-          { $match: { category: 'verbal' } },
-          { $sample: { size: 4 } },
-          { $project: { text: 1, options: 1, category: 1, subcategory: 1, topic: 1, imageUrl: 1, imageUrls: 1 } },
-        ]),
-        Question.aggregate([
-          { $match: { category: 'quantitative' } },
-          { $sample: { size: 4 } },
-          { $project: { text: 1, options: 1, category: 1, subcategory: 1, topic: 1, imageUrl: 1, imageUrls: 1 } },
-        ]),
-      ]);
-      const questions = [...verbalQuestions, ...quantitativeQuestions];
-      if (questions.length < 8) {
-        return res.status(503).json({ error: 'لا توجد أسئلة تشخيصية معتمدة كافية حاليًا' });
+      const program = requestedProgram as FoundationPlacementProgram;
+      const questions = shuffleFoundationPlacementQuestions(
+        getFoundationPlacementQuestions(program),
+      );
+      const expectedCount = program === 'qudrat' ? 18 : 32;
+      if (questions.length !== expectedCount) {
+        return res.status(503).json({ error: 'تعذر تجهيز التقييم الكامل لهذا البرنامج' });
       }
+      const { DiagnosticAttempt } = await import('../mongodb/models');
       const attempt = await DiagnosticAttempt.create({
         userId,
         program,
-        questionIds: questions.map((question: any) => question._id),
+        questionIds: [],
+        questionRefs: questions.map((item) => ({
+          questionId: item.id,
+          sourceType: 'legacy_json',
+          areaKey: item.areaKey,
+          areaLabel: item.areaLabel,
+          subjectId: item.subjectId,
+          difficulty: item.difficulty,
+        })),
         expiresAt: new Date(Date.now() + 60 * 60 * 1000),
       });
       return res.json({
         attemptId: String(attempt._id),
+        program,
         expiresAt: attempt.expiresAt,
-        questions: questions.map((question: any) => ({
-          _id: String(question._id),
-          text: question.text,
-          options: question.options,
-          category: question.category,
-          subcategory: question.subcategory || question.topic || 'المهارات الأساسية',
-          imageUrl: question.imageUrl,
-          imageUrls: question.imageUrls || [],
+        questions: questions.map((item) => ({
+          ...toPublicFoundationPlacementQuestion(item),
+          _id: item.id,
+          category: program === 'tahsili' ? 'tahsili' : item.areaKey,
+          subcategory: item.areaLabel,
         })),
       });
     } catch (error) {
@@ -13466,12 +14059,12 @@ app.post("/api/auth/register", async (req: Request, res: Response) => {
     if (!mongoose.Types.ObjectId.isValid(attemptId)) {
       return res.status(400).json({ error: 'معرف التقييم غير صالح' });
     }
+    let submissionClaimed = false;
     try {
-      const { DiagnosticAttempt, Question, TestResult, StudentLearningProfile } = await import('../mongodb/models');
+      const { DiagnosticAttempt, TestResult, StudentLearningProfile } = await import('../mongodb/models');
       const attempt = await DiagnosticAttempt.findOne({
         _id: attemptId,
         userId,
-        program: 'qudrat',
         status: 'active',
         expiresAt: { $gt: new Date() },
       }).lean() as any;
@@ -13479,110 +14072,135 @@ app.post("/api/auth/register", async (req: Request, res: Response) => {
         return res.status(410).json({ error: 'انتهت صلاحية التقييم. ابدأ تقييمًا جديدًا.' });
       }
 
-      const allowedQuestionIds = attempt.questionIds.map((id: unknown) => String(id));
+      const program = attempt.program as FoundationPlacementProgram;
+      const refs = Array.isArray(attempt.questionRefs) ? attempt.questionRefs : [];
+      if ((program !== 'qudrat' && program !== 'tahsili') || refs.length === 0) {
+        return res.status(410).json({ error: 'تغير إصدار التقييم. ابدأ تقييمًا جديدًا.' });
+      }
+      const questions = refs.map((ref: any) =>
+        getFoundationPlacementQuestion(program, String(ref.questionId)),
+      );
+      if (questions.some((item: any) => !item) || questions.length !== (program === 'qudrat' ? 18 : 32)) {
+        return res.status(410).json({ error: 'تعذر التحقق من أسئلة هذا التقييم. ابدأ تقييمًا جديدًا.' });
+      }
+      const typedQuestions = questions as NonNullable<typeof questions[number]>[];
+      const refsMatchBank = refs.every((ref: any, index: number) => {
+        const item = typedQuestions[index];
+        return ref.sourceType === 'legacy_json' &&
+          ref.questionId === item.id &&
+          ref.areaKey === item.areaKey &&
+          ref.areaLabel === item.areaLabel &&
+          ref.subjectId === item.subjectId &&
+          ref.difficulty === item.difficulty;
+      });
+      if (!refsMatchBank || new Set(refs.map((ref: any) => String(ref.questionId))).size !== refs.length) {
+        return res.status(409).json({ error: 'بيانات التقييم غير متطابقة. ابدأ تقييمًا جديدًا.' });
+      }
+
       const submitted = Array.isArray(req.body?.answers) ? req.body.answers : [];
       const answerMap = new Map<string, number>();
       for (const answer of submitted) {
         const questionId = String(answer?.questionId || '');
-        const optionIndex = Number(answer?.selectedOptionIndex);
-        if (allowedQuestionIds.includes(questionId) && Number.isInteger(optionIndex) && optionIndex >= 0 && optionIndex <= 10) {
-          answerMap.set(questionId, optionIndex);
+        const optionIndex = answer?.selectedOptionIndex;
+        const item = typedQuestions.find((question) => question.id === questionId);
+        if (!item || answerMap.has(questionId) || typeof optionIndex !== 'number' ||
+          !Number.isInteger(optionIndex) || optionIndex < 0 || optionIndex >= item.options.length) {
+          return res.status(400).json({ error: 'تحقق من إجاباتك ثم أرسل التقييم مرة أخرى.' });
         }
+        answerMap.set(questionId, optionIndex);
       }
-      const questions = await Question.find({ _id: { $in: attempt.questionIds } })
-        .select('_id correctOptionIndex category subcategory topic')
-        .lean() as any[];
-      const questionById = new Map(questions.map((question: any) => [String(question._id), question]));
-      const skillTotals = new Map<string, { key: string; label: string; category: 'verbal' | 'quantitative'; totalQuestions: number; correctAnswers: number }>();
-      let correctAnswers = 0;
-      let answeredQuestions = 0;
-      const questionDetails = allowedQuestionIds.map((questionId: string) => {
-        const question = questionById.get(questionId);
-        const selectedOptionIndex = answerMap.get(questionId);
-        const answered = !!question && Number.isInteger(selectedOptionIndex);
-        const isCorrect = answered && selectedOptionIndex === question.correctOptionIndex;
-        if (answered) answeredQuestions += 1;
-        if (isCorrect) correctAnswers += 1;
-        if (question) {
-          const key = String(question.subcategory || question.topic || 'المهارات الأساسية');
-          const current = skillTotals.get(`${question.category}:${key}`) || {
-            key,
-            label: key,
-            category: question.category,
-            totalQuestions: 0,
-            correctAnswers: 0,
-          };
-          current.totalQuestions += 1;
-          if (isCorrect) current.correctAnswers += 1;
-          skillTotals.set(`${question.category}:${key}`, current);
-        }
-        return {
-          questionId,
-          selectedOptionIndex: answered ? selectedOptionIndex : null,
-          isCorrect: Boolean(isCorrect),
-          category: question?.category,
-          subcategory: question?.subcategory || question?.topic || 'المهارات الأساسية',
-        };
-      });
-      for (const detail of questionDetails) {
-        const category = detail.category === 'quantitative' ? 'quantitative' : 'verbal';
-        await recordVerifiedLearningAttempt(userId, {
-          questionId: detail.questionId,
-          sourceType: 'mongo_question',
-          sourceKey: `diagnostic:${attemptId}`,
-          programId: 'program.qudrat',
-          subjectId: `subject.qudrat.${category}`,
-          selectedAnswer: detail.selectedOptionIndex,
-          responseTime: 0,
-          idempotencyKey: `diagnostic:${attemptId}:${detail.questionId}`,
-          metadata: {
-            flow: 'foundation-diagnostic',
-            diagnosticAttemptId: attemptId,
-            subcategory: detail.subcategory,
-          },
-        });
+      if (answerMap.size !== typedQuestions.length) {
+        return res.status(422).json({ error: 'أجب عن جميع الأسئلة قبل حفظ التقييم.' });
       }
-      const totalQuestions = allowedQuestionIds.length;
-      const percentage = Math.round((correctAnswers / totalQuestions) * 100);
-      const summaries = Array.from(skillTotals.values()).map((skill) => ({
-        ...skill,
-        percentage: Math.round((skill.correctAnswers / skill.totalQuestions) * 100),
-      }));
-      const focus = [...summaries].sort((a, b) =>
-        a.percentage - b.percentage || b.totalQuestions - a.totalQuestions || a.label.localeCompare(b.label, 'ar')
-      )[0] || {
-        key: 'general',
-        label: 'المهارات الأساسية',
-        category: 'verbal' as const,
-        totalQuestions: 0,
-        correctAnswers: 0,
-        percentage: 0,
-      };
-      const recommendation = {
-        title: `مهمة اليوم: ابدأ بـ ${focus.label}`,
-        reason: `نتيجتك الأولية ${percentage}%. سنبدأ بأضعف مهارة ظهرت في التقييم (${focus.label}) ثم نعيد القياس بعد التدريب.`,
-        href: `/foundation?program=qudrat&subject=${focus.category}`,
-      };
+      const claim = await DiagnosticAttempt.updateOne(
+        { _id: attemptId, userId, status: 'active', expiresAt: { $gt: new Date() } },
+        { $set: { status: 'submitting' } },
+      );
+      if (claim.modifiedCount !== 1) {
+        return res.status(409).json({ error: 'تم إرسال هذا التقييم بالفعل أو انتهت صلاحيته.' });
+      }
+      submissionClaimed = true;
 
+      const assessment = scoreFoundationPlacementAssessment(program, typedQuestions, answerMap);
+      const questionDetails = typedQuestions.map((item) => ({
+        questionId: item.id,
+        selectedOptionIndex: answerMap.get(item.id)!,
+        isCorrect: answerMap.get(item.id) === item.correctOptionIndex,
+        category: item.areaKey,
+        subcategory: item.areaLabel,
+        areaKey: item.areaKey,
+      }));
+      const learningAttempts = typedQuestions.map((item) => ({
+        item,
+        selectedOptionIndex: answerMap.get(item.id)!,
+      }));
+      for (let index = 0; index < learningAttempts.length; index += 4) {
+        const batch = learningAttempts.slice(index, index + 4);
+        const recorded = await Promise.allSettled(batch.map(({ item, selectedOptionIndex }) =>
+          recordVerifiedLearningAttempt(userId, {
+            questionId: item.id,
+            sourceType: 'legacy_json',
+            sourceKey: `foundation-placement-${FOUNDATION_PLACEMENT_VERSION}:${attemptId}`,
+            programId: `program.${program}`,
+            subjectId: item.subjectId,
+            selectedAnswer: selectedOptionIndex,
+            responseTime: 0,
+            idempotencyKey: `foundation-placement-${FOUNDATION_PLACEMENT_VERSION}:${attemptId}:${item.id}`,
+            metadata: {
+              flow: 'foundation-placement',
+              diagnosticAttemptId: attemptId,
+              areaKey: item.areaKey,
+              difficulty: item.difficulty,
+            },
+          }, {
+            correctOptionIndex: item.correctOptionIndex,
+            optionsCount: item.options.length,
+          }),
+        ));
+        const failedAttempt = recorded.find((result) => result.status === 'rejected');
+        if (failedAttempt?.status === 'rejected') throw failedAttempt.reason;
+      }
+
+      const completedAt = new Date();
+      const totalQuestions = assessment.totalQuestions;
+      const correctAnswers = assessment.correctAnswers;
+      const percentage = assessment.percentage;
+      const qodratBaseline = program === 'qudrat'
+        ? {
+            overall: percentage,
+            verbal: assessment.areas.find((area) => area.key === 'verbal')?.percentage || 0,
+            quantitative: assessment.areas.find((area) => area.key === 'quantitative')?.percentage || 0,
+          }
+        : undefined;
+      const qodratSkillSummaries = program === 'qudrat'
+        ? assessment.areas.map((area) => ({
+            key: area.key,
+            label: area.label,
+            category: area.key as 'verbal' | 'quantitative',
+            totalQuestions: area.totalQuestions,
+            correctAnswers: area.correctAnswers,
+            percentage: area.percentage,
+          }))
+        : [];
       const diagnosticResult = {
         userId,
-        program: 'qudrat',
+        program,
         testType: 'custom',
-        testId: `diagnostic-${attemptId}`,
-        testName: 'التقييم التشخيصي الأولي',
+        testId: `foundation-placement-${FOUNDATION_PLACEMENT_VERSION}-${attemptId}`,
+        testName: program === 'qudrat' ? 'تقييم تحديد مستوى القدرات' : 'تقييم تحديد مستوى التحصيلي',
         difficulty: 'mixed',
         score: percentage,
         totalQuestions,
         correctAnswers,
-        wrongAnswers: answeredQuestions - correctAnswers,
-        skippedQuestions: totalQuestions - answeredQuestions,
+        wrongAnswers: totalQuestions - correctAnswers,
+        skippedQuestions: 0,
         percentage,
-        timeTaken: Math.max(0, Number(req.body?.timeTakenSeconds) || 0),
+        timeTaken: Math.min(7200, Math.max(0, Math.round(Number(req.body?.timeTakenSeconds) || 0))),
         pointsEarned: correctAnswers,
         isOfficial: false,
         questionDetails,
-        weakAreas: summaries.filter((skill) => skill.percentage < 60).map((skill) => skill.label),
-        strongAreas: summaries.filter((skill) => skill.percentage >= 75).map((skill) => skill.label),
+        weakAreas: assessment.focusArea ? [assessment.focusArea.label] : [],
+        strongAreas: assessment.areas.filter((area) => area.percentage >= 75).map((area) => area.label),
       } as any;
       if (mongoose.Types.ObjectId.isValid(userId)) {
         await mongoStorage.createTestResult(diagnosticResult);
@@ -13594,36 +14212,62 @@ app.post("/api/auth/register", async (req: Request, res: Response) => {
         { $set: { status: 'completed', completedAt: new Date() } },
       );
       const profile = await StudentLearningProfile.findOneAndUpdate(
-        { userId, program: 'qudrat' },
+        { userId, program },
         {
           $set: {
             status: 'diagnostic_completed',
             diagnosticAttemptId: attemptId,
-            baseline: {
-              overall: percentage,
-              verbal: Math.round((summaries.filter((skill) => skill.category === 'verbal').reduce((sum, skill) => sum + skill.correctAnswers, 0) /
-                Math.max(1, summaries.filter((skill) => skill.category === 'verbal').reduce((sum, skill) => sum + skill.totalQuestions, 0))) * 100),
-              quantitative: Math.round((summaries.filter((skill) => skill.category === 'quantitative').reduce((sum, skill) => sum + skill.correctAnswers, 0) /
-                Math.max(1, summaries.filter((skill) => skill.category === 'quantitative').reduce((sum, skill) => sum + skill.totalQuestions, 0))) * 100),
+            ...(qodratBaseline ? { baseline: qodratBaseline } : {}),
+            skillSummaries: qodratSkillSummaries,
+            ...(program === 'qudrat' && assessment.focusArea
+              ? {
+                  focus: {
+                    category: assessment.focusArea.key as 'verbal' | 'quantitative',
+                    skill: assessment.focusArea.key,
+                    label: assessment.focusArea.label,
+                  },
+                }
+              : {}),
+            placementAssessment: {
+              version: FOUNDATION_PLACEMENT_VERSION,
+              percentage,
+              correctAnswers,
+              totalQuestions,
+              answeredQuestions: assessment.answeredQuestions,
+              confidence: assessment.confidence,
+              areas: assessment.areas,
+              focusArea: assessment.focusArea,
+              recommendation: assessment.recommendation,
+              completedAt,
             },
-            skillSummaries: summaries,
-            focus: { category: focus.category, skill: focus.key, label: focus.label },
-            recommendation,
-            lastDiagnosticAt: new Date(),
+            recommendation: assessment.recommendation,
+            lastDiagnosticAt: completedAt,
           },
         },
         { upsert: true, new: true, setDefaultsOnInsert: true },
       ).lean();
+      await DiagnosticAttempt.updateOne(
+        { _id: attemptId, userId, status: 'submitting' },
+        { $set: { status: 'completed', completedAt } },
+      );
+      submissionClaimed = false;
       return res.status(201).json({
-        result: { percentage, correctAnswers, totalQuestions, skippedQuestions: totalQuestions - answeredQuestions },
+        result: assessment,
         profile: {
           status: profile?.status,
-          baseline: profile?.baseline,
-          focus: profile?.focus,
+          baseline: program === 'qudrat' ? profile?.baseline : null,
+          focus: program === 'qudrat' && assessment.focusArea ? profile?.focus : null,
+          placementAssessment: profile?.placementAssessment,
           recommendation: profile?.recommendation,
         },
       });
     } catch (error) {
+      if (submissionClaimed) {
+        await (await import('../mongodb/models')).DiagnosticAttempt.updateOne(
+          { _id: attemptId, userId, status: 'submitting' },
+          { $set: { status: 'active' } },
+        ).catch(() => undefined);
+      }
       console.error('Foundation diagnostic submission error:', error);
       return res.status(500).json({ error: 'فشل في حفظ نتيجة التقييم التشخيصي' });
     }

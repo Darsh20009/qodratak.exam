@@ -8,6 +8,8 @@ import ImageZoom from '@/components/ImageZoom';
 import { getQuestionImageUrls } from '@/lib/questionImages';
 import { resolveFoundationAssetUrl } from '@/lib/foundationVideoUrl';
 import ResultsTeacherAnalysis from '@/components/exam-results/ResultsTeacherAnalysis';
+import ExamLearningReport from '@/components/exam-results/ExamLearningReport';
+import { examQuestionSeconds } from '@/lib/examTiming';
 import QuestionReportModal from '@/components/exam-results/QuestionReportModal';
 import { apiRequest } from "@/lib/queryClient";
 import { SEO } from "@/components/SEO";
@@ -89,7 +91,7 @@ import { TestType } from "@shared/types"; // Assuming TestType is "verbal" | "qu
 import { DetailedTestResults } from "@/components/DetailedTestResults";
 import { PointsAndRankingCard } from "@/components/test-results/PointsAndRankingCard";
 import { EnhancedSaveToFolderDialog } from "@/components/EnhancedSaveToFolderDialog";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { getQueryFn } from "@/lib/queryClient";
 import { useUser } from "@/hooks/use-user";
 
@@ -127,6 +129,9 @@ interface QiyasExam {
 
 interface ExamQuestion {
   id: number;
+  _id?: string;
+  questionId?: number | string;
+  answerStatus?: "approved" | "review";
   text: string;
   options: string[];
   correctOptionIndex: number;
@@ -320,13 +325,22 @@ const qiyasExams: QiyasExam[] = [
   },
 ];
 
+function createExamAttemptId(): string {
+  return typeof globalThis.crypto?.randomUUID === "function"
+    ? globalThis.crypto.randomUUID()
+    : `${Date.now()}-${Math.random().toString(36).slice(2)}`;
+}
+
 // Main component
 const QiyasExamPage: React.FC = () => {
   const [, setLocation] = useLocation();
   const { toast } = useToast();
   const isMobile = useIsMobile();
   const { user } = useUser();
+  const queryClient = useQueryClient();
   const finishExamRef = useRef<(() => void) | null>(null);
+  const examAttemptIdRef = useRef<string | null>(null);
+  const finishExamStartedRef = useRef(false);
 
   const [selectedExam, setSelectedExam] = useState<QiyasExam | null>(null);
   const [currentView, setCurrentView] = useState<"selection" | "instructions" | "section-intro" | "inProgress" | "results">("selection");
@@ -838,10 +852,12 @@ const QiyasExamPage: React.FC = () => {
 
     setCurrentSectionIdx(0);
     setCurrentQuestionIdx(0);
-    // محاولة استعادة الإجابات المحفوظة عند وجود اختبار في التقدم
+    // لا تستعد إجابات قديمة لا ترتبط بمجموعة الأسئلة العشوائية الجديدة.
     const savedAnswersKey = `qiyasAnswers_${selectedExam.id}`;
-    const savedAnswers = localStorage.getItem(savedAnswersKey);
-    setAnswers(savedAnswers ? JSON.parse(savedAnswers) : {});
+    localStorage.removeItem(savedAnswersKey);
+    setAnswers({});
+    examAttemptIdRef.current = createExamAttemptId();
+    finishExamStartedRef.current = false;
     setSectionScores({});
     setAllProcessedQuestionsBySection({});
     setQuestions([]);
@@ -1107,6 +1123,9 @@ const QiyasExamPage: React.FC = () => {
   };
 
   const finishExam = async () => {
+    if (finishExamStartedRef.current) return;
+    finishExamStartedRef.current = true;
+
     // Ensure the last section's score is calculated before finishing
     calculateSectionScore();
     // مسح الإجابات المؤقتة المحفوظة بعد إتمام الاختبار
@@ -1171,9 +1190,29 @@ const QiyasExamPage: React.FC = () => {
     if (user?.id) {
       try {
         const timeTakenInSeconds = timeTakenMinutes * 60;
+        const examAttemptId = examAttemptIdRef.current || createExamAttemptId();
+        const examSourceKey = `qiyas-exam:${selectedExam?.id ?? "unknown"}:${examAttemptId}`;
+        const learningAnswers = allQuestions
+          .filter((question) =>
+            !question._isNonScored &&
+            question.answerStatus === "approved" &&
+            Boolean(question._id) &&
+            (question.category === "verbal" || question.category === "quantitative") &&
+            answers[question.id] !== undefined,
+          )
+          .map((question) => ({
+            questionId: String(question._id),
+            selectedOptionIndex: answers[question.id],
+            sourceKey: examSourceKey,
+            examId: selectedExam?.id,
+            responseTime: examQuestionSeconds(String(question._id)),
+            metadata: {
+              section: question.section,
+              subcategory: question.subcategory,
+            },
+          }));
         
         // حساب الأسئلة المتروكة (غير المجاب عليها)
-        const allQuestions = Object.values(allProcessedQuestionsBySection).flat();
         const scoredQuestions = allQuestions.filter(q => !q._isNonScored);
         const skippedQuestions = scoredQuestions.filter(q => answers[q.id] === undefined).length;
         
@@ -1183,7 +1222,13 @@ const QiyasExamPage: React.FC = () => {
           score: finalStats.totalCorrect,
           totalQuestions: finalStats.totalScoredQuestions,
           timeTaken: timeTakenInSeconds,
-          skippedQuestions
+          skippedQuestions,
+          sourceKey: examSourceKey,
+          idempotencyKey: examSourceKey,
+          questionIds: [...new Set(allQuestions.map((question) =>
+            String(question.questionId ?? question.id),
+          ))],
+          learningAnswers,
         }) as any; // Cast to any لتجنب خطأ TypeScript
 
         // حفظ النقاط المكتسبة في localStorage للعرض
@@ -1191,10 +1236,28 @@ const QiyasExamPage: React.FC = () => {
           localStorage.setItem('lastExamPointsEarned', response.pointsEarned.toString());
         }
 
+        await queryClient.invalidateQueries({ queryKey: ["/api/student/learning-coach"] });
+        if (response?.learningAttemptsRecorded > 0) {
+          toast({
+            title: "تم تحديث تحليل المهارات",
+            description: `أُضيفت ${response.learningAttemptsRecorded} إجابة موثقة من اختبار القدرات إلى تقريرك.`,
+          });
+        } else {
+          toast({
+            title: "حُفظت نتيجة الاختبار",
+            description: "لم تتوفر إجابات مرتبطة بأسئلة معتمدة لتحديث تحليل المهارات.",
+          });
+        }
+
         // إطلاق حدث تحديث النقاط
         window.dispatchEvent(new Event('pointsUpdated'));
       } catch (error) {
         console.error('Failed to save test results:', error);
+        toast({
+          title: "تعذر تحديث تحليل المهارات",
+          description: "اكتمل عرض نتيجة الاختبار، لكن لم يتأكد حفظ محاولاته على الخادم.",
+          variant: "destructive",
+        });
       }
     }
     finishExamRef.current = null;
@@ -2758,6 +2821,7 @@ const generateChallengeFile = ({ isTimed, questions: incorrectOrUnansweredQuesti
 
     return (
       <div className="container py-8 max-w-4xl font-arabic animate-fadeIn">
+        <ExamLearningReport />
         {renderMistakeChallengeDialog()}
         <Card className="mb-8 overflow-hidden shadow-xl dark:bg-slate-800/50">
           <div className={cn("h-3 rounded-t-lg", selectedExam.themeColor || "bg-primary")}></div>

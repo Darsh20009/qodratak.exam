@@ -1,4 +1,5 @@
 import { QueryClient, QueryFunction } from "@tanstack/react-query";
+import { attachExamTiming, completeExamTiming } from './examTiming';
 
 async function throwIfResNotOk(res: Response) {
   if (!res.ok) {
@@ -12,6 +13,9 @@ export async function apiRequest(
   url: string,
   data?: unknown | undefined,
 ): Promise<Response> {
+  if (method.toUpperCase() === 'POST' && (/\/test-results$/.test(url) || /\/submit$/.test(url))) {
+    data = attachExamTiming(data);
+  }
   const res = await fetch(url, {
     method,
     headers: data ? { "Content-Type": "application/json" } : {},
@@ -20,6 +24,19 @@ export async function apiRequest(
   });
 
   await throwIfResNotOk(res);
+  if (method.toUpperCase() === 'POST' && /\/(?:test-results|submit|finish)$/.test(url) && !url.includes('/exam-reports')) {
+    const snapshot = completeExamTiming();
+    if (snapshot && Object.keys(snapshot.questions).length) {
+      // Report failure must never invalidate a successfully saved exam result.
+      void fetch('/api/student/exam-reports', {
+        method: 'POST', credentials: 'include', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ runId: snapshot.runId, title: snapshot.title,
+          questions: Object.values(snapshot.questions).map((q) => ({ ...q, seconds: Math.min(7200, q.seconds) })) }),
+      }).then((response) => {
+        window.dispatchEvent(new CustomEvent('examReportSaved', { detail: { success: response.ok } }));
+      }).catch(() => window.dispatchEvent(new CustomEvent('examReportSaved', { detail: { success: false } })));
+    }
+  }
   return res;
 }
 

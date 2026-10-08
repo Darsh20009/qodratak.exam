@@ -80,72 +80,9 @@ export default function ResultsTeacherAnalysis({ wrongQuestions, totalQuestions,
   const steps = ["يراجع إجاباتك...", "يحلل نقاط القوة والضعف...", "يُعدّ التوصيات..."];
 
   useEffect(() => {
-    let stepTimer: NodeJS.Timeout;
-    let idx = 0;
-    stepTimer = setInterval(() => {
-      idx++;
-      if (idx < steps.length) setStep(idx);
-      else clearInterval(stepTimer);
-    }, 900);
-
-    const controller = new AbortController();
-    (async () => {
-      try {
-        const res = await fetch("/api/ai/explain-mistakes", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          signal: controller.signal,
-          body: JSON.stringify({ wrongQuestions, totalQuestions, score }),
-        });
-        if (!res.ok) throw new Error("API error");
-        // This endpoint returns per-question explanations, not overall analysis
-        // Build category analysis ourselves
-        setAnalysis(buildFallback(score, totalQuestions, wrongQuestions));
-      } catch {
-        setAnalysis(buildFallback(score, totalQuestions, wrongQuestions));
-      } finally {
-        clearInterval(stepTimer);
-        setLoading(false);
-      }
-    })();
-
-    // Also call teacher analyze endpoint for richer analysis
-    (async () => {
-      try {
-        const res = await fetch("/api/student/teacher-analysis", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            examType: "qudrat",
-            questions: wrongQuestions.map(q => ({
-              text: q.questionText,
-              options: q.options,
-              correctOptionIndex: q.correctAnswerIndex,
-              category: q.category || "verbal",
-              subcategory: q.subcategory,
-            })),
-            answers: Object.fromEntries(wrongQuestions.map((_, i) => [i, wrongQuestions[i].studentAnswerIndex])),
-            timings: {},
-          }),
-        });
-        if (!res.ok) return;
-        const data = await res.json();
-        const plan = data.plan;
-        if (!plan) return;
-        setAnalysis({
-          overallComment: plan.summary || buildFallback(score, totalQuestions, wrongQuestions).overallComment,
-          strengthsComment: plan.strengths?.join("، ") || "",
-          weaknessesComment: plan.weaknesses?.join("، ") || "",
-          topWeakAreas: plan.weaknesses || [],
-          topStrengths: plan.strengths || [],
-          actionPlan: plan.roadmap?.[0]?.tasks || [],
-          encouragement: plan.encouragement || "",
-        });
-      } catch { /* use fallback */ }
-    })();
-
-    return () => { controller.abort(); clearInterval(stepTimer); };
-  }, []);
+    setAnalysis(buildFallback(score, totalQuestions, wrongQuestions));
+    setLoading(false);
+  }, [score, totalQuestions, wrongQuestions]);
 
   const pct = Math.round((score / totalQuestions) * 100);
 

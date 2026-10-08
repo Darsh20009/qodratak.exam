@@ -218,6 +218,7 @@ function AuthenticatedRouteBoundary({ children }: { children: React.ReactNode })
   const isExpiredStudent = user?.role === "student" && Boolean(subscription?.isExpired);
   const canUseExpiredTrialRoute = [
     "/",
+    "/records",
     "/subscription",
     "/enhanced-subscription",
     "/payment/geidea/return",
@@ -443,7 +444,7 @@ function MainLayout({ children }: { children: React.ReactNode }) {
   const moreNavItems = [
     { name: "اختبار قياس",      href: "/qiyas",              icon: Brain },
     { name: "بنك الأسئلة",      href: "/question-bank",      icon: BookOpenIcon },
-    { name: "سجل الاختبارات",   href: "/records",            icon: ClipboardIcon },
+    { name: "نتائجي",          href: "/records",            icon: ClipboardIcon },
     { name: "محفظتي",           href: "/wallet",               icon: Wallet },
     { name: "اختبارات اللفظي",  href: "/verbal-tests",       icon: BookOpenIcon },
     { name: "اختبارات الكمي",   href: "/quantitative-tests",  icon: Calculator },
@@ -701,7 +702,7 @@ function MainLayout({ children }: { children: React.ReactNode }) {
                     { href: "/book-exam", icon: CalendarCheck, label: "احجز اختبار", color: "text-emerald-500 dark:text-emerald-400", bg: "bg-emerald-500/10 dark:bg-emerald-500/20" },
                     { href: "/notifications", icon: Bell, label: "الإشعارات", color: "text-blue-500 dark:text-blue-400", bg: "bg-blue-500/10 dark:bg-blue-500/20" },
                     { href: "/tahsilik", icon: GraduationCapIcon, label: "تحصيلك", color: "text-amber-500 dark:text-amber-400", bg: "bg-amber-500/10 dark:bg-amber-500/20" },
-                    { href: "/records", icon: ClipboardIcon, label: "السجل", color: "text-amber-500 dark:text-amber-400", bg: "bg-amber-500/10 dark:bg-amber-500/20" },
+                    { href: "/records", icon: ClipboardIcon, label: "نتائجي", color: "text-amber-500 dark:text-amber-400", bg: "bg-amber-500/10 dark:bg-amber-500/20" },
                     { href: "/learn", icon: BookOpenIcon, label: "تعلم", color: "text-emerald-500 dark:text-emerald-400", bg: "bg-emerald-500/10 dark:bg-emerald-500/20" },
                     { href: "/folders", icon: FolderIcon, label: "مجلداتي", color: "text-orange-500 dark:text-orange-400", bg: "bg-orange-500/10 dark:bg-orange-500/20" },
                     { href: "/time-management", icon: Clock, label: "وقتي", color: "text-cyan-500 dark:text-cyan-400", bg: "bg-cyan-500/10 dark:bg-cyan-500/20" },
@@ -1003,6 +1004,9 @@ function Router({ splashDone }: { splashDone: boolean }) {
       <Route path="/tahsilik/tests/subject">
         {() => <StudentShell><ProtectedRoute requiresPremium={true}><TahsilikSubjectTest /></ProtectedRoute></StudentShell>}
       </Route>
+      <Route path="/tahsilik/test-runner/subject">
+        {() => <StudentShell><ProtectedRoute requiresPremium={true}><TahsilikSubjectTestRunner /></ProtectedRoute></StudentShell>}
+      </Route>
       <Route path="/tahsilik/tests-hub">
         {() => <StudentShell><ProtectedRoute requiresPremium={true}><Redirect to="/tahsilik/tests" /></ProtectedRoute></StudentShell>}
       </Route>
@@ -1146,7 +1150,7 @@ function Router({ splashDone }: { splashDone: boolean }) {
         {() => <StudentShell><ProtectedRoute requiresPremium={true}><FolderTest /></ProtectedRoute></StudentShell>}
       </Route>
       <Route path="/records">
-        {() => <StudentShell><ProtectedRoute requiresPremium={true}><ExamRecordsPage /></ProtectedRoute></StudentShell>}
+        {() => <StudentShell><ProtectedRoute><ExamRecordsPage /></ProtectedRoute></StudentShell>}
       </Route>
       <Route path="/mock-exams">
         {() => <StudentShell><ProtectedRoute requiresPremium={true}><MockExamPage /></ProtectedRoute></StudentShell>}

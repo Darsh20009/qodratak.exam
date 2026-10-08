@@ -8,6 +8,245 @@
 import * as zod from 'zod';
 
 
+export const startRemedialPracticeBodyRunIdMin = 8;
+export const startRemedialPracticeBodyRunIdMax = 150;
+
+
+
+export const StartRemedialPracticeBody = zod.object({
+  "runId": zod.string().min(startRemedialPracticeBodyRunIdMin).max(startRemedialPracticeBodyRunIdMax)
+})
+
+export const StartRemedialPracticeResponse = zod.object({
+  "attemptId": zod.string(),
+  "questions": zod.array(zod.object({
+  "id": zod.string(),
+  "text": zod.string(),
+  "category": zod.string(),
+  "subcategory": zod.string(),
+  "options": zod.array(zod.string()),
+  "imageUrl": zod.string().optional(),
+  "passageText": zod.string().optional(),
+  "imageUrls": zod.array(zod.string()).optional()
+}))
+})
+
+
+export const submitRemedialPracticeBodyAnswersItemSelectedOptionIndexMin = 0;
+export const submitRemedialPracticeBodyAnswersItemSelectedOptionIndexMax = 9;
+
+export const submitRemedialPracticeBodyAnswersItemResponseTimeMin = 0;
+export const submitRemedialPracticeBodyAnswersItemResponseTimeMax = 7200;
+
+export const submitRemedialPracticeBodyAnswersMax = 8;
+
+
+
+export const SubmitRemedialPracticeBody = zod.object({
+  "attemptId": zod.string(),
+  "answers": zod.array(zod.object({
+  "questionId": zod.string(),
+  "selectedOptionIndex": zod.number().min(submitRemedialPracticeBodyAnswersItemSelectedOptionIndexMin).max(submitRemedialPracticeBodyAnswersItemSelectedOptionIndexMax).nullable(),
+  "responseTime": zod.number().min(submitRemedialPracticeBodyAnswersItemResponseTimeMin).max(submitRemedialPracticeBodyAnswersItemResponseTimeMax).optional()
+})).max(submitRemedialPracticeBodyAnswersMax)
+})
+
+export const SubmitRemedialPracticeResponse = zod.object({
+  "totalQuestions": zod.number(),
+  "correctAnswers": zod.number(),
+  "questions": zod.array(zod.object({
+  "id": zod.string(),
+  "correctOptionIndex": zod.number(),
+  "isCorrect": zod.boolean(),
+  "explanation": zod.string()
+}))
+})
+
+
+export const getStudentExamReportsQueryBeforeMin = 24;
+export const getStudentExamReportsQueryBeforeMax = 24;
+
+
+
+export const GetStudentExamReportsQueryParams = zod.object({
+  "before": zod.coerce.string().min(getStudentExamReportsQueryBeforeMin).max(getStudentExamReportsQueryBeforeMax).optional()
+})
+
+export const getStudentExamReportsResponseTotalCountMin = 0;
+
+export const getStudentExamReportsResponseReportsItemQuestionsItemOneIdMax = 150;
+
+export const getStudentExamReportsResponseReportsItemQuestionsItemOneTextMax = 12000;
+
+export const getStudentExamReportsResponseReportsItemQuestionsItemOneOptionsItemMax = 4000;
+
+export const getStudentExamReportsResponseReportsItemQuestionsItemOneOptionsMax = 10;
+
+export const getStudentExamReportsResponseReportsItemQuestionsItemOneSelectedOptionIndexMin = 0;
+export const getStudentExamReportsResponseReportsItemQuestionsItemOneSelectedOptionIndexMax = 9;
+
+export const getStudentExamReportsResponseReportsItemQuestionsItemOneSecondsMin = 0;
+export const getStudentExamReportsResponseReportsItemQuestionsItemOneSecondsMax = 7200;
+
+export const getStudentExamReportsResponseReportsItemQuestionsItemOneCategoryMax = 200;
+
+export const getStudentExamReportsResponseReportsItemQuestionsItemOneSubcategoryMax = 200;
+
+
+
+export const GetStudentExamReportsResponse = zod.object({
+  "nextCursor": zod.string().nullish(),
+  "totalCount": zod.number().min(getStudentExamReportsResponseTotalCountMin).optional(),
+  "reports": zod.array(zod.object({
+  "runId": zod.string(),
+  "title": zod.string(),
+  "createdAt": zod.string().optional(),
+  "questions": zod.array(zod.object({
+  "id": zod.string().max(getStudentExamReportsResponseReportsItemQuestionsItemOneIdMax),
+  "text": zod.string().max(getStudentExamReportsResponseReportsItemQuestionsItemOneTextMax),
+  "options": zod.array(zod.string().max(getStudentExamReportsResponseReportsItemQuestionsItemOneOptionsItemMax)).max(getStudentExamReportsResponseReportsItemQuestionsItemOneOptionsMax),
+  "selectedOptionIndex": zod.number().min(getStudentExamReportsResponseReportsItemQuestionsItemOneSelectedOptionIndexMin).max(getStudentExamReportsResponseReportsItemQuestionsItemOneSelectedOptionIndexMax).nullable(),
+  "seconds": zod.number().min(getStudentExamReportsResponseReportsItemQuestionsItemOneSecondsMin).max(getStudentExamReportsResponseReportsItemQuestionsItemOneSecondsMax),
+  "category": zod.string().max(getStudentExamReportsResponseReportsItemQuestionsItemOneCategoryMax).optional(),
+  "subcategory": zod.string().max(getStudentExamReportsResponseReportsItemQuestionsItemOneSubcategoryMax).optional()
+}).and(zod.object({
+  "sourceQuestionId": zod.string().optional(),
+  "imageUrl": zod.string().optional(),
+  "passageText": zod.string().optional(),
+  "imageUrls": zod.array(zod.string()).optional(),
+  "isCorrect": zod.boolean().nullable(),
+  "correctOptionIndex": zod.number().nullable(),
+  "explanation": zod.string(),
+  "explanationStatus": zod.string(),
+  "speedTip": zod.string(),
+  "baselineSeconds": zod.number().nullable(),
+  "baselineSource": zod.enum(['student_history', 'this_exam']),
+  "isSlow": zod.boolean()
+}))),
+  "timing": zod.object({
+  "measuredQuestions": zod.number(),
+  "totalSeconds": zod.number(),
+  "medianSeconds": zod.number().nullable(),
+  "slowThresholdSeconds": zod.number().nullable()
+})
+}))
+})
+
+
+export const saveStudentExamReportBodyRunIdMin = 8;
+export const saveStudentExamReportBodyRunIdMax = 150;
+
+export const saveStudentExamReportBodyTitleMax = 200;
+
+export const saveStudentExamReportBodyQuestionsItemIdMax = 150;
+
+export const saveStudentExamReportBodyQuestionsItemTextMax = 12000;
+
+export const saveStudentExamReportBodyQuestionsItemOptionsItemMax = 4000;
+
+export const saveStudentExamReportBodyQuestionsItemOptionsMax = 10;
+
+export const saveStudentExamReportBodyQuestionsItemSelectedOptionIndexMin = 0;
+export const saveStudentExamReportBodyQuestionsItemSelectedOptionIndexMax = 9;
+
+export const saveStudentExamReportBodyQuestionsItemSecondsMin = 0;
+export const saveStudentExamReportBodyQuestionsItemSecondsMax = 7200;
+
+export const saveStudentExamReportBodyQuestionsItemCategoryMax = 200;
+
+export const saveStudentExamReportBodyQuestionsItemSubcategoryMax = 200;
+
+export const saveStudentExamReportBodyQuestionsMax = 250;
+
+
+
+export const SaveStudentExamReportBody = zod.object({
+  "runId": zod.string().min(saveStudentExamReportBodyRunIdMin).max(saveStudentExamReportBodyRunIdMax),
+  "title": zod.string().min(1).max(saveStudentExamReportBodyTitleMax),
+  "questions": zod.array(zod.object({
+  "id": zod.string().max(saveStudentExamReportBodyQuestionsItemIdMax),
+  "text": zod.string().max(saveStudentExamReportBodyQuestionsItemTextMax),
+  "options": zod.array(zod.string().max(saveStudentExamReportBodyQuestionsItemOptionsItemMax)).max(saveStudentExamReportBodyQuestionsItemOptionsMax),
+  "selectedOptionIndex": zod.number().min(saveStudentExamReportBodyQuestionsItemSelectedOptionIndexMin).max(saveStudentExamReportBodyQuestionsItemSelectedOptionIndexMax).nullable(),
+  "seconds": zod.number().min(saveStudentExamReportBodyQuestionsItemSecondsMin).max(saveStudentExamReportBodyQuestionsItemSecondsMax),
+  "category": zod.string().max(saveStudentExamReportBodyQuestionsItemCategoryMax).optional(),
+  "subcategory": zod.string().max(saveStudentExamReportBodyQuestionsItemSubcategoryMax).optional()
+})).min(1).max(saveStudentExamReportBodyQuestionsMax)
+})
+
+export const saveStudentExamReportResponseReportQuestionsItemOneIdMax = 150;
+
+export const saveStudentExamReportResponseReportQuestionsItemOneTextMax = 12000;
+
+export const saveStudentExamReportResponseReportQuestionsItemOneOptionsItemMax = 4000;
+
+export const saveStudentExamReportResponseReportQuestionsItemOneOptionsMax = 10;
+
+export const saveStudentExamReportResponseReportQuestionsItemOneSelectedOptionIndexMin = 0;
+export const saveStudentExamReportResponseReportQuestionsItemOneSelectedOptionIndexMax = 9;
+
+export const saveStudentExamReportResponseReportQuestionsItemOneSecondsMin = 0;
+export const saveStudentExamReportResponseReportQuestionsItemOneSecondsMax = 7200;
+
+export const saveStudentExamReportResponseReportQuestionsItemOneCategoryMax = 200;
+
+export const saveStudentExamReportResponseReportQuestionsItemOneSubcategoryMax = 200;
+
+
+
+export const SaveStudentExamReportResponse = zod.object({
+  "report": zod.object({
+  "runId": zod.string(),
+  "title": zod.string(),
+  "createdAt": zod.string().optional(),
+  "questions": zod.array(zod.object({
+  "id": zod.string().max(saveStudentExamReportResponseReportQuestionsItemOneIdMax),
+  "text": zod.string().max(saveStudentExamReportResponseReportQuestionsItemOneTextMax),
+  "options": zod.array(zod.string().max(saveStudentExamReportResponseReportQuestionsItemOneOptionsItemMax)).max(saveStudentExamReportResponseReportQuestionsItemOneOptionsMax),
+  "selectedOptionIndex": zod.number().min(saveStudentExamReportResponseReportQuestionsItemOneSelectedOptionIndexMin).max(saveStudentExamReportResponseReportQuestionsItemOneSelectedOptionIndexMax).nullable(),
+  "seconds": zod.number().min(saveStudentExamReportResponseReportQuestionsItemOneSecondsMin).max(saveStudentExamReportResponseReportQuestionsItemOneSecondsMax),
+  "category": zod.string().max(saveStudentExamReportResponseReportQuestionsItemOneCategoryMax).optional(),
+  "subcategory": zod.string().max(saveStudentExamReportResponseReportQuestionsItemOneSubcategoryMax).optional()
+}).and(zod.object({
+  "sourceQuestionId": zod.string().optional(),
+  "imageUrl": zod.string().optional(),
+  "passageText": zod.string().optional(),
+  "imageUrls": zod.array(zod.string()).optional(),
+  "isCorrect": zod.boolean().nullable(),
+  "correctOptionIndex": zod.number().nullable(),
+  "explanation": zod.string(),
+  "explanationStatus": zod.string(),
+  "speedTip": zod.string(),
+  "baselineSeconds": zod.number().nullable(),
+  "baselineSource": zod.enum(['student_history', 'this_exam']),
+  "isSlow": zod.boolean()
+}))),
+  "timing": zod.object({
+  "measuredQuestions": zod.number(),
+  "totalSeconds": zod.number(),
+  "medianSeconds": zod.number().nullable(),
+  "slowThresholdSeconds": zod.number().nullable()
+})
+})
+})
+
+
+export const prepareExamQuestionExplanationBodyQuestionIdMax = 150;
+
+
+
+export const PrepareExamQuestionExplanationBody = zod.object({
+  "questionId": zod.string().min(1).max(prepareExamQuestionExplanationBodyQuestionIdMax)
+})
+
+export const PrepareExamQuestionExplanationResponse = zod.object({
+  "explanation": zod.string(),
+  "tip": zod.string(),
+  "status": zod.string(),
+  "generated": zod.boolean()
+})
+
+
 /**
  * Returns server health status
  * @summary Health check
@@ -15,6 +254,701 @@ import * as zod from 'zod';
 export const HealthCheckResponse = zod.object({
   "status": zod.enum(['ok', 'unhealthy']),
   "mongodb": zod.enum(['connected', 'disconnected'])
+})
+
+
+/**
+ * @summary Get a student's starting-level assessment and recommendation
+ */
+export const getFoundationLearningStateQueryProgramDefault = `qudrat`;
+
+export const GetFoundationLearningStateQueryParams = zod.object({
+  "program": zod.enum(['qudrat', 'tahsili']).default(getFoundationLearningStateQueryProgramDefault)
+})
+
+export const getFoundationLearningStateResponseBaselineOverallMin = 0;
+export const getFoundationLearningStateResponseBaselineOverallMax = 100;
+
+export const getFoundationLearningStateResponseBaselineVerbalMin = 0;
+export const getFoundationLearningStateResponseBaselineVerbalMax = 100;
+
+export const getFoundationLearningStateResponseBaselineQuantitativeMin = 0;
+export const getFoundationLearningStateResponseBaselineQuantitativeMax = 100;
+
+export const getFoundationLearningStateResponsePlacementAssessmentOneOnePercentageMin = 0;
+export const getFoundationLearningStateResponsePlacementAssessmentOneOnePercentageMax = 100;
+
+export const getFoundationLearningStateResponsePlacementAssessmentOneOneCorrectAnswersMin = 0;
+
+
+export const getFoundationLearningStateResponsePlacementAssessmentOneOneAnsweredQuestionsMin = 0;
+
+export const getFoundationLearningStateResponsePlacementAssessmentOneOneAreasItemTotalQuestionsMin = 0;
+
+export const getFoundationLearningStateResponsePlacementAssessmentOneOneAreasItemCorrectAnswersMin = 0;
+
+export const getFoundationLearningStateResponsePlacementAssessmentOneOneAreasItemPercentageMin = 0;
+export const getFoundationLearningStateResponsePlacementAssessmentOneOneAreasItemPercentageMax = 100;
+
+export const getFoundationLearningStateResponsePlacementAssessmentOneOneAreasItemDifficultyCoverageItemTotalQuestionsMin = 0;
+
+export const getFoundationLearningStateResponsePlacementAssessmentOneOneAreasItemDifficultyCoverageItemCorrectAnswersMin = 0;
+
+export const getFoundationLearningStateResponsePlacementAssessmentOneOneFocusAreaOneTotalQuestionsMin = 0;
+
+export const getFoundationLearningStateResponsePlacementAssessmentOneOneFocusAreaOneCorrectAnswersMin = 0;
+
+export const getFoundationLearningStateResponsePlacementAssessmentOneOneFocusAreaOnePercentageMin = 0;
+export const getFoundationLearningStateResponsePlacementAssessmentOneOneFocusAreaOnePercentageMax = 100;
+
+export const getFoundationLearningStateResponsePlacementAssessmentOneOneFocusAreaOneDifficultyCoverageItemTotalQuestionsMin = 0;
+
+export const getFoundationLearningStateResponsePlacementAssessmentOneOneFocusAreaOneDifficultyCoverageItemCorrectAnswersMin = 0;
+
+export const getFoundationLearningStateResponseSkillSummariesItemTotalQuestionsMin = 0;
+
+export const getFoundationLearningStateResponseSkillSummariesItemCorrectAnswersMin = 0;
+
+export const getFoundationLearningStateResponseSkillSummariesItemPercentageMin = 0;
+export const getFoundationLearningStateResponseSkillSummariesItemPercentageMax = 100;
+
+
+
+export const GetFoundationLearningStateResponse = zod.object({
+  "status": zod.enum(['needs_diagnostic', 'diagnostic_completed']),
+  "program": zod.enum(['qudrat', 'tahsili']),
+  "baseline": zod.object({
+  "overall": zod.number().min(getFoundationLearningStateResponseBaselineOverallMin).max(getFoundationLearningStateResponseBaselineOverallMax).optional(),
+  "verbal": zod.number().min(getFoundationLearningStateResponseBaselineVerbalMin).max(getFoundationLearningStateResponseBaselineVerbalMax).optional(),
+  "quantitative": zod.number().min(getFoundationLearningStateResponseBaselineQuantitativeMin).max(getFoundationLearningStateResponseBaselineQuantitativeMax).optional()
+}).nullable(),
+  "focus": zod.object({
+  "category": zod.enum(['verbal', 'quantitative']).optional(),
+  "skill": zod.string().optional(),
+  "label": zod.string().optional()
+}).nullable(),
+  "placementAssessment": zod.union([zod.object({
+  "program": zod.enum(['qudrat', 'tahsili']),
+  "percentage": zod.number().min(getFoundationLearningStateResponsePlacementAssessmentOneOnePercentageMin).max(getFoundationLearningStateResponsePlacementAssessmentOneOnePercentageMax),
+  "correctAnswers": zod.number().min(getFoundationLearningStateResponsePlacementAssessmentOneOneCorrectAnswersMin),
+  "totalQuestions": zod.number().min(1),
+  "answeredQuestions": zod.number().min(getFoundationLearningStateResponsePlacementAssessmentOneOneAnsweredQuestionsMin),
+  "confidence": zod.object({
+  "level": zod.enum(['LOW', 'MEDIUM', 'HIGH']),
+  "label": zod.string(),
+  "note": zod.string()
+}),
+  "areas": zod.array(zod.object({
+  "key": zod.string(),
+  "label": zod.string(),
+  "subjectId": zod.string(),
+  "totalQuestions": zod.number().min(getFoundationLearningStateResponsePlacementAssessmentOneOneAreasItemTotalQuestionsMin),
+  "correctAnswers": zod.number().min(getFoundationLearningStateResponsePlacementAssessmentOneOneAreasItemCorrectAnswersMin),
+  "percentage": zod.number().min(getFoundationLearningStateResponsePlacementAssessmentOneOneAreasItemPercentageMin).max(getFoundationLearningStateResponsePlacementAssessmentOneOneAreasItemPercentageMax),
+  "difficultyCoverage": zod.array(zod.object({
+  "difficulty": zod.enum(['beginner', 'intermediate', 'advanced']),
+  "totalQuestions": zod.number().min(getFoundationLearningStateResponsePlacementAssessmentOneOneAreasItemDifficultyCoverageItemTotalQuestionsMin),
+  "correctAnswers": zod.number().min(getFoundationLearningStateResponsePlacementAssessmentOneOneAreasItemDifficultyCoverageItemCorrectAnswersMin)
+}))
+})),
+  "focusArea": zod.union([zod.object({
+  "key": zod.string(),
+  "label": zod.string(),
+  "subjectId": zod.string(),
+  "totalQuestions": zod.number().min(getFoundationLearningStateResponsePlacementAssessmentOneOneFocusAreaOneTotalQuestionsMin),
+  "correctAnswers": zod.number().min(getFoundationLearningStateResponsePlacementAssessmentOneOneFocusAreaOneCorrectAnswersMin),
+  "percentage": zod.number().min(getFoundationLearningStateResponsePlacementAssessmentOneOneFocusAreaOnePercentageMin).max(getFoundationLearningStateResponsePlacementAssessmentOneOneFocusAreaOnePercentageMax),
+  "difficultyCoverage": zod.array(zod.object({
+  "difficulty": zod.enum(['beginner', 'intermediate', 'advanced']),
+  "totalQuestions": zod.number().min(getFoundationLearningStateResponsePlacementAssessmentOneOneFocusAreaOneDifficultyCoverageItemTotalQuestionsMin),
+  "correctAnswers": zod.number().min(getFoundationLearningStateResponsePlacementAssessmentOneOneFocusAreaOneDifficultyCoverageItemCorrectAnswersMin)
+}))
+}),zod.null()]),
+  "recommendation": zod.object({
+  "title": zod.string(),
+  "reason": zod.string(),
+  "href": zod.string(),
+  "startingLevel": zod.enum(['foundation', 'practice', 'program_overview'])
+})
+}).and(zod.object({
+  "version": zod.string(),
+  "completedAt": zod.coerce.date()
+})),zod.null()]),
+  "recommendation": zod.object({
+  "title": zod.string(),
+  "reason": zod.string(),
+  "href": zod.string(),
+  "startingLevel": zod.enum(['foundation', 'practice', 'program_overview'])
+}),
+  "skillSummaries": zod.array(zod.object({
+  "key": zod.string(),
+  "label": zod.string(),
+  "category": zod.enum(['verbal', 'quantitative']),
+  "totalQuestions": zod.number().min(getFoundationLearningStateResponseSkillSummariesItemTotalQuestionsMin),
+  "correctAnswers": zod.number().min(getFoundationLearningStateResponseSkillSummariesItemCorrectAnswersMin),
+  "percentage": zod.number().min(getFoundationLearningStateResponseSkillSummariesItemPercentageMin).max(getFoundationLearningStateResponseSkillSummariesItemPercentageMax)
+})),
+  "lastDiagnosticAt": zod.coerce.date().nullish()
+})
+
+
+/**
+ * @summary Start a separate Qudrat or Tahsili placement assessment
+ */
+export const startFoundationPlacementAssessmentQueryProgramDefault = `qudrat`;
+
+export const StartFoundationPlacementAssessmentQueryParams = zod.object({
+  "program": zod.enum(['qudrat', 'tahsili']).default(startFoundationPlacementAssessmentQueryProgramDefault)
+})
+
+export const startFoundationPlacementAssessmentResponseQuestionsItemOptionsMin = 2;
+
+
+
+export const StartFoundationPlacementAssessmentResponse = zod.object({
+  "attemptId": zod.string(),
+  "program": zod.enum(['qudrat', 'tahsili']),
+  "expiresAt": zod.coerce.date(),
+  "questions": zod.array(zod.object({
+  "_id": zod.string(),
+  "text": zod.string(),
+  "options": zod.array(zod.string()).min(startFoundationPlacementAssessmentResponseQuestionsItemOptionsMin),
+  "category": zod.enum(['verbal', 'quantitative', 'tahsili']),
+  "subcategory": zod.string(),
+  "areaKey": zod.string(),
+  "areaLabel": zod.string(),
+  "difficulty": zod.enum(['beginner', 'intermediate', 'advanced']),
+  "imageUrl": zod.string().nullish(),
+  "imageUrls": zod.array(zod.string()).optional()
+}))
+})
+
+
+/**
+ * @summary Score and save a completed placement assessment
+ */
+
+
+export const submitFoundationPlacementAssessmentBodyAnswersItemSelectedOptionIndexMin = 0;
+
+export const submitFoundationPlacementAssessmentBodyTimeTakenSecondsMin = 0;
+export const submitFoundationPlacementAssessmentBodyTimeTakenSecondsMax = 7200;
+
+
+
+export const SubmitFoundationPlacementAssessmentBody = zod.object({
+  "attemptId": zod.string().min(1),
+  "answers": zod.array(zod.object({
+  "questionId": zod.string().min(1),
+  "selectedOptionIndex": zod.number().min(submitFoundationPlacementAssessmentBodyAnswersItemSelectedOptionIndexMin)
+})),
+  "timeTakenSeconds": zod.number().min(submitFoundationPlacementAssessmentBodyTimeTakenSecondsMin).max(submitFoundationPlacementAssessmentBodyTimeTakenSecondsMax).optional()
+})
+
+export const submitFoundationPlacementAssessmentResponseResultPercentageMin = 0;
+export const submitFoundationPlacementAssessmentResponseResultPercentageMax = 100;
+
+export const submitFoundationPlacementAssessmentResponseResultCorrectAnswersMin = 0;
+
+
+export const submitFoundationPlacementAssessmentResponseResultAnsweredQuestionsMin = 0;
+
+export const submitFoundationPlacementAssessmentResponseResultAreasItemTotalQuestionsMin = 0;
+
+export const submitFoundationPlacementAssessmentResponseResultAreasItemCorrectAnswersMin = 0;
+
+export const submitFoundationPlacementAssessmentResponseResultAreasItemPercentageMin = 0;
+export const submitFoundationPlacementAssessmentResponseResultAreasItemPercentageMax = 100;
+
+export const submitFoundationPlacementAssessmentResponseResultAreasItemDifficultyCoverageItemTotalQuestionsMin = 0;
+
+export const submitFoundationPlacementAssessmentResponseResultAreasItemDifficultyCoverageItemCorrectAnswersMin = 0;
+
+export const submitFoundationPlacementAssessmentResponseResultFocusAreaOneTotalQuestionsMin = 0;
+
+export const submitFoundationPlacementAssessmentResponseResultFocusAreaOneCorrectAnswersMin = 0;
+
+export const submitFoundationPlacementAssessmentResponseResultFocusAreaOnePercentageMin = 0;
+export const submitFoundationPlacementAssessmentResponseResultFocusAreaOnePercentageMax = 100;
+
+export const submitFoundationPlacementAssessmentResponseResultFocusAreaOneDifficultyCoverageItemTotalQuestionsMin = 0;
+
+export const submitFoundationPlacementAssessmentResponseResultFocusAreaOneDifficultyCoverageItemCorrectAnswersMin = 0;
+
+export const submitFoundationPlacementAssessmentResponseProfileBaselineOverallMin = 0;
+export const submitFoundationPlacementAssessmentResponseProfileBaselineOverallMax = 100;
+
+export const submitFoundationPlacementAssessmentResponseProfileBaselineVerbalMin = 0;
+export const submitFoundationPlacementAssessmentResponseProfileBaselineVerbalMax = 100;
+
+export const submitFoundationPlacementAssessmentResponseProfileBaselineQuantitativeMin = 0;
+export const submitFoundationPlacementAssessmentResponseProfileBaselineQuantitativeMax = 100;
+
+export const submitFoundationPlacementAssessmentResponseProfilePlacementAssessmentOnePercentageMin = 0;
+export const submitFoundationPlacementAssessmentResponseProfilePlacementAssessmentOnePercentageMax = 100;
+
+export const submitFoundationPlacementAssessmentResponseProfilePlacementAssessmentOneCorrectAnswersMin = 0;
+
+
+export const submitFoundationPlacementAssessmentResponseProfilePlacementAssessmentOneAnsweredQuestionsMin = 0;
+
+export const submitFoundationPlacementAssessmentResponseProfilePlacementAssessmentOneAreasItemTotalQuestionsMin = 0;
+
+export const submitFoundationPlacementAssessmentResponseProfilePlacementAssessmentOneAreasItemCorrectAnswersMin = 0;
+
+export const submitFoundationPlacementAssessmentResponseProfilePlacementAssessmentOneAreasItemPercentageMin = 0;
+export const submitFoundationPlacementAssessmentResponseProfilePlacementAssessmentOneAreasItemPercentageMax = 100;
+
+export const submitFoundationPlacementAssessmentResponseProfilePlacementAssessmentOneAreasItemDifficultyCoverageItemTotalQuestionsMin = 0;
+
+export const submitFoundationPlacementAssessmentResponseProfilePlacementAssessmentOneAreasItemDifficultyCoverageItemCorrectAnswersMin = 0;
+
+export const submitFoundationPlacementAssessmentResponseProfilePlacementAssessmentOneFocusAreaOneTotalQuestionsMin = 0;
+
+export const submitFoundationPlacementAssessmentResponseProfilePlacementAssessmentOneFocusAreaOneCorrectAnswersMin = 0;
+
+export const submitFoundationPlacementAssessmentResponseProfilePlacementAssessmentOneFocusAreaOnePercentageMin = 0;
+export const submitFoundationPlacementAssessmentResponseProfilePlacementAssessmentOneFocusAreaOnePercentageMax = 100;
+
+export const submitFoundationPlacementAssessmentResponseProfilePlacementAssessmentOneFocusAreaOneDifficultyCoverageItemTotalQuestionsMin = 0;
+
+export const submitFoundationPlacementAssessmentResponseProfilePlacementAssessmentOneFocusAreaOneDifficultyCoverageItemCorrectAnswersMin = 0;
+
+
+
+export const SubmitFoundationPlacementAssessmentResponse = zod.object({
+  "result": zod.object({
+  "program": zod.enum(['qudrat', 'tahsili']),
+  "percentage": zod.number().min(submitFoundationPlacementAssessmentResponseResultPercentageMin).max(submitFoundationPlacementAssessmentResponseResultPercentageMax),
+  "correctAnswers": zod.number().min(submitFoundationPlacementAssessmentResponseResultCorrectAnswersMin),
+  "totalQuestions": zod.number().min(1),
+  "answeredQuestions": zod.number().min(submitFoundationPlacementAssessmentResponseResultAnsweredQuestionsMin),
+  "confidence": zod.object({
+  "level": zod.enum(['LOW', 'MEDIUM', 'HIGH']),
+  "label": zod.string(),
+  "note": zod.string()
+}),
+  "areas": zod.array(zod.object({
+  "key": zod.string(),
+  "label": zod.string(),
+  "subjectId": zod.string(),
+  "totalQuestions": zod.number().min(submitFoundationPlacementAssessmentResponseResultAreasItemTotalQuestionsMin),
+  "correctAnswers": zod.number().min(submitFoundationPlacementAssessmentResponseResultAreasItemCorrectAnswersMin),
+  "percentage": zod.number().min(submitFoundationPlacementAssessmentResponseResultAreasItemPercentageMin).max(submitFoundationPlacementAssessmentResponseResultAreasItemPercentageMax),
+  "difficultyCoverage": zod.array(zod.object({
+  "difficulty": zod.enum(['beginner', 'intermediate', 'advanced']),
+  "totalQuestions": zod.number().min(submitFoundationPlacementAssessmentResponseResultAreasItemDifficultyCoverageItemTotalQuestionsMin),
+  "correctAnswers": zod.number().min(submitFoundationPlacementAssessmentResponseResultAreasItemDifficultyCoverageItemCorrectAnswersMin)
+}))
+})),
+  "focusArea": zod.union([zod.object({
+  "key": zod.string(),
+  "label": zod.string(),
+  "subjectId": zod.string(),
+  "totalQuestions": zod.number().min(submitFoundationPlacementAssessmentResponseResultFocusAreaOneTotalQuestionsMin),
+  "correctAnswers": zod.number().min(submitFoundationPlacementAssessmentResponseResultFocusAreaOneCorrectAnswersMin),
+  "percentage": zod.number().min(submitFoundationPlacementAssessmentResponseResultFocusAreaOnePercentageMin).max(submitFoundationPlacementAssessmentResponseResultFocusAreaOnePercentageMax),
+  "difficultyCoverage": zod.array(zod.object({
+  "difficulty": zod.enum(['beginner', 'intermediate', 'advanced']),
+  "totalQuestions": zod.number().min(submitFoundationPlacementAssessmentResponseResultFocusAreaOneDifficultyCoverageItemTotalQuestionsMin),
+  "correctAnswers": zod.number().min(submitFoundationPlacementAssessmentResponseResultFocusAreaOneDifficultyCoverageItemCorrectAnswersMin)
+}))
+}),zod.null()]),
+  "recommendation": zod.object({
+  "title": zod.string(),
+  "reason": zod.string(),
+  "href": zod.string(),
+  "startingLevel": zod.enum(['foundation', 'practice', 'program_overview'])
+})
+}),
+  "profile": zod.object({
+  "status": zod.enum(['needs_diagnostic', 'diagnostic_completed']),
+  "baseline": zod.object({
+  "overall": zod.number().min(submitFoundationPlacementAssessmentResponseProfileBaselineOverallMin).max(submitFoundationPlacementAssessmentResponseProfileBaselineOverallMax).optional(),
+  "verbal": zod.number().min(submitFoundationPlacementAssessmentResponseProfileBaselineVerbalMin).max(submitFoundationPlacementAssessmentResponseProfileBaselineVerbalMax).optional(),
+  "quantitative": zod.number().min(submitFoundationPlacementAssessmentResponseProfileBaselineQuantitativeMin).max(submitFoundationPlacementAssessmentResponseProfileBaselineQuantitativeMax).optional()
+}).nullable(),
+  "focus": zod.object({
+  "category": zod.enum(['verbal', 'quantitative']).optional(),
+  "skill": zod.string().optional(),
+  "label": zod.string().optional()
+}).nullable(),
+  "placementAssessment": zod.object({
+  "program": zod.enum(['qudrat', 'tahsili']),
+  "percentage": zod.number().min(submitFoundationPlacementAssessmentResponseProfilePlacementAssessmentOnePercentageMin).max(submitFoundationPlacementAssessmentResponseProfilePlacementAssessmentOnePercentageMax),
+  "correctAnswers": zod.number().min(submitFoundationPlacementAssessmentResponseProfilePlacementAssessmentOneCorrectAnswersMin),
+  "totalQuestions": zod.number().min(1),
+  "answeredQuestions": zod.number().min(submitFoundationPlacementAssessmentResponseProfilePlacementAssessmentOneAnsweredQuestionsMin),
+  "confidence": zod.object({
+  "level": zod.enum(['LOW', 'MEDIUM', 'HIGH']),
+  "label": zod.string(),
+  "note": zod.string()
+}),
+  "areas": zod.array(zod.object({
+  "key": zod.string(),
+  "label": zod.string(),
+  "subjectId": zod.string(),
+  "totalQuestions": zod.number().min(submitFoundationPlacementAssessmentResponseProfilePlacementAssessmentOneAreasItemTotalQuestionsMin),
+  "correctAnswers": zod.number().min(submitFoundationPlacementAssessmentResponseProfilePlacementAssessmentOneAreasItemCorrectAnswersMin),
+  "percentage": zod.number().min(submitFoundationPlacementAssessmentResponseProfilePlacementAssessmentOneAreasItemPercentageMin).max(submitFoundationPlacementAssessmentResponseProfilePlacementAssessmentOneAreasItemPercentageMax),
+  "difficultyCoverage": zod.array(zod.object({
+  "difficulty": zod.enum(['beginner', 'intermediate', 'advanced']),
+  "totalQuestions": zod.number().min(submitFoundationPlacementAssessmentResponseProfilePlacementAssessmentOneAreasItemDifficultyCoverageItemTotalQuestionsMin),
+  "correctAnswers": zod.number().min(submitFoundationPlacementAssessmentResponseProfilePlacementAssessmentOneAreasItemDifficultyCoverageItemCorrectAnswersMin)
+}))
+})),
+  "focusArea": zod.union([zod.object({
+  "key": zod.string(),
+  "label": zod.string(),
+  "subjectId": zod.string(),
+  "totalQuestions": zod.number().min(submitFoundationPlacementAssessmentResponseProfilePlacementAssessmentOneFocusAreaOneTotalQuestionsMin),
+  "correctAnswers": zod.number().min(submitFoundationPlacementAssessmentResponseProfilePlacementAssessmentOneFocusAreaOneCorrectAnswersMin),
+  "percentage": zod.number().min(submitFoundationPlacementAssessmentResponseProfilePlacementAssessmentOneFocusAreaOnePercentageMin).max(submitFoundationPlacementAssessmentResponseProfilePlacementAssessmentOneFocusAreaOnePercentageMax),
+  "difficultyCoverage": zod.array(zod.object({
+  "difficulty": zod.enum(['beginner', 'intermediate', 'advanced']),
+  "totalQuestions": zod.number().min(submitFoundationPlacementAssessmentResponseProfilePlacementAssessmentOneFocusAreaOneDifficultyCoverageItemTotalQuestionsMin),
+  "correctAnswers": zod.number().min(submitFoundationPlacementAssessmentResponseProfilePlacementAssessmentOneFocusAreaOneDifficultyCoverageItemCorrectAnswersMin)
+}))
+}),zod.null()]),
+  "recommendation": zod.object({
+  "title": zod.string(),
+  "reason": zod.string(),
+  "href": zod.string(),
+  "startingLevel": zod.enum(['foundation', 'practice', 'program_overview'])
+})
+}).and(zod.object({
+  "version": zod.string(),
+  "completedAt": zod.coerce.date()
+})),
+  "recommendation": zod.object({
+  "title": zod.string(),
+  "reason": zod.string(),
+  "href": zod.string(),
+  "startingLevel": zod.enum(['foundation', 'practice', 'program_overview'])
+})
+})
+})
+
+
+/**
+ * @summary Get trusted Qudrat and Tahsili evidence, study steps, and performance history
+ */
+export const getStudentLearningCoachReportResponseEvidenceTrustedAttemptsMin = 0;
+
+export const getStudentLearningCoachReportResponseEvidenceRepeatedWrongAnswersMin = 0;
+
+export const getStudentLearningCoachReportResponseStrengthsItemTotalAttemptsMin = 0;
+
+export const getStudentLearningCoachReportResponseStrengthsItemCorrectAttemptsMin = 0;
+
+export const getStudentLearningCoachReportResponseStrengthsItemAccuracyMin = 0;
+export const getStudentLearningCoachReportResponseStrengthsItemAccuracyMax = 100;
+
+export const getStudentLearningCoachReportResponseStrengthsItemRepeatedWrongQuestionsMin = 0;
+
+export const getStudentLearningCoachReportResponseStrengthsItemDistinctDaysMin = 0;
+
+export const getStudentLearningCoachReportResponseFocusAreasItemTotalAttemptsMin = 0;
+
+export const getStudentLearningCoachReportResponseFocusAreasItemCorrectAttemptsMin = 0;
+
+export const getStudentLearningCoachReportResponseFocusAreasItemAccuracyMin = 0;
+export const getStudentLearningCoachReportResponseFocusAreasItemAccuracyMax = 100;
+
+export const getStudentLearningCoachReportResponseFocusAreasItemRepeatedWrongQuestionsMin = 0;
+
+export const getStudentLearningCoachReportResponseFocusAreasItemDistinctDaysMin = 0;
+
+export const getStudentLearningCoachReportResponsePerformanceTrendItemPeriodsItemTotalAttemptsMin = 0;
+
+export const getStudentLearningCoachReportResponsePerformanceTrendItemPeriodsItemCorrectAttemptsMin = 0;
+
+export const getStudentLearningCoachReportResponsePerformanceTrendItemPeriodsItemAccuracyMin = 0;
+export const getStudentLearningCoachReportResponsePerformanceTrendItemPeriodsItemAccuracyMax = 100;
+
+export const getStudentLearningCoachReportResponseAssessmentHistoryItemPercentageMin = 0;
+export const getStudentLearningCoachReportResponseAssessmentHistoryItemPercentageMax = 100;
+
+export const getStudentLearningCoachReportResponseAssessmentHistoryItemTotalQuestionsMin = 0;
+
+
+
+export const GetStudentLearningCoachReportResponse = zod.object({
+  "generatedAt": zod.coerce.date(),
+  "evidence": zod.object({
+  "trustedAttempts": zod.number().min(getStudentLearningCoachReportResponseEvidenceTrustedAttemptsMin),
+  "repeatedWrongAnswers": zod.number().min(getStudentLearningCoachReportResponseEvidenceRepeatedWrongAnswersMin),
+  "confidence": zod.enum(['low', 'medium', 'high'])
+}),
+  "strengths": zod.array(zod.object({
+  "program": zod.enum(['qudrat', 'tahsili']),
+  "subjectId": zod.string(),
+  "subjectLabel": zod.string(),
+  "category": zod.string(),
+  "subcategory": zod.string(),
+  "totalAttempts": zod.number().min(getStudentLearningCoachReportResponseStrengthsItemTotalAttemptsMin),
+  "correctAttempts": zod.number().min(getStudentLearningCoachReportResponseStrengthsItemCorrectAttemptsMin),
+  "accuracy": zod.number().min(getStudentLearningCoachReportResponseStrengthsItemAccuracyMin).max(getStudentLearningCoachReportResponseStrengthsItemAccuracyMax),
+  "repeatedWrongQuestions": zod.number().min(getStudentLearningCoachReportResponseStrengthsItemRepeatedWrongQuestionsMin),
+  "distinctDays": zod.number().min(getStudentLearningCoachReportResponseStrengthsItemDistinctDaysMin),
+  "confidence": zod.enum(['low', 'medium', 'high']),
+  "reason": zod.string()
+})),
+  "focusAreas": zod.array(zod.object({
+  "program": zod.enum(['qudrat', 'tahsili']),
+  "subjectId": zod.string(),
+  "subjectLabel": zod.string(),
+  "category": zod.string(),
+  "subcategory": zod.string(),
+  "totalAttempts": zod.number().min(getStudentLearningCoachReportResponseFocusAreasItemTotalAttemptsMin),
+  "correctAttempts": zod.number().min(getStudentLearningCoachReportResponseFocusAreasItemCorrectAttemptsMin),
+  "accuracy": zod.number().min(getStudentLearningCoachReportResponseFocusAreasItemAccuracyMin).max(getStudentLearningCoachReportResponseFocusAreasItemAccuracyMax),
+  "repeatedWrongQuestions": zod.number().min(getStudentLearningCoachReportResponseFocusAreasItemRepeatedWrongQuestionsMin),
+  "distinctDays": zod.number().min(getStudentLearningCoachReportResponseFocusAreasItemDistinctDaysMin),
+  "confidence": zod.enum(['low', 'medium', 'high']),
+  "reason": zod.string()
+})),
+  "studyPlans": zod.array(zod.object({
+  "program": zod.enum(['qudrat', 'tahsili']),
+  "programLabel": zod.string(),
+  "subjectId": zod.string().optional(),
+  "subjectLabel": zod.string().optional(),
+  "reason": zod.string(),
+  "confidence": zod.enum(['low', 'medium', 'high']),
+  "nextLesson": zod.object({
+  "title": zod.string(),
+  "href": zod.string()
+}).optional(),
+  "nextPractice": zod.object({
+  "title": zod.string(),
+  "href": zod.string()
+}).optional(),
+  "nextRetestAt": zod.coerce.date().optional(),
+  "retestDue": zod.boolean(),
+  "availabilityNote": zod.string().optional()
+})),
+  "performanceTrend": zod.array(zod.object({
+  "program": zod.enum(['qudrat', 'tahsili']),
+  "subjectId": zod.string(),
+  "subjectLabel": zod.string(),
+  "periods": zod.array(zod.object({
+  "label": zod.string(),
+  "totalAttempts": zod.number().min(getStudentLearningCoachReportResponsePerformanceTrendItemPeriodsItemTotalAttemptsMin),
+  "correctAttempts": zod.number().min(getStudentLearningCoachReportResponsePerformanceTrendItemPeriodsItemCorrectAttemptsMin),
+  "accuracy": zod.number().min(getStudentLearningCoachReportResponsePerformanceTrendItemPeriodsItemAccuracyMin).max(getStudentLearningCoachReportResponsePerformanceTrendItemPeriodsItemAccuracyMax)
+}))
+})),
+  "assessmentHistory": zod.array(zod.object({
+  "program": zod.enum(['qudrat', 'tahsili']),
+  "testName": zod.string(),
+  "testType": zod.string(),
+  "percentage": zod.number().min(getStudentLearningCoachReportResponseAssessmentHistoryItemPercentageMin).max(getStudentLearningCoachReportResponseAssessmentHistoryItemPercentageMax),
+  "totalQuestions": zod.number().min(getStudentLearningCoachReportResponseAssessmentHistoryItemTotalQuestionsMin),
+  "completedAt": zod.coerce.date()
+})),
+  "guide": zod.object({
+  "title": zod.string(),
+  "summary": zod.string(),
+  "steps": zod.array(zod.string()),
+  "markdown": zod.string()
+}),
+  "aiAvailable": zod.boolean(),
+  "note": zod.string()
+})
+
+
+/**
+ * @summary Get verified Tahsili question coverage and the student's real subject performance
+ */
+export const getTahsiliSubjectTestsOverviewResponseSubjectsItemVerifiedQuestionCountMin = 0;
+export const getTahsiliSubjectTestsOverviewResponseSubjectsItemVerifiedQuestionCountMultipleOf = 1;
+
+export const getTahsiliSubjectTestsOverviewResponseSubjectsItemAttemptsMin = 0;
+export const getTahsiliSubjectTestsOverviewResponseSubjectsItemAttemptsMultipleOf = 1;
+
+export const getTahsiliSubjectTestsOverviewResponseSubjectsItemCorrectAttemptsMin = 0;
+export const getTahsiliSubjectTestsOverviewResponseSubjectsItemCorrectAttemptsMultipleOf = 1;
+
+export const getTahsiliSubjectTestsOverviewResponseSubjectsItemAccuracyMin = 0;
+export const getTahsiliSubjectTestsOverviewResponseSubjectsItemAccuracyMax = 100;
+
+export const getTahsiliSubjectTestsOverviewResponseSubjectsItemFocusAreasItemAttemptsMin = 0;
+export const getTahsiliSubjectTestsOverviewResponseSubjectsItemFocusAreasItemAttemptsMultipleOf = 1;
+
+export const getTahsiliSubjectTestsOverviewResponseSubjectsItemFocusAreasItemAccuracyMin = 0;
+export const getTahsiliSubjectTestsOverviewResponseSubjectsItemFocusAreasItemAccuracyMax = 100;
+
+
+
+export const GetTahsiliSubjectTestsOverviewResponse = zod.object({
+  "subjects": zod.array(zod.object({
+  "subject": zod.enum(['math', 'physics', 'chemistry', 'biology', 'environment']),
+  "label": zod.string(),
+  "verifiedQuestionCount": zod.number().min(getTahsiliSubjectTestsOverviewResponseSubjectsItemVerifiedQuestionCountMin).multipleOf(getTahsiliSubjectTestsOverviewResponseSubjectsItemVerifiedQuestionCountMultipleOf),
+  "attempts": zod.number().min(getTahsiliSubjectTestsOverviewResponseSubjectsItemAttemptsMin).multipleOf(getTahsiliSubjectTestsOverviewResponseSubjectsItemAttemptsMultipleOf),
+  "correctAttempts": zod.number().min(getTahsiliSubjectTestsOverviewResponseSubjectsItemCorrectAttemptsMin).multipleOf(getTahsiliSubjectTestsOverviewResponseSubjectsItemCorrectAttemptsMultipleOf),
+  "accuracy": zod.number().min(getTahsiliSubjectTestsOverviewResponseSubjectsItemAccuracyMin).max(getTahsiliSubjectTestsOverviewResponseSubjectsItemAccuracyMax).nullable(),
+  "focusAreas": zod.array(zod.object({
+  "subcategory": zod.string(),
+  "attempts": zod.number().min(getTahsiliSubjectTestsOverviewResponseSubjectsItemFocusAreasItemAttemptsMin).multipleOf(getTahsiliSubjectTestsOverviewResponseSubjectsItemFocusAreasItemAttemptsMultipleOf),
+  "accuracy": zod.number().min(getTahsiliSubjectTestsOverviewResponseSubjectsItemFocusAreasItemAccuracyMin).max(getTahsiliSubjectTestsOverviewResponseSubjectsItemFocusAreasItemAccuracyMax)
+}))
+}))
+})
+
+
+/**
+ * @summary Start a subject-specific adaptive Tahsili test without exposing answer keys
+ */
+export const startTahsiliSubjectTestBodyQuestionCountDefault = 20;
+export const startTahsiliSubjectTestBodyQuestionCountMin = 5;
+export const startTahsiliSubjectTestBodyQuestionCountMax = 30;
+export const startTahsiliSubjectTestBodyQuestionCountMultipleOf = 1;
+
+
+
+export const StartTahsiliSubjectTestBody = zod.object({
+  "subject": zod.enum(['math', 'physics', 'chemistry', 'biology', 'environment']),
+  "questionCount": zod.number().min(startTahsiliSubjectTestBodyQuestionCountMin).max(startTahsiliSubjectTestBodyQuestionCountMax).multipleOf(startTahsiliSubjectTestBodyQuestionCountMultipleOf).default(startTahsiliSubjectTestBodyQuestionCountDefault)
+})
+
+export const startTahsiliSubjectTestResponseQuestionCountMultipleOf = 1;
+
+export const startTahsiliSubjectTestResponseTimeLimitMinutesMultipleOf = 1;
+
+export const startTahsiliSubjectTestResponseQuestionsItemOptionsMin = 2;
+
+
+
+export const StartTahsiliSubjectTestResponse = zod.object({
+  "attemptId": zod.string(),
+  "subject": zod.enum(['math', 'physics', 'chemistry', 'biology', 'environment']),
+  "label": zod.string(),
+  "questionCount": zod.number().min(1).multipleOf(startTahsiliSubjectTestResponseQuestionCountMultipleOf),
+  "timeLimitMinutes": zod.number().min(1).multipleOf(startTahsiliSubjectTestResponseTimeLimitMinutesMultipleOf),
+  "personalizationMode": zod.enum(['diagnostic', 'weakness_focus']),
+  "rationale": zod.string(),
+  "focusSubcategories": zod.array(zod.string()),
+  "questions": zod.array(zod.object({
+  "id": zod.string(),
+  "text": zod.string(),
+  "options": zod.array(zod.string()).min(startTahsiliSubjectTestResponseQuestionsItemOptionsMin),
+  "subcategory": zod.string(),
+  "topic": zod.string(),
+  "difficulty": zod.enum(['beginner', 'intermediate', 'advanced']),
+  "imageUrl": zod.string().nullish()
+}))
+})
+
+
+/**
+ * @summary Score a subject test using server-owned answer keys and save trusted attempts
+ */
+
+
+export const submitTahsiliSubjectTestBodyAnswersItemSelectedOptionIndexMin = 0;
+export const submitTahsiliSubjectTestBodyAnswersItemSelectedOptionIndexMax = 3;
+export const submitTahsiliSubjectTestBodyAnswersItemSelectedOptionIndexMultipleOf = 1;
+
+export const submitTahsiliSubjectTestBodyAnswersItemResponseTimeMin = 0;
+export const submitTahsiliSubjectTestBodyAnswersItemResponseTimeMax = 7200;
+
+export const submitTahsiliSubjectTestBodyAnswersMax = 30;
+
+export const submitTahsiliSubjectTestBodyTimeTakenSecondsMin = 0;
+export const submitTahsiliSubjectTestBodyTimeTakenSecondsMax = 7200;
+export const submitTahsiliSubjectTestBodyTimeTakenSecondsMultipleOf = 1;
+
+
+
+export const SubmitTahsiliSubjectTestBody = zod.object({
+  "attemptId": zod.string().min(1),
+  "answers": zod.array(zod.object({
+  "questionId": zod.string().min(1),
+  "selectedOptionIndex": zod.number().min(submitTahsiliSubjectTestBodyAnswersItemSelectedOptionIndexMin).max(submitTahsiliSubjectTestBodyAnswersItemSelectedOptionIndexMax).multipleOf(submitTahsiliSubjectTestBodyAnswersItemSelectedOptionIndexMultipleOf).nullable(),
+  "responseTime": zod.number().min(submitTahsiliSubjectTestBodyAnswersItemResponseTimeMin).max(submitTahsiliSubjectTestBodyAnswersItemResponseTimeMax).optional()
+})).max(submitTahsiliSubjectTestBodyAnswersMax),
+  "timeTakenSeconds": zod.number().min(submitTahsiliSubjectTestBodyTimeTakenSecondsMin).max(submitTahsiliSubjectTestBodyTimeTakenSecondsMax).multipleOf(submitTahsiliSubjectTestBodyTimeTakenSecondsMultipleOf).optional()
+})
+
+export const submitTahsiliSubjectTestResponseTotalQuestionsMultipleOf = 1;
+
+export const submitTahsiliSubjectTestResponseAnsweredQuestionsMin = 0;
+export const submitTahsiliSubjectTestResponseAnsweredQuestionsMultipleOf = 1;
+
+export const submitTahsiliSubjectTestResponseCorrectAnswersMin = 0;
+export const submitTahsiliSubjectTestResponseCorrectAnswersMultipleOf = 1;
+
+export const submitTahsiliSubjectTestResponseWrongAnswersMin = 0;
+export const submitTahsiliSubjectTestResponseWrongAnswersMultipleOf = 1;
+
+export const submitTahsiliSubjectTestResponseSkippedQuestionsMin = 0;
+export const submitTahsiliSubjectTestResponseSkippedQuestionsMultipleOf = 1;
+
+export const submitTahsiliSubjectTestResponsePercentageMin = 0;
+export const submitTahsiliSubjectTestResponsePercentageMax = 100;
+
+export const submitTahsiliSubjectTestResponseQuestionsItemSelectedOptionIndexMin = 0;
+export const submitTahsiliSubjectTestResponseQuestionsItemSelectedOptionIndexMax = 3;
+export const submitTahsiliSubjectTestResponseQuestionsItemSelectedOptionIndexMultipleOf = 1;
+
+export const submitTahsiliSubjectTestResponseQuestionsItemCorrectOptionIndexMin = 0;
+export const submitTahsiliSubjectTestResponseQuestionsItemCorrectOptionIndexMax = 3;
+export const submitTahsiliSubjectTestResponseQuestionsItemCorrectOptionIndexMultipleOf = 1;
+
+
+
+export const SubmitTahsiliSubjectTestResponse = zod.object({
+  "attemptId": zod.string(),
+  "subject": zod.enum(['math', 'physics', 'chemistry', 'biology', 'environment']),
+  "label": zod.string(),
+  "totalQuestions": zod.number().min(1).multipleOf(submitTahsiliSubjectTestResponseTotalQuestionsMultipleOf),
+  "answeredQuestions": zod.number().min(submitTahsiliSubjectTestResponseAnsweredQuestionsMin).multipleOf(submitTahsiliSubjectTestResponseAnsweredQuestionsMultipleOf),
+  "correctAnswers": zod.number().min(submitTahsiliSubjectTestResponseCorrectAnswersMin).multipleOf(submitTahsiliSubjectTestResponseCorrectAnswersMultipleOf),
+  "wrongAnswers": zod.number().min(submitTahsiliSubjectTestResponseWrongAnswersMin).multipleOf(submitTahsiliSubjectTestResponseWrongAnswersMultipleOf),
+  "skippedQuestions": zod.number().min(submitTahsiliSubjectTestResponseSkippedQuestionsMin).multipleOf(submitTahsiliSubjectTestResponseSkippedQuestionsMultipleOf),
+  "percentage": zod.number().min(submitTahsiliSubjectTestResponsePercentageMin).max(submitTahsiliSubjectTestResponsePercentageMax),
+  "grade": zod.string(),
+  "personalizationMode": zod.enum(['diagnostic', 'weakness_focus']),
+  "focusSubcategories": zod.array(zod.string()),
+  "questions": zod.array(zod.object({
+  "id": zod.string(),
+  "text": zod.string(),
+  "options": zod.array(zod.string()),
+  "subcategory": zod.string(),
+  "topic": zod.string(),
+  "difficulty": zod.enum(['beginner', 'intermediate', 'advanced']),
+  "selectedOptionIndex": zod.number().min(submitTahsiliSubjectTestResponseQuestionsItemSelectedOptionIndexMin).max(submitTahsiliSubjectTestResponseQuestionsItemSelectedOptionIndexMax).multipleOf(submitTahsiliSubjectTestResponseQuestionsItemSelectedOptionIndexMultipleOf).nullable(),
+  "correctOptionIndex": zod.number().min(submitTahsiliSubjectTestResponseQuestionsItemCorrectOptionIndexMin).max(submitTahsiliSubjectTestResponseQuestionsItemCorrectOptionIndexMax).multipleOf(submitTahsiliSubjectTestResponseQuestionsItemCorrectOptionIndexMultipleOf),
+  "isCorrect": zod.boolean().nullable(),
+  "explanation": zod.string()
+}))
+})
+
+
+/**
+ * @summary Ask an optional AI tutor using server-verified study context
+ */
+export const askStudentLearningCoachBodyMessageMax = 800;
+
+export const askStudentLearningCoachBodyHistoryItemContentMax = 500;
+
+export const askStudentLearningCoachBodyHistoryMax = 12;
+
+
+
+export const AskStudentLearningCoachBody = zod.object({
+  "message": zod.string().min(1).max(askStudentLearningCoachBodyMessageMax),
+  "history": zod.array(zod.object({
+  "role": zod.enum(['user', 'assistant']),
+  "content": zod.string().max(askStudentLearningCoachBodyHistoryItemContentMax)
+})).max(askStudentLearningCoachBodyHistoryMax).optional()
+})
+
+export const AskStudentLearningCoachResponse = zod.object({
+  "reply": zod.string(),
+  "aiAvailable": zod.boolean(),
+  "fallback": zod.boolean()
 })
 
 
@@ -393,6 +1327,74 @@ export const SubmitQudratVerbalBookLessonResponse = zod.object({
   "passageText": zod.string().optional()
 })),
   "unlockedNextLessonId": zod.string().nullable()
+})
+
+
+/**
+ * @summary Get the signed-in student's progress for the 23 verbal videos
+ */
+
+export const getQudratVerbalVideoProgressResponseItemsItemWatchedSecondsMin = 0;
+
+export const getQudratVerbalVideoProgressResponseItemsItemProgressPercentMin = 0;
+export const getQudratVerbalVideoProgressResponseItemsItemProgressPercentMax = 100;
+
+export const getQudratVerbalVideoProgressResponseItemsItemResumePositionSecondsMin = 0;
+
+
+
+export const GetQudratVerbalVideoProgressResponse = zod.object({
+  "items": zod.array(zod.object({
+  "videoId": zod.string(),
+  "durationSeconds": zod.number().min(1),
+  "watchedSeconds": zod.number().min(getQudratVerbalVideoProgressResponseItemsItemWatchedSecondsMin),
+  "progressPercent": zod.number().min(getQudratVerbalVideoProgressResponseItemsItemProgressPercentMin).max(getQudratVerbalVideoProgressResponseItemsItemProgressPercentMax),
+  "resumePositionSeconds": zod.number().min(getQudratVerbalVideoProgressResponseItemsItemResumePositionSecondsMin),
+  "state": zod.enum(['NOT_STARTED', 'IN_PROGRESS', 'COMPLETED']),
+  "completedAt": zod.coerce.date().nullable()
+}))
+})
+
+
+/**
+ * @summary Record playback progress for one computerized verbal video
+ */
+export const recordQudratVerbalVideoProgressPathVideoIdMax = 80;
+
+
+
+export const RecordQudratVerbalVideoProgressParams = zod.object({
+  "videoId": zod.coerce.string().min(1).max(recordQudratVerbalVideoProgressPathVideoIdMax)
+})
+
+export const recordQudratVerbalVideoProgressBodyPositionSecondsMin = 0;
+export const recordQudratVerbalVideoProgressBodyPositionSecondsMax = 4000;
+
+
+
+export const RecordQudratVerbalVideoProgressBody = zod.object({
+  "event": zod.enum(['play', 'tick', 'seek', 'pause', 'ended']),
+  "positionSeconds": zod.number().min(recordQudratVerbalVideoProgressBodyPositionSecondsMin).max(recordQudratVerbalVideoProgressBodyPositionSecondsMax)
+})
+
+
+export const recordQudratVerbalVideoProgressResponseWatchedSecondsMin = 0;
+
+export const recordQudratVerbalVideoProgressResponseProgressPercentMin = 0;
+export const recordQudratVerbalVideoProgressResponseProgressPercentMax = 100;
+
+export const recordQudratVerbalVideoProgressResponseResumePositionSecondsMin = 0;
+
+
+
+export const RecordQudratVerbalVideoProgressResponse = zod.object({
+  "videoId": zod.string(),
+  "durationSeconds": zod.number().min(1),
+  "watchedSeconds": zod.number().min(recordQudratVerbalVideoProgressResponseWatchedSecondsMin),
+  "progressPercent": zod.number().min(recordQudratVerbalVideoProgressResponseProgressPercentMin).max(recordQudratVerbalVideoProgressResponseProgressPercentMax),
+  "resumePositionSeconds": zod.number().min(recordQudratVerbalVideoProgressResponseResumePositionSecondsMin),
+  "state": zod.enum(['NOT_STARTED', 'IN_PROGRESS', 'COMPLETED']),
+  "completedAt": zod.coerce.date().nullable()
 })
 
 

@@ -8,3 +8,11 @@ flutter_app
 .migration-backup
 .whatsapp-auth
 *.log
+**/*.log
+.env
+.env.*
+**/.env
+**/.env.*
+attached_assets/user.json
+attached_assets/device_trials.json
+**/.whatsapp-auth
