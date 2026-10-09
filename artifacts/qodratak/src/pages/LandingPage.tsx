@@ -127,7 +127,7 @@ function OfferPreview({ onSignup }: { onSignup: () => void }) {
           <span className="text-[#FF8A70]">لمدة ٣ أيام</span>
         </h2>
         <p className="mt-3 text-sm leading-7 text-slate-300">
-          جرّب كل الصلاحيات، واكتشف الطريقة الأسهل للاستعداد للقدرات والتحصيلي.
+          جرّب مسار القدرات، واكتشف خطتك اليومية. التحصيلي قريبًا.
         </p>
         <div className="mt-7 space-y-3 border-y border-white/10 py-5">
           {["كل الصلاحيات مفتوحة", "اختبار يومي طوال السنة", "تحليل واضح بعد كل محاولة"].map((item) => (
@@ -154,7 +154,7 @@ const benefits = [
   {
     icon: Target,
     title: "اختبار يومي",
-    text: "تدرّب كل يوم على أسئلة القدرات والتحصيلي بدون ما تحتار من أين تبدأ.",
+    text: "تدرّب كل يوم على أسئلة القدرات بدون ما تحتار من أين تبدأ. التحصيلي قريبًا.",
   },
   {
     icon: BookOpenCheck,
@@ -183,16 +183,16 @@ const studyTracks = [
   },
   {
     icon: GraduationCap,
-    label: "التحصيلي",
-    title: "تدريب التحصيلي",
-    text: "مراجعة مرتبة واختبارات تدريبية تساعدك تستعد للمواد وتتابع تقدمك بثقة.",
+    label: "التحصيلي — قريبًا",
+    title: "التحصيلي قيد التجهيز",
+    text: "هذا المسار مغلق مؤقتًا حتى تكتمل الدروس والاختبارات. تابع الآن دورة القدرات.",
     accent: "bg-[#FFF0E9] text-[#B65D36]",
   },
 ];
 
 const steps = [
   ["١", "سجّل مجانًا", "أنشئ حسابك خلال دقائق وابدأ تجربتك المجانية."],
-  ["٢", "حل اختبارك اليومي", "تدرّب على القدرات أو التحصيلي بالطريقة التي تناسبك."],
+  ["٢", "حل اختبارك اليومي", "تدرّب على القدرات بالطريقة التي تناسب مستواك. التحصيلي قريبًا."],
   ["٣", "راجع نتيجتك", "شاهد تقدمك واعرف الخطوة التالية بسهولة."],
 ];
 
@@ -373,7 +373,7 @@ export default function LandingPage({ initialModal }: { initialModal?: "signup" 
               <br />
               خطتك أوضح لـ
               <br />
-              <span style={{ color: SIGNAL }}>القدرات والتحصيلي.</span>
+              <span style={{ color: SIGNAL }}>القدرات.</span>
             </h1>
             <p className="mt-6 max-w-xl text-base leading-8 text-[#6B625B] dark:text-slate-300 sm:text-lg">
               قدراتك (Qodratak) تجمع التأسيس والمحوسب والتدريب اليومي في مسار واضح يخبرك بخطوتك التالية.
@@ -395,7 +395,7 @@ export default function LandingPage({ initialModal }: { initialModal?: "signup" 
               </a>
             </div>
             <div className="mt-9 flex flex-wrap gap-x-6 gap-y-3 border-t border-[#24202D]/[.1] pt-5 text-xs font-bold text-[#6B625B] dark:border-white/10 dark:text-slate-300">
-              {["قدرات وتحصيلي", "تأسيس ومحوسب", "خطة شخصية", "رحلة سهلة"].map((item) => (
+              {["التحصيلي قريبًا", "تأسيس ومحوسب", "خطة شخصية", "رحلة سهلة"].map((item) => (
                 <span key={item} className="flex items-center gap-1.5">
                   <Check className="h-3.5 w-3.5 text-[#398B79]" />
                   {item}
@@ -465,7 +465,7 @@ export default function LandingPage({ initialModal }: { initialModal?: "signup" 
               title="تجربة مجانية"
               price="٣ أيام"
               description="جرّب قدراتك بكل الصلاحيات قبل الاشتراك."
-              items={["كل الصلاحيات مفتوحة", "اختبار يومي طوال السنة", "قدرات وتحصيلي"]}
+              items={["صلاحيات القدرات مفتوحة", "اختبار يومي طوال السنة", "التحصيلي قريبًا"]}
               onSignup={openSignup}
             />
             <PlanCard
@@ -539,7 +539,7 @@ export default function LandingPage({ initialModal }: { initialModal?: "signup" 
               },
               {
                 question: "هل منصة قدراتك مناسبة للتدريب على القدرات والتحصيلي؟",
-                answer: "نعم. توفر المنصة مسارات للقدرات اللفظية والكمية، وللتحصيلي في الرياضيات والفيزياء والكيمياء والأحياء، مع شرح وتطبيق واختبار.",
+                answer: "مسار القدرات اللفظية والكمية متاح الآن مع التأسيس والتدريب والخطة اليومية. التحصيلي مغلق مؤقتًا وقريبًا بعد اكتمال تجهيز دروسه واختباراته.",
               },
               {
                 question: "كيف أبدأ التدريب في منصة قدراتك؟",

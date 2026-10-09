@@ -163,6 +163,10 @@ import FoundationReaderPage from "@/pages/student/FoundationReaderPage";
 import { QuantitativeBookOverviewPage, QuantitativeBookLessonPage } from "@/pages/student/QuantitativeBookPage";
 import LearningTodayPage from "@/pages/student/LearningTodayPage";
 import ComputerizedPage from "@/pages/student/ComputerizedPage";
+import PreparationCoursePage from "@/pages/student/PreparationCoursePage";
+import CoursePracticePage from "@/pages/student/CoursePracticePage";
+import { StudentAvailabilityBoundary } from "@/components/student/TahsiliComingSoon";
+import { StudentJourneyNavigation } from "@/components/student/StudentJourneyNavigation";
 import AccountPage from "@/pages/student/AccountPage";
 import { StudentShell } from "@/components/student/StudentShell";
 import { StudentExamChromeContext } from "@/components/student/StudentExamChromeContext";
@@ -317,6 +321,7 @@ function isTestModeLocation(
 
 function MainLayout({ children }: { children: React.ReactNode }) {
   const [location] = useLocation();
+  const { user: layoutUser } = useUser();
   const [userName, setUserName] = useState<string | null>(null);
   const [userSubscription, setUserSubscription] = useState<string>('free');
   const [userPoints, setUserPoints] = useState<number>(0);
@@ -434,17 +439,19 @@ function MainLayout({ children }: { children: React.ReactNode }) {
   // ─── Core nav items (always visible) ─────────────────────
   const coreNavItems = [
     { name: "الرئيسية",       href: "/",                icon: HomeIcon },
-    { name: "القدرات | Qudrat", href: "/student-program/qudrat", icon: Brain },
-    { name: "التحصيلي | Tahsili", href: "/student-program/tahsili", icon: GraduationCapIcon },
-    { name: "المكتبة",        href: "/library",           icon: Library },
-    { name: "مجلداتي",        href: "/folders",           icon: FolderIcon },
+    { name: "دورتي ومهام اليوم", href: "/preparation-course", icon: CalendarCheck },
+    { name: "التأسيس", href: "/foundation", icon: BookOpenIcon },
+    { name: "التدريب المحوسب", href: "/computerized", icon: Brain },
+    { name: "نتائجي", href: "/records", icon: ClipboardIcon },
   ];
 
   // ─── More items (collapsible) ─────────────────────────────
   const moreNavItems = [
     { name: "اختبار قياس",      href: "/qiyas",              icon: Brain },
     { name: "بنك الأسئلة",      href: "/question-bank",      icon: BookOpenIcon },
-    { name: "نتائجي",          href: "/records",            icon: ClipboardIcon },
+    { name: "التحصيلي — قريبًا", href: "/student-program/tahsili", icon: GraduationCapIcon },
+    { name: "المكتبة", href: "/library", icon: Library },
+    { name: "مجلداتي", href: "/folders", icon: FolderIcon },
     { name: "محفظتي",           href: "/wallet",               icon: Wallet },
     { name: "اختبارات اللفظي",  href: "/verbal-tests",       icon: BookOpenIcon },
     { name: "اختبارات الكمي",   href: "/quantitative-tests",  icon: Calculator },
@@ -701,7 +708,7 @@ function MainLayout({ children }: { children: React.ReactNode }) {
                     { href: "/wallet", icon: Wallet, label: "محفظتي", color: "text-green-500 dark:text-green-400", bg: "bg-green-500/10 dark:bg-green-500/20" },
                     { href: "/book-exam", icon: CalendarCheck, label: "احجز اختبار", color: "text-emerald-500 dark:text-emerald-400", bg: "bg-emerald-500/10 dark:bg-emerald-500/20" },
                     { href: "/notifications", icon: Bell, label: "الإشعارات", color: "text-blue-500 dark:text-blue-400", bg: "bg-blue-500/10 dark:bg-blue-500/20" },
-                    { href: "/tahsilik", icon: GraduationCapIcon, label: "تحصيلك", color: "text-amber-500 dark:text-amber-400", bg: "bg-amber-500/10 dark:bg-amber-500/20" },
+                    { href: "/tahsilik", icon: GraduationCapIcon, label: "التحصيلي — قريبًا", color: "text-amber-500 dark:text-amber-400", bg: "bg-amber-500/10 dark:bg-amber-500/20" },
                     { href: "/records", icon: ClipboardIcon, label: "نتائجي", color: "text-amber-500 dark:text-amber-400", bg: "bg-amber-500/10 dark:bg-amber-500/20" },
                     { href: "/learn", icon: BookOpenIcon, label: "تعلم", color: "text-emerald-500 dark:text-emerald-400", bg: "bg-emerald-500/10 dark:bg-emerald-500/20" },
                     { href: "/folders", icon: FolderIcon, label: "مجلداتي", color: "text-orange-500 dark:text-orange-400", bg: "bg-orange-500/10 dark:bg-orange-500/20" },
@@ -810,6 +817,7 @@ function MainLayout({ children }: { children: React.ReactNode }) {
         )}>
           <div key={location} className="qodratak-page-surface page-enter min-h-full">
             <ErrorBoundary>
+              {!isInTestMode && layoutUser?.role === 'student' && <StudentJourneyNavigation />}
               {children}
             </ErrorBoundary>
             {/* Footer - مخفي في وضع الاختبار */}
@@ -832,7 +840,7 @@ function MainLayout({ children }: { children: React.ReactNode }) {
               ] : [
                 { href: "/", icon: HomeIcon, label: "الرئيسية", exact: true },
                 { href: "/student-program/qudrat", icon: Brain, label: "القدرات", exact: false },
-                { href: "/student-program/tahsili", icon: GraduationCapIcon, label: "التحصيلي", exact: false },
+                { href: "/student-program/tahsili", icon: GraduationCapIcon, label: "التحصيلي — قريبًا", exact: false },
               ]).map((item) => {
                 const active = activeProgram && item.href.includes("?section=")
                   ? isProgramSubNavActive({ name: item.label === "التأسيس" ? "التأسيس" : "المحوسب", href: item.href })
@@ -897,6 +905,7 @@ function Router({ splashDone }: { splashDone: boolean }) {
       {splashDone && <RotateDevicePrompt />}
        <RouteSEO isAuthenticated={Boolean(serverUser)} isLoading={isUserLoading} />
       <AuthenticatedRouteBoundary>
+      <StudentAvailabilityBoundary>
       <PageTransition>
       <Switch>
       <Route path="/payment/geidea/return">
@@ -925,6 +934,12 @@ function Router({ splashDone }: { splashDone: boolean }) {
 
       <Route path="/foundation">
         {() => <StudentShell><ProtectedRoute><FoundationPage /></ProtectedRoute></StudentShell>}
+      </Route>
+      <Route path="/preparation-course/practice/:taskId">
+        {(params) => <StudentShell><ProtectedRoute><CoursePracticePage taskId={params.taskId} /></ProtectedRoute></StudentShell>}
+      </Route>
+      <Route path="/preparation-course">
+        {() => <StudentShell><ProtectedRoute><PreparationCoursePage /></ProtectedRoute></StudentShell>}
       </Route>
       <Route path="/student/foundation-book/quantitative">
         {() => <StudentShell><ProtectedRoute><QuantitativeBookOverviewPage /></ProtectedRoute></StudentShell>}
@@ -1340,6 +1355,7 @@ function Router({ splashDone }: { splashDone: boolean }) {
       </Route>
       </Switch>
       </PageTransition>
+      </StudentAvailabilityBoundary>
       </AuthenticatedRouteBoundary>
     </>
   );

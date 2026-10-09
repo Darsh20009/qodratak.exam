@@ -8,6 +8,169 @@
 import * as zod from 'zod';
 
 
+export const GetStudentCourseResponse = zod.object({
+  "course": zod.union([zod.object({
+  "id": zod.string(),
+  "examDate": zod.string(),
+  "durationDays": zod.number(),
+  "dailyMinutes": zod.number(),
+  "level": zod.enum(['unassessed', 'foundation', 'practice', 'advanced']),
+  "levelReason": zod.string(),
+  "focus": zod.string(),
+  "coverageNote": zod.string(),
+  "availableQuestions": zod.number(),
+  "plannedQuestions": zod.number(),
+  "days": zod.array(zod.object({
+  "day": zod.number(),
+  "date": zod.string(),
+  "title": zod.string(),
+  "tasks": zod.array(zod.object({
+  "id": zod.string(),
+  "kind": zod.enum(['diagnostic', 'lesson', 'practice', 'review', 'simulation']),
+  "title": zod.string(),
+  "reason": zod.string(),
+  "href": zod.string(),
+  "minutes": zod.number(),
+  "questionCount": zod.number(),
+  "category": zod.string(),
+  "status": zod.enum(['pending', 'completed']),
+  "completionSource": zod.enum(['self_reported', 'assessment', 'test_report', 'pending'])
+}))
+}))
+}),zod.null()]),
+  "ideas": zod.array(zod.object({
+  "key": zod.string(),
+  "label": zod.string(),
+  "category": zod.string(),
+  "attempts": zod.number(),
+  "wrong": zod.number(),
+  "slow": zod.number(),
+  "confidence": zod.enum(['limited', 'developing', 'repeated']),
+  "reason": zod.string()
+}))
+})
+
+
+export const createStudentCourseBodyDailyMinutesMin = 30;
+export const createStudentCourseBodyDailyMinutesMax = 240;
+
+
+
+export const CreateStudentCourseBody = zod.object({
+  "examDate": zod.string().describe('Strict YYYY-MM-DD Riyadh calendar date; validated by the server without coercing to Date.'),
+  "durationDays": zod.union([zod.literal(5),zod.literal(10),zod.literal(15),zod.literal(30)]),
+  "dailyMinutes": zod.number().min(createStudentCourseBodyDailyMinutesMin).max(createStudentCourseBodyDailyMinutesMax)
+})
+
+export const CreateStudentCourseResponse = zod.object({
+  "course": zod.union([zod.object({
+  "id": zod.string(),
+  "examDate": zod.string(),
+  "durationDays": zod.number(),
+  "dailyMinutes": zod.number(),
+  "level": zod.enum(['unassessed', 'foundation', 'practice', 'advanced']),
+  "levelReason": zod.string(),
+  "focus": zod.string(),
+  "coverageNote": zod.string(),
+  "availableQuestions": zod.number(),
+  "plannedQuestions": zod.number(),
+  "days": zod.array(zod.object({
+  "day": zod.number(),
+  "date": zod.string(),
+  "title": zod.string(),
+  "tasks": zod.array(zod.object({
+  "id": zod.string(),
+  "kind": zod.enum(['diagnostic', 'lesson', 'practice', 'review', 'simulation']),
+  "title": zod.string(),
+  "reason": zod.string(),
+  "href": zod.string(),
+  "minutes": zod.number(),
+  "questionCount": zod.number(),
+  "category": zod.string(),
+  "status": zod.enum(['pending', 'completed']),
+  "completionSource": zod.enum(['self_reported', 'assessment', 'test_report', 'pending'])
+}))
+}))
+}),zod.null()]),
+  "ideas": zod.array(zod.object({
+  "key": zod.string(),
+  "label": zod.string(),
+  "category": zod.string(),
+  "attempts": zod.number(),
+  "wrong": zod.number(),
+  "slow": zod.number(),
+  "confidence": zod.enum(['limited', 'developing', 'repeated']),
+  "reason": zod.string()
+}))
+})
+
+
+export const CompleteStudentCourseTaskParams = zod.object({
+  "taskId": zod.coerce.string()
+})
+
+export const CompleteStudentCourseTaskResponse = zod.object({
+  "course": zod.union([zod.object({
+  "id": zod.string(),
+  "examDate": zod.string(),
+  "durationDays": zod.number(),
+  "dailyMinutes": zod.number(),
+  "level": zod.enum(['unassessed', 'foundation', 'practice', 'advanced']),
+  "levelReason": zod.string(),
+  "focus": zod.string(),
+  "coverageNote": zod.string(),
+  "availableQuestions": zod.number(),
+  "plannedQuestions": zod.number(),
+  "days": zod.array(zod.object({
+  "day": zod.number(),
+  "date": zod.string(),
+  "title": zod.string(),
+  "tasks": zod.array(zod.object({
+  "id": zod.string(),
+  "kind": zod.enum(['diagnostic', 'lesson', 'practice', 'review', 'simulation']),
+  "title": zod.string(),
+  "reason": zod.string(),
+  "href": zod.string(),
+  "minutes": zod.number(),
+  "questionCount": zod.number(),
+  "category": zod.string(),
+  "status": zod.enum(['pending', 'completed']),
+  "completionSource": zod.enum(['self_reported', 'assessment', 'test_report', 'pending'])
+}))
+}))
+}),zod.null()]),
+  "ideas": zod.array(zod.object({
+  "key": zod.string(),
+  "label": zod.string(),
+  "category": zod.string(),
+  "attempts": zod.number(),
+  "wrong": zod.number(),
+  "slow": zod.number(),
+  "confidence": zod.enum(['limited', 'developing', 'repeated']),
+  "reason": zod.string()
+}))
+})
+
+
+export const StartStudentCoursePracticeBody = zod.object({
+  "taskId": zod.string()
+})
+
+export const StartStudentCoursePracticeResponse = zod.object({
+  "attemptId": zod.string(),
+  "questions": zod.array(zod.object({
+  "id": zod.string(),
+  "text": zod.string(),
+  "category": zod.string(),
+  "subcategory": zod.string(),
+  "options": zod.array(zod.string()),
+  "imageUrl": zod.string().optional(),
+  "passageText": zod.string().optional(),
+  "imageUrls": zod.array(zod.string()).optional()
+}))
+})
+
+
 export const startRemedialPracticeBodyRunIdMin = 8;
 export const startRemedialPracticeBodyRunIdMax = 150;
 

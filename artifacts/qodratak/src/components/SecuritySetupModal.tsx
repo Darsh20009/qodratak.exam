@@ -38,9 +38,10 @@ export function SecuritySetupModal() {
   const skipMutation = useMutation({
     mutationFn: () => apiRequest('POST', '/api/auth/security-setup/skip', {}),
     onSuccess: () => {
+      setStep('done');
       queryClient.invalidateQueries({ queryKey: ['/api/auth/security-status'] });
     },
-    onError: () => {},
+    onError: () => toast({ title: 'لم يُحفظ اختيار التخطي', description: 'يمكنك متابعة الدراسة الآن؛ قد يظهر إعداد الأمان مرة أخرى عند الدخول لاحقًا.', variant: 'destructive' }),
   });
 
   if (isLoading || !securityStatus?.needsSetup) return null;
@@ -100,7 +101,7 @@ export function SecuritySetupModal() {
                 إعداد رمز PIN الآن
               </Button>
               <button
-                onClick={() => skipMutation.mutate()}
+                onClick={() => { setStep('done'); skipMutation.mutate(); }}
                 disabled={skipMutation.isPending}
                 className="w-full text-center text-sm text-gray-400 hover:text-gray-600 py-2"
               >

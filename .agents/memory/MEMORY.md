@@ -46,3 +46,4 @@
 - [React runtime error stacks](react-runtime-error-stack.md) — format JavaScript and React component stacks as strings in development logs so browser collectors preserve them.
 - [Large attachment staging](large-attachment-staging.md) — keep temporary hard links on the workspace filesystem; `/tmp` is mounted separately.
 - [Reusable explanations and reports](reusable-explanations-and-reports.md) — deterministic reporting, AI only for missing explanations, reusable content-aware caches with generated text clearly labeled.
+- [Student journey scope](student-journey-scope.md) — one personalized preparation path; keep incomplete Tahsili student features closed and labeled «قريبًا».

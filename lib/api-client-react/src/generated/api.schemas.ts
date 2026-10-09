@@ -5,6 +5,129 @@
  * API specification
  * OpenAPI spec version: 0.1.0
  */
+export interface StudentCoursePracticeInput {
+  taskId: string;
+}
+
+export type StudentCourseInputDurationDays = typeof StudentCourseInputDurationDays[keyof typeof StudentCourseInputDurationDays];
+
+
+export const StudentCourseInputDurationDays = {
+  NUMBER_5: 5,
+  NUMBER_10: 10,
+  NUMBER_15: 15,
+  NUMBER_30: 30,
+} as const;
+
+export interface StudentCourseInput {
+  /** Strict YYYY-MM-DD Riyadh calendar date; validated by the server without coercing to Date. */
+  examDate: string;
+  durationDays: StudentCourseInputDurationDays;
+  /**
+     * @minimum 30
+     * @maximum 240
+     */
+  dailyMinutes: number;
+}
+
+export type StudentCourseTaskKind = typeof StudentCourseTaskKind[keyof typeof StudentCourseTaskKind];
+
+
+export const StudentCourseTaskKind = {
+  diagnostic: 'diagnostic',
+  lesson: 'lesson',
+  practice: 'practice',
+  review: 'review',
+  simulation: 'simulation',
+} as const;
+
+export type StudentCourseTaskStatus = typeof StudentCourseTaskStatus[keyof typeof StudentCourseTaskStatus];
+
+
+export const StudentCourseTaskStatus = {
+  pending: 'pending',
+  completed: 'completed',
+} as const;
+
+export type StudentCourseTaskCompletionSource = typeof StudentCourseTaskCompletionSource[keyof typeof StudentCourseTaskCompletionSource];
+
+
+export const StudentCourseTaskCompletionSource = {
+  self_reported: 'self_reported',
+  assessment: 'assessment',
+  test_report: 'test_report',
+  pending: 'pending',
+} as const;
+
+export interface StudentCourseTask {
+  id: string;
+  kind: StudentCourseTaskKind;
+  title: string;
+  reason: string;
+  href: string;
+  minutes: number;
+  questionCount: number;
+  category: string;
+  status: StudentCourseTaskStatus;
+  completionSource: StudentCourseTaskCompletionSource;
+}
+
+export interface StudentCourseDay {
+  day: number;
+  date: string;
+  title: string;
+  tasks: StudentCourseTask[];
+}
+
+export type StudentCourseLevel = typeof StudentCourseLevel[keyof typeof StudentCourseLevel];
+
+
+export const StudentCourseLevel = {
+  unassessed: 'unassessed',
+  foundation: 'foundation',
+  practice: 'practice',
+  advanced: 'advanced',
+} as const;
+
+export interface StudentCourse {
+  id: string;
+  examDate: string;
+  durationDays: number;
+  dailyMinutes: number;
+  level: StudentCourseLevel;
+  levelReason: string;
+  focus: string;
+  coverageNote: string;
+  availableQuestions: number;
+  plannedQuestions: number;
+  days: StudentCourseDay[];
+}
+
+export type StudentQuestionIdeaConfidence = typeof StudentQuestionIdeaConfidence[keyof typeof StudentQuestionIdeaConfidence];
+
+
+export const StudentQuestionIdeaConfidence = {
+  limited: 'limited',
+  developing: 'developing',
+  repeated: 'repeated',
+} as const;
+
+export interface StudentQuestionIdea {
+  key: string;
+  label: string;
+  category: string;
+  attempts: number;
+  wrong: number;
+  slow: number;
+  confidence: StudentQuestionIdeaConfidence;
+  reason: string;
+}
+
+export interface StudentCourseState {
+  course: StudentCourse | null;
+  ideas: StudentQuestionIdea[];
+}
+
 export interface RemedialPracticeInput {
   /**
      * @minLength 8

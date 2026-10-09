@@ -854,57 +854,8 @@ function SearchWorkspace() {
   );
 }
 
-function TahsiliWorkspace() {
-  return (
-    <section className="space-y-5" aria-labelledby="tahsili-workspace-title">
-      <div className="rounded-[1.5rem] border border-[#F0DCE1] bg-[#FFF9FA] p-5 md:p-6">
-        <p className="text-xs font-black text-[#C94C65]">المحوسب · التحصيلي</p>
-        <h2 id="tahsili-workspace-title" className="mt-1 text-2xl font-black text-[#0D1B2A]">مسار التحصيلي</h2>
-        <p className="mt-2 max-w-2xl text-sm leading-6 text-[#64748B]">
-          اختر المادة أو انتقل إلى بنك الأسئلة والاختبارات الشاملة. سيُضاف محتوى كل مادة هنا عند وصول الداتا الجديدة.
-        </p>
-      </div>
-
-      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-        <ResourceCard
-          title="المواد العلمية"
-          description="رياضيات وفيزياء وكيمياء وأحياء."
-          icon={BookOpen}
-          href="/tahsili"
-          accent="bg-[#FFF0F2] text-[#C94C65]"
-        />
-        <ResourceCard
-          title="بنك التحصيلي"
-          description="أسئلة مرتبة حسب المادة والمستوى."
-          icon={Library}
-          href="/tahsilik/question-bank"
-          accent="bg-[#F2F7FF] text-[#3B67A5]"
-        />
-        <ResourceCard
-          title="الاختبارات الشاملة"
-          description="اختبارات محاكية لجميع مواد التحصيلي."
-          icon={Trophy}
-          href="/tahsilik/tests"
-          accent="bg-[#FFF7E6] text-[#9A6A1F]"
-        />
-        <ResourceCard
-          title="نتائجي وتقدمي"
-          description="راجع محاولاتك وما يحتاج إلى مراجعة."
-          icon={CheckCircle2}
-          href="/records"
-          accent="bg-[#F7EEFB] text-[#7A4B91]"
-        />
-      </div>
-    </section>
-  );
-}
-
-export default function ComputerizedPage({
-  initialTrack = "qudrat",
-}: {
-  initialTrack?: ComputerizedTrack;
-}) {
-  const [activeTrack, setActiveTrack] = useState<ComputerizedTrack>(initialTrack);
+export default function ComputerizedPage() {
+  const [activeTrack, setActiveTrack] = useState<ComputerizedTrack>("qudrat");
   const [activeMode, setActiveMode] = useState<ComputerizedMode>("quantitative");
   const { data: dashboard } = useStudentDashboard();
   const completed = dashboard?.stats.totalTests ?? 0;
@@ -919,7 +870,7 @@ export default function ComputerizedPage({
               <p className="mb-2 text-xs font-black text-[#F7F775]">قدرات · مركز التدريب</p>
               <h1 className="text-3xl font-black md:text-4xl">المحوسب</h1>
               <p className="mt-3 max-w-2xl text-sm leading-7 text-[#CBD5E1]">
-                اختر أولًا بين القدرات والتحصيلي، ثم انتقل إلى نوع التدريب الذي يناسبك.
+                تدرّب على اللفظي أو الكمي بتركيز. التحصيلي قريبًا.
               </p>
             </div>
             <div className="grid grid-cols-2 gap-2">
@@ -944,6 +895,17 @@ export default function ComputerizedPage({
             {TRACKS.map((track) => {
               const Icon = track.icon;
               const selected = activeTrack === track.key;
+              if (track.key === "tahsili") {
+                return (
+                  <div key={track.key} data-testid="status-tahsili-locked" aria-disabled="true" className="flex items-center gap-4 rounded-2xl border border-dashed border-[#CBD5E1] bg-[#F1F5F9] p-4 text-right opacity-80 md:p-5">
+                    <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-white text-[#94A3B8]"><Icon className="h-6 w-6" /></span>
+                    <span>
+                      <span className="block text-lg font-black text-[#64748B]">التحصيلي — قريبًا</span>
+                      <span className="mt-1 block text-xs leading-5 text-[#64748B]">غير متاح للتشغيل حاليًا.</span>
+                    </span>
+                  </div>
+                );
+              }
               return (
                 <button
                   key={track.key}
@@ -976,7 +938,7 @@ export default function ComputerizedPage({
         <StudentWorkflow
           currentStage="skills"
           level={dashboard?.recommendedPlan.level || "foundation"}
-          progress={activeTrack === "tahsili" ? dashboard?.progress.tahsili.percentage || 0 : dashboard?.progress.qudrat.percentage || 0}
+          progress={dashboard?.progress.qudrat.percentage || 0}
           focusLabel={dashboard?.recommendedPlan.focusSubject === "verbal" ? "اللفظي" : dashboard?.recommendedPlan.focusSubject === "quantitative" ? "الكمي" : undefined}
           nextAction={{ label: "افتح مهمة التدريب", href: "/computerized" }}
         />
@@ -1021,7 +983,6 @@ export default function ComputerizedPage({
         {activeMode === "search" && <SearchWorkspace />}
           </>
         )}
-        {activeTrack === "tahsili" && <TahsiliWorkspace />}
       </div>
     </div>
   );

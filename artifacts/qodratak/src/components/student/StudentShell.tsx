@@ -9,10 +9,11 @@ import { HomeIcon, BookOpenIcon, BrainCircuitIcon, UserIcon, MenuIcon, XIcon, Lo
 import { BrandMark } from "@/components/BrandMark";
 import { StudentExamChromeContext } from "@/components/student/StudentExamChromeContext";
 import useSubscription from "@/hooks/useSubscription";
+import { StudentJourneyNavigation } from "@/components/student/StudentJourneyNavigation";
 
 const NAV_ITEMS = [
   { name: "لوحتي", href: "/", icon: HomeIcon },
-  { name: "رحلتي", href: "/foundation", icon: BookOpenIcon },
+  { name: "دورتي", href: "/preparation-course", icon: BookOpenIcon },
   { name: "المحوسب", href: "/computerized", icon: BrainCircuitIcon },
   { name: "نتائجي", href: "/records", icon: ClipboardList },
   { name: "حسابي", href: "/account", icon: UserIcon },
@@ -119,7 +120,8 @@ export function StudentShell({ children }: { children: React.ReactNode }) {
           ? "h-[100dvh] overflow-hidden"
           : "md:pt-0 pt-16 pb-20 md:pb-0 h-[100dvh] overflow-y-auto"
       )}>
-        {children}
+          {!isExamLayoutActive && !subscription?.isExpired && <StudentJourneyNavigation />}
+          {children}
       </main>
 
       {/* Mobile Bottom Navigation */}

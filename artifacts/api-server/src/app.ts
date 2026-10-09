@@ -12,6 +12,7 @@ import notificationRouter from "./notificationRoutes";
 import { logger } from "./lib/logger";
 import { enforceSessionIp } from "./middleware/sessionIp";
 import { enforceStudentTrialAccess } from "./middleware/studentTrialAccess";
+import { enforceStudentContentAvailability, studentPassagePresentation } from "./middleware/studentContentAvailability";
 import { notifyTechnicalFailure } from "./services/technicalErrorAlerts";
 
 const app: Express = express();
@@ -90,7 +91,9 @@ app.use(
   }),
 );
 app.use(enforceSessionIp);
+app.use("/api", enforceStudentContentAvailability);
 app.use("/api", enforceStudentTrialAccess);
+app.use("/api", studentPassagePresentation);
 app.use("/api", (request, response, next) => {
   response.once("finish", () => {
     const requestPath = request.originalUrl.split("?")[0];

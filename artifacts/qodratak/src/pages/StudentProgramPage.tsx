@@ -80,7 +80,7 @@ export default function StudentProgramPage() {
   const section = new URLSearchParams(location.split("?")[1] || "").get("section");
   const { data: dashboard } = useStudentDashboard();
   if ((programKey === "qudrat" || programKey === "tahsili") && section === "computer") {
-    return <ComputerizedPage key={programKey} initialTrack={programKey} />;
+    return <ComputerizedPage key={programKey} />;
   }
   const showFoundation = !section || section === "foundation";
   const showComputer = !section || section === "computer";

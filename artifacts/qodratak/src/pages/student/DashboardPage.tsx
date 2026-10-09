@@ -32,6 +32,7 @@ import { Input } from "@/components/ui/input";
 import SubscriptionRenewalDialog from "@/components/SubscriptionRenewalDialog";
 import AdaptiveLearningCoach from "@/components/student/AdaptiveLearningCoach";
 import useSubscription from "@/hooks/useSubscription";
+import { getGetStudentCourseQueryKey, useGetStudentCourse } from "@workspace/api-client-react";
 import { foundationHrefForScope, todayLearningHref } from "@/lib/foundationRoutes.mjs";
 
 const SUPPORTED_DASHBOARD_PATHS = new Set([
@@ -92,10 +93,9 @@ function DashboardSkeleton() {
 }
 
 const paths = [
-  { href: "/foundation", label: "التأسيس والتقييم", detail: "ابنِ أساسك", icon: BookOpen },
-  { href: "/computerized", label: "التدريب المحوسب", detail: "تدرّب بتركيز", icon: Laptop },
-  { href: "/question-bank", label: "بنك الأسئلة", detail: "راجع ما تحتاجه", icon: ListChecks },
-  { href: "/qiyas", label: "المحاكاة", detail: "اختبر جاهزيتك", icon: ClipboardCheck },
+  { href: "/preparation-course", label: "خطة التحضير", detail: "حجزت اختبارك؟ جدول يومي", icon: Calendar },
+  { href: "/computerized", label: "التدريب المحوسب", detail: "لفظي وكمي بتركيز", icon: Laptop },
+  { href: "/records", label: "تقاريري", detail: "راجع الخطأ والبطيء", icon: FileText },
 ];
 
 export default function DashboardPage() {
@@ -109,14 +109,13 @@ export default function DashboardPage() {
     error,
     refetch: refetchDashboard,
   } = useStudentDashboard(isStudent);
-  const journeyProgram = dashboard?.recommendedPlan?.program
-    ?? dashboard?.officialScores?.program
-    ?? "qudrat";
-  const journeySubjectId = dashboard?.recommendedPlan?.subjectId;
+  const journeyProgram = "qudrat" as const;
+  const journeySubjectId = dashboard?.recommendedPlan?.program === "tahsili" ? undefined : dashboard?.recommendedPlan?.subjectId;
   const hasJourneyScope = isStudent && Boolean(dashboard) && !subscription?.isExpired;
   const todayLearning = useTodayLearningSession(hasJourneyScope, journeyProgram, journeySubjectId);
   const adaptiveDecision = useAdaptiveLearningDecision(hasJourneyScope, journeyProgram, journeySubjectId);
   const recommendations = useStudentLearningRecommendations(hasJourneyScope, journeyProgram);
+  const courseQuery = useGetStudentCourse({ query: { queryKey: getGetStudentCourseQueryKey(), staleTime: 30000, enabled: hasJourneyScope } });
   const updateExamDate = useUpdateExamDate();
   const [examDateStr, setExamDateStr] = useState("");
   const [isExamDialogOpen, setIsExamDialogOpen] = useState(false);
@@ -202,12 +201,8 @@ export default function DashboardPage() {
     );
   }
   const todayPlan = todayLearning.data?.plan;
-  const planProgram = todayPlan?.programId === "program.tahsili"
-    ? "tahsili"
-    : todayPlan?.programId === "program.qudrat"
-      ? "qudrat"
-      : journeyProgram;
-  const planSubjectId = todayPlan?.subjectId || journeySubjectId;
+  const planProgram = "qudrat" as const;
+  const planSubjectId = todayPlan?.programId === "program.tahsili" ? journeySubjectId : (todayPlan?.subjectId || journeySubjectId);
   const foundationHref = foundationHrefForScope(planProgram, planSubjectId);
   const todaySessionHref = todayLearningHref(planProgram, planSubjectId);
   const adaptiveLabel =
@@ -231,7 +226,13 @@ export default function DashboardPage() {
     "جلسة قصيرة بخطوات واضحة تساعدك على التقدم.";
   const todayIsComplete = todayPlan?.state === "COMPLETED";
   const todayHref = todayPlan?.planStatus === "DIAGNOSTIC_REQUIRED" ? foundationHref : todaySessionHref;
-  const recommendedHref = getSafeInternalHref(dashboard.recommendedPlan?.nextAction?.href);
+  const rawRecommended = getSafeInternalHref(dashboard.recommendedPlan?.nextAction?.href);
+  const recommendedHref = /tahsil/.test(rawRecommended) ? "/foundation" : rawRecommended;
+  const saudiToday = new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Riyadh" }).format(new Date());
+  const course = courseQuery.data?.course ?? null;
+  const dueTask = course && course.level !== "unassessed"
+    ? course.days.filter((d) => d.date.slice(0, 10) <= saudiToday).flatMap((d) => d.tasks.map((t) => ({ t, day: d.day }))).find((x) => x.t.status === "pending")
+    : undefined;
   const daysToExam = dashboard.upcomingExam.date
     ? Math.max(0, Math.ceil((new Date(dashboard.upcomingExam.date).getTime() - Date.now()) / 86400000))
     : null;
@@ -241,7 +242,7 @@ export default function DashboardPage() {
     { key: "overall", label: "الإجمالي", value: dashboard.progress.overall.percentage },
     { key: "verbal", label: "اللفظي", value: dashboard.progress.verbal.percentage },
     { key: "quantitative", label: "الكمي", value: dashboard.progress.quantitative.percentage },
-    { key: "tahsili", label: "التحصيلي", value: dashboard.progress.tahsili.percentage },
+    { key: "tahsili", label: "التحصيلي — قريبًا", value: dashboard.progress.tahsili.percentage },
   ];
 
   const handleOpenExamDialog = () => {
@@ -258,10 +259,6 @@ export default function DashboardPage() {
 
   return (
     <div className="mx-auto w-full max-w-5xl space-y-7 p-5 md:p-8" dir="rtl">
-      <Link href="/records" data-testid="link-my-results" className="flex items-center justify-between gap-4 rounded-2xl border border-border bg-card p-5 text-foreground hover:border-primary/40">
-        <span className="flex items-center gap-3"><FileText className="h-6 w-6 text-primary" /><span><strong className="block">نتائجي</strong><span className="text-sm text-muted-foreground">عرض نتائج الاختبارات والتقارير التفصيلية المحفوظة</span></span></span>
-        <ChevronLeft className="h-5 w-5 shrink-0" />
-      </Link>
       <header className="space-y-2">
         <p className="text-sm font-bold text-muted-foreground">{new Date().getHours() < 17 ? "مرحبًا" : "مساء الخير"}،</p>
         <h1 data-testid="text-student-name" className="text-3xl font-black tracking-tight text-foreground md:text-4xl">
@@ -270,8 +267,6 @@ export default function DashboardPage() {
         <p className="text-sm leading-7 text-muted-foreground">خطوة واحدة الآن تكفي لتعرف ما التالي في استعدادك.</p>
       </header>
 
-      <AdaptiveLearningCoach />
-
       <section data-testid="student-next-step" className="overflow-hidden rounded-3xl border border-primary/20 bg-primary/5 shadow-sm">
         <div className="flex flex-col gap-5 p-5 sm:p-7 md:flex-row md:items-center md:justify-between">
           <div className="flex items-start gap-4">
@@ -279,60 +274,86 @@ export default function DashboardPage() {
               <PlayCircle className="h-6 w-6" aria-hidden="true" />
             </span>
             <div className="min-w-0">
-              <p className="text-xs font-black tracking-wide text-primary">مهمتك التالية</p>
-              {todayLearning.isLoading ? (
-                <div className="mt-3 space-y-2" data-testid="status-today-loading">
+              <p className="text-xs font-black tracking-wide text-primary">مهمتك اليوم</p>
+              {courseQuery.isLoading ? (
+                <div className="mt-3 space-y-2" data-testid="status-course-loading">
                   <div className="h-6 w-56 animate-pulse rounded bg-muted" />
-                  <div className="h-4 w-80 max-w-full animate-pulse rounded bg-muted" />
+                  <div className="h-4 w-72 max-w-full animate-pulse rounded bg-muted" />
                 </div>
-              ) : todayLearning.isError ? (
-                <div data-testid="status-today-error">
-                  <h2 className="mt-1 text-xl font-black text-foreground">لم نتمكن من تجهيز مهمة اليوم</h2>
-                  <p className="mt-1 text-sm leading-7 text-muted-foreground">تحقق من الاتصال وحاول تحميل المهمة مرة أخرى.</p>
+              ) : courseQuery.isError ? (
+                <div data-testid="status-course-error">
+                  <h2 className="mt-1 text-xl font-black text-foreground">تعذر تحميل خطتك</h2>
+                  <p className="mt-1 text-sm leading-7 text-muted-foreground">تحقق من الاتصال وحاول مرة أخرى.</p>
                 </div>
-              ) : !todayPlan ? (
-                <div data-testid="status-today-empty">
-                  <h2 className="mt-1 text-xl font-black text-foreground">ابدأ بتحديد مسارك</h2>
-                  <p className="mt-1 text-sm leading-7 text-muted-foreground">لا توجد مهمة جاهزة بعد. ابدأ بالتقييم لنقترح لك الخطوة المناسبة.</p>
+              ) : !course ? (
+                <div data-testid="status-course-none">
+                  <h2 className="mt-1 text-xl font-black text-foreground">حجزت اختبارك؟ ابنِ دورتك</h2>
+                  <p className="mt-1 max-w-2xl text-sm leading-7 text-muted-foreground">حدد موعدك ووقتك اليومي، ونعطيك مهمة واحدة واضحة كل يوم.</p>
+                </div>
+              ) : course.level === "unassessed" ? (
+                <div data-testid="status-course-unassessed">
+                  <h2 className="mt-1 text-xl font-black text-foreground">ابدأ بالتقييم التأسيسي</h2>
+                  <p className="mt-1 max-w-2xl text-sm leading-7 text-muted-foreground">نحتاج تقييمًا قصيرًا لتحديد مستواك قبل ترتيب مهام الأيام.</p>
+                </div>
+              ) : dueTask ? (
+                <div data-testid="status-course-task">
+                  <h2 className="mt-1 text-xl font-black text-foreground">{dueTask.t.title}</h2>
+                  <p className="mt-1 max-w-2xl text-sm leading-7 text-muted-foreground">{dueTask.t.reason}</p>
+                  <p className="mt-3 text-xs font-bold text-muted-foreground">اليوم {dueTask.day} · {dueTask.t.minutes} دقيقة</p>
                 </div>
               ) : (
-                <div data-testid="status-today-ready">
-                  <h2 className="mt-1 text-xl font-black text-foreground">{todayIsComplete ? "أكملت مهمة اليوم" : todayTitle}</h2>
-                  <p className="mt-1 max-w-2xl text-sm leading-7 text-muted-foreground">{todayReason}</p>
-                  <div className="mt-3 flex flex-wrap gap-x-4 gap-y-1 text-xs font-bold text-muted-foreground">
-                    <span>{todayPlan.estimatedMinutes} دقيقة تقريبًا</span>
-                    <span>{clampPercentage(todayPlan.progress)}٪ من المهمة</span>
-                  </div>
+                <div data-testid="status-course-clear">
+                  <h2 className="mt-1 text-xl font-black text-foreground">لا مهام معلّقة لليوم</h2>
+                  <p className="mt-1 text-sm leading-7 text-muted-foreground">راجع خطتك لمعرفة مهام الأيام القادمة.</p>
                 </div>
               )}
             </div>
           </div>
-          {todayLearning.isError ? (
-            <Button
-              type="button"
-              data-testid="button-retry-today-learning"
-              onClick={() => todayLearning.refetch()}
-              className="min-h-11 shrink-0 rounded-xl bg-foreground px-5 font-black text-background hover:bg-foreground/90"
-            >
-              <RefreshCw className="ml-2 h-4 w-4" aria-hidden="true" />
-              إعادة المحاولة
+          {courseQuery.isError ? (
+            <Button type="button" data-testid="button-retry-course" onClick={() => courseQuery.refetch()} className="min-h-11 shrink-0 rounded-xl bg-foreground px-5 font-black text-background hover:bg-foreground/90">
+              <RefreshCw className="ml-2 h-4 w-4" aria-hidden="true" />إعادة المحاولة
             </Button>
           ) : (
             <Link
-              href={todayPlan ? todayHref : foundationHref}
+              href="/preparation-course"
               data-testid="link-start-next-step"
               className="inline-flex min-h-11 shrink-0 items-center justify-center gap-2 rounded-xl bg-foreground px-5 text-sm font-black text-background transition-opacity hover:opacity-90"
             >
-              {todayPlan?.planStatus === "DIAGNOSTIC_REQUIRED" || !todayPlan
-                ? planProgram === "tahsili" ? "اختر مادتك" : "ابدأ التقييم"
-                : todayIsComplete ? "عرض مهمة اليوم" : todayLearning.data?.started ? "نكمل؟" : "ابدأ المهمة"}
+              {!course ? "ابنِ دورتك" : course.level === "unassessed" ? "ابدأ التقييم" : "تابع مهام اليوم"}
               <ChevronLeft className="h-4 w-4" aria-hidden="true" />
             </Link>
           )}
         </div>
       </section>
 
-      <section data-testid="student-progress-summary" className="rounded-3xl border border-border bg-card p-5 shadow-sm md:p-6">
+      <details data-testid="details-more-guidance" className="group rounded-3xl border border-border bg-card shadow-sm">
+        <summary className="flex cursor-pointer list-none items-center gap-3 p-5 font-black text-foreground [&::-webkit-details-marker]:hidden">
+          <Brain className="h-5 w-5 text-primary" aria-hidden="true" />
+          <span className="flex-1">اقتراحات إضافية</span>
+          <ChevronDown className="h-4 w-4 text-muted-foreground transition-transform group-open:rotate-180" aria-hidden="true" />
+        </summary>
+        <div className="space-y-4 border-t border-border p-4 sm:p-5">
+          <div data-testid="status-today-ready" className="rounded-2xl bg-muted/60 p-4">
+            <p className="text-xs font-black text-primary">{adaptiveLabel}</p>
+            {todayLearning.isLoading ? (
+              <div className="mt-2 h-5 w-48 animate-pulse rounded bg-muted" />
+            ) : todayLearning.isError ? (
+              <p className="mt-1 text-sm text-muted-foreground">تعذر تحميل جلسة التعلم المقترحة. <button type="button" data-testid="button-retry-today-learning" className="font-black underline" onClick={() => todayLearning.refetch()}>إعادة المحاولة</button></p>
+            ) : (
+              <>
+                <p className="mt-1 font-black text-foreground">{todayIsComplete ? "أكملت جلسة التعلم" : todayTitle}</p>
+                <p className="mt-1 text-sm leading-7 text-muted-foreground">{todayReason}</p>
+                <Link href={todayPlan ? todayHref : foundationHref} data-testid="link-today-learning" className="mt-3 inline-flex min-h-10 items-center rounded-xl border border-border px-4 text-sm font-black hover:bg-muted">
+                  {!todayPlan || todayPlan.planStatus === "DIAGNOSTIC_REQUIRED" ? "ابدأ التقييم" : todayIsComplete ? "عرض الجلسة" : todayLearning.data?.started ? "نكمل الجلسة" : "ابدأ الجلسة"}
+                </Link>
+              </>
+            )}
+          </div>
+          <AdaptiveLearningCoach />
+        </div>
+      </details>
+
+      <details data-testid="student-progress-summary" className="rounded-3xl border border-border bg-card p-5 shadow-sm md:p-6"><summary className="cursor-pointer font-black text-foreground">ملخص التقدم</summary><div className="mt-4">
         <div className="flex flex-col gap-4 border-b border-border pb-5 sm:flex-row sm:items-end sm:justify-between">
           <div>
             <p className="text-xs font-black text-primary">ملخص التقدم</p>
@@ -369,16 +390,16 @@ export default function DashboardPage() {
             );
           })}
         </div>
-      </section>
+      </div></details>
 
       <section data-testid="student-paths" className="space-y-3">
         <div>
           <div>
             <p className="text-xs font-black text-primary">مساراتك</p>
-            <h2 className="mt-1 text-xl font-black text-foreground">اختر ما تريد إنجازه</h2>
+            <h2 className="mt-1 text-xl font-black text-foreground">بعد مهمتك، أين تذهب؟</h2>
           </div>
         </div>
-        <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+        <div className="grid gap-3 sm:grid-cols-3">
           {paths.map((path) => {
             const Icon = path.icon;
             return (

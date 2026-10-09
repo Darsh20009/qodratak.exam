@@ -4,6 +4,7 @@ import { StartRemedialPracticeBody, SubmitRemedialPracticeBody } from '@workspac
 import { ExamLearningReport } from '../mongodb/examReportModels';
 import { Question, TahsiliQuestion } from '../mongodb/models';
 import { recordVerifiedLearningAttempt } from '../services/learningProfileService';
+import { recordCoursePracticeCompletion } from './preparationCourseRoutes';
 
 const subjectIds: Record<string, string> = { 'رياضيات': 'math', 'فيزياء': 'physics', 'كيمياء': 'chemistry', 'أحياء': 'biology', 'علم الأرض': 'environment' };
 export function registerRemedialPracticeRoutes(app: Express, studentOnly: RequestHandler[]) {
@@ -59,7 +60,10 @@ export function registerRemedialPracticeRoutes(app: Express, studentOnly: Reques
     const studentId = String((req.session as any).userId);
     const attempt = (req.session as any).remedialPracticeAttempts?.[parsed.data.attemptId];
     if (!attempt || attempt.studentId !== studentId || Date.now() - attempt.createdAt > 7200000) return res.status(410).json({ error: 'انتهت جلسة التدريب.' });
-    if (attempt.result) return res.json(attempt.result);
+      if (attempt.result) {
+        if (attempt.courseTaskId) await recordCoursePracticeCompletion(studentId, attempt.courseTaskId, attempt.createdAt);
+        return res.json(attempt.result);
+      }
     const selected = new Map(parsed.data.answers.map((a) => [a.questionId, a]));
     if (selected.size !== parsed.data.answers.length || selected.size !== attempt.questions.length || attempt.questions.some((q: any) => !selected.has(q.id))) return res.status(400).json({ error: 'الإجابات لا تطابق جلسة التدريب.' });
     try {
@@ -81,6 +85,7 @@ export function registerRemedialPracticeRoutes(app: Express, studentOnly: Reques
       }
       attempt.result = { totalQuestions: questions.length, correctAnswers: questions.filter((q) => q.isCorrect).length, questions };
       await new Promise<void>((resolve, reject) => req.session.save((error) => error ? reject(error) : resolve()));
+      if (attempt.courseTaskId) await recordCoursePracticeCompletion(studentId, attempt.courseTaskId, attempt.createdAt);
       return res.json(attempt.result);
     } catch { return res.status(503).json({ error: 'تعذر حفظ التدريب؛ أعد المحاولة.' }); }
   });

@@ -15,6 +15,62 @@ tags:
   - name: payments
     description: Sandbox Geidea checkout, reconciliation, and admin refunds
 paths:
+  /student/course:
+    get:
+      operationId: getStudentCourse
+      tags: [learning]
+      responses:
+        "200":
+          description: Student-owned course and observed question ideas
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/StudentCourseState" }
+    post:
+      operationId: createStudentCourse
+      tags: [learning]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/StudentCourseInput" }
+      responses:
+        "200":
+          description: Saved deterministic course
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/StudentCourseState" }
+  /student/course/tasks/{taskId}/complete:
+    post:
+      operationId: completeStudentCourseTask
+      tags: [learning]
+      parameters:
+        - in: path
+          name: taskId
+          required: true
+          schema: { type: string }
+      responses:
+        "200":
+          description: Completion recorded or verified from student evidence
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/StudentCourseState" }
+        "409":
+          description: Required assessment or test evidence is missing
+  /student/course/practice:
+    post:
+      operationId: startStudentCoursePractice
+      tags: [learning]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/StudentCoursePracticeInput" }
+      responses:
+        "200":
+          description: Scheduled trusted questions without answer keys
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/RemedialPracticeStart" }
   /student/exam-reports/practice:
     post:
       operationId: startRemedialPractice
@@ -759,6 +815,82 @@ paths:
           description: Payment not found
 components:
   schemas:
+    StudentCoursePracticeInput:
+      type: object
+      required: [taskId]
+      properties:
+        taskId: { type: string }
+    StudentCourseInput:
+      type: object
+      required: [examDate, durationDays, dailyMinutes]
+      properties:
+        examDate: { type: string, description: "Strict YYYY-MM-DD Riyadh calendar date; validated by the server without coercing to Date." }
+        durationDays: { type: number, enum: [5, 10, 15, 30] }
+        dailyMinutes: { type: number, minimum: 30, maximum: 240 }
+    StudentCourseTask:
+      type: object
+      required: [id, kind, title, reason, href, minutes, questionCount, category, status, completionSource]
+      properties:
+        id: { type: string }
+        kind: { type: string, enum: [diagnostic, lesson, practice, review, simulation] }
+        title: { type: string }
+        reason: { type: string }
+        href: { type: string }
+        minutes: { type: number }
+        questionCount: { type: number }
+        category: { type: string }
+        status: { type: string, enum: [pending, completed] }
+        completionSource: { type: string, enum: [self_reported, assessment, test_report, pending] }
+    StudentCourseDay:
+      type: object
+      required: [day, date, title, tasks]
+      properties:
+        day: { type: number }
+        date: { type: string }
+        title: { type: string }
+        tasks:
+          type: array
+          items: { $ref: "#/components/schemas/StudentCourseTask" }
+    StudentCourse:
+      type: object
+      required: [id, examDate, durationDays, dailyMinutes, level, levelReason, focus, coverageNote, availableQuestions, plannedQuestions, days]
+      properties:
+        id: { type: string }
+        examDate: { type: string }
+        durationDays: { type: number }
+        dailyMinutes: { type: number }
+        level: { type: string, enum: [unassessed, foundation, practice, advanced] }
+        levelReason: { type: string }
+        focus: { type: string }
+        coverageNote: { type: string }
+        availableQuestions: { type: number }
+        plannedQuestions: { type: number }
+        days:
+          type: array
+          items: { $ref: "#/components/schemas/StudentCourseDay" }
+    StudentQuestionIdea:
+      type: object
+      required: [key, label, category, attempts, wrong, slow, confidence, reason]
+      properties:
+        key: { type: string }
+        label: { type: string }
+        category: { type: string }
+        attempts: { type: number }
+        wrong: { type: number }
+        slow: { type: number }
+        confidence: { type: string, enum: [limited, developing, repeated] }
+        reason: { type: string }
+    StudentCourseState:
+      type: object
+      required: [course, ideas]
+      properties:
+        course:
+          anyOf:
+            - { $ref: "#/components/schemas/StudentCourse" }
+            - { type: "null" }
+        ideas:
+          type: array
+          items: { $ref: "#/components/schemas/StudentQuestionIdea" }
     RemedialPracticeInput:
       type: object
       required: [runId]

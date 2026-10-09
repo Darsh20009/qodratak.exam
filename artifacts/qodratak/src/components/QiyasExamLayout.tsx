@@ -7,6 +7,7 @@ import { resolveFoundationAssetUrl } from "@/lib/foundationVideoUrl";
 import { BrandMark } from "@/components/BrandMark";
 import { StudentExamChromeContext } from "@/components/student/StudentExamChromeContext";
 import { ExamStudyToolsDialog, type ExamStudyTool } from "@/components/ExamStudyTools";
+import { isReadingComprehension } from "@/lib/verbalPassage";
 
 const OPTION_LABELS = ['أ', 'ب', 'ج', 'د'];
 
@@ -74,7 +75,7 @@ function nonEmptyString(value: unknown): string | undefined {
   return typeof value === "string" && value.trim() ? value.trim() : undefined;
 }
 
-function getQuestionDisplayParts(questionData: unknown, originalQuestionText: string) {
+function getQuestionDisplayParts(questionData: unknown, originalQuestionText: string, typeLabel?: string) {
   const question = isRecord(questionData) ? questionData : {};
   const source = isRecord(question.source) ? question.source : {};
   const passageText = nonEmptyString(source.passageText) ?? nonEmptyString(question.passageText);
@@ -94,7 +95,8 @@ function getQuestionDisplayParts(questionData: unknown, originalQuestionText: st
     }
   }
 
-  return { passageText, passageLabel, displayQuestionText };
+  const reading = isReadingComprehension(question, typeLabel);
+  return { passageText: reading ? passageText : undefined, passageLabel: reading ? passageLabel : undefined, displayQuestionText };
 }
 
 function formatTime(s: number): string {
@@ -149,7 +151,7 @@ export function QiyasExamLayout({
     id: questionId ?? (questionData as any)?.id ?? `${sectionNumber}:${questionNumber}`,
     text: questionText, options, imageUrl: questionImageUrl,
   }, selectedAnswer, !isFinishing, examTitle || 'اختبار');
-  const { passageText, passageLabel, displayQuestionText } = getQuestionDisplayParts(questionData, questionText);
+  const { passageText, passageLabel, displayQuestionText } = getQuestionDisplayParts(questionData, questionText, questionTypeLabel);
   const { setActive: setStudentExamChromeActive } = useContext(StudentExamChromeContext);
   const [fontSize, setFontSize] = useState<'sm' | 'base' | 'lg'>('base');
   const [visitedQuestions, setVisitedQuestions] = useState<Set<number>>(new Set([0]));

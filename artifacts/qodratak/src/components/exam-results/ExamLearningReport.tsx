@@ -30,24 +30,41 @@ export function ReportDetails({ report }: { report: ExamReportRecord }) {
   const measured = report.timing.measuredQuestions;
   const known = report.questions.filter((q) => q.isCorrect !== null);
   const visible = report.questions.filter((q) => filter === 'all' || (filter === 'wrong' ? q.isCorrect === false : q.isSlow));
+  const correctCount = report.questions.filter((q) => q.isCorrect === true).length;
+  const unverified = report.questions.filter((q) => q.selectedOptionIndex !== null && q.isCorrect === null).length;
+  const skipped = report.questions.filter((q) => q.selectedOptionIndex === null).length;
+  const nextAction = wrong.length > 0
+    ? { text: `راجع ${wrong.length} سؤالًا أخطأت فيه أولًا، ثم تدرّب على المجال نفسه.`, kind: 'practice' as const }
+    : slow.length > 0
+      ? { text: `أجبت بدقة موثقة، لكن ${slow.length} سؤالًا كان أبطأ من المعتاد. راجع طريقة حلها.`, kind: 'practice' as const }
+      : unverified > 0
+        ? { text: 'بعض الإجابات لم يُوثّق تصحيحها بعد. أعد فتح التقرير بعد قليل.', kind: 'wait' as const }
+        : { text: 'لا أخطاء موثقة هنا. أكمل مهمتك التالية في خطة التحضير.', kind: 'course' as const };
   const weaknesses = [...new Set([...wrong, ...slow].map((q) => q.subcategory || q.category || 'عام'))];
   return <Card dir="rtl" className="my-5 text-right">
     <CardHeader><CardTitle>تقرير التعلم والوقت — {report.title}</CardTitle></CardHeader>
     <CardContent className="space-y-5">
       <Link href="/records" className="inline-block text-sm font-bold text-primary underline underline-offset-4">عرض تقاريري المحفوظة في حسابي</Link>
-      <div className="grid grid-cols-2 gap-3 md:grid-cols-4 text-sm">
-        <div>الوقت النشط: <strong>{minutes(report.timing.totalSeconds)}</strong></div>
-        <div>تم قياس <strong>{measured}</strong> سؤالًا</div>
-        <div>أخطاء موثقة: <strong>{wrong.length}</strong> من {known.length} إجابة موثقة</div>
-        <div>أسئلة أبطأ من المعتاد: <strong>{slow.length}</strong></div>
+      <div className="rounded-xl border border-primary/30 bg-primary/5 p-4" data-testid="report-next-action">
+        <p className="text-xs font-bold text-primary">خطوتك التالية</p>
+        <p className="mt-1 font-bold">{nextAction.text}</p>
+        {nextAction.kind === 'practice' && weaknesses.length > 0 && <Button className="mt-3" onClick={() => setPractice(true)}>ابدأ تدريبًا من مجالات أخطائي</Button>}
+        {nextAction.kind === 'course' && <Link href="/preparation-course" className="mt-3 inline-block rounded-lg bg-primary px-4 py-2 text-sm font-bold text-primary-foreground">افتح خطة التحضير</Link>}
       </div>
+      <div className="grid grid-cols-2 gap-3 md:grid-cols-5 text-sm" data-testid="report-summary">
+        <div>صحيحة موثقة<strong className="block text-lg">{correctCount}</strong></div>
+        <div>خاطئة موثقة<strong className="block text-lg">{wrong.length}</strong></div>
+        <div>غير موثقة<strong className="block text-lg">{unverified}</strong></div>
+        <div>أبطأ من المعتاد<strong className="block text-lg">{slow.length}</strong></div>
+        <div>الوقت النشط<strong className="block text-sm">{minutes(report.timing.totalSeconds)}</strong></div>
+      </div>
+      {skipped > 0 && <p className="text-xs text-muted-foreground">{skipped} سؤالًا متروكًا. تم قياس {measured} سؤالًا.</p>}
       <p className="text-xs text-muted-foreground">الوقت مقاس في المتصفح أثناء ظهور السؤال؛ لا يشمل إخفاء الصفحة. المقارنة مع وسيط وقتك لنوع السؤال، لا مع سرعة جميع الطلاب. عند نقص العينات لا نصنف السؤال بطيئًا.</p>
       {known.length < report.questions.filter((q) => q.selectedOptionIndex !== null).length &&
         <p role="status" className="text-sm text-amber-700 dark:text-amber-300">بعض الإجابات لم تتوفر لها محاولة مصححة موثوقة على الخادم؛ وقتها ظاهر دون اختلاق صحة الإجابة.</p>}
       {weaknesses.length > 0 && <div className="rounded-xl bg-muted p-4 text-sm space-y-2">
         <h3 className="font-bold">خطة المراجعة من أخطائك</h3>
         {weaknesses.map((area) => <p key={area}>راجع {area}، ثم حل تدريبًا من المجال نفسه وأعد قياس وقتك. الخطأ هنا ملاحظة أداء وليس حكمًا نهائيًا على مستواك.</p>)}
-        <Button onClick={() => setPractice(true)}>ابدأ تدريبًا إضافيًا من مجالات أخطائي</Button>
       </div>}
       {practice && <RemedialPractice runId={report.runId} onClose={() => setPractice(false)} />}
       <div className="flex gap-2 flex-wrap">
@@ -55,7 +72,14 @@ export function ReportDetails({ report }: { report: ExamReportRecord }) {
           <Button key={key} size="sm" variant={filter === key ? 'default' : 'outline'} onClick={() => setFilter(key)}>{title}</Button>)}
       </div>
       {visible.length === 0 && <p className="text-muted-foreground">لا توجد أسئلة في هذا التصنيف.</p>}
-      {visible.map((q, index) => <article key={q.id} className="rounded-xl border border-border p-4 space-y-3">
+      {visible.map((q) => <details key={q.id} className="rounded-xl border border-border" data-testid={`report-question-${q.id}`}>
+        <summary className="cursor-pointer list-none p-4 text-sm font-bold flex flex-wrap gap-3">
+          <span>السؤال {report.questions.indexOf(q) + 1}</span>
+          <span>{q.selectedOptionIndex === null ? 'متروك' : q.isCorrect === null ? 'التصحيح غير موثق' : q.isCorrect ? 'صحيح' : 'خطأ'}</span>
+          {q.isSlow && <span className="text-amber-700 dark:text-amber-300">بطيء</span>}
+          <span className="mr-auto text-xs text-primary">عرض التفاصيل</span>
+        </summary>
+        <div className="space-y-3 border-t border-border p-4">
         <div className="flex flex-wrap gap-3 text-sm font-bold">
           <span>السؤال {report.questions.indexOf(q) + 1}</span>
           <span>{minutes(q.seconds)}</span>
@@ -70,7 +94,7 @@ export function ReportDetails({ report }: { report: ExamReportRecord }) {
         {q.baselineSeconds !== null && <p className="text-xs text-muted-foreground">وسيط الوقت المرجعي: {minutes(q.baselineSeconds)} — {q.baselineSource === 'student_history' ? 'من اختباراتك السابقة' : 'من هذا الاختبار'}</p>}
         {q.correctOptionIndex !== null && <p className="text-sm">إجابتك: {q.selectedOptionIndex === null ? 'لم تجب' : q.options[q.selectedOptionIndex]} — الإجابة الصحيحة: {q.options[q.correctOptionIndex]}</p>}
         {q.explanation ? <section className="rounded-lg bg-muted p-3">
-          <h4 className="font-bold text-sm">{q.explanationStatus === 'generated' ? 'شرح آلي محفوظ — يحتاج مراجعة علمية' : 'شرح السؤال'}</h4>
+          <h4 className="font-bold text-sm">{q.explanationStatus === 'generated' ? 'مصدر الشرح: شرح آلي محفوظ، يحتاج مراجعة علمية' : 'مصدر الشرح: شرح السؤال المحفوظ'}</h4>
           <p className="whitespace-pre-wrap text-sm leading-7 mt-2">{q.explanation}</p>
         </section> : q.isCorrect !== null ? <div className="text-sm space-y-2">
           <p className="text-muted-foreground">لم يتوفر شرح محفوظ بعد. تظل المراجعة والتدريب متاحين.</p>
@@ -80,7 +104,8 @@ export function ReportDetails({ report }: { report: ExamReportRecord }) {
           <strong>إرشاد لتقليل الوقت: </strong>{q.speedTip}
           <p className="mt-2">افهم الحل أولًا، ثم أعد السؤال دون النظر إلى الشرح. تحسين السرعة لا يعني التخمين.</p>
         </div>}
-      </article>)}
+        </div>
+      </details>)}
       {explanation.isError && <p role="alert" className="text-destructive text-sm">تعذر تجهيز الشرح. قد يكون حد التوليد أو المصدر غير متاح؛ التقرير لا يتوقف.</p>}
       {explanationNotice && <p role="status" className="text-sm text-amber-700 dark:text-amber-300">{explanationNotice}</p>}
     </CardContent>

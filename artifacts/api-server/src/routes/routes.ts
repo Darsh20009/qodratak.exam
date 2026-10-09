@@ -25,6 +25,7 @@ import { Strategy as GoogleStrategy } from 'passport-google-oauth20';
 import { storage } from "../storage";
 import { registerExamLearningReportRoutes } from './examLearningReportRoutes';
 import { registerRemedialPracticeRoutes } from './remedialPracticeRoutes';
+import { registerPreparationCourseRoutes } from './preparationCourseRoutes';
 import { mongoStorage } from "../mongodb/mongoStorage";
 import path from "path";
 import fs from "fs";
@@ -11824,6 +11825,7 @@ app.post("/api/auth/register", async (req: Request, res: Response) => {
   // ── Redesigned student product ───────────────────────────────────────────
   registerExamLearningReportRoutes(app, [requireAuth, requireRole('student')]);
   registerRemedialPracticeRoutes(app, [requireAuth, requireRole('student')]);
+  registerPreparationCourseRoutes(app, [requireAuth, requireRole('student')]);
   // These endpoints always derive the subject from the authenticated session.
   const studentOnly = (req: Request, res: Response): string | null => {
     const user = (req as any).rbacUser;

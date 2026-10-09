@@ -344,6 +344,8 @@ const QiyasExamPage: React.FC = () => {
 
   const [selectedExam, setSelectedExam] = useState<QiyasExam | null>(null);
   const [currentView, setCurrentView] = useState<"selection" | "instructions" | "section-intro" | "inProgress" | "results">("selection");
+  const [correctionState, setCorrectionState] = useState<'pending' | 'saved' | 'failed'>('pending');
+  const [serverCorrection, setServerCorrection] = useState<{ score: number; totalQuestions: number; percentage: number } | null>(null);
   const [isCheckingExam, setIsCheckingExam] = useState(false);
   const [isLoadingExam, setIsLoadingExam] = useState(false);
   const [showAiReview, setShowAiReview] = useState(false);
@@ -1154,7 +1156,11 @@ const QiyasExamPage: React.FC = () => {
         imageUrl: q.imageUrl || undefined,
       }));
     setWrongQuestionsForAI(wrongs);
-    setShowAiReview(true);
+    // The result must never wait for an AI animation/provider to finish.
+    setShowAiReview(false);
+    setCorrectionState('pending');
+    setServerCorrection(null);
+    setCurrentView("results");
     const timeTakenMinutes = finalStats.timeTaken;
     const detailedExamResults = calculateDetailedResults(allQuestions, answers, timeTakenMinutes);
     setDetailedResults(detailedExamResults);
@@ -1216,7 +1222,7 @@ const QiyasExamPage: React.FC = () => {
         const scoredQuestions = allQuestions.filter(q => !q._isNonScored);
         const skippedQuestions = scoredQuestions.filter(q => answers[q.id] === undefined).length;
         
-        const response = await apiRequest('POST', '/api/test-results', {
+        const savedResponse = await apiRequest('POST', '/api/test-results', {
           testType: 'qiyas',
           difficulty: 'advanced', // اختبارات قياس متقدمة
           score: finalStats.totalCorrect,
@@ -1229,7 +1235,10 @@ const QiyasExamPage: React.FC = () => {
             String(question.questionId ?? question.id),
           ))],
           learningAnswers,
-        }) as any; // Cast to any لتجنب خطأ TypeScript
+        });
+        const response = await savedResponse.json();
+        setServerCorrection({ score: Number(response.correctAnswers ?? response.score), totalQuestions: Number(response.totalQuestions), percentage: Number(response.percentage) });
+        setCorrectionState('saved');
 
         // حفظ النقاط المكتسبة في localStorage للعرض
         if (response?.pointsEarned !== undefined) {
@@ -1252,6 +1261,7 @@ const QiyasExamPage: React.FC = () => {
         // إطلاق حدث تحديث النقاط
         window.dispatchEvent(new Event('pointsUpdated'));
       } catch (error) {
+        setCorrectionState('failed');
         console.error('Failed to save test results:', error);
         toast({
           title: "تعذر تحديث تحليل المهارات",
@@ -1291,16 +1301,16 @@ const QiyasExamPage: React.FC = () => {
       const questionsInSection = allProcessedQuestionsBySection[sectionNum] || [];
 
       questionsInSection.forEach(q => {
-        if (!q._isNonScored) {
+        if (!q._isNonScored && Number.isInteger(q.correctOptionIndex) && q.correctOptionIndex >= 0 && q.correctOptionIndex < q.options.length) {
           totalScoredQuestionsPresented++;
           const userAnswer = answers[q.id];
           const isCorrect = userAnswer === q.correctOptionIndex;
 
           // Simplified category check for mixed questions
-          if ((q.category as string) === "verbal" || (sectionConfig.category === "mixed" && ((q.category as string) === "verbal" || String(q.text).match(/مرادف|معنى|نص|علاقة/i)) ) ) {
+          if ((q.category as string) === "verbal") {
             verbalTotalScored++;
             if (isCorrect) verbalCorrectScored++;
-          } else if ((q.category as string) === "quantitative" || (sectionConfig.category === "mixed" && ((q.category as string) === "quantitative" || String(q.text).match(/حساب|هندسة|جبر|نسبة|رقم/i)) ) ) {
+          } else if ((q.category as string) === "quantitative") {
             quantitativeTotalScored++;
             if (isCorrect) quantitativeCorrectScored++;
           }
@@ -1316,8 +1326,8 @@ const QiyasExamPage: React.FC = () => {
     const quantitativePercentage = quantitativeTotalScored > 0 ? (quantitativeCorrectScored / quantitativeTotalScored) * 100 : 0;
 
     return {
-      totalCorrect: totalCorrectScored,
-      totalScoredQuestions: totalScoredQuestionsPresented,
+      totalCorrect: currentView === 'results' && serverCorrection ? serverCorrection.score : totalCorrectScored,
+      totalScoredQuestions: currentView === 'results' && serverCorrection ? serverCorrection.totalQuestions : totalScoredQuestionsPresented,
       verbalScore: verbalCorrectScored,
       verbalTotal: verbalTotalScored,
       verbalPercentage,
@@ -1325,9 +1335,9 @@ const QiyasExamPage: React.FC = () => {
       quantitativeTotal: quantitativeTotalScored,
       quantitativePercentage,
       timeTaken: actualTimeTakenInMinutes,
-      percentage,
+      percentage: currentView === 'results' && serverCorrection ? serverCorrection.percentage : percentage,
     };
-  }, [selectedExam, examStartTime, answers, allProcessedQuestionsBySection, currentView]); // Depend on currentView to recalculate when results are shown
+  }, [selectedExam, examStartTime, answers, allProcessedQuestionsBySection, currentView, serverCorrection]);
 
 
   const calculateExamStats = () => examStats;
@@ -2821,7 +2831,13 @@ const generateChallengeFile = ({ isTimed, questions: incorrectOrUnansweredQuesti
 
     return (
       <div className="container py-8 max-w-4xl font-arabic animate-fadeIn">
-        <ExamLearningReport />
+        <div className="rounded-xl border p-4 text-sm leading-7" role="status">
+          {correctionState === 'pending' ? 'نحفظ الإجابات ونؤكد التصحيح على الخادم. الأرقام المعروضة مؤقتة حتى اكتمال الحفظ.' :
+            correctionState === 'saved' ? 'تم حفظ النتيجة وتأكيد التصحيح بمفاتيح الحل المعتمدة. ابدأ بمراجعة الأخطاء ثم الأسئلة البطيئة في التقرير.' :
+            'لم يتأكد حفظ النتيجة على الخادم. لا تعتبر هذه الأرقام نتيجة محفوظة؛ احتفظ بالصفحة وأعد الإرسال.'}
+        </div>
+        {correctionState === 'failed' && <Button onClick={() => { finishExamStartedRef.current = false; void finishExam(); }}>إعادة حفظ وتصحيح الإجابات</Button>}
+        {correctionState === 'saved' && <ExamLearningReport />}
         {renderMistakeChallengeDialog()}
         <Card className="mb-8 overflow-hidden shadow-xl dark:bg-slate-800/50">
           <div className={cn("h-3 rounded-t-lg", selectedExam.themeColor || "bg-primary")}></div>
