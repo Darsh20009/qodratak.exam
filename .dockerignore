@@ -16,3 +16,6 @@ flutter_app
 attached_assets/user.json
 attached_assets/device_trials.json
 **/.whatsapp-auth
+**/*.mp4
+**/*.MP4
+**/*.MOV

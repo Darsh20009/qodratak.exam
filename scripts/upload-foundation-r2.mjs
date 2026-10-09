@@ -195,7 +195,7 @@ function responseError(status, body) {
   return new Error(`R2 returned ${status}${detail ? `: ${detail}` : ""}`);
 }
 
-function createR2Client({ accountId, bucket, accessKeyId, secretAccessKey }) {
+export function createR2Client({ accountId, bucket, accessKeyId, secretAccessKey }) {
   const host = `${accountId}.r2.cloudflarestorage.com`;
   const emptyPayloadHash = hash("");
   const requestUrl = (uri, queryString = "") =>
@@ -511,7 +511,9 @@ async function main() {
   );
 }
 
-main().catch((error) => {
-  console.error(error instanceof Error ? error.message : "R2 upload failed.");
-  process.exitCode = 1;
-});
+if (process.argv[1] && import.meta.url === pathToFileURL(path.resolve(process.argv[1])).href) {
+  main().catch((error) => {
+    console.error(error instanceof Error ? error.message : "R2 upload failed.");
+    process.exitCode = 1;
+  });
+}

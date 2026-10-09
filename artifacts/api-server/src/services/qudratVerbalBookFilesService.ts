@@ -396,9 +396,9 @@ function signR2Request({
   };
 }
 
-async function fetchR2VerbalObject(
+export async function fetchR2VerbalObject(
   objectKey: string,
-  options: { method?: "GET" | "HEAD"; range?: string } = {},
+  options: { method?: "GET" | "HEAD"; range?: string; signal?: AbortSignal } = {},
 ): Promise<Response> {
   const { accountId, bucket, accessKeyId, secretAccessKey } = getR2Config();
   const host = `${accountId}.r2.cloudflarestorage.com`;
@@ -426,6 +426,7 @@ async function fetchR2VerbalObject(
     method,
     headers,
     redirect: "error",
+    signal: options.signal,
   });
 }
 

@@ -19,15 +19,16 @@ GitHub does not transfer workspace secrets to Render. Configure them privately i
 - `OPENAI_API_KEY`: needed only for AI features; existing explanations and deterministic reports do not need generation.
 - `GEIDEA_TEST_PUBLIC_KEY` and `GEIDEA_TEST_API_PASSWORD`: sandbox payment credentials, not live-payment credentials.
 - Persistent-media and WhatsApp provider settings required by the existing installation, including `QIROX_PROJECT_API_KEY` and Cloudflare R2 credentials when those providers are used.
-- `FOUNDATION_ASSET_BASE_URL`: the validated public location of the hosted quantitative foundation files if production uses the foundation-media redirect. Set the actual existing public base, not a guessed URL.
+- `CLOUDFLARE_R2_ACCOUNT_ID` and `CLOUDFLARE_R2_BUCKET_NAME`: the existing R2 account and bucket identifiers. These are needed alongside the R2 credential secrets for quantitative and verbal media.
+- `FOUNDATION_ASSET_BASE_URL` is optional: use it only for a verified public CDN base. Without it, production streams quantitative videos from private R2 at their existing `/foundation/quantitative/...mp4` URLs, including HEAD and byte-range requests. No public bucket or signed URL in the frontend is required.
 
 Student data and hosted media are not copied by a Git push. Their availability depends on using the same intended database and persistent-media settings in Render.
 
 ## Media checkout blocker
 
-The current repository contains about 57 GB of materialized Git LFS assets. A Render checkout that downloads all of them can exceed its 32 GB checkout-volume limit before Docker runs. A successful local build does not prove that this checkout will succeed.
+The former checkout contained about 57 GB of materialized Git LFS assets. Large video binaries are now excluded from the current Git tree and Docker context after verifying all 56 quantitative videos against R2 size/hash metadata and checking all 27 verbal video/book files. Local originals and existing Git history are retained. Required PDFs and question images remain in Git.
 
-Do not delete original uploads or rewrite repository history as a workaround. Before changing asset tracking, verify the required files are available from persistent hosting, preserve local originals, and obtain approval for the Git packaging change. Excluding files in `.dockerignore` does not by itself fix an oversized Git checkout.
+Run `node scripts/verify-render-media.mjs` in the original workspace to repeat read-only media verification before future packaging changes. The script requires local originals and the existing R2 environment and performs no uploads. Excluding files in `.dockerignore` alone does not fix an oversized Git checkout. Remaining PDF LFS objects still require GitHub LFS availability; do not select an older heavy-media commit for deployment.
 
 ## Verify the actual release
 

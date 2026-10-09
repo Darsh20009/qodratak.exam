@@ -1,4 +1,5 @@
 import express, { type Express } from "express";
+import { createFoundationAssetsRouter } from "./routes/foundationAssets";
 import cors from "cors";
 import MongoStore from "connect-mongo";
 import session from "express-session";
@@ -157,6 +158,7 @@ if (process.env.NODE_ENV === "production") {
         `window.__FOUNDATION_ASSET_BASE_URL__=${serializedFoundationAssetBaseUrl};`,
       );
   });
+  app.use("/foundation/quantitative", createFoundationAssetsRouter());
   app.use(express.static(frontendDistPath, { index: false }));
   app.use((request, response, next) => {
     if (

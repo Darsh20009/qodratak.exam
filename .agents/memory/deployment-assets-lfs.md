@@ -32,3 +32,15 @@ Git LFS reduces Git pack size but does not reduce checkout disk usage when the b
 **Why:** Render failed while cloning this media-heavy repository because its temporary `/project` volume is limited to 32 GB; the source media alone occupies tens of gigabytes.
 
 **How to apply:** Estimate materialized checkout size, not just `.git` pack size or pointer size. Excluding media from the Docker build context can reduce later build layers, but cannot fix a clone that already exceeds the checkout volume.
+
+Keep large lesson-video binaries out of the current deployment checkout while preserving local originals and existing Git history. Verify the required hosted lesson assets before changing their tracking.
+
+**Why:** The user approved lightweight Render packaging with preserved originals and history, not deletion of the media library or a history rewrite.
+
+**How to apply:** Apply this policy to future lesson-video additions. Keep source archives recoverable, and do not extend the approval to deleting other content or rewriting history.
+
+Do not assume an R2 account has a public CDN base or require making its bucket public solely to slim deployment packaging.
+
+**Why:** Private R2 objects can be served through a server-side stream without changing existing lesson URLs, which also preserves playback and progress contracts.
+
+**How to apply:** Verify HEAD, byte ranges, streaming, and client-disconnect behavior for hosted native videos; never replace working paths with guessed public URLs.

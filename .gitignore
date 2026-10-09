@@ -57,5 +57,11 @@ artifacts/api-server/attached_assets/user.json
 /attached_assets/video-output-*.mp4
 /attached_assets/.video_*.mp4.*
 
+# Deployment uses verified R2 lesson media; retain local originals, not Git copies.
+/attached_assets/*.mp4
+/attached_assets/*.MP4
+/attached_assets/*.MOV
+/artifacts/qodratak/public/**/*.mp4
+
 # Local WhatsApp device sessions (credentials and encryption keys)
 /.whatsapp-auth/
