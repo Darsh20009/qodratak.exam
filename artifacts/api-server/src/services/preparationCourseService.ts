@@ -1,5 +1,6 @@
 import crypto from 'node:crypto';
-import { questionIdea, observedIdeas, normalizeArabic } from './questionIdeas';
+import { questionIdea, observedIdeas } from './questionIdeas';
+import { courseLessonUnits, questionMatchesLesson } from './courseLessonUnits';
 
 const DAY = 86400000;
 export const riyadhDay = (now = new Date()) => new Date(now.getTime() + 3 * 3600000).toISOString().slice(0, 10);
@@ -14,11 +15,26 @@ export function validateCourseInput(input: any, now = new Date()) {
   }
   return null;
 }
-export function classifyCourseLevel(profile: any, reports: any[]) {
+export function recentCourseReports(reports: any[], now = new Date()) {
+  return reports.filter(r => {
+    const time = new Date(r.createdAt).getTime();
+    return Number.isFinite(time) && time <= now.getTime() && now.getTime() - time <= 30 * DAY;
+  });
+}
+export function classifyCourseLevel(profile: any, reports: any[], now = new Date()) {
   if (profile?.status !== 'diagnostic_completed') return {
     level: 'unassessed', reason: 'لم تكتمل نقطة البداية بعد؛ سنبدأ بتقييم قصير، ولا نفترض مستواك.',
   };
-  const verified = reports.flatMap((r) => r.questions || []).filter((q) => typeof q.isCorrect === 'boolean' &&
+  const recent = recentCourseReports(reports, now);
+  const dates = [profile.lastDiagnosticAt, profile.baseline?.completedAt,
+    ...recent.filter(r => r.questions?.some((q: any) => typeof q.isCorrect === 'boolean' &&
+      ['verbal', 'quantitative'].includes(q.category))).map(r => r.createdAt)]
+    .map(d => d ? new Date(d).getTime() : NaN).filter(d => Number.isFinite(d) && d <= now.getTime());
+  if (!dates.length || now.getTime() - Math.max(...dates) > 30 * DAY) return {
+    level: 'unassessed', reason: 'نتيجتك السابقة قديمة أو بلا تاريخ موثوق. نبدأ بتقييم عودة قصير لمعرفة ما يحتاج مراجعة، دون حذف تقدمك السابق.',
+    assessmentRequiredAfter: now.toISOString(),
+  };
+  const verified = recent.flatMap((r) => r.questions || []).filter((q) => typeof q.isCorrect === 'boolean' &&
     ['verbal', 'quantitative'].includes(q.category)).slice(0, 100);
   const baseline = Number(profile.baseline?.overall || 0);
   const accuracy = verified.length ? verified.filter((q) => q.isCorrect).length / verified.length * 100 : baseline;
@@ -37,8 +53,8 @@ export function buildPreparationCourse(input: any, profile: any, reports: any[],
   const start = riyadhDay(now);
   const daysUntil = Math.round((Date.parse(input.examDate) - Date.parse(start)) / DAY);
   const duration = Math.max(1, Math.min(input.durationDays, daysUntil || 1));
-  const { level, reason: levelReason } = classifyCourseLevel(profile, reports);
-  const ideas = observedIdeas(reports);
+  const { level, reason: levelReason, assessmentRequiredAfter } = classifyCourseLevel(profile, reports, now);
+  const ideas = observedIdeas(recentCourseReports(reports, now));
   const focusIdea = ideas.find((i) => i.wrong > 0 || i.slow > 0);
   const focusCategory = focusIdea?.category || profile?.focus?.category || 'quantitative';
   const focus = focusIdea?.label || profile?.focus?.label || 'الأساسيات الكمية واللفظية';
@@ -47,12 +63,18 @@ export function buildPreparationCourse(input: any, profile: any, reports: any[],
     q.answerStatus === 'approved' && Array.isArray(q.options) && q.options.length >= 2 &&
     Number.isInteger(q.correctOptionIndex) && q.correctOptionIndex >= 0 && q.correctOptionIndex < q.options.length);
   const weights = new Map(ideas.map((i) => [i.key, i.wrong * 2 + i.slow]));
-  validBank.sort((a, b) => (weights.get(questionIdea(b).key) || 0) - (weights.get(questionIdea(a).key) || 0) ||
+  const ideaKeys = new Map(validBank.map(q => [q, questionIdea(q).key]));
+  validBank.sort((a, b) => (weights.get(ideaKeys.get(b)!) || 0) - (weights.get(ideaKeys.get(a)!) || 0) ||
     (level === 'foundation' || level === 'unassessed'
       ? Number(a.difficulty !== 'beginner') - Number(b.difficulty !== 'beginner')
       : Number(b.difficulty === 'advanced') - Number(a.difficulty === 'advanced')) ||
     String(a._id).localeCompare(String(b._id)));
   const used = new Set<string>();
+  const units = courseLessonUnits(lessons);
+  const usedUnits = new Set<string>();
+  const matches = new Map(units.map(u => [u, validBank.filter(q => questionMatchesLesson(q, u))]));
+  const unitWeights = new Map(units.map(u => [u, (matches.get(u) || [])
+    .reduce((max, q) => Math.max(max, weights.get(ideaKeys.get(q)!) || 0), 0)]));
   let plannedQuestions = 0;
   const days = Array.from({ length: duration }, (_, index) => {
     const category = index % 3 === 2 ? (focusCategory === 'verbal' ? 'quantitative' : 'verbal') : focusCategory;
@@ -66,29 +88,43 @@ export function buildPreparationCourse(input: any, profile: any, reports: any[],
       id: `${courseId}:${index + 1}:${kind}`, kind, status: 'pending', completionSource: 'pending', category,
       ...data,
     });
-    if (!index && level === 'unassessed') tasks.push(task('diagnostic', {
-      title: 'تحديد نقطة البداية في القدرات', reason: 'التقييم يسبق اختيار مستوى الصعوبة. بعده حدّث الدورة من نتيجتك.',
-      href: '/foundation?program=qudrat', minutes: Math.min(25, input.dailyMinutes), questionCount: 0,
-    }));
-    const categoryLessons = lessons.filter((l) => String(l.subjectId || '').endsWith(category) ||
-      normalizeArabic(l.title).includes(category === 'verbal' ? 'لفظي' : 'كمي'));
-    const lesson = categoryLessons[index % Math.max(1, categoryLessons.length)];
-    const lessonMinutes = Math.max(10, Math.floor(input.dailyMinutes * (level === 'foundation' || level === 'unassessed' ? .45 : .25)));
-    if (!(level === 'unassessed' && !index)) tasks.push(task('lesson', {
-      title: lesson ? `شرح: ${lesson.title}` : `مراجعة أساسيات ${categoryLabel}`,
-      reason: `راجع الشرح والمثال المحلول قبل التطبيق. التركيز الحالي: ${focus}.`,
-      href: lesson ? `/foundation/content/${lesson._id}` : `/foundation?program=qudrat&subject=${category}`,
-      minutes: daysUntil === 0 ? 10 : lessonMinutes, questionCount: 0,
-    }));
+    if (level === 'unassessed') {
+      if (!index) tasks.push(task('diagnostic', {
+        title: assessmentRequiredAfter ? 'تقييم العودة بعد الانقطاع' : 'تحديد نقطة البداية في القدرات',
+        reason: levelReason, href: '/foundation?program=qudrat&reassess=1',
+        minutes: Math.min(25, input.dailyMinutes), questionCount: 0,
+      }));
+      return { day: index + 1, date, title: index ? 'تُحدّد المهام بعد التقييم' : 'تقييم ثم خطة من مستواك الحالي', tasks };
+    }
+    const lessonBudget = Math.max(10, Math.floor(input.dailyMinutes * (level === 'foundation' ? .45 : .25)));
+    const unitKey = (u: any) => `${u.contentId}:${u.sectionIds.join(',')}`;
+    const suitable = units.filter(u => u.category === category && u.minutes <= lessonBudget &&
+      matches.get(u)?.some(q => !used.has(String(q._id))))
+      .sort((a, b) => Number(usedUnits.has(unitKey(a))) - Number(usedUnits.has(unitKey(b))) ||
+        (unitWeights.get(b) || 0) - (unitWeights.get(a) || 0));
+    const lesson = suitable[0];
+    if (lesson) {
+      usedUnits.add(unitKey(lesson));
+      const params = new URLSearchParams({ task: `${courseId}:${index + 1}:lesson`, minutes: String(lesson.minutes), topic: lesson.title });
+      if (lesson.sectionIds.length) params.set('sections', lesson.sectionIds.join(','));
+      tasks.push(task('lesson', {
+        title: `شرح جزئي: ${lesson.title}`,
+        reason: 'اقرأ الفكرة والمثال والتنبيه المحددة فقط، ثم طبّق أسئلة من نفس التصنيف. الوقت تقديري، ولا يُطلب إنهاء الكتاب كله.',
+        href: `/foundation/content/${lesson.contentId}?${params}`,
+        minutes: lesson.minutes, questionCount: 0,
+      }));
+    }
     const availableMinutes = input.dailyMinutes - tasks.reduce((sum, t) => sum + t.minutes, 0);
     const practiceMinutes = Math.max(0, availableMinutes - Math.min(10, Math.floor(availableMinutes / 3)));
     const size = daysUntil === 0 ? Math.min(5, Math.floor(practiceMinutes / 2)) : Math.min(40, Math.floor(practiceMinutes / 2));
     const simulation = level !== 'unassessed' && level !== 'foundation' && index > 0 && !last && (index + 1) % 5 === 0;
-    const candidates = validBank.filter((q) => (simulation || q.category === category) && !used.has(String(q._id)));
+    const candidates = validBank.filter((q) => (simulation || q.category === category) && !used.has(String(q._id)) &&
+      (simulation || !lesson || questionMatchesLesson(q, lesson)));
+    if (level === 'foundation') candidates.sort((a, b) => Number(a.difficulty !== 'beginner') - Number(b.difficulty !== 'beginner'));
     // Select across observed question ideas, not just the first database IDs.
     const chosen: any[] = [];
     const represented = new Set<string>();
-    for (const q of candidates) {
+    for (const q of candidates.filter(q => level !== 'foundation' || q.difficulty === candidates[0]?.difficulty)) {
       const idea = questionIdea(q).key;
       if (represented.has(idea)) continue;
       chosen.push(q); represented.add(idea);
@@ -104,14 +140,14 @@ export function buildPreparationCourse(input: any, profile: any, reports: any[],
       const kind = simulation ? 'simulation' : 'practice';
       tasks.push(task(kind, {
         title: simulation ? 'محاكاة زمنية مختصرة للكمي واللفظي' : `تطبيق ${categoryLabel}: ${chosen.length} أسئلة معتمدة`,
-        reason: `${focusIdea ? 'أولوية للأفكار المرصودة في أخطائك وبطئك، مع تنويع الأفكار.' : 'تغطية متنوعة للأفكار المتاحة بمفاتيح حل معتمدة.'} لا نعتمد على الذكاء الاصطناعي في التصحيح.`,
+        reason: `${lesson && !simulation ? `أسئلة مرتبطة بدرس ${lesson.title}.` : 'تدريب من التصنيفات المتاحة؛ لا يوجد درس جزئي مطابق ضمن وقت اليوم.'} ${focusIdea ? 'الأولوية للأخطاء والبطء المرصودين حديثًا.' : ''} الصعوبة بحسب الوسوم المتاحة وليست معايرة علمية. التصحيح من مفاتيح معتمدة.`,
         href: `/preparation-course/practice/${courseId}:${index + 1}:${kind}`,
-        minutes: practiceMinutes, questionCount: chosen.length, questionIds: chosen.map((q) => String(q._id)),
+        minutes: Math.max(5, chosen.length * 2), questionCount: chosen.length, questionIds: chosen.map((q) => String(q._id)),
         category: simulation ? 'mixed' : category,
       }));
       tasks.push(task('review', {
-        title: 'راجع الأخطاء والأسئلة البطيئة', reason: 'افتح نتيجة تدريب هذا اليوم، افهم السبب ثم أعد حل ما أخطأت فيه.',
-        href: '/records', minutes: availableMinutes - practiceMinutes, questionCount: 0,
+      title: 'راجع الأخطاء والأسئلة البطيئة', reason: 'افتح نتيجة تدريب هذا اليوم، افهم السبب ثم أعد حل ما أخطأت فيه.',
+        href: '/records', minutes: Math.min(10, Math.max(0, availableMinutes - Math.max(5, chosen.length * 2))), questionCount: 0,
         practiceTaskId: `${courseId}:${index + 1}:${kind}`,
       }));
     }
@@ -119,7 +155,7 @@ export function buildPreparationCourse(input: any, profile: any, reports: any[],
   });
   return {
     id: courseId, examDate: input.examDate, durationDays: duration, requestedDurationDays: input.durationDays,
-    dailyMinutes: input.dailyMinutes, level, levelReason, focus,
+    dailyMinutes: input.dailyMinutes, level, levelReason, focus, assessmentRequiredAfter,
     availableQuestions: validBank.length, plannedQuestions, days,
     coverageNote: `خطة ${duration} أيام حسب وقتك وتغطي ${plannedQuestions} أسئلة مختلفة من ${validBank.length} سؤالًا صالحًا للتصحيح. ${daysUntil < input.durationDays ? 'اختُصرت الخطة لقرب الاختبار. ' : ''}${!validBank.length ? 'لا توجد أسئلة معتمدة متاحة حاليًا؛ الشرح متاح ولن نختلق تدريبًا. ' : ''}الأولوية لفهم الأساسيات والأفكار المتكررة، وليست إنهاء كل أسئلة المنصة أو ضمان الدرجة الكاملة.`,
   };

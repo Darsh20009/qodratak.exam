@@ -15,6 +15,8 @@ export interface StudentCourse {
   dailyMinutes: number;
   level: StudentCourseLevel;
   levelReason: string;
+  /** A fresh diagnostic must be submitted after this ISO timestamp before regenerating a returning student's course. */
+  assessmentRequiredAfter?: string;
   focus: string;
   coverageNote: string;
   availableQuestions: number;

@@ -861,6 +861,7 @@ components:
         dailyMinutes: { type: number }
         level: { type: string, enum: [unassessed, foundation, practice, advanced] }
         levelReason: { type: string }
+        assessmentRequiredAfter: { type: string, description: "A fresh diagnostic must be submitted after this ISO timestamp before regenerating a returning student's course." }
         focus: { type: string }
         coverageNote: { type: string }
         availableQuestions: { type: number }

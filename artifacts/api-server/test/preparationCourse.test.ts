@@ -1,12 +1,13 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { buildPreparationCourse, publicCourse, riyadhDay, validateCourseInput } from '../src/services/preparationCourseService';
+import { buildPreparationCourse, classifyCourseLevel, publicCourse, riyadhDay, validateCourseInput } from '../src/services/preparationCourseService';
+import { courseLessonUnits, questionMatchesLesson } from '../src/services/courseLessonUnits';
 import { isReadingQuestion, observedIdeas, questionIdea } from '../src/services/questionIdeas';
 import { requestsTahsili, sanitizeStudentPassages } from '../src/middleware/studentContentAvailability';
 import { CreateStudentCourseBody } from '@workspace/api-zod';
 
 const now = new Date('2026-10-10T05:00:00Z');
-const profile = { status: 'diagnostic_completed', baseline: { overall: 40 }, focus: { category: 'quantitative' } };
+const profile = { status: 'diagnostic_completed', lastDiagnosticAt: now, baseline: { overall: 40 }, focus: { category: 'quantitative' } };
 const bank = Array.from({ length: 120 }, (_, i) => ({
   _id: String(i), category: i % 2 ? 'verbal' : 'quantitative', text: `سؤال ${i}`,
   subcategory: i % 2 ? 'إكمال الجمل' : 'النسبة', difficulty: 'beginner', answerStatus: 'approved',
@@ -73,4 +74,42 @@ test('Tahsili endpoints and scoped practice lock but historic records/admin stay
   assert.equal(requestsTahsili('/api/student/exam-reports', { program: 'tahsili' }), false);
   assert.equal(requestsTahsili('/api/admin/foundation', {}, { program: 'tahsili' }), false);
   assert.equal(requestsTahsili('/api/questions', { program: 'qudrat' }), false);
+});
+test('returning learner needs a new assessment; old evidence never drives current focus', () => {
+  const old = new Date(now.getTime() - 90 * 86400000);
+  const stale = { ...profile, lastDiagnosticAt: old, baseline: { overall: 90 } };
+  const reports = [{ createdAt: old, questions: [{ id: 'old', category: 'verbal', subcategory: 'إكمال الجمل', isCorrect: false }] }];
+  assert.equal(classifyCourseLevel(stale, reports, now).level, 'unassessed');
+  const c = buildPreparationCourse({ examDate: '2026-10-25', durationDays: 15, dailyMinutes: 60 }, stale, reports, bank, [], now);
+  assert.equal(c.assessmentRequiredAfter, now.toISOString());
+  assert.equal(c.days[0].tasks[0].kind, 'diagnostic');
+  assert.equal(c.plannedQuestions, 0);
+  assert.ok(c.days.slice(1).every(d => d.tasks.length === 0));
+  assert.notEqual(c.focus, 'إكمال الجمل');
+  assert.equal(stale.lastDiagnosticAt, old, 'historic profile must not be reset');
+  assert.notEqual(classifyCourseLevel({ ...stale, lastDiagnosticAt: now }, [], now).level, 'unassessed');
+  assert.equal(classifyCourseLevel(stale, [{ createdAt: now, questions: [{ category: 'physics', isCorrect: true }] }], now).level, 'unassessed');
+});
+test('published books become specific units; practice matches and time is not whole-book duration', () => {
+  const lessons = [{ _id: 'book', subjectId: 'subject.qudrat.quantitative', title: 'كتاب كمي', durationMinutes: 180,
+    sections: [
+      { id: 'intro', type: 'INTRO', title: 'المقدمة', body: 'تعريف' },
+      { id: 'ratio-concept', type: 'CONCEPT', title: 'النسبة — الفكرة', body: 'شرح النسبة' },
+      { id: 'ratio-example', type: 'EXAMPLE', title: 'مثال', problem: 'سؤال', solution: 'حل' },
+      { id: 'ratio-warning', type: 'WARNING', title: 'انتبه', body: 'لا تخلط' },
+      { id: 'geometry', type: 'CONCEPT', title: 'الهندسة — الفكرة', body: 'هندسة' },
+    ] }];
+  const units = courseLessonUnits(lessons);
+  assert.deepEqual(units[0].sectionIds, ['ratio-concept', 'ratio-example', 'ratio-warning']);
+  assert.ok(units[0].minutes < 15);
+  assert.equal(questionMatchesLesson(bank[0], units[0]), true);
+  assert.equal(questionMatchesLesson(bank[1], units[0]), false);
+  const c = buildPreparationCourse({ examDate: '2026-10-15', durationDays: 5, dailyMinutes: 60 }, profile, [], bank, lessons, now);
+  const lecture = c.days[0].tasks.find((t: any) => t.kind === 'lesson');
+  const practice = c.days[0].tasks.find((t: any) => t.kind === 'practice');
+  assert.ok(lecture.href.includes('sections=ratio-concept'));
+  assert.equal(lecture.minutes, units[0].minutes);
+  assert.equal(practice.minutes, Math.max(5, practice.questionIds.length * 2));
+  assert.ok(practice.questionIds.every((id: string) => questionMatchesLesson(bank.find(q => q._id === id), units[0])));
+  assert.equal(courseLessonUnits([{ ...lessons[0], sections: [], videoUrl: 'video', durationMinutes: undefined }]).length, 0);
 });

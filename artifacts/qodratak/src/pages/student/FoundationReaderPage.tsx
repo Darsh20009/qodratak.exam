@@ -53,6 +53,8 @@ import {
 import { getCurrentTextSelection } from "@/lib/foundationAnnotations";
 import { getVideoEmbedUrl } from "@/lib/video";
 import { isDirectFoundationVideo, resolveFoundationAssetUrl, resolveFoundationVideoUrl } from "@/lib/foundationVideoUrl";
+import { useCompleteStudentCourseTask, getGetStudentCourseQueryKey } from "@workspace/api-client-react";
+import { queryClient } from "@/lib/queryClient";
 
 type ContentStatus = "draft" | "published" | "archived" | string;
 type ProgressState = "NOT_STARTED" | "READING" | "COMPLETED" | "PRACTICE_COMPLETED";
@@ -602,6 +604,15 @@ export default function FoundationReaderPage() {
   const [, setLocation] = useLocation();
   const contentId = params.contentId || "";
   const searchParams = useMemo(() => new URLSearchParams(search), [search]);
+  const courseTaskId = searchParams.get("task") || "";
+  const requestedSections = useMemo(() => (searchParams.get("sections") || "").split(",").filter(Boolean), [searchParams]);
+  const focused = requestedSections.length > 0;
+  const fromCourse = Boolean(courseTaskId);
+  const courseFinish = useCompleteStudentCourseTask({ mutation: { onSuccess: () => {
+    void queryClient.invalidateQueries({ queryKey: getGetStudentCourseQueryKey() });
+    void queryClient.invalidateQueries({ queryKey: ["/api/student/dashboard"] });
+    setLocation("/preparation-course");
+  } } });
   const fromToday = searchParams.get("from") === "today";
   const todaySessionId = searchParams.get("sessionId") || "";
   const todayStepId = searchParams.get("stepId") || "";
@@ -639,8 +650,9 @@ export default function FoundationReaderPage() {
   const cancelledPendingIds = useRef(new Set<string>());
 
   const savedProgress = progressQuery.data as unknown as LearningProgress | undefined;
-  const sections = useMemo(() => content?.sections || [], [content?.sections]);
-  const currentId = currentSectionId || savedProgress?.currentSectionId || sections[0]?.id;
+  const allSections = useMemo(() => content?.sections || [], [content?.sections]);
+  const sections = useMemo(() => focused ? allSections.filter(s => requestedSections.includes(s.id)) : allSections, [allSections, focused, requestedSections]);
+  const currentId = [currentSectionId, savedProgress?.currentSectionId].find(id => sections.some(s => s.id === id)) || sections[0]?.id;
   const currentIndex = Math.max(0, sections.findIndex((section) => section.id === currentId));
   const savedPercent = normalizeProgress(savedProgress?.progress);
   const progressPercent = localProgress ?? savedPercent;
@@ -702,6 +714,9 @@ export default function FoundationReaderPage() {
   }, [annotationQuery.isError]);
 
   if (!contentId) return <ReaderUnavailable message="رابط المحتوى غير مكتمل." />;
+  if (content && focused && requestedSections.some(id => !allSections.some(s => s.id === id))) {
+    return <ReaderUnavailable message="تغيرت أقسام هذا الدرس. ارجع للدورة وحدّث الخطة لاختيار جزء متاح." />;
+  }
   if (contentQuery.isLoading || progressQuery.isLoading) return <ReaderSkeleton />;
   if (contentQuery.isError || progressQuery.isError) {
     return (
@@ -871,10 +886,11 @@ export default function FoundationReaderPage() {
   const selectSection = (sectionId: string) => {
     const nextIndex = sections.findIndex((section) => section.id === sectionId);
     if (nextIndex < 0) return;
-    const nextProgress = sections.length > 1 ? Math.round((nextIndex / (sections.length - 1)) * 100) : 100;
+    const fullIndex = allSections.findIndex(section => section.id === sectionId);
+    const nextProgress = allSections.length > 1 ? Math.round((fullIndex / (allSections.length - 1)) * 100) : 100;
     setCurrentSectionId(sectionId);
     setLocalProgress(Math.max(progressPercent, nextProgress));
-    update({ currentSectionId: sectionId, progress: Math.max(progressPercent, nextProgress), state: "READING" });
+    if (!focused && !fromCourse) update({ currentSectionId: sectionId, progress: Math.max(progressPercent, nextProgress), state: "READING" });
     window.requestAnimationFrame(() => sectionRefs.current[sectionId]?.scrollIntoView({ behavior: "smooth", block: "start" }));
   };
 
@@ -887,6 +903,11 @@ export default function FoundationReaderPage() {
   };
 
   const markComplete = () => {
+    if (fromCourse) {
+      if (!courseFinish.isPending) courseFinish.mutate({ taskId: courseTaskId });
+      return;
+    }
+    if (focused) { setLocation("/foundation"); return; }
     if (completeContent.isPending || isContentCompleted) return;
       complete(undefined, {
         onSuccess: () => {
@@ -1045,11 +1066,15 @@ export default function FoundationReaderPage() {
             {content.estimatedMinutes ? (
               <span className="inline-flex items-center gap-1.5">
                 <Clock3 className="h-3.5 w-3.5" aria-hidden="true" />
-                {content.estimatedMinutes} دقيقة
+                {focused ? `وقت الجزء تقديري: ${Math.max(5, Math.min(240, Number(searchParams.get("minutes")) || 10))}` : content.estimatedMinutes} دقيقة
               </span>
             ) : null}
           </div>
-          <h1 className="mt-4 text-[clamp(2rem,6vw,4.2rem)] font-black leading-[1.2] tracking-tight text-[hsl(var(--reader-ink))]">{content.title}</h1>
+          <h1 className="mt-4 text-[clamp(2rem,6vw,4.2rem)] font-black leading-[1.2] tracking-tight text-[hsl(var(--reader-ink))]">{focused ? sections[0]?.title : content.title}</h1>
+          {focused && <section className="mt-4 rounded-xl border border-[hsl(var(--reader-line))] p-4 text-sm leading-7" data-testid="course-focused-lesson">
+            هذه مهمة جزئية من «{content.title}»: اقرأ الأقسام المحددة أدناه فقط، ثم ارجع للدورة لتطبيق أسئلة مرتبطة بها. لا يُطلب إنهاء الكتاب كاملًا، وتأكيد القراءة لا يعني الإتقان.
+            <Link href={`/foundation/content/${contentId}`} className="mr-2 underline">فتح الكتاب كاملًا</Link>
+          </section>}
           {content.description ? <p className="mt-5 max-w-2xl whitespace-pre-line text-base leading-8 text-[hsl(var(--reader-muted))] sm:text-lg">{content.description}</p> : null}
 
           <div className="mt-7 flex flex-wrap items-center gap-3">
@@ -1109,7 +1134,7 @@ export default function FoundationReaderPage() {
                 <TextBlock className="mt-4">{content.description}</TextBlock>
               </section>
             ) : null}
-            <VideoPanel content={content} />
+            {!focused && <VideoPanel content={content} />}
             {sections.map((section, index) => (
               <SectionCard
                 key={section.id}
@@ -1130,7 +1155,7 @@ export default function FoundationReaderPage() {
                 onSelect={() => selectSection(section.id)}
               />
             ))}
-            {content.hasPractice ? <PracticePanel contentId={contentId} open={practiceOpen} onClose={() => setPracticeOpen(false)} /> : null}
+            {content.hasPractice && !focused ? <PracticePanel contentId={contentId} open={practiceOpen} onClose={() => setPracticeOpen(false)} /> : null}
 
             <section aria-labelledby="completion-heading" className="rounded-[1.5rem] border border-[hsl(var(--reader-line))] bg-[hsl(var(--reader-surface))] p-5 sm:p-7">
               <div className="flex flex-col gap-5 sm:flex-row sm:items-center sm:justify-between">
@@ -1139,18 +1164,19 @@ export default function FoundationReaderPage() {
                     {isContentCompleted ? <CheckCircle2 className="h-5 w-5" aria-hidden="true" /> : <LockKeyhole className="h-5 w-5" aria-hidden="true" />}
                   </span>
                   <div>
-                    <h2 id="completion-heading" className="font-black text-[hsl(var(--reader-ink))]">{isContentCompleted ? "اكتمل المحتوى" : "أنهيت قراءة المحتوى؟"}</h2>
+                    <h2 id="completion-heading" className="font-black text-[hsl(var(--reader-ink))]">{fromCourse || focused ? "أنهيت الجزء المحدد؟" : isContentCompleted ? "اكتمل المحتوى" : "أنهيت قراءة المحتوى؟"}</h2>
                     <p className="mt-1 text-sm leading-7 text-[hsl(var(--reader-muted))]">
-                      {isPracticeCompleted ? "أكملت القراءة والتدريب لهذا المحتوى." : content.hasPractice ? "إتمام القراءة مستقل عن إتمام التدريب؛ أكمل كل خطوة في وقتها." : "سجّل إتمام القراءة عندما تصل إلى الفكرة الأخيرة."}
+                      {fromCourse || focused ? "هذا تأكيد قراءة الجزء فقط؛ لا يسجّل إكمال الكتاب أو إتقان المهارة. التصحيح يكون في التدريب التالي." : isPracticeCompleted ? "أكملت القراءة والتدريب لهذا المحتوى." : content.hasPractice ? "إتمام القراءة مستقل عن إتمام التدريب؛ أكمل كل خطوة في وقتها." : "سجّل إتمام القراءة عندما تصل إلى الفكرة الأخيرة."}
                     </p>
                   </div>
                 </div>
-                <Button type="button" onClick={markComplete} disabled={isContentCompleted || completeContent.isPending} className="min-h-11 shrink-0 rounded-xl bg-[hsl(var(--reader-ink))] px-5 hover:bg-[hsl(var(--reader-ink)/0.9)]">
+                <Button type="button" onClick={markComplete} disabled={fromCourse ? courseFinish.isPending : !focused && (isContentCompleted || completeContent.isPending)} className="min-h-11 shrink-0 rounded-xl bg-[hsl(var(--reader-ink))] px-5 hover:bg-[hsl(var(--reader-ink)/0.9)]">
                   {completeContent.isPending ? <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" /> : isContentCompleted ? <Check className="h-4 w-4" aria-hidden="true" /> : null}
-                  {isContentCompleted ? "تم تسجيل الإتمام" : "تسجيل إتمام القراءة"}
+                  {fromCourse ? "أنهيت الجزء — العودة للدورة" : focused ? "العودة للتأسيس" : isContentCompleted ? "تم تسجيل الإتمام" : "تسجيل إتمام القراءة"}
                 </Button>
               </div>
               {completeContent.isError ? <p className="mt-4 text-sm font-bold text-destructive">{(completeContent.error as Error).message}</p> : null}
+              {courseFinish.isError && <p role="alert" className="mt-4 text-sm font-bold text-destructive">تعذر تسجيل إنجاز الجزء. يمكنك المحاولة مرة أخرى أو الرجوع للدورة.</p>}
             </section>
           </div>
 

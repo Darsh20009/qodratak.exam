@@ -9,6 +9,12 @@ Keep one clear student preparation path personalized to observed level, exam dat
 
 **How to apply:** Make the next task primary and supplementary tools optional. Explain weak/slow observations with evidence, keep reviewed source keys authoritative, and never promise completing the entire bank or a perfect official score when time/evidence does not support it.
 
+Course reading tasks must identify the specific teaching unit, not allocate a short slot to an entire book. Confirming a unit's reading must not complete the whole book or assert mastery.
+
+**Why:** The persona audit exposed 15–22 minute assignments pointing to 150–180 minute books without a section target. Students could not tell what they were expected to finish.
+
+**How to apply:** Keep unit reading self-reported and separate from trusted practice results and whole-content completion. Source difficulty labels and text-based lesson matches are instructional hints, not calibrated difficulty or approved concept mastery.
+
 Tahsili is not ready for student use. Keep its student-facing lessons, tests and plans closed and labeled «قريبًا» until the user explicitly asks to reopen it after readiness work.
 
 **Why:** The user said «المنصة التحصيلي لا يعمل بالكامل» and requested closing anything related to it.

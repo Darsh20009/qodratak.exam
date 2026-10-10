@@ -53,7 +53,7 @@ export default function PreparationCoursePage() {
   const pendingKey = pendingKeyFor(userId);
   const courseQuery = useGetStudentCourse({ query: { queryKey: getGetStudentCourseQueryKey(), staleTime: 30000, enabled: isStudent && !expired, refetchOnWindowFocus: true } });
   const isUnassessed = courseQuery.data?.course?.level === "unassessed";
-  const foundation = useGetFoundationLearningState({ program: "qudrat" }, { query: { queryKey: getGetFoundationLearningStateQueryKey({ program: "qudrat" }), enabled: isStudent && !expired && isUnassessed, refetchOnWindowFocus: true, staleTime: 0 } });
+  const foundation = useGetFoundationLearningState({ program: "qudrat" }, { query: { queryKey: getGetFoundationLearningStateQueryKey({ program: "qudrat" }), enabled: isStudent && !expired && (isUnassessed || Boolean(sessionStorage.getItem(pendingKey))), refetchOnWindowFocus: true, staleTime: 0 } });
   const [examDate, setExamDate] = useState("");
   const [duration, setDuration] = useState<Duration>(10);
   const [minutes, setMinutes] = useState(60);
@@ -85,18 +85,24 @@ export default function PreparationCoursePage() {
   const regenAttempted = useRef(false);
   const createMutate = useRef(create.mutate);
   createMutate.current = create.mutate;
-  const diagnosticDone = foundation.data?.status === "diagnostic_completed";
+  const diagnosticDone = foundation.data?.status === "diagnostic_completed" &&
+    (!course?.assessmentRequiredAfter ||
+      new Date(foundation.data.lastDiagnosticAt || '').getTime() > new Date(course.assessmentRequiredAfter).getTime());
   useEffect(() => {
-    if (regenAttempted.current || !isUnassessed || !diagnosticDone || !userId) return;
+    if (regenAttempted.current || !diagnosticDone || !userId) return;
     const raw = sessionStorage.getItem(pendingKey);
     if (!raw) return;
     let input;
     try { input = JSON.parse(raw); } catch { sessionStorage.removeItem(pendingKey); return; }
+    const requiredAfter = input.assessmentAfter || course?.assessmentRequiredAfter;
+    if (requiredAfter && new Date(foundation.data?.lastDiagnosticAt || '').getTime() <= new Date(requiredAfter).getTime()) return;
+    if (requiredAfter && !Number.isFinite(new Date(foundation.data?.lastDiagnosticAt || '').getTime())) return;
+    if (!isUnassessed && !input.assessmentAfter) return;
     regenAttempted.current = true;
     createMutate.current({ data: input }, {
       onError: (e) => { setRegenFailed(true); setActionError(errMessage(e, "تعذر تحديث الخطة بعد التقييم.")); },
     });
-  }, [isUnassessed, diagnosticDone, userId, pendingKey]);
+  }, [isUnassessed, diagnosticDone, userId, pendingKey, course?.assessmentRequiredAfter, foundation.data?.lastDiagnosticAt]);
 
   const retryRegen = () => { regenAttempted.current = false; setRegenFailed(false); setActionError(""); void foundation.refetch(); };
 
@@ -125,8 +131,8 @@ export default function PreparationCoursePage() {
   };
 
   const goDiagnostic = () => {
-    if (course) sessionStorage.setItem(pendingKey, JSON.stringify({ examDate: course.examDate.slice(0, 10), durationDays: [5, 10, 15, 30].includes(course.durationDays) ? course.durationDays : 5, dailyMinutes: course.dailyMinutes }));
-    navigate("/foundation");
+    if (course) sessionStorage.setItem(pendingKey, JSON.stringify({ examDate: course.examDate.slice(0, 10), durationDays: [5, 10, 15, 30].includes(course.durationDays) ? course.durationDays : 5, dailyMinutes: course.dailyMinutes, assessmentAfter: course.assessmentRequiredAfter }));
+    navigate("/foundation?program=qudrat&reassess=1");
   };
 
   const markDone = (task: StudentCourseTask) => {

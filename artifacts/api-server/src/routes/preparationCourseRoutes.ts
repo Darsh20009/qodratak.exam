@@ -4,15 +4,37 @@ import { CreateStudentCourseBody, StartStudentCoursePracticeBody } from '@worksp
 import { FoundationContent, Question, StudentLearningProfile, User } from '../mongodb/models';
 import { ExamLearningReport } from '../mongodb/examReportModels';
 import { PreparationCourse } from '../mongodb/preparationCourseModels';
-import { buildPreparationCourse, publicCourse, riyadhDay, validateCourseInput } from '../services/preparationCourseService';
+import { buildPreparationCourse, classifyCourseLevel, publicCourse, recentCourseReports, riyadhDay, validateCourseInput } from '../services/preparationCourseService';
 import { observedIdeas, isReadingQuestion } from '../services/questionIdeas';
 
 async function courseState(studentId: string) {
-  const [saved, reports] = await Promise.all([
+  const [saved, reports, profile] = await Promise.all([
     PreparationCourse.findOne({ studentId }).lean() as Promise<any>,
     ExamLearningReport.find({ studentId }).sort({ createdAt: -1 }).limit(30).lean(),
+    StudentLearningProfile.findOne({ userId: studentId, program: 'qudrat' }).lean(),
   ]);
-  return { course: publicCourse(saved?.course), ideas: observedIdeas(reports) };
+  let course = publicCourse(saved?.course);
+  const assessment = classifyCourseLevel(profile, reports);
+  if (course && course.level !== 'unassessed' && assessment.level === 'unassessed') {
+    // A read-only projection gates old saved plans without deleting their progress.
+    course = { ...course, level: 'unassessed', levelReason: assessment.reason,
+      assessmentRequiredAfter: assessment.assessmentRequiredAfter || new Date().toISOString(),
+      days: course.days.map((day: any, index: number) => ({ ...day, title: 'أعد التقييم لتحديث الخطة', tasks: index ? [] : [{
+        id: `${course.id}:reassessment`, kind: 'diagnostic', title: 'تقييم عودة من مستواك الحالي',
+        reason: assessment.reason, href: '/foundation?program=qudrat&reassess=1',
+        minutes: 25, questionCount: 0, category: 'mixed', status: 'pending', completionSource: 'pending',
+      }] })) };
+  }
+  return { course, ideas: observedIdeas(recentCourseReports(reports)) };
+}
+async function assessmentIsCurrent(studentId: string, course: any) {
+  const [profile, reports] = await Promise.all([
+    StudentLearningProfile.findOne({ userId: studentId, program: 'qudrat' }).lean(),
+    ExamLearningReport.find({ studentId }).sort({ createdAt: -1 }).limit(30).lean(),
+  ]);
+  if (classifyCourseLevel(profile, reports).level === 'unassessed') return false;
+  if (course.assessmentRequiredAfter) return new Date(profile?.lastDiagnosticAt || 0).getTime() > new Date(course.assessmentRequiredAfter).getTime();
+  return true;
 }
 function locateTask(course: any, id: string) {
   for (let d = 0; d < course.days.length; d++) {
@@ -50,13 +72,13 @@ export function registerPreparationCourseRoutes(app: Express, studentOnly: Reque
         ExamLearningReport.find({ studentId }).sort({ createdAt: -1 }).limit(30).lean(),
         Question.find({ answerStatus: 'approved', category: { $in: ['verbal', 'quantitative'] } })
           .select('_id category subcategory text options correctOptionIndex answerStatus difficulty source.subcategory source.section').lean(),
-        FoundationContent.find({ program: 'qudrat', published: true }).sort({ order: 1 }).select('_id title subjectId durationMinutes').lean(),
+        FoundationContent.find({ program: 'qudrat', published: true }).sort({ order: 1 }).select('_id title subjectId durationMinutes sections videoUrl').lean(),
       ]);
       const course = buildPreparationCourse(parsed.data, profile, reports, bank, lessons);
       const student = await User.findByIdAndUpdate(studentId, { $set: { targetExamDate: new Date(`${parsed.data.examDate}T00:00:00+03:00`) } });
       if (!student) return res.status(404).json({ error: 'حساب الطالب غير موجود.' });
       await PreparationCourse.findOneAndUpdate({ studentId }, { $set: { course, createdAt: new Date() } }, { upsert: true });
-      return res.json({ course: publicCourse(course), ideas: observedIdeas(reports) });
+      return res.json({ course: publicCourse(course), ideas: observedIdeas(recentCourseReports(reports)) });
     } catch (error) {
       req.log.error({ err: error }, 'Unable to create preparation course');
       return res.status(503).json({ error: 'تعذر حفظ الدورة. خطتك السابقة لم تُحذف.' });
@@ -72,8 +94,11 @@ export function registerPreparationCourseRoutes(app: Express, studentOnly: Reque
       if (found.task.status === 'completed') return res.json(await courseState(studentId));
       if (['practice', 'simulation'].includes(found.task.kind)) return res.status(409).json({ error: 'أكمل تدريب هذه المهمة وأرسله للتصحيح؛ الإنجاز يُسجّل من الإجابات الفعلية وليس بالضغط على الزر.' });
       if (found.task.kind === 'diagnostic') {
-        const assessed = await StudentLearningProfile.exists({ userId: studentId, program: 'qudrat', status: 'diagnostic_completed' });
+        const assessed = await assessmentIsCurrent(studentId, saved.course);
         if (!assessed) return res.status(409).json({ error: 'أكمل تقييم البداية أولًا.' });
+      }
+      if (found.task.kind !== 'diagnostic' && !await assessmentIsCurrent(studentId, saved.course)) {
+        return res.status(409).json({ error: 'نتيجة البداية تحتاج تحديثًا. أكمل تقييم العودة قبل متابعة هذه الخطة.' });
       }
       if (found.task.kind === 'review') {
         const practice = locateTask(saved.course, found.task.practiceTaskId);
@@ -100,6 +125,7 @@ export function registerPreparationCourseRoutes(app: Express, studentOnly: Reque
       if (!found || !['practice', 'simulation'].includes(found.task.kind)) return res.status(404).json({ error: 'تدريب المهمة غير موجود.' });
       if (found.date > riyadhDay()) return res.status(409).json({ error: 'هذا التدريب مجدول ليوم لاحق.' });
       if (saved.course.level === 'unassessed') return res.status(409).json({ error: 'أكمل تقييم البداية ثم حدّث دورتك حتى نختار التدريب من مستواك.' });
+      if (!await assessmentIsCurrent(studentId, saved.course)) return res.status(409).json({ error: 'نتيجتك السابقة تحتاج تحديثًا. أكمل تقييم العودة ثم حدّث الدورة.' });
       const sessions = (req.session as any).remedialPracticeAttempts || {};
       for (const [id, value] of Object.entries(sessions) as Array<[string, any]>) if (Date.now() - value.createdAt > 7200000) delete sessions[id];
       const existing = (Object.entries(sessions) as Array<[string, any]>).find(([, value]) => value.courseTaskId === found.task.id && value.studentId === studentId && !value.result);

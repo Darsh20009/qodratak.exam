@@ -1883,10 +1883,20 @@ function FoundationPageContent() {
   );
 }
 
+function CourseDiagnosticLauncher() {
+  const search = useSearch();
+  const [open, setOpen] = useState(false);
+  useEffect(() => {
+    if (new URLSearchParams(search).get("reassess") === "1") setOpen(true);
+  }, [search]);
+  return <FoundationDiagnosticDialog open={open} program="qudrat" onOpenChange={setOpen} />;
+}
+
 export default function FoundationPage() {
   return (
     <ErrorBoundary fallback={(error) => <FoundationPageErrorFallback error={error} />}>
       <FoundationPageContent />
+      <CourseDiagnosticLauncher />
     </ErrorBoundary>
   );
 }
