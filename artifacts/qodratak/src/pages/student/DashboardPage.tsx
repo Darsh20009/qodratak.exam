@@ -33,6 +33,7 @@ import SubscriptionRenewalDialog from "@/components/SubscriptionRenewalDialog";
 import AdaptiveLearningCoach from "@/components/student/AdaptiveLearningCoach";
 import useSubscription from "@/hooks/useSubscription";
 import { getGetStudentCourseQueryKey, useGetStudentCourse } from "@workspace/api-client-react";
+import { usePreparationPreferences } from "@/hooks/use-preparation-preferences";
 import { foundationHrefForScope, todayLearningHref } from "@/lib/foundationRoutes.mjs";
 
 const SUPPORTED_DASHBOARD_PATHS = new Set([
@@ -93,7 +94,7 @@ function DashboardSkeleton() {
 }
 
 const paths = [
-  { href: "/preparation-course", label: "خطة التحضير", detail: "حجزت اختبارك؟ جدول يومي", icon: Calendar },
+  { href: "/preparation-course", label: "خطة التحضير", detail: "ابدأ بموعد أو دون حجز", icon: Calendar },
   { href: "/computerized", label: "التدريب المحوسب", detail: "لفظي وكمي بتركيز", icon: Laptop },
   { href: "/records", label: "تقاريري", detail: "راجع الخطأ والبطيء", icon: FileText },
 ];
@@ -116,6 +117,7 @@ export default function DashboardPage() {
   const adaptiveDecision = useAdaptiveLearningDecision(hasJourneyScope, journeyProgram, journeySubjectId);
   const recommendations = useStudentLearningRecommendations(hasJourneyScope, journeyProgram);
   const courseQuery = useGetStudentCourse({ query: { queryKey: getGetStudentCourseQueryKey(), staleTime: 30000, enabled: hasJourneyScope } });
+  const { preferences: preparationPreferences } = usePreparationPreferences(user?.id ?? user?._id);
   const updateExamDate = useUpdateExamDate();
   const [examDateStr, setExamDateStr] = useState("");
   const [isExamDialogOpen, setIsExamDialogOpen] = useState(false);
@@ -287,8 +289,8 @@ export default function DashboardPage() {
                 </div>
               ) : !course ? (
                 <div data-testid="status-course-none">
-                  <h2 className="mt-1 text-xl font-black text-foreground">حجزت اختبارك؟ ابنِ دورتك</h2>
-                  <p className="mt-1 max-w-2xl text-sm leading-7 text-muted-foreground">حدد موعدك ووقتك اليومي، ونعطيك مهمة واحدة واضحة كل يوم.</p>
+                  <h2 className="mt-1 text-xl font-black text-foreground">{preparationPreferences.bookingMode === "open" ? "واصل استعدادك دون انتظار الحجز" : "ابدأ استعدادك للقدرات من هنا"}</h2>
+                  <p className="mt-1 max-w-2xl text-sm leading-7 text-muted-foreground">{preparationPreferences.bookingMode === "open" ? "افتح نقطة بدايتك والخطوة التعليمية التالية. لن نفترض موعد اختبار لم تحجزه." : "تعرف على الكمي واللفظي، ثم اختر مسارًا بموعد محجوز أو ابدأ التعلم دون موعد."}</p>
                 </div>
               ) : course.level === "unassessed" ? (
                 <div data-testid="status-course-unassessed">
@@ -319,7 +321,7 @@ export default function DashboardPage() {
               data-testid="link-start-next-step"
               className="inline-flex min-h-11 shrink-0 items-center justify-center gap-2 rounded-xl bg-foreground px-5 text-sm font-black text-background transition-opacity hover:opacity-90"
             >
-              {!course ? "ابنِ دورتك" : course.level === "unassessed" ? "ابدأ التقييم" : "تابع مهام اليوم"}
+              {!course ? preparationPreferences.bookingMode === "open" ? "واصل استعدادك" : "ابدأ من هنا" : course.level === "unassessed" ? "ابدأ التقييم" : "تابع مهام اليوم"}
               <ChevronLeft className="h-4 w-4" aria-hidden="true" />
             </Link>
           )}

@@ -228,10 +228,12 @@ function FoundationDiagnosticDialog({
   open,
   onOpenChange,
   program,
+  continueHref,
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   program: FoundationProgram;
+  continueHref?: "/preparation-course";
 }) {
   const [, setLocation] = useLocation();
   const [diagnostic, setDiagnostic] = useState<FoundationDiagnostic | null>(null);
@@ -364,11 +366,11 @@ function FoundationDiagnosticDialog({
                 type="button"
                 className="rounded-xl font-black"
                 onClick={() => {
-                  setLocation(result.recommendation.href);
+                  setLocation(continueHref || result.recommendation.href);
                   handleOpenChange(false);
                 }}
               >
-                ابدأ المسار المقترح
+                {continueHref ? "تابع خطوة التحضير التالية" : "ابدأ المسار المقترح"}
               </Button>
               <Button type="button" variant="outline" className="rounded-xl" onClick={() => handleOpenChange(false)}>
                 إغلاق
@@ -1885,11 +1887,12 @@ function FoundationPageContent() {
 
 function CourseDiagnosticLauncher() {
   const search = useSearch();
+  const returnToPreparation = new URLSearchParams(search).get("returnTo") === "preparation";
   const [open, setOpen] = useState(false);
   useEffect(() => {
     if (new URLSearchParams(search).get("reassess") === "1") setOpen(true);
   }, [search]);
-  return <FoundationDiagnosticDialog open={open} program="qudrat" onOpenChange={setOpen} />;
+  return <FoundationDiagnosticDialog open={open} program="qudrat" onOpenChange={setOpen} continueHref={returnToPreparation ? "/preparation-course" : undefined} />;
 }
 
 export default function FoundationPage() {

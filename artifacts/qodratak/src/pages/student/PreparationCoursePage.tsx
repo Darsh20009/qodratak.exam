@@ -16,6 +16,11 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useUser } from "@/hooks/use-user";
 import useSubscription from "@/hooks/useSubscription";
+import { CourseStartGuide } from "@/components/student/CourseStartGuide";
+import { usePreparationPreferences } from "@/hooks/use-preparation-preferences";
+import { openPreparationTarget, preparationNeedsAssessment, type BookingMode } from "@/lib/preparationStart";
+import { useTodayLearningSession } from "@/hooks/use-student";
+import { foundationHrefForScope, todayLearningHref } from "@/lib/foundationRoutes.mjs";
 
 const DURATIONS = [5, 10, 15, 30] as const;
 type Duration = (typeof DURATIONS)[number];
@@ -50,10 +55,13 @@ export default function PreparationCoursePage() {
   const isStudent = user?.role === "student";
   const expired = Boolean(subscription?.isExpired);
   const userId = user?.id ?? user?._id;
+  const { preferences, updatePreferences } = usePreparationPreferences(userId);
+  const [introExpanded, setIntroExpanded] = useState<boolean | null>(null);
+  useEffect(() => { setIntroExpanded(null); }, [userId]);
   const pendingKey = pendingKeyFor(userId);
   const courseQuery = useGetStudentCourse({ query: { queryKey: getGetStudentCourseQueryKey(), staleTime: 30000, enabled: isStudent && !expired, refetchOnWindowFocus: true } });
   const isUnassessed = courseQuery.data?.course?.level === "unassessed";
-  const foundation = useGetFoundationLearningState({ program: "qudrat" }, { query: { queryKey: getGetFoundationLearningStateQueryKey({ program: "qudrat" }), enabled: isStudent && !expired && (isUnassessed || Boolean(sessionStorage.getItem(pendingKey))), refetchOnWindowFocus: true, staleTime: 0 } });
+  const foundation = useGetFoundationLearningState({ program: "qudrat" }, { query: { queryKey: getGetFoundationLearningStateQueryKey({ program: "qudrat" }), enabled: isStudent && !expired, refetchOnWindowFocus: true, staleTime: 0 } });
   const [examDate, setExamDate] = useState("");
   const [duration, setDuration] = useState<Duration>(10);
   const [minutes, setMinutes] = useState(60);
@@ -79,6 +87,20 @@ export default function PreparationCoursePage() {
 
   const state = courseQuery.data;
   const course = state?.course ?? null;
+  const needsAssessment = preparationNeedsAssessment(foundation.data, course, Boolean(state?.ideas.length));
+  const returning = foundation.data?.status === "diagnostic_completed" && needsAssessment;
+  const bookingMode: BookingMode = course ? "booked" : preferences.bookingMode;
+  const openSubjectId = foundation.data?.focus?.category ? `subject.qudrat.${foundation.data.focus.category}` : undefined;
+  const openStudy = useTodayLearningSession(isStudent && !expired && !course && bookingMode === "open" && !needsAssessment, "qudrat", openSubjectId);
+  const openTarget = openPreparationTarget(openStudy.data?.plan?.planStatus);
+  const openHref = openTarget === "session" ? todayLearningHref("qudrat", openSubjectId) : foundationHrefForScope("qudrat", openSubjectId);
+  const showIntro = introExpanded ?? (!course && !preferences.introSeen && foundation.data?.status !== "diagnostic_completed");
+  const chooseBooking = (mode: "booked" | "open") => {
+    updatePreferences({ bookingMode: mode, introSeen: true });
+    setIntroExpanded(false);
+    setActionError("");
+    if (mode === "open" && !course) sessionStorage.removeItem(pendingKey);
+  };
 
   // Regenerate only when: the course is still unassessed, the real placement profile says the
   // diagnostic is completed, and this user explicitly left pending inputs before the diagnostic.
@@ -104,7 +126,15 @@ export default function PreparationCoursePage() {
     });
   }, [isUnassessed, diagnosticDone, userId, pendingKey, course?.assessmentRequiredAfter, foundation.data?.lastDiagnosticAt]);
 
-  const retryRegen = () => { regenAttempted.current = false; setRegenFailed(false); setActionError(""); void foundation.refetch(); };
+  const retryRegen = () => {
+    if (create.isPending || !course) return;
+    setRegenFailed(false);
+    setActionError("");
+    const durationDays = DURATIONS.find(d => d >= course.durationDays) || 30;
+    create.mutate({ data: { examDate: course.examDate.slice(0, 10), durationDays, dailyMinutes: course.dailyMinutes } }, {
+      onError: (e) => { setRegenFailed(true); setActionError(errMessage(e, "تعذر تحديث الخطة بعد التقييم.")); },
+    });
+  };
 
   const today = new Date(Date.now() + 3 * 3600000).toISOString().slice(0, 10);
   const currentDay = useMemo(() => {
@@ -122,6 +152,7 @@ export default function PreparationCoursePage() {
     const input = { examDate, durationDays: duration, dailyMinutes: Math.round(minutes) };
     create.mutate({ data: input }, {
       onSuccess: (d) => {
+        updatePreferences({ bookingMode: "booked", introSeen: true });
         if (d.course?.level === "unassessed") {
           sessionStorage.setItem(pendingKey, JSON.stringify(input));
         }
@@ -131,8 +162,9 @@ export default function PreparationCoursePage() {
   };
 
   const goDiagnostic = () => {
-    if (course) sessionStorage.setItem(pendingKey, JSON.stringify({ examDate: course.examDate.slice(0, 10), durationDays: [5, 10, 15, 30].includes(course.durationDays) ? course.durationDays : 5, dailyMinutes: course.dailyMinutes, assessmentAfter: course.assessmentRequiredAfter }));
-    navigate("/foundation?program=qudrat&reassess=1");
+    updatePreferences({ introSeen: true });
+    if (course) sessionStorage.setItem(pendingKey, JSON.stringify({ examDate: course.examDate.slice(0, 10), durationDays: DURATIONS.find(d => d >= course.durationDays) || 30, dailyMinutes: course.dailyMinutes, assessmentAfter: course.assessmentRequiredAfter }));
+    navigate("/foundation?program=qudrat&reassess=1&returnTo=preparation");
   };
 
   const markDone = (task: StudentCourseTask) => {
@@ -144,7 +176,7 @@ export default function PreparationCoursePage() {
     });
   };
 
-  if (userLoading || subLoading || (isStudent && !expired && courseQuery.isLoading)) {
+  if (userLoading || subLoading || (isStudent && !expired && (courseQuery.isLoading || (!course && foundation.isLoading)))) {
     return (
       <div className="mx-auto max-w-3xl space-y-4 p-5" dir="rtl" aria-label="جاري التحميل">
         <div className="h-10 w-64 animate-pulse rounded bg-muted" />
@@ -216,10 +248,41 @@ export default function PreparationCoursePage() {
     <div className="mx-auto w-full max-w-3xl space-y-6 p-5 md:p-8" dir="rtl">
       <header>
         <p className="text-xs font-black text-primary">خطة التحضير</p>
-        <h1 className="mt-1 text-3xl font-black text-foreground" data-testid="text-course-title">{course ? "خطتك حتى الاختبار" : "حجزت اختبارك؟"}</h1>
+        <h1 className="mt-1 text-3xl font-black text-foreground" data-testid="text-course-title">{course ? "خطتك حتى الاختبار" : bookingMode === "open" ? "استعدادك يبدأ قبل الحجز" : "من هنا تبدأ استعدادك للقدرات"}</h1>
       </header>
 
-      {!course || showForm ? form : (
+      <CourseStartGuide expanded={showIntro} onExpandedChange={(expanded) => {
+        setIntroExpanded(expanded);
+        if (!expanded) updatePreferences({ introSeen: true });
+      }} bookingMode={bookingMode} onBookingModeChange={chooseBooking} showBookingChoice={!course} />
+
+      {!course && bookingMode === "open" ? (
+        <section className="rounded-3xl border border-primary/20 bg-primary/5 p-5 sm:p-7" data-testid="section-open-preparation">
+          <p className="text-xs font-black text-primary">خطوتك التالية</p>
+          {foundation.isError ? (
+            <div role="alert"><h2 className="mt-2 text-xl font-black">تعذر تحميل نقطة البداية</h2>
+              <p className="mt-2 text-sm leading-7">لم نفترض مستواك أو نغيّر نتائجك. أعد المحاولة لعرض الخطوة المناسبة.</p>
+              <Button className="mt-4 min-h-11" onClick={() => foundation.refetch()}>إعادة المحاولة</Button></div>
+          ) : needsAssessment ? (
+            <><h2 className="mt-2 text-xl font-black">{returning ? "نحدّث نقطة البداية بعد الانقطاع" : "ابدأ بتقييم نقطة البداية"}</h2>
+              <p className="mt-2 text-sm leading-7 text-muted-foreground">{returning ? "نتيجتك السابقة محفوظة، لكننا نحتاج قياسًا حديثًا قبل اختيار الدرس والتدريب." : "أجب بنفسك، حتى لو لم تعرف بعض الحلول. هذا قياس أولي لترتيب تعلمك، وليس درجتك الرسمية أو حكمًا نهائيًا على قدراتك."}</p>
+              <Button className="mt-4 min-h-12 rounded-xl font-black" onClick={goDiagnostic} data-testid="button-open-assessment">ابدأ التقييم<ChevronLeft className="mr-2 h-4 w-4" /></Button></>
+          ) : openStudy.isLoading ? (
+            <p role="status" className="mt-3 text-sm font-bold">نبحث عن خطوة تعلم متاحة لقسمك...</p>
+          ) : openStudy.isError ? (
+            <div role="alert"><h2 className="mt-2 text-xl font-black">تعذر تحميل الخطوة الحالية</h2>
+              <p className="mt-2 text-sm leading-7">نقطة بدايتك محفوظة. لم نفترض توفر جلسة أو نغيّر مستواك.</p>
+              <Button className="mt-4 min-h-11" onClick={() => openStudy.refetch()}>إعادة المحاولة</Button></div>
+          ) : (
+            <><h2 className="mt-2 text-xl font-black">{openTarget === "session" ? "تابع خطوتك التعليمية الحالية" : "ابدأ من التأسيس المنشور"}</h2>
+              <p className="mt-2 text-sm leading-7 text-muted-foreground">{openTarget === "session" ? "نقطة البداية مسجلة، وجلسة اليوم متاحة. افتح الدرس والتدريب المطلوبين ثم راجع أخطاءك." : "نقطة البداية مسجلة، لكن لم تتوفر جلسة آلية مناسبة الآن. لا تحتاج الانتظار: افتح مواد التأسيس المنشورة للقسم المقترح وراجع الفكرة والمثال. هذا مسار مراجعة، وليس إثباتًا لوجود نقطة ضعف أو لإتقان مهارة."} تأكيد القراءة وحده لا يثبت الإتقان.</p>
+              <Link href={openHref} data-testid={openTarget === "session" ? "link-open-today" : "link-open-foundation"} className="mt-4 inline-flex min-h-12 items-center rounded-xl bg-foreground px-5 font-black text-background">{openTarget === "session" ? "ابدأ جلسة اليوم" : "افتح التأسيس المنشور"}<ChevronLeft className="mr-2 h-4 w-4" /></Link></>
+          )}
+          <p className="mt-4 text-xs leading-6 text-muted-foreground">لم نفترض موعد اختبار، ولم ننشئ دورة تنتهي بموعد وهمي. عندما تحجز، اختر «حجزت اختباري» وأدخل موعدك الحقيقي.</p>
+        </section>
+      ) : (!course && bookingMode === "undecided") ? (
+        <p className="text-sm leading-7 text-muted-foreground" data-testid="text-select-booking">اختر حالة الحجز أعلاه لنُظهر لك خطوة واحدة مناسبة. لا تحتاج حجز اختبار كي تبدأ التعلم.</p>
+      ) : !course || showForm ? form : (
         <>
           <section className="rounded-3xl border border-primary/20 bg-primary/5 p-5 sm:p-7" data-testid="section-course-next">
             <p className="text-xs font-black text-primary">المهمة التالية</p>
@@ -229,8 +292,10 @@ export default function PreparationCoursePage() {
                 <p className="mt-1 text-sm leading-7 text-muted-foreground">{course.levelReason} بعد التقييم نعيد بناء الخطة بنفس موعدك ووقتك.</p>
                 {diagnosticDone && regenFailed ? (
                   <Button onClick={retryRegen} className="mt-4 min-h-11 rounded-xl font-black" data-testid="button-retry-regenerate">أعد المحاولة</Button>
-                ) : diagnosticDone ? (
+                ) : diagnosticDone && create.isPending ? (
                   <p className="mt-3 text-sm font-bold" data-testid="status-regenerating">اكتمل التقييم، جارٍ تحديث خطتك...</p>
+                ) : diagnosticDone ? (
+                  <Button onClick={retryRegen} className="mt-4 min-h-11 rounded-xl font-black" data-testid="button-build-from-assessment">ابنِ الخطة من نتيجتي</Button>
                 ) : (
                   <Button onClick={goDiagnostic} className="mt-4 min-h-11 rounded-xl font-black" data-testid="button-start-diagnostic">ابدأ التقييم<ChevronLeft className="mr-2 h-4 w-4" /></Button>
                 )}
@@ -261,7 +326,12 @@ export default function PreparationCoursePage() {
             <p className="text-muted-foreground">التركيز: {course.focus}</p>
             <p className="mt-1 text-xs text-muted-foreground" data-testid="text-coverage-note">{course.coverageNote}</p>
             <p className="text-xs text-muted-foreground">{course.plannedQuestions} سؤالًا مخططًا من {course.availableQuestions} متاحًا. الخطة لا تضمن تغطية كل الأسئلة.</p>
-            <Button variant="outline" size="sm" className="mt-3 rounded-lg" onClick={() => setShowForm(true)} data-testid="button-edit-course">تعديل الموعد أو المدة</Button>
+            <Button variant="outline" size="sm" className="mt-3 rounded-lg" onClick={() => {
+              setExamDate(course.examDate.slice(0, 10));
+              setMinutes(course.dailyMinutes);
+              setDuration(DURATIONS.find(d => d >= course.durationDays) || 30);
+              setShowForm(true);
+            }} data-testid="button-edit-course">تعديل الموعد أو المدة</Button>
           </section>
 
           {actionError && <p role="alert" className="text-sm font-bold text-destructive" data-testid="text-course-error">{actionError}</p>}

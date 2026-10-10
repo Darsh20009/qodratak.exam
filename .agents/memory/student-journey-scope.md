@@ -20,3 +20,9 @@ Tahsili is not ready for student use. Keep its student-facing lessons, tests and
 **Why:** The user said «المنصة التحصيلي لا يعمل بالكامل» and requested closing anything related to it.
 
 **How to apply:** Preserve existing content, administrative maintenance and historical results; do not delete Tahsili data. Apply availability restrictions on the server as well as navigation so direct student URLs do not reopen unfinished features.
+
+Students without a booked exam must be able to start assessment and daily learning without inventing an official exam date.
+
+**Why:** Booking is not a prerequisite for beginning preparation; a fabricated deadline would distort urgency and the student's course.
+
+**How to apply:** Open a daily session only when a real ready plan exists; otherwise explicitly offer published foundation material, not a fabricated personalized session or a request to wait for nonexistent new content. Intro visibility and booking-choice preferences are presentation only, never evidence of level or permission to bypass assessment/subscription checks.
