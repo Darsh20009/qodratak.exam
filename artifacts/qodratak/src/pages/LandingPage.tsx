@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { Link } from "wouter";
+import { useLayoutEffect, useState } from "react";
+import { Link, useLocation } from "wouter";
 import {
   ArrowLeft,
   BarChart3,
@@ -330,6 +330,13 @@ function PlanCard({
 }
 
 export default function LandingPage({ initialModal }: { initialModal?: "signup" | "login" } = {}) {
+  const [location] = useLocation();
+  const showStoreSeal = location === "/" && !initialModal;
+  useLayoutEffect(() => {
+    const root = document.documentElement;
+    root.classList.toggle("qodratak-landing-page", showStoreSeal);
+    return () => root.classList.remove("qodratak-landing-page");
+  }, [showStoreSeal]);
   const [authMode, setAuthMode] = useState<"signup" | "login" | null>(initialModal || null);
   const openSignup = () => setAuthMode("signup");
 
@@ -340,6 +347,7 @@ export default function LandingPage({ initialModal }: { initialModal?: "signup" 
         description="قدراتك (Qodratak) منصة تعليمية للتأسيس اللفظي والكمي، بنك أسئلة، اختبارات محاكية وخطة تدريب للقدرات والتحصيلي."
         url="/"
       />
+      {showStoreSeal && <>
       <div
         className="sbc-verify-seal"
         data-token="QVllTDdEcm91V0cxa25lTW1iRUJzQT09"
@@ -349,6 +357,7 @@ export default function LandingPage({ initialModal }: { initialModal?: "signup" 
         src="https://eauthenticate.saudibusiness.gov.sa/EAuthSealApi/seal.js"
         async
       />
+      </>}
       <AuthModal
         open={authMode !== null}
         mode={authMode || "login"}
@@ -487,7 +496,7 @@ export default function LandingPage({ initialModal }: { initialModal?: "signup" 
             />
           </div>
           <div className="mx-auto mt-6 max-w-5xl rounded-2xl border border-[#398B79]/20 bg-[#EFF8F4] px-5 py-4 text-center dark:bg-[#132B2A]">
-            <p className="text-sm font-black text-[#286B5C] dark:text-[#91D7C5]">عندك عذر مادي؟ تواصل معنا وما يصير لك إلا الخير.</p>
+            <p className="text-sm font-black text-[#286B5C] dark:text-[#91D7C5]">عندك عذر مادي؟ تواصل معنا وابشر بالخير</p>
             <a href={SUPPORT_WHATSAPP_URL} target="_blank" rel="noopener noreferrer" className="mt-2 inline-flex items-center gap-2 text-sm font-black text-[#17354A] underline underline-offset-4 dark:text-white">
               أحتاج اشتراك لعذر مادي <MessageCircle size={16} />
             </a>

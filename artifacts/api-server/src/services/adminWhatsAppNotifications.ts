@@ -14,7 +14,7 @@ const RIYADH_OFFSET_MS = 3 * 60 * 60 * 1000;
 
 type ReportPeriod = "daily" | "weekly" | "monthly";
 
-async function getAdminPhone() {
+export async function getAdminPhone() {
   try {
     const admin = await Admin.findOne({
       isActive: { $ne: false },

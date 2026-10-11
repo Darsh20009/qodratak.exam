@@ -1,4 +1,4 @@
-import React, { useContext, useState, useLayoutEffect } from "react";
+import React, { useCallback, useContext, useMemo, useState, useLayoutEffect } from "react";
 import { resetExamTiming, bindExamTimingOwner } from '@/lib/examTiming';
 import { Link, useLocation } from "wouter";
 import { ThemeToggle } from "@/components/ThemeToggle";
@@ -25,7 +25,17 @@ export function StudentShell({ children }: { children: React.ReactNode }) {
   useLayoutEffect(() => { bindExamTimingOwner(user?.id ? String(user.id) : null); }, [user?.id]);
   const { subscription } = useSubscription();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const { isActive: isExamLayoutActive } = useContext(StudentExamChromeContext);
+  const inheritedExamChrome = useContext(StudentExamChromeContext);
+  const [localExamActive, setLocalExamActive] = useState(false);
+  const setExamActive = useCallback((active: boolean) => {
+    setLocalExamActive(active);
+    inheritedExamChrome.setActive(active);
+  }, [inheritedExamChrome.setActive]);
+  const isExamLayoutActive = localExamActive || inheritedExamChrome.isActive;
+  const examChrome = useMemo(
+    () => ({ isActive: isExamLayoutActive, setActive: setExamActive }),
+    [isExamLayoutActive, setExamActive],
+  );
   const visibleNavItems = subscription?.isExpired
     ? [
         NAV_ITEMS[0],
@@ -43,6 +53,7 @@ export function StudentShell({ children }: { children: React.ReactNode }) {
   };
 
   return (
+    <StudentExamChromeContext.Provider value={examChrome}>
     <div className={cn("qodratak-app-shell flex min-h-[100dvh] bg-background text-foreground", isExamLayoutActive && "h-[100dvh] max-h-[100dvh] overflow-hidden")} dir="rtl">
       {/* Desktop Sidebar */}
       {!isExamLayoutActive && <aside className="hidden md:flex w-64 flex-col border-l border-border bg-card">
@@ -115,7 +126,7 @@ export function StudentShell({ children }: { children: React.ReactNode }) {
 
       {/* Main Content Area */}
       <main className={cn(
-        "flex-1 flex flex-col bg-[#F7F8FA] dark:bg-background",
+        "qodratak-page-surface min-w-0 flex-1 flex flex-col bg-[#F7F8FA] dark:bg-background",
         isExamLayoutActive
           ? "h-[100dvh] overflow-hidden"
           : "md:pt-0 pt-16 pb-20 md:pb-0 h-[100dvh] overflow-y-auto"
@@ -149,5 +160,6 @@ export function StudentShell({ children }: { children: React.ReactNode }) {
         </nav>
       </div>}
     </div>
+    </StudentExamChromeContext.Provider>
   );
 }

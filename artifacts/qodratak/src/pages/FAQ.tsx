@@ -3,6 +3,7 @@ import { ChevronDownIcon, ChevronUpIcon, HelpCircleIcon, MessageCircleIcon, Book
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Helmet } from 'react-helmet-async';
+import { SupportTicketForm } from '@/components/support/SupportTicketForm';
 
 const featuredFaqs = [
   {
@@ -247,6 +248,19 @@ export const FAQPage: React.FC = () => {
           );
         })}
       </div>
+
+      {/* Complaint Ticket */}
+      <section id="support-ticket" aria-labelledby="support-ticket-title" className="mt-12 rounded-3xl border border-gray-200 bg-white p-6 shadow-sm md:p-10 dark:border-gray-700 dark:bg-gray-900">
+        <div className="mb-8 border-r-4 border-emerald-600 pr-4">
+          <h2 id="support-ticket-title" className="text-2xl font-bold text-gray-900 dark:text-white">
+            أرسل شكوى إلى فريق الدعم
+          </h2>
+          <p className="mt-2 text-gray-600 dark:text-gray-300">
+            اكتب بياناتك وتفاصيل المشكلة، وستصل الشكوى مباشرة إلى إدارة المنصة مع رقم مرجعي لمتابعتها.
+          </p>
+        </div>
+        <SupportTicketForm />
+      </section>
 
       {/* Contact Section */}
       <Card className="mt-12 bg-gradient-to-r from-blue-50 to-emerald-600 dark:from-blue-900/20 dark:to-emerald-600/20 border-blue-200 dark:border-blue-700">

@@ -1,153 +1,156 @@
-import { Clock3, ExternalLink, MapPin, MessageCircle, Phone, ShieldCheck } from "lucide-react";
-import { BRAND_NAME, LEGAL_ENTITY_NAME, SUPPORT_EMAIL, SUPPORT_PHONE, UNIFIED_NATIONAL_NUMBER } from "@/constants/legalIdentity";
+import { Clock3, ExternalLink, Mail, MapPin, MessageCircle } from "lucide-react";
+import { LEGAL_ENTITY_NAME, SUPPORT_EMAIL, SUPPORT_PHONE, UNIFIED_NATIONAL_NUMBER } from "@/constants/legalIdentity";
 import { BrandMark } from "@/components/BrandMark";
 
-const learningLinks = [
+type FooterLink = { label: string; href: string; soon?: boolean };
+
+const serviceLinks: FooterLink[] = [
   { label: "تدريب اختبار القدرات", href: "/qiyas-hub" },
-  { label: "تدريب اختبار التحصيلي", href: "/tahsilik" },
+  { label: "التحصيلي", href: "/tahsilik", soon: true },
   { label: "اختبارات تجريبية مجانية", href: "/free-verbal-test" },
   { label: "الدورات", href: "/courses" },
   { label: "مقالات ودلائل", href: "/learn" },
+  { label: "الباقات والاشتراكات", href: "/#plans" },
+  { label: "دليل الخدمات وطريقة الاستخدام", href: "/guide" },
+  { label: "دليل التدريب المتقدم", href: "/platform-guide" },
+  { label: "الأسئلة الشائعة", href: "/faq" },
 ];
 
-const policyLinks = [
+const policyLinks: FooterLink[] = [
   { label: "الشروط والأحكام", href: "/terms" },
   { label: "الخصوصية وحماية البيانات (PDPL)", href: "/privacy" },
   { label: "الاسترجاع والاستبدال", href: "/refund-policy" },
+  { label: "الشكاوى والدعم", href: "/support" },
 ];
 
 const paymentMethods = ["مدى Mada", "Apple Pay", "Visa", "MasterCard"];
 
-export function Footer() {
+const focusRing =
+  "rounded-md outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background";
+
+function LinkColumn({ title, links, testId }: { title: string; links: FooterLink[]; testId: string }) {
   return (
-    <footer id="footer" className="border-t border-border bg-background text-foreground" dir="rtl">
-      <div className="mx-auto max-w-6xl px-5 pb-5 pt-14 sm:px-8">
-        <div className="grid gap-10 lg:grid-cols-[1.35fr_1fr_1fr_1fr]">
-          <div>
-            <div className="flex items-center gap-3">
-              <BrandMark imageClassName="h-12 w-12" />
-            </div>
-            <p className="mt-2 text-xs font-bold text-muted-foreground">{LEGAL_ENTITY_NAME}</p>
-            <p className="mt-5 max-w-sm text-sm leading-7 text-muted-foreground">
-              منصة تعليمية وتدريبية متكاملة لطلاب الثانوية بالمملكة العربية السعودية، تساعدك على الاستعداد بخطة واضحة ونتيجة تفهمها.
+    <nav aria-label={title} data-testid={testId}>
+      <h3 className="text-sm font-black text-foreground">{title}</h3>
+      <ul className="mt-3 space-y-2">
+        {links.map((link) => (
+          <li key={link.href}>
+            <a
+              href={link.href}
+              className={`inline-flex items-center gap-2 text-[13px] font-bold text-muted-foreground transition-colors duration-200 hover:text-foreground ${focusRing}`}
+              data-testid={`link-footer-${link.href.replace(/[^a-z0-9]+/gi, "-").replace(/^-|-$/g, "") || "home"}`}
+            >
+              {link.label}
+              {link.soon && (
+                <span className="rounded-full border border-border bg-muted px-2 py-0.5 text-[10px] font-black text-muted-foreground">
+                  قريبًا
+                </span>
+              )}
+            </a>
+          </li>
+        ))}
+      </ul>
+    </nav>
+  );
+}
+
+export function Footer() {
+  const whatsappHref = `https://wa.me/966${SUPPORT_PHONE.replace(/^0/, "")}`;
+
+  return (
+    <footer id="footer" className="border-t border-border bg-muted/40 text-foreground dark:bg-card/60" dir="rtl">
+      <div className="mx-auto max-w-6xl px-5 pb-4 pt-8 sm:px-8">
+        <div className="grid gap-8 sm:grid-cols-2 lg:grid-cols-[1.4fr_1fr_1fr_1.15fr] lg:gap-10">
+          {/* Brand + payment */}
+          <div className="min-w-0">
+            <BrandMark imageClassName="h-10 w-10" />
+            <p className="mt-1.5 text-xs font-bold text-muted-foreground">{LEGAL_ENTITY_NAME}</p>
+            <p className="mt-3 max-w-sm text-[13px] leading-6 text-muted-foreground">
+              منصة تعليمية وتدريبية لطلاب الثانوية بالمملكة العربية السعودية، متوافقة مع أنظمة التجارة الإلكترونية وحماية البيانات الشخصية (PDPL).
             </p>
-
-            <div className="mt-6 rounded-2xl border border-border bg-card p-4">
-              <div className="flex items-start gap-3">
-                <div className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-primary text-primary-foreground">
-                  <ShieldCheck className="h-5 w-5" />
-                </div>
-                <div>
-                  <p className="text-sm font-black">تجربة تعليمية موثوقة</p>
-                  <p className="mt-1 text-xs leading-5 text-muted-foreground">
-                    متوافقة مع متطلبات وزارة التجارة وأنظمة التجارة الإلكترونية وحماية البيانات الشخصية (PDPL).
-                  </p>
-                </div>
-              </div>
-            </div>
-
-            <div className="mt-6">
-              <p className="text-xs font-black text-muted-foreground">وسائل الدفع الإلكتروني المعتمدة</p>
-              <div className="mt-3 flex flex-wrap gap-2">
-                {paymentMethods.map((method) => (
-                  <span key={method} className="rounded-lg border border-border bg-card px-3 py-2 text-xs font-black text-foreground">
-                    {method}
-                  </span>
-                ))}
-              </div>
-            </div>
-          </div>
-
-          <div>
-            <h3 className="text-sm font-black">الاختبارات والخدمات</h3>
-            <nav className="mt-4 space-y-3" aria-label="الاختبارات والخدمات">
-              {learningLinks.map((link) => (
-                <a key={link.label} href={link.href} className="block text-sm font-bold text-muted-foreground transition hover:text-foreground">
-                  {link.label}
-                </a>
+            <p className="mt-4 text-[11px] font-black text-muted-foreground">وسائل الدفع الإلكتروني المعتمدة</p>
+            <ul className="mt-2 flex flex-wrap gap-1.5">
+              {paymentMethods.map((method) => (
+                <li key={method} className="rounded-md border border-border bg-background px-2.5 py-1 text-[11px] font-black text-foreground">
+                  {method}
+                </li>
               ))}
-            </nav>
+            </ul>
           </div>
 
-          <div>
-            <h3 className="text-sm font-black">ابدأ مع قدراتك</h3>
-            <nav className="mt-4 space-y-3" aria-label="طريقة العمل والأسعار">
-              <a href="/guide" className="block text-sm font-bold text-muted-foreground transition hover:text-foreground">دليل الخدمات وطريقة الاستخدام</a>
-              <a href="/platform-guide" className="block text-sm font-bold text-muted-foreground transition hover:text-foreground">دليل التدريب المتقدم</a>
-              <a href="/#plans" className="block text-sm font-bold text-muted-foreground transition hover:text-foreground">الباقات والاشتراكات</a>
-              <a href="/faq" className="block text-sm font-bold text-muted-foreground transition hover:text-foreground">الأسئلة الشائعة</a>
-            </nav>
+          <LinkColumn title="الاختبارات والخدمات" links={serviceLinks} testId="nav-footer-services" />
+          <LinkColumn title="السياسات والأنظمة" links={policyLinks} testId="nav-footer-policies" />
 
-            <h3 className="mt-8 text-sm font-black">السياسات والأنظمة</h3>
-            <div className="mt-4 space-y-3">
-              {policyLinks.map((link) => (
-                <a key={link.href} href={link.href} className="block text-sm font-bold text-muted-foreground transition hover:text-foreground">{link.label}</a>
-              ))}
-            </div>
-          </div>
-
-          <div>
+          {/* Support */}
+          <div className="min-w-0">
             <h3 className="text-sm font-black">الدعم وخدمة العملاء</h3>
-            <div className="mt-4 space-y-4 text-sm text-muted-foreground">
-              <a href="/support" className="flex items-center gap-2 font-bold transition hover:text-foreground">
-                <MessageCircle className="h-4 w-4 text-primary" />
-                مركز الدعم والتواصل
+            <a href="/support" className={`mt-3 inline-block text-[13px] font-bold text-muted-foreground transition-colors hover:text-foreground ${focusRing}`} data-testid="link-footer-support-center">
+              مركز الدعم والتواصل
+            </a>
+            <div className="mt-3 space-y-2">
+              <a
+                href={whatsappHref}
+                target="_blank"
+                rel="noopener noreferrer"
+                className={`flex items-center gap-3 rounded-xl border border-emerald-600/30 bg-emerald-600/10 px-3 py-2.5 transition-colors duration-200 hover:bg-emerald-600/15 dark:border-emerald-400/30 dark:bg-emerald-400/10 dark:hover:bg-emerald-400/15 ${focusRing}`}
+                data-testid="link-footer-whatsapp"
+              >
+                <MessageCircle className="h-5 w-5 shrink-0 text-emerald-700 dark:text-emerald-400" aria-hidden="true" />
+                <span className="min-w-0">
+                  <span className="block text-[11px] font-black text-emerald-800 dark:text-emerald-300">الدعم الفني عبر واتساب</span>
+                  <span dir="ltr" className="block text-sm font-black text-emerald-700 dark:text-emerald-400">{SUPPORT_PHONE}</span>
+                </span>
               </a>
-              <a href={`https://wa.me/966${SUPPORT_PHONE.replace(/^0/, "")}`} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 font-bold text-primary transition hover:text-foreground">
-                <Phone className="h-4 w-4" />
-                <span dir="ltr">{SUPPORT_PHONE}</span>
+              <a
+                href={`mailto:${SUPPORT_EMAIL}`}
+                className={`flex items-center gap-3 rounded-xl border border-border bg-background px-3 py-2.5 transition-colors duration-200 hover:border-foreground/25 dark:border-slate-200 dark:bg-slate-100 dark:hover:border-slate-400 ${focusRing}`}
+                data-testid="link-footer-email"
+              >
+                <Mail className="h-5 w-5 shrink-0 text-muted-foreground dark:text-slate-600" aria-hidden="true" />
+                <span className="min-w-0">
+                  <span className="block text-[11px] font-black text-muted-foreground dark:text-slate-600">راسلنا عبر البريد الإلكتروني</span>
+                  <span dir="ltr" className="block break-all text-sm font-black text-foreground dark:text-slate-900">{SUPPORT_EMAIL}</span>
+                </span>
               </a>
-              <a href={`mailto:${SUPPORT_EMAIL}`} className="break-all font-bold transition hover:text-foreground">
-                {SUPPORT_EMAIL}
-              </a>
-              <p className="flex items-start gap-2 font-bold">
-                <Clock3 className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
+            </div>
+            <div className="mt-3 space-y-1.5 text-xs font-bold text-muted-foreground">
+              <p className="flex items-center gap-2">
+                <Clock3 className="h-3.5 w-3.5 shrink-0 text-emerald-700 dark:text-emerald-400" aria-hidden="true" />
                 ساعات العمل: 9:00 ص - 10:00 م
               </p>
-              <p className="flex items-start gap-2 font-bold">
-                <MapPin className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
+              <p className="flex items-center gap-2">
+                <MapPin className="h-3.5 w-3.5 shrink-0 text-emerald-700 dark:text-emerald-400" aria-hidden="true" />
                 المملكة العربية السعودية
               </p>
             </div>
           </div>
         </div>
 
-        <div className="mt-12 border-t border-border pt-6">
-          <div className="flex flex-col gap-4 text-xs font-bold text-muted-foreground sm:flex-row sm:items-center sm:justify-between">
-            <div>
-              <p>© 2026 {LEGAL_ENTITY_NAME}. جميع الحقوق محفوظة.</p>
-              <p className="mt-1">الرقم الوطني الموحد: <span dir="ltr">{UNIFIED_NATIONAL_NUMBER}</span></p>
-            </div>
-            <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
-              <a href="/terms" className="hover:text-foreground">الشروط والأحكام</a>
-              <span aria-hidden="true">•</span>
-              <a href="/privacy" className="hover:text-foreground">الخصوصية</a>
-              <span aria-hidden="true">•</span>
-              <a href="/refund-policy" className="hover:text-foreground">الاسترجاع</a>
-              <span aria-hidden="true">•</span>
-              <a href="/support" className="hover:text-foreground">الشكاوى والدعم</a>
-            </div>
-          </div>
-
-          <div className="mt-7 flex justify-center">
-            <a
-              href="https://qiroxstudio.online"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="group inline-flex items-center gap-2 rounded-xl px-3 py-2 text-xs font-black text-muted-foreground transition hover:bg-muted hover:text-foreground"
-            >
-              <span>Made by Qirox Studio Group</span>
-              <img
-                src="https://qiroxstudio.online/qirox-icon-nobg.png"
-                alt="شعار Qirox Studio"
-                width="28"
-                height="28"
-                loading="lazy"
-                className="h-7 w-7 object-contain opacity-75 transition group-hover:opacity-100"
-              />
-              <ExternalLink className="h-3.5 w-3.5 opacity-60" />
-            </a>
-          </div>
+        {/* Legal strip */}
+        <div className="mt-7 flex flex-col gap-3 border-t border-border pt-4 text-[11px] font-bold text-muted-foreground md:flex-row md:items-center md:justify-between">
+          <p data-testid="text-footer-legal">
+            © 2026 {LEGAL_ENTITY_NAME}. جميع الحقوق محفوظة.
+            <span className="mx-2 text-border" aria-hidden="true">|</span>
+            الرقم الوطني الموحد: <span dir="ltr">{UNIFIED_NATIONAL_NUMBER}</span>
+          </p>
+          <a
+            href="https://qiroxstudio.online"
+            target="_blank"
+            rel="noopener noreferrer"
+            className={`group inline-flex items-center gap-1.5 self-start px-1 py-0.5 text-[11px] font-black transition-colors hover:text-foreground md:self-auto ${focusRing}`}
+            data-testid="link-footer-qirox"
+          >
+            <span dir="ltr">Made by Qirox Studio Group</span>
+            <img
+              src="https://qiroxstudio.online/qirox-icon-nobg.png"
+              alt="شعار Qirox Studio"
+              width="20"
+              height="20"
+              loading="lazy"
+              className="h-5 w-5 object-contain opacity-75 transition-opacity group-hover:opacity-100"
+            />
+            <ExternalLink className="h-3 w-3 opacity-60" aria-hidden="true" />
+          </a>
         </div>
       </div>
     </footer>

@@ -594,6 +594,7 @@ function AnnotationToolbar({
           </button>
         ) : null}
       </div>
+      {activeTool === "PEN" && <p className="mx-auto mt-1 max-w-6xl text-xs text-[hsl(var(--reader-muted))]" dir="rtl">اكتب على محتوى الكتاب بالفأرة أو اللمس أو القلم الرقمي. اختر «قراءة» للتمرير. تُحفظ الخطوط في حسابك عند نجاح الحفظ.</p>}
     </div>
   );
 }

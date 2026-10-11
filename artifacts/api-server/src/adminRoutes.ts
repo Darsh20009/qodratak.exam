@@ -2527,6 +2527,24 @@ router.post('/whatsapp/messages/:phone', requireAdminAuth, async (req: Request, 
 });
 
 // =========== SUPPORT TICKETS ============
+router.post('/support-tickets/:id/notify', requireAdminAuth, async (req: Request, res: Response) => {
+  if (!/^[0-9a-f]{24}$/i.test(String(req.params.id))) return res.status(400).json({ error: 'معرف التذكرة غير صالح' });
+  try {
+    const { SupportTicket } = await import('./mongodb/models');
+    const ticket = await SupportTicket.findOneAndUpdate({
+      _id: req.params.id, whatsappNotificationStatus: 'failed',
+    }, {
+      $set: { whatsappNotificationStatus: 'pending', whatsappAttempts: 0 },
+      $unset: { whatsappNextAttemptAt: 1, whatsappLockedUntil: 1 },
+    }, { new: true });
+    if (!ticket) return res.status(409).json({ error: 'التذكرة غير موجودة أو التنبيه أُرسل أو ما زال قيد الإرسال' });
+    const { deliverSupportTicketNotification } = await import('./services/supportTicketNotifications');
+    void deliverSupportTicketNotification(String(ticket._id)).catch(() => {});
+    return res.json({ success: true });
+  } catch {
+    return res.status(503).json({ error: 'تعذر إعادة إرسال التنبيه الآن' });
+  }
+});
 router.get('/support-tickets', requireAdminAuth, async (req: Request, res: Response) => {
   try {
     const { SupportTicket } = await import('./mongodb/models');

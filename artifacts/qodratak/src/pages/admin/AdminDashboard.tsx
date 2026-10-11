@@ -301,7 +301,7 @@ export default function AdminDashboard({ initialTab = 'overview' }: { initialTab
     queryFn: () => fetch('/api/admin/subscription-plan', { credentials: 'include' }).then(r => r.json()),
     enabled: !!(session as any)?.authenticated && activeTab === 'subscriptions',
   });
-  const { data: ticketsData, isLoading: ticketsLoading } = useQuery({ queryKey: ['/api/admin/support-tickets', ticketFilter], queryFn: () => fetch(`/api/admin/support-tickets?status=${ticketFilter}`, { credentials: 'include' }).then(r => r.json()), enabled: !!(session as any)?.authenticated && activeTab === 'support' });
+  const { data: ticketsData, isLoading: ticketsLoading } = useQuery({ queryKey: ['/api/admin/support-tickets', ticketFilter], queryFn: () => fetch(`/api/admin/support-tickets?status=${ticketFilter}`, { credentials: 'include' }).then(r => r.json()), enabled: !!(session as any)?.authenticated && activeTab === 'support', refetchInterval: 30000 });
   const { data: adminsData, isLoading: adminsLoading } = useQuery({ queryKey: ['/api/admin/admins'], queryFn: () => fetch('/api/admin/admins', { credentials: 'include' }).then(r => r.json()), enabled: !!(session as any)?.authenticated && activeTab === 'roles' });
   const { data: notificationsData, isLoading: notificationsLoading, refetch: refetchNotifications } = useQuery({ queryKey: ['/api/notifications/in-app/global'], queryFn: () => fetch('/api/notifications/in-app/global?limit=50', { credentials: 'include' }).then(r => r.json()), enabled: !!(session as any)?.authenticated && activeTab === 'notifications' });
   const { data: pushStatsData } = useQuery({ queryKey: ['/api/notifications/push/stats'], queryFn: () => fetch('/api/notifications/push/stats', { credentials: 'include' }).then(r => r.json()), enabled: !!(session as any)?.authenticated && activeTab === 'notifications' });
@@ -427,6 +427,19 @@ export default function AdminDashboard({ initialTab = 'overview' }: { initialTab
   });
 
   // Support ticket mutation
+  const retryTicketNotification = useMutation({
+    mutationFn: async (id: string) => {
+      const response = await fetch(`/api/admin/support-tickets/${id}/notify`, { method: 'POST', credentials: 'include' });
+      const data = await response.json();
+      if (!response.ok || !data.success) throw new Error(data.error || 'تعذر إعادة إرسال التنبيه');
+      return data;
+    },
+    onSuccess: () => {
+      toast({ title: 'أُعيدت جدولة تنبيه واتساب' });
+      queryClient.invalidateQueries({ queryKey: ['/api/admin/support-tickets'] });
+    },
+    onError: (error: Error) => toast({ title: error.message, variant: 'destructive' }),
+  });
   const updateTicket = useMutation({
     mutationFn: ({ id, data }: { id: string; data: any }) => fetch(`/api/admin/support-tickets/${id}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data), credentials: 'include' }).then(r => r.json()),
     onSuccess: (d) => { if (d.success) { toast({ title: '✅ تم تحديث التذكرة' }); queryClient.invalidateQueries({ queryKey: ['/api/admin/support-tickets'] }); setSelectedTicket(null); } else toast({ title: d.error || 'خطأ', variant: 'destructive' }); },
@@ -1589,12 +1602,16 @@ export default function AdminDashboard({ initialTab = 'overview' }: { initialTab
                               <span className={`text-xs font-medium ${priorityColors[ticket.priority] || ''}`}>{ticket.priority === 'urgent' ? '🔴 عاجل' : ticket.priority === 'high' ? '🟠 عالي' : ticket.priority === 'medium' ? '🟡 متوسط' : '⚪ منخفض'}</span>
                             </div>
                             <p className="text-slate-400 text-xs mb-1">{ticket.userName} • {ticket.userEmail}</p>
+                            {ticket.userPhone && <p className="text-slate-300 text-xs mb-1">الجوال: <a dir="ltr" href={`tel:+${ticket.userPhone}`} className="underline">{ticket.userPhone}</a></p>}
+                            <p className="text-slate-500 text-xs mb-1" dir="ltr">SUP-{String(ticket._id).toUpperCase()}</p>
+                            {ticket.whatsappNotificationStatus && <p className="text-xs mb-2 text-teal-300">تنبيه واتساب: {ticket.whatsappNotificationStatus === 'sent' ? 'أُرسل' : ticket.whatsappNotificationStatus === 'failed' ? 'تعذر الإرسال — التذكرة محفوظة' : 'قيد الإرسال'}</p>}
                             <p className="text-slate-300 text-sm line-clamp-2">{ticket.message}</p>
                             {ticket.adminNotes && <p className="text-teal-400 text-xs mt-1 bg-teal-500/10 px-2 py-1 rounded">ملاحظة الأدمن: {ticket.adminNotes}</p>}
                             <p className="text-slate-500 text-xs mt-2">{formatDateTime(ticket.createdAt)}</p>
                           </div>
                           <div className="flex items-center gap-1.5 shrink-0">
                             <button onClick={() => { setSelectedTicket(ticket); setTicketNotes(ticket.adminNotes || ''); }} className="text-xs px-3 py-1.5 rounded-lg bg-teal-600/20 text-teal-400 hover:bg-teal-600/30 transition-colors">معالجة</button>
+                            {ticket.whatsappNotificationStatus === 'failed' && <button disabled={retryTicketNotification.isPending} onClick={() => retryTicketNotification.mutate(ticket._id)} className="text-xs px-3 py-1.5 rounded-lg bg-amber-500/10 text-amber-300 disabled:opacity-50">إعادة تنبيه واتساب</button>}
                             <button onClick={() => { if (confirm('حذف هذه التذكرة؟')) deleteTicket.mutate(ticket._id); }} className="w-7 h-7 rounded-lg bg-slate-800 hover:bg-red-600/20 flex items-center justify-center text-slate-400 hover:text-red-400 transition-colors"><Trash2 className="w-3 h-3" /></button>
                           </div>
                         </div>
@@ -2266,6 +2283,7 @@ export default function AdminDashboard({ initialTab = 'overview' }: { initialTab
               <div className="bg-slate-800 rounded-xl p-4 space-y-2">
                 <p className="text-white font-semibold">{selectedTicket.subject}</p>
                 <p className="text-slate-400 text-sm">{selectedTicket.userName} • {selectedTicket.userEmail}</p>
+                {selectedTicket.userPhone && <p className="text-slate-300 text-sm">الجوال: <a dir="ltr" href={`tel:+${selectedTicket.userPhone}`} className="underline">{selectedTicket.userPhone}</a></p>}
                 <p className="text-slate-300 text-sm">{selectedTicket.message}</p>
               </div>
               <div><p className="text-slate-400 text-xs mb-1">ملاحظات الأدمن</p><Textarea value={ticketNotes} onChange={e => setTicketNotes(e.target.value)} className="bg-slate-800 border-slate-700 text-white placeholder:text-slate-500 resize-none" rows={3} placeholder="اكتب ملاحظاتك هنا..." /></div>

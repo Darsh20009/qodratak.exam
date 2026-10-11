@@ -2,13 +2,14 @@ import { useEffect, useState } from 'react';
 import { useQuery, useMutation, useQueryClient, useInfiniteQuery } from '@tanstack/react-query';
 import type { ExamReportRecord, ExamReportSaveOutput, ExamReportCollection } from '@workspace/api-client-react';
 import { apiRequest } from '@/lib/queryClient';
-import { completeExamTiming } from '@/lib/examTiming';
+import { completeExamTiming, orderedTimedQuestions } from '@/lib/examTiming';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import RemedialPractice from './RemedialPractice';
 import { Link } from 'wouter';
 
-const minutes = (seconds: number) => `${(seconds / 60).toFixed(2)} دقيقة (${Math.round(seconds)} ثانية)`;
+const minutes = (seconds: number) => seconds > 0
+  ? `${(seconds / 60).toFixed(2)} دقيقة (${Math.round(seconds)} ثانية)` : 'الزمن غير مقاس';
 
 export function ReportDetails({ report }: { report: ExamReportRecord }) {
   const cache = useQueryClient();
@@ -121,7 +122,7 @@ export default function ExamLearningReport() {
     queryFn: async () => {
       const response = await apiRequest('POST', '/api/student/exam-reports', {
         runId: snapshot!.runId, title: snapshot!.title,
-        questions: Object.values(snapshot!.questions).map((q) => ({ ...q, seconds: Math.min(7200, q.seconds) })),
+        questions: orderedTimedQuestions(snapshot!).map((q) => ({ ...q, seconds: Math.min(7200, q.seconds) })),
       });
       return response.json() as Promise<ExamReportSaveOutput>;
     },

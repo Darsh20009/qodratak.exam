@@ -72,6 +72,7 @@ import {
   LearningAttemptError,
   recordVerifiedLearningAttempt,
 } from '../services/learningProfileService';
+import { ExamGradingError, gradeTrustedExam } from '../services/trustedExamGrade';
 import {
   FOUNDATION_PLACEMENT_VERSION,
   getFoundationPlacementQuestion,
@@ -1777,6 +1778,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         questionIds,
         answers,
         learningAnswers,
+        scoredQuestionIds,
         idempotencyKey,
         sourceKey,
         programId = 'program.qudrat',
@@ -1798,7 +1800,35 @@ export async function registerRoutes(app: Express): Promise<Server> {
       let resolvedSkippedQuestions = Number(skippedQuestions || 0);
       let resolvedWrongAnswers = resolvedTotalQuestions - resolvedScore - resolvedSkippedQuestions;
       let resolvedQuestionIds = Array.isArray(questionIds) ? questionIds.map(String) : [];
+      let correctedQuestions: any[] | undefined;
       if (Array.isArray(learningAnswers)) {
+        if (!Array.isArray(scoredQuestionIds) || !scoredQuestionIds.length ||
+            scoredQuestionIds.length > 2000 ||
+            scoredQuestionIds.some((id: unknown) => typeof id !== 'string' || !/^[a-f0-9]{24}$/.test(id)) ||
+            new Set(scoredQuestionIds).size !== scoredQuestionIds.length) {
+          return res.status(400).json({ message: 'تعذر التحقق من قائمة أسئلة الاختبار. حدّث الصفحة وأعد المحاولة.' });
+        }
+        const gradingQuestions = await Question.find({ _id: { $in: scoredQuestionIds } })
+          .select('_id questionId options correctOptionIndex answerStatus explanation studentTip subcategory source.passageText source.passageLabel').lean();
+        if (gradingQuestions.length !== scoredQuestionIds.length) {
+          return res.status(400).json({ message: 'بعض أسئلة الاختبار غير موجودة؛ لم تُحفظ درجة غير موثقة.' });
+        }
+        try {
+          const grade = gradeTrustedExam(gradingQuestions as any, learningAnswers);
+          resolvedScore = grade.score;
+          resolvedTotalQuestions = grade.totalQuestions;
+          resolvedSkippedQuestions = grade.skippedQuestions;
+          resolvedWrongAnswers = grade.wrongAnswers;
+          resolvedQuestionIds = gradingQuestions.map((q) => String(q.questionId));
+          correctedQuestions = gradingQuestions.map((q) => ({
+            _id: String(q._id), correctOptionIndex: q.correctOptionIndex,
+            explanation: q.explanation, studentTip: q.studentTip, subcategory: q.subcategory,
+            source: q.source,
+          }));
+        } catch (error) {
+          if (error instanceof ExamGradingError) return res.status(400).json({ message: error.message });
+          throw error;
+        }
         const evidenceQuestionIds = learningAnswers.map(
           (answer: any) => String(answer?.questionId || answer?.id || ''),
         );
@@ -2027,6 +2057,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           ...serializedResult,
           pointsEarned: totalPoints,
           learningAttemptsRecorded,
+          correctedQuestions,
           badges,
           parentNotification,
         });
@@ -2036,6 +2067,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           ...serializedResult,
           pointsEarned: totalPoints,
           learningAttemptsRecorded,
+          correctedQuestions,
           parentNotification,
         });
       }
@@ -2057,6 +2089,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Get test results for a user
+  app.get("/api/test-results/user", requireAuth, async (req: Request, res: Response) => {
+    try {
+      const userId = String((req as any).session?.userId || '');
+      if (mongoose.Types.ObjectId.isValid(userId)) {
+        // limit(0) returns all this student's results, not just the first page.
+        const { results } = await mongoStorage.getUserTestResults(userId, 1, 0);
+        return res.json(results.map((result: any) =>
+          typeof result.toObject === 'function' ? result.toObject() : result._doc ?? result));
+      }
+      const numericId = Number(userId);
+      if (!Number.isInteger(numericId) || numericId < 1) {
+        return res.status(400).json({ message: 'معرّف الطالب غير صالح' });
+      }
+      return res.json(await storage.getTestResultsByUser(numericId));
+    } catch (error) {
+      console.error('Error fetching session-owned results:', error);
+      return res.status(500).json({ message: 'تعذر تحميل نتائجك' });
+    }
+  });
+
   app.get("/api/test-results/user/:userId", async (req: Request, res: Response) => {
     try {
       const { userId } = req.params;
@@ -9460,7 +9512,7 @@ app.post("/api/auth/register", async (req: Request, res: Response) => {
           resultVisibleAt: new Date(Date.now() + 15 * 60 * 1000),
         }
       });
-      // Trigger AI re-review in background
+      // Recheck the server-owned answer snapshot; AI cannot override grades.
       setTimeout(async () => {
         try {
           const { reviewExamBooking } = await import('./services/aiExamReview');
@@ -9488,7 +9540,7 @@ app.post("/api/auth/register", async (req: Request, res: Response) => {
           console.error('[Objection] Re-review error:', err);
         }
       }, 1000);
-      res.json({ success: true, message: 'تم تقديم الاعتراض. سيتم إعادة مراجعة إجاباتك وإرسال النتيجة المعدلة.' });
+      res.json({ success: true, message: 'تم تقديم الاعتراض. سيتم إعادة التصحيح بمفاتيح الإجابات المحفوظة دون تغييرها تلقائيًا بالذكاء الاصطناعي.' });
     } catch (error) {
       console.error('objection error:', error);
       res.status(500).json({ error: 'فشل في تقديم الاعتراض' });

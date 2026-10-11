@@ -9,7 +9,7 @@ import { getQuestionImageUrls } from '@/lib/questionImages';
 import { resolveFoundationAssetUrl } from '@/lib/foundationVideoUrl';
 import ResultsTeacherAnalysis from '@/components/exam-results/ResultsTeacherAnalysis';
 import ExamLearningReport from '@/components/exam-results/ExamLearningReport';
-import { examQuestionSeconds } from '@/lib/examTiming';
+import { completeExamTiming, examQuestionSeconds } from '@/lib/examTiming';
 import QuestionReportModal from '@/components/exam-results/QuestionReportModal';
 import { apiRequest } from "@/lib/queryClient";
 import { SEO } from "@/components/SEO";
@@ -354,7 +354,6 @@ const QiyasExamPage: React.FC = () => {
   const [lastShownSubcategory, setLastShownSubcategory] = useState<string | null>(null);
   const [showEarlySubmitConfirm, setShowEarlySubmitConfirm] = useState(false);
   const [unansweredCount, setUnansweredCount] = useState(0);
-  const [pendingSectionAdvance, setPendingSectionAdvance] = useState(false);
   const [examSettings, setExamSettings] = useState<ExamModeSettingsValue>({ monitored: true, fullscreen: false });
 
   const { violations: antiCheatViolations, lastViolationType: antiCheatType, isWarningVisible: antiCheatWarning, dismissWarning: dismissAntiCheatWarning } = useAntiCheat({
@@ -1034,7 +1033,7 @@ const QiyasExamPage: React.FC = () => {
       setIsReviewDialogOpen(false); // Close dialog on jump
   };
 
-    const moveToNextSection = (isTimeOut = false) => {
+    const moveToNextSection = (isTimeOut = false, confirmedUnanswered = false) => {
         if (!selectedExam) return;
 
         calculateSectionScore(); // Calculate score for the *current* section before moving/finishing
@@ -1046,13 +1045,11 @@ const QiyasExamPage: React.FC = () => {
         });
 
         // إذا كان هناك أسئلة غير مجابة ولم ينته الوقت، تحذير المستخدم
-        if (unansweredQuestions.length > 0 && !isTimeOut && !pendingSectionAdvance) {
+        if (unansweredQuestions.length > 0 && !isTimeOut && !confirmedUnanswered) {
           setUnansweredCount(unansweredQuestions.length);
           setShowEarlySubmitConfirm(true);
           return;
         }
-        // Reset pending flag after confirm
-        setPendingSectionAdvance(false);
 
         // Check if we are on the last section
         if (currentSectionIdx >= selectedExam.sections.length - 1) {
@@ -1231,13 +1228,53 @@ const QiyasExamPage: React.FC = () => {
           skippedQuestions,
           sourceKey: examSourceKey,
           idempotencyKey: examSourceKey,
+          scoredQuestionIds: scoredQuestions.map((question) => String(question._id ?? '')),
           questionIds: [...new Set(allQuestions.map((question) =>
             String(question.questionId ?? question.id),
           ))],
           learningAnswers,
         });
         const response = await savedResponse.json();
+        const canonicalQuestions = new Map<string, any>(
+          (response.correctedQuestions ?? []).map((q: any) => [String(q._id), q]),
+        );
+        if (canonicalQuestions.size) {
+          const correctQuestion = (q: ProcessedExamQuestion): ProcessedExamQuestion => {
+            const canonical = canonicalQuestions.get(String(q._id));
+            return canonical ? { ...q, ...canonical, source: { ...q.source, ...canonical.source } } : q;
+          };
+          setAllProcessedQuestionsBySection((previous) => Object.fromEntries(
+            Object.entries(previous).map(([section, questions]) => [section, questions.map(correctQuestion)]),
+          ));
+          setSectionScores((previous) => {
+            const next = { ...previous };
+            for (const [section, rows] of Object.entries(allProcessedQuestionsBySection)) {
+              const scored = rows.map(correctQuestion).filter((q) => !q._isNonScored);
+              next[Number(section)] = {
+                score: scored.filter((q) => answers[q.id] === q.correctOptionIndex).length,
+                scoredQuestionsCount: scored.length,
+              };
+            }
+            return next;
+          });
+          setWrongQuestionsForAI(allQuestions.map(correctQuestion)
+            .filter((q) => !q._isNonScored && answers[q.id] !== q.correctOptionIndex)
+            .map((q) => ({
+              questionText: q.text, options: q.options,
+              studentAnswerIndex: answers[q.id] ?? null, correctAnswerIndex: q.correctOptionIndex,
+              category: q.category, subcategory: q.subcategory, imageUrl: q.imageUrl || undefined,
+            })));
+        }
         setServerCorrection({ score: Number(response.correctAnswers ?? response.score), totalQuestions: Number(response.totalQuestions), percentage: Number(response.percentage) });
+        completeExamTiming(scoredQuestions.map((q) => {
+          const canonical = canonicalQuestions.get(String(q._id));
+          return {
+            id: String(q._id), bankId: String(q.questionId ?? q.id),
+            text: q.text, options: q.options, category: q.category,
+            subcategory: canonical?.subcategory ?? q.subcategory, imageUrl: q.imageUrl,
+            selectedOptionIndex: answers[q.id] ?? null,
+          };
+        }));
         setCorrectionState('saved');
 
         // حفظ النقاط المكتسبة في localStorage للعرض
@@ -1264,8 +1301,8 @@ const QiyasExamPage: React.FC = () => {
         setCorrectionState('failed');
         console.error('Failed to save test results:', error);
         toast({
-          title: "تعذر تحديث تحليل المهارات",
-          description: "اكتمل عرض نتيجة الاختبار، لكن لم يتأكد حفظ محاولاته على الخادم.",
+          title: "تعذر تأكيد التصحيح وحفظ النتيجة",
+          description: "النتيجة المعروضة مؤقتة وليست نتيجة موثقة. استخدم إعادة حفظ وتصحيح الإجابات.",
           variant: "destructive",
         });
       }
@@ -1769,14 +1806,13 @@ const QiyasExamPage: React.FC = () => {
                 أنت تريد أن تسلّم القسم قبل انتهاء الوقت.
               </p>
               <p className="text-amber-700 bg-amber-50 border border-amber-200 rounded p-3 text-sm mb-5">
-                لديك <strong>{unansweredCount}</strong> سؤال غير مجاب في هذا القسم. الأسئلة غير المجابة ستُحسب كإجابات خاطئة.
+                لديك <strong>{unansweredCount}</strong> سؤال غير مجاب في هذا القسم. ستُسجّل كأسئلة متروكة وتؤثر على النسبة النهائية.
               </p>
               <div className="flex gap-3">
                 <button
                   onClick={() => {
                     setShowEarlySubmitConfirm(false);
-                    setPendingSectionAdvance(true);
-                    setTimeout(() => moveToNextSection(false), 50);
+                    moveToNextSection(false, true);
                   }}
                   className="flex-1 bg-red-600 hover:bg-red-700 text-white font-semibold py-2 px-4 rounded text-sm transition-colors"
                 >

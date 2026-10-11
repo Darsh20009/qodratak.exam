@@ -8,9 +8,11 @@ interface ImageZoomProps {
   style?: React.CSSProperties;
   imgClassName?: string;
   imgStyle?: React.CSSProperties;
+  /** Transparent question scans need paper behind their original ink. */
+  paperBackground?: boolean;
 }
 
-export default function ImageZoom({ src, alt = "صورة السؤال", className, style, imgClassName, imgStyle }: ImageZoomProps) {
+export default function ImageZoom({ src, alt = "صورة السؤال", className, style, imgClassName, imgStyle, paperBackground = false }: ImageZoomProps) {
   const [open, setOpen] = useState(false);
 
   useEffect(() => {
@@ -32,7 +34,7 @@ export default function ImageZoom({ src, alt = "صورة السؤال", classNam
           src={src}
           alt={alt}
           className={imgClassName}
-          style={imgStyle}
+          style={paperBackground ? { ...imgStyle, backgroundColor: "#fff" } : imgStyle}
           draggable={false}
         />
         <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors rounded-lg flex items-center justify-center opacity-0 group-hover:opacity-100">
@@ -61,7 +63,7 @@ export default function ImageZoom({ src, alt = "صورة السؤال", classNam
             src={src}
             alt={alt}
             className="max-w-full max-h-full rounded-xl shadow-2xl object-contain"
-            style={{ maxHeight: "90vh", maxWidth: "90vw" }}
+            style={{ maxHeight: "90vh", maxWidth: "90vw", ...(paperBackground ? { backgroundColor: "#fff" } : {}) }}
             onClick={e => e.stopPropagation()}
             draggable={false}
           />

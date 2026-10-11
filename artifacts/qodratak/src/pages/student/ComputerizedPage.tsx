@@ -58,32 +58,32 @@ const MODES: ModeConfig[] = [
     title: "الكمي",
     description: "بنوك وفيديوهات واختبارات مرتبة حسب مهارات الكمي.",
     icon: Calculator,
-    accent: "text-[#147D68]",
-    iconSurface: "bg-[#EAF8F3]",
+    accent: "text-[#147D68] dark:text-emerald-400",
+    iconSurface: "bg-emerald-500/10",
   },
   {
     key: "verbal",
     title: "اللفظي",
     description: "تدرّب على أقسام اللفظي من الشرح إلى الاختبار.",
     icon: BookOpen,
-    accent: "text-[#3B67A5]",
-    iconSurface: "bg-[#EEF4FF]",
+    accent: "text-[#3B67A5] dark:text-sky-400",
+    iconSurface: "bg-sky-500/10",
   },
   {
     key: "mixed",
     title: "الاختبارات المختلطة",
     description: "محاكاة تجمع الكمي واللفظي في اختبار واحد.",
     icon: Layers3,
-    accent: "text-[#9A6A1F]",
-    iconSurface: "bg-[#FFF7E6]",
+    accent: "text-[#9A6A1F] dark:text-amber-400",
+    iconSurface: "bg-amber-500/10",
   },
   {
     key: "search",
     title: "ابحث عن سؤال فقط",
     description: "انتقل مباشرة إلى السؤال الذي تريد مراجعته.",
     icon: Search,
-    accent: "text-[#7A4B91]",
-    iconSurface: "bg-[#F7EEFB]",
+    accent: "text-[#7A4B91] dark:text-fuchsia-400",
+    iconSurface: "bg-fuchsia-500/10",
   },
 ];
 
@@ -244,7 +244,7 @@ const VERBAL_READING_COMPREHENSION_VIDEOS = [
 
 function EmptyContentNotice({ label }: { label: string }) {
   return (
-    <div className="mt-3 rounded-xl border border-dashed border-[#CBD5E1] bg-white/70 px-3 py-2 text-xs leading-5 text-[#64748B]">
+    <div className="mt-3 rounded-xl border border-dashed border-border bg-card/70 px-3 py-2 text-xs leading-5 text-muted-foreground">
       لا يوجد محتوى منشور لـ{label} حتى الآن.
     </div>
   );
@@ -253,18 +253,18 @@ function EmptyContentNotice({ label }: { label: string }) {
 function SectionItemCard({ item }: { item: ContentItem }) {
   const Icon = item.icon;
   const card = (
-    <div className={`group h-full rounded-2xl border border-[#E2E8F0] bg-white p-4 transition ${item.href ? "hover:-translate-y-0.5 hover:border-[#0D1B2A]/30 hover:shadow-md" : ""}`}>
+    <div className={`group h-full rounded-2xl border border-border bg-card p-4 transition ${item.href ? "hover:-translate-y-0.5 hover:border-primary/40 hover:shadow-md" : ""}`}>
       <div className="flex items-start justify-between gap-3">
-        <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#F1F5F9] text-[#0D1B2A]">
+        <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-muted text-foreground">
           <Icon className="h-5 w-5" />
         </span>
-        <span className="rounded-full bg-[#F8FAFC] px-2.5 py-1 text-[10px] font-black text-[#64748B]">
+        <span className="rounded-full bg-muted/40 px-2.5 py-1 text-[10px] font-black text-muted-foreground">
           {item.tag || (item.href ? "فتح بنك القسم" : "قيد المراجعة")}
         </span>
       </div>
-      <h3 className="mt-4 text-sm font-black text-[#0D1B2A]">{item.title}</h3>
-      <p className="mt-1 text-xs leading-5 text-[#64748B]">{item.description}</p>
-      {item.href && <p className="mt-3 text-[11px] font-black text-[#147D68]">افتح بنك الأسئلة للتدريب والاختبار</p>}
+      <h3 className="mt-4 text-sm font-black text-foreground">{item.title}</h3>
+      <p className="mt-1 text-xs leading-5 text-muted-foreground">{item.description}</p>
+      {item.href && <p className="mt-3 text-[11px] font-black text-[#147D68] dark:text-emerald-400">افتح بنك الأسئلة للتدريب والاختبار</p>}
     </div>
   );
 
@@ -285,15 +285,15 @@ function ResourceCard({
   accent: string;
 }) {
   return (
-    <Link href={href} className="group block rounded-2xl border border-[#E2E8F0] bg-white p-4 transition hover:-translate-y-0.5 hover:border-[#0D1B2A]/30 hover:shadow-md">
+    <Link href={href} className="group block rounded-2xl border border-border bg-card p-4 transition hover:-translate-y-0.5 hover:border-primary/40 hover:shadow-md">
       <div className="flex items-start justify-between gap-3">
         <span className={`flex h-11 w-11 items-center justify-center rounded-xl ${accent}`}>
           <Icon className="h-5 w-5" />
         </span>
-        <ArrowLeft className="h-4 w-4 text-[#94A3B8] transition-transform group-hover:-translate-x-1" />
+        <ArrowLeft className="h-4 w-4 text-muted-foreground transition-transform group-hover:-translate-x-1" />
       </div>
-      <h3 className="mt-4 text-base font-black text-[#0D1B2A]">{title}</h3>
-      <p className="mt-1 text-xs leading-5 text-[#64748B]">{description}</p>
+      <h3 className="mt-4 text-base font-black text-foreground">{title}</h3>
+      <p className="mt-1 text-xs leading-5 text-muted-foreground">{description}</p>
     </Link>
   );
 }
@@ -312,16 +312,16 @@ function TestChoiceCard({
   return (
     <Link
       href={href}
-      className="group flex items-center gap-3 rounded-2xl border border-[#E2E8F0] bg-white p-4 transition hover:-translate-y-0.5 hover:border-[#0D1B2A]/30 hover:shadow-md"
+      className="group flex items-center gap-3 rounded-2xl border border-border bg-card p-4 transition hover:-translate-y-0.5 hover:border-primary/40 hover:shadow-md"
     >
-      <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#F1F5F9] text-[#0D1B2A]">
+      <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-muted text-foreground">
         <Icon className="h-5 w-5" />
       </span>
       <span className="min-w-0 flex-1">
-        <span className="block text-sm font-black text-[#0D1B2A]">{title}</span>
-        <span className="mt-1 block text-xs leading-5 text-[#64748B]">{description}</span>
+        <span className="block text-sm font-black text-foreground">{title}</span>
+        <span className="mt-1 block text-xs leading-5 text-muted-foreground">{description}</span>
       </span>
-      <ArrowLeft className="h-4 w-4 shrink-0 text-[#94A3B8] transition-transform group-hover:-translate-x-1" />
+      <ArrowLeft className="h-4 w-4 shrink-0 text-muted-foreground transition-transform group-hover:-translate-x-1" />
     </Link>
   );
 }
@@ -331,7 +331,7 @@ function BankLessonCard({ lesson, index, subject }: { lesson: FoundationContent;
   const lessonHref = `/foundation?program=qudrat&subject=${lesson.subjectId?.split(".").pop() || "quantitative"}&lesson=${encodeURIComponent(lesson._id)}`;
 
   return (
-    <article className="overflow-hidden rounded-3xl border border-[#DDE6E2] bg-white shadow-sm">
+    <article className="overflow-hidden rounded-3xl border border-border bg-card shadow-sm">
       <div className="relative aspect-video bg-[#07111f]">
         {directVideo ? (
           <video
@@ -359,9 +359,9 @@ function BankLessonCard({ lesson, index, subject }: { lesson: FoundationContent;
       </div>
       <div className="space-y-3 p-4">
         <div>
-           <p className="text-xs font-black text-[#147D68]">فيديوهات تدريب المحوسب · بنك {subject === "quantitative" ? "الكمي" : "اللفظي"}</p>
-          <h4 className="mt-1 text-base font-black text-[#0D1B2A]">{lesson.title}</h4>
-          <p className="mt-1 text-xs leading-5 text-[#64748B]">{lesson.description}</p>
+           <p className="text-xs font-black text-[#147D68] dark:text-emerald-400">فيديوهات تدريب المحوسب · بنك {subject === "quantitative" ? "الكمي" : "اللفظي"}</p>
+          <h4 className="mt-1 text-base font-black text-foreground">{lesson.title}</h4>
+          <p className="mt-1 text-xs leading-5 text-muted-foreground">{lesson.description}</p>
         </div>
         <div className="grid gap-2 sm:grid-cols-2">
           {lesson.attachments?.length ? (
@@ -371,32 +371,32 @@ function BankLessonCard({ lesson, index, subject }: { lesson: FoundationContent;
                 href={resolveFoundationAssetUrl(attachment.url)}
                 target="_blank"
                 rel="noreferrer"
-                className="inline-flex items-center justify-center gap-2 rounded-xl border border-[#F0C7C7] bg-[#FFF7F7] px-3 py-2 text-xs font-black text-[#A64242] hover:bg-[#FDECEC]"
+                className="inline-flex items-center justify-center gap-2 rounded-xl border border-red-500/25 bg-red-500/10 px-3 py-2 text-xs font-black text-[#A64242] dark:text-red-300 hover:bg-red-500/15"
               >
                 <FileText className="h-4 w-4" />
                 ملف البنك PDF
               </a>
             ))
           ) : (
-            <span className="inline-flex items-center justify-center rounded-xl border border-dashed border-[#CBD5E1] px-3 py-2 text-xs font-bold text-[#64748B]">
+            <span className="inline-flex items-center justify-center rounded-xl border border-dashed border-border px-3 py-2 text-xs font-bold text-muted-foreground">
               لا يوجد ملف لهذا البنك
             </span>
           )}
           {lesson.quiz?.questionIds?.length ? (
             <Link
               href={lessonHref}
-              className="inline-flex items-center justify-center gap-2 rounded-xl bg-[#0D1B2A] px-3 py-2 text-xs font-black text-white hover:bg-[#18334D]"
+              className="inline-flex items-center justify-center gap-2 rounded-xl bg-[#0D1B2A] dark:bg-primary dark:text-primary-foreground px-3 py-2 text-xs font-black text-white hover:bg-[#18334D] dark:hover:bg-primary/90"
             >
               <ListChecksIcon />
               الاختبار ({lesson.quiz.questionIds.length} سؤال)
             </Link>
           ) : (
-            <span className="inline-flex items-center justify-center rounded-xl border border-dashed border-[#CBD5E1] px-3 py-2 text-xs font-bold text-[#64748B]">
+            <span className="inline-flex items-center justify-center rounded-xl border border-dashed border-border px-3 py-2 text-xs font-bold text-muted-foreground">
               لا يوجد اختبار مرتبط
             </span>
           )}
         </div>
-        <Link href={lessonHref} className="block text-center text-xs font-black text-[#147D68] hover:underline">
+        <Link href={lessonHref} className="block text-center text-xs font-black text-[#147D68] dark:text-emerald-400 hover:underline">
           فتح البنك في صفحة الدرس والاختبار
         </Link>
       </div>
@@ -437,16 +437,16 @@ function VerbalVideoCategorySection({
   ) => Promise<QudratVerbalVideoProgress>;
 }) {
   return (
-    <div className="mt-6 border-t border-[#DDE6E2] pt-5">
+    <div className="mt-6 border-t border-border pt-5">
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
-          <p className="text-xs font-black text-[#147D68]">{category.label} · المحوسب</p>
-          <h4 className="mt-1 text-lg font-black text-[#0D1B2A]">دروس ملخص الـ95</h4>
-          <p className="mt-1 text-xs leading-5 text-[#64748B]">
+          <p className="text-xs font-black text-[#147D68] dark:text-emerald-400">{category.label} · المحوسب</p>
+          <h4 className="mt-1 text-lg font-black text-foreground">دروس ملخص الـ95</h4>
+          <p className="mt-1 text-xs leading-5 text-muted-foreground">
             شاهد كل درس ثم ابدأ اختبارًا من ١٠ أسئلة في {category.label}.
           </p>
         </div>
-        <span className="rounded-full bg-white px-3 py-1 text-xs font-black text-[#147D68]">
+        <span className="rounded-full bg-card px-3 py-1 text-xs font-black text-[#147D68] dark:text-emerald-400">
           {category.videos.length} دروس · {category.videos.length} اختبارات
         </span>
       </div>
@@ -556,42 +556,42 @@ function VerbalFilesSection() {
 
   return (
     <section
-      className="rounded-3xl border border-[#DDE6E2] bg-[#F8FBFA] p-5 md:p-6"
+      className="rounded-3xl border border-border bg-muted/40 p-5 md:p-6"
       aria-labelledby="verbal-computerized-files-title"
       data-testid="section-verbal-computerized-files"
     >
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
-          <p className="text-xs font-black text-[#3B67A5]">مراجعة الأقسام</p>
+          <p className="text-xs font-black text-[#3B67A5] dark:text-sky-400">مراجعة الأقسام</p>
           <h3
             id="verbal-computerized-files-title"
-            className="mt-1 text-xl font-black text-[#0D1B2A]"
+            className="mt-1 text-xl font-black text-foreground"
           >
             ملفات ودروس اللفظي
           </h3>
-          <p className="mt-1 text-sm leading-6 text-[#64748B]">
+          <p className="mt-1 text-sm leading-6 text-muted-foreground">
             ملفات PDF للأقسام، ودروس الاستيعاب المقروء وإكمال الجمل والخطأ السياقي والتناظر اللفظي في المحوسب مع اختبار بعد كل درس.
           </p>
         </div>
-        <span className="rounded-full bg-white px-3 py-1 text-xs font-black text-[#3B67A5]">
+        <span className="rounded-full bg-card px-3 py-1 text-xs font-black text-[#3B67A5] dark:text-sky-400">
           ٤ ملفات · ٢٣ درسًا واختبارًا
         </span>
       </div>
-      <div className="mt-4 rounded-2xl border border-[#DDE6E2] bg-white p-4" data-testid="verbal-video-progress-summary">
+      <div className="mt-4 rounded-2xl border border-border bg-card p-4" data-testid="verbal-video-progress-summary">
         <div className="flex flex-wrap items-center justify-between gap-2">
-          <p className="text-sm font-black text-[#0D1B2A]">تقدم مشاهدة دروس اللفظي</p>
+          <p className="text-sm font-black text-foreground">تقدم مشاهدة دروس اللفظي</p>
           {progressQuery.data ? (
-            <p className="text-xs font-bold text-[#147D68]">
+            <p className="text-xs font-bold text-[#147D68] dark:text-emerald-400">
               {completedVideoCount} من {progressQuery.data.items.length} فيديو مكتمل المشاهدة
             </p>
           ) : (
-            <p className="text-xs font-bold text-[#64748B]">
+            <p className="text-xs font-bold text-muted-foreground">
               {progressQuery.isError ? "تعذر تحميل التقدم المحفوظ" : "جارٍ تحميل تقدم المشاهدة…"}
             </p>
           )}
         </div>
         <div
-          className="mt-2 h-2 overflow-hidden rounded-full bg-[#E2E8F0]"
+          className="mt-2 h-2 overflow-hidden rounded-full bg-muted"
           role="progressbar"
           aria-label="عدد فيديوهات اللفظي المكتملة"
           aria-valuemin={0}
@@ -603,13 +603,13 @@ function VerbalFilesSection() {
             style={{ width: `${completionPercent}%` }}
           />
         </div>
-        <p className="mt-2 text-[11px] leading-5 text-[#64748B]">
+        <p className="mt-2 text-[11px] leading-5 text-muted-foreground">
           يُستأنف الفيديو من آخر موضع محفوظ، ويُسجّل مكتملًا بعد مشاهدة ٩٠٪ من محتواه. نتيجة الاختبار منفصلة عن تقدم المشاهدة.
         </p>
         {progressQuery.isError ? (
           <button
             type="button"
-            className="mt-2 text-xs font-black text-[#3B67A5] hover:underline"
+            className="mt-2 text-xs font-black text-[#3B67A5] dark:text-sky-400 hover:underline"
             onClick={() => void progressQuery.refetch()}
           >
             إعادة تحميل التقدم
@@ -623,23 +623,23 @@ function VerbalFilesSection() {
             href={`/api/learning/foundation-book/verbal/files/${file.id}`}
             target="_blank"
             rel="noopener noreferrer"
-            className="group flex min-h-20 items-center justify-between gap-3 rounded-2xl border border-[#DDE6E2] bg-white p-4 transition hover:border-[#3B67A5]/40 hover:shadow-sm"
+            className="group flex min-h-20 items-center justify-between gap-3 rounded-2xl border border-border bg-card p-4 transition hover:border-[#3B67A5]/40 hover:shadow-sm"
             data-testid={`link-verbal-book-file-${file.id}`}
           >
             <div className="flex min-w-0 items-center gap-3">
-              <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#EEF4FF] text-[#3B67A5]">
+              <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-sky-500/10 text-[#3B67A5] dark:text-sky-400">
                 <FileText className="h-5 w-5" />
               </span>
               <span className="min-w-0">
-                <span className="block text-sm font-black text-[#0D1B2A]">
+                <span className="block text-sm font-black text-foreground">
                   ملخص الـ95
                 </span>
-                <span className="mt-1 block text-xs font-bold text-[#64748B]">
+                <span className="mt-1 block text-xs font-bold text-muted-foreground">
                   {file.section} · PDF
                 </span>
               </span>
             </div>
-            <ArrowLeft className="h-4 w-4 shrink-0 text-[#94A3B8] transition-transform group-hover:-translate-x-1" />
+            <ArrowLeft className="h-4 w-4 shrink-0 text-muted-foreground transition-transform group-hover:-translate-x-1" />
           </a>
         ))}
       </div>
@@ -675,16 +675,16 @@ function SubjectWorkspace({ mode }: { mode: "quantitative" | "verbal" }) {
 
   return (
     <section className="space-y-5" aria-labelledby={`${subject}-workspace-title`}>
-      <div className="rounded-[1.5rem] border border-[#DDE6E2] bg-[#F8FBFA] p-5 md:p-6">
+      <div className="rounded-[1.5rem] border border-border bg-muted/40 p-5 md:p-6">
         <div className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
           <div>
-            <p className="text-xs font-black text-[#147D68]">المحوسب · {isQuantitative ? "الكمي" : "اللفظي"}</p>
-            <h2 id={`${subject}-workspace-title`} className="mt-1 text-2xl font-black text-[#0D1B2A]">{title}</h2>
-             <p className="mt-2 max-w-2xl text-sm leading-6 text-[#64748B]">{description}</p>
+            <p className="text-xs font-black text-[#147D68] dark:text-emerald-400">المحوسب · {isQuantitative ? "الكمي" : "اللفظي"}</p>
+            <h2 id={`${subject}-workspace-title`} className="mt-1 text-2xl font-black text-foreground">{title}</h2>
+             <p className="mt-2 max-w-2xl text-sm leading-6 text-muted-foreground">{description}</p>
           </div>
-          <div className="rounded-xl border border-[#DDE6E2] bg-white px-4 py-3 text-right">
-            <p className="text-[11px] font-bold text-[#64748B]">حالة المحتوى</p>
-             <p className="mt-1 text-sm font-black text-[#147D68]">{bankLessons.length ? `${bankLessons.length} بنكًا منشورًا` : "لا توجد بنوك منشورة"}</p>
+          <div className="rounded-xl border border-border bg-card px-4 py-3 text-right">
+            <p className="text-[11px] font-bold text-muted-foreground">حالة المحتوى</p>
+             <p className="mt-1 text-sm font-black text-[#147D68] dark:text-emerald-400">{bankLessons.length ? `${bankLessons.length} بنكًا منشورًا` : "لا توجد بنوك منشورة"}</p>
           </div>
         </div>
       </div>
@@ -694,10 +694,10 @@ function SubjectWorkspace({ mode }: { mode: "quantitative" | "verbal" }) {
       <div>
         <div className="mb-3 flex items-end justify-between gap-3">
           <div>
-            <h3 className="text-lg font-black text-[#0D1B2A]">المصادر الرئيسية</h3>
-            <p className="mt-1 text-xs text-[#64748B]">كل مصدر له مكان واضح حتى تتم إضافة المحتوى بدون إعادة بناء الواجهة.</p>
+            <h3 className="text-lg font-black text-foreground">المصادر الرئيسية</h3>
+            <p className="mt-1 text-xs text-muted-foreground">كل مصدر له مكان واضح حتى تتم إضافة المحتوى بدون إعادة بناء الواجهة.</p>
           </div>
-           <span className="hidden rounded-full bg-[#F1F5F9] px-3 py-1 text-[11px] font-black text-[#64748B] sm:inline-flex">٤ اختيارات</span>
+           <span className="hidden rounded-full bg-muted px-3 py-1 text-[11px] font-black text-muted-foreground sm:inline-flex">٤ اختيارات</span>
         </div>
         <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
            <ResourceCard
@@ -705,7 +705,7 @@ function SubjectWorkspace({ mode }: { mode: "quantitative" | "verbal" }) {
              description="أسئلة مرتبة حسب القسم والمستوى والمصدر."
              icon={Library}
              href="/question-bank"
-             accent={isQuantitative ? "bg-[#EAF8F3] text-[#147D68]" : "bg-[#EEF4FF] text-[#3B67A5]"}
+             accent={isQuantitative ? "bg-emerald-500/10 text-[#147D68] dark:text-emerald-400" : "bg-sky-500/10 text-[#3B67A5] dark:text-sky-400"}
            />
            <TestChoiceCard
              title={`اختبارات ${isQuantitative ? "الكمي" : "اللفظي"}`}
@@ -728,20 +728,20 @@ function SubjectWorkspace({ mode }: { mode: "quantitative" | "verbal" }) {
         </div>
       </div>
 
-       <section className="rounded-3xl border border-[#DDE6E2] bg-[#F8FBFA] p-5 md:p-6" aria-labelledby={`${subject}-banks-title`}>
+       <section className="rounded-3xl border border-border bg-muted/40 p-5 md:p-6" aria-labelledby={`${subject}-banks-title`}>
          <div className="flex flex-wrap items-end justify-between gap-3">
            <div>
-             <p className="text-xs font-black text-[#147D68]">المحتوى المرتبط</p>
-             <h3 id={`${subject}-banks-title`} className="mt-1 text-xl font-black text-[#0D1B2A]">
+             <p className="text-xs font-black text-[#147D68] dark:text-emerald-400">المحتوى المرتبط</p>
+             <h3 id={`${subject}-banks-title`} className="mt-1 text-xl font-black text-foreground">
                {isQuantitative ? "بنوك الكمي" : "بنوك اللفظي"}
              </h3>
-                <p className="mt-1 text-sm leading-6 text-[#64748B]">
+                <p className="mt-1 text-sm leading-6 text-muted-foreground">
                {isQuantitative
                   ? "هذه فيديوهات تدريب المحوسب، وليست دروس التأسيس. شاهد الفيديو ثم افتح ملف البنك واختباره من نفس البطاقة."
                   : "فيديوهات اللفظي المحوسب منفصلة في هذه المرحلة عن فيديوهات التأسيس، ولكل بنك ملف واختبار مرتبطان به."}
              </p>
            </div>
-           <span className="rounded-full bg-white px-3 py-1 text-xs font-black text-[#147D68]">
+           <span className="rounded-full bg-card px-3 py-1 text-xs font-black text-[#147D68] dark:text-emerald-400">
               {isLessonsLoading ? "جاري التحميل" : `${bankLessons.length} بنك`}
            </span>
          </div>
@@ -756,8 +756,8 @@ function SubjectWorkspace({ mode }: { mode: "quantitative" | "verbal" }) {
 
       <div>
         <div className="mb-3">
-          <h3 className="text-lg font-black text-[#0D1B2A]">أقسام {isQuantitative ? "الكمي" : "اللفظي"}</h3>
-          <p className="mt-1 text-xs text-[#64748B]">اختر القسم للوصول إلى بنك أسئلته واختباره، ثم استخدم الاختبار الشامل عند الانتهاء.</p>
+          <h3 className="text-lg font-black text-foreground">أقسام {isQuantitative ? "الكمي" : "اللفظي"}</h3>
+          <p className="mt-1 text-xs text-muted-foreground">اختر القسم للوصول إلى بنك أسئلته واختباره، ثم استخدم الاختبار الشامل عند الانتهاء.</p>
         </div>
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
           {items.map((item) => (
@@ -780,13 +780,13 @@ function MixedWorkspace() {
     <section className="rounded-[1.5rem] border border-[#E8DFC9] bg-[#FFFCF5] p-5 md:p-6">
       <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
         <div>
-          <p className="text-xs font-black text-[#9A6A1F]">المحوسب · اختبارات مختلطة</p>
-          <h2 className="mt-1 text-2xl font-black text-[#0D1B2A]">اختبر الكمي واللفظي معًا</h2>
-          <p className="mt-2 max-w-2xl text-sm leading-6 text-[#64748B]">
+          <p className="text-xs font-black text-[#9A6A1F] dark:text-amber-400">المحوسب · اختبارات مختلطة</p>
+          <h2 className="mt-1 text-2xl font-black text-foreground">اختبر الكمي واللفظي معًا</h2>
+          <p className="mt-2 max-w-2xl text-sm leading-6 text-muted-foreground">
             هنا ستظهر الاختبارات المحاكية والتقفيلات المختلطة التي تجمع القسمين في تجربة واحدة.
           </p>
         </div>
-        <Link href="/qiyas" className="inline-flex shrink-0 items-center justify-center gap-2 rounded-xl bg-[#0D1B2A] px-4 py-3 text-sm font-black text-white transition hover:bg-[#18334D]">
+        <Link href="/qiyas" className="inline-flex shrink-0 items-center justify-center gap-2 rounded-xl bg-[#0D1B2A] dark:bg-primary dark:text-primary-foreground px-4 py-3 text-sm font-black text-white transition hover:bg-[#18334D]">
           فتح الاختبارات المختلطة
           <ArrowLeft className="h-4 w-4" />
         </Link>
@@ -812,22 +812,22 @@ function SearchWorkspace() {
   return (
     <section className="rounded-[1.5rem] border border-[#E4D8E9] bg-[#FCF9FD] p-5 md:p-6">
       <div>
-        <p className="text-xs font-black text-[#7A4B91]">المحوسب · سؤال مباشر</p>
-        <h2 className="mt-1 text-2xl font-black text-[#0D1B2A]">ابحث عن سؤال فقط</h2>
-        <p className="mt-2 max-w-2xl text-sm leading-6 text-[#64748B]">
+        <p className="text-xs font-black text-[#7A4B91] dark:text-fuchsia-400">المحوسب · سؤال مباشر</p>
+        <h2 className="mt-1 text-2xl font-black text-foreground">ابحث عن سؤال فقط</h2>
+        <p className="mt-2 max-w-2xl text-sm leading-6 text-muted-foreground">
           اكتب كلمة أو رقم السؤال للوصول إليه بعد إضافة بنك الأسئلة الجديد وتصنيفه.
         </p>
       </div>
       <form onSubmit={submitSearch} className="mt-5 flex flex-col gap-2 sm:flex-row">
         <label htmlFor="computerized-question-search" className="sr-only">ابحث في بنك الأسئلة</label>
         <div className="relative flex-1">
-          <Search className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#94A3B8]" />
+          <Search className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
           <input
             id="computerized-question-search"
             value={query}
             onChange={(event) => setQuery(event.target.value)}
             placeholder="مثال: سؤال الهندسة أو رقم السؤال"
-            className="h-12 w-full rounded-xl border border-[#DCCDE3] bg-white pr-10 pl-4 text-sm text-[#0D1B2A] outline-none transition placeholder:text-[#94A3B8] focus:border-[#7A4B91] focus:ring-2 focus:ring-[#7A4B91]/15"
+            className="h-12 w-full rounded-xl border border-[#DCCDE3] bg-card pr-10 pl-4 text-sm text-foreground outline-none transition placeholder:text-muted-foreground focus:border-[#7A4B91] focus:ring-2 focus:ring-[#7A4B91]/15"
           />
         </div>
         <button type="submit" className="inline-flex h-12 items-center justify-center gap-2 rounded-xl bg-[#7A4B91] px-5 text-sm font-black text-white transition hover:bg-[#633D77]">
@@ -835,17 +835,17 @@ function SearchWorkspace() {
           <Search className="h-4 w-4" />
         </button>
       </form>
-      <div className="mt-4 rounded-xl border border-dashed border-[#DCCDE3] bg-white/70 px-3 py-3 text-xs leading-5 text-[#64748B]">
+      <div className="mt-4 rounded-xl border border-dashed border-[#DCCDE3] bg-card/70 px-3 py-3 text-xs leading-5 text-muted-foreground">
         {submittedQuery
           ? `لا توجد نتائج حالية لعبارة «${submittedQuery}». ستظهر النتائج بعد إضافة الداتا الجديدة ومراجعتها.`
           : "نتائج البحث ستظهر هنا بعد إضافة الداتا الجديدة ومراجعتها."}
       </div>
       <div className="mt-4 flex flex-col gap-4 border-t border-[#E4D8E9] pt-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <p className="text-sm font-black text-[#0D1B2A]">البحث المتقدم</p>
-          <p className="mt-1 text-xs text-[#64748B]">يمكن ربط الفلاتر بالقسم والمصدر والمستوى عند وصول الداتا.</p>
+          <p className="text-sm font-black text-foreground">البحث المتقدم</p>
+          <p className="mt-1 text-xs text-muted-foreground">يمكن ربط الفلاتر بالقسم والمصدر والمستوى عند وصول الداتا.</p>
         </div>
-        <span className="inline-flex items-center gap-2 rounded-full bg-[#F7EEFB] px-3 py-2 text-[11px] font-black text-[#7A4B91]">
+        <span className="inline-flex items-center gap-2 rounded-full bg-fuchsia-500/10 px-3 py-2 text-[11px] font-black text-[#7A4B91] dark:text-fuchsia-400">
           <Sparkles className="h-3.5 w-3.5" />
           جاهز للتصنيف
         </span>
@@ -888,8 +888,8 @@ export default function ComputerizedPage() {
 
         <section aria-labelledby="computerized-track-title">
           <div className="mb-3">
-            <h2 id="computerized-track-title" className="text-xl font-black text-[#0D1B2A]">اختر المسار</h2>
-            <p className="mt-1 text-sm text-[#64748B]">هذه هي الخطوة الأولى قبل اختيار نوع التدريب.</p>
+            <h2 id="computerized-track-title" className="text-xl font-black text-foreground">اختر المسار</h2>
+            <p className="mt-1 text-sm text-muted-foreground">هذه هي الخطوة الأولى قبل اختيار نوع التدريب.</p>
           </div>
           <div className="grid gap-3 sm:grid-cols-2">
             {TRACKS.map((track) => {
@@ -897,11 +897,11 @@ export default function ComputerizedPage() {
               const selected = activeTrack === track.key;
               if (track.key === "tahsili") {
                 return (
-                  <div key={track.key} data-testid="status-tahsili-locked" aria-disabled="true" className="flex items-center gap-4 rounded-2xl border border-dashed border-[#CBD5E1] bg-[#F1F5F9] p-4 text-right opacity-80 md:p-5">
-                    <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-white text-[#94A3B8]"><Icon className="h-6 w-6" /></span>
+                  <div key={track.key} data-testid="status-tahsili-locked" aria-disabled="true" className="flex items-center gap-4 rounded-2xl border border-dashed border-border bg-muted p-4 text-right opacity-80 md:p-5">
+                    <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-card text-muted-foreground"><Icon className="h-6 w-6" /></span>
                     <span>
-                      <span className="block text-lg font-black text-[#64748B]">التحصيلي — قريبًا</span>
-                      <span className="mt-1 block text-xs leading-5 text-[#64748B]">غير متاح للتشغيل حاليًا.</span>
+                      <span className="block text-lg font-black text-muted-foreground">التحصيلي — قريبًا</span>
+                      <span className="mt-1 block text-xs leading-5 text-muted-foreground">غير متاح للتشغيل حاليًا.</span>
                     </span>
                   </div>
                 );
@@ -917,16 +917,16 @@ export default function ComputerizedPage() {
                   }}
                   className={`flex items-center gap-4 rounded-2xl border p-4 text-right transition-all md:p-5 ${
                     selected
-                      ? "border-[#0D1B2A] bg-[#0D1B2A] text-white shadow-md"
-                      : "border-[#E2E8F0] bg-white text-[#0D1B2A] hover:-translate-y-0.5 hover:border-[#0D1B2A]/30 hover:shadow-sm"
+                      ? "border-[#0D1B2A] bg-[#0D1B2A] dark:bg-primary dark:text-primary-foreground text-white shadow-md"
+                      : "border-border bg-card text-foreground hover:-translate-y-0.5 hover:border-primary/40 hover:shadow-sm"
                   }`}
                 >
-                  <span className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-xl ${selected ? "bg-white/10 text-[#F7F775]" : track.key === "qudrat" ? "bg-[#EAF8F3] text-[#147D68]" : "bg-[#FFF0F2] text-[#C94C65]"}`}>
+                  <span className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-xl ${selected ? "bg-white/10 text-[#F7F775] dark:bg-black/5 dark:text-primary-foreground" : track.key === "qudrat" ? "bg-emerald-500/10 text-[#147D68] dark:text-emerald-400" : "bg-[#FFF0F2] text-[#C94C65]"}`}>
                     <Icon className="h-6 w-6" />
                   </span>
                   <span>
                     <span className="block text-lg font-black">{track.title}</span>
-                    <span className={`mt-1 block text-xs leading-5 ${selected ? "text-white/65" : "text-[#64748B]"}`}>{track.description}</span>
+                    <span className={`mt-1 block text-xs leading-5 ${selected ? "text-white/65 dark:text-primary-foreground/80" : "text-muted-foreground"}`}>{track.description}</span>
                   </span>
                   {selected && <CheckCircle2 className="mr-auto h-5 w-5 text-[#F7F775]" />}
                 </button>
@@ -947,8 +947,8 @@ export default function ComputerizedPage() {
           <>
         <section aria-labelledby="computerized-options-title">
           <div className="mb-3">
-            <h2 id="computerized-options-title" className="text-xl font-black text-[#0D1B2A]">اختر مسار التدريب</h2>
-            <p className="mt-1 text-sm text-[#64748B]">ابدأ من النوع الذي تريد مراجعته الآن.</p>
+            <h2 id="computerized-options-title" className="text-xl font-black text-foreground">اختر مسار التدريب</h2>
+            <p className="mt-1 text-sm text-muted-foreground">ابدأ من النوع الذي تريد مراجعته الآن.</p>
           </div>
           <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
             {MODES.map((mode) => {
@@ -962,15 +962,15 @@ export default function ComputerizedPage() {
                   onClick={() => setActiveMode(mode.key)}
                   className={`rounded-2xl border p-4 text-right transition-all ${
                     selected
-                      ? "border-[#0D1B2A] bg-[#0D1B2A] text-white shadow-md"
-                      : "border-[#E2E8F0] bg-white text-[#0D1B2A] hover:-translate-y-0.5 hover:border-[#0D1B2A]/30 hover:shadow-sm"
+                      ? "border-[#0D1B2A] bg-[#0D1B2A] dark:bg-primary dark:text-primary-foreground text-white shadow-md"
+                      : "border-border bg-card text-foreground hover:-translate-y-0.5 hover:border-primary/40 hover:shadow-sm"
                   }`}
                 >
-                  <span className={`flex h-11 w-11 items-center justify-center rounded-xl ${selected ? "bg-white/10 text-[#F7F775]" : `${mode.iconSurface} ${mode.accent}`}`}>
+                  <span className={`flex h-11 w-11 items-center justify-center rounded-xl ${selected ? "bg-white/10 text-[#F7F775] dark:bg-black/5 dark:text-primary-foreground" : `${mode.iconSurface} ${mode.accent}`}`}>
                     <Icon className="h-5 w-5" />
                   </span>
                   <p className="mt-4 text-base font-black">{mode.title}</p>
-                  <p className={`mt-1 text-xs leading-5 ${selected ? "text-white/65" : "text-[#64748B]"}`}>{mode.description}</p>
+                  <p className={`mt-1 text-xs leading-5 ${selected ? "text-white/65 dark:text-primary-foreground/80" : "text-muted-foreground"}`}>{mode.description}</p>
                 </button>
               );
             })}

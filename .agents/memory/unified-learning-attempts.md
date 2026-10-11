@@ -34,10 +34,32 @@ skill evidence: the server must load each Mongo question, accept only approved
 questions, and derive the Qudrat subject from its stored category. Never use
 client-supplied correctness, category, or answer keys as learning evidence.
 
-**Why:** The legacy Qiyas exam still calculates its displayed aggregate in the
-browser, while the learning coach requires server-verifiable per-question
-evidence.
+**Why:** A browser aggregate can disagree with the verified attempts, corrupting
+both the result and the learning coach's interpretation.
 
-**How to apply:** Send question IDs and selected option indices; verify against
-the server's approved question bank before recording attempts. Keep Tahsili
-answer keys session-owned and record only answered questions.
+**How to apply:** Verify the complete scored question roster on the server and
+derive correct/wrong/skipped counts and the denominator there. Persist only
+answered evidence, but include unanswered scored questions in the denominator.
+Return canonical keys for the result review so cached browser keys cannot
+contradict the saved grade. Keep Tahsili answer keys session-owned.
+
+Automated result review must be deterministic. AI must not replace answer keys,
+declare wrong questions experimental, or grant artificial correctness credits.
+
+**Why:** Such changes silently alter both grades and the student's observed
+weaknesses without a reviewed content source.
+
+**How to apply:** Recheck server-owned exam snapshots; reject malformed keys for
+human review. Exclude a subject with no questions from a single-subject
+percentage instead of halving the student's grade. Keep corrections to old
+student results separate from future grading changes.
+
+Detailed exam reports must cover the complete scored roster in exam order, not
+only the questions captured by the viewing/timing tracker.
+
+**Why:** A visit tracker omits unvisited questions, so a report built solely from
+it understates skipped counts and disagrees with the saved exam result.
+
+**How to apply:** Include unvisited questions as skipped with unknown timing.
+Keep measured-time counts separate from exam question counts, preserve existing
+positive measurements, and never interpret zero/unmeasured time as fast work.

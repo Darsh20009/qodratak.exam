@@ -1,5 +1,6 @@
 import { Maximize, Monitor, ShieldCheck, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { enterExamFocus } from "@/lib/examDisplayMode";
 
 export interface ExamModeSettingsValue {
   monitored: boolean;
@@ -16,13 +17,7 @@ interface Props {
 
 export async function enterExamDisplayMode(fullscreen: boolean) {
   if (!fullscreen || typeof document === "undefined") return;
-  if (!document.fullscreenElement && document.documentElement.requestFullscreen) {
-    try {
-      await document.documentElement.requestFullscreen();
-    } catch {
-      // Some browsers require a user gesture or do not support fullscreen.
-    }
-  }
+  return enterExamFocus();
 }
 
 export default function ExamModeSettings({
@@ -93,8 +88,8 @@ export default function ExamModeSettings({
         >
           <Maximize className="h-5 w-5 text-primary" />
           <span>
-            <span className="block text-sm font-black text-foreground">ملء الشاشة</span>
-            <span className="block text-xs text-muted-foreground">أفضل للمحاكاة على الكمبيوتر</span>
+            <span className="block text-sm font-black text-foreground">الشاشة الكاملة</span>
+            <span className="block text-xs text-muted-foreground">إخفاء القوائم وتوسيع الاختبار على التابلت والكمبيوتر</span>
           </span>
         </button>
         <button

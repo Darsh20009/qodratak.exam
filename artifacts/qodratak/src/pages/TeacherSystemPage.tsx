@@ -753,7 +753,7 @@ export default function TeacherSystemPage() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-slate-50 flex items-center justify-center dir-rtl">
+      <div className="qodratak-page-surface min-h-screen bg-slate-50 flex items-center justify-center dir-rtl">
         <div className="flex flex-col items-center gap-4">
           <div className="w-12 h-12 border-4 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
           <p className="text-slate-500 font-medium">جاري تحميل مساحة المعلم...</p>
@@ -765,7 +765,7 @@ export default function TeacherSystemPage() {
   if (error || !data) {
     if (error?.message === 'UNAUTHORIZED') {
       return (
-        <div className="min-h-screen bg-slate-50 flex items-center justify-center dir-rtl p-4">
+        <div className="qodratak-page-surface min-h-screen bg-slate-50 flex items-center justify-center dir-rtl p-4">
           <Card className="max-w-md w-full text-center p-8">
             <LogOut className="w-16 h-16 text-slate-300 mx-auto mb-6" />
             <h2 className="text-2xl font-bold text-slate-900 mb-2">غير مصرح لك بالدخول</h2>
@@ -779,7 +779,7 @@ export default function TeacherSystemPage() {
     }
 
     return (
-      <div className="min-h-screen bg-slate-50 flex items-center justify-center dir-rtl p-4">
+      <div className="qodratak-page-surface min-h-screen bg-slate-50 flex items-center justify-center dir-rtl p-4">
         <Card className="max-w-md w-full text-center p-8">
           <AlertCircle className="w-16 h-16 text-red-500 mx-auto mb-6" />
           <h2 className="text-2xl font-bold text-slate-900 mb-2">حدث خطأ</h2>
@@ -793,7 +793,7 @@ export default function TeacherSystemPage() {
   return (
     <>
       <SEO title="مساحة المعلم | قدراتك" description="لوحة تحكم المعلم لإدارة الفصول والطلاب" url="/teacher" />
-      <div className="min-h-screen bg-slate-50 flex flex-col font-sans" dir="rtl">
+      <div className="qodratak-page-surface min-h-screen bg-slate-50 flex flex-col font-sans" dir="rtl">
 
         {/* Header */}
         <header className="bg-white border-b border-slate-200 h-16 flex items-center justify-between px-6 sticky top-0 z-20">

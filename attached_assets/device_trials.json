@@ -61,5 +61,26 @@
     "trialEndDate": "2026-10-11T18:41:22.770Z",
     "isActive": true,
     "createdAt": "2026-10-08T18:41:22.770Z"
+  },
+  {
+    "deviceId": "spoxhf",
+    "trialStartDate": "2026-10-11T13:58:20.753Z",
+    "trialEndDate": "2026-10-14T13:58:20.753Z",
+    "isActive": true,
+    "createdAt": "2026-10-11T13:58:20.753Z"
+  },
+  {
+    "deviceId": "e4whkn",
+    "trialStartDate": "2026-10-11T13:58:26.725Z",
+    "trialEndDate": "2026-10-14T13:58:26.725Z",
+    "isActive": true,
+    "createdAt": "2026-10-11T13:58:26.725Z"
+  },
+  {
+    "deviceId": "x1d28a",
+    "trialStartDate": "2026-10-11T14:09:40.199Z",
+    "trialEndDate": "2026-10-14T14:09:40.199Z",
+    "isActive": true,
+    "createdAt": "2026-10-11T14:09:40.199Z"
   }
 ]

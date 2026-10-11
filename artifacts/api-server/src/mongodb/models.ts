@@ -1057,6 +1057,13 @@ export interface ISupportTicket extends Document {
   userId?: any;
   userName: string;
   userEmail: string;
+  userPhone?: string;
+  requestId?: string;
+  requestFingerprint?: string;
+  whatsappNotificationStatus?: 'pending' | 'sending' | 'sent' | 'failed';
+  whatsappAttempts?: number;
+  whatsappNextAttemptAt?: Date;
+  whatsappLockedUntil?: Date;
   subject: string;
   message: string;
   status: 'open' | 'in_progress' | 'resolved' | 'closed';
@@ -1071,6 +1078,13 @@ const supportTicketSchema = new Schema<ISupportTicket>({
   userId: { type: Schema.Types.Mixed },
   userName: { type: String, required: true },
   userEmail: { type: String, required: true },
+  userPhone: { type: String },
+  requestId: { type: String, unique: true, sparse: true },
+  requestFingerprint: { type: String },
+  whatsappNotificationStatus: { type: String, enum: ['pending', 'sending', 'sent', 'failed'] },
+  whatsappAttempts: { type: Number, default: 0 },
+  whatsappNextAttemptAt: { type: Date },
+  whatsappLockedUntil: { type: Date },
   subject: { type: String, required: true },
   message: { type: String, required: true },
   status: { type: String, enum: ['open', 'in_progress', 'resolved', 'closed'], default: 'open' },
@@ -1081,6 +1095,7 @@ const supportTicketSchema = new Schema<ISupportTicket>({
   createdAt: { type: Date, default: Date.now },
   updatedAt: { type: Date, default: Date.now },
 });
+supportTicketSchema.index({ whatsappNotificationStatus: 1, whatsappNextAttemptAt: 1 });
 
 // ── IN-APP NOTIFICATION MODEL ─────────────────────────────────────────────────
 export interface IInAppNotification extends Document {

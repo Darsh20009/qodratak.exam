@@ -395,6 +395,10 @@ export async function recordVerifiedLearningAttempt(
   if (!question) {
     throw new LearningAttemptError('السؤال غير موجود', 'UNKNOWN_QUESTION');
   }
+  if ((question as any).answerStatus === 'review' ||
+      typeof question.correctOptionIndex !== 'number' || !Number.isInteger(question.correctOptionIndex)) {
+    throw new LearningAttemptError('مفتاح السؤال غير معتمد أو غير صالح للتصحيح', 'INVALID_ANSWER');
+  }
 
   const optionsCount = serverQuestion
     ? serverQuestion.optionsCount
@@ -522,13 +526,13 @@ export async function findQuestionForLearningAttempt(questionId: string, sourceT
   }
   if (mongoose.Types.ObjectId.isValid(questionId)) {
     const question = await Question.findById(questionId)
-      .select('questionId correctOptionIndex category options')
+      .select('questionId correctOptionIndex category options answerStatus')
       .lean();
     if (question) return question;
   }
   const numericId = Number(questionId);
   if (!Number.isInteger(numericId)) return null;
   return Question.findOne({ questionId: numericId })
-    .select('questionId correctOptionIndex category options')
+    .select('questionId correctOptionIndex category options answerStatus')
     .lean();
 }

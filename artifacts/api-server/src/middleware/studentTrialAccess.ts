@@ -235,6 +235,7 @@ export async function ensureStudentAccountTrial(
 
 export function isAllowedAfterTrial(path: string, method: string) {
   const normalizedMethod = method.toUpperCase();
+  if (path === "/api/support-tickets" && normalizedMethod === "POST") return true;
   if (path === "/api/diagnostics/client-error") return true;
   if (path === "/api/auth/logout") return true;
   if (path === "/api/user" && normalizedMethod === "GET") return true;

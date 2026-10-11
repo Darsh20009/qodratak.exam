@@ -76,28 +76,28 @@ export function StudentWorkflow({
   const safeProgress = Math.max(0, Math.min(100, Math.round(progress || 0)));
 
   return (
-    <section className="rounded-3xl border border-[#DCE7E3] bg-[#F8FBFA] p-4 shadow-sm sm:p-5" aria-labelledby="student-workflow-title">
+    <section className="rounded-3xl border border-border bg-muted/40 p-4 shadow-sm sm:p-5" aria-labelledby="student-workflow-title">
       <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
         <div className="flex items-start gap-3">
-          <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-[#0D1B2A] text-[#F7F775]">
+          <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-[#0D1B2A] dark:bg-primary dark:text-primary-foreground text-[#F7F775]">
             <Route className="h-5 w-5" />
           </span>
           <div>
-            <p className="text-xs font-black text-[#147D68]">مسار الطالب</p>
-            <h2 id="student-workflow-title" className="mt-1 text-lg font-black text-[#0D1B2A]">
+            <p className="text-xs font-black text-[#147D68] dark:text-emerald-400">مسار الطالب</p>
+            <h2 id="student-workflow-title" className="mt-1 text-lg font-black text-foreground">
               أنت الآن في: {STAGES[currentIndex]?.title || "التأسيس"}
             </h2>
-            <p className="mt-1 text-xs leading-6 text-[#64748B]">
+            <p className="mt-1 text-xs leading-6 text-muted-foreground">
               {LEVEL_LABELS[level]}{focusLabel ? ` · التركيز الحالي: ${focusLabel}` : ""}
             </p>
           </div>
         </div>
-        <div className="min-w-52 rounded-2xl border border-[#DCE7E3] bg-white px-4 py-3">
+        <div className="min-w-52 rounded-2xl border border-border bg-card px-4 py-3">
           <div className="flex items-center justify-between gap-3 text-xs font-black">
-            <span className="text-[#64748B]">تقدمك العام</span>
-            <span className="text-[#147D68]">{safeProgress}%</span>
+            <span className="text-muted-foreground">تقدمك العام</span>
+            <span className="text-[#147D68] dark:text-emerald-400">{safeProgress}%</span>
           </div>
-          <div className="mt-2 h-2 overflow-hidden rounded-full bg-[#E7EFEC]">
+          <div className="mt-2 h-2 overflow-hidden rounded-full bg-muted">
             <div className="h-full rounded-full bg-[#147D68] transition-all" style={{ width: `${safeProgress}%` }} />
           </div>
         </div>
@@ -112,12 +112,12 @@ export function StudentWorkflow({
             <div
               className={`relative h-full rounded-2xl border p-3 transition ${
                 isCurrent
-                  ? "border-[#147D68] bg-white shadow-sm"
+                  ? "border-[#147D68] bg-card shadow-sm"
                   : isComplete
-                    ? "border-[#B9DED2] bg-[#EFF9F5]"
+                    ? "border-emerald-500/30 bg-emerald-500/10"
                     : isLocked
-                      ? "border-[#E2E8F0] bg-white/60 opacity-65"
-                      : "border-[#E2E8F0] bg-white hover:border-[#147D68]/50"
+                      ? "border-border bg-card/60 opacity-65"
+                      : "border-border bg-card hover:border-[#147D68]/50"
               }`}
             >
               <div className="flex items-start gap-2">
@@ -125,14 +125,14 @@ export function StudentWorkflow({
                   isComplete
                     ? "bg-[#147D68] text-white"
                     : isCurrent
-                      ? "bg-[#0D1B2A] text-[#F7F775]"
-                      : "bg-[#EEF3F1] text-[#64748B]"
+                      ? "bg-[#0D1B2A] dark:bg-primary dark:text-primary-foreground text-[#F7F775]"
+                      : "bg-muted text-muted-foreground"
                 }`}>
                   {isComplete ? <CheckCircle2 className="h-4 w-4" /> : isLocked ? <LockKeyhole className="h-3.5 w-3.5" /> : stage.number}
                 </span>
                 <div className="min-w-0">
-                  <p className="text-xs font-black text-[#0D1B2A]">{stage.title}</p>
-                  <p className="mt-1 text-[11px] leading-5 text-[#64748B]">
+                  <p className="text-xs font-black text-foreground">{stage.title}</p>
+                  <p className="mt-1 text-[11px] leading-5 text-muted-foreground">
                     {isCurrent ? "المرحلة الحالية" : isComplete ? "مكتملة" : isLocked ? "تظهر بعد إكمال السابقة" : "الخطوة التالية"}
                   </p>
                 </div>
@@ -151,11 +151,11 @@ export function StudentWorkflow({
       </div>
 
       {nextAction && (
-        <div className="mt-4 flex flex-col gap-2 border-t border-[#DCE7E3] pt-4 sm:flex-row sm:items-center sm:justify-between">
-          <p className="text-xs leading-6 text-[#64748B]">
+        <div className="mt-4 flex flex-col gap-2 border-t border-border pt-4 sm:flex-row sm:items-center sm:justify-between">
+          <p className="text-xs leading-6 text-muted-foreground">
             لا يهم من أين بدأت؛ النظام يضعك في المرحلة المناسبة ثم ينقلك خطوة خطوة.
           </p>
-          <Link href={nextAction.href} data-testid="link-workflow-next-action" className="inline-flex items-center justify-center gap-2 rounded-xl bg-[#0D1B2A] px-4 py-2.5 text-xs font-black text-white">
+          <Link href={nextAction.href} data-testid="link-workflow-next-action" className="inline-flex items-center justify-center gap-2 rounded-xl bg-[#0D1B2A] dark:bg-primary dark:text-primary-foreground px-4 py-2.5 text-xs font-black text-white">
             {nextAction.label}
             <ChevronLeft className="h-4 w-4" />
           </Link>

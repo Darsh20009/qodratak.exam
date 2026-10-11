@@ -236,7 +236,7 @@ export default function SubscriptionRenewalDialog({
             </div>
 
             <div className="rounded-2xl border border-[#398B79]/20 bg-[#EFF8F4] p-4">
-              <p className="text-sm font-black text-[#286B5C]">عندك عذر مادي؟ تواصل معنا وما يصير لك إلا الخير.</p>
+              <p className="text-sm font-black text-[#286B5C]">عندك عذر مادي؟ تواصل معنا وابشر بالخير</p>
               <a
                 href={SUPPORT_WHATSAPP_URL}
                 target="_blank"

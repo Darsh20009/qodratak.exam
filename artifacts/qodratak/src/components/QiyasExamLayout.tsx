@@ -1,4 +1,4 @@
-import { useState, useEffect, useContext } from "react";
+import { useState, useEffect, useContext, useLayoutEffect } from "react";
 import { useExamQuestionTiming } from '@/lib/examTiming';
 import { X, BookmarkCheck, Bookmark, Flag, AlertTriangle, CheckCircle2, LayoutGrid, ChevronRight, ChevronLeft, BookOpen, Calculator } from "lucide-react";
 import ImageZoom from "@/components/ImageZoom";
@@ -8,6 +8,9 @@ import { BrandMark } from "@/components/BrandMark";
 import { StudentExamChromeContext } from "@/components/student/StudentExamChromeContext";
 import { ExamStudyToolsDialog, type ExamStudyTool } from "@/components/ExamStudyTools";
 import { isReadingComprehension } from "@/lib/verbalPassage";
+import { EXAM_FOCUS_EVENT, enterExamFocus, exitExamFocus, isExamFocusMode, setExamPageFocus } from "@/lib/examDisplayMode";
+import { ExamWorkspaceToolbar } from "@/components/exam/ExamWorkspaceToolbar";
+import { ExamNotebook } from "@/components/exam/ExamNotebook";
 
 const OPTION_LABELS = ['أ', 'ب', 'ج', 'د'];
 
@@ -63,6 +66,7 @@ export interface QiyasExamLayoutProps {
   sectionQuestionsCount?: number;
   onShowFormulas?: () => void;
   enableQuantitativeTools?: boolean;
+  fullscreenRequired?: boolean;
 
   questionId?: number | string;
 }
@@ -144,6 +148,7 @@ export function QiyasExamLayout({
   sectionQuestionsCount,
   onShowFormulas,
   enableQuantitativeTools = false,
+  fullscreenRequired = false,
   questionId,
 }: QiyasExamLayoutProps) {
   useExamQuestionTiming({
@@ -159,7 +164,10 @@ export function QiyasExamLayout({
   const [showSectionInstructions, setShowSectionInstructions] = useState(false);
   const [activeStudyTool, setActiveStudyTool] = useState<ExamStudyTool | null>(null);
   const [showMobilePanel, setShowMobilePanel] = useState(false);
-  const [isDisplayFullscreen, setIsDisplayFullscreen] = useState(false);
+  const [isDisplayFullscreen, setIsDisplayFullscreen] = useState(isExamFocusMode);
+  const [showNotebook, setShowNotebook] = useState(false);
+  const [showDesktopGrid, setShowDesktopGrid] = useState(false);
+  const [displayNotice, setDisplayNotice] = useState("");
 
   const [showReportDialog, setShowReportDialog] = useState(false);
   const [reportType, setReportType] = useState('');
@@ -171,25 +179,58 @@ export function QiyasExamLayout({
     imageUrls: questionImageUrls,
   });
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     setStudentExamChromeActive(true);
     return () => setStudentExamChromeActive(false);
   }, [setStudentExamChromeActive]);
 
   useEffect(() => {
     const syncFullscreenState = () => {
-      setIsDisplayFullscreen(typeof document !== "undefined" && Boolean(document.fullscreenElement));
+      setIsDisplayFullscreen(isExamFocusMode());
+      setDisplayNotice(document.documentElement.dataset.examFocusMode === "true" && !document.fullscreenElement
+        ? "المتصفح لا يسمح بملء الشاشة؛ تم توسيع مساحة الاختبار داخل الصفحة وإخفاء القائمة الجانبية."
+        : "");
+    };
+    const onNativeFullscreenChange = () => {
+      if (!document.fullscreenElement) setExamPageFocus(false);
+      syncFullscreenState();
     };
 
     syncFullscreenState();
-    document.addEventListener("fullscreenchange", syncFullscreenState);
+    document.addEventListener("fullscreenchange", onNativeFullscreenChange);
+    document.addEventListener(EXAM_FOCUS_EVENT, syncFullscreenState);
     return () => {
-      document.removeEventListener("fullscreenchange", syncFullscreenState);
+      document.removeEventListener("fullscreenchange", onNativeFullscreenChange);
+      document.removeEventListener(EXAM_FOCUS_EVENT, syncFullscreenState);
+      setExamPageFocus(false);
       if (document.fullscreenElement && document.exitFullscreen) {
         void document.exitFullscreen().catch(() => undefined);
       }
     };
   }, []);
+
+  useEffect(() => {
+    const media = window.matchMedia("(min-width: 768px)");
+    const sync = () => { if (!media.matches) { setShowNotebook(false); setShowDesktopGrid(false); } };
+    sync();
+    media.addEventListener("change", sync);
+    return () => media.removeEventListener("change", sync);
+  }, []);
+
+  const toggleFullscreen = async () => {
+    if (isDisplayFullscreen && fullscreenRequired) return;
+    try {
+      if (isDisplayFullscreen) {
+        await exitExamFocus();
+        setDisplayNotice("");
+      } else {
+        const mode = await enterExamFocus();
+        setDisplayNotice(mode === "page" ? "المتصفح لا يسمح بملء الشاشة؛ تم توسيع مساحة الاختبار داخل الصفحة وإخفاء القائمة الجانبية." : "");
+      }
+    } catch {
+      setDisplayNotice("تعذر تغيير وضع الشاشة. يمكنك متابعة الاختبار والمحاولة مجددًا.");
+    }
+  };
 
   const handleSubmitReport = async () => {
     if (!reportType) return;
@@ -258,7 +299,7 @@ export function QiyasExamLayout({
       {gridQuestions.map((status, idx) => (
         <button
           key={idx}
-          onClick={() => { onJumpToQuestion?.(idx); setShowMobilePanel(false); }}
+          onClick={() => { onJumpToQuestion?.(idx); setShowMobilePanel(false); setShowDesktopGrid(false); }}
           title={`سؤال ${idx + 1}`}
           className={`w-full aspect-square rounded text-xs font-bold transition-all hover:scale-105 active:scale-95 ${
             idx === currentQuestionIndex && (status as any).bookmarked
@@ -283,14 +324,14 @@ export function QiyasExamLayout({
   );
 
   return (
-    <div className={`min-h-[100dvh] overflow-x-hidden bg-gray-100 flex flex-col md:flex-row ${isDisplayFullscreen ? "bg-white" : ""}`} dir="rtl">
+    <div className={`h-[100dvh] max-h-[100dvh] overflow-hidden bg-gray-100 flex flex-col md:flex-row ${isDisplayFullscreen ? "bg-white" : ""}`} dir="rtl" data-testid="qiyas-exam-layout">
 
       {/* ════════════════════════════════════════
           MOBILE TOP BAR (hidden on md+)
       ════════════════════════════════════════ */}
-      <div className={`md:hidden bg-white border-b border-gray-200 px-3 py-2 flex items-center justify-between shadow-sm sticky top-0 z-30 ${isDisplayFullscreen ? "hidden" : ""}`}>
+      <div className="md:hidden bg-white border-b border-gray-200 px-3 py-2 flex items-center justify-between shadow-sm sticky top-0 z-30">
         {/* Logo */}
-        <BrandMark tone="light" imageClassName="h-7 w-7" />
+        {!isDisplayFullscreen && <BrandMark tone="light" imageClassName="h-7 w-7" />}
 
         {/* Question number + section */}
         <div className="flex flex-col items-center">
@@ -314,7 +355,17 @@ export function QiyasExamLayout({
       {/* ════════════════════════════════════════
           MAIN CONTENT AREA
       ════════════════════════════════════════ */}
-      <div className={`flex-1 flex min-h-0 min-w-0 flex-col pb-[calc(4.5rem+env(safe-area-inset-bottom))] md:pb-0 ${isDisplayFullscreen ? "pb-0" : ""}`}>
+      <div className="flex-1 flex min-h-0 min-w-0 flex-col pb-[calc(4.5rem+env(safe-area-inset-bottom))] md:pb-0">
+        <ExamWorkspaceToolbar focused={isDisplayFullscreen} fullscreenRequired={fullscreenRequired}
+          notebookOpen={showNotebook} onFullscreen={() => void toggleFullscreen()}
+          onNotebook={() => setShowNotebook(open => !open)} timeLabel={formatTime(timeLeft)} urgent={isTimeUrgent}
+          questionNumber={questionNumber} totalQuestions={totalQuestions} showNavigation={isDisplayFullscreen || showNotebook}
+          navigationOpen={showDesktopGrid} onNavigation={() => setShowDesktopGrid(open => !open)} questionGrid={<QuestionGrid />}
+          notice={displayNotice} actions={topRightSlot}
+          studyTools={enableQuantitativeTools && (isDisplayFullscreen || showNotebook) ? <>
+            <button type="button" onClick={openLaws} className="min-h-11 rounded-lg border border-sky-200 bg-sky-50 px-3 text-sm font-bold text-sky-800">القوانين</button>
+            <button type="button" onClick={openCalculator} className="min-h-11 rounded-lg border border-teal-200 bg-teal-50 px-3 text-sm font-bold text-teal-800">الحاسبة</button>
+          </> : undefined} />
 
         {/* Desktop Top Bar (hidden on mobile) */}
         <div className={`hidden md:flex bg-white border-b border-gray-200 px-5 py-3 items-center justify-between shadow-sm ${isDisplayFullscreen ? "!hidden" : ""}`}>
@@ -448,6 +499,7 @@ export function QiyasExamLayout({
                     <div key={`${imageUrl}-${index}`} className="flex justify-center">
                       <ImageZoom
                         src={resolveFoundationAssetUrl(imageUrl)}
+                        paperBackground
                         imgClassName="rounded-xl object-contain border border-gray-200 shadow-sm max-w-full"
                         imgStyle={{ maxHeight: '280px', maxWidth: '100%', width: 'auto' }}
                       />
@@ -562,7 +614,7 @@ export function QiyasExamLayout({
       {/* ════════════════════════════════════════
           MOBILE BOTTOM NAVIGATION BAR (fixed)
       ════════════════════════════════════════ */}
-      <div className={`md:hidden fixed bottom-0 inset-x-0 z-[60] bg-white border-t border-gray-200 shadow-lg pb-[env(safe-area-inset-bottom)] ${isDisplayFullscreen ? "hidden" : ""}`} dir="rtl">
+      <div className="md:hidden fixed bottom-0 inset-x-0 z-[60] bg-white border-t border-gray-200 shadow-lg pb-[env(safe-area-inset-bottom)]" dir="rtl">
         <div className="flex h-16 items-center gap-1 px-2">
           {/* Previous */}
           <button
@@ -834,7 +886,7 @@ export function QiyasExamLayout({
       {/* ════════════════════════════════════════
           DESKTOP SIDEBAR (hidden on mobile)
       ════════════════════════════════════════ */}
-      <div className={`hidden md:flex w-56 flex-shrink-0 bg-white border-r border-gray-200 flex-col overflow-y-auto shadow-sm ${isDisplayFullscreen ? "!hidden" : ""}`}>
+      <div className={`hidden md:flex w-56 flex-shrink-0 bg-white border-r border-gray-200 flex-col overflow-y-auto shadow-sm ${isDisplayFullscreen || showNotebook ? "!hidden" : ""}`} data-testid="exam-question-sidebar">
         {/* Timer */}
         <div className={`p-3 border-b text-center ${isTimeUrgent ? 'bg-red-50 border-red-200' : 'border-gray-200'}`}>
           <p className="text-xs text-gray-500 mb-1">الوقت المتبقي</p>
@@ -1045,8 +1097,10 @@ export function QiyasExamLayout({
         </div>
       )}
 
+      <ExamNotebook open={showNotebook} questionKey={`${sectionNumber}:${questionId ?? questionNumber}`}
+        questionLabel={`السؤال ${questionNumber}`} onClose={() => setShowNotebook(false)} />
       {activeStudyTool && (
-        <ExamStudyToolsDialog
+      <ExamStudyToolsDialog
           tool={activeStudyTool}
           onClose={() => setActiveStudyTool(null)}
         />

@@ -65,6 +65,7 @@ export function useAntiCheat(options: AntiCheatOptions = {}): AntiCheatState {
 
     // Prevent right-click context menu
     const handleContextMenu = (e: MouseEvent) => {
+      if (e.target instanceof HTMLTextAreaElement && e.target.closest("[data-exam-notebook]")) return;
       e.preventDefault();
       recordViolation('right_click');
     };
@@ -91,6 +92,8 @@ export function useAntiCheat(options: AntiCheatOptions = {}): AntiCheatState {
 
       // Prevent Ctrl+C (copy) and Ctrl+A (select all)
       if (e.ctrlKey && (e.key === 'c' || e.key === 'C' || e.key === 'a' || e.key === 'A')) {
+        // The student's own temporary notes are not exam content or answer keys.
+        if (e.target instanceof HTMLTextAreaElement && e.target.closest("[data-exam-notebook]")) return;
         e.preventDefault();
         recordViolation('copy_attempt');
         return;

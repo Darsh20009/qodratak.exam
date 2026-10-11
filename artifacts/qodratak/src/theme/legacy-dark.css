@@ -1,0 +1,157 @@
+/* Compatibility for legacy app pages, not embedded previews or source media.
+   Explicit dark variants and semantic theme utilities remain page-owned. */
+@media screen {
+.dark .qodratak-page-surface :is(
+  [class~="bg-white"], [class~="bg-white/70"], [class~="bg-white/80"], [class~="bg-white/90"],
+  [class~="bg-gray-50"], [class~="bg-gray-100"], [class~="bg-slate-50"], [class~="bg-slate-100"],
+  [class~="bg-zinc-50"], [class~="bg-neutral-50"], [class~="bg-[#f8fafc]"], [class~="bg-[#F8FAFC]"],
+  [class~="bg-[#FFFCF7]"], [class~="bg-[#F7F4EE]"], [class~="bg-[#F7F8FA]"],
+  [class~="bg-[#EDF1F4]"], [class~="bg-[#F8FAFB]"], [class~="bg-[#F0F3F5]"],
+  [class~="bg-[#EAF2F5]"], [class~="bg-[#F3F0EA]"], [class~="bg-[#E5E7EB]"],
+  [class~="bg-[#fbfcf8]"], [class~="bg-[#f7faf6]"], [class~="bg-[#f2f5f0]"],
+  [class~="bg-[#f9fbf7]"], [class~="bg-[#edf1ec]"], [class~="bg-[#fffaf0]"],
+  [class~="bg-[#fff8f6]"], [class~="bg-[#f3faf6]"], [class~="bg-[#eef3ee]"],
+  [class~="bg-[#f8faf7]"], [class~="bg-[#FFFCF5]"], [class~="bg-[#FCF9FD]"],
+  [class~="bg-[#fbfaf5]"], [class~="bg-[#f5f7ef]"], [class~="bg-[#f1f0e9]"],
+  [class~="bg-[#eff1e5]"], [class~="bg-[#eff1e8]"], [class~="bg-[#f0f1e8]"],
+  [class~="bg-[#eef3e8]"], [class~="bg-[#fcfcf8]"], [class~="bg-[#eeefe8]"],
+  [class~="bg-[#eef5ec]"], [class~="bg-[#f3f0e8]"]
+):not([class*="dark:bg-"]) {
+  background-color: hsl(var(--card)) !important;
+}
+
+.dark .qodratak-page-surface :is(
+  [class~="bg-gray-200"], [class~="bg-slate-200"], [class~="bg-[#F1F5F9]"],
+  [class~="bg-[#edf0e2]"], [class~="bg-[#e2e8d3]"], [class~="bg-[#e7e9df]"],
+  [class~="bg-[#f4f2e9]"], [class~="bg-[#edf0df]"], [class~="bg-[#e9edda]"],
+  [class~="bg-[#e8e7df]"], [class~="bg-[#e5ead9]"]
+):not([class*="dark:bg-"]) {
+  background-color: hsl(var(--muted)) !important;
+}
+
+.dark .qodratak-page-surface :is(
+  [class~="text-black"], [class~="text-gray-800"], [class~="text-gray-900"],
+  [class~="text-slate-800"], [class~="text-slate-900"], [class~="text-zinc-800"],
+  [class~="text-zinc-900"], [class~="text-[#14213d]"], [class~="text-[#0D1B2A]"], [class~="text-[#171723]"],
+  [class~="text-[#172337]"], [class~="text-[#17354A]"], [class~="text-[#24202D]"],
+  [class~="text-[#143e3a]"], [class~="text-[#304942]"], [class~="text-[#3d554d]"],
+  [class~="text-[#365846]"], [class~="text-[#273a35]"], [class~="text-[#20352f]"],
+  [class~="text-[#203f38]"], [class~="text-[#426452]"], [class~="text-[#344d40]"],
+  [class~="text-[#345941]"], [class~="text-[#62502d]"], [class~="text-[#674641]"]
+):not([class*="dark:text-"]) {
+  color: hsl(var(--foreground)) !important;
+}
+
+.dark .qodratak-page-surface :is(
+  [class~="text-gray-400"], [class~="text-gray-500"], [class~="text-gray-600"], [class~="text-gray-700"],
+  [class~="text-slate-400"], [class~="text-slate-500"], [class~="text-slate-600"], [class~="text-slate-700"],
+  [class~="text-zinc-500"], [class~="text-zinc-600"], [class~="text-zinc-700"],
+  [class~="text-[#64748B]"], [class~="text-[#5E7180]"], [class~="text-[#94A3B8]"],
+  [class~="text-[#6B625B]"], [class~="text-[#625D69]"], [class~="text-[#8E8993]"],
+  [class~="text-[#68736d]"], [class~="text-[#617069]"], [class~="text-[#68736c]"],
+  [class~="text-[#68756e]"], [class~="text-[#65736a]"], [class~="text-[#778077]"],
+  [class~="text-[#56665d]"], [class~="text-[#75836f]"], [class~="text-[#6c786f]"],
+  [class~="text-[#50694f]"], [class~="text-[#69766a]"], [class~="text-[#71845c]"],
+  [class~="text-[#71806f]"], [class~="text-[#778177]"], [class~="text-[#68766a]"],
+  [class~="text-[#59695e]"], [class~="text-[#68766b]"], [class~="text-[#77664f]"],
+  [class~="text-[#53665a]"], [class~="text-[#58745f]"], [class~="text-[#47644e]"]
+):not([class*="dark:text-"]) {
+  color: hsl(var(--muted-foreground)) !important;
+}
+
+.dark .qodratak-page-surface :is(
+  [class~="border-gray-100"], [class~="border-gray-200"], [class~="border-gray-300"],
+  [class~="border-slate-100"], [class~="border-slate-200"], [class~="border-slate-300"],
+  [class~="border-[#E2E8F0]"], [class~="border-[#DDE6E2]"], [class~="border-[#D9E1E5]"],
+  [class~="border-[#C9D9E0]"], [class~="border-[#E5E7EB]"], [class~="border-[#dfe4df]"],
+  [class~="border-[#e3e8e2]"], [class~="border-[#dce4dc]"], [class~="border-[#e8ece7]"],
+  [class~="border-[#d9dfb0]"], [class~="border-[#d5daba]"], [class~="border-[#e3e2d8]"],
+  [class~="border-[#e4e5da]"], [class~="border-[#dfe2d4]"], [class~="border-[#e5e5db]"],
+  [class~="border-[#e7e8df]"], [class~="border-[#dbe9e1]"]
+):not([class*="dark:border-"]) {
+  border-color: hsl(var(--border)) !important;
+}
+
+/* Branded filled controls keep dark ink on coral; fallback title rules must not
+   turn their labels white. Explicit primary-foreground remains authoritative. */
+.dark .qodratak-page-surface :is(
+  [class~="bg-primary"], [class~="dark:bg-primary"],
+  [class~="bg-[#F7F775]"], [class~="bg-[#FF8A70]"], [class~="bg-[#91D7C5]"], [class~="bg-[#b8f36b]"]
+),
+.dark .qodratak-page-surface :is(
+  [class~="bg-primary"], [class~="dark:bg-primary"],
+  [class~="bg-[#F7F775]"], [class~="bg-[#FF8A70]"], [class~="bg-[#91D7C5]"], [class~="bg-[#b8f36b]"]
+) :is([class~="text-[#0D1B2A]"], [class~="text-white"], [class~="text-foreground"]) {
+  color: hsl(var(--primary-foreground)) !important;
+}
+
+/* Pale status panels retain their meaning with translucent dark-safe tints. */
+.dark .qodratak-page-surface :is([class~="bg-blue-50"], [class~="bg-blue-100"], [class~="bg-sky-50"], [class~="bg-indigo-50"]):not([class*="dark:bg-"]) { background-color: rgb(59 130 246 / .12) !important; }
+.dark .qodratak-page-surface :is([class~="text-blue-600"], [class~="text-blue-700"], [class~="text-blue-800"], [class~="text-blue-900"], [class~="text-sky-700"], [class~="text-indigo-700"]):not([class*="dark:text-"]) { color: #93c5fd !important; }
+.dark .qodratak-page-surface :is([class~="bg-green-50"], [class~="bg-green-100"], [class~="bg-emerald-50"], [class~="bg-emerald-100"], [class~="bg-[#E8F7F2]"], [class~="bg-[#EAF8F3]"], [class~="bg-[#EFF8F4]"], [class~="bg-[#f0fdf4]"], [class~="bg-[#e0f1ec]"], [class~="bg-[#e8f2ed]"], [class~="bg-[#e2f1eb]"], [class~="bg-[#e5f2ed]"], [class~="bg-[#edf6f1]"], [class~="bg-[#e1f0e9]"], [class~="bg-[#e7f4eb]"], [class~="bg-[#F2FBF7]"], [class~="bg-[#dcebdc]"]):not([class*="dark:bg-"]) { background-color: rgb(16 185 129 / .12) !important; }
+.dark .qodratak-page-surface :is([class~="text-green-600"], [class~="text-green-700"], [class~="text-green-800"], [class~="text-emerald-600"], [class~="text-emerald-700"], [class~="text-[#398B79]"], [class~="text-[#287966]"], [class~="text-[#237f79]"], [class~="text-[#39805e]"], [class~="text-[#216953]"], [class~="text-[#147D68]"], [class~="text-[#3f7655]"], [class~="text-[#3c684d]"], [class~="text-[#4f7b58]"]):not([class*="dark:text-"]) { color: #6ee7b7 !important; }
+.dark .qodratak-page-surface :is([class~="bg-red-50"], [class~="bg-red-100"], [class~="bg-rose-50"], [class~="bg-[#FFF0EC]"], [class~="bg-[#fae4df]"], [class~="bg-[#fae5df]"], [class~="bg-[#FFF0F2]"], [class~="bg-[#fff0ea]"]):not([class*="dark:bg-"]) { background-color: rgb(244 63 94 / .12) !important; }
+.dark .qodratak-page-surface :is([class~="text-red-600"], [class~="text-red-700"], [class~="text-red-800"], [class~="text-rose-700"], [class~="text-[#A74B3A]"], [class~="text-[#A64242]"], [class~="text-[#C94C65]"], [class~="text-[#a35449]"], [class~="text-[#9b4937]"]):not([class*="dark:text-"]) { color: #fda4af !important; }
+.dark .qodratak-page-surface :is([class~="bg-amber-50"], [class~="bg-amber-100"], [class~="bg-orange-50"], [class~="bg-yellow-50"], [class~="bg-[#FFF0E9]"], [class~="bg-[#FFF8F2]"], [class~="bg-[#FFFFE4]"], [class~="bg-[#f7edd8]"], [class~="bg-[#fff1d9]"], [class~="bg-[#f8edd8]"], [class~="bg-[#f1dcae]"], [class~="bg-[#fff8f3]"], [class~="bg-[#fbf2e6]"]):not([class*="dark:bg-"]) { background-color: rgb(245 158 11 / .12) !important; }
+.dark .qodratak-page-surface :is([class~="text-amber-600"], [class~="text-amber-700"], [class~="text-amber-800"], [class~="text-yellow-700"], [class~="text-orange-700"], [class~="text-[#866323]"], [class~="text-[#8b7040]"], [class~="text-[#9A6A1F]"], [class~="text-[#a46c3f]"], [class~="text-[#a45d42]"], [class~="text-[#B65D36]"]):not([class*="dark:text-"]) { color: #fcd34d !important; }
+.dark .qodratak-page-surface :is([class~="bg-purple-50"], [class~="bg-purple-100"], [class~="bg-violet-50"], [class~="bg-[#e6e6ef]"], [class~="bg-[#ebeaf3]"]):not([class*="dark:bg-"]) { background-color: rgb(168 85 247 / .12) !important; }
+.dark .qodratak-page-surface :is([class~="text-purple-600"], [class~="text-purple-700"], [class~="text-violet-700"], [class~="text-[#7964C1]"], [class~="text-[#7A4B91]"]):not([class*="dark:text-"]) { color: #d8b4fe !important; }
+
+/* Neutral and pastel gradient stops must not retain a light wash. */
+.dark .qodratak-page-surface :is([class~="from-white"], [class~="from-gray-50"], [class~="from-slate-50"], [class~="from-blue-50"], [class~="from-green-50"], [class~="from-purple-50"]):not([class*="dark:from-"]) {
+  --tw-gradient-from: hsl(var(--card)) var(--tw-gradient-from-position) !important;
+  --tw-gradient-to: hsl(var(--card) / 0) var(--tw-gradient-to-position) !important;
+  --tw-gradient-stops: var(--tw-gradient-from), var(--tw-gradient-to);
+}
+.dark .qodratak-page-surface :is([class~="to-white"], [class~="to-gray-50"], [class~="to-slate-50"], [class~="to-blue-50"], [class~="to-green-50"], [class~="to-purple-50"]):not([class*="dark:to-"]) {
+  --tw-gradient-to: hsl(var(--muted)) var(--tw-gradient-to-position) !important;
+}
+
+.dark .qodratak-page-surface .recharts-cartesian-axis-tick-value,
+.dark .qodratak-page-surface .recharts-label {
+  fill: hsl(var(--muted-foreground));
+}
+.dark .qodratak-page-surface .recharts-cartesian-grid line {
+  stroke: hsl(var(--border));
+}
+.dark .qodratak-page-surface .recharts-default-tooltip {
+  background-color: hsl(var(--popover)) !important;
+  border-color: hsl(var(--border)) !important;
+  color: hsl(var(--popover-foreground)) !important;
+}
+.dark .qodratak-page-surface .recharts-tooltip-label {
+  color: hsl(var(--popover-foreground));
+}
+
+.dark .qodratak-page-surface :is(
+  [class~="hover:bg-white"], [class~="hover:bg-gray-50"], [class~="hover:bg-gray-100"],
+  [class~="hover:bg-slate-50"], [class~="hover:bg-slate-100"]
+):hover:not([class*="dark:hover:bg-"]) {
+  background-color: hsl(var(--muted)) !important;
+}
+.dark .qodratak-page-surface [class~="dark:bg-primary"]:hover:not([class*="dark:hover:bg-"]) {
+  background-color: hsl(var(--primary) / .9) !important;
+}
+
+/* Dialogs are portaled outside route containers; retain their theme boundary
+   without adding wrappers or changing Radix focus/animation behavior. */
+.dark .qodratak-dialog-surface :is([class~="bg-white"], [class~="bg-gray-50"], [class~="bg-slate-50"]):not([class*="dark:bg-"]) {
+  background-color: hsl(var(--card)) !important;
+}
+.dark .qodratak-dialog-surface :is([class~="text-black"], [class~="text-gray-900"], [class~="text-gray-800"], [class~="text-slate-900"], [class~="text-slate-800"]):not([class*="dark:text-"]) {
+  color: hsl(var(--foreground)) !important;
+}
+.dark .qodratak-dialog-surface :is([class~="text-gray-500"], [class~="text-gray-600"], [class~="text-slate-500"], [class~="text-slate-600"]):not([class*="dark:text-"]) {
+  color: hsl(var(--muted-foreground)) !important;
+}
+.dark .qodratak-dialog-surface :is([class~="border-gray-200"], [class~="border-gray-300"], [class~="border-slate-200"]):not([class*="dark:border-"]) {
+  border-color: hsl(var(--border)) !important;
+}
+/* The same transparent scans also appear in practice, reports and review.
+   Only the image's paper changes; never filter or invert the source pixels. */
+.dark :is(.qodratak-page-surface, .qodratak-dialog-surface) img:is(
+  [src*="/computer-banks/"], [alt^="صورة السؤال"]
+) {
+  background-color: #fff !important;
+}
+}

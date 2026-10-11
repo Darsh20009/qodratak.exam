@@ -47,3 +47,7 @@
 - [Large attachment staging](large-attachment-staging.md) — keep temporary hard links on the workspace filesystem; `/tmp` is mounted separately.
 - [Reusable explanations and reports](reusable-explanations-and-reports.md) — deterministic reporting, AI only for missing explanations, reusable content-aware caches with generated text clearly labeled.
 - [Student journey scope](student-journey-scope.md) — one personalized preparation path; keep incomplete Tahsili student features closed and labeled «قريبًا».
+- [Landing store badge](landing-store-badge.md) — show «متجر موثّق» only on the public homepage, never on any dashboard or other page.
+- [Complaint notification boundary](customer-complaint-notifications.md) — minimal admin WhatsApp notices; full customer records stay protected, and saving does not depend on delivery.
+- [RTL hidden controls](rtl-hidden-controls.md) — clip hidden fields in place; far-negative offsets can expand RTL document bounds.
+- [Student brand accent](student-brand-accent.md) — student highlights use the landing page’s orange/coral rather than yellow; preserve semantic warning colors.

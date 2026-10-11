@@ -1,3 +1,5 @@
+@import "./theme/legacy-dark.css";
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -8,13 +10,15 @@
    =============================================== */
 
 :root {
+  color-scheme: light;
   /* Brand palette:
      Navy #0D1B2A · Slate #1E2938 · Mist #94A3B8
-     Signal #F7F775 · Canvas #E5E7EB */
+     Signal #FF8A70 · Canvas #E5E7EB */
   --brand-navy: #0D1B2A;
   --brand-slate: #1E2938;
   --brand-mist: #94A3B8;
-  --brand-signal: #F7F775;
+  --brand-signal: #FF8A70;
+  --brand-signal-hsl: 10.9091 100% 71.9608%;
   --brand-canvas: #E5E7EB;
   --brand-surface: #F7F8FA;
 
@@ -43,7 +47,7 @@
   --primary-foreground: 0 0% 100%;
   --secondary: 210 12% 92%;
   --secondary-foreground: 211 54% 11%;
-  --accent: 60 90% 71%;
+  --accent: var(--brand-signal-hsl);
   --accent-foreground: 211 54% 11%;
   --destructive: 0 65% 50%;
   --destructive-foreground: 0 0% 100%;
@@ -51,7 +55,7 @@
   --sidebar: 211 54% 11%;
   --sidebar-foreground: 0 0% 100%;
   --sidebar-border: 210 14% 88%;
-  --sidebar-accent: 60 90% 71%;
+  --sidebar-accent: var(--brand-signal-hsl);
   --sidebar-accent-foreground: 211 54% 11%;
   
   --radius: 0.5rem;
@@ -65,6 +69,7 @@
 
 /* الوضع الليلي - Dark Mode (أغمق وأكثر راحة للعين) */
 .dark {
+  color-scheme: dark;
   --background: 211 54% 7%;
   --foreground: 0 0% 95%;
   --muted: 214 30% 17%;
@@ -77,13 +82,13 @@
   
   --border: 215 28% 14%;
   --input: 215 28% 14%;
-  --ring: 60 90% 71%;
+  --ring: var(--brand-signal-hsl);
   
-  --primary: 60 90% 71%;
+  --primary: var(--brand-signal-hsl);
   --primary-foreground: 211 54% 11%;
   --secondary: 214 30% 17%;
   --secondary-foreground: 0 0% 95%;
-  --accent: 60 90% 71%;
+  --accent: var(--brand-signal-hsl);
   --accent-foreground: 211 54% 11%;
   --destructive: 0 62% 50%;
   --destructive-foreground: 0 0% 100%;
@@ -91,8 +96,39 @@
   --sidebar: 211 54% 11%;
   --sidebar-foreground: 0 0% 95%;
   --sidebar-border: 214 30% 17%;
-  --sidebar-accent: 60 90% 71%;
+  --sidebar-accent: var(--brand-signal-hsl);
   --sidebar-accent-foreground: 211 54% 11%;
+}
+
+/* Older brand utilities follow the same landing-page accent, including opacity
+   and hover states. Semantic yellow/amber warning and grading colors stay intact. */
+[class~="text-[#F7F775]"],
+[class~="hover:text-[#F7F775]"]:hover {
+  color: var(--brand-signal);
+}
+[class~="bg-[#F7F775]"] {
+  background-color: var(--brand-signal);
+}
+[class~="border-[#F7F775]"] {
+  border-color: var(--brand-signal);
+}
+[class~="bg-[#F7F775]/15"] {
+  background-color: hsl(var(--brand-signal-hsl) / .15);
+}
+[class~="bg-[#F7F775]/35"] {
+  background-color: hsl(var(--brand-signal-hsl) / .35);
+}
+[class~="bg-[#F7F775]/40"] {
+  background-color: hsl(var(--brand-signal-hsl) / .4);
+}
+[class~="hover:bg-[#F7F775]/85"]:hover {
+  background-color: hsl(var(--brand-signal-hsl) / .85);
+}
+[class~="hover:bg-[#F7F775]/90"]:hover {
+  background-color: hsl(var(--brand-signal-hsl) / .9);
+}
+[class~="hover:border-[#F7F775]/60"]:hover {
+  border-color: hsl(var(--brand-signal-hsl) / .6);
 }
 
 /* الشعار الأبيض المرفق مخصص للخلفيات الداكنة، مع إبقاء نسخة النهار كما هي. */
@@ -598,31 +634,6 @@
 /* Keep legacy page components readable when the shared dark theme is active.
    These selectors only apply inside the app surface, so embedded previews and
    unrelated artifacts keep their own palettes. */
-.dark .qodratak-page-surface [class~="bg-white"],
-.dark .qodratak-page-surface [class~="bg-white/70"],
-.dark .qodratak-page-surface [class~="bg-white/80"],
-.dark .qodratak-page-surface [class~="bg-white/90"],
-.dark .qodratak-page-surface [class~="bg-[#FFFCF7]"] {
-  background-color: hsl(var(--card)) !important;
-}
-
-.dark .qodratak-page-surface [class~="text-black"],
-.dark .qodratak-page-surface [class~="text-gray-900"],
-.dark .qodratak-page-surface [class~="text-gray-800"],
-.dark .qodratak-page-surface [class~="text-[#0D1B2A]"],
-.dark .qodratak-page-surface [class~="text-[#171723]"],
-.dark .qodratak-page-surface [class~="text-[#172337]"] {
-  color: hsl(var(--foreground)) !important;
-}
-
-.dark .qodratak-page-surface [class~="text-gray-500"],
-.dark .qodratak-page-surface [class~="text-gray-400"],
-.dark .qodratak-page-surface [class~="text-[#64748B]"],
-.dark .qodratak-page-surface [class~="text-[#5E7180]"],
-.dark .qodratak-page-surface [class~="text-[#94A3B8]"] {
-  color: hsl(var(--muted-foreground)) !important;
-}
-
 .dark body {
   background-color: hsl(var(--background)) !important;
 }

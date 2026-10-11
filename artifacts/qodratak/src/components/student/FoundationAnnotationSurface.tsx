@@ -4,6 +4,7 @@ import type {
   LearningContentAnnotationData,
 } from "@/hooks/use-student";
 import { cn } from "@/lib/utils";
+import { appendFoundationPoint, canStartFoundationStroke, foundationStrokePayload } from "@/lib/foundationDrawing";
 
 export type FoundationAnnotationTool = "READ" | "PEN" | "HIGHLIGHT" | "UNDERLINE" | "NOTE" | "ERASE";
 
@@ -21,9 +22,7 @@ type FoundationAnnotationSurfaceProps = {
 };
 
 function isDrawingPointer(event: React.PointerEvent, activeTool: FoundationAnnotationTool): boolean {
-  if (activeTool !== "PEN") return false;
-  if (event.pointerType === "pen") return true;
-  return event.pointerType === "touch";
+  return canStartFoundationStroke(activeTool, event);
 }
 
 function pointsToPath(points: Point[]): string {
@@ -42,8 +41,8 @@ function DrawingOverlay({
   onDeleteAnnotation: (annotationId: string) => void;
 }) {
   const [layoutVersion, setLayoutVersion] = useState(0);
-  const drawingAnnotations = annotations.filter((annotation) => annotation.type === "DRAWING" && annotation.data.points?.length);
-  const textAnnotations = annotations.filter((annotation) => annotation.type === "HIGHLIGHT" || annotation.type === "UNDERLINE");
+  const drawingAnnotations = useMemo(() => annotations.filter((annotation) => annotation.type === "DRAWING" && annotation.data.points?.length), [annotations]);
+  const textAnnotations = useMemo(() => annotations.filter((annotation) => annotation.type === "HIGHLIGHT" || annotation.type === "UNDERLINE"), [annotations]);
 
   useEffect(() => {
     if (!root) return;
@@ -150,6 +149,7 @@ export function FoundationAnnotationSurface({
   const [drawing, setDrawing] = useState<Point[] | null>(null);
   const [root, setRootState] = useState<HTMLDivElement | null>(null);
   const pointerId = useRef<number | null>(null);
+  const livePoints = useRef<Point[]>([]);
   const rootRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
@@ -168,26 +168,35 @@ export function FoundationAnnotationSurface({
   };
 
   const handlePointerDown = (event: React.PointerEvent<HTMLDivElement>) => {
-    if (!isDrawingPointer(event, activeTool)) return;
-    if ((event.target as HTMLElement).closest("button,a,input,textarea")) return;
+    if (pointerId.current !== null || !isDrawingPointer(event, activeTool)) return;
+    if ((event.target as Element).closest("button,a,input,textarea,select,[contenteditable=true]")) return;
     const point = pointFromEvent(event);
     if (!point) return;
     event.preventDefault();
     pointerId.current = event.pointerId;
+    livePoints.current = [point];
     event.currentTarget.setPointerCapture(event.pointerId);
     setDrawing([point]);
   };
 
   const handlePointerMove = (event: React.PointerEvent<HTMLDivElement>) => {
-    if (pointerId.current !== event.pointerId || !drawing) return;
+    if (pointerId.current !== event.pointerId) return;
     const point = pointFromEvent(event);
-    if (point) setDrawing((current) => current ? [...current, point] : current);
+    if (point) {
+      appendFoundationPoint(livePoints.current, point);
+      setDrawing([...livePoints.current]);
+    }
   };
 
   const finishDrawing = (event: React.PointerEvent<HTMLDivElement>) => {
     if (pointerId.current !== event.pointerId) return;
-    const points = drawing || [];
+    if (event.type === "pointerup") {
+      const endpoint = pointFromEvent(event);
+      if (endpoint) appendFoundationPoint(livePoints.current, endpoint);
+    }
+    const points = foundationStrokePayload(livePoints.current);
     pointerId.current = null;
+    livePoints.current = [];
     if (event.currentTarget.hasPointerCapture(event.pointerId)) event.currentTarget.releasePointerCapture(event.pointerId);
     setDrawing(null);
     if (points.length >= 2) {
@@ -208,7 +217,8 @@ export function FoundationAnnotationSurface({
       onPointerMove={handlePointerMove}
       onPointerUp={finishDrawing}
       onPointerCancel={finishDrawing}
-      style={{ touchAction: activeTool === "PEN" ? "pan-y" : undefined }}
+      onLostPointerCapture={finishDrawing}
+      style={{ touchAction: activeTool === "PEN" ? "none" : undefined, cursor: activeTool === "PEN" ? "crosshair" : undefined }}
     >
       {children}
       <DrawingOverlay root={root} annotations={annotations} activeTool={activeTool} onDeleteAnnotation={onDeleteAnnotation} />

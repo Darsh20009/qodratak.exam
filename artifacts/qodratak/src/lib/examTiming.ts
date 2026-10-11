@@ -4,7 +4,7 @@ export type TimedQuestion = {
   id: string; text: string; options: string[]; category?: string; subcategory?: string;
   imageUrl?: string; bankId?: string; selectedOptionIndex: number | null; seconds: number;
 };
-type Run = { runId: string; title: string; path?: string; finished: boolean; questions: Record<string, TimedQuestion> };
+type Run = { runId: string; title: string; path?: string; finished: boolean; questions: Record<string, TimedQuestion>; questionOrder?: string[] };
 let run: Run | null = null;
 let active: { id: string; since: number } | null = null;
 const storageKey = 'qodratak:active-exam-timing';
@@ -26,7 +26,25 @@ export function examQuestionSeconds(id: string | number) {
   const question = current?.questions[String(id)] || Object.values(current?.questions || {}).find((q) => q.bankId === String(id));
   return Math.round(question?.seconds || 0);
 }
-export function completeExamTiming() { flush(); active = null; if (run) { run.finished = true; persist(); } return run; }
+export function completeExamTiming(roster?: Omit<TimedQuestion, 'seconds'>[]) {
+  restore(); flush(); active = null;
+  if (run) {
+    if (roster) {
+      const previous = run.questions;
+      run.questions = Object.fromEntries(roster.map((q) => [
+        q.id, { ...q, seconds: previous[q.id]?.seconds || 0 },
+      ]));
+      run.questionOrder = roster.map((q) => q.id);
+    }
+    run.finished = true; persist();
+  }
+  return run;
+}
+export function orderedTimedQuestions(snapshot: Run) {
+  return snapshot.questionOrder
+    ? snapshot.questionOrder.map((id) => snapshot.questions[id]).filter(Boolean)
+    : Object.values(snapshot.questions);
+}
 export function resetExamTiming() { run = null; active = null; sessionStorage.removeItem(storageKey); }
 export function bindExamTimingOwner(owner: string | null) {
   try {
