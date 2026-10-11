@@ -236,10 +236,10 @@ export function generateBalancedQuestionSet(
     return result;
   }
 
-  const selected = getBalancedQuestions(
-    available,
-    calculateBalancedDistribution(requestedCount, category),
-  );
+  const selected = [...new Map(
+    getBalancedQuestions(available, calculateBalancedDistribution(requestedCount, category))
+      .map(question => [question.id, question]),
+  ).values()];
   while (selected.length < requestedCount) {
     const remaining = available.filter(
       (question) =>

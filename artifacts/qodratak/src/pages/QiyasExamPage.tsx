@@ -1,5 +1,7 @@
 import React, { useState, useEffect, useMemo, useRef, useCallback } from "react";
-import { useLocation } from "wouter";
+import { useLocation, useSearch } from "wouter";
+import useSubscription from "@/hooks/useSubscription";
+import { selectExamSection } from "@/lib/examQuestionSelection";
 import { useToast } from "@/hooks/use-toast";
 import { useAntiCheat } from '@/hooks/useAntiCheat';
 import { AntiCheatWarning } from '@/components/AntiCheatWarning';
@@ -20,7 +22,6 @@ import type { ExamModeSettingsValue } from "@/components/exam/ExamModeSettings";
 import ExamSectionIntro from "@/components/exam/ExamSectionIntro";
 import SubSectionIntroOverlay, { normalizeSubcategory } from "@/components/exam/SubSectionIntroOverlay";
 import {
-  generateBalancedQuestionSet,
   calculateDetailedResults,
   type DetailedExamResult
 } from "@shared/examUtils";
@@ -333,8 +334,17 @@ function createExamAttemptId(): string {
 }
 
 // Main component
-const QiyasExamPage: React.FC = () => {
+export interface CustomExamConfiguration {
+  verbalCount: number;
+  quantitativeCount: number;
+  timeLimit: number;
+}
+
+const QiyasExamPage: React.FC<{ customConfiguration?: CustomExamConfiguration }> = ({ customConfiguration }) => {
   const [, setLocation] = useLocation();
+  const search = useSearch();
+  const { subscription } = useSubscription();
+  const hasExamAccess = Boolean(subscription?.canAccessPremiumFeatures && !subscription?.isExpired);
   const { toast } = useToast();
   const isMobile = useIsMobile();
   const { user } = useUser();
@@ -366,7 +376,28 @@ const QiyasExamPage: React.FC = () => {
   const [sectionOnlyIndex, setSectionOnlyIndex] = useState<number | null>(null); // 0-based section index for single-section mode
 
   useEffect(() => {
-    const params = new URLSearchParams(window.location.search);
+    if (!customConfiguration) return;
+    const { verbalCount, quantitativeCount, timeLimit } = customConfiguration;
+    const totalQuestions = verbalCount + quantitativeCount;
+    if (![verbalCount, quantitativeCount, timeLimit].every(Number.isSafeInteger) ||
+        verbalCount < 0 || quantitativeCount < 0 || totalQuestions < 5 || totalQuestions > 120 ||
+        timeLimit < 5 || timeLimit > 180) return;
+    setSectionOnlyIndex(null);
+    setSelectedExam({
+      id: 9, name: "اختبار مخصص", totalSections: 1, totalQuestions, totalTime: timeLimit,
+      overallCategory: verbalCount === 0 ? "quantitative" : quantitativeCount === 0 ? "verbal" : "mixed",
+      sections: [{
+        sectionNumber: 1, name: "التدريب المخصص", category: "mixed",
+        questionCount: totalQuestions, timeLimit, verbalCount, quantitativeCount,
+      }],
+    });
+    setCurrentView("instructions");
+  }, [customConfiguration]);
+
+  useEffect(() => {
+    if (customConfiguration) return;
+    setSectionOnlyIndex(null);
+    const params = new URLSearchParams(search);
     const examIdParam = params.get('examId');
     const sectionOnlyParam = params.get('sectionOnly'); // 1-based section number
     if (examIdParam) {
@@ -395,7 +426,7 @@ const QiyasExamPage: React.FC = () => {
         setCurrentView("instructions");
       }
     }
-  }, []);
+  }, [search, customConfiguration]);
   const [currentSectionIdx, setCurrentSectionIdx] = useState(0);
   const [currentQuestionIdx, setCurrentQuestionIdx] = useState(0);
   const [timeLeft, setTimeLeft] = useState(0);
@@ -755,98 +786,6 @@ const QiyasExamPage: React.FC = () => {
     setCurrentView("instructions");
   };
 
-  const fetchRawQuestionsForSectionConfig = async (section: QiyasSection, usedQuestionIds: Set<number>): Promise<ExamQuestion[]> => {
-    try {
-      const response = await fetch('/api/questions', { credentials: 'include' });
-      if (!response.ok) {
-        throw new Error(`فشل في جلب الأسئلة من الخادم: ${response.status}`);
-      }
-      const allAvailableQuestions: ExamQuestion[] = await response.json();
-
-      // فلترة الأسئلة لتجنب التكرار
-      const availableQuestions = allAvailableQuestions.filter(q => !usedQuestionIds.has(q.id));
-
-      let balancedQuestions: ExamQuestion[] = [];
-
-      // للأقسام المختلطة مع توزيع محدد
-      if (section.category === 'mixed' && section.verbalCount !== undefined && section.quantitativeCount !== undefined) {
-        // جلب الأسئلة اللفظية
-        const verbalQuestions = generateBalancedQuestionSet(
-          availableQuestions,
-          'verbal',
-          section.verbalCount
-        );
-        
-        // جلب الأسئلة الكمية
-        const quantitativeQuestions = generateBalancedQuestionSet(
-          availableQuestions,
-          'quantitative',
-          section.quantitativeCount
-        );
-        
-        // الكمي أولاً ثم اللفظي (حسب نظام قياس الرسمي)
-        balancedQuestions = [...quantitativeQuestions, ...verbalQuestions];
-      } else {
-        // استخدام نظام التوزيع المتوازن العادي
-        balancedQuestions = generateBalancedQuestionSet(
-          availableQuestions,
-          section.category,
-          section.questionCount
-        );
-      }
-
-      let filteredQuestions = balancedQuestions;
-
-      // إذا لم نحصل على أسئلة كافية من الأسئلة غير المستخدمة
-      if (filteredQuestions.length < section.questionCount) {
-         console.warn(`تحذير: تم العثور على ${filteredQuestions.length} سؤال فقط لقسم ${section.name} (مطلوب ${section.questionCount})`);
-
-         // إذا لم نجد أي أسئلة متاحة، استخدم من جميع الأسئلة
-         if (filteredQuestions.length === 0) {
-           const fallbackQuestions = generateBalancedQuestionSet(
-             allAvailableQuestions,
-             section.category,
-             section.questionCount
-           );
-           filteredQuestions = fallbackQuestions;
-
-           toast({
-             title: `تحذير: قسم ${section.name}`,
-             description: "تم إعادة استخدام بعض الأسئلة بسبب عدم توفر أسئلة جديدة كافية",
-             variant: "default"
-           });
-         }
-
-         // إذا لا تزال الأسئلة غير كافية، املأ بأسئلة عشوائية
-         while (filteredQuestions.length < section.questionCount && allAvailableQuestions.length > 0) {
-            const randomQ = allAvailableQuestions[Math.floor(Math.random() * allAvailableQuestions.length)];
-            if (!filteredQuestions.find(q => q.id === randomQ.id)) {
-              filteredQuestions.push({...randomQ, id: randomQ.id + Math.random() * 1000});
-            }
-         }
-      }
-
-      // تحديث مجموعة الأسئلة المستخدمة
-      filteredQuestions.forEach(q => usedQuestionIds.add(q.id));
-
-      return filteredQuestions.map(q => ({
-        ...q,
-        section: section.sectionNumber,
-        id: q.id || Date.now() + Math.random(),
-        imageUrl: (q as any).imageUrl || (q as any).displayImage || (q as any).image_url || undefined
-      }));
-
-    } catch (error) {
-      console.error(`خطأ في تحميل أسئلة قسم ${section.name}:`, error);
-      toast({
-        title: "خطأ في تحميل الأسئلة",
-        description: `لم نتمكن من تحميل أسئلة قسم "${section.name}".`,
-        variant: "destructive"
-      });
-      return [];
-    }
-  };
-
   const startExam = async (settings?: ExamModeSettingsValue) => {
     if (!selectedExam || isLoadingExam) return;
     if (settings) setExamSettings(settings);
@@ -871,11 +810,19 @@ const QiyasExamPage: React.FC = () => {
     setPendingNextSectionIdx(null);
 
     try {
+      const response = await fetch('/api/questions', { credentials: 'include' });
+      if (!response.ok) throw new Error(`تعذر تحميل أسئلة الاختبار (${response.status}). أعد المحاولة.`);
+      const availableQuestions: ExamQuestion[] = await response.json();
+      if (!Array.isArray(availableQuestions)) throw new Error("بيانات الأسئلة غير صالحة. أعد المحاولة.");
       let flatListOfAllRawQuestions: ExamQuestion[] = [];
       const usedQuestionIds = new Set<number>(); // تتبع الأسئلة المستخدمة
 
       for (const section of selectedExam.sections) {
-        const rawQs = await fetchRawQuestionsForSectionConfig(section, usedQuestionIds);
+        const rawQs = selectExamSection(availableQuestions, section, usedQuestionIds).map(question => ({
+          ...question,
+          section: section.sectionNumber,
+          imageUrl: getQuestionImageUrls(question)[0],
+        }));
         flatListOfAllRawQuestions.push(...rawQs);
       }
 
@@ -989,11 +936,11 @@ const QiyasExamPage: React.FC = () => {
     } catch (error) {
       console.error("Error starting exam:", error);
       toast({
-        title: "خطأ فادح عند بدء الاختبار",
+        title: "تعذر بدء الاختبار",
         description: `فشل في تحميل أو معالجة أسئلة الاختبار. ${(error as Error).message}`,
         variant: "destructive",
       });
-       setCurrentView("selection");
+       setCurrentView("instructions");
     } finally {
       setIsLoadingExam(false);
     }
@@ -1433,7 +1380,7 @@ const QiyasExamPage: React.FC = () => {
       setIsCheckingExam(false);
     }
 
-    const isUserSubscribed = user?.subscription?.type === 'Pro Live' || user?.subscription?.type === 'Pro Life Plus' || user?.subscription?.type === 'Pro Life' || user?.subscription?.type === 'Pro';
+    const isUserSubscribed = hasExamAccess;
 
     // Default behavior for all other exams
      if (exam.requiresSubscription && !isUserSubscribed) {
@@ -1445,7 +1392,7 @@ const QiyasExamPage: React.FC = () => {
 
 
   const renderExamSelection = () => {
-    const isUserSubscribed = user?.subscription?.type === 'Pro Live' || user?.subscription?.type === 'Pro Life Plus' || user?.subscription?.type === 'Pro Life' || user?.subscription?.type === 'Pro';
+    const isUserSubscribed = hasExamAccess;
 
     // Exam references
     const examFull    = qiyasExams.find(e => e.id === 1)!; // قدراتك التأهيلي كامل

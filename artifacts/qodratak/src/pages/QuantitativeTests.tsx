@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import useSubscription from "@/hooks/useSubscription";
 import { Link, useLocation } from 'wouter';
 import { motion } from 'framer-motion';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
@@ -60,12 +61,8 @@ export function QuantitativeTests() {
   const { user, isLoading: isUserLoading } = useUser();
 
   // تحديد المستخدم المميز
-  const subscription = user?.subscription;
-  const subscriptionType = subscription?.type;
-  const isPremiumUser = ['Pro', 'Pro Life', 'Pro Life Plus', 'Pro Live', 'pro', 'pro_life', 'pro_life_plus']
-    .includes(subscriptionType || '') &&
-    subscription?.status !== 'expired' &&
-    (!subscription?.endDate || new Date(subscription.endDate) > new Date());
+  const { subscription, isLoading: accessLoading } = useSubscription();
+  const isPremiumUser = Boolean(subscription?.canAccessPremiumFeatures && !subscription?.isExpired);
 
   // تحميل الحد اليومي للاختبارات
   useEffect(() => {
@@ -255,7 +252,7 @@ export function QuantitativeTests() {
   const canTakeThisTest = canTakeTest;
 
   const startTest = (test: QuantitativeTest) => {
-    if (isUserLoading) return;
+    if (isUserLoading || accessLoading) return;
 
     // Must be logged in first
     if (!user) {

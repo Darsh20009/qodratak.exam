@@ -204,7 +204,7 @@ export function EndTestButton({
                 هل تريد إنهاء {testName}؟
               </DialogTitle>
               
-              <DialogDescription className="text-gray-600 dark:text-gray-400 mt-2">
+              <DialogDescription asChild className="text-gray-600 dark:text-gray-400 mt-2">
                 <div className="space-y-2">
                   <p>سيتم فقدان جميع إجاباتك الحالية!</p>
                   

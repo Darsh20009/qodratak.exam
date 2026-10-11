@@ -23,6 +23,7 @@ import mongoose from 'mongoose';
 import passport from 'passport';
 import { Strategy as GoogleStrategy } from 'passport-google-oauth20';
 import { storage } from "../storage";
+import { examQuestionPayload, dailyExamQuestions } from "../services/examQuestionPayload";
 import { registerExamLearningReportRoutes } from './examLearningReportRoutes';
 import { registerQuestionVideoRoutes } from './questionVideoRoutes';
 import { registerRemedialPracticeRoutes } from './remedialPracticeRoutes';
@@ -1702,16 +1703,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
         try {
           const unseenQuestions = await mongoStorage.getUnseenQuestions(
             String(sessionUserId),
-            20,
+            200,
             { category }
           );
-          if (unseenQuestions.length > 0) return res.json(unseenQuestions);
+          const validUnseen = dailyExamQuestions(unseenQuestions);
+          if (validUnseen.length > 0) return res.json(validUnseen);
         } catch {}
       }
 
       const allQuestions = await storage.getQuestionsByCategory(category);
       const shuffled = [...allQuestions].sort(() => Math.random() - 0.5);
-      const selectedQuestions = shuffled.slice(0, 20);
+      const selectedQuestions = dailyExamQuestions(shuffled);
 
       return res.json(selectedQuestions);
     } catch (error) {
@@ -10409,16 +10411,19 @@ app.post("/api/auth/register", async (req: Request, res: Response) => {
       let pool: any[] = [];
       if (category === 'verbal' || category === 'all') {
         const vq = await mongoStorage.getQuestions('verbal', undefined, undefined, 5000);
-        pool.push(...vq.map((q: any) => ({ ...q, id: q.questionId })));
+        pool.push(...vq.map(examQuestionPayload));
       }
       if (category === 'quantitative' || category === 'all') {
         const qq = await mongoStorage.getQuestions('quantitative', undefined, undefined, 5000);
-        pool.push(...qq.map((q: any) => ({ ...q, id: q.questionId })));
+        pool.push(...qq.map(examQuestionPayload));
       }
 
       // Filter out already-seen-this-session
       const seenSet = new Set(seenIds.map(Number));
-      pool = pool.filter((q: any) => !seenSet.has(Number(q.questionId || q.id)));
+      pool = pool.filter((q: any) =>
+        !seenSet.has(Number(q.id)) && Number.isSafeInteger(q.id) &&
+        q.answerStatus !== 'review' && Array.isArray(q.options) && q.options.length >= 4 &&
+        Number.isInteger(q.correctOptionIndex) && q.correctOptionIndex >= 0 && q.correctOptionIndex < q.options.length);
 
       if (pool.length === 0) return res.json(null);
 

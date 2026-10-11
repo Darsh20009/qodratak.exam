@@ -1239,7 +1239,7 @@ function Router({ splashDone }: { splashDone: boolean }) {
         {() => <StudentShell><SectionedTestRunner /></StudentShell>}
       </Route>
       <Route path="/standard-test">
-        {() => <StudentShell><StandardSectionTestRunner /></StudentShell>}
+        {() => <Redirect to="/qiyas?examId=1" />}
       </Route>
       <Route path="/profile">
         {() => <Redirect to="/account" />}

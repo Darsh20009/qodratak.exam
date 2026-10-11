@@ -67,7 +67,7 @@ export default function NewProtectedRoute({
 
   const subscriptionType = (serverUser as any)?.subscription?.type || 'free';
   const isPremium = Boolean(
-    subscription?.hasActiveSubscription &&
+    (subscription?.hasActiveSubscription || subscription?.isTrialActive) &&
     subscription?.canAccessPremiumFeatures &&
     !subscription?.isExpired,
   );
