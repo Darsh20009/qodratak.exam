@@ -5,6 +5,19 @@
  * API specification
  * OpenAPI spec version: 0.1.0
  */
+export interface QuestionVideoClipOutput {
+  available: boolean;
+  reason?: string;
+  title?: string;
+  videoUrl?: string;
+  bankNumber?: number;
+  questionNumber?: number;
+  startSeconds?: number;
+  endSeconds?: number;
+  approximate?: boolean;
+  verified?: boolean;
+}
+
 export interface StudentCoursePracticeInput {
   taskId: string;
 }

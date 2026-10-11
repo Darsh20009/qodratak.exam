@@ -9,6 +9,7 @@ import { getQuestionImageUrls } from '@/lib/questionImages';
 import { resolveFoundationAssetUrl } from '@/lib/foundationVideoUrl';
 import ResultsTeacherAnalysis from '@/components/exam-results/ResultsTeacherAnalysis';
 import ExamLearningReport from '@/components/exam-results/ExamLearningReport';
+import QuestionVideoExplanation from '@/components/exam-results/QuestionVideoExplanation';
 import { completeExamTiming, examQuestionSeconds } from '@/lib/examTiming';
 import QuestionReportModal from '@/components/exam-results/QuestionReportModal';
 import { apiRequest } from "@/lib/queryClient";
@@ -3329,6 +3330,8 @@ const generateChallengeFile = ({ isTimed, questions: incorrectOrUnansweredQuesti
                                 </div>
                                 ))}
                             </div>
+                            {question.category === 'quantitative' && question._id &&
+                              <div className="mt-3"><QuestionVideoExplanation questionId={String(question._id)} /></div>}
                             {question.explanation && (
                                 <div className="mt-4 overflow-hidden rounded-2xl border border-amber-500/25 bg-gradient-to-br from-amber-500/8 to-orange-500/5 dark:from-amber-900/20 dark:to-orange-900/10">
                                   <div className="flex items-center gap-2.5 px-4 py-2.5 border-b border-amber-500/15 bg-amber-500/5 dark:bg-amber-900/15">

@@ -397,6 +397,27 @@ export const SaveStudentExamReportResponse = zod.object({
 })
 
 
+/**
+ * @summary Get the source-bank video segment for a quantitative question
+ */
+export const GetQuestionVideoClipParams = zod.object({
+  "questionId": zod.coerce.string()
+})
+
+export const GetQuestionVideoClipResponse = zod.object({
+  "available": zod.boolean(),
+  "reason": zod.string().optional(),
+  "title": zod.string().optional(),
+  "videoUrl": zod.string().optional(),
+  "bankNumber": zod.number().optional(),
+  "questionNumber": zod.number().optional(),
+  "startSeconds": zod.number().optional(),
+  "endSeconds": zod.number().optional(),
+  "approximate": zod.boolean().optional(),
+  "verified": zod.boolean().optional()
+})
+
+
 export const prepareExamQuestionExplanationBodyQuestionIdMax = 150;
 
 

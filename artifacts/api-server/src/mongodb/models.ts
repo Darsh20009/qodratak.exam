@@ -519,6 +519,9 @@ export interface IQuestion extends Document {
     passageText?: string;
     videoTimestampSeconds?: number;
     videoTimestampInferred?: boolean;
+    videoEndTimestampSeconds?: number;
+    videoEndTimestampInferred?: boolean;
+    videoTimingVerified?: boolean;
   };
   imageUrl?: string;
   imageUrls?: string[];
@@ -573,6 +576,9 @@ const questionSchema = new Schema<IQuestion>({
     passageText: { type: String },
     videoTimestampSeconds: { type: Number, min: 0 },
     videoTimestampInferred: { type: Boolean },
+    videoEndTimestampSeconds: { type: Number, min: 0 },
+    videoEndTimestampInferred: { type: Boolean },
+    videoTimingVerified: { type: Boolean },
   },
   imageUrl: { type: String },
   imageUrls: { type: [String], default: [] },

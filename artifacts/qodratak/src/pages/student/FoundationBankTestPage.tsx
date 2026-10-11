@@ -1,15 +1,11 @@
 import { useRef, useState } from "react";
 import { useLocation } from "wouter";
-import { ArrowLeft, Clock3, Loader2, PlayCircle, Trophy } from "lucide-react";
+import { ArrowLeft, Loader2, Trophy } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { QiyasExamLayout } from "@/components/QiyasExamLayout";
 import ExamLearningReport from '@/components/exam-results/ExamLearningReport';
+import QuestionVideoExplanation from '@/components/exam-results/QuestionVideoExplanation';
 import { useFoundationContent } from "@/hooks/use-student";
-import {
-  foundationVideoUrlAt,
-  isDirectFoundationVideo,
-  resolveFoundationVideoUrl,
-} from "@/lib/foundationVideoUrl";
 import { getQuestionImageUrls } from "@/lib/questionImages";
 
 type QuizResult = {
@@ -28,13 +24,6 @@ type QuizResult = {
   }>;
 };
 
-function formatVideoTime(seconds: number) {
-  const safeSeconds = Math.max(0, Math.floor(seconds));
-  const minutes = Math.floor(safeSeconds / 60);
-  const remainingSeconds = safeSeconds % 60;
-  return `${String(minutes).padStart(2, "0")}:${String(remainingSeconds).padStart(2, "0")}`;
-}
-
 export default function FoundationBankTestPage({ contentId }: { contentId: string }) {
   const [, setLocation] = useLocation();
   const contentQuery = useFoundationContent(
@@ -47,8 +36,6 @@ export default function FoundationBankTestPage({ contentId }: { contentId: strin
   const [result, setResult] = useState<QuizResult | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState("");
-  const [activeVideoQuestionId, setActiveVideoQuestionId] = useState<string | null>(null);
-  const [videoPlaybackError, setVideoPlaybackError] = useState(false);
   const startedAt = useRef(Date.now());
   const submissionId = useRef(crypto.randomUUID());
 
@@ -183,12 +170,6 @@ export default function FoundationBankTestPage({ contentId }: { contentId: strin
             const detail = detailsByQuestionId.get(question._id);
             const correctIndex = detail?.correctOptionIndex;
             const selectedIndex = detail?.selectedOptionIndex;
-            const timestamp = question.source?.videoTimestampSeconds
-              ?? detail?.videoTimestampSeconds
-              ?? null;
-            const videoUrl = timestamp !== null && lesson.videoUrl
-              ? foundationVideoUrlAt(lesson.videoUrl, timestamp)
-              : null;
 
             return (
               <article key={question._id} className="rounded-2xl border border-border bg-card p-4">
@@ -220,76 +201,9 @@ export default function FoundationBankTestPage({ contentId }: { contentId: strin
                       : question.options[correctIndex] ?? "—"}
                   </span>
                 </div>
-                {videoUrl && timestamp !== null && (
-                  <div className="mt-3 space-y-3">
-                    <div className="flex flex-wrap gap-2">
-                      <Button
-                        type="button"
-                        variant="outline"
-                        className="rounded-lg border-primary/20 text-primary"
-                        onClick={() => {
-                          setVideoPlaybackError(false);
-                          setActiveVideoQuestionId((activeId) =>
-                            activeId === question._id ? null : question._id,
-                          );
-                        }}
-                      >
-                        <PlayCircle className="ml-2 h-4 w-4" />
-                        {activeVideoQuestionId === question._id
-                          ? "إخفاء مقطع الشرح"
-                          : `شاهد الشرح عند ${formatVideoTime(timestamp)}`}
-                        {question.source?.videoTimestampInferred ? " · وقت تقريبي" : ""}
-                      </Button>
-                      <a
-                        href={videoUrl}
-                        target="_blank"
-                        rel="noreferrer"
-                        className="inline-flex items-center gap-2 rounded-lg bg-primary/10 px-3 py-2 text-sm font-black text-primary transition hover:bg-primary/15"
-                      >
-                        <Clock3 className="h-4 w-4" />
-                        فتح عند {formatVideoTime(timestamp)}
-                      </a>
-                    </div>
-                    {activeVideoQuestionId === question._id && (
-                      <div className="overflow-hidden rounded-xl border border-border bg-black">
-                        {isDirectFoundationVideo(lesson.videoUrl) ? (
-                          <video
-                            key={`${question._id}-${timestamp}`}
-                            src={resolveFoundationVideoUrl(lesson.videoUrl)}
-                            title={`شرح السؤال ${index + 1}`}
-                            className="aspect-video w-full bg-black"
-                            controls
-                            playsInline
-                            preload="metadata"
-                            controlsList="nodownload"
-                            onLoadedMetadata={(event) => {
-                              const player = event.currentTarget;
-                              if (!Number.isFinite(player.duration) || player.duration <= 0) return;
-                              player.currentTime = Math.min(
-                                timestamp,
-                                Math.max(0, player.duration - 0.25),
-                              );
-                            }}
-                            onError={() => setVideoPlaybackError(true)}
-                          />
-                        ) : (
-                          <p className="p-4 text-sm font-bold text-amber-200">
-                            افتح رابط الشرح في تبويب جديد لمشاهدة هذا الفيديو.
-                          </p>
-                        )}
-                        {videoPlaybackError && (
-                          <p className="p-3 text-sm font-bold text-destructive-foreground">
-                            تعذر تحميل الفيديو. تحقق من اتصالك ثم أعد فتح المقطع.
-                          </p>
-                        )}
-                        <p className="px-3 py-2 text-xs font-bold text-white/70">
-                          يبدأ المقطع عند {formatVideoTime(timestamp)}
-                          {question.source?.videoTimestampInferred ? " · التوقيت تقريبي" : ""}
-                        </p>
-                      </div>
-                    )}
-                  </div>
-                )}
+                {lesson.videoUrl && <div className="mt-3">
+                  <QuestionVideoExplanation questionId={question._id} />
+                </div>}
               </article>
             );
           })}

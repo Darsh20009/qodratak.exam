@@ -115,6 +115,7 @@ export * from './qudratVerbalVideoProgressInputEvent';
 export * from './qudratVerbalVideoProgressState';
 export * from './qudratVerbalVideoProgressSummary';
 export * from './questionBankCoverage';
+export * from './questionVideoClipOutput';
 export * from './remedialPracticeAnswer';
 export * from './remedialPracticeInput';
 export * from './remedialPracticeQuestion';

@@ -52,6 +52,7 @@ import type {
   QudratVerbalVideoProgress,
   QudratVerbalVideoProgressInput,
   QudratVerbalVideoProgressSummary,
+  QuestionVideoClipOutput,
   RemedialPracticeInput,
   RemedialPracticeResult,
   RemedialPracticeStart,
@@ -636,6 +637,83 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
       > => {
       return useMutation(getSaveStudentExamReportMutationOptions(options));
     }
+
+export const getGetQuestionVideoClipUrl = (questionId: string,) => {
+
+
+
+
+  return `/api/student/question-video/${questionId}`
+}
+
+/**
+ * @summary Get the source-bank video segment for a quantitative question
+ */
+export const getQuestionVideoClip = async (questionId: string, options?: Parameters<typeof customFetch>[1]): Promise<QuestionVideoClipOutput> => {
+
+  return customFetch<QuestionVideoClipOutput>(getGetQuestionVideoClipUrl(questionId),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetQuestionVideoClipQueryKey = (questionId: string,) => {
+    return [
+    `/api/student/question-video/${questionId}`
+    ] as const;
+    }
+
+
+export const getGetQuestionVideoClipQueryOptions = <TData = Awaited<ReturnType<typeof getQuestionVideoClip>>, TError = ErrorType<void>>(questionId: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getQuestionVideoClip>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetQuestionVideoClipQueryKey(questionId);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getQuestionVideoClip>>> = ({ signal }) => getQuestionVideoClip(questionId, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: questionId !== null && questionId !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getQuestionVideoClip>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetQuestionVideoClipQueryResult = NonNullable<Awaited<ReturnType<typeof getQuestionVideoClip>>>
+export type GetQuestionVideoClipQueryError = ErrorType<void>
+
+
+/**
+ * @summary Get the source-bank video segment for a quantitative question
+ */
+
+export function useGetQuestionVideoClip<TData = Awaited<ReturnType<typeof getQuestionVideoClip>>, TError = ErrorType<void>>(
+ questionId: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getQuestionVideoClip>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetQuestionVideoClipQueryOptions(questionId,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
 
 export const getPrepareExamQuestionExplanationUrl = () => {
 

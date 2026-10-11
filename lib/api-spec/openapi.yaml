@@ -137,6 +137,28 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ExamReportSaveOutput"
+  /student/question-video/{questionId}:
+    get:
+      operationId: getQuestionVideoClip
+      summary: Get the source-bank video segment for a quantitative question
+      tags: [ExamReports]
+      parameters:
+        - name: questionId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Available clip or an explicit missing-video/timing status
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/QuestionVideoClipOutput"
+        "400":
+          description: Invalid question identifier
+        "401":
+          description: Sign-in required
   /student/exam-explanation:
     post:
       operationId: prepareExamQuestionExplanation
@@ -815,6 +837,30 @@ paths:
           description: Payment not found
 components:
   schemas:
+    QuestionVideoClipOutput:
+      type: object
+      required: [available]
+      properties:
+        available:
+          type: boolean
+        reason:
+          type: string
+        title:
+          type: string
+        videoUrl:
+          type: string
+        bankNumber:
+          type: number
+        questionNumber:
+          type: number
+        startSeconds:
+          type: number
+        endSeconds:
+          type: number
+        approximate:
+          type: boolean
+        verified:
+          type: boolean
     StudentCoursePracticeInput:
       type: object
       required: [taskId]
