@@ -9,6 +9,12 @@ Keep one clear student preparation path personalized to observed level, exam dat
 
 **How to apply:** Make the next task primary and supplementary tools optional. Explain weak/slow observations with evidence, keep reviewed source keys authoritative, and never promise completing the entire bank or a perfect official score when time/evidence does not support it.
 
+Keep Qudrat test types together under «الاختبارات» inside «المحوسب», including simulations, models and scheduled simulation booking.
+
+**Why:** The user explicitly asked for one section containing every Qudrat exam type rather than scattered entry points.
+
+**How to apply:** Add future Qudrat exam entry points to this hub while retaining existing routes. A hub link is not evidence that reviewed exam content is available; state missing content clearly.
+
 Course reading tasks must identify the specific teaching unit, not allocate a short slot to an entire book. Confirming a unit's reading must not complete the whole book or assert mastery.
 
 **Why:** The persona audit exposed 15–22 minute assignments pointing to 150–180 minute books without a section target. Students could not tell what they were expected to finish.

@@ -10,6 +10,7 @@ import {
 } from "../mongodb/models";
 import { mongoStorage } from "../mongodb/mongoStorage";
 import { onWhatsAppMessage, sendWhatsAppText, type WhatsAppMessageEvent } from "./whatsappService";
+import { enqueueBookedExamResult } from './examResultNotifications';
 import { recordVerifiedLearningAttempt } from "./learningProfileService";
 
 const QUIZ_LENGTH = 5;
@@ -436,16 +437,6 @@ export function registerWhatsAppBot() {
   });
 }
 
-export async function sendStudentExamResult(phone: string | undefined, booking: Partial<IExamBooking>) {
-  if (!phone) return;
-  const message = [
-    "تم اعتماد نتيجة اختبارك المحجوز في منصة قدراتك 🎓",
-    `الاختبار: ${examTypeName(String(booking.examType || ""))}`,
-    `النتيجة: ${Math.round(Number(booking.totalScoreOutOf100 || 0))}/100`,
-    `الإجابات الصحيحة: ${Number(booking.correctAnswers || 0)}`,
-    `الإجابات الخاطئة: ${Number(booking.wrongAnswers || 0)}`,
-    "",
-    "أرسل «نتائجي» لعرض آخر نتائجك عبر واتساب.",
-  ].join("\n");
-  await sendWhatsAppText(phone, message);
+export async function sendStudentExamResult(_phone: string | undefined, booking: Partial<IExamBooking>) {
+  await enqueueBookedExamResult(booking);
 }

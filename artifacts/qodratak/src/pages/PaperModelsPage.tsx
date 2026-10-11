@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
-import { useLocation } from "wouter";
+import { Link, useLocation } from "wouter";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -905,8 +905,11 @@ export default function PaperModelsPage() {
               <FileText className="w-12 h-12 mx-auto mb-4 text-muted-foreground" />
               <h3 className="text-xl font-bold mb-2">لا توجد نماذج متاحة</h3>
               <p className="text-muted-foreground mb-4">
-                لم يتم العثور على نماذج ورقية. جاري التحميل...
+                لم تُنشر نماذج ورقية معتمدة حاليًا. يمكنك التدريب بالمحاكاة إلى حين توفرها.
               </p>
+              <Link href="/qiyas" className="mb-4 block font-bold text-primary underline underline-offset-4">
+                افتح اختبارات المحاكاة
+              </Link>
               <Button onClick={() => window.location.reload()}>
                 تحديث الصفحة
               </Button>

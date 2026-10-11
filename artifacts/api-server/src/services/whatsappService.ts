@@ -37,6 +37,7 @@ export type WhatsAppOutboundKind =
   | "customer_security"
   | "customer_purchase"
   | "customer_booking"
+  | "customer_exam_result"
   | "admin_new_student"
   | "admin_subscription"
   | "admin_daily_report"
@@ -49,6 +50,7 @@ const outboundPriorities: Record<WhatsAppOutboundKind, number> = {
   customer_security: 0,
   customer_purchase: 1,
   customer_booking: 1,
+  customer_exam_result: 1,
   admin_new_student: 2,
   admin_subscription: 2,
   admin_daily_report: 3,

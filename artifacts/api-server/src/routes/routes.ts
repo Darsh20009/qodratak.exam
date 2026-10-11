@@ -13987,6 +13987,7 @@ app.post("/api/auth/register", async (req: Request, res: Response) => {
         program: lesson.program,
         testType: 'custom',
         testId: `foundation-${String(lesson._id)}`,
+        resultNotificationKey: `foundation:${crypto.createHash('sha256').update(`${String(lesson._id)}:${baseIdempotencyKey}`).digest('hex')}`,
         testName: lesson.quiz.title || lesson.title,
         difficulty: 'mixed',
         score: percentage,

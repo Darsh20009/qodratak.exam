@@ -5,6 +5,7 @@ import { mongoStorage } from "./mongodb/mongoStorage";
 import { ExamBooking } from "./mongodb/models";
 import { gameWebSocketServer } from "./multiplayerRoutes";
 import { startNotificationScheduler } from "./services/notificationService";
+import { startExamResultNotificationWorker } from "./services/examResultNotifications";
 import { startPushScheduler } from "./services/pushService";
 import { notifyAdminIncomingEmail, startAdminWhatsAppReportScheduler } from "./services/adminWhatsAppNotifications";
 import { onWhatsAppMessage, restoreWhatsAppSession } from "./services/whatsappService";
@@ -77,6 +78,7 @@ onWhatsAppMessage(async (message) => {
 });
 void restoreWhatsAppSession();
 startNotificationScheduler();
+startExamResultNotificationWorker();
 startPushScheduler();
 startAdminWhatsAppReportScheduler();
 startIncomingEmailWatcher((message) =>

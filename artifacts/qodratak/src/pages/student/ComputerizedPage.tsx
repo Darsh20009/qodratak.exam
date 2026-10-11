@@ -32,7 +32,7 @@ import { StudentWorkflow } from "@/components/student/StudentWorkflow";
 import { isDirectFoundationVideo, resolveFoundationAssetUrl } from "@/lib/foundationVideoUrl";
 import { VerbalVideoProgressCard } from "@/components/student/VerbalVideoProgressCard";
 
-type ComputerizedMode = "quantitative" | "verbal" | "mixed" | "search";
+type ComputerizedMode = "quantitative" | "verbal" | "exams" | "search";
 type ComputerizedTrack = "qudrat" | "tahsili";
 
 type ModeConfig = {
@@ -70,12 +70,12 @@ const MODES: ModeConfig[] = [
     iconSurface: "bg-sky-500/10",
   },
   {
-    key: "mixed",
-    title: "الاختبارات المختلطة",
-    description: "محاكاة تجمع الكمي واللفظي في اختبار واحد.",
+    key: "exams",
+    title: "الاختبارات",
+    description: "المحاكاة والنماذج الورقية والمجدولة والمخصصة واختبارات الأقسام.",
     icon: Layers3,
-    accent: "text-[#9A6A1F] dark:text-amber-400",
-    iconSurface: "bg-amber-500/10",
+    accent: "text-primary",
+    iconSurface: "bg-primary/10",
   },
   {
     key: "search",
@@ -96,7 +96,7 @@ const TRACKS: Array<{
   {
     key: "qudrat",
     title: "قدرات",
-    description: "الكمي واللفظي والاختبارات المختلطة.",
+    description: "الكمي واللفظي والاختبارات.",
     icon: Target,
   },
   {
@@ -775,26 +775,48 @@ function SubjectWorkspace({ mode }: { mode: "quantitative" | "verbal" }) {
   );
 }
 
-function MixedWorkspace() {
+const EXAM_ENTRIES: Array<{ title: string; description: string; href: string; icon: LucideIcon; tag: string }> = [
+  { title: "اختبار المحاكاة", description: "محاكاة اختبار القدرات بنفس الإطار والتوقيت.", href: "/qiyas", icon: Trophy, tag: "محاكاة" },
+  { title: "النماذج الورقية", description: "نماذج ورقية قابلة للطباعة والتصحيح.", href: "/paper-models", icon: FileText, tag: "ورقي" },
+  { title: "حجز اختبار مجدول", description: "احجز موعدًا لاختبار محدد الوقت.", href: "/book-exam", icon: Clock3, tag: "مجدول" },
+  { title: "اختبار المحاكاة القياسي", description: "اختبار قدرات مقسّم إلى أقسام مع توقيت لكل قسم.", href: "/standard-test", icon: Target, tag: "قياسي" },
+  { title: "الاختبار التكيفي", description: "تدرّب على أسئلة تتكيف مع أدائك أثناء المحاولة.", href: "/adaptive-test", icon: Layers3, tag: "تكيفي" },
+  { title: "اختبار الكمي المجاني", description: "اختبار كمي ضمن فرصة التدريب اليومية المتاحة لحسابك.", href: "/free-quantitative-test", icon: Calculator, tag: "يومي" },
+  { title: "اختبار اللفظي المجاني", description: "اختبار لفظي ضمن فرصة التدريب اليومية المتاحة لحسابك.", href: "/free-verbal-test", icon: BookOpen, tag: "يومي" },
+  { title: "اختبار مخصص ومختلط", description: "حدد توزيع الكمي واللفظي وعدد الأسئلة بنفسك.", href: "/custom-exam", icon: Layers3, tag: "مخصص" },
+  { title: "اختبارات الكمي", description: "اختبارات أقسام الكمي والتدريب المحوسب.", href: "/quantitative-tests", icon: Calculator, tag: "كمي" },
+  { title: "اختبارات اللفظي", description: "اختبارات أقسام اللفظي والتدريب المحوسب.", href: "/verbal-tests", icon: BookOpen, tag: "لفظي" },
+];
+
+function ExamsWorkspace() {
   return (
-    <section className="rounded-[1.5rem] border border-[#E8DFC9] bg-[#FFFCF5] p-5 md:p-6">
-      <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+    <section className="rounded-[1.5rem] border border-border bg-muted/40 p-5 md:p-6" aria-labelledby="computerized-exams-title" data-testid="section-computerized-exams">
+      <div className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
         <div>
-          <p className="text-xs font-black text-[#9A6A1F] dark:text-amber-400">المحوسب · اختبارات مختلطة</p>
-          <h2 className="mt-1 text-2xl font-black text-foreground">اختبر الكمي واللفظي معًا</h2>
-          <p className="mt-2 max-w-2xl text-sm leading-6 text-muted-foreground">
-            هنا ستظهر الاختبارات المحاكية والتقفيلات المختلطة التي تجمع القسمين في تجربة واحدة.
-          </p>
+          <p className="text-xs font-black text-[#9A6A1F] dark:text-amber-400">المحوسب · الاختبارات</p>
+          <h2 id="computerized-exams-title" className="mt-1 text-2xl font-black text-foreground">كل اختبارات القدرات في مكان واحد</h2>
+          <p className="mt-2 max-w-2xl text-sm leading-6 text-muted-foreground">اختر نوع الاختبار: محاكاة، نماذج ورقية، موعد مجدول، مخصص، أو اختبارات القسم.</p>
         </div>
-        <Link href="/qiyas" className="inline-flex shrink-0 items-center justify-center gap-2 rounded-xl bg-[#0D1B2A] dark:bg-primary dark:text-primary-foreground px-4 py-3 text-sm font-black text-white transition hover:bg-[#18334D]">
-          فتح الاختبارات المختلطة
+        <Link href="/records" className="inline-flex shrink-0 items-center justify-center gap-2 rounded-xl border border-border bg-card px-4 py-3 text-sm font-black text-foreground transition hover:border-primary/40">
+          نتائجي السابقة
           <ArrowLeft className="h-4 w-4" />
         </Link>
       </div>
-      <div className="mt-5 grid gap-3 md:grid-cols-3">
-        <TestChoiceCard title="اختبار مختلط شامل" description="اختبار قدرات يجمع الكمي واللفظي." href="/qiyas?examId=1" icon={Layers3} />
-        <TestChoiceCard title="اختبار محاكاة كامل" description="تجربة اختبار داخل إطار الاختبار الأساسي." href="/qiyas?examId=5" icon={Trophy} />
-        <TestChoiceCard title="اختبار مختلط مخصص" description="حدد توزيع وعدد الأسئلة بنفسك." href="/custom-exam" icon={Target} />
+      <div className="mt-5 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+        {EXAM_ENTRIES.map((entry, i) => {
+          const Icon = entry.icon;
+          return (
+            <Link key={entry.href} href={entry.href} data-testid={`link-exam-${entry.href.slice(1)}`} className="group flex flex-col rounded-2xl border border-border bg-card p-4 transition hover:-translate-y-0.5 hover:border-primary/40 hover:shadow-md">
+              <div className="flex items-start justify-between gap-3">
+                <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-primary/10 text-primary"><Icon className="h-5 w-5" /></span>
+                <span className="rounded-full bg-muted px-2.5 py-1 text-[10px] font-black text-muted-foreground">{String(i + 1).padStart(2, "0")} · {entry.tag}</span>
+              </div>
+              <h3 className="mt-4 text-base font-black text-foreground">{entry.title}</h3>
+              <p className="mt-1 flex-1 text-xs leading-5 text-muted-foreground">{entry.description}</p>
+              <span className="mt-3 inline-flex items-center gap-1 text-xs font-black text-[#147D68] dark:text-emerald-400">ابدأ<ArrowLeft className="h-3.5 w-3.5 transition-transform group-hover:-translate-x-1" /></span>
+            </Link>
+          );
+        })}
       </div>
     </section>
   );
@@ -979,7 +1001,7 @@ export default function ComputerizedPage() {
 
         {activeMode === "quantitative" && <SubjectWorkspace mode="quantitative" />}
         {activeMode === "verbal" && <SubjectWorkspace mode="verbal" />}
-        {activeMode === "mixed" && <MixedWorkspace />}
+        {activeMode === "exams" && <ExamsWorkspace />}
         {activeMode === "search" && <SearchWorkspace />}
           </>
         )}

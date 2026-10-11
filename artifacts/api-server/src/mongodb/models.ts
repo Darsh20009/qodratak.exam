@@ -441,6 +441,7 @@ export interface ITestResult extends Document {
   testType: 'verbal' | 'quantitative' | 'qiyas' | 'custom' | 'paper_model' | 'standard';
   testId?: string;
   testName?: string;
+  resultNotificationKey?: string;
   difficulty: 'beginner' | 'intermediate' | 'advanced' | 'mixed';
   subcategory?: string;
   score: number;
@@ -470,6 +471,7 @@ const testResultSchema = new Schema<ITestResult>({
   testType: { type: String, enum: ['verbal', 'quantitative', 'qiyas', 'custom', 'paper_model', 'standard'], required: true },
   testId: { type: String },
   testName: { type: String },
+  resultNotificationKey: { type: String },
   difficulty: { type: String, enum: ['beginner', 'intermediate', 'advanced', 'mixed'], required: true },
   subcategory: { type: String },
   score: { type: Number, required: true },
@@ -491,6 +493,16 @@ const testResultSchema = new Schema<ITestResult>({
 testResultSchema.index({ userId: 1, completedAt: -1 });
 testResultSchema.index({ userId: 1, testId: 1, completedAt: -1 });
 testResultSchema.index({ userId: 1, program: 1, completedAt: -1 });
+testResultSchema.pre('save', function () {
+  this.$locals.resultNotificationNew = this.isNew;
+});
+testResultSchema.post('save', async function (result) {
+  if (!this.$locals.resultNotificationNew) return;
+  try {
+    const { enqueueSavedTestResult } = await import('../services/examResultNotifications');
+    await enqueueSavedTestResult(result);
+  } catch { console.warn('[Exam result WhatsApp] result saved; notification enqueue will be retried'); }
+});
 
 export interface IQuestion extends Document {
   questionId: number;

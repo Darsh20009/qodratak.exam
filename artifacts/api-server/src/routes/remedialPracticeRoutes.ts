@@ -1,3 +1,4 @@
+import { enqueuePracticeResult } from '../services/examResultNotifications';
 import type { Express, RequestHandler } from 'express';
 import crypto from 'node:crypto';
 import { StartRemedialPracticeBody, SubmitRemedialPracticeBody } from '@workspace/api-zod';
@@ -62,6 +63,9 @@ export function registerRemedialPracticeRoutes(app: Express, studentOnly: Reques
     if (!attempt || attempt.studentId !== studentId || Date.now() - attempt.createdAt > 7200000) return res.status(410).json({ error: 'انتهت جلسة التدريب.' });
       if (attempt.result) {
         if (attempt.courseTaskId) await recordCoursePracticeCompletion(studentId, attempt.courseTaskId, attempt.createdAt);
+        await enqueuePracticeResult(studentId, parsed.data.attemptId, attempt.result,
+          attempt.courseTaskId ? 'تدريب دورة القدرات' : 'تدريب نقاط الضعف')
+          .catch(() => console.warn('[Exam result WhatsApp] practice notification enqueue will be retried'));
         return res.json(attempt.result);
       }
     const selected = new Map(parsed.data.answers.map((a) => [a.questionId, a]));
@@ -86,6 +90,9 @@ export function registerRemedialPracticeRoutes(app: Express, studentOnly: Reques
       attempt.result = { totalQuestions: questions.length, correctAnswers: questions.filter((q) => q.isCorrect).length, questions };
       await new Promise<void>((resolve, reject) => req.session.save((error) => error ? reject(error) : resolve()));
       if (attempt.courseTaskId) await recordCoursePracticeCompletion(studentId, attempt.courseTaskId, attempt.createdAt);
+      await enqueuePracticeResult(studentId, parsed.data.attemptId, attempt.result,
+        attempt.courseTaskId ? 'تدريب دورة القدرات' : 'تدريب نقاط الضعف')
+        .catch(() => console.warn('[Exam result WhatsApp] practice saved; notification enqueue failed'));
       return res.json(attempt.result);
     } catch { return res.status(503).json({ error: 'تعذر حفظ التدريب؛ أعد المحاولة.' }); }
   });
