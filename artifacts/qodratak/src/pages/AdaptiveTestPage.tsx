@@ -1,3 +1,4 @@
+import QuantitativeVideoReview from '@/components/exam-results/QuantitativeVideoReview';
 import { useState, useEffect, useCallback, useRef } from "react";
 import ImageZoom from "@/components/ImageZoom";
 import { useQuery, useMutation } from "@tanstack/react-query";
@@ -157,6 +158,7 @@ function SessionSummary({
   return (
     <div className="flex flex-col gap-5 py-4">
       {/* Score */}
+      <QuantitativeVideoReview questions={answers} />
       <div className="flex flex-col items-center gap-2 text-center">
         <div className={cn(
           "w-20 h-20 rounded-full flex items-center justify-center text-3xl shadow-lg",

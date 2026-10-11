@@ -1,3 +1,4 @@
+import QuantitativeVideoReview from '@/components/exam-results/QuantitativeVideoReview';
 import React, { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useLocation } from 'wouter';
@@ -1038,6 +1039,7 @@ export default function EnhancedMistakeChallenge() {
         )}
 
         <div className="max-w-4xl mx-auto relative z-10">
+          <QuantitativeVideoReview questions={questions} />
 
           {/* Victory Header */}
           <motion.div

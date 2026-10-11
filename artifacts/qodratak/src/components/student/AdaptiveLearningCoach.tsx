@@ -1,3 +1,4 @@
+import QuantitativeVideoReview from '@/components/exam-results/QuantitativeVideoReview';
 import { useState } from "react";
 import { useExamQuestionTiming, examQuestionSeconds } from '@/lib/examTiming';
 import ExamLearningReport from '@/components/exam-results/ExamLearningReport';
@@ -731,6 +732,7 @@ export default function AdaptiveLearningCoach({
                   <Button variant="outline" disabled={activeQuestion + 1 >= currentTest.questions.length} onClick={() => setActiveQuestion(activeQuestion + 1)}>التالي</Button>
                 </div>
               )}
+              {isCompleted && <QuantitativeVideoReview questions={currentTest.questions} />}
               {isCompleted && submitTest.isSuccess && <ExamLearningReport />}
               {!isCompleted && (
                 <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">

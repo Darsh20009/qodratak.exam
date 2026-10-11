@@ -1,3 +1,4 @@
+import QuantitativeVideoReview from '@/components/exam-results/QuantitativeVideoReview';
 import React from "react";
 import { TestDifficulty } from "@shared/types";
 import { formatDifficulty } from "@/lib/formatters";
@@ -307,6 +308,7 @@ const TestResults: React.FC<TestResultsProps> = ({
         </CardHeader>
         <CardContent>
           <div className="space-y-6">
+            <QuantitativeVideoReview questions={questions} />
             {questions.map((question, index) => (
               <div key={index} className="p-4 border rounded-lg">
                 <div className="flex items-center gap-2 mb-2">

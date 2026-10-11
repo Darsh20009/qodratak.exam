@@ -1,3 +1,4 @@
+import QuantitativeVideoReview from '@/components/exam-results/QuantitativeVideoReview';
 
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -230,6 +231,7 @@ export default function MistakeChallengePage() {
     return (
       <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-green-50 to-teal-50 dark:from-emerald-900 dark:via-green-900 dark:to-teal-900">
         <div className="container mx-auto px-4 py-8 max-w-4xl">
+          <QuantitativeVideoReview questions={challengeData?.questions} />
           <motion.div
             initial={{ opacity: 0, scale: 0.8 }}
             animate={{ opacity: 1, scale: 1 }}

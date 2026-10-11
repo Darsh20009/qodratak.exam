@@ -1,3 +1,4 @@
+import QuantitativeVideoReview from '@/components/exam-results/QuantitativeVideoReview';
 import React, { useState, useEffect } from 'react';
 import { useLocation } from 'wouter';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -1402,6 +1403,7 @@ export function AdvancedQuantitativeTest() {
 
     return (
       <div className="min-h-screen bg-gradient-to-br from-orange-50 via-red-50 to-amber-600 dark:from-gray-900 dark:via-orange-900/20 dark:to-red-900/20 p-4">
+        <div className="max-w-7xl mx-auto"><QuantitativeVideoReview questions={testSections.flatMap((section) => section.questions)} quantitativeOnly /></div>
         {/* خلفية رياضية متحركة */}
         <div className="fixed inset-0 overflow-hidden pointer-events-none">
           {['∑', '∫', '√', 'π', '∞', 'Δ', 'α', 'β', 'γ', 'θ'].map((symbol, i) => (

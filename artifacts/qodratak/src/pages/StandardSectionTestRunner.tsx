@@ -1,3 +1,4 @@
+import QuantitativeVideoReview from '@/components/exam-results/QuantitativeVideoReview';
 import { useState, useEffect } from 'react';
 import { useLocation } from 'wouter';
 import AiReviewingScreen, { WrongQuestion, QuestionExplanation } from '@/components/AiReviewingScreen';
@@ -548,6 +549,7 @@ export function StandardSectionTestRunner() {
     return (
       <div className="min-h-screen bg-gradient-to-br from-slate-950 via-blue-950 to-teal-500 py-8 px-4">
         <div className="max-w-6xl mx-auto">
+          <QuantitativeVideoReview questions={testSections.flatMap((section) => section.questions)} />
           <Card>
             <CardHeader className="bg-gradient-to-r from-orange-600 to-rose-600 text-white">
               <CardTitle className="text-3xl flex items-center justify-center gap-2">

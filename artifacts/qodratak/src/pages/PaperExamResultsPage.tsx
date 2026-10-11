@@ -1,3 +1,4 @@
+import QuantitativeVideoReview from '@/components/exam-results/QuantitativeVideoReview';
 import { useState, useEffect } from 'react';
 import { useLocation, useRoute } from 'wouter';
 import { Button } from '@/components/ui/button';
@@ -713,6 +714,7 @@ export default function PaperExamResultsPage() {
     return (
       <div className="min-h-screen bg-gray-50 dark:bg-gray-900 p-4 pb-20">
         <div className="max-w-6xl mx-auto space-y-6">
+          <QuantitativeVideoReview questions={questions} />
           <Card className="bg-gradient-to-r from-green-600 to-amber-600 text-white">
             <CardHeader>
               <CardTitle className="text-3xl text-center">نتائج {examTitle}</CardTitle>

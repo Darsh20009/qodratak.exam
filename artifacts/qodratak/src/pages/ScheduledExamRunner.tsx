@@ -1,3 +1,4 @@
+import QuantitativeVideoReview from '@/components/exam-results/QuantitativeVideoReview';
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useParams, useLocation } from "wouter";
 import { useQuery, useMutation } from "@tanstack/react-query";
@@ -732,6 +733,7 @@ export default function ScheduledExamRunner() {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-900 via-teal-600 to-slate-900 px-4" dir="rtl">
         <div className="bg-slate-800/80 backdrop-blur-sm border border-slate-700 rounded-3xl p-10 max-w-md w-full shadow-2xl text-center space-y-5">
+          {minutesLeft === 0 && <QuantitativeVideoReview questions={allQuestionsRef.current.flat()} />}
           <div className="w-24 h-24 bg-emerald-500/20 rounded-full flex items-center justify-center mx-auto border-2 border-emerald-500/40">
             <CheckCircle2 className="h-12 w-12 text-emerald-400" />
           </div>

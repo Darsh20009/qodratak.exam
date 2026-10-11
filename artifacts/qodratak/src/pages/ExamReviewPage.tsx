@@ -1,3 +1,4 @@
+import QuantitativeVideoReview from '@/components/exam-results/QuantitativeVideoReview';
 import { useState, useEffect, useRef } from "react";
 import ImageZoom from "@/components/ImageZoom";
 import { useLocation } from "wouter";
@@ -146,6 +147,7 @@ export default function ExamReviewPage() {
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-950" dir="rtl">
+      <div className="mx-auto max-w-7xl px-4"><QuantitativeVideoReview questions={allQuestions} /></div>
       {/* Desktop Recommendation Banner (mobile only) */}
       {isMobile && showDesktopBanner && (
         <div className="bg-gradient-to-l from-teal-600 to-emerald-500 text-white px-4 py-3 flex items-start gap-3">

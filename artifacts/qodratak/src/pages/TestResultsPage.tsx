@@ -1,3 +1,4 @@
+import QuantitativeVideoReview from '@/components/exam-results/QuantitativeVideoReview';
 import { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -855,6 +856,7 @@ export default function TestResultsPage() {
       </AnimatePresence>
 
       <div className="relative z-10 container mx-auto px-4 py-8 max-w-4xl">
+        <QuantitativeVideoReview questions={result.questions} />
         {/* العنوان الرئيسي المحسن */}
         <motion.div
           initial={{ opacity: 0, y: -50 }}

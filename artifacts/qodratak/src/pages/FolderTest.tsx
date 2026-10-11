@@ -1,3 +1,4 @@
+import QuantitativeVideoReview from '@/components/exam-results/QuantitativeVideoReview';
 
 import { useState, useEffect } from "react";
 import AiReviewingScreen, { WrongQuestion, QuestionExplanation } from '@/components/AiReviewingScreen';
@@ -392,6 +393,7 @@ export default function FolderTest() {
     return (
       <div className="min-h-screen bg-gradient-to-br from-teal-600 to-blue-50 dark:from-gray-900 dark:to-teal-500 p-4">
         <div className="container mx-auto max-w-4xl py-8">
+          <QuantitativeVideoReview questions={questions} />
           <Card className="mb-6 bg-gradient-to-br from-teal-600 to-blue-600 text-white border-0">
             <CardContent className="pt-6">
               <div className="text-center">

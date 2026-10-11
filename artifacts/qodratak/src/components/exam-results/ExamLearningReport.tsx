@@ -93,7 +93,7 @@ export function ReportDetails({ report }: { report: ExamReportRecord }) {
         {[...new Set([q.imageUrl, ...(q.imageUrls || [])].filter(Boolean))].map((url) =>
           <img key={url} src={url} alt="صورة السؤال" className="max-h-80 max-w-full object-contain bg-white rounded-lg" />)}
         <p className="text-sm text-muted-foreground">{q.subcategory || q.category}</p>
-        {q.category === 'quantitative' && <QuestionVideoExplanation questionId={q.id} />}
+        {q.category === 'quantitative' && <QuestionVideoExplanation questionId={q.sourceQuestionId || q.id} />}
         {q.baselineSeconds !== null && <p className="text-xs text-muted-foreground">وسيط الوقت المرجعي: {minutes(q.baselineSeconds)} — {q.baselineSource === 'student_history' ? 'من اختباراتك السابقة' : 'من هذا الاختبار'}</p>}
         {q.correctOptionIndex !== null && <p className="text-sm">إجابتك: {q.selectedOptionIndex === null ? 'لم تجب' : q.options[q.selectedOptionIndex]} — الإجابة الصحيحة: {q.options[q.correctOptionIndex]}</p>}
         {q.explanation ? <section className="rounded-lg bg-muted p-3">

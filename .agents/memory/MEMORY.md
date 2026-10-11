@@ -51,3 +51,4 @@
 - [Complaint notification boundary](customer-complaint-notifications.md) — minimal admin WhatsApp notices; full customer records stay protected, and saving does not depend on delivery.
 - [RTL hidden controls](rtl-hidden-controls.md) — clip hidden fields in place; far-negative offsets can expand RTL document bounds.
 - [Student brand accent](student-brand-accent.md) — student highlights use the landing page’s orange/coral rather than yellow; preserve semantic warning colors.
+- [Quantitative correction videos](quantitative-correction-video-scope.md) — question-specific video explanations apply to every exam type containing quantitative questions, including mixed exams.

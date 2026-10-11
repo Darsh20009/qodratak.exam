@@ -1,3 +1,4 @@
+import QuantitativeVideoReview from '@/components/exam-results/QuantitativeVideoReview';
 import React, { useState, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -288,6 +289,7 @@ export function LevelAssessmentPage() {
           className="max-w-4xl mx-auto"
         >
           {/* رأس النتائج */}
+          <QuantitativeVideoReview questions={state.questions} />
           <Card className="mb-8 bg-gradient-to-r from-teal-600 to-emerald-600 text-white border-0">
             <CardHeader className="text-center">
               <div className="flex items-center justify-center mb-4">

@@ -1,3 +1,4 @@
+import QuantitativeVideoReview from '@/components/exam-results/QuantitativeVideoReview';
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useAntiCheat } from '@/hooks/useAntiCheat';
 import { AntiCheatWarning } from '@/components/AntiCheatWarning';
@@ -1229,6 +1230,7 @@ export default function SectionedTestRunner() {
 
         <div className="relative z-10 max-w-7xl mx-auto">
           {/* Header Section */}
+          <QuantitativeVideoReview questions={questions} />
           <Card className="bg-white/90 dark:bg-gray-800/90 backdrop-blur-xl border border-white/30 dark:border-gray-700/50 shadow-2xl shadow-blue-500/10 dark:shadow-green-500/10 rounded-3xl overflow-hidden mb-8">
             <CardHeader className="text-center pb-8 relative">
               <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-bl from-blue-400/10 to-transparent dark:from-blue-600/10 rounded-bl-full"></div>

@@ -1,3 +1,4 @@
+import QuantitativeVideoReview from '@/components/exam-results/QuantitativeVideoReview';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
@@ -867,6 +868,7 @@ export default function ResultsStep({ exam, result, questions, onRestart }: Resu
 
   return (
     <div className="space-y-6">
+      <QuantitativeVideoReview questions={questions} />
       <Card className="border-2 border-primary">
         <CardHeader className="text-center">
           <div className="mx-auto w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mb-4">
