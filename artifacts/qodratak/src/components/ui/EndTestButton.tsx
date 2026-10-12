@@ -25,6 +25,7 @@ interface EndTestButtonProps {
   className?: string;
   variant?: 'default' | 'floating' | 'subtle';
   testName?: string;
+  confirmationMessage?: string;
   showProgress?: boolean;
   questionsAnswered?: number;
   totalQuestions?: number;
@@ -35,6 +36,7 @@ export function EndTestButton({
   className,
   variant = 'default',
   testName = 'الاختبار',
+  confirmationMessage = 'سيتم فقدان جميع إجاباتك الحالية!',
   showProgress = false,
   questionsAnswered = 0,
   totalQuestions = 0
@@ -206,7 +208,7 @@ export function EndTestButton({
               
               <DialogDescription asChild className="text-gray-600 dark:text-gray-400 mt-2">
                 <div className="space-y-2">
-                  <p>سيتم فقدان جميع إجاباتك الحالية!</p>
+                  <p>{confirmationMessage}</p>
                   
                   {showProgress && totalQuestions > 0 && (
                     <div className="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-3 mt-3">

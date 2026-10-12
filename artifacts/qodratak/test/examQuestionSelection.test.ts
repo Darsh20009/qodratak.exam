@@ -2,7 +2,15 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import { selectExamSection, validExamPool } from "../src/lib/examQuestionSelection";
 
-function question(id: number, category = "verbal", answerStatus?: string) {
+test("the exam roster excludes unapproved, blank and duplicated choices before starting", () => {
+  const q = { id: 1, category: "quantitative", options: ["أ", "ب", "ج", "د"], correctOptionIndex: 0, answerStatus: "approved" };
+  assert.deepEqual(validExamPool([
+    q, { ...q, id: 2, answerStatus: undefined }, { ...q, id: 3, options: ["أ", "أ", "ج", "د"] },
+    { ...q, id: 4, options: ["أ", "  ", "ج", "د"] },
+  ]).map(row => row.id), [1]);
+});
+
+function question(id: number, category = "verbal", answerStatus = "approved") {
   return { id, text: `Question ${id}`, category, options: ["A", "B", "C", "D"], correctOptionIndex: 0, answerStatus };
 }
 

@@ -1,5 +1,6 @@
 import { QueryClient, QueryFunction } from "@tanstack/react-query";
 import { attachExamTiming, completeExamTiming } from './examTiming';
+import { isExamSubmission } from './examSubmission';
 
 async function throwIfResNotOk(res: Response) {
   if (!res.ok) {
@@ -13,7 +14,7 @@ export async function apiRequest(
   url: string,
   data?: unknown | undefined,
 ): Promise<Response> {
-  if (method.toUpperCase() === 'POST' && (/\/test-results$/.test(url) || /\/submit$/.test(url))) {
+  if (isExamSubmission(method, url)) {
     data = attachExamTiming(data);
   }
   const res = await fetch(url, {
@@ -24,7 +25,7 @@ export async function apiRequest(
   });
 
   await throwIfResNotOk(res);
-  if (method.toUpperCase() === 'POST' && /\/(?:test-results|submit|finish)$/.test(url) && !url.includes('/exam-reports')) {
+  if (isExamSubmission(method, url)) {
     const snapshot = completeExamTiming();
     if (snapshot && Object.keys(snapshot.questions).length) {
       // Report failure must never invalidate a successfully saved exam result.

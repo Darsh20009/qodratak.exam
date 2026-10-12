@@ -1974,6 +1974,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
           userId: sessionUserId,
           program: 'qudrat',
           testType,
+          testName: ({
+            'free-verbal': 'الاختبار اللفظي اليومي',
+            'free-quantitative': 'الاختبار الكمي اليومي',
+            'adaptive': 'الاختبار التكيفي',
+            'qiyas': ({
+              '1': 'اختبار قدراتك التأهيلي', '2': 'اختبار لفظي - 65 سؤال',
+              '3': 'اختبار كمي - 55 سؤال', '4': 'اختبار قياس عام 2025',
+              '5': 'اختبار قدراتك', '6': 'اختبار قياس تجريبي',
+              '7': 'اختبار نظام نمر', '8': 'قسم نمر واحد', '9': 'اختبار مخصص',
+              '10': 'محاكاة الورقي التدريبية',
+            } as Record<string, string>)[String(sourceKey || '').split(':')[1]] || 'اختبار المحاكاة',
+          } as Record<string, string>)[String(testType)],
           difficulty,
           score: resolvedScore,
           totalQuestions: resolvedTotalQuestions,
@@ -9471,7 +9483,10 @@ app.post("/api/auth/register", async (req: Request, res: Response) => {
       const booking = await mongoStorage.getExamBookingById(req.params.id);
       if (!booking) return res.status(404).json({ error: 'الحجز غير موجود' });
       if (String(booking.userId) !== String(sessionUserId)) return res.status(403).json({ error: 'غير مصرح' });
-      res.json({ booking });
+      const payload = typeof (booking as any).toObject === 'function' ? (booking as any).toObject() : booking;
+      // Existing completed records keep their historical roster; new/live Namer runs use 5 × 25.
+      res.json({ booking: ['pending', 'active', 'in_progress'].includes(booking.status)
+        ? { ...payload, totalQuestions: 125 } : payload });
     } catch (error) {
       res.status(500).json({ error: 'فشل في جلب الحجز' });
     }
@@ -9995,22 +10010,29 @@ app.post("/api/auth/register", async (req: Request, res: Response) => {
       const SECTIONS = 5;
       const VERBAL_PER_SECTION = 13;
       const QUANT_PER_SECTION  = 12;
-      const EXTRA_PER_SECTION  = 2;  // experimental buffer
-
-      const totalVerbal = SECTIONS * (VERBAL_PER_SECTION + EXTRA_PER_SECTION);
-      const totalQuant  = SECTIONS * (QUANT_PER_SECTION  + EXTRA_PER_SECTION);
+      const totalVerbal = SECTIONS * VERBAL_PER_SECTION;
+      const totalQuant  = SECTIONS * QUANT_PER_SECTION;
 
       // Fetch all needed questions in 2 parallel calls instead of 10 sequential ones
-      const [verbalAll, quantAll] = await Promise.all([
-        mongoStorage.getUnseenQuestions(sessionUserId, totalVerbal, { category: 'verbal' }),
-        mongoStorage.getUnseenQuestions(sessionUserId, totalQuant,  { category: 'quantitative' }),
+      const [verbalUnseen, quantUnseen] = await Promise.all([
+        mongoStorage.getUnseenQuestions(sessionUserId, 1000, { category: 'verbal' }),
+        mongoStorage.getUnseenQuestions(sessionUserId, 1000,  { category: 'quantitative' }),
       ]);
+      let verbalAll = dailyExamQuestions(verbalUnseen, totalVerbal);
+      let quantAll = dailyExamQuestions(quantUnseen, totalQuant);
+      if (verbalAll.length < totalVerbal) verbalAll = dailyExamQuestions(
+        [...verbalAll, ...await mongoStorage.getQuestions('verbal', undefined, undefined, 5000)], totalVerbal);
+      if (quantAll.length < totalQuant) quantAll = dailyExamQuestions(
+        [...quantAll, ...await mongoStorage.getQuestions('quantitative', undefined, undefined, 5000)], totalQuant);
+      if (verbalAll.length !== totalVerbal || quantAll.length !== totalQuant) {
+        return res.status(409).json({ error: 'لا توجد أسئلة معتمدة كافية لإكمال أقسام المحاكاة. لم يبدأ اختبار ناقص.' });
+      }
 
       // Distribute into sections (no duplicates across sections)
       const sections: any[][] = [];
       for (let s = 0; s < SECTIONS; s++) {
-        const vStart = s * (VERBAL_PER_SECTION + EXTRA_PER_SECTION);
-        const qStart = s * (QUANT_PER_SECTION  + EXTRA_PER_SECTION);
+        const vStart = s * VERBAL_PER_SECTION;
+        const qStart = s * QUANT_PER_SECTION;
         const verbalSlice = verbalAll.slice(vStart, vStart + VERBAL_PER_SECTION);
         const quantSlice  = quantAll.slice(qStart,  qStart  + QUANT_PER_SECTION);
         sections.push([...verbalSlice, ...quantSlice]);
@@ -10420,10 +10442,7 @@ app.post("/api/auth/register", async (req: Request, res: Response) => {
 
       // Filter out already-seen-this-session
       const seenSet = new Set(seenIds.map(Number));
-      pool = pool.filter((q: any) =>
-        !seenSet.has(Number(q.id)) && Number.isSafeInteger(q.id) &&
-        q.answerStatus !== 'review' && Array.isArray(q.options) && q.options.length >= 4 &&
-        Number.isInteger(q.correctOptionIndex) && q.correctOptionIndex >= 0 && q.correctOptionIndex < q.options.length);
+      pool = dailyExamQuestions(pool, pool.length).filter((q: any) => !seenSet.has(Number(q.id)));
 
       if (pool.length === 0) return res.json(null);
 
@@ -10488,7 +10507,19 @@ app.post("/api/auth/register", async (req: Request, res: Response) => {
       const userId = (req.session as any)?.userId;
       if (!userId) return res.status(401).json({ error: 'يجب تسجيل الدخول' });
 
-      const { subcategory, category, correct }: { subcategory: string; category: string; correct: boolean } = req.body;
+      const { questionId, selectedOptionIndex } = req.body;
+      if (!Number.isSafeInteger(Number(questionId)) || !Number.isInteger(selectedOptionIndex)) {
+        return res.status(400).json({ error: 'أرسل رقم السؤال والخيار المحدد للتصحيح.' });
+      }
+      const question = await Question.findOne({ questionId: Number(questionId), answerStatus: 'approved' })
+        .select('options correctOptionIndex category subcategory answerStatus').lean();
+      if (!question || selectedOptionIndex < 0 || selectedOptionIndex >= question.options.length ||
+          dailyExamQuestions([{ ...question, id: Number(questionId) }], 1).length !== 1) {
+        return res.status(400).json({ error: 'السؤال أو الإجابة غير صالحين للتصحيح.' });
+      }
+      const correct = selectedOptionIndex === question.correctOptionIndex;
+      const category = question.category;
+      const subcategory = question.subcategory || 'عام';
 
       const { AdaptiveProfile } = await import('./mongodb/models');
       let profile = await AdaptiveProfile.findOne({ userId: String(userId) });
@@ -10519,7 +10550,7 @@ app.post("/api/auth/register", async (req: Request, res: Response) => {
       if (newAbility >= 0.8) newDiff = 'advanced';
       else if (newAbility <= -0.8) newDiff = 'beginner';
 
-      res.json({ ability: newAbility, abilityPct: Math.round((newAbility + 2) * 25), difficulty: newDiff });
+      res.json({ correct, ability: newAbility, abilityPct: Math.round((newAbility + 2) * 25), difficulty: newDiff });
     } catch (e) {
       res.status(500).json({ error: 'فشل في تحديث الملف التكيفي' });
     }

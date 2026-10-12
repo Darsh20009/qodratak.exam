@@ -166,6 +166,20 @@ type ChallengeQuestionData = ProcessedExamQuestion & {
 // Mock data for Qiyas exams
 const qiyasExams: QiyasExam[] = [
   {
+    id: 10,
+    name: "محاكاة الورقي التدريبية",
+    description: "100 سؤال من بنك المنصة المعتمد: 53 لفظيًا و47 كميًا. تدريب إلكتروني بنمط الورقي، وليس نموذجًا رسميًا مستوردًا.",
+    totalSections: 1,
+    totalQuestions: 100,
+    totalTime: 100,
+    overallCategory: "mixed",
+    requiresSubscription: true,
+    icon: BookOpen,
+    sections: [
+      { sectionNumber: 1, name: "محاكاة الورقي", category: "mixed", questionCount: 100, timeLimit: 100, verbalCount: 53, quantitativeCount: 47 },
+    ],
+  },
+  {
     id: 1,
     name: "اختبار قدراتك التأهيلي",
     description: "اختبار تأهيلي شامل يتكون من سبعة أقسام متنوعة بين اللفظي والكمي. يتضمن 20 سؤالاً تجريبياً (12 لفظي + 8 كمي) غير محسوب للمساعدة. متاح مجاناً كل يومين.",
@@ -338,6 +352,10 @@ export interface CustomExamConfiguration {
   verbalCount: number;
   quantitativeCount: number;
   timeLimit: number;
+  name?: string;
+  id?: number;
+  questionEndpoint?: string;
+  testType?: string;
 }
 
 const QiyasExamPage: React.FC<{ customConfiguration?: CustomExamConfiguration }> = ({ customConfiguration }) => {
@@ -384,10 +402,11 @@ const QiyasExamPage: React.FC<{ customConfiguration?: CustomExamConfiguration }>
         timeLimit < 5 || timeLimit > 180) return;
     setSectionOnlyIndex(null);
     setSelectedExam({
-      id: 9, name: "اختبار مخصص", totalSections: 1, totalQuestions, totalTime: timeLimit,
+      id: customConfiguration.id ?? 9, name: customConfiguration.name ?? "اختبار مخصص", totalSections: 1, totalQuestions, totalTime: timeLimit,
       overallCategory: verbalCount === 0 ? "quantitative" : quantitativeCount === 0 ? "verbal" : "mixed",
       sections: [{
-        sectionNumber: 1, name: "التدريب المخصص", category: "mixed",
+        sectionNumber: 1, name: customConfiguration.name ?? "التدريب المخصص",
+        category: verbalCount === 0 ? "quantitative" : quantitativeCount === 0 ? "verbal" : "mixed",
         questionCount: totalQuestions, timeLimit, verbalCount, quantitativeCount,
       }],
     });
@@ -810,7 +829,7 @@ const QiyasExamPage: React.FC<{ customConfiguration?: CustomExamConfiguration }>
     setPendingNextSectionIdx(null);
 
     try {
-      const response = await fetch('/api/questions', { credentials: 'include' });
+      const response = await fetch(customConfiguration?.questionEndpoint ?? '/api/questions', { credentials: 'include' });
       if (!response.ok) throw new Error(`تعذر تحميل أسئلة الاختبار (${response.status}). أعد المحاولة.`);
       const availableQuestions: ExamQuestion[] = await response.json();
       if (!Array.isArray(availableQuestions)) throw new Error("بيانات الأسئلة غير صالحة. أعد المحاولة.");
@@ -1166,9 +1185,16 @@ const QiyasExamPage: React.FC<{ customConfiguration?: CustomExamConfiguration }>
         // حساب الأسئلة المتروكة (غير المجاب عليها)
         const scoredQuestions = allQuestions.filter(q => !q._isNonScored);
         const skippedQuestions = scoredQuestions.filter(q => answers[q.id] === undefined).length;
+        // The automatic archive must receive the full scored roster, including never-opened/skipped items.
+        completeExamTiming(scoredQuestions.map(q => ({
+          id: String(q._id), bankId: String(q.questionId ?? q.id),
+          text: q.text, options: q.options, category: q.category,
+          subcategory: q.subcategory, imageUrl: q.imageUrl,
+          selectedOptionIndex: answers[q.id] ?? null,
+        })));
         
         const savedResponse = await apiRequest('POST', '/api/test-results', {
-          testType: 'qiyas',
+          testType: customConfiguration?.testType ?? 'qiyas',
           difficulty: 'advanced', // اختبارات قياس متقدمة
           score: finalStats.totalCorrect,
           totalQuestions: finalStats.totalScoredQuestions,
@@ -1816,6 +1842,7 @@ const QiyasExamPage: React.FC<{ customConfiguration?: CustomExamConfiguration }>
                 onEndTest={finishExam}
                 variant="subtle"
                 testName={selectedExam.name}
+                confirmationMessage="سيتم تصحيح إجاباتك المحفوظة وحفظ النتيجة. الأسئلة غير المجابة ستُحسب متروكة."
                 showProgress={true}
                 questionsAnswered={Object.keys(answers).length}
                 totalQuestions={selectedExam.totalQuestions}

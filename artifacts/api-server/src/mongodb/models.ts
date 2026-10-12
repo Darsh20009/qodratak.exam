@@ -438,7 +438,7 @@ subscriptionSchema.index({ paymentGateway: 1, paymentStatus: 1, createdAt: -1 })
 export interface ITestResult extends Document {
   userId: string;
   program: 'qudrat' | 'tahsili' | 'general';
-  testType: 'verbal' | 'quantitative' | 'qiyas' | 'custom' | 'paper_model' | 'standard';
+  testType: 'verbal' | 'quantitative' | 'qiyas' | 'custom' | 'paper_model' | 'standard' | 'free-verbal' | 'free-quantitative' | 'adaptive';
   testId?: string;
   testName?: string;
   resultNotificationKey?: string;
@@ -468,7 +468,7 @@ const testResultSchema = new Schema<ITestResult>({
     default: 'general',
     index: true,
   },
-  testType: { type: String, enum: ['verbal', 'quantitative', 'qiyas', 'custom', 'paper_model', 'standard'], required: true },
+  testType: { type: String, enum: ['verbal', 'quantitative', 'qiyas', 'custom', 'paper_model', 'standard', 'free-verbal', 'free-quantitative', 'adaptive'], required: true },
   testId: { type: String },
   testName: { type: String },
   resultNotificationKey: { type: String },
@@ -901,7 +901,7 @@ const examBookingSchema = new Schema<IExamBooking>({
   totalScoreOutOf100: { type: Number, default: 0 },
   verbalPercent: { type: Number, default: 0 },
   quantPercent: { type: Number, default: 0 },
-  totalQuestions: { type: Number, default: 100 },
+  totalQuestions: { type: Number, default: 125 },
   correctAnswers: { type: Number, default: 0 },
   wrongAnswers: { type: Number, default: 0 },
   skippedAnswers: { type: Number, default: 0 },

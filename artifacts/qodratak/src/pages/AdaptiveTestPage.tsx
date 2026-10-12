@@ -1,4 +1,8 @@
 import QuantitativeVideoReview from '@/components/exam-results/QuantitativeVideoReview';
+import ExamLearningReport from '@/components/exam-results/ExamLearningReport';
+import { resetExamTiming, useExamQuestionTiming } from '@/lib/examTiming';
+import { isReadingComprehension } from '@/lib/verbalPassage';
+import { isExamRosterComplete } from '@/lib/examSubmission';
 import { useState, useEffect, useCallback, useRef } from "react";
 import ImageZoom from "@/components/ImageZoom";
 import { useQuery, useMutation } from "@tanstack/react-query";
@@ -14,6 +18,7 @@ import {
 } from "lucide-react";
 
 interface Question {
+  _id: string;
   id: number;
   questionId: number;
   text: string;
@@ -24,6 +29,8 @@ interface Question {
   difficulty: string;
   explanation?: string;
   imageUrl?: string;
+  passage?: string;
+  source?: { passageText?: string; passageLabel?: string; subcategory?: string; section?: string };
 }
 
 interface NextQuestionResponse {
@@ -34,12 +41,16 @@ interface NextQuestionResponse {
 }
 
 interface SubmitResponse {
+  correct: boolean;
   ability: number;
   abilityPct: number;
   difficulty: string;
 }
 
 interface SessionAnswer {
+  mongoId: string;
+  selectedOptionIndex: number;
+  responseTime: number;
   questionId: number;
   subcategory: string;
   category: string;
@@ -265,15 +276,49 @@ export default function AdaptiveTestPage() {
   const [abilityDelta, setAbilityDelta] = useState<"up" | "down" | null>(null);
   const [feedback, setFeedback] = useState<{ correct: boolean; explanation?: string } | null>(null);
   const [loadingNext, setLoadingNext] = useState(false);
+  const [reportState, setReportState] = useState<"idle" | "pending" | "saved" | "failed">("idle");
+  const [reportError, setReportError] = useState("");
+  const sessionIdRef = useRef("");
+  const sessionStartedRef = useRef(0);
+  const questionStartedRef = useRef(0);
+  useExamQuestionTiming(currentQ?.question, selectedOption,
+    stage === "testing" || stage === "answer-reveal", "الاختبار التكيفي");
+
+  const saveSession = async (completedAnswers: SessionAnswer[]) => {
+    const attempt = sessionIdRef.current;
+    const sourceKey = `adaptive-session:${attempt}`;
+    setReportState("pending");
+    setReportError("");
+    try {
+      const result = await apiRequest("POST", "/api/test-results", {
+        testType: "adaptive", difficulty: "intermediate",
+        score: completedAnswers.filter(a => a.correct).length, totalQuestions: completedAnswers.length,
+        skippedQuestions: 0, timeTaken: Math.round((Date.now() - sessionStartedRef.current) / 1000),
+        sourceKey, idempotencyKey: sourceKey,
+        questionIds: completedAnswers.map(a => String(a.questionId)),
+        scoredQuestionIds: completedAnswers.map(a => a.mongoId),
+        learningAnswers: completedAnswers.map(a => ({
+          questionId: a.mongoId, selectedOptionIndex: a.selectedOptionIndex, responseTime: a.responseTime, sourceKey,
+        })),
+      });
+      await result.json();
+      if (attempt === sessionIdRef.current) setReportState("saved");
+    } catch (error) {
+      if (attempt !== sessionIdRef.current) return;
+      setReportState("failed");
+      setReportError(error instanceof Error ? error.message : "تعذر حفظ التقرير. أعد المحاولة.");
+    }
+  };
 
   const seenIds = sessionAnswers.map(a => a.questionId);
   const questionCount = sessionAnswers.length;
-  const isLastQuestion = questionCount >= SESSION_TOTAL - 1;
+  const isLastQuestion = isExamRosterComplete(questionCount, SESSION_TOTAL);
 
   const fetchNextMutation = useMutation({
     mutationFn: (data: { category: string; seenIds: number[] }) =>
       apiRequest("POST", "/api/adaptive/next", data).then(r => r.json()),
     onSuccess: (data: NextQuestionResponse) => {
+      questionStartedRef.current = Date.now();
       setCurrentQ(data);
       setSelectedOption(null);
       setFeedback(null);
@@ -287,7 +332,7 @@ export default function AdaptiveTestPage() {
   });
 
   const submitMutation = useMutation({
-    mutationFn: (data: { subcategory: string; category: string; correct: boolean }) =>
+    mutationFn: (data: { questionId: number; selectedOptionIndex: number }) =>
       apiRequest("POST", "/api/adaptive/submit", data).then(r => r.json()),
     onSuccess: (data: SubmitResponse) => {
       const prev = currentAbilityPct;
@@ -299,6 +344,11 @@ export default function AdaptiveTestPage() {
   });
 
   const startSession = (cat: string) => {
+    resetExamTiming();
+    sessionIdRef.current = `${Date.now()}-${Math.random().toString(36).slice(2)}`;
+    sessionStartedRef.current = Date.now();
+    setReportState("idle");
+    setReportError("");
     setCategory(cat);
     setSessionAnswers([]);
     setCurrentQ(null);
@@ -309,15 +359,32 @@ export default function AdaptiveTestPage() {
     fetchNextMutation.mutate({ category: cat, seenIds: [] });
   };
 
-  const handleOptionSelect = (idx: number) => {
+  const handleOptionSelect = async (idx: number) => {
     if (selectedOption !== null || !currentQ?.question) return;
+    const attempt = sessionIdRef.current;
+    const responseTime = Math.max(0, Math.round((Date.now() - questionStartedRef.current) / 1000));
     setSelectedOption(idx);
-    const correct = idx === currentQ.question.correctOptionIndex;
+    let correct: boolean;
+    try {
+      const correction: SubmitResponse = await submitMutation.mutateAsync({
+        questionId: currentQ.question.questionId || currentQ.question.id, selectedOptionIndex: idx,
+      });
+      if (attempt !== sessionIdRef.current) return;
+      correct = correction.correct;
+      setReportError("");
+    } catch (error) {
+      setSelectedOption(null);
+      setReportError(error instanceof Error ? error.message : "تعذر تصحيح الإجابة. أعد المحاولة.");
+      return;
+    }
 
     setFeedback({ correct, explanation: currentQ.question.explanation });
     setStage("answer-reveal");
 
     const answer: SessionAnswer = {
+      mongoId: currentQ.question._id,
+      selectedOptionIndex: idx,
+      responseTime,
       questionId: currentQ.question.questionId || currentQ.question.id,
       subcategory: currentQ.subcategory,
       category: currentQ.question.category,
@@ -326,12 +393,6 @@ export default function AdaptiveTestPage() {
       abilityAfter: currentAbilityPct / 100 * 4 - 2,
     };
     setSessionAnswers(prev => [...prev, answer]);
-
-    submitMutation.mutate({
-      subcategory: currentQ.subcategory,
-      category: currentQ.question.category,
-      correct,
-    });
 
     // Log error (fire-and-forget) for error analysis
     if (!correct) {
@@ -349,13 +410,14 @@ export default function AdaptiveTestPage() {
       }).catch(() => {});
     }
 
-    if (questionCount + 1 >= SESSION_TOTAL) {
+    if (isExamRosterComplete(questionCount + 1, SESSION_TOTAL)) {
+      void saveSession([...sessionAnswers, answer]);
       setTimeout(() => { setStage("done"); }, 1800);
     }
   };
 
   const handleNextQuestion = () => {
-    if (questionCount + 1 >= SESSION_TOTAL) {
+    if (isExamRosterComplete(questionCount, SESSION_TOTAL)) {
       setStage("done");
       return;
     }
@@ -431,6 +493,16 @@ export default function AdaptiveTestPage() {
           <CategorySelect onSelect={startSession} />
         )}
 
+        {reportError && <p role="alert" className="my-3 text-sm text-red-600 dark:text-red-400">{reportError}</p>}
+        {stage === "done" && (
+          <div className="mb-4 space-y-2 text-sm">
+            <p>{reportState === "saved" ? "تم تصحيح الاختبار وحفظ النتيجة. تقرير الأسئلة والتوقيت بالأسفل." : reportState === "pending" ? "جارٍ تصحيح وحفظ تقرير الاختبار..." : "لم تُحفظ النتيجة بعد."}</p>
+            {reportState === "saved" && <Link href="/records" className="font-bold text-primary underline">افتح نتائجي والتقرير المفصل</Link>}
+            {reportState === "failed" && <button onClick={() => void saveSession(sessionAnswers)} className="font-bold text-primary underline">إعادة حفظ التقرير</button>}
+          </div>
+        )}
+        {stage === "done" && reportState === "saved" && <ExamLearningReport />}
+
         {stage === "done" && (
           <div className="bg-white dark:bg-gray-900 rounded-3xl border border-gray-100 dark:border-gray-800 shadow-sm p-5">
             <SessionSummary
@@ -471,6 +543,12 @@ export default function AdaptiveTestPage() {
 
                 {/* Question text */}
                 <div className="px-5 py-5">
+                  {isReadingComprehension(question) && (question.source?.passageText || question.passage) && (
+                    <div dir="rtl" className="mb-4 rounded-xl border border-border bg-muted/40 p-4 text-foreground">
+                      <h3 className="mb-2 font-bold">{question.source?.passageLabel || "نص القطعة"}</h3>
+                      <p className="whitespace-pre-wrap leading-8">{question.source?.passageText || question.passage}</p>
+                    </div>
+                  )}
                   {question.imageUrl && (
                     <div className="flex justify-center mb-4">
                       <ImageZoom src={resolveFoundationAssetUrl(question.imageUrl)} imgClassName="max-h-32 rounded-xl object-contain w-full" />

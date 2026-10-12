@@ -20,7 +20,9 @@ export function examQuestionPayload(question: any) {
 export function dailyExamQuestions(questions: any[], count = 20) {
   const valid = questions.map(examQuestionPayload).filter(question =>
     Number.isSafeInteger(question.id) && question.id > 0 &&
-    question.answerStatus !== "review" && Array.isArray(question.options) && question.options.length >= 4 &&
+    question.answerStatus === "approved" && Array.isArray(question.options) && question.options.length >= 4 &&
+    question.options.every((option: unknown) => typeof option === "string" && option.trim()) &&
+    new Set(question.options.map((option: string) => option.trim())).size === question.options.length &&
     Number.isInteger(question.correctOptionIndex) && question.correctOptionIndex >= 0 &&
     question.correctOptionIndex < question.options.length);
   return [...new Map(valid.map(question => [question.id, question])).values()].slice(0, count);

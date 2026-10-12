@@ -16,7 +16,9 @@ export function validExamPool<T extends { id: number; options: string[]; correct
         !Array.isArray(question.options) || question.options.length < 4 ||
         !Number.isInteger(question.correctOptionIndex) ||
         question.correctOptionIndex < 0 || question.correctOptionIndex >= question.options.length ||
-        question.answerStatus === "review" ||
+        question.answerStatus !== "approved" ||
+        question.options.some(option => typeof option !== "string" || !option.trim()) ||
+        new Set(question.options.map(option => option.trim())).size !== question.options.length ||
         !["verbal", "quantitative"].includes(question.category)) continue;
     if (!unique.has(question.id)) unique.set(question.id, question);
   }

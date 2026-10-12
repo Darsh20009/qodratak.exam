@@ -903,12 +903,12 @@ export default function PaperModelsPage() {
           <Card className="w-full max-w-md">
             <CardContent className="p-6 text-center">
               <FileText className="w-12 h-12 mx-auto mb-4 text-muted-foreground" />
-              <h3 className="text-xl font-bold mb-2">لا توجد نماذج متاحة</h3>
+              <h3 className="text-xl font-bold mb-2">محاكاة الورقي متاحة للتدريب</h3>
               <p className="text-muted-foreground mb-4">
-                لم تُنشر نماذج ورقية معتمدة حاليًا. يمكنك التدريب بالمحاكاة إلى حين توفرها.
+                ابدأ اختبارًا من بنك المنصة: 53 سؤالًا لفظيًا و47 كميًا، مع تصحيح وتقرير مفصل. هذه محاكاة تدريبية وليست نموذجًا رسميًا مستوردًا؛ ملفات النماذج المعتمدة لم تُنشر بعد.
               </p>
-              <Link href="/qiyas" className="mb-4 block font-bold text-primary underline underline-offset-4">
-                افتح اختبارات المحاكاة
+              <Link href="/qiyas?examId=10" className="mb-4 block font-bold text-primary underline underline-offset-4" data-testid="start-paper-simulation">
+                ابدأ محاكاة الورقي
               </Link>
               <Button onClick={() => window.location.reload()}>
                 تحديث الصفحة

@@ -23,7 +23,7 @@ test("lean and Mongoose exam questions share the same public identity and conten
 });
 
 test("daily tests omit two-choice, invalid-key and review-only items and preserve distinct IDs", () => {
-  const row = { id: 1, options: ["أ", "ب", "ج", "د"], correctOptionIndex: 0 };
+  const row = { id: 1, options: ["أ", "ب", "ج", "د"], correctOptionIndex: 0, answerStatus: "approved" };
   const questions = dailyExamQuestions([
     row, row, { ...row, id: 2, options: ["أ", "ب"] },
     { ...row, id: 3, correctOptionIndex: 4 },

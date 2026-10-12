@@ -1,4 +1,5 @@
 import React from 'react';
+import DailyExamPage from "./pages/DailyExamPage";
 import { Switch, Route, Link, useLocation, Router as WouterRouter } from "wouter";
 import { RotateDevicePrompt } from "@/components/RotateDevicePrompt";
 import { queryClient } from "./lib/queryClient";
@@ -1097,10 +1098,10 @@ function Router({ splashDone }: { splashDone: boolean }) {
 
       {/* الاختبارات المجانية - متاحة للحسابات المسجلة */}
       <Route path="/free-verbal-test">
-        {() => <StudentShell><FreeVerbalTestRunner /></StudentShell>}
+        {() => <StudentShell><ProtectedRoute><DailyExamPage category="verbal" /></ProtectedRoute></StudentShell>}
       </Route>
       <Route path="/free-quantitative-test">
-        {() => <StudentShell><FreeQuantitativeTestRunner /></StudentShell>}
+        {() => <StudentShell><ProtectedRoute><DailyExamPage category="quantitative" /></ProtectedRoute></StudentShell>}
       </Route>
 
       {/* صفحة تتبع التقدم */}
@@ -1122,10 +1123,10 @@ function Router({ splashDone }: { splashDone: boolean }) {
         {() => <StudentShell><ProtectedRoute requiresPremium={true}><QuantitativeTestRunner /></ProtectedRoute></StudentShell>}
       </Route>
       <Route path="/advanced-verbal-test">
-        {() => <StudentShell><ProtectedRoute requiresPremium={true}><AdvancedVerbalTest /></ProtectedRoute></StudentShell>}
+        {() => <StudentShell><ProtectedRoute requiresPremium={true}><Redirect to="/qiyas?examId=2" /></ProtectedRoute></StudentShell>}
       </Route>
       <Route path="/advanced-quantitative-test">
-        {() => <StudentShell><ProtectedRoute requiresPremium={true}><AdvancedQuantitativeTest /></ProtectedRoute></StudentShell>}
+        {() => <StudentShell><ProtectedRoute requiresPremium={true}><Redirect to="/qiyas?examId=3" /></ProtectedRoute></StudentShell>}
       </Route>
 
       <Route path="/custom-exam">

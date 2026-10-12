@@ -2,7 +2,7 @@ import mongoose from 'mongoose';
 import bcrypt from 'bcryptjs';
 import crypto from 'node:crypto';
 import fs from 'node:fs/promises';
-import { User } from '../../src/mongodb/models';
+import { User, ExamBooking } from '../../src/mongodb/models';
 
 // Temporary, notification-disabled account for protected UI verification.
 // Credentials stay in /tmp; never use this helper against a production runtime.
@@ -11,7 +11,20 @@ if (process.env.NODE_ENV === 'production') throw new Error('Development verifica
 if (!process.env.MONGODB_URI) throw new Error('MongoDB is not configured');
 await mongoose.connect(process.env.MONGODB_URI);
 try {
-  if (process.argv.includes('--cleanup')) {
+  if (process.argv.includes('--booking')) {
+    const fixture = JSON.parse(await fs.readFile(file, 'utf8'));
+    if (!/^uihub-[0-9a-f-]+$/.test(fixture.username)) throw new Error('Not a temporary UI fixture');
+    const user = await User.findOne({ _id: fixture.id, username: fixture.username });
+    if (!user || user.fullName !== 'طالب اختبار الواجهة' || !user.email?.endsWith('@example.invalid')) {
+      throw new Error('Fixture ownership check failed');
+    }
+    const booking = await ExamBooking.create({
+      userId: fixture.id, userName: user.fullName, userEmail: user.email,
+      scheduledAt: new Date(Date.now() - 30_000), status: 'pending',
+    });
+    await fs.writeFile('/tmp/qodratak-exam-booking.json', JSON.stringify({ id: String(booking._id) }), { mode: 0o600 });
+    console.log('Temporary booking prepared for the notification-disabled fixture');
+  } else if (process.argv.includes('--cleanup')) {
     const fixture = JSON.parse(await fs.readFile(file, 'utf8'));
     if (!/^uihub-[0-9a-f-]+$/.test(fixture.username)) throw new Error('Not a temporary UI fixture');
     const user = await User.findOne({ _id: fixture.id, username: fixture.username });
@@ -30,6 +43,7 @@ try {
       await User.deleteOne({ _id: user._id, username: fixture.username });
     }
     await fs.unlink(file);
+    await fs.rm('/tmp/qodratak-exam-booking.json', { force: true });
     console.log('Temporary student fixture removed');
   } else {
     const username = `uihub-${crypto.randomUUID()}`;
