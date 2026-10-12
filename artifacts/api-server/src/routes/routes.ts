@@ -37,6 +37,7 @@ import multer from 'multer';
 import { insertQuestionSchema } from "@workspace/db";
 import { TestType, TestDifficulty } from "../shared/types";
 import bcrypt from 'bcryptjs';
+import { registerInstitutionRoutes } from './institutions';
 import { exec } from 'child_process';
 import { sendTestEmail, sendOTPEmail, sendWelcomeEmail, sendSubscriptionApprovalEmail, sendExamResults, sendPasswordResetEmail, notifyAdminNewSubscription, notifyAdminReceiptUploaded, notifyAdminInstitutionRequest, sendInvitationEmail, sendCustomEmail } from '../services/emailService';
 import crypto from 'crypto';
@@ -780,7 +781,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     if (pathName.startsWith('/support-tickets') || pathName.startsWith('/whatsapp')) return 'manage_support';
     if (pathName.startsWith('/settings') || pathName.startsWith('/subscription-plan')) return 'manage_settings';
     if (pathName.startsWith('/scheduled-exams')) return 'manage_exams';
-    if (pathName.startsWith('/institution-requests')) return 'manage_institutions';
+    if (pathName.startsWith('/institution-requests') || pathName.startsWith('/institutions')) return 'manage_institutions';
     if (pathName.startsWith('/notifications')) return 'manage_notifications';
     if (pathName.startsWith('/seasonal-exams') || pathName.startsWith('/foundation-content') || pathName.startsWith('/platform-reviews')) return 'manage_content';
     if (pathName.startsWith('/wallets') || pathName.startsWith('/leaderboard')) return 'manage_wallets';
@@ -4581,6 +4582,8 @@ app.post("/api/auth/register", async (req: Request, res: Response) => {
     }
   });
 
+  registerInstitutionRoutes(app, { requireAdmin: requireAdmin as any, verifyPhoneVerificationToken });
+
   // Approve institution request (Admin only)
   app.post("/api/admin/institution-requests/:id/approve", requireAdmin, async (req: Request, res: Response) => {
     try {
@@ -6061,6 +6064,20 @@ app.post("/api/auth/register", async (req: Request, res: Response) => {
         }
       }
 
+      // Device trials are for signed-out visitors only. Authenticated student
+      if (userId) {
+        const institutionAccess = await ensureStudentAccountTrial(userId, sessionEmail);
+        if (institutionAccess?.user?.institutionId) {
+          hasUsedTrial = true;
+          hasActiveSubscription = institutionAccess.paid;
+          isTrialActive = !institutionAccess.paid && institutionAccess.active;
+          trialEndDate = institutionAccess.trialEndDate;
+          subscriptionEndDate = institutionAccess.paid ? institutionAccess.endDate : null;
+          if (!institutionAccess.paid) subscriptionType = institutionAccess.active ? 'free_trial' : 'free';
+          isUserSubscribed = institutionAccess.active;
+        }
+      }
+      // The institutional ledger overrides legacy JSON trial mirrors.
       // Device trials are for signed-out visitors only. Authenticated student
       // trials are bound to the account so changing devices cannot restart them.
       if (!userId && !isUserSubscribed) {

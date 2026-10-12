@@ -8,6 +8,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Switch } from "@/components/ui/switch";
 import { Shield, KeyRound, Phone, Crown, CheckCircle2, User, LogOut, Camera, Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import InstitutionMembershipCard from "@/components/institution/InstitutionMembershipCard";
 import { Label } from "@/components/ui/label";
 import SubscriptionRenewalDialog from "@/components/SubscriptionRenewalDialog";
 
@@ -98,6 +99,8 @@ export default function AccountPage() {
         <h1 className="text-3xl font-black text-[#0D1B2A] dark:text-white mb-2">حسابي</h1>
         <p className="text-sm text-muted-foreground">إدارة بياناتك الشخصية واشتراكك وإعدادات الأمان.</p>
       </header>
+
+      {user.role === "student" && <InstitutionMembershipCard />}
 
       {/* Profile Info */}
       <section className="rounded-2xl border border-border bg-white dark:bg-card p-6 flex flex-col md:flex-row items-center gap-6 shadow-sm">

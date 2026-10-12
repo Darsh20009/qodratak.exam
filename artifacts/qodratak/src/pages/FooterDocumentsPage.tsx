@@ -4,7 +4,7 @@ import { LEGAL_ENTITY_NAME, SUPPORT_EMAIL, SUPPORT_PHONE, UNIFIED_NATIONAL_NUMBE
 
 type DocumentKey = "terms" | "privacy" | "refund";
 
-const documents: Record<DocumentKey, {
+export const documents: Record<DocumentKey, {
   eyebrow: string;
   title: string;
   intro: string;

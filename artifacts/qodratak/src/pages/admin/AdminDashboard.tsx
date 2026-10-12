@@ -9,6 +9,7 @@ import AdminGeideaTransactionsTab from './AdminGeideaTransactionsTab';
 import WhatsAppAdminTab from './WhatsAppAdminTab';
 import EmailAdminTab from './EmailAdminTab';
 import AdminOverview from './AdminOverview';
+import AdminInstitutionsTab, { type InstitutionPrefill } from '@/components/admin/AdminInstitutionsTab';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -189,6 +190,7 @@ export default function AdminDashboard({ initialTab = 'overview' }: { initialTab
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [activeTab, setActiveTab] = useState(initialTab);
+  const [institutionPrefill, setInstitutionPrefill] = useState<InstitutionPrefill | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
   const [selectedSubscription, setSelectedSubscription] = useState<Subscription | null>(null);
@@ -319,15 +321,6 @@ export default function AdminDashboard({ initialTab = 'overview' }: { initialTab
   const { data: walletsData, isLoading: walletsLoading, refetch: refetchWallets } = useQuery({ queryKey: ['/api/admin/wallets'], queryFn: () => fetch('/api/admin/wallets', { credentials: 'include' }).then(r => r.json()), enabled: !!(session as any)?.authenticated && activeTab === 'wallets' });
   const { data: monthlyTop3Data, isLoading: top3Loading, refetch: refetchTop3 } = useQuery({ queryKey: ['/api/admin/leaderboard/monthly-top3'], queryFn: () => fetch('/api/admin/leaderboard/monthly-top3', { credentials: 'include' }).then(r => r.json()), enabled: !!(session as any)?.authenticated && activeTab === 'wallets' });
   const { data: seasonalExamsData, isLoading: seasonalLoading, refetch: refetchSeasonal } = useQuery({ queryKey: ['/api/admin/seasonal-exams'], queryFn: () => fetch('/api/admin/seasonal-exams', { credentials: 'include' }).then(r => r.json()), enabled: !!(session as any)?.authenticated && activeTab === 'seasonal-exams' });
-  const { data: activeInstitutionsData, isLoading: activeInstitutionsLoading, error: activeInstitutionsError } = useQuery({
-    queryKey: ['/api/admin/institutions/active'],
-    queryFn: async () => {
-      const res = await fetch('/api/admin/institutions/active', { credentials: 'include' });
-      if (!res.ok) throw new Error('فشل في جلب المؤسسات النشطة');
-      return res.json();
-    },
-    enabled: !!(session as any)?.authenticated && activeTab === 'active-institutions'
-  });
 
   // Test template mutations
   const addTemplate = useMutation({
@@ -520,11 +513,15 @@ export default function AdminDashboard({ initialTab = 'overview' }: { initialTab
     onError: () => toast({ title: 'خطأ', variant: 'destructive' }),
   });
 
-  const approveInstitution = useMutation({
-    mutationFn: async (id: string) => { const r = await fetch(`/api/admin/institution-requests/${id}/approve`, { method: 'POST', credentials: 'include' }); if (!r.ok) throw new Error(); return r.json(); },
-    onSuccess: () => { toast({ title: '✅ تم قبول طلب المؤسسة' }); queryClient.invalidateQueries({ queryKey: ['/api/admin/institution-requests'] }); },
-    onError: () => toast({ title: 'خطأ', variant: 'destructive' }),
-  });
+  // Legacy approval is retired server-side (409 → /admin/institutions). Start the contract workflow instead.
+  const approveInstitution = {
+    isPending: false,
+    mutate: (id: string) => {
+      const req = ((institutionsData as any)?.requests || ((pendingInstitutions as any)?.requests) || []).find((r: any) => r._id === id) || selectedInstitution;
+      setInstitutionPrefill({ name: req?.institutionName, email: req?.email, phone: req?.phone, city: req?.city, address: req?.address });
+      setActiveTab('active-institutions');
+    },
+  };
 
   const rejectInstitution = useMutation({
     mutationFn: async (id: string) => { const r = await fetch(`/api/admin/institution-requests/${id}/reject`, { method: 'POST', credentials: 'include' }); if (!r.ok) throw new Error(); return r.json(); },
@@ -580,6 +577,11 @@ export default function AdminDashboard({ initialTab = 'overview' }: { initialTab
   }
 
   const admin = (session as any)?.admin;
+  const adminPermissions: string[] = Array.isArray(admin?.permissions) ? admin.permissions : [];
+  // Mirrors server adminCan(): session.admin.permissions are already the server's effective permissions.
+  const canManageInstitutions = admin?.role === 'super_admin' || admin?.role === 'system_admin'
+    || adminPermissions.includes('all') || adminPermissions.includes('manage_institutions')
+    || (admin?.role === 'admin' && adminPermissions.length === 2 && adminPermissions.includes('view_students') && adminPermissions.includes('view_subscriptions'));
   const pendingSubCount = Array.isArray(pendingSubs) ? pendingSubs.length : (((pendingSubs as any)?.subscriptions)?.length || 0);
   const pendingInstCount = ((pendingInstitutions as any)?.requests || []).length;
 
@@ -632,7 +634,7 @@ export default function AdminDashboard({ initialTab = 'overview' }: { initialTab
         <nav className="flex-1 space-y-4 p-3">
           <div className="space-y-0.5">
             <p className="px-3 pb-2 text-[10px] font-bold tracking-wide text-slate-600">الأساسيات</p>
-            {NAV_ITEMS.filter(item => PRIMARY_ADMIN_NAV_KEYS.has(item.key)).map(item => {
+            {NAV_ITEMS.filter(item => (item.key !== 'active-institutions' || canManageInstitutions) && PRIMARY_ADMIN_NAV_KEYS.has(item.key)).map(item => {
             const isActive = activeTab === item.key;
             const hasBadge = (item.key === 'subscriptions' && pendingSubCount > 0) || (item.key === 'institutions' && pendingInstCount > 0);
             return (
@@ -667,7 +669,7 @@ export default function AdminDashboard({ initialTab = 'overview' }: { initialTab
               <span>المزيد من الأدوات</span>
               <ChevronRight className={`h-3.5 w-3.5 transition-transform ${showMoreAdminNav ? 'rotate-90' : ''}`} />
             </button>
-            {showMoreAdminNav && NAV_ITEMS.filter(item => !PRIMARY_ADMIN_NAV_KEYS.has(item.key)).map(item => {
+            {showMoreAdminNav && NAV_ITEMS.filter(item => (item.key !== 'active-institutions' || canManageInstitutions) && !PRIMARY_ADMIN_NAV_KEYS.has(item.key)).map(item => {
               const isActive = activeTab === item.key;
               const hasBadge = item.key === 'institutions' && pendingInstCount > 0;
               return (
@@ -1210,7 +1212,7 @@ export default function AdminDashboard({ initialTab = 'overview' }: { initialTab
                               </button>
                               {inst.status === 'pending' && (
                                 <>
-                                  <button onClick={() => approveInstitution.mutate(inst._id)} disabled={approveInstitution.isPending} className="text-emerald-400 hover:text-emerald-300 text-xs transition-colors">قبول</button>
+                                  <button onClick={() => approveInstitution.mutate(inst._id)} disabled={approveInstitution.isPending} className="text-emerald-400 hover:text-emerald-300 text-xs transition-colors">بدء العقد</button>
                                   <button onClick={() => rejectInstitution.mutate(inst._id)} disabled={rejectInstitution.isPending} className="text-red-400 hover:text-red-300 text-xs transition-colors">رفض</button>
                                 </>
                               )}
@@ -1488,78 +1490,10 @@ export default function AdminDashboard({ initialTab = 'overview' }: { initialTab
             </div>
           )}
 
-          {/* ─── ACTIVE INSTITUTIONS TAB ─── */}
-          {activeTab === 'active-institutions' && (
-            <div className="space-y-5">
-              <div className="flex items-center justify-between">
-                <div>
-                  <h2 className="text-white text-xl font-bold flex items-center gap-2">
-                    <Building2 className="w-5 h-5 text-emerald-400" /> المؤسسات
-                  </h2>
-                  <p className="text-slate-400 text-sm mt-1">إدارة المؤسسات النشطة ومتابعة إحصائيات المعلمين والطلاب</p>
-                </div>
-              </div>
-
-              {activeInstitutionsLoading ? (
-                <div className="text-center py-16 text-slate-400">جارٍ التحميل...</div>
-              ) : activeInstitutionsError ? (
-                <div className="bg-red-900/20 rounded-2xl border border-red-900/40 py-16 text-center text-red-400">
-                  <p className="font-medium">حدث خطأ أثناء تحميل المؤسسات</p>
-                </div>
-              ) : !activeInstitutionsData?.institutions?.length ? (
-                <div className="bg-slate-800/40 rounded-2xl border border-slate-700/50 py-16 text-center text-slate-400">
-                  <Building2 className="w-12 h-12 mx-auto mb-3 opacity-30" />
-                  <p className="font-medium">لا توجد مؤسسات نشطة</p>
-                </div>
-              ) : (
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-                  {activeInstitutionsData.institutions.map((inst: ActiveInstitution) => (
-                    <div key={inst.id} className="bg-slate-800/40 rounded-2xl border border-slate-700/50 p-5 hover:bg-slate-800/60 transition-colors">
-                      <div className="flex justify-between items-start mb-4">
-                        <div>
-                          <h3 className="text-lg font-bold text-white mb-1">{inst.name}</h3>
-                          <div className="flex items-center gap-2 text-sm text-slate-400">
-                            <span>{inst.city}</span>
-                            <span>•</span>
-                            <span className="text-emerald-400">{inst.subscriptionType}</span>
-                          </div>
-                        </div>
-                        <Button
-                          onClick={() => setSelectedActiveInstitution(inst)}
-                          variant="outline"
-                          className="bg-slate-800 border-slate-600 hover:bg-slate-700 h-8 text-xs"
-                        >
-                          <Eye className="w-3 h-3 ml-1" /> عرض التفاصيل
-                        </Button>
-                      </div>
-
-                      <div className="grid grid-cols-2 gap-3 mb-4">
-                        <div className="bg-slate-900/50 rounded-lg p-3">
-                          <div className="text-xs text-slate-400 mb-1">الطلاب</div>
-                          <div className="flex items-end justify-between">
-                            <span className="text-xl font-bold text-white">{inst.studentCount}</span>
-                            <span className="text-xs text-slate-500 mb-1">/ {inst.maxStudents}</span>
-                          </div>
-                        </div>
-                        <div className="bg-slate-900/50 rounded-lg p-3">
-                          <div className="text-xs text-slate-400 mb-1">المعلمون</div>
-                          <div className="flex items-end justify-between">
-                            <span className="text-xl font-bold text-white">{inst.teacherCount}</span>
-                            <span className="text-xs text-slate-500 mb-1">/ {inst.maxTeachers}</span>
-                          </div>
-                        </div>
-                      </div>
-
-                      <div className="flex justify-between items-center text-xs">
-                        <span className="text-slate-400 text-left w-full" dir="ltr">{inst.email}</span>
-                        <span className="text-slate-400 text-left w-full" dir="ltr">{inst.phone}</span>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-          )}
+          {/* ─── INSTITUTIONS & CONTRACTS TAB ─── */}
+          {activeTab === 'active-institutions' && (canManageInstitutions
+            ? <AdminInstitutionsTab prefill={institutionPrefill} onPrefillConsumed={() => setInstitutionPrefill(null)} />
+            : <div className="rounded-2xl border border-white/10 p-8 text-center text-sm text-slate-400">لا تملك صلاحية إدارة المؤسسات (manage_institutions).</div>)}
 
           {/* ─── SUPPORT TICKETS TAB ─── */}
           {activeTab === 'support' && (
@@ -2707,7 +2641,7 @@ export default function AdminDashboard({ initialTab = 'overview' }: { initialTab
                       disabled={approveSub.isPending}
                       className="flex-1 bg-emerald-600 hover:bg-emerald-700 text-sm"
                     >
-                      <CheckCircle className="w-4 h-4 ml-1" /> موافقة على الاشتراك
+                      <CheckCircle className="w-4 h-4 ml-1" /> بدء عقد المؤسسة على الاشتراك
                     </Button>
                     <Button
                       onClick={() => {
@@ -2761,7 +2695,7 @@ export default function AdminDashboard({ initialTab = 'overview' }: { initialTab
               {selectedInstitution.status === 'pending' && (
                 <div className="flex gap-2 pt-2 border-t border-slate-700">
                   <Button onClick={() => { approveInstitution.mutate(selectedInstitution._id); setSelectedInstitution(null); }} disabled={approveInstitution.isPending} className="flex-1 bg-emerald-600 hover:bg-emerald-700">
-                    <CheckCircle className="w-4 h-4 ml-1" /> موافقة
+                    <CheckCircle className="w-4 h-4 ml-1" /> بدء عقد المؤسسة
                   </Button>
                   <Button onClick={() => { rejectInstitution.mutate(selectedInstitution._id); setSelectedInstitution(null); }} disabled={rejectInstitution.isPending} variant="destructive" className="flex-1">
                     <XCircle className="w-4 h-4 ml-1" /> رفض

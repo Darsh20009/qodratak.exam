@@ -1,4 +1,5 @@
 import mongoose, { Schema, Document } from 'mongoose';
+import { contractSchema } from './institutionModels';
 
 export type UserRole = 'student' | 'parent' | 'teacher' | 'institution_admin' | 'system_admin' | 'support_admin';
 
@@ -308,6 +309,10 @@ export interface IInstitution extends Document {
   subscriptionType: 'basic' | 'premium' | 'enterprise';
   subscriptionEndDate?: Date;
   logo?: string;
+  contract?: any;
+  activatedAt?: Date;
+  suspendedAt?: Date;
+  memberRevision?: number;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -327,6 +332,10 @@ const institutionSchema = new Schema<IInstitution>({
   subscriptionType: { type: String, enum: ['basic', 'premium', 'enterprise'], default: 'basic' },
   subscriptionEndDate: { type: Date },
   logo: { type: String },
+  contract: { type: contractSchema },
+  activatedAt: Date,
+  suspendedAt: Date,
+  memberRevision: { type: Number, default: 0 },
   createdAt: { type: Date, default: Date.now },
   updatedAt: { type: Date, default: Date.now },
 });

@@ -4,6 +4,7 @@ import path from "node:path";
 import type { NextFunction, Request, Response } from "express";
 import { Subscription, User } from "../mongodb/models";
 import { TRIAL_CONFIG } from "../services/subscriptionEngine";
+import { membershipForUser } from "../services/institutionService";
 
 const PREMIUM_TYPES = ["Pro", "Pro Life", "Pro Life Plus", "Pro Live"];
 const RIYADH_DAY_MS = 24 * 60 * 60 * 1000;
@@ -151,7 +152,8 @@ export async function ensureStudentAccountTrial(
     user = await User.findOne({ email: String(email).trim().toLowerCase() });
   }
   if (!user) return ensureLegacyAccountTrial(userId, email, now);
-  if (user.role !== "student") return null;
+  if (user.role !== "student" &&
+      (!user.institutionId || !await membershipForUser(user._id, now))) return null;
 
   const activePaidSubscription = await Subscription.findOne({
     userId: { $in: candidates },
@@ -171,6 +173,16 @@ export async function ensureStudentAccountTrial(
       endDate: activePaidSubscription.endDate,
       trialUsed: Boolean(user.trialUsed),
       trialEndDate: user.trialEndDate || null,
+    };
+  }
+
+  if (user.institutionId) {
+    const membership = await membershipForUser(user._id, now);
+    return {
+      user, paid: false, active: Boolean(membership?.freeActive),
+      endDate: membership?.freeEndDate || null, trialUsed: true,
+      trialEndDate: membership?.freeEndDate || null,
+      institutionGrant: membership,
     };
   }
 
@@ -235,6 +247,8 @@ export async function ensureStudentAccountTrial(
 
 export function isAllowedAfterTrial(path: string, method: string) {
   const normalizedMethod = method.toUpperCase();
+  if (path === "/api/institution/membership" && normalizedMethod === "GET") return true;
+  if (["/api/institutions/join", "/api/institutions/preview", "/api/institutions/register"].includes(path) && normalizedMethod === "POST") return true;
   if (path === "/api/support-tickets" && normalizedMethod === "POST") return true;
   if (path === "/api/diagnostics/client-error") return true;
   if (path === "/api/auth/logout") return true;
@@ -295,13 +309,16 @@ export async function enforceStudentTrialAccess(
         role = await getLegacySessionRole(session.userId, session.userEmail);
       }
     }
-    if (role !== "student") return next();
+    if (!["student", "teacher", "institution_admin"].includes(role)) return next();
 
     const access = await ensureStudentAccountTrial(
       session.userId,
       session.userEmail,
     );
     const fullPath = `${request.baseUrl}${request.path}`.split("?")[0];
+    // Institution management remains available after the learning grant ends;
+    // each management route still applies its own tenant/assignment guard.
+    if (role !== "student" && (fullPath.startsWith("/api/institution/") || !access)) return next();
     if (!access) {
       if (isAllowedAfterTrial(fullPath, request.method)) return next();
       response.status(403).json({

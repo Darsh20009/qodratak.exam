@@ -148,7 +148,7 @@ import AiScorePrediction from "@/pages/AiScorePrediction";
 import AiPatternAnalysis from "@/pages/AiPatternAnalysis";
 import AiDailyPlan from "@/pages/AiDailyPlan";
 import { SecuritySetupModal } from "@/components/SecuritySetupModal";
-import TeacherSystemPage from "@/pages/TeacherSystemPage";
+import TeacherHomePage from "@/pages/TeacherHomePage";
 import SecuritySettingsPage from "@/pages/SecuritySettingsPage";
 import NotificationsPage from "@/pages/NotificationsPage";
 import InstitutionPortalPage from "@/pages/InstitutionPortalPage";
@@ -1043,7 +1043,7 @@ function Router({ splashDone }: { splashDone: boolean }) {
           }
           if (!serverUser) return <Redirect to="/login?return=%2Fteacher" />;
           if (serverUser.role !== 'teacher') return <Redirect to="/" />;
-          return <TeacherSystemPage />;
+          return <TeacherHomePage />;
         }}
       </Route>
 

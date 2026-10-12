@@ -344,17 +344,19 @@ function signR2Request({
   accessKeyId,
   secretAccessKey,
   range,
+  body,
 }: {
-  method: "GET" | "HEAD";
+  method: "GET" | "HEAD" | "PUT" | "DELETE";
   host: string;
   uri: string;
   accessKeyId: string;
   secretAccessKey: string;
   range?: string;
+  body?: Buffer;
 }): Record<string, string> {
   const amzDate = new Date().toISOString().replace(/[:-]|\.\d{3}/g, "");
   const dateStamp = amzDate.slice(0, 8);
-  const payloadHash = hash("");
+  const payloadHash = body ? createHash("sha256").update(body).digest("hex") : hash("");
   const headers: Record<string, string> = {
     host,
     "x-amz-content-sha256": payloadHash,
@@ -394,6 +396,23 @@ function signR2Request({
     ...headers,
     authorization: `AWS4-HMAC-SHA256 Credential=${accessKeyId}/${scope}, SignedHeaders=${signedHeaderNames}, Signature=${signature}`,
   };
+}
+
+export async function writeR2Object(objectKey: string, body?: Buffer) {
+  const { accountId, bucket, accessKeyId, secretAccessKey } = getR2Config();
+  const host = `${accountId}.r2.cloudflarestorage.com`;
+  const uri = `/${bucket}/${objectKey.split("/").map(encodeURIComponent).join("/")}`;
+  const method = body ? "PUT" : "DELETE";
+  const headers = signR2Request({ method, host, uri, accessKeyId, secretAccessKey, body });
+  const response = await fetch(`https://${host}${uri}`, {
+    method, headers, body: body ? new Uint8Array(body) : undefined,
+    redirect: "error", signal: AbortSignal.timeout(30000),
+  });
+  if (!response.ok) throw new Error(`تعذر حفظ ملف العقد في التخزين الدائم (${response.status})`);
+}
+
+export function isR2Configured() {
+  try { getR2Config(); return true; } catch { return false; }
 }
 
 export async function fetchR2VerbalObject(

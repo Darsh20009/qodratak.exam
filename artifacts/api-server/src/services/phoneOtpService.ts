@@ -122,7 +122,7 @@ export function consumePhoneOtp(phoneInput: unknown, purpose: OtpPurpose) {
   otpStore.delete(recordKey(phone, purpose));
 }
 
-function createPhoneVerificationToken(phone: string, purpose: OtpPurpose) {
+export function createPhoneVerificationToken(phone: string, purpose: OtpPurpose) {
   const payload = Buffer.from(
     JSON.stringify({ phone, purpose, exp: Date.now() + OTP_TTL_MS }),
   ).toString("base64url");

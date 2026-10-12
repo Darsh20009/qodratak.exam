@@ -26,6 +26,7 @@ import {
 } from "@/hooks/use-student";
 import OfficialScoreCard from "@/components/student/OfficialScoreCard";
 import { useUser } from "@/hooks/use-user";
+import InstitutionMembershipCard from "@/components/institution/InstitutionMembershipCard";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -194,6 +195,7 @@ export default function DashboardPage() {
             انتهت التجربة المجانية. يمكنك متابعة اختبار تكيفي واحد يوميًا أو الاشتراك لفتح بقية المنصة.
           </p>
         </header>
+        <InstitutionMembershipCard />
         <AdaptiveLearningCoach trialExpired />
         <Link href="/records" data-testid="link-my-results" className="flex items-center justify-between gap-4 rounded-2xl border border-border bg-card p-5 text-foreground hover:border-primary/40">
           <span className="flex items-center gap-3"><FileText className="h-6 w-6 text-primary" /><span><strong className="block">نتائجي</strong><span className="text-sm text-muted-foreground">عرض نتائج الاختبارات والتقارير التفصيلية المحفوظة</span></span></span>
@@ -351,6 +353,7 @@ export default function DashboardPage() {
               </>
             )}
           </div>
+          <InstitutionMembershipCard />
           <AdaptiveLearningCoach />
         </div>
       </details>

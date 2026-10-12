@@ -3,6 +3,7 @@ import { useLocation } from "wouter";
 import { useQueryClient } from "@tanstack/react-query";
 import { CheckCircle2, ChevronDown, Eye, EyeOff, KeyRound, Laptop, Loader2, Lock, Mail, MessageCircle, Phone, Smartphone, Trash2, User, UsersRound, X } from "lucide-react";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
+import { INVITE_CODE_RE, previewInvite, type InvitePreview } from "@/lib/institutionApi";
 import { useToast } from "@/hooks/use-toast";
 import { getDeviceId } from "@/lib/device";
 import { setAdminAccessToken } from "@/lib/adminSession";
@@ -140,6 +141,19 @@ export function AuthModal({ open, mode, onClose, onModeChange }: { open: boolean
   const [loading, setLoading] = useState(false);
   const [deviceLimit, setDeviceLimit] = useState<{ devices: DeviceLimitDevice[]; managementToken: string } | null>(null);
   const [removingDeviceId, setRemovingDeviceId] = useState<string | null>(null);
+  const [joinCode, setJoinCode] = useState("");
+  const [joinPreview, setJoinPreview] = useState<InvitePreview | null>(null);
+  const [joinChecking, setJoinChecking] = useState(false);
+  const [joinError, setJoinError] = useState("");
+  const [joinConsent, setJoinConsent] = useState(false);
+  const checkJoinCode = async () => {
+    setJoinPreview(null); setJoinError(""); setJoinConsent(false);
+    if (!INVITE_CODE_RE.test(joinCode.trim())) { setJoinError("صيغة الكود غير صحيحة"); return; }
+    setJoinChecking(true);
+    try { setJoinPreview(await previewInvite(joinCode)); }
+    catch (e) { setJoinError((e as Error).message); }
+    finally { setJoinChecking(false); }
+  };
 
   useEffect(() => {
     if (resendAfter <= 0) return;
@@ -167,6 +181,7 @@ export function AuthModal({ open, mode, onClose, onModeChange }: { open: boolean
   const resetFlow = (nextMode?: AuthMode) => {
     setOtp(""); setOtpSent(false); setResendAfter(0); setPhoneToken(""); setFullName(""); setUsername(""); setEmail(""); setPassword(""); setConfirmPassword(""); setPasswordSetup(""); setPasswordSetupConfirm(""); setPasswordSetupRequired(false); setPhoneLoginMode(nextMode === "login" ? "password" : "otp"); setLoading(false);
     setAccountType(null);
+    setJoinCode(""); setJoinPreview(null); setJoinError(""); setJoinConsent(false);
     setParentName(""); setParentPhone(""); setParentOtp(""); setParentOtpSent(false); setParentToken("");
     setChildPhone(""); setChildOtp(""); setChildOtpSent(false); setVerifiedChildren([]);
     if (nextMode) onModeChange(nextMode);
@@ -427,6 +442,28 @@ export function AuthModal({ open, mode, onClose, onModeChange }: { open: boolean
         if (password.length < 6) throw new Error("كلمة المرور 6 أحرف على الأقل");
         if (password !== confirmPassword) throw new Error("كلمتا المرور غير متطابقتين");
         const number = fullPhone(countryCode, phone);
+        if (joinCode.trim()) {
+          if (!joinPreview) throw new Error("تحقق من كود المؤسسة أولًا أو احذفه");
+          if (password.length < 8) throw new Error("التسجيل بكود مؤسسة يتطلب كلمة مرور من 8 أحرف على الأقل");
+          if (!joinConsent) throw new Error("يلزم الموافقة على مشاركة بيانات التعلّم مع المؤسسة");
+          const r = await fetch("/api/institutions/register", {
+            method: "POST", credentials: "include", headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ fullName: fullName.trim(), username: username.trim(), email: email ? email.toLowerCase() : undefined, phone: number, password, phoneVerificationToken: phoneToken, code: joinCode.trim(), consent: true }),
+          });
+          const res = await readAuthResponse(r);
+          if (!r.ok) {
+            if (showDeviceLimit(res)) return;
+            throw new Error(res.message || "تعذر إنشاء الحساب");
+          }
+          const u = res.user || res;
+          await Promise.all([
+            queryClient.invalidateQueries({ queryKey: ["/api/user"] }),
+            queryClient.invalidateQueries({ queryKey: ["/api/subscription/status"] }),
+            queryClient.invalidateQueries({ queryKey: ["institution"] }),
+          ]);
+          await finishLogin(u);
+          return;
+        }
         const response = await fetch("/api/auth/register-multi", {
           method: "POST", credentials: "include", headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ fullName: fullName.trim(), username: username.trim(), email: email ? email.toLowerCase() : undefined, phone: number, whatsapp: number, password, role: "student", phoneVerificationToken: phoneToken }),
@@ -588,6 +625,24 @@ export function AuthModal({ open, mode, onClose, onModeChange }: { open: boolean
                     <input type={showPassword ? "text" : "password"} required value={confirmPassword} onChange={(event) => setConfirmPassword(event.target.value)} placeholder="تأكيد كلمة المرور" autoComplete="new-password" className="h-11 rounded-xl border border-[#24202D]/15 bg-[#F8F6F1] px-3 text-sm outline-none focus:border-[#171723]" />
                   </div>
                   <button type="button" onClick={() => setShowPassword((value) => !value)} className="text-right text-[11px] font-bold text-[#6B625B]">{showPassword ? "إخفاء كلمة المرور" : "إظهار كلمة المرور"}</button>
+                  <div className="rounded-xl border border-dashed border-[#24202D]/20 p-3">
+                    <p className="text-[11px] font-black text-[#4F4A58]">كود مؤسسة (اختياري)</p>
+                    <div className="mt-2 flex gap-2">
+                      <input data-testid="input-signup-join-code" dir="ltr" value={joinCode} onChange={(e) => { setJoinCode(e.target.value.replace(/\s/g, "")); setJoinPreview(null); setJoinError(""); setJoinConsent(false); }} placeholder="اتركه فارغًا إن لم يكن لديك كود" className="h-10 min-w-0 flex-1 rounded-lg border border-[#24202D]/15 bg-[#F8F6F1] px-3 font-mono text-xs outline-none focus:border-[#171723]" />
+                      {joinCode && <button data-testid="button-signup-check-code" type="button" onClick={checkJoinCode} disabled={joinChecking} className="rounded-lg border border-[#24202D]/15 px-3 text-xs font-black disabled:opacity-40">{joinChecking ? "..." : "تحقق"}</button>}
+                    </div>
+                    {joinError && <p className="mt-2 text-[11px] font-bold text-[#A3402E]">{joinError}</p>}
+                    {joinPreview && (
+                      <div className="mt-2 space-y-2 rounded-lg bg-[#EFF8F4] p-2.5 text-[11px] leading-6 text-[#1F6B55]">
+                        <p><b>{joinPreview.institutionName}</b> · {joinPreview.role === "teacher" ? "معلم" : joinPreview.role === "institution_admin" ? "مدير المؤسسة" : "طالب"} · {joinPreview.freeMonths} أشهر مجانية {joinPreview.individualStart ? "تبدأ من تاريخ انضمامك" : "ضمن مدة المؤسسة"}{joinPreview.requiresBoundPhone ? " · مرتبط برقم الجوال المؤكد" : ""}</p>
+                        <p>كلمة المرور يجب أن تكون 8 أحرف على الأقل.</p>
+                        <label className="flex items-start gap-2 text-[#171723]">
+                          <input data-testid="checkbox-signup-consent" type="checkbox" checked={joinConsent} onChange={(e) => setJoinConsent(e.target.checked)} className="mt-1 h-4 w-4 accent-[#171723]" />
+                          أوافق على الانضمام ومشاركة بيانات تعلّمي ونتائجي المحفوظة مع إدارة المؤسسة والمعلمين المسندين.
+                        </label>
+                      </div>
+                    )}
+                  </div>
                 </>}
 
                 {/* Parent Signup Fields */}
