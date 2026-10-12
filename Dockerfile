@@ -26,6 +26,7 @@ COPY attached_assets/ ./attached_assets/
 
 RUN pnpm install --frozen-lockfile --prod=false
 RUN pnpm --filter @workspace/qodratak run build
+RUN PORT=21742 BASE_PATH=/qodratak-guide/ pnpm --filter @workspace/qodratak-guide run build
 RUN pnpm --filter @workspace/api-server run build
 
 FROM base AS runtime

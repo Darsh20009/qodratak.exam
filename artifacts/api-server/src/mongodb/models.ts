@@ -376,6 +376,9 @@ export interface ISubscription extends Document {
   providerOrderId?: string;
   providerStatus?: string;
   paidAt?: Date;
+  purchaseNotificationState?: "pending" | "sending" | "sent" | "failed" | "skipped";
+  purchaseNotificationAttempts?: number;
+  purchaseNotificationAttemptedAt?: Date;
   refundedAmount?: number;
   refundReason?: string;
   refundRequestedBy?: string;
@@ -415,6 +418,9 @@ const subscriptionSchema = new Schema<ISubscription>({
   providerOrderId: { type: String },
   providerStatus: { type: String },
   paidAt: { type: Date },
+  purchaseNotificationState: { type: String, enum: ["pending", "sending", "sent", "failed", "skipped"] },
+  purchaseNotificationAttempts: { type: Number },
+  purchaseNotificationAttemptedAt: { type: Date },
   refundedAmount: { type: Number, default: 0 },
   refundReason: { type: String },
   refundRequestedBy: { type: String },

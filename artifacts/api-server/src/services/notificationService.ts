@@ -1,5 +1,7 @@
 import { User, ExamBooking, TestResult } from '../mongodb/models';
 import { sendStudentWhatsAppNotification } from './studentWhatsAppNotifications';
+import { retryGeideaPurchaseNotifications } from './geideaPaymentService';
+import { logger } from '../lib/logger';
 
 const BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN || '';
 
@@ -199,6 +201,20 @@ export function startNotificationScheduler(): void {
   setInterval(checkTelegramExamReminders, 5 * 60 * 1000);
   // Run once immediately on boot
   setTimeout(checkTelegramExamReminders, 30 * 1000);
+  let retryingPurchases = false;
+  const retryPurchases = async () => {
+    if (retryingPurchases) return;
+    retryingPurchases = true;
+    try {
+      await retryGeideaPurchaseNotifications();
+    } catch {
+      logger.warn("Could not retry pending Geidea purchase notifications");
+    } finally {
+      retryingPurchases = false;
+    }
+  };
+  setInterval(retryPurchases, 60 * 1000);
+  setTimeout(retryPurchases, 10 * 1000);
 
   console.log('Notification scheduler started (Telegram and transactional WhatsApp exam reminders enabled)');
 }

@@ -1,0 +1,58 @@
+{
+  "screenshots": [
+    {
+      "route": "/",
+      "purpose": "Public signed-out landing page; desktop 16:9 visual reference, no account identity shown.",
+      "screenshotPath": "attached_assets/qodratak-guide/landing-signed-out.jpg"
+    },
+    {
+      "route": "/",
+      "purpose": "لوحة الطالب الجديد والخطوة التالية الفعلية",
+      "screenshotPath": "attached_assets/qodratak-guide/student-dashboard.jpg",
+      "account": "synthetic, notification-disabled"
+    },
+    {
+      "route": "/preparation-course",
+      "purpose": "حجز موعد الاختبار واختيار مسار التحضير؛ الحساب الجديد بلا موعد",
+      "screenshotPath": "attached_assets/qodratak-guide/preparation-course.jpg",
+      "account": "synthetic, notification-disabled"
+    },
+    {
+      "route": "/learning/today",
+      "purpose": "مهام اليوم ومتطلبات قياس البداية للحساب الجديد",
+      "screenshotPath": "attached_assets/qodratak-guide/today.jpg",
+      "account": "synthetic, notification-disabled"
+    },
+    {
+      "route": "/foundation",
+      "purpose": "اختيار محتوى التأسيس الكمي واللفظي",
+      "screenshotPath": "attached_assets/qodratak-guide/foundation.jpg",
+      "account": "synthetic, notification-disabled"
+    },
+    {
+      "route": "/student/foundation-book/quantitative",
+      "purpose": "واجهة كتاب التأسيس الكمي والشرح المكتوب",
+      "screenshotPath": "attached_assets/qodratak-guide/quantitative-book.jpg",
+      "account": "synthetic, notification-disabled"
+    },
+    {
+      "route": "/computerized",
+      "purpose": "بنوك التدريب المحوسب والدروس المنشورة",
+      "screenshotPath": "attached_assets/qodratak-guide/computerized.jpg",
+      "account": "synthetic, notification-disabled"
+    },
+    {
+      "route": "/records",
+      "purpose": "مكان تقارير النتائج؛ الحساب الجديد لم يحفظ أي نتيجة بعد",
+      "screenshotPath": "attached_assets/qodratak-guide/results.jpg",
+      "account": "synthetic, notification-disabled"
+    },
+    {
+      "route": "/account",
+      "purpose": "إدارة الحساب والتجربة؛ بيانات الحساب التجريبي محجوبة",
+      "screenshotPath": "attached_assets/qodratak-guide/account.jpg",
+      "account": "synthetic, notification-disabled"
+    }
+  ],
+  "note": "Actual student-facing UI. Synthetic account, personal identifiers masked. No paid transaction or populated result was fabricated."
+}

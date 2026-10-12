@@ -28,3 +28,10 @@ mtime_ms = 1791137421127
 storage_uri = "gcs://replit-rams-assets-pike/rams/assets/repl:79f460e2-89e6-494d-9d5c-e2f64f1b6716/9e185fd6-7fde-42c3-8214-ec2dbcb88245/6f7f20c5-5114-46b1-b272-655a1807d1c7"
 storage_version_token = "1791137472007594"
 content_type = "text/markdown"
+
+[[outputs]]
+id = "YQl2p0Mr4X4e7VDGk3lgT"
+uri = "file://artifacts/qodratak-guide/public/audio/bg_music.mp3"
+type = "audio"
+title = "background music"
+description = "Generated music: Warm uplifting modern Arabic-inspired lo-fi electronic instrumental for a calm product tutorial. Soft oud plucks, warm pads, light hand percussion and gentle beat, 96 BPM. Patient in…"

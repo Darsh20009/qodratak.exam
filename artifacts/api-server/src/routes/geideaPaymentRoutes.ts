@@ -14,6 +14,7 @@ import {
   publicGeideaPaymentStatus,
   reconcileGeideaSubscriptionPayment,
 } from "../services/geideaPaymentService";
+import { subscriptionPeriod } from "../services/subscriptionBilling";
 
 type Plan = {
   type: string;
@@ -86,12 +87,7 @@ export function createGeideaPaymentRouter(options: RouterOptions): Router {
         startDate: { $lte: now },
         endDate: { $gt: now },
       }).sort({ endDate: -1 });
-      const startDate =
-        activeSubscription?.endDate && activeSubscription.endDate > now
-          ? new Date(activeSubscription.endDate)
-          : now;
-      const endDate = new Date(startDate);
-      endDate.setDate(endDate.getDate() + durationDays);
+       const { startDate, endDate } = subscriptionPeriod(now, durationDays, activeSubscription?.endDate);
       const merchantReferenceId = crypto.randomUUID();
       const payment = new Subscription({
         userId: user._id,
@@ -117,7 +113,7 @@ export function createGeideaPaymentRouter(options: RouterOptions): Router {
           amount,
           merchantReferenceId,
           callbackUrl: `${publicAppUrl}/api/payments/geidea/callback`,
-          returnUrl: `${publicAppUrl}/payment/geidea/return?paymentId=${encodeURIComponent(String(payment._id))}`,
+          returnUrl: `${publicAppUrl}/payment/geidea/return?paymentId=${encodeURIComponent(String(payment._id))}&embedded=1`,
           customer: {
             email: user.email || undefined,
             phoneNumber: user.whatsappPhone || user.phone || undefined,
@@ -214,7 +210,7 @@ export function createGeideaPaymentRouter(options: RouterOptions): Router {
           res.status(404).json({ error: "عملية الدفع غير موجودة" });
           return;
         }
-        res.json(publicGeideaPaymentStatus(reconciled));
+        res.json(publicGeideaPaymentStatus(reconciled, user));
       } catch (error) {
         req.log.error({ error }, "Could not verify Geidea payment status");
         res.status(503).json({ error: "تعذر التحقق من حالة الدفع الآن" });

@@ -16,3 +16,9 @@ Do not infer sandbox versus live from the KSA hostname: real live credentials wo
 **Why:** Live session creation and an actual card-entry form were verified without charging; the earlier HPP error must not be treated as a permanent provider limitation or a reason to invent a different endpoint.
 
 **How to apply:** Keep payment-mode changes explicit, save credentials only through secret tooling, and distinguish a working preview checkout from a deployed site's configuration. Never test a live charge without separate authorization.
+
+Geidea's KSA JavaScript checkout rejects pages that are themselves inside another iframe, even though the HPP guide documents drop-in embedding.
+
+**Why:** Its public SDK checks `window !== top` before mounting. Replit's framed preview therefore differs from a standalone production page. Hot-reloading React payment files during verification can also reset an unpaid checkout and look like a provider failure.
+
+**How to apply:** Use the documented SDK on standalone pages and a validated official hosted iframe with server-owned status checks in nested previews. Keep a secure external fallback for browser restrictions. Never trust iframe messages as payment evidence; do not edit checkout modules during its browser verification.

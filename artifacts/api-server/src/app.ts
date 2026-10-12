@@ -162,6 +162,13 @@ if (process.env.NODE_ENV === "production") {
       );
   });
   app.use("/foundation/quantitative", createFoundationAssetsRouter());
+  // Serve the instructional film before the main SPA fallback, including on Render.
+  app.use("/qodratak-guide", express.static(path.resolve(
+    process.cwd(), "artifacts/qodratak-guide/dist/public",
+  )));
+  app.use("/qodratak-guide", (_request, response) => {
+    response.status(404).json({ message: "ملف فيديو الاستخدام غير موجود" });
+  });
   app.use(express.static(frontendDistPath, { index: false }));
   app.use((request, response, next) => {
     if (

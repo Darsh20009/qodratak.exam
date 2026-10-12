@@ -2,7 +2,6 @@ import { useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   Check,
-  ChevronLeft,
   CreditCard,
   Crown,
   Loader2,
@@ -13,6 +12,7 @@ import {
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
+import GeideaCardCheckout from "@/components/GeideaCardCheckout";
 import {
   Dialog,
   DialogContent,
@@ -64,7 +64,8 @@ export default function SubscriptionRenewalDialog({
 }: SubscriptionRenewalDialogProps) {
   const { toast } = useToast();
   const queryClient = useQueryClient();
-  const [method, setMethod] = useState<PaymentMethod>("wallet");
+  const [method, setMethod] = useState<PaymentMethod>("card");
+  const [checkoutActive, setCheckoutActive] = useState(false);
   const [selectedPlanKey, setSelectedPlanKey] = useState("pro");
 
   const { data: planData, isLoading: planLoading } = useQuery<{ plan?: SubscriptionPlan; plans?: SubscriptionPlan[] }>({
@@ -125,12 +126,13 @@ export default function SubscriptionRenewalDialog({
     onSuccess: () => {
       toast({
         title: "تم تمديد الاشتراك",
-        description: `اشتراكك فعال حتى ${formatDate(nextEndDate)}.`,
+        description: "تم تحديث تاريخ انتهاء اشتراكك.",
       });
       queryClient.invalidateQueries({ queryKey: ["/api/user"] });
       queryClient.invalidateQueries({ queryKey: ["/api/user/my-subscriptions"] });
       queryClient.invalidateQueries({ queryKey: ["/api/wallet"] });
       queryClient.invalidateQueries({ queryKey: ["/api/subscription/status"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/user/current-subscription"] });
       onOpenChange(false);
     },
     onError: (error: Error) => {
@@ -142,44 +144,8 @@ export default function SubscriptionRenewalDialog({
     },
   });
 
-  const checkoutMutation = useMutation({
-    mutationFn: async () => {
-      const response = await apiRequest("POST", "/api/subscription/geidea/sessions", {
-        planKey: selectedPlan?.key || "pro",
-      });
-      return response.json();
-    },
-    onSuccess: (result: { checkoutUrl?: string }) => {
-      if (!result?.checkoutUrl) {
-        toast({
-          title: "تعذر فتح بوابة الدفع",
-          description: "لم يصل رابط الدفع من Geidea.",
-          variant: "destructive",
-        });
-        return;
-      }
-      window.location.assign(result.checkoutUrl);
-    },
-    onError: (error: Error) => {
-      let description = error.message.replace(/^\d+:\s*/, "");
-      try {
-        const responseBody = JSON.parse(description);
-        if (typeof responseBody?.error === "string") {
-          description = responseBody.error;
-        }
-      } catch {
-        // Keep plain-text or network errors readable.
-      }
-      toast({
-        title: "تعذر بدء الدفع",
-        description,
-        variant: "destructive",
-      });
-    },
-  });
-
   const close = (nextOpen: boolean) => {
-    if (!nextOpen) setMethod("wallet");
+    if (!nextOpen) setMethod("card");
     onOpenChange(nextOpen);
   };
 
@@ -189,7 +155,7 @@ export default function SubscriptionRenewalDialog({
     <Dialog open={open} onOpenChange={close}>
       <DialogContent
         dir="rtl"
-        className="w-[calc(100vw-1.5rem)] max-w-md overflow-hidden rounded-[1.75rem] border-[#E5E7EB] bg-[#F7F4EE] p-0 text-[#0D1B2A] shadow-2xl"
+        className="w-[calc(100vw-1.5rem)] max-w-lg overflow-hidden rounded-[1.75rem] border-[#E5E7EB] bg-[#F7F4EE] p-0 text-[#0D1B2A] shadow-2xl"
       >
         <DialogHeader className="relative overflow-hidden bg-[#0D1B2A] px-5 pb-5 pt-6 text-right text-white">
           <div className="absolute -left-10 -top-12 h-32 w-32 rounded-full bg-[#F7F775]/15 blur-2xl" />
@@ -255,6 +221,7 @@ export default function SubscriptionRenewalDialog({
                      key={item.key}
                      type="button"
                      onClick={() => setSelectedPlanKey(item.key)}
+                     disabled={checkoutActive}
                      className={`rounded-2xl border-2 p-4 text-right transition ${
                        selectedPlan?.key === item.key
                          ? "border-[#0D1B2A] bg-white shadow-sm"
@@ -276,7 +243,7 @@ export default function SubscriptionRenewalDialog({
                </div>
               {currentEndDate && (
                 <p className="mt-3 rounded-xl bg-[#F7F775]/35 p-3 text-xs font-bold">
-                  بعد الشراء يصبح تاريخ الانتهاء: {formatDate(nextEndDate)}
+                  تاريخ الانتهاء المتوقع بعد الشراء: {formatDate(nextEndDate)} (يُعتمد التاريخ النهائي بعد تأكيد الخادم)
                 </p>
               )}
             </div>
@@ -291,8 +258,8 @@ export default function SubscriptionRenewalDialog({
               <p className="mb-2 text-sm font-black">اختر طريقة الدفع</p>
               <div className="grid grid-cols-2 gap-2">
                 {([
-                  { id: "wallet", label: "المحفظة", icon: WalletCards },
                   { id: "card", label: "بطاقة", icon: CreditCard },
+                  { id: "wallet", label: "المحفظة", icon: WalletCards },
                 ] as const).map((item) => {
                   const Icon = item.icon;
                   const selected = method === item.id;
@@ -301,6 +268,7 @@ export default function SubscriptionRenewalDialog({
                       key={item.id}
                       type="button"
                       onClick={() => setMethod(item.id)}
+                      disabled={checkoutActive}
                       className={`rounded-2xl border p-3 text-center transition ${
                         selected
                           ? "border-[#0D1B2A] bg-[#0D1B2A] text-white shadow-md"
@@ -337,26 +305,13 @@ export default function SubscriptionRenewalDialog({
                 </Button>
               </div>
             ) : (
-              <div className="rounded-2xl border border-[#E5E7EB] bg-white p-4">
-                <p className="text-sm font-bold leading-6">
-                  أكمل الدفع في صفحة Geidea الآمنة. قد تظهر مدى أو Visa أو Mastercard أو Apple Pay بحسب إعدادات حساب التاجر.
-                </p>
-                <Button
-                  type="button"
-                  onClick={() => checkoutMutation.mutate()}
-                  disabled={checkoutMutation.isPending}
-                  className="mt-4 h-11 w-full rounded-xl bg-[#0D1B2A] font-black text-white hover:bg-[#1E2938]"
-                >
-                  {checkoutMutation.isPending
-                    ? <Loader2 className="ml-2 h-4 w-4 animate-spin" />
-                    : <CreditCard className="ml-2 h-4 w-4" />}
-                  {checkoutMutation.isPending ? "جارٍ تجهيز الدفع..." : "الدفع عبر Geidea"}
-                  <ChevronLeft className="mr-auto h-4 w-4" />
-                </Button>
-                <p className="mt-3 text-center text-[11px] font-medium text-[#94A3B8]">
-                  لا يتم التفعيل إلا بعد أن يؤكد خادم قدراتك نجاح العملية مباشرة من Geidea.
-                </p>
-              </div>
+              <GeideaCardCheckout
+                planKey={selectedPlan?.key || ""}
+                planLabel={selectedPlan?.name || "الباقة"}
+                price={price}
+                onActiveChange={setCheckoutActive}
+                onDone={() => close(false)}
+              />
             )}
 
             <p className="text-center text-[11px] font-medium leading-5 text-[#94A3B8]">

@@ -82,5 +82,19 @@
     "trialEndDate": "2026-10-14T14:09:40.199Z",
     "isActive": true,
     "createdAt": "2026-10-11T14:09:40.199Z"
+  },
+  {
+    "deviceId": "fyc0l8",
+    "trialStartDate": "2026-10-12T16:35:02.089Z",
+    "trialEndDate": "2026-10-15T16:35:02.089Z",
+    "isActive": true,
+    "createdAt": "2026-10-12T16:35:02.089Z"
+  },
+  {
+    "deviceId": "19djd2",
+    "trialStartDate": "2026-10-12T17:05:25.754Z",
+    "trialEndDate": "2026-10-15T17:05:25.754Z",
+    "isActive": true,
+    "createdAt": "2026-10-12T17:05:25.754Z"
   }
 ]

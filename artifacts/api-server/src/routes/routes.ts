@@ -46,6 +46,7 @@ import {
   notifyAdminSubscription,
 } from '../services/adminWhatsAppNotifications';
 import { createGeideaPaymentRouter } from '../routes/geideaPaymentRoutes';
+import { subscriptionPeriod } from '../services/subscriptionBilling';
 import {
   consumePhoneOtp,
   normalizeSaudiPhone,
@@ -7926,11 +7927,8 @@ app.post("/api/auth/register", async (req: Request, res: Response) => {
             startDate: { $lte: now },
             endDate: { $gt: now },
           }).sort({ endDate: -1 }).session(mongoSession);
-          const baseDate = activeSubscription?.endDate && activeSubscription.endDate > now
-            ? new Date(activeSubscription.endDate)
-            : now;
-          endDate = new Date(baseDate);
-           endDate.setDate(endDate.getDate() + selectedPlan.durationDays);
+          const period = subscriptionPeriod(now, selectedPlan.durationDays, activeSubscription?.endDate);
+          endDate = period.endDate;
 
           const canonicalUserId = mongoose.Types.ObjectId.isValid(String(sessionUserId))
             ? new mongoose.Types.ObjectId(String(sessionUserId))
@@ -7939,7 +7937,7 @@ app.post("/api/auth/register", async (req: Request, res: Response) => {
             userId: canonicalUserId,
             type: planType as ISubscription["type"],
             status: 'active',
-            startDate: baseDate,
+            startDate: now,
             endDate,
             autoRenew: false,
             paymentMethod: 'wallet',

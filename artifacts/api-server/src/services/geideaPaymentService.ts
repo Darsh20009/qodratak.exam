@@ -2,10 +2,12 @@ import mongoose from "mongoose";
 import { Subscription, User } from "../mongodb/models";
 import { logger } from "../lib/logger";
 import { notifyStudentSubscriptionActivated } from "./adminWhatsAppNotifications";
+import { subscriptionPeriod, subscriptionPlanName } from "./subscriptionBilling";
 import {
   fetchGeideaOrdersByMerchantReference,
   geideaPaymentIsFailed,
   geideaPaymentIsSuccessful,
+  getGeideaPublicAppUrl,
 } from "./geideaService";
 
 type PaymentStatus =
@@ -36,16 +38,36 @@ export function subscriptionInvoiceNumber(subscription: {
   return `QDR-${year}-${String(subscription._id).slice(-8).toUpperCase()}`;
 }
 
-export function publicGeideaPaymentStatus(subscription: any) {
+export function publicGeideaPaymentStatus(subscription: any, customer?: any) {
+  const invoiceNumber = subscriptionInvoiceNumber(subscription);
+  const startDate = new Date(subscription.startDate).toISOString();
+  const endDate = new Date(subscription.endDate).toISOString();
   return {
     paymentId: String(subscription._id),
     status: (subscription.paymentStatus || "pending") as PaymentStatus,
     plan: String(subscription.type || ""),
     amount: Number(subscription.price || 0),
     currency: String(subscription.currency || "SAR"),
-    invoiceNumber: subscriptionInvoiceNumber(subscription),
+    invoiceNumber: subscription.paymentStatus === "paid" ? invoiceNumber : null,
     providerOrderId: subscription.providerOrderId || null,
     paidAt: subscription.paidAt ? new Date(subscription.paidAt).toISOString() : null,
+    startDate,
+    endDate,
+    durationDays: Number(subscription.durationDays || 0),
+    invoice: subscription.paymentStatus === "paid" && customer ? {
+      invoiceNumber,
+      customerName: String(customer.fullName || customer.username || "الطالب"),
+      customerEmail: String(customer.email || ""),
+      customerPhone: String(customer.whatsappPhone || customer.phone || ""),
+      planName: subscriptionPlanName(subscription.type),
+      amount: Number(subscription.price),
+      currency: String(subscription.currency || "SAR"),
+      paymentMethod: "geidea",
+      issueDate: new Date(subscription.paidAt || subscription.createdAt).toISOString(),
+      startDate,
+      endDate,
+      status: "active",
+    } : null,
   };
 }
 
@@ -173,13 +195,9 @@ export async function reconcileGeideaSubscriptionPayment(paymentId: string): Pro
       })
         .sort({ endDate: -1 })
         .session(mongoSession);
-      const startDate =
-        activeSubscription?.endDate && activeSubscription.endDate > now
-          ? new Date(activeSubscription.endDate)
-          : now;
-      const durationDays = Math.max(1, Number(current.durationDays) || 30);
-      const endDate = new Date(startDate);
-      endDate.setDate(endDate.getDate() + durationDays);
+      const { startDate, endDate } = subscriptionPeriod(
+        now, Number(current.durationDays) || 30, activeSubscription?.endDate,
+      );
       const providerOrderId = String(order.orderId || "");
 
       const updated = await Subscription.findOneAndUpdate(
@@ -199,6 +217,8 @@ export async function reconcileGeideaSubscriptionPayment(paymentId: string): Pro
             startDate,
             endDate,
             approvedAt: now,
+            purchaseNotificationState: "pending",
+            purchaseNotificationAttempts: 0,
             updatedAt: now,
           },
         },
@@ -213,8 +233,8 @@ export async function reconcileGeideaSubscriptionPayment(paymentId: string): Pro
             subscription: {
               type: updated.type,
               status: "active",
-              startDate: startDate.toISOString().split("T")[0],
-              endDate: endDate.toISOString().split("T")[0],
+              startDate: startDate.toISOString(),
+              endDate: endDate.toISOString(),
             },
           },
         },
@@ -233,12 +253,62 @@ export async function reconcileGeideaSubscriptionPayment(paymentId: string): Pro
   }
 
   if (activated) {
-    void notifyStudentSubscriptionActivated({
-      ...activated,
-      paymentMethod: "Geidea",
-    }).catch((error) => {
-      logger.warn({ error, paymentId: String(payment._id) }, "Could not queue Geidea purchase confirmation");
+    void deliverGeideaPurchaseNotification(String(payment._id)).catch(() => {
+      logger.warn({ paymentId: String(payment._id) }, "Could not process persisted Geidea purchase notification");
     });
   }
   return Subscription.findById(payment._id);
+}
+
+/** Persist intent with activation; provider outages must not revoke paid access. */
+export async function deliverGeideaPurchaseNotification(paymentId: string) {
+  const now = new Date();
+  const payment = await Subscription.findOneAndUpdate({
+    _id: paymentId,
+    paymentStatus: "paid",
+    purchaseNotificationAttempts: { $lt: 5 },
+    $or: [
+      { purchaseNotificationState: "pending" },
+      { purchaseNotificationState: "failed", purchaseNotificationAttemptedAt: { $lt: new Date(now.getTime() - 300_000) } },
+      { purchaseNotificationState: "sending", purchaseNotificationAttemptedAt: { $lt: new Date(now.getTime() - 600_000) } },
+    ],
+  }, {
+    $set: { purchaseNotificationState: "sending", purchaseNotificationAttemptedAt: now },
+    $inc: { purchaseNotificationAttempts: 1 },
+  }, { new: true });
+  if (!payment) return;
+  try {
+    const result = await notifyStudentSubscriptionActivated({
+      userId: String(payment.userId),
+      plan: subscriptionPlanName(payment.type),
+      price: Number(payment.price),
+      endDate: payment.endDate,
+      invoiceNumber: subscriptionInvoiceNumber(payment),
+      invoiceUrl: `${getGeideaPublicAppUrl()}/payment/geidea/return?paymentId=${encodeURIComponent(paymentId)}`,
+      paymentMethod: "Geidea",
+      createInApp: payment.purchaseNotificationAttempts === 1,
+    });
+    await Subscription.updateOne({ _id: paymentId }, {
+      $set: { purchaseNotificationState: result.sent ? "sent" : "skipped" },
+    });
+  } catch {
+    await Subscription.updateOne({ _id: paymentId }, {
+      $set: { purchaseNotificationState: "failed" },
+    });
+    logger.warn({ paymentId }, "Geidea purchase WhatsApp confirmation failed; paid access is preserved");
+  }
+}
+
+export async function retryGeideaPurchaseNotifications() {
+  const now = Date.now();
+  const pending = await Subscription.find({
+    paymentGateway: "geidea", paymentStatus: "paid",
+    purchaseNotificationAttempts: { $lt: 5 },
+    $or: [
+      { purchaseNotificationState: "pending" },
+      { purchaseNotificationState: "failed", purchaseNotificationAttemptedAt: { $lt: new Date(now - 300_000) } },
+      { purchaseNotificationState: "sending", purchaseNotificationAttemptedAt: { $lt: new Date(now - 600_000) } },
+    ],
+  }).select("_id").limit(5).lean();
+  for (const payment of pending) await deliverGeideaPurchaseNotification(String(payment._id));
 }

@@ -52,3 +52,4 @@
 - [RTL hidden controls](rtl-hidden-controls.md) — clip hidden fields in place; far-negative offsets can expand RTL document bounds.
 - [Student brand accent](student-brand-accent.md) — student highlights use the landing page’s orange/coral rather than yellow; preserve semantic warning colors.
 - [Quantitative correction videos](quantitative-correction-video-scope.md) — question-specific video explanations apply to every exam type containing quantitative questions, including mixed exams.
+- [Institutional access](institution-contract-entitlements.md) — signed, approved contracts gate activation; institutions and their students receive three free months.

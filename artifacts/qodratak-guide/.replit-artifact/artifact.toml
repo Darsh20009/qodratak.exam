@@ -1,0 +1,29 @@
+kind = "video"
+videoAspectRatio = "16:9"
+previewPath = "/qodratak-guide/"
+title = "كيف تستخدم قدراتك"
+description = "فيديو تعريفي لرحلة الطالب في منصة قدراتك باستخدام صور حقيقية من واجهتها."
+version = "1.0.0"
+id = "artifacts/qodratak-guide"
+router = "path"
+
+[[services]]
+name = "web"
+paths = [ "/qodratak-guide/" ]
+localPort = 21742
+
+[services.development]
+run = "pnpm --filter @workspace/qodratak-guide run dev"
+
+[services.production]
+build = [ "pnpm", "--filter", "@workspace/qodratak-guide", "run", "build" ]
+serve = "static"
+publicDir = "artifacts/qodratak-guide/dist/public"
+
+[[services.production.rewrites]]
+from = "/*"
+to = "/index.html"
+
+[services.env]
+PORT = "21742"
+BASE_PATH = "/qodratak-guide/"

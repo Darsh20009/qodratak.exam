@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef, memo } from "react";
 import { Link } from "wouter";
 import { SEO } from "@/components/SEO";
+import { GuideFilmCard } from "@/components/GuideFilm";
 import { useQuery } from "@tanstack/react-query";
 import {
   BookOpenIcon, GraduationCapIcon, Sparkles, UserIcon, CrownIcon,
@@ -324,6 +325,8 @@ function LoggedInDashboard({ user }: { user: any }) {
             ))}
           </div>
         </section>
+
+        <GuideFilmCard />
 
         <section className="rounded-2xl border border-border bg-card p-5">
           <div className="flex items-start justify-between gap-3">

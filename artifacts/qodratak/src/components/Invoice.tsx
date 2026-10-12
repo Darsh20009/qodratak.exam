@@ -1,8 +1,6 @@
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { PrinterIcon } from 'lucide-react';
-import { format } from 'date-fns';
-import { arSA } from 'date-fns/locale';
 
 interface InvoiceProps {
   invoiceNumber?: string;
@@ -57,7 +55,9 @@ export function Invoice({
   const formatDate = (date?: string | Date) => {
     if (!date) return '-';
     try {
-      return format(new Date(date), 'dd MMMM yyyy', { locale: arSA });
+      return new Date(date).toLocaleDateString('ar-SA-u-ca-gregory', {
+        day: '2-digit', month: 'long', year: 'numeric', timeZone: 'Asia/Riyadh',
+      });
     } catch {
       return '-';
     }

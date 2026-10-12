@@ -19,6 +19,7 @@ import { Footer } from "@/components/Footer";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { BrandMark } from "@/components/BrandMark";
 import { SEO } from "@/components/SEO";
+import { GuideFilm } from "@/components/GuideFilm";
 
 const NAVY = "#171723";
 const SIGNAL = "#FF8A70";
@@ -371,7 +372,7 @@ export default function LandingPage({ initialModal }: { initialModal?: "signup" 
           style={{ background: `radial-gradient(circle at 9% 18%, ${MINT}20, transparent 24%), radial-gradient(circle at 78% 105%, ${SIGNAL}18, transparent 38%)` }}
         />
         <Header onSignup={openSignup} onLogin={() => setAuthMode("login")} />
-        <div className="relative mx-auto grid max-w-6xl items-center gap-12 px-5 pb-20 pt-14 sm:px-8 lg:grid-cols-2 lg:pb-24 lg:pt-20">
+        <div className="relative mx-auto grid max-w-6xl items-center gap-12 px-5 pb-12 pt-14 sm:px-8 lg:grid-cols-2 lg:pb-14 lg:pt-20">
           <div className="max-w-2xl">
             <p className="inline-flex items-center gap-2 text-sm font-black text-[#398B79]">
               <span className="h-2 w-2 rounded-full bg-[#398B79]" />
@@ -412,6 +413,12 @@ export default function LandingPage({ initialModal }: { initialModal?: "signup" 
               ))}
             </div>
           </div>
+          <div className="w-full">
+            <p className="mb-3 text-sm font-black text-[#398B79]">شاهد كيف تبدأ</p>
+            <GuideFilm />
+          </div>
+        </div>
+        <div className="relative mx-auto max-w-6xl px-5 pb-20 sm:px-8 lg:pb-24">
           <OfferPreview onSignup={openSignup} />
         </div>
       </section>

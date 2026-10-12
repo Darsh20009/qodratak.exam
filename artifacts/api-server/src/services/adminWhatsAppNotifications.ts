@@ -158,11 +158,13 @@ export async function notifyStudentSubscriptionActivated(input: {
   price?: number;
   endDate?: Date | string;
   invoiceNumber?: string;
+  invoiceUrl?: string;
+  createInApp?: boolean;
   paymentMethod?: string;
 }) {
   const endDate = input.endDate ? new Date(input.endDate) : null;
   const endDateLabel = endDate && !Number.isNaN(endDate.getTime())
-    ? endDate.toLocaleDateString("ar-SA", { timeZone: "Asia/Riyadh" })
+    ? endDate.toLocaleDateString("ar-SA-u-ca-gregory", { timeZone: "Asia/Riyadh" })
     : "غير محدد";
 
   return sendStudentWhatsAppNotification(input.userId, {
@@ -170,6 +172,7 @@ export async function notifyStudentSubscriptionActivated(input: {
     body: [
       "أهلاً بك في رحلتك التعليمية مع قدراتك.",
       ...(input.invoiceNumber ? [`رقم الفاتورة: ${input.invoiceNumber}`] : []),
+      ...(input.invoiceUrl ? [`عرض الفاتورة: ${input.invoiceUrl}`] : []),
       `الخطة: ${input.plan}`,
       `المبلغ: ${Number(input.price || 0).toLocaleString("ar-SA")} ر.س`,
       `طريقة الدفع: ${input.paymentMethod || "غير محددة"}`,
@@ -180,6 +183,7 @@ export async function notifyStudentSubscriptionActivated(input: {
     link: "/",
     type: "success",
     whatsappKind: "customer_purchase",
+    createInApp: input.createInApp,
   });
 }
 

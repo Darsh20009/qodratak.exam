@@ -20,3 +20,9 @@ Student result alerts are an explicitly requested transactional exception to the
 **Why:** The user asked that the student receive their result on WhatsApp when the exam result becomes available.
 
 **How to apply:** Send server-saved results only, respect the student's WhatsApp setting and scheduled result-release time, preserve grades when delivery fails, and deduplicate per attempt. Do not bulk-send historical results. Provider acceptance is not proof of handset delivery, and cross-provider retries cannot guarantee exactly-once delivery without provider idempotency.
+
+A paid renewal grants access immediately and extends the latest currently valid expiry, rather than waiting for a future activation date. Keep exact timestamps through payment, entitlement, countdown and invoice; display billing dates in Riyadh with one calendar.
+
+**Why:** A future-dated renewal can remain invisible to the active-entitlement query, leaving the student seeing the old deadline even after paying. Date-only account mirrors can shorten access or disagree with receipts.
+
+**How to apply:** Preserve remaining paid days, do not rewrite earlier invoices, and use server-confirmed expiry instead of a browser projection. Purchase-message intent should survive provider outages and process restarts without rolling back paid access; respect opt-out and do not resend historical purchases.
