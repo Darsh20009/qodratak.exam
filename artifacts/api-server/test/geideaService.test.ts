@@ -1,13 +1,91 @@
 import assert from "node:assert/strict";
 import crypto from "node:crypto";
-import test from "node:test";
+import test, { beforeEach, afterEach } from "node:test";
 import {
   createGeideaSession,
   createSessionSignature,
   GeideaRequestError,
+  GeideaConfigurationError,
+  getGeideaMode,
+  isGeideaConfigured,
+  verifyGeideaCallbackPayload,
   geideaPaymentIsSuccessful,
   verifyGeideaCallbackSignature,
 } from "../src/services/geideaService";
+
+const credentialKeys = [
+  "GEIDEA_MODE", "GEIDEA_TEST_PUBLIC_KEY", "GEIDEA_TEST_API_PASSWORD",
+  "GEIDEA_LIVE_PUBLIC_KEY", "GEIDEA_LIVE_API_PASSWORD",
+] as const;
+let savedEnv: Array<[string, string | undefined]> = [];
+beforeEach(() => {
+  savedEnv = credentialKeys.map((key) => [key, process.env[key]]);
+  for (const key of credentialKeys) delete process.env[key];
+});
+afterEach(() => {
+  for (const [key, value] of savedEnv) {
+    if (value === undefined) delete process.env[key];
+    else process.env[key] = value;
+  }
+});
+
+test("Geidea defaults to sandbox and requires a complete pair for the explicit mode", () => {
+  assert.equal(getGeideaMode(), "sandbox");
+  assert.equal(isGeideaConfigured(), false);
+  process.env.GEIDEA_TEST_PUBLIC_KEY = "test-public";
+  process.env.GEIDEA_TEST_API_PASSWORD = "test-password";
+  assert.equal(isGeideaConfigured(), true);
+  process.env.GEIDEA_MODE = "live";
+  assert.equal(isGeideaConfigured(), false);
+  process.env.GEIDEA_LIVE_PUBLIC_KEY = "live-public";
+  assert.equal(isGeideaConfigured(), false);
+  process.env.GEIDEA_LIVE_API_PASSWORD = "live-password";
+  assert.equal(isGeideaConfigured(), true);
+  process.env.GEIDEA_MODE = "invalid";
+  assert.equal(isGeideaConfigured(), false);
+  assert.throws(() => getGeideaMode(), GeideaConfigurationError);
+});
+
+test("Geidea live sessions and callbacks use only the live credential pair", async () => {
+  process.env.GEIDEA_MODE = "live";
+  process.env.GEIDEA_TEST_PUBLIC_KEY = "test-public";
+  process.env.GEIDEA_TEST_API_PASSWORD = "test-password";
+  process.env.GEIDEA_LIVE_PUBLIC_KEY = "live-public";
+  process.env.GEIDEA_LIVE_API_PASSWORD = "live-password";
+  const previousFetch = globalThis.fetch;
+  globalThis.fetch = (async (_url: RequestInfo | URL, init?: RequestInit) => {
+    assert.equal(new Headers(init?.headers).get("authorization"),
+      `Basic ${Buffer.from("live-public:live-password").toString("base64")}`);
+    const body = JSON.parse(String(init?.body));
+    assert.equal(body.signature, createSessionSignature({
+      ...body, publicKey: "live-public", apiPassword: "live-password",
+    }));
+    return new Response(JSON.stringify({
+      responseCode: "000", detailedResponseCode: "000", session: { id: "live-session" },
+    }), { status: 200 });
+  }) as typeof fetch;
+  try {
+    const result = await createGeideaSession({
+      amount: 10, merchantReferenceId: "live-reference",
+      callbackUrl: "https://example.test/callback",
+      returnUrl: "https://example.test/return", customer: {},
+    });
+    assert.equal(result.sessionId, "live-session");
+    const input = {
+      amount: 10, currency: "SAR", orderId: "live-order", status: "Success",
+      merchantReferenceId: "live-reference", timestamp: "2026/10/12 12:30:45",
+    };
+    const data = `live-public10.00SARlive-orderSuccesslive-reference${input.timestamp}`;
+    const signature = crypto.createHmac("sha256", "live-password").update(data).digest("base64");
+    assert.equal(verifyGeideaCallbackPayload({ ...input, signature }), true);
+    assert.equal(verifyGeideaCallbackPayload({ ...input, amount: 11, signature }), false);
+    assert.equal(verifyGeideaCallbackPayload({
+      ...input, signature: crypto.createHmac("sha256", "test-password").update(data).digest("base64"),
+    }), false);
+  } finally {
+    globalThis.fetch = previousFetch;
+  }
+});
 
 test("Geidea session signature uses the two-decimal amount and request fields", () => {
   const input = {
@@ -135,6 +213,8 @@ test("Geidea session uses the KSA v2 endpoint and returns the HPP checkout URL",
 
 test("Geidea session errors retain only bounded provider diagnostics", async () => {
   const previousFetch = globalThis.fetch;
+  process.env.GEIDEA_TEST_PUBLIC_KEY = "unit-test-public";
+  process.env.GEIDEA_TEST_API_PASSWORD = "unit-test-password";
 
   globalThis.fetch = (async () =>
     new Response(
@@ -155,6 +235,7 @@ test("Geidea session errors retain only bounded provider diagnostics", async () 
         merchantReferenceId: "unit-test-reference",
         callbackUrl: "https://example.test/api/payments/geidea/callback",
         returnUrl: "https://example.test/payment/geidea/return?paymentId=unit-test-payment",
+        customer: {},
       }),
       (error: unknown) => {
         assert.ok(error instanceof GeideaRequestError);

@@ -10,3 +10,9 @@ Qodratak does not offer Cash on Delivery; when Geidea's response mentions COD an
 **Why:** The documented KSA v2 session request reached Geidea and returned `110/080`; the user challenged attributing this to Geidea's account without ruling out an integration fault. The supplied HPP guide confirms the endpoint, Basic auth, timestamp shape, signature formula, and hosted-checkout URL. A minimal request without optional customer fields returned the same error.
 
 **How to apply:** When `110/080` occurs, compare the exact request with current docs and test a minimal documented payload before assigning fault; then verify the key, merchant profile, and environment mapping. Do not guess another host or expose credentials. Keep smoke tests non-charging and stop after session creation.
+
+Do not infer sandbox versus live from the KSA hostname: real live credentials work with the same KSA session and HPP hosts used by the existing integration. Switching credentials in a workspace does not configure credentials on the external Render service.
+
+**Why:** Live session creation and an actual card-entry form were verified without charging; the earlier HPP error must not be treated as a permanent provider limitation or a reason to invent a different endpoint.
+
+**How to apply:** Keep payment-mode changes explicit, save credentials only through secret tooling, and distinguish a working preview checkout from a deployed site's configuration. Never test a live charge without separate authorization.

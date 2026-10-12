@@ -56,7 +56,7 @@ import { getClientIp } from './middleware/sessionIp';
 import {
   GeideaConfigurationError,
   GeideaRequestError,
-  isGeideaSandboxConfigured,
+  isGeideaConfigured,
   refundGeideaOrder,
 } from './services/geideaService';
 import { subscriptionInvoiceNumber } from './services/geideaPaymentService';
@@ -2813,8 +2813,8 @@ router.post('/geidea/transactions/:id/refund', requireAdminAuth, async (req: Req
     res.status(400).json({ error: 'اكتب سبب الاسترداد (3 إلى 300 حرف)' });
     return;
   }
-  if (!isGeideaSandboxConfigured()) {
-    res.status(503).json({ error: 'إعدادات Geidea التجريبية غير مكتملة' });
+  if (!isGeideaConfigured()) {
+    res.status(503).json({ error: 'إعدادات Geidea غير مكتملة' });
     return;
   }
 
@@ -2880,7 +2880,7 @@ router.post('/geidea/transactions/:id/refund', requireAdminAuth, async (req: Req
         },
       );
       if (error instanceof GeideaConfigurationError) {
-        res.status(503).json({ error: 'إعدادات Geidea التجريبية غير مكتملة' });
+        res.status(503).json({ error: 'إعدادات Geidea غير مكتملة' });
         return;
       }
       req.log.error(

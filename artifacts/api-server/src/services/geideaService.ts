@@ -9,7 +9,7 @@ type GeideaCredentials = {
 };
 
 export class GeideaConfigurationError extends Error {
-  constructor(message = "Geidea sandbox credentials are not configured") {
+  constructor(message = "Geidea credentials are not configured for the selected mode") {
     super(message);
     this.name = "GeideaConfigurationError";
   }
@@ -65,23 +65,35 @@ export class GeideaRequestError extends Error {
   }
 }
 
-function getCredentials(): GeideaCredentials {
-  if (process.env.GEIDEA_MODE && process.env.GEIDEA_MODE !== "sandbox") {
-    throw new GeideaConfigurationError("Only the Geidea sandbox is enabled");
+export function getGeideaMode(): "sandbox" | "live" {
+  const mode = process.env.GEIDEA_MODE?.trim() || "sandbox";
+  if (mode !== "sandbox" && mode !== "live") {
+    throw new GeideaConfigurationError("Invalid Geidea payment mode");
   }
+  return mode;
+}
 
-  const publicKey = process.env.GEIDEA_TEST_PUBLIC_KEY?.trim();
-  const apiPassword = process.env.GEIDEA_TEST_API_PASSWORD?.trim();
+function getCredentials(): GeideaCredentials {
+  const mode = getGeideaMode();
+  // Never mix test/live keys or silently fall back to a different merchant.
+  const publicKey = (mode === "live"
+    ? process.env.GEIDEA_LIVE_PUBLIC_KEY
+    : process.env.GEIDEA_TEST_PUBLIC_KEY)?.trim();
+  const apiPassword = (mode === "live"
+    ? process.env.GEIDEA_LIVE_API_PASSWORD
+    : process.env.GEIDEA_TEST_API_PASSWORD)?.trim();
   if (!publicKey || !apiPassword) throw new GeideaConfigurationError();
   return { publicKey, apiPassword };
 }
 
-export function isGeideaSandboxConfigured(): boolean {
-  return Boolean(
-    process.env.GEIDEA_TEST_PUBLIC_KEY?.trim() &&
-      process.env.GEIDEA_TEST_API_PASSWORD?.trim() &&
-      (!process.env.GEIDEA_MODE || process.env.GEIDEA_MODE === "sandbox"),
-  );
+export function isGeideaConfigured(): boolean {
+  try {
+    getCredentials();
+    return true;
+  } catch (error) {
+    if (error instanceof GeideaConfigurationError) return false;
+    throw error;
+  }
 }
 
 export function getGeideaPublicAppUrl(): string {
@@ -180,7 +192,7 @@ async function geideaJsonRequest<T>(
       },
     });
   } catch {
-    throw new GeideaRequestError("Geidea sandbox could not be reached");
+    throw new GeideaRequestError("Geidea could not be reached");
   }
 
   let payload: any;

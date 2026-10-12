@@ -7,7 +7,7 @@ import {
   GeideaRequestError,
   createGeideaSession,
   getGeideaPublicAppUrl,
-  isGeideaSandboxConfigured,
+  isGeideaConfigured,
   verifyGeideaCallbackPayload,
 } from "../services/geideaService";
 import {
@@ -61,8 +61,8 @@ export function createGeideaPaymentRouter(options: RouterOptions): Router {
         res.status(400).json({ error: "الخطة المطلوبة غير متاحة" });
         return;
       }
-      if (!isGeideaSandboxConfigured()) {
-        res.status(503).json({ error: "الدفع التجريبي غير مُعدّ بعد" });
+      if (!isGeideaConfigured()) {
+        res.status(503).json({ error: "إعدادات بوابة الدفع غير مكتملة" });
         return;
       }
 
@@ -147,8 +147,8 @@ export function createGeideaPaymentRouter(options: RouterOptions): Router {
           },
         );
         if (error instanceof GeideaConfigurationError) {
-          req.log.warn({ error: error.message }, "Geidea sandbox configuration is incomplete");
-          res.status(503).json({ error: "إعدادات الدفع التجريبي غير مكتملة" });
+          req.log.warn({ error: error.message }, "Geidea configuration is incomplete");
+          res.status(503).json({ error: "إعدادات بوابة الدفع غير مكتملة" });
           return;
         }
         if (
@@ -161,7 +161,7 @@ export function createGeideaPaymentRouter(options: RouterOptions): Router {
               responseCode: error.responseCode,
               detailedResponseCode: error.detailedResponseCode,
             },
-            "Geidea online payments are not configured for this merchant",
+            "Geidea returned an HPP integration error",
           );
           res.status(503).json({
             error: "الدفع الإلكتروني غير متاح حاليًا. يرجى المحاولة لاحقًا أو التواصل مع الدعم.",
@@ -224,8 +224,8 @@ export function createGeideaPaymentRouter(options: RouterOptions): Router {
 
   router.post("/payments/geidea/callback", async (req: Request, res: Response) => {
     try {
-      if (!isGeideaSandboxConfigured()) {
-        res.status(503).json({ error: "Geidea sandbox is not configured" });
+      if (!isGeideaConfigured()) {
+        res.status(503).json({ error: "Geidea is not configured" });
         return;
       }
       const payload =
