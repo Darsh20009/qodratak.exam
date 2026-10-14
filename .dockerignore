@@ -19,3 +19,13 @@ attached_assets/device_trials.json
 **/*.mp4
 **/*.MP4
 **/*.MOV
+
+# Original/import PDFs and archives in the workspace root are source material,
+# not runtime files. The app's downloadable books and lesson PDFs are packaged
+# from artifacts/api-server/attached_assets and artifacts/qodratak/public.
+/attached_assets/*.pdf
+/attached_assets/*.PDF
+/attached_assets/*.pdf.*
+/attached_assets/*.PDF.*
+/attached_assets/*.zip
+/attached_assets/*.ZIP
