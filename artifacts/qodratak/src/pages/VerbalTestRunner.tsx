@@ -106,7 +106,7 @@ export function VerbalTestRunner() {
   // Fetch unseen verbal questions to avoid repetition
   const { data: allQuestions = [], isLoading } = useQuery<Question[]>({
     queryKey: ['/api/questions', 'verbal', 'excludeSeen'],
-    queryFn: () => fetch('/api/questions?category=verbal&excludeSeen=true', { credentials: 'include' }).then(r => r.json()),
+    queryFn: () => fetch(`/api/questions?category=verbal&excludeSeen=true&count=${Math.max(1, Math.min(200, testConfig?.questionCount || 65))}`, { credentials: 'include' }).then(r => r.json()),
   });
 
   // Load test configuration from localStorage

@@ -120,7 +120,7 @@ export function QuantitativeTestRunner() {
   // جلب الأسئلة الكمية غير المرئية سابقاً لمنع التكرار
   const { data: allQuestions, isLoading } = useQuery({
     queryKey: ['/api/questions', 'quantitative', 'excludeSeen'],
-    queryFn: () => fetch('/api/questions?category=quantitative&excludeSeen=true', { credentials: 'include' }).then(r => r.json()),
+    queryFn: () => fetch('/api/questions?category=quantitative&excludeSeen=true&count=200', { credentials: 'include' }).then(r => r.json()),
   });
 
   const QUANT_SECTION_DESCRIPTIONS: Record<string, { title: string; description: string; icon: string; color: string }> = {

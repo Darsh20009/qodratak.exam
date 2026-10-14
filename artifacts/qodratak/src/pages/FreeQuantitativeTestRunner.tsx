@@ -207,7 +207,14 @@ export function FreeQuantitativeTestRunner() {
       // تسجيل الأسئلة المشاهدة لمنع تكرارها في المستقبل
       try {
         const qIds = (questions || []).map((q: any) => q._id || q.id || q.questionId).filter(Boolean);
-        if (qIds.length) await fetch('/api/test-results/mark-seen', { method: 'POST', credentials: 'include', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ questionIds: qIds }) });
+        const questionAnswers = (questions || []).map((q: any, index: number) => ({
+          questionId: String(q._id || ''),
+          selectedOptionIndex: answers[index] ?? null,
+        })).filter((entry: any) => entry.questionId);
+        if (qIds.length) await fetch('/api/test-results/mark-seen', {
+          method: 'POST', credentials: 'include', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ questionIds: qIds, answers: questionAnswers }),
+        });
       } catch {}
     }
 

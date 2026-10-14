@@ -9,6 +9,11 @@ import {
 import bcrypt from 'bcryptjs';
 import mongoose from 'mongoose';
 import { attachSubscriptionStudents, subscriptionStudentId } from '../services/adminSubscriptionStudents';
+import {
+  getStudentQuestionProgress,
+  recordQuestionPracticeOutcomes,
+  selectPersonalizedQuestions,
+} from '../services/personalizedQuestionBankService';
 
 export class MongoStorage {
   private isInitialized = false;
@@ -943,9 +948,23 @@ export class MongoStorage {
   // ========== Question History Methods ==========
 
   async markQuestionsAsSeen(userId: string, questionIds: string[]): Promise<void> {
+    const ids = new Set<string>();
+    const numericIds: number[] = [];
+    for (const rawId of questionIds) {
+      const id = String(rawId);
+      if (/^[a-f0-9]{24}$/i.test(id)) ids.add(id.toLowerCase());
+      else if (/^\d+$/.test(id) && Number(id) >= 0) numericIds.push(Number(id));
+    }
+    if (numericIds.length) {
+      const questions = await Question.find({ questionId: { $in: [...new Set(numericIds)] } })
+        .select("_id")
+        .lean();
+      questions.forEach((question: any) => ids.add(String(question._id)));
+    }
+    if (!ids.size) return;
     await QuestionHistory.findOneAndUpdate(
       { userId },
-      { $addToSet: { seenQuestionIds: { $each: questionIds } }, updatedAt: new Date() },
+      { $addToSet: { seenQuestionIds: { $each: [...ids] } }, updatedAt: new Date() },
       { upsert: true }
     );
   }
@@ -956,32 +975,18 @@ export class MongoStorage {
   }
 
   async getUnseenQuestions(userId: string, count: number, filters: { category?: string; subcategory?: string } = {}): Promise<IQuestion[]> {
-    const seenIds = await this.getSeenQuestionIds(userId);
-    const query: any = {};
-    if (filters.category) query.category = filters.category;
-    if (filters.subcategory) query.subcategory = filters.subcategory;
-    if (seenIds.length > 0) {
-      query.questionId = { $nin: seenIds.map(id => parseInt(id)).filter(n => !isNaN(n)) };
-    }
-    const questions = await Question.aggregate([
-      { $match: query },
-      { $sample: { size: count * 3 } },
-      { $limit: count },
-    ]);
-    if (questions.length < count) {
-      const extra = await Question.aggregate([
-        { $match: filters.category ? { category: filters.category } : {} },
-        { $sample: { size: count - questions.length } },
-      ]);
-      const existingIds = new Set(questions.map((q: any) => q._id.toString()));
-      for (const q of extra) {
-        if (!existingIds.has(q._id.toString())) {
-          questions.push(q);
-          if (questions.length >= count) break;
-        }
-      }
-    }
-    return questions;
+    return await selectPersonalizedQuestions(userId, count, filters) as unknown as IQuestion[];
+  }
+
+  async recordQuestionPracticeOutcomes(
+    userId: string,
+    outcomes: Array<{ questionId: string; isCorrect: boolean }>,
+  ): Promise<void> {
+    await recordQuestionPracticeOutcomes(userId, outcomes);
+  }
+
+  async getStudentQuestionProgress(userId: string) {
+    return await getStudentQuestionProgress(userId);
   }
 
   async clearQuestionHistory(userId: string): Promise<void> {

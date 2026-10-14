@@ -19,6 +19,7 @@ import {
   getFoundationPlacementQuestion,
 } from "./foundationPlacementAssessment";
 import { canonicalSubjectToTahsiliLabel } from "./adaptiveLearningDecisionService";
+import { selectPersonalizedQuestions } from "./personalizedQuestionBankService";
 
 const QUDRAT_SUBJECTS = [
   "subject.qudrat.verbal",
@@ -1070,74 +1071,20 @@ export async function selectAdaptiveQuestions(
   const categories: Array<"verbal" | "quantitative"> = focusCategory
     ? [focusCategory]
     : ["quantitative", "verbal"];
-  const qudratAttempts = evidence.attempts.filter((attempt) =>
-    attempt.programId === "program.qudrat" &&
-    attempt.sourceType === "mongo_question",
-  );
-  const alreadyAnswered = new Set(qudratAttempts.map((attempt) => attempt.questionId));
-
-  const questionPool = async (category: "verbal" | "quantitative", unseenOnly: boolean) => {
-    const filter: Record<string, unknown> = {
-      category,
-      answerStatus: "approved",
-      options: { $type: "array", $ne: [] },
-    };
-    if (focus && focus.category === category) {
-      filter.subcategory = focus.subcategory;
-    }
-    const rows = await Question.find(filter)
-      .select(
-        "_id questionId category subcategory text options correctOptionIndex difficulty explanation studentTip answerStatus imageUrl imageUrls source",
-      )
-      .limit(1200)
-      .lean() as unknown as QuestionRecord[];
-    return unseenOnly
-      ? rows.filter((question) =>
-          !alreadyAnswered.has(String(question.questionId)) &&
-          !alreadyAnswered.has(String(question._id)),
-        )
-      : rows;
-  };
-
-  const pools = await Promise.all(
-    categories.map(async (category) => ({
-      category,
-      unseen: await questionPool(category, true),
-      fallback: await questionPool(category, false),
-    })),
-  );
-  for (const pool of pools) {
-    for (let index = pool.unseen.length - 1; index > 0; index -= 1) {
-      const swapIndex = Math.floor(Math.random() * (index + 1));
-      [pool.unseen[index], pool.unseen[swapIndex]] =
-        [pool.unseen[swapIndex], pool.unseen[index]];
-    }
-    for (let index = pool.fallback.length - 1; index > 0; index -= 1) {
-      const swapIndex = Math.floor(Math.random() * (index + 1));
-      [pool.fallback[index], pool.fallback[swapIndex]] =
-        [pool.fallback[swapIndex], pool.fallback[index]];
-    }
-  }
-
-  const selected: QuestionRecord[] = [];
-  for (let index = 0; selected.length < limit && pools.length; index += 1) {
-    const pool = pools[index % pools.length];
-    const candidates = pool.unseen.length ? pool.unseen : pool.fallback;
-    const candidate = candidates.shift();
-    if (!candidate || selected.some((question) => String(question._id) === String(candidate._id))) {
-      if (pools.every((item) => item.unseen.length === 0 && item.fallback.length === 0)) break;
-      continue;
-    }
-    if (
-      !Array.isArray(candidate.options) ||
-      candidate.options.length < 2 ||
-      !Number.isInteger(candidate.correctOptionIndex) ||
-      candidate.correctOptionIndex < 0 ||
-      candidate.correctOptionIndex >= candidate.options.length
-    ) {
-      continue;
-    }
-    selected.push(candidate);
+  const selected = await selectPersonalizedQuestions(studentId, Math.min(200, Math.max(1, limit)), {
+    category: focusCategory,
+    subcategory: focus?.subcategory,
+  }) as unknown as QuestionRecord[];
+  if (selected.length < limit) {
+    const fallback = await selectPersonalizedQuestions(
+      studentId,
+      Math.min(200, limit - selected.length),
+      {
+        category: focusCategory,
+        excludeQuestionIds: selected.map((question) => String(question._id)),
+      },
+    ) as unknown as QuestionRecord[];
+    selected.push(...fallback);
   }
 
   return {

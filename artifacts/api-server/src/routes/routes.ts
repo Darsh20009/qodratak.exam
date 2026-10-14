@@ -79,6 +79,10 @@ import {
 } from '../services/learningProfileService';
 import { ExamGradingError, gradeTrustedExam } from '../services/trustedExamGrade';
 import {
+  PersonalizedQuestionPoolError,
+  selectPersonalizedExamSections,
+} from '../services/personalizedQuestionBankService';
+import {
   FOUNDATION_PLACEMENT_VERSION,
   getFoundationPlacementQuestion,
   getFoundationPlacementQuestions,
@@ -1282,12 +1286,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const { category, difficulty, excludeSeen } = req.query;
       const sessionUserId = (req as any).session?.userId;
 
-      // If excludeSeen=true and user is logged in, return only unseen questions
-      if (excludeSeen === 'true' && sessionUserId) {
+      if (excludeSeen === 'true') {
+        if (!sessionUserId) return res.status(401).json({ message: "سجّل الدخول لعرض الأسئلة المخصصة لك." });
         try {
+          const requestedCount = Number(req.query.count ?? 2000);
+          const count = Number.isSafeInteger(requestedCount)
+            ? Math.max(1, Math.min(requestedCount, 2000))
+            : 2000;
           const unseenQuestions = await mongoStorage.getUnseenQuestions(
             String(sessionUserId),
-            2000,
+            count,
             { category: category as string | undefined }
           );
           return res.json(unseenQuestions.map((q: any) => ({
@@ -1307,7 +1315,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
             imageUrl: getQuestionImageUrls(q)[0],
             imageUrls: getQuestionImageUrls(q),
           })));
-        } catch {}
+        } catch (error) {
+          console.error("Personalized question selection failed:", error);
+          return res.status(503).json({ message: "تعذر تجهيز أسئلتك المخصصة الآن. أعد المحاولة بعد قليل." });
+        }
       }
 
       const pgQuestions = category && difficulty
@@ -1359,6 +1370,51 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error fetching questions:", error);
       return res.status(500).json({ message: "Error fetching questions" });
+    }
+  });
+
+  app.post("/api/questions/personalized", requireAuth, async (req: Request, res: Response) => {
+    try {
+      const userId = String((req as any).session?.userId || "");
+      const sections = await selectPersonalizedExamSections(userId, req.body?.sections);
+      return res.json({
+        sections: sections.map(({ sectionNumber, questions }) => ({
+          sectionNumber,
+          questions: questions.map((question: any) => ({
+            id: question.questionId,
+            questionId: question.questionId,
+            _id: String(question._id),
+            text: question.text,
+            options: question.options,
+            correctOptionIndex: question.correctOptionIndex,
+            category: question.category,
+            subcategory: question.subcategory,
+            difficulty: question.difficulty,
+            explanation: question.explanation,
+            studentTip: question.studentTip,
+            answerStatus: question.answerStatus,
+            source: question.source,
+            imageUrl: getQuestionImageUrls(question)[0],
+            imageUrls: getQuestionImageUrls(question),
+          })),
+        })),
+      });
+    } catch (error) {
+      if (error instanceof PersonalizedQuestionPoolError) {
+        return res.status(error.status).json({ message: error.message });
+      }
+      console.error("Personalized exam question selection failed:", error);
+      return res.status(503).json({ message: "تعذر تجهيز الاختبار الآن. أعد المحاولة بعد قليل." });
+    }
+  });
+
+  app.get("/api/student/question-progress", requireAuth, async (req: Request, res: Response) => {
+    try {
+      const userId = String((req as any).session?.userId || "");
+      return res.json(await mongoStorage.getStudentQuestionProgress(userId));
+    } catch (error) {
+      console.error("Student question progress failed:", error);
+      return res.status(503).json({ message: "تعذر تحميل تقدم مكتبة الأسئلة الآن." });
     }
   });
 
@@ -1709,7 +1765,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
           );
           const validUnseen = dailyExamQuestions(unseenQuestions);
           if (validUnseen.length > 0) return res.json(validUnseen);
-        } catch {}
+          return res.status(409).json({ message: "أنهيت الأسئلة المتاحة لهذا القسم؛ لا توجد إجابات خاطئة لإعادتها الآن." });
+        } catch (error) {
+          console.error("Personalized daily question selection failed:", error);
+          return res.status(503).json({ message: "تعذر تجهيز اختبارك اليومي الآن." });
+        }
       }
 
       const allQuestions = await storage.getQuestionsByCategory(category);
@@ -1854,6 +1914,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       let resolvedSkippedQuestions = Number(skippedQuestions || 0);
       let resolvedWrongAnswers = resolvedTotalQuestions - resolvedScore - resolvedSkippedQuestions;
       let resolvedQuestionIds = Array.isArray(questionIds) ? questionIds.map(String) : [];
+      let practiceQuestionOutcomes: Array<{ questionId: string; isCorrect: boolean }> = [];
       let correctedQuestions: any[] | undefined;
       if (Array.isArray(learningAnswers)) {
         if (!Array.isArray(scoredQuestionIds) || !scoredQuestionIds.length ||
@@ -1874,6 +1935,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
           resolvedSkippedQuestions = grade.skippedQuestions;
           resolvedWrongAnswers = grade.wrongAnswers;
           resolvedQuestionIds = gradingQuestions.map((q) => String(q.questionId));
+          const answerByQuestionId = new Map<string, any>(
+            learningAnswers.map((answer: any) => [
+              String(answer?.questionId || answer?.id || ""),
+              answer,
+            ]),
+          );
+          practiceQuestionOutcomes = gradingQuestions.map((question: any) => {
+            const answer = answerByQuestionId.get(String(question._id));
+            const selected = answer?.selectedAnswer ?? answer?.selectedOptionIndex;
+            const isAnswered = selected !== null && selected !== undefined && selected !== "" &&
+              selected !== -1 && selected !== "-1";
+            return {
+              questionId: String(question._id),
+              isCorrect: isAnswered && Number(selected) === Number(question.correctOptionIndex),
+            };
+          });
           correctedQuestions = gradingQuestions.map((q) => ({
             _id: String(q._id), correctOptionIndex: q.correctOptionIndex,
             explanation: q.explanation, studentTip: q.studentTip, subcategory: q.subcategory,
@@ -1949,6 +2026,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           });
         });
         learningAttemptsRecorded = recordedEvidence.length;
+        await mongoStorage.recordQuestionPracticeOutcomes(String(sessionUserId), practiceQuestionOutcomes);
       }
       if (Array.isArray(answers)) {
         const answerQuestionIds = answers.map((answer: any) => String(answer?.questionId || answer?.id || ''));
@@ -2000,6 +2078,31 @@ export async function registerRoutes(app: Express): Promise<Server> {
         resolvedSkippedQuestions = Math.max(0, resolvedTotalQuestions - answeredCount);
         resolvedWrongAnswers = answeredCount - resolvedScore;
         resolvedQuestionIds = answerQuestionIds;
+        if (!practiceQuestionOutcomes.length) {
+          const canonicalQuestionIds = [...new Set(answers
+            .filter((answer: any) =>
+              (answer?.sourceType || "mongo_question") === "mongo_question" &&
+              mongoose.Types.ObjectId.isValid(String(answer?.questionId || answer?.id || "")),
+            )
+            .map((answer: any) => String(answer.questionId || answer.id)))];
+          if (canonicalQuestionIds.length) {
+            const canonicalQuestions = await Question.find({
+              _id: { $in: canonicalQuestionIds },
+              answerStatus: "approved",
+              category: { $in: ["verbal", "quantitative"] },
+            }).select("_id").lean();
+            const correctnessById = new Map<string, boolean>(
+              resolvedAttempts.flatMap((result: any) => result?.attempt?.questionId
+                ? [[String(result.attempt.questionId), Boolean(result.attempt.isCorrect)] as [string, boolean]]
+                : []),
+            );
+            practiceQuestionOutcomes = canonicalQuestions.map((question: any) => ({
+              questionId: String(question._id),
+              isCorrect: correctnessById.get(String(question._id)) === true,
+            }));
+            await mongoStorage.recordQuestionPracticeOutcomes(String(sessionUserId), practiceQuestionOutcomes);
+          }
+        }
       }
 
       // نظام النقاط الموحد: +10 صح، -1 خطأ، -0.5 متروك (يمكن أن تكون سالبة)
@@ -2076,11 +2179,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
         percentage,
       });
 
-      // تسجيل الأسئلة المشاهدة لمنع التكرار في الاختبارات القادمة
-      if (resolvedQuestionIds?.length && sessionUserId) {
+      // حفظ التقدم القديم للنتائج التي لم ترسل أدلة تصحيح موثوقة.
+      if (!practiceQuestionOutcomes.length && resolvedQuestionIds?.length && sessionUserId) {
         try {
           await mongoStorage.markQuestionsAsSeen(String(sessionUserId), resolvedQuestionIds);
-        } catch {}
+        } catch (error) {
+          console.error("Could not update legacy question history:", error);
+        }
       }
 
       // تحديث نقاط المستخدم
@@ -2292,14 +2397,48 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Mark questions as seen (called from free tests / any test without full submission)
   app.post("/api/test-results/mark-seen", requireAuth, async (req: Request, res: Response) => {
     try {
-      const sessionUserId = (req as any).session?.userId;
-      const { questionIds } = req.body;
+      const sessionUserId = String((req as any).session?.userId || "");
+      const { questionIds, answers: submittedAnswers } = req.body;
+      if (Array.isArray(submittedAnswers) && submittedAnswers.length) {
+        const validIds = submittedAnswers
+          .map((answer: any) => String(answer?.questionId || ""))
+          .filter((id: string) => mongoose.Types.ObjectId.isValid(id));
+        if (validIds.length !== submittedAnswers.length || new Set(validIds).size !== validIds.length) {
+          return res.status(400).json({ success: false, message: "تعذر التحقق من أسئلة الاختبار." });
+        }
+        const questions = await Question.find({
+          _id: { $in: validIds },
+          answerStatus: "approved",
+          category: { $in: ["verbal", "quantitative"] },
+        }).select("_id").lean();
+        if (questions.length !== validIds.length) {
+          return res.status(400).json({ success: false, message: "بعض أسئلة الاختبار لم تعد متاحة." });
+        }
+        const selectedById = new Map<string, any>(
+          submittedAnswers.map((answer: any) => [String(answer.questionId), answer.selectedOptionIndex]),
+        );
+        const canonical = await Question.find({ _id: { $in: validIds } })
+          .select("_id correctOptionIndex")
+          .lean();
+        const outcomes = canonical.map((question: any) => {
+          const selected = selectedById.get(String(question._id));
+          return {
+            questionId: String(question._id),
+            isCorrect: selected !== null && selected !== undefined &&
+              selected !== "" && selected !== -1 && selected !== "-1" &&
+              Number(selected) === Number(question.correctOptionIndex),
+          };
+        });
+        await mongoStorage.recordQuestionPracticeOutcomes(sessionUserId, outcomes);
+        return res.json({ success: true, tracked: outcomes.length });
+      }
       if (questionIds?.length && sessionUserId) {
         await mongoStorage.markQuestionsAsSeen(String(sessionUserId), questionIds.map(String));
       }
-      res.json({ success: true });
-    } catch (err: any) {
-      res.json({ success: false });
+      return res.json({ success: true });
+    } catch (error) {
+      console.error("Could not record student question outcomes:", error);
+      return res.status(503).json({ success: false, message: "تعذر حفظ تقدم الأسئلة." });
     }
   });
 

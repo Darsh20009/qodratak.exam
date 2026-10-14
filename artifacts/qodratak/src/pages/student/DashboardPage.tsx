@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { Link } from "wouter";
+import { useQuery } from "@tanstack/react-query";
 import {
   AlertTriangle,
   Award,
@@ -116,6 +117,58 @@ function DashboardHelpDetails({ reviewId }: { reviewId: React.ComponentProps<typ
   );
 }
 
+function QuestionProgressLibraryCard() {
+  const { data, isLoading, isError } = useQuery({
+    queryKey: ["student-question-progress"],
+    queryFn: async () => {
+      const response = await fetch("/api/student/question-progress", { credentials: "include" });
+      if (!response.ok) throw new Error("تعذر تحميل تقدم الأسئلة");
+      return response.json() as Promise<{
+        total: number;
+        mastered: number;
+        review: number;
+        unseen: number;
+      }>;
+    },
+    staleTime: 60_000,
+  });
+
+  return (
+    <section className="rounded-3xl border border-border bg-card p-5 shadow-sm" dir="rtl" aria-label="مكتبة الأسئلة الشخصية">
+      <div className="flex items-start gap-3">
+        <div className="rounded-2xl bg-primary/10 p-3 text-primary"><BookOpen className="h-5 w-5" aria-hidden="true" /></div>
+        <div className="min-w-0 flex-1">
+          <h2 className="font-black text-foreground">مكتبة أسئلتك</h2>
+          <p className="mt-1 text-sm leading-6 text-muted-foreground">
+            الإجابة الصحيحة تُحفظ ولا تعود ضمن الأسئلة الجديدة، والأسئلة التي تحتاج مراجعة تظهر لك مجددًا.
+          </p>
+        </div>
+      </div>
+      {isError ? (
+        <p className="mt-4 text-sm text-muted-foreground">تعذر تحميل الأرقام الآن؛ سيستمر الاختبار بالعمل دون تعطّل.</p>
+      ) : (
+        <div className="mt-4 grid grid-cols-3 gap-2 text-center">
+          <div className="rounded-2xl bg-muted/60 p-3">
+            <strong className="block text-lg font-black text-foreground">{isLoading ? "—" : data?.mastered ?? 0}</strong>
+            <span className="text-xs font-bold text-muted-foreground">إجابة صحيحة</span>
+          </div>
+          <div className="rounded-2xl bg-muted/60 p-3">
+            <strong className="block text-lg font-black text-foreground">{isLoading ? "—" : data?.review ?? 0}</strong>
+            <span className="text-xs font-bold text-muted-foreground">تحتاج مراجعة</span>
+          </div>
+          <div className="rounded-2xl bg-muted/60 p-3">
+            <strong className="block text-lg font-black text-foreground">{isLoading ? "—" : data?.unseen ?? 0}</strong>
+            <span className="text-xs font-bold text-muted-foreground">أسئلة جديدة</span>
+          </div>
+        </div>
+      )}
+      <Link href="/records" className="mt-4 inline-flex items-center gap-2 text-sm font-black text-primary hover:underline">
+        <span>عرض تقاريرك وتفاصيل الإجابات</span><ChevronLeft className="h-4 w-4" aria-hidden="true" />
+      </Link>
+    </section>
+  );
+}
+
 const paths = [
   { href: "/preparation-course", label: "خطة التحضير", detail: "ابدأ بموعد أو دون حجز", icon: Calendar },
   { href: "/computerized", label: "التدريب المحوسب", detail: "لفظي وكمي بتركيز", icon: Laptop },
@@ -217,6 +270,7 @@ export default function DashboardPage() {
           </p>
         </header>
         <DashboardGuideFilm studentId={user.id ?? user._id} displayName={userName} />
+        <QuestionProgressLibraryCard />
         <AdaptiveLearningCoach trialExpired />
         <InstitutionMembershipCard />
         <Link href="/records" data-testid="link-my-results" className="flex items-center justify-between gap-4 rounded-2xl border border-border bg-card p-5 text-foreground hover:border-primary/40">
@@ -282,6 +336,7 @@ export default function DashboardPage() {
       <div className="mx-auto w-full max-w-5xl space-y-6 p-5 md:p-8" dir="rtl">
         <NewStudentWelcome studentName={userName} />
         <DashboardGuideFilm studentId={user.id ?? user._id} displayName={userName} />
+        <QuestionProgressLibraryCard />
         <section data-testid="student-paths" className="space-y-3">
           <h2 className="text-lg font-black text-foreground">بعد التقييم</h2>
           <div className="grid gap-3 sm:grid-cols-2">
@@ -326,6 +381,7 @@ export default function DashboardPage() {
         <p className="text-sm leading-7 text-muted-foreground">خطوة واحدة الآن تكفي.</p>
       </header>
       <DashboardGuideFilm studentId={user.id ?? user._id} displayName={userName} />
+      <QuestionProgressLibraryCard />
 
       <section data-testid="student-next-step" className="overflow-hidden rounded-3xl border border-primary/20 bg-primary/5 shadow-sm">
         <div className="flex flex-col gap-5 p-5 sm:p-7 md:flex-row md:items-center md:justify-between">

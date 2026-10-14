@@ -836,10 +836,39 @@ const QiyasExamPage: React.FC<{ customConfiguration?: CustomExamConfiguration }>
     setPendingNextSectionIdx(null);
 
     try {
-      const response = await fetch(customConfiguration?.questionEndpoint ?? '/api/questions', { credentials: 'include' });
-      if (!response.ok) throw new Error(`تعذر تحميل أسئلة الاختبار (${response.status}). أعد المحاولة.`);
-      const availableQuestions: ExamQuestion[] = await response.json();
+      const usesDedicatedQuestionEndpoint = Boolean(customConfiguration?.questionEndpoint);
+      const response = usesDedicatedQuestionEndpoint
+        ? await fetch(customConfiguration!.questionEndpoint!, { credentials: 'include' })
+        : await fetch('/api/questions/personalized', {
+            method: 'POST',
+            credentials: 'include',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              sections: selectedExam.sections.map((section) => ({
+                sectionNumber: section.sectionNumber,
+                category: section.category,
+                questionCount: section.questionCount,
+                verbalCount: (section as any).verbalCount,
+                quantitativeCount: (section as any).quantitativeCount,
+              })),
+              ...(institutionTestAssignmentId ? {
+                institutionTestAssignmentId,
+                examId: selectedExam.id,
+              } : {}),
+            }),
+          });
+      if (!response.ok) {
+        const errorBody = await response.json().catch(() => null);
+        throw new Error(errorBody?.message || `تعذر تحميل أسئلة الاختبار (${response.status}). أعد المحاولة.`);
+      }
+      const payload = await response.json();
+      const availableQuestions: ExamQuestion[] = usesDedicatedQuestionEndpoint
+        ? payload
+        : Array.isArray(payload?.sections)
+          ? payload.sections.flatMap((section: any) => Array.isArray(section.questions) ? section.questions : [])
+          : [];
       if (!Array.isArray(availableQuestions)) throw new Error("بيانات الأسئلة غير صالحة. أعد المحاولة.");
+      if (!availableQuestions.length) throw new Error("لم يعثر النظام على أسئلة متاحة لهذا الاختبار.");
       let flatListOfAllRawQuestions: ExamQuestion[] = [];
       const usedQuestionIds = new Set<number>(); // تتبع الأسئلة المستخدمة
 

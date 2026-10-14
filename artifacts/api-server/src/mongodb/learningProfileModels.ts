@@ -84,6 +84,7 @@ const learningAttemptSchema = new Schema<ILearningAttempt>({
 
 learningAttemptSchema.index({ studentId: 1, createdAt: -1 });
 learningAttemptSchema.index({ studentId: 1, sourceIdentity: 1, createdAt: -1 });
+learningAttemptSchema.index({ studentId: 1, sourceType: 1, programId: 1, questionId: 1 });
 learningAttemptSchema.index({ studentId: 1, idempotencyKey: 1 }, { unique: true, sparse: true });
 
 export interface ILearningAttemptSequence extends Document {

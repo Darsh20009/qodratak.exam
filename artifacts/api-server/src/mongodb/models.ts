@@ -650,6 +650,7 @@ const questionSchema = new Schema<IQuestion>({
   updatedAt: { type: Date },
   createdBy: { type: String },
 });
+questionSchema.index({ answerStatus: 1, category: 1, difficulty: 1, questionId: 1 });
 
 export interface IChatMessage extends Document {
   fromUserId: string;
@@ -962,12 +963,18 @@ const examBookingSchema = new Schema<IExamBooking>({
 export interface IQuestionHistory extends Document {
   userId: string;
   seenQuestionIds: string[];
+  correctQuestionIds: string[];
+  incorrectQuestionIds: string[];
+  progressVersion: number;
   updatedAt: Date;
 }
 
 const questionHistorySchema = new Schema<IQuestionHistory>({
   userId: { type: String, required: true, unique: true, index: true },
   seenQuestionIds: { type: [String], default: [] },
+  correctQuestionIds: { type: [String], default: [] },
+  incorrectQuestionIds: { type: [String], default: [] },
+  progressVersion: { type: Number, default: 0 },
   updatedAt: { type: Date, default: Date.now },
 });
 
