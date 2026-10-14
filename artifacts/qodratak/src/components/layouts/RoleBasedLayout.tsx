@@ -131,7 +131,7 @@ export function RoleBasedLayout({ children, role, user, onLogout }: RoleBasedLay
   const navItems = getNavItemsForRole(role);
   const roleLabel = getRoleLabel(role);
   const currentTab = new URLSearchParams(search).get('tab');
-  
+  const isInstitutionAdmin = role === 'institution_admin';
   const isAdmin = ['system_admin', 'support_admin', 'institution_admin'].includes(role);
   
   const sidebarStyle = {
@@ -145,8 +145,12 @@ export function RoleBasedLayout({ children, role, user, onLogout }: RoleBasedLay
 
   return (
     <SidebarProvider style={sidebarStyle}>
-      <div className="flex h-screen w-full">
-        <Sidebar>
+      <div className="flex h-screen w-full" dir={isInstitutionAdmin ? 'rtl' : undefined}>
+        <Sidebar
+          side={isInstitutionAdmin ? 'right' : 'left'}
+          dir={isInstitutionAdmin ? 'rtl' : undefined}
+          contentClassName={isInstitutionAdmin ? 'qodratak-institution-sidebar-panel' : undefined}
+        >
           <SidebarHeader className="border-b border-sidebar-border p-4">
             <div className="flex items-center gap-3">
               <BrandMark />

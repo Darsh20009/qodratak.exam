@@ -338,15 +338,30 @@ function PlanCard({
   );
 }
 
-export default function LandingPage({ initialModal }: { initialModal?: "signup" | "login" } = {}) {
+export default function LandingPage({
+  initialModal,
+  enableStoreBadge = false,
+}: {
+  initialModal?: "signup" | "login";
+  enableStoreBadge?: boolean;
+} = {}) {
   const [location] = useLocation();
-  const showStoreSeal = location === "/" && !initialModal;
+  const [authMode, setAuthMode] = useState<"signup" | "login" | null>(initialModal || null);
+  const showStoreSeal = enableStoreBadge && location === "/" && !initialModal && authMode === null;
   useLayoutEffect(() => {
     const root = document.documentElement;
     root.classList.toggle("qodratak-landing-page", showStoreSeal);
-    return () => root.classList.remove("qodratak-landing-page");
+    const removeInjectedStoreBadge = () => {
+      document
+        .querySelectorAll(".sbc-badge-trigger, .sbc-certificate-backdrop")
+        .forEach((element) => element.remove());
+    };
+    if (!showStoreSeal) removeInjectedStoreBadge();
+    return () => {
+      root.classList.remove("qodratak-landing-page");
+      removeInjectedStoreBadge();
+    };
   }, [showStoreSeal]);
-  const [authMode, setAuthMode] = useState<"signup" | "login" | null>(initialModal || null);
   const openSignup = () => setAuthMode("signup");
 
   return (

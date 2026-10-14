@@ -45,6 +45,9 @@ import {
   CalendarClock,
   Bell,
   Flame,
+  Lightbulb,
+  Search,
+  Target,
   TrendingUp,
   TrendingDown,
   ChevronLeft,
@@ -52,6 +55,7 @@ import {
   Menu,
   BarChart2,
   MessageCircle,
+  Users,
   Library
 } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -360,10 +364,11 @@ function MainLayout({ children }: { children: React.ReactNode }) {
   const [aiBadgeInHeader, setAiBadgeInHeader] = useState(() => sessionStorage.getItem('ai_badge_hidden') === '1');
   const [showMoreMenu, setShowMoreMenu] = useState(false);
   const [sidebarMoreOpen, setSidebarMoreOpen] = useState(false);
+  const [sidebarMoreSearch, setSidebarMoreSearch] = useState("");
 
   useEffect(() => {
     setShowMoreMenu(false);
-    setSidebarMoreOpen(false);
+    setSidebarMoreSearch("");
   }, [location]);
 
   useEffect(() => {
@@ -476,22 +481,87 @@ function MainLayout({ children }: { children: React.ReactNode }) {
     { name: "نتائجي", href: "/records", icon: ClipboardIcon },
   ];
 
-  // ─── More items (collapsible) ─────────────────────────────
+  // ─── Complete student learning directory ───────────────────
   const moreNavItems = [
-    { name: "اختبار قياس",      href: "/qiyas",              icon: Brain },
-    { name: "بنك الأسئلة",      href: "/question-bank",      icon: BookOpenIcon },
-    { name: "التحصيلي — قريبًا", href: "/student-program/tahsili", icon: GraduationCapIcon },
-    { name: "المكتبة", href: "/library", icon: Library },
-    { name: "مجلداتي", href: "/folders", icon: FolderIcon },
-    { name: "محفظتي",           href: "/wallet",               icon: Wallet },
-    { name: "اختبارات اللفظي",  href: "/verbal-tests",       icon: BookOpenIcon },
-    { name: "اختبارات الكمي",   href: "/quantitative-tests",  icon: Calculator },
-    { name: "نماذج الورقي",     href: "/paper-models",         icon: FileText },
-    { name: "بطاقات المراجعة",  href: "/flashcards",           icon: Layers },
-    { name: "تحدي الأخطاء",     href: "/mistake-challenge",    icon: GamepadIcon },
-    { name: "احجز اختبارك",    href: "/book-exam",             icon: CalendarCheck },
-    { name: "الدعم والمساعدة",  href: "/faq",                   icon: HelpCircle },
+    { group: "اختبارات وتدريب", name: "مركز الاختبارات", href: "/qiyas-hub", icon: Brain, description: "اختر اختبارًا محوسبًا أو محاكاة مناسبة." },
+    { group: "اختبارات وتدريب", name: "اختبارات اللفظي", href: "/verbal-tests", icon: BookOpenIcon, description: "تدرب على أقسام اللفظي." },
+    { group: "اختبارات وتدريب", name: "اختبارات الكمي", href: "/quantitative-tests", icon: Calculator, description: "تدرب على أقسام الكمي." },
+    { group: "اختبارات وتدريب", name: "بنك الأسئلة", href: "/question-bank", icon: BookOpenIcon, description: "ابحث عن أسئلة التدريب المتاحة." },
+    { group: "اختبارات وتدريب", name: "اختبار القدرات المحوسب", href: "/qiyas", icon: Brain, description: "ابدأ اختبار قدرات محوسبًا من الإعدادات المتاحة." },
+    { group: "اختبارات وتدريب", name: "اختبار تغطية التأسيس", href: "/foundation/coverage-test", icon: ClipboardIcon, description: "تحقق من تغطية مهارات التأسيس." },
+    { group: "اختبارات وتدريب", name: "اختبرني من الأسئلة", href: "/test-me", icon: Target, description: "ابدأ تدريبًا من الأسئلة المتاحة لحسابك." },
+    { group: "اختبارات وتدريب", name: "اختبار يومي لفظي", href: "/free-verbal-test", icon: ClipboardIcon, description: "اختبار لفظي يومي للحسابات المسجلة." },
+    { group: "اختبارات وتدريب", name: "اختبار يومي كمي", href: "/free-quantitative-test", icon: Calculator, description: "اختبار كمي يومي للحسابات المسجلة." },
+    { group: "اختبارات وتدريب", name: "الاختبارات المحاكية", href: "/mock-exams", icon: BrainCircuitIcon, description: "تدرب في تجربة أقرب للاختبار." },
+    { group: "اختبارات وتدريب", name: "اختبار مخصص", href: "/custom-exam", icon: Layers, description: "اختر إعدادات التدريب التي تناسبك." },
+    { group: "اختبارات وتدريب", name: "الاختبار الورقي", href: "/paper-exam", icon: Printer, description: "تدرب على نموذج ورقي." },
+    { group: "اختبارات وتدريب", name: "نماذج الورقي", href: "/paper-models", icon: FileText, description: "استعرض النماذج الورقية المنشورة." },
+    { group: "اختبارات وتدريب", name: "تصحيح ورقة الإجابة", href: "/bubble-sheet-scan", icon: ClipboardIcon, description: "صحح ورقة إجابتك إذا كانت الميزة متاحة لاشتراكك." },
+    { group: "اختبارات وتدريب", name: "الاختبارات الموسمية", href: "/seasonal-exams", icon: CalendarClock, description: "استعرض الاختبارات الموسمية المتاحة." },
+    { group: "اختبارات وتدريب", name: "اختبارات القدرات", href: "/abilities", icon: Target, description: "افتح اختبارات القدرات المتاحة لحسابك." },
+    { group: "اختبارات وتدريب", name: "الدورات التعليمية", href: "/courses", icon: GraduationCapIcon, description: "استعرض الدورات التعليمية المنشورة." },
+
+    { group: "مراجعة وتقدم", name: "تقدم المهارات", href: "/skill-progress", icon: TrendingUp, description: "تابع تقدمك في المهارات." },
+    { group: "مراجعة وتقدم", name: "تحليل الأداء", href: "/performance-report", icon: BarChart2, description: "راجع مؤشرات أدائك عبر المحاولات." },
+    { group: "مراجعة وتقدم", name: "تحليلاتي", href: "/analytics", icon: TrendingUp, description: "استعرض ملخص نشاطك ونتائجك." },
+    { group: "مراجعة وتقدم", name: "تحليل الأخطاء", href: "/error-analysis", icon: TrendingDown, description: "افهم أنماط الإجابات التي تحتاج مراجعة." },
+    { group: "مراجعة وتقدم", name: "اختبار تكيفي", href: "/adaptive-test", icon: Brain, description: "تدرب بأسئلة تتدرج حسب أدائك." },
+    { group: "مراجعة وتقدم", name: "بطاقات المراجعة", href: "/flashcards", icon: Layers, description: "راجع المفاهيم بالبطاقات." },
+    { group: "مراجعة وتقدم", name: "تحدي مراجعة الأخطاء", href: "/mistake-challenge", icon: GamepadIcon, description: "راجع ما أخطأت فيه بطريقة تفاعلية." },
+    { group: "مراجعة وتقدم", name: "تحديات التعلم", href: "/challenges", icon: Flame, description: "أنشطة قصيرة لتحفيز الممارسة." },
+    { group: "مراجعة وتقدم", name: "استراتيجيات الحل", href: "/strategy-library", icon: Lightbulb, description: "تعرف على طرق حل منظمة." },
+
+    { group: "خطة واستعداد", name: "جلسة اليوم", href: "/learning/today", icon: CalendarCheck, description: "تابع جلسة التعلم الموجهة لهذا اليوم." },
+    { group: "خطة واستعداد", name: "حجز موعد الاختبار", href: "/book-exam", icon: CalendarClock, description: "سجل موعد اختبارك أو احجز محاكاة." },
+    { group: "خطة واستعداد", name: "الاستعداد ليوم الاختبار", href: "/pre-exam-day", icon: CalendarClock, description: "راجع الاستعدادات والخطوات قبل الاختبار." },
+    { group: "خطة واستعداد", name: "إدارة الوقت", href: "/time-management", icon: Clock, description: "نظم وقت المذاكرة والراحة." },
+    { group: "خطة واستعداد", name: "غرف المذاكرة", href: "/study-rooms", icon: Users, description: "انضم إلى جلسة مذاكرة جماعية." },
+
+    { group: "مصادر ومساعدة", name: "مسار القدرات", href: "/student-program/qudrat", icon: Brain, description: "افتح محتوى القدرات حسب مسارك." },
+    { group: "مصادر ومساعدة", name: "التحصيلي — قريبًا", href: "/student-program/tahsili", icon: GraduationCapIcon, description: "محتوى التحصيلي للطلاب غير متاح حاليًا." },
+    { group: "مصادر ومساعدة", name: "مركز التعلم", href: "/learn", icon: BookOpenIcon, description: "استكشف خيارات التعلم المتاحة." },
+    { group: "مصادر ومساعدة", name: "كتاب التأسيس الكمي", href: "/student/foundation-book/quantitative", icon: BookOpenIcon, description: "افتح كتاب التأسيس الكمي المنشور." },
+    { group: "مصادر ومساعدة", name: "المكتبة", href: "/library", icon: Library, description: "افتح مكتبتك التعليمية." },
+    { group: "مصادر ومساعدة", name: "كتبي", href: "/books", icon: BookOpenIcon, description: "تابع كتبك التعليمية." },
+    { group: "مصادر ومساعدة", name: "مجلداتي", href: "/folders", icon: FolderIcon, description: "نظم الأسئلة والمواد المحفوظة." },
+    { group: "مصادر ومساعدة", name: "محفظتي", href: "/wallet", icon: Wallet, description: "راجع رصيدك وعمليات حسابك." },
+    { group: "مصادر ومساعدة", name: "مساعد الشرح (اختياري)", href: "/ai-tutor", icon: BrainCircuitIcon, description: "اطلب شرحًا عند الحاجة؛ لا يعمل تلقائيًا." },
+    { group: "مصادر ومساعدة", name: "مركز الأدوات الذكية (اختياري)", href: "/ai-hub", icon: BrainCircuitIcon, description: "افتح الأدوات الذكية بإرادتك؛ لا تُشغّل تلقائيًا من قائمة التنقل." },
+    { group: "مصادر ومساعدة", name: "تحليل الأنماط الذكي (اختياري)", href: "/ai-hub/pattern-analysis", icon: TrendingDown, description: "تحليل اختياري عند فتحك لهذه الصفحة." },
+    { group: "مصادر ومساعدة", name: "اقتراح خطة ذكية (اختياري)", href: "/ai-hub/daily-plan", icon: CalendarCheck, description: "اقتراح اختياري عند فتحك لهذه الصفحة." },
+    { group: "مصادر ومساعدة", name: "توقع الدرجة (اختياري)", href: "/ai-hub/score-prediction", icon: TrendingUp, description: "توقع اختياري عند فتحك لهذه الصفحة." },
+    { group: "مصادر ومساعدة", name: "دليل الاستخدام", href: "/usage-guide", icon: HelpCircle, description: "تعرف على صفحات المنصة وطريقة استخدامها." },
+    { group: "مصادر ومساعدة", name: "كيف تعمل المنصة؟", href: "/how-it-works", icon: PlayCircleIcon, description: "شاهد مسار الاستخدام خطوة بخطوة." },
+    { group: "مصادر ومساعدة", name: "دليل المنصة", href: "/guide", icon: PlayCircleIcon, description: "افتح الدليل التعريفي للمنصة." },
+    { group: "مصادر ومساعدة", name: "تثبيت التطبيق", href: "/install", icon: Download, description: "تعرف على طريقة تثبيت المنصة على جهازك." },
+    { group: "مصادر ومساعدة", name: "الإشعارات", href: "/notifications", icon: Bell, description: "راجع تحديثات حسابك." },
+    { group: "مصادر ومساعدة", name: "إعدادات الإشعارات", href: "/notification-settings", icon: Bell, description: "اختر الإشعارات التي تريد استقبالها." },
+    { group: "مصادر ومساعدة", name: "الأمان", href: "/security-settings", icon: UserIcon, description: "راجع إعدادات أمان حسابك." },
+    { group: "مصادر ومساعدة", name: "حسابي", href: "/account", icon: UserIcon, description: "حدّث بياناتك وراجع اشتراكك." },
+    { group: "مصادر ومساعدة", name: "الاشتراك والباقات", href: "/subscription", icon: Wallet, description: "راجع تفاصيل الاشتراك والخيارات المتاحة." },
+    { group: "مصادر ومساعدة", name: "الباقات والأسعار", href: "/pricing", icon: Wallet, description: "قارن الباقات قبل الاشتراك." },
+    { group: "مصادر ومساعدة", name: "الأسئلة الشائعة والدعم", href: "/faq", icon: HelpCircleIcon, description: "ابحث عن إجابة أو تواصل مع الدعم." },
   ];
+
+  const learnerGoalActions = [
+    { name: "أبني الأساس", href: "/foundation", icon: BookOpenIcon, description: "ابدأ من المفاهيم الأساسية." },
+    { name: "أتدرب على اختبار", href: "/qiyas-hub", icon: Brain, description: "اختر تدريبًا أو اختبارًا محاكيًا." },
+    { name: "أراجع أخطائي", href: "/error-analysis", icon: TrendingDown, description: "اكتشف ما يحتاج إلى مراجعة." },
+    { name: "أستعد لموعدي", href: "/pre-exam-day", icon: CalendarCheck, description: "راجع خطة الاستعداد للاختبار." },
+  ];
+
+  const normalizedMoreSearch = sidebarMoreSearch.trim().toLocaleLowerCase("ar");
+  const filteredMoreNavItems = moreNavItems.filter((item) =>
+    !normalizedMoreSearch ||
+    `${item.group} ${item.name} ${item.description} ${item.href}`.toLocaleLowerCase("ar").includes(normalizedMoreSearch)
+  );
+  const moreNavGroups = Array.from(new Set(filteredMoreNavItems.map((item) => item.group))).map((group) => ({
+    group,
+    items: filteredMoreNavItems.filter((item) => item.group === group),
+  }));
+  const sidebarMoreGroups = sidebarMoreOpen
+    ? moreNavGroups
+    : [{ group: moreNavItems[0].group, items: moreNavItems.slice(0, 4) }];
 
   const activeProgram = React.useMemo(() => {
     const path = location.split("?")[0];
@@ -636,40 +706,94 @@ function MainLayout({ children }: { children: React.ReactNode }) {
               );
              })}
 
-             {!activeProgram && (
-               <>
-                 {/* Divider */}
-                 <div className="pt-2 pb-1">
-                   <p className="px-3 text-[10px] font-semibold uppercase tracking-wider text-gray-400">المزيد</p>
-                 </div>
+              <div id="student-more-navigation" className="mt-3 border-t border-gray-100 pt-3 dark:border-gray-800">
+                <p className="px-3 pb-2 text-[10px] font-semibold uppercase tracking-wider text-gray-400">المزيد من صفحاتك</p>
 
-                 {/* More nav items */}
-                 {moreNavItems.slice(0, sidebarMoreOpen ? undefined : 4).map((item) => {
-                   const isActive = location.startsWith(item.href);
-                   return (
-                     <Link key={item.href} href={item.href}>
-                       <div className={cn(
-                         "flex cursor-pointer items-center gap-3 rounded-xl px-3 py-2 text-sm font-medium transition-colors",
-                         isActive
-                           ? "bg-green-50 text-green-700 dark:bg-green-950/30 dark:text-green-400"
-                           : "text-gray-500 hover:bg-gray-50 hover:text-gray-700 dark:text-gray-500 dark:hover:bg-gray-800 dark:hover:text-gray-300"
-                       )}>
-                         <item.icon className="h-4 w-4 flex-shrink-0 text-gray-400" />
-                         <span>{item.name}</span>
-                       </div>
-                     </Link>
-                   );
-                 })}
+                {sidebarMoreOpen && (
+                  <>
+                    <div className="mb-3 rounded-xl border border-primary/15 bg-primary/5 p-2.5">
+                      <p className="px-1 pb-2 text-[10px] font-black text-primary">اختر ما تحتاجه الآن</p>
+                      <div className="grid grid-cols-2 gap-1.5">
+                        {learnerGoalActions.map((action) => (
+                          <Link
+                            key={action.href}
+                            href={action.href}
+                            title={action.description}
+                            data-testid={`link-learning-goal-${action.href.slice(1).replaceAll("/", "-")}`}
+                            className="flex min-h-10 items-center gap-1.5 rounded-lg bg-white px-2 py-1.5 text-[10px] font-bold text-gray-700 transition hover:bg-primary/10 dark:bg-gray-900 dark:text-gray-200 dark:hover:bg-primary/20"
+                          >
+                            <action.icon className="h-3.5 w-3.5 shrink-0 text-primary" aria-hidden="true" />
+                            <span className="leading-4">{action.name}</span>
+                          </Link>
+                        ))}
+                      </div>
+                    </div>
+                    <label className="relative mb-3 block">
+                      <Search className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" aria-hidden="true" />
+                      <input
+                        type="search"
+                        value={sidebarMoreSearch}
+                        onChange={(event) => setSidebarMoreSearch(event.target.value)}
+                        placeholder="ابحث عن صفحة أو أداة"
+                        aria-label="ابحث في صفحات الطالب"
+                        data-testid="input-student-more-search"
+                        className="min-h-10 w-full rounded-xl border border-gray-200 bg-white py-2 pr-9 pl-3 text-xs text-gray-800 outline-none transition placeholder:text-gray-400 focus:border-primary dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100"
+                      />
+                    </label>
+                  </>
+                )}
 
-                 <button
-                   onClick={() => setSidebarMoreOpen(v => !v)}
-                   className="flex w-full items-center gap-3 rounded-xl px-3 py-2 text-sm font-medium text-gray-400 transition-colors hover:bg-gray-50 dark:hover:bg-gray-800"
-                 >
-                   <ChevronLeft className={cn("h-4 w-4 transition-transform", sidebarMoreOpen ? "rotate-90" : "-rotate-90")} />
-                   <span>{sidebarMoreOpen ? "إخفاء" : "عرض المزيد"}</span>
-                 </button>
-               </>
-             )}
+                {sidebarMoreGroups.map((group) => (
+                  <div key={group.group} className="mb-2">
+                    {sidebarMoreOpen && (
+                      <p className="px-3 pb-1 pt-2 text-[10px] font-bold text-gray-400">{group.group}</p>
+                    )}
+                    {group.items.map((item) => {
+                      const itemPath = item.href.split("?")[0];
+                      const currentPath = location.split("?")[0];
+                      const isActive = currentPath === itemPath || currentPath.startsWith(`${itemPath}/`);
+                      return (
+                        <Link key={item.href} href={item.href}>
+                          <div
+                            title={item.description}
+                            data-testid={`link-student-more-${itemPath.slice(1).replaceAll("/", "-")}`}
+                            className={cn(
+                              "flex cursor-pointer items-center gap-3 rounded-xl px-3 py-2 text-sm font-medium transition-colors",
+                              isActive
+                                ? "bg-green-50 text-green-700 dark:bg-green-950/30 dark:text-green-400"
+                                : "text-gray-500 hover:bg-gray-50 hover:text-gray-700 dark:text-gray-500 dark:hover:bg-gray-800 dark:hover:text-gray-300"
+                            )}
+                          >
+                            <item.icon className="h-4 w-4 flex-shrink-0 text-gray-400" aria-hidden="true" />
+                            <span>{item.name}</span>
+                          </div>
+                        </Link>
+                      );
+                    })}
+                  </div>
+                ))}
+
+                {sidebarMoreOpen && filteredMoreNavItems.length === 0 && (
+                  <p data-testid="text-student-more-empty" className="rounded-xl px-3 py-4 text-xs text-gray-500 dark:text-gray-400">
+                    لا توجد صفحة بهذا الاسم. جرّب كلمة أخرى.
+                  </p>
+                )}
+
+                <button
+                  type="button"
+                  aria-expanded={sidebarMoreOpen}
+                  aria-controls="student-more-navigation"
+                  data-testid="button-toggle-student-more"
+                  onClick={() => {
+                    setSidebarMoreOpen((open) => !open);
+                    setSidebarMoreSearch("");
+                  }}
+                  className="flex w-full items-center gap-3 rounded-xl px-3 py-2 text-sm font-medium text-gray-400 transition-colors hover:bg-gray-50 dark:hover:bg-gray-800"
+                >
+                  <ChevronLeft className={cn("h-4 w-4 transition-transform", sidebarMoreOpen ? "rotate-90" : "-rotate-90")} aria-hidden="true" />
+                  <span>{sidebarMoreOpen ? "إخفاء الصفحات" : "عرض كل الصفحات"}</span>
+                </button>
+              </div>
           </nav>
 
           {/* Bottom: theme + user */}
@@ -718,9 +842,11 @@ function MainLayout({ children }: { children: React.ReactNode }) {
           {/* More menu drawer */}
           {showMoreMenu && (
             <div
+              id="student-more-drawer"
               className="fixed left-0 right-0 z-50 md:hidden rounded-t-3xl bg-white dark:bg-gray-900 shadow-2xl"
               style={{ bottom: 'calc(4rem + env(safe-area-inset-bottom, 0px))' }}
               dir="rtl"
+              aria-label="كل صفحات الطالب"
             >
               <div className="flex justify-center pt-3 pb-1">
                 <div className="w-10 h-1 bg-gray-200 dark:bg-gray-700 rounded-full" />
@@ -728,38 +854,87 @@ function MainLayout({ children }: { children: React.ReactNode }) {
               <div
                 className="px-5 pb-5 pt-2"
                 style={{
-                  maxHeight: 'calc(60vh - 4rem)',
+                  maxHeight: 'calc(76vh - 4rem)',
                   overflowY: 'auto',
                   WebkitOverflowScrolling: 'touch',
                 }}
               >
-                <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-4">التنقل السريع</p>
-                <div className="grid grid-cols-4 gap-3">
-                  {[
-                    { href: "/wallet", icon: Wallet, label: "محفظتي", color: "text-green-500 dark:text-green-400", bg: "bg-green-500/10 dark:bg-green-500/20" },
-                    { href: "/book-exam", icon: CalendarCheck, label: "احجز اختبار", color: "text-emerald-500 dark:text-emerald-400", bg: "bg-emerald-500/10 dark:bg-emerald-500/20" },
-                    { href: "/notifications", icon: Bell, label: "الإشعارات", color: "text-blue-500 dark:text-blue-400", bg: "bg-blue-500/10 dark:bg-blue-500/20" },
-                    { href: "/tahsilik", icon: GraduationCapIcon, label: "التحصيلي — قريبًا", color: "text-amber-500 dark:text-amber-400", bg: "bg-amber-500/10 dark:bg-amber-500/20" },
-                    { href: "/records", icon: ClipboardIcon, label: "نتائجي", color: "text-amber-500 dark:text-amber-400", bg: "bg-amber-500/10 dark:bg-amber-500/20" },
-                    { href: "/learn", icon: BookOpenIcon, label: "تعلم", color: "text-emerald-500 dark:text-emerald-400", bg: "bg-emerald-500/10 dark:bg-emerald-500/20" },
-                    { href: "/folders", icon: FolderIcon, label: "مجلداتي", color: "text-orange-500 dark:text-orange-400", bg: "bg-orange-500/10 dark:bg-orange-500/20" },
-                    { href: "/time-management", icon: Clock, label: "وقتي", color: "text-cyan-500 dark:text-cyan-400", bg: "bg-cyan-500/10 dark:bg-cyan-500/20" },
-                    { href: "/notification-settings", icon: Bell, label: "الإشعارات", color: "text-teal-500 dark:text-teal-400", bg: "bg-teal-500/10 dark:bg-teal-500/20" },
-                    { href: "/support", icon: MessageCircle, label: "الدعم", color: "text-sky-500 dark:text-sky-400", bg: "bg-sky-500/10 dark:bg-sky-500/20" },
-                  ].map((item) => (
-                    <Link
-                      key={item.href}
-                      href={item.href}
-                      onClick={() => setShowMoreMenu(false)}
-                      className="flex flex-col items-center gap-1.5 active:scale-95 transition-transform"
-                    >
-                      <div className={cn("w-12 h-12 rounded-2xl flex items-center justify-center", item.bg)}>
-                        <item.icon className={cn("h-5 w-5", item.color)} />
-                      </div>
-                      <span className="text-[10px] font-medium text-gray-600 dark:text-gray-400 text-center leading-tight">{item.label}</span>
-                    </Link>
-                  ))}
+                <div className="mb-4 flex items-center justify-between">
+                  <div>
+                    <p className="text-sm font-black text-gray-900 dark:text-white">كل صفحات الطالب</p>
+                    <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">{filteredMoreNavItems.length} صفحة متاحة للتنقل</p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setShowMoreMenu(false)}
+                    data-testid="button-close-student-more"
+                    className="rounded-lg px-3 py-2 text-xs font-bold text-gray-500 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-800"
+                  >
+                    إغلاق
+                  </button>
                 </div>
+
+                <label className="relative mb-4 block">
+                  <Search className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" aria-hidden="true" />
+                  <input
+                    type="search"
+                    value={sidebarMoreSearch}
+                    onChange={(event) => setSidebarMoreSearch(event.target.value)}
+                    placeholder="ابحث عن درس أو اختبار أو صفحة"
+                    aria-label="ابحث في صفحات الطالب"
+                    data-testid="input-mobile-student-more-search"
+                    className="min-h-11 w-full rounded-xl border border-gray-200 bg-gray-50 py-2 pr-10 pl-3 text-sm text-gray-800 outline-none placeholder:text-gray-400 focus:border-primary dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100"
+                  />
+                </label>
+
+                <section aria-label="أهداف تعلم سريعة" className="mb-5 rounded-2xl border border-primary/15 bg-primary/5 p-3">
+                  <h2 className="mb-2 text-xs font-black text-primary">اختر ما تحتاجه الآن</h2>
+                  <div className="grid grid-cols-2 gap-2">
+                    {learnerGoalActions.map((action) => (
+                      <Link
+                        key={action.href}
+                        href={action.href}
+                        onClick={() => setShowMoreMenu(false)}
+                        title={action.description}
+                        data-testid={`link-mobile-learning-goal-${action.href.slice(1).replaceAll("/", "-")}`}
+                        className="flex min-h-12 items-center gap-2 rounded-xl bg-white p-2.5 text-right text-xs font-black text-gray-800 shadow-sm transition hover:bg-primary/10 active:scale-[0.98] dark:bg-gray-900 dark:text-gray-100 dark:hover:bg-primary/20"
+                      >
+                        <action.icon className="h-4 w-4 shrink-0 text-primary" aria-hidden="true" />
+                        <span>{action.name}</span>
+                      </Link>
+                    ))}
+                  </div>
+                </section>
+
+                {moreNavGroups.map((group) => (
+                  <section key={group.group} aria-label={group.group} className="mb-5">
+                    <h2 className="mb-2 text-xs font-black text-gray-500 dark:text-gray-400">{group.group}</h2>
+                    <div className="grid grid-cols-3 gap-2 sm:grid-cols-4">
+                      {group.items.map((item) => (
+                        <Link
+                          key={item.href}
+                          href={item.href}
+                          onClick={() => setShowMoreMenu(false)}
+                          title={item.description}
+                          aria-label={`${item.name}: ${item.description}`}
+                          data-testid={`link-mobile-student-more-${item.href.split("?")[0].slice(1).replaceAll("/", "-")}`}
+                          className="flex min-h-[5.25rem] flex-col items-center justify-center gap-1.5 rounded-xl border border-gray-100 bg-white px-1.5 py-2 text-center transition hover:border-primary/30 hover:bg-primary/5 active:scale-[0.98] dark:border-gray-800 dark:bg-gray-900 dark:hover:bg-primary/10"
+                        >
+                          <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-primary/10 text-primary">
+                            <item.icon className="h-4 w-4" aria-hidden="true" />
+                          </span>
+                          <span className="line-clamp-2 text-[10px] font-bold leading-4 text-gray-700 dark:text-gray-200">{item.name}</span>
+                        </Link>
+                      ))}
+                    </div>
+                  </section>
+                ))}
+
+                {filteredMoreNavItems.length === 0 && (
+                  <p data-testid="text-mobile-student-more-empty" className="rounded-xl bg-gray-50 p-4 text-center text-sm text-gray-500 dark:bg-gray-800 dark:text-gray-400">
+                    لا توجد صفحة بهذا الاسم. جرّب كلمة أخرى.
+                  </p>
+                )}
               </div>
             </div>
           )}
@@ -895,6 +1070,25 @@ function MainLayout({ children }: { children: React.ReactNode }) {
                 );
               })}
 
+              <button
+                type="button"
+                aria-label="فتح كل صفحات الطالب"
+                aria-expanded={showMoreMenu}
+                aria-controls="student-more-drawer"
+                data-testid="button-open-student-more"
+                onClick={() => {
+                  setSidebarMoreSearch("");
+                  setShowMoreMenu((open) => !open);
+                }}
+                className={cn(
+                  "relative flex flex-1 flex-col items-center justify-center gap-1 rounded-lg py-1.5 text-muted-foreground transition-colors duration-150 hover:bg-muted/60 hover:text-foreground",
+                  showMoreMenu && "bg-primary/10 font-semibold text-primary"
+                )}
+              >
+                <MoreHorizontal className="h-5 w-5" aria-hidden="true" />
+                <span className="text-[9px] font-medium leading-none text-center">المزيد</span>
+              </button>
+
             </nav>
           </div>
         )}
@@ -959,7 +1153,7 @@ function Router({ splashDone }: { splashDone: boolean }) {
           }
           return serverUser?.role === 'student'
             ? <StudentShell><DashboardPage /></StudentShell>
-            : <LandingPage />;
+            : <LandingPage enableStoreBadge />;
         }}
       </Route>
 

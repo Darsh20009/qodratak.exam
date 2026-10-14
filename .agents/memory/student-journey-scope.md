@@ -38,3 +38,9 @@ Students without a booked exam must be able to start assessment and daily learni
 **Why:** Booking is not a prerequisite for beginning preparation; a fabricated deadline would distort urgency and the student's course.
 
 **How to apply:** Open a daily session only when a real ready plan exists; otherwise explicitly offer published foundation material, not a fabricated personalized session or a request to wait for nonexistent new content. Intro visibility and booking-choice preferences are presentation only, never evidence of level or permission to bypass assessment/subscription checks.
+
+Keep «المزيد» a searchable directory of all active student-facing pages on desktop and mobile, with clear learning-goal shortcuts. Do not expose admin routes, context-only exam routes, or unfinished Tahsili features as available pages.
+
+**Why:** The user explicitly asked to make every remaining student page discoverable and to improve the learning experience for students at every level.
+
+**How to apply:** Add new student-ready destinations to the shared navigation registry and verify each link resolves to a route; preserve subscription checks and keep Tahsili clearly marked «قريبًا».

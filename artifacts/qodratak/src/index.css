@@ -1867,6 +1867,15 @@ body {
 }
 
 /* Sidebar active item */
+.qodratak-institution-sidebar-panel {
+  background-color: #0A1726 !important;
+  color: #F1F5F9;
+}
+
+.qodratak-institution-sidebar-panel [data-sidebar="group-label"] {
+  color: #94A3B8 !important;
+}
+
 .sidebar-item-active {
   background: linear-gradient(135deg, rgba(99, 102, 241, 0.12), rgba(168, 85, 247, 0.08));
   border-right: 3px solid #6366f1;
