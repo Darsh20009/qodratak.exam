@@ -4,6 +4,7 @@ import VideoTemplate, { SCENE_DURATIONS, GUIDE_DURATIONS } from './VideoTemplate
 import RoleFilmTemplate, { ROLE_FILMS, roleDurations, type Role } from './RoleFilms';
 import { ViewerProvider } from './viewer';
 import MarketingTemplate, { MARKETING_DURATIONS } from './Marketing';
+import MarketingLegacyTemplate, { MARKETING_DURATIONS as LEGACY_MARKETING_DURATIONS } from './MarketingLegacy';
 import ExtraChapterTemplate, { EXTRA_DURATIONS } from './ExtraChapters';
 import { useSceneControls } from './useSceneControls';
 
@@ -14,11 +15,18 @@ const SCENE_DETAILS: Record<string, { title: string; filePath: string }> = {
   foundation: { title: 'التأسيس', filePath: F }, book: { title: 'كتاب التأسيس', filePath: F },
   computerized: { title: 'المحوسب', filePath: F }, results: { title: 'نتائجي', filePath: F },
   account: { title: 'حسابي', filePath: F }, outro: { title: 'الخاتمة', filePath: F },
-  m_hook: { title: 'ليه مشتّت؟', filePath: 'src/components/video/Marketing.tsx' },
 };
 
 function announce(index: number, keys: string[]) {
-  const d = SCENE_DETAILS[keys[index]];
+  const key = keys[index];
+  const isMarketing = key?.startsWith('m_');
+  const welcome = new URLSearchParams(window.location.search).get('film') === 'marketing-welcome';
+  const marketingTitles: Record<string, string> = welcome
+    ? { m_hook: 'من وين تبدأ؟', m_gather: 'خطوات واضحة', m_foundation: 'ابدأ من الأساس', m_practice: 'تدرّب على اختيارك', m_exam: 'جرّب واجهة الاختبار', m_results: 'راجع نتيجتك', m_plans: 'مهمتك التالية واضحة', m_outro: 'طريقك يبدأ بخطوة' }
+    : { m_hook: 'ليه دايمًا مشتّت؟', m_gather: 'جمعنا لك كل مصادرك', m_foundation: 'ابدأ من الصفر', m_computerized: 'لفظي وكمي', m_exam: 'محاكاة الاختبار', m_results: 'التصحيح والنتائج', m_plans: 'كل يوم خطوة', m_outro: 'اختار قدراتك وابدأ بسلام' };
+  const d = isMarketing
+    ? { title: marketingTitles[key], filePath: `src/components/video/${welcome ? 'Marketing' : 'MarketingLegacy'}.tsx` }
+    : SCENE_DETAILS[key];
   if (!d?.filePath) return;
   window.parent.postMessage({ type: 'REPLIT_VIDEO_SCENE_SELECTED', payload: { sceneIndex: index, sceneCount: keys.length, sceneTitle: d.title, filePath: d.filePath, lineNumber: 1 } }, '*');
 }
@@ -66,12 +74,13 @@ export const CHAPTERS: Record<string, string[]> = {
 type TplProps = { durations: Record<string, number>; loop?: boolean; paused?: boolean; muted?: boolean; onSceneChange?: (k: string) => void };
 const ROLE_TEMPLATES = Object.fromEntries((Object.keys(ROLE_FILMS) as Role[]).map((r) => [r, (p: TplProps) => <RoleFilmTemplate role={r} {...p} />])) as Record<Role, (p: TplProps) => React.ReactElement>;
 
-/** Reads ?film=guide(default)|admin|institution|teacher|marketing | ?chapter=KEY | ?muted=1. */
+/** Reads ?film=guide(default)|admin|institution|teacher|marketing|marketing-welcome | ?chapter=KEY | ?muted=1. */
 export function readPlayerConfig() {
   const q = new URLSearchParams(typeof window !== 'undefined' ? window.location.search : '');
   const muted = q.get('muted') === '1';
-  if (q.get('film') === 'marketing') return { Template: MarketingTemplate, base: MARKETING_DURATIONS as Record<string, number>, muted };
   const film = q.get('film') ?? '';
+  if (film === 'marketing') return { Template: MarketingLegacyTemplate, base: LEGACY_MARKETING_DURATIONS as Record<string, number>, muted };
+  if (film === 'marketing-welcome') return { Template: MarketingTemplate, base: MARKETING_DURATIONS as Record<string, number>, muted };
   if (Object.prototype.hasOwnProperty.call(ROLE_FILMS, film)) return { Template: ROLE_TEMPLATES[film as Role], base: roleDurations(film as Role), muted };
   const ch = q.get('chapter') ?? '';
   if (Object.prototype.hasOwnProperty.call(EXTRA_DURATIONS, ch)) return { Template: ExtraChapterTemplate, base: { [ch]: EXTRA_DURATIONS[ch as keyof typeof EXTRA_DURATIONS] } as Record<string, number>, muted };

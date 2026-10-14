@@ -30,6 +30,7 @@ import { useUser } from "@/hooks/use-user";
 import InstitutionMembershipCard from "@/components/institution/InstitutionMembershipCard";
 import InstitutionAssignmentsCard from "@/components/institution/InstitutionAssignmentsCard";
 import { DashboardGuideFilm } from "@/components/student/DashboardGuideFilm";
+import { GuideFilm } from "@/components/GuideFilm";
 import PlatformReviewCard from "@/components/student/PlatformReviewCard";
 import { NewStudentWelcome } from "@/components/student/NewStudentWelcome";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
@@ -335,6 +336,26 @@ export default function DashboardPage() {
     return (
       <div className="mx-auto w-full max-w-5xl space-y-6 p-5 md:p-8" dir="rtl">
         <NewStudentWelcome studentName={userName} />
+        <section
+          data-testid="section-new-account-marketing-film"
+          aria-labelledby="new-account-film-title"
+          className="rounded-3xl border border-border bg-card p-4 text-foreground shadow-sm sm:p-5"
+        >
+          <div className="mb-3">
+            <p className="text-xs font-black text-primary">جولة ترحيبية</p>
+            <h2 id="new-account-film-title" className="mt-1 text-lg font-black">تعرّف على قدراتك قبل أن تبدأ</h2>
+            <p className="mt-1 text-sm leading-6 text-muted-foreground">
+              شاهد كيف تجمع المنصة التأسيس والتدريب وخطتك في مكان واحد.
+            </p>
+          </div>
+          <GuideFilm
+            film="marketing-welcome"
+            muted
+            compact
+            displayName={userName}
+            title="جولة ترحيبية للطالب الجديد في منصة قدراتك"
+          />
+        </section>
         <DashboardGuideFilm studentId={user.id ?? user._id} displayName={userName} />
         <QuestionProgressLibraryCard />
         <section data-testid="student-paths" className="space-y-3">

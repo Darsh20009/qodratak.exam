@@ -31,7 +31,26 @@ Shots: old captures (crop 6.6% dev strip): student-dashboard, preparation-course
 
 Audio: bg_music_full.mp3 (73.0 s) premixed from the original 46 s bg_music.mp3: two copies joined with a 6 s triangular crossfade around 40-46 s, trimmed to 73 s with a 3 s fade-out at 70 s. No new music, no loop attribute; each scene seeks to its absolute film start (SCENE_START_SEC), so the bed runs continuously across the whole 72 s film with no mid-film restart. No VO/SFX.
 
-## Marketing film (?film=marketing) — revised, 36 s, 8 scenes
+## Marketing route split
+
+The public homepage film route `?film=marketing` is restored to the pre-46e97e5 Marketing.tsx composition (36 s, 8 scenes). The approved revised film remains unchanged at `?film=marketing-welcome` (36 s, 8 scenes). Both use the existing 16:9 canvas, `marketing_music.mp3`, player/recording scaffold, and existing shot assets; no audio or visuals were replaced in the welcome cut.
+
+### Public homepage film (`?film=marketing`) — restored legacy cut, 36 s, 8 scenes
+
+| # / time | Duration | Scene key | On-screen story | Product/screens |
+|---|---:|---|---|---|
+| 01 · 0–4.5 s | 4.5 s | m_hook | «سلام!» → «ليه دايمًا مشتّت؟» / «مصدر هنا وملف هناك… ووقتك يضيع»; scattered study-source labels converge toward the question. | Navy field; labels for PDF, Telegram, old question bank, YouTube, scattered compilations, unfinished schedule, third-party site, and phone notes. |
+| 02 · 4.5–8.5 s | 4 s | m_gather | «جمعنا لك كل مصادرك / في مكان واحد» and qodratak.sa. | Brand icon reveal and expanding mint ring; no browser visible. |
+| 03 · 8.5–12.5 s | 4 s | m_foundation | «التأسيس» / «ابدأ من الصفر» / «كمي ولفظي خطوة بخطوة». | Foundation screen, then the quantitative foundation book; right-side copy. |
+| 04 · 12.5–17 s | 4.5 s | m_computerized | «المحوسب» / «لفظي وكمي» / «بنوك أسئلة واختبارات محاكية» / «محوسب». | Computerized page then mock-exams page, with original floating labels «لفظي» and «كمي»; left-side copy. |
+| 05 · 17–23.5 s | 6.5 s | m_exam | «محاكاة تقرّبك من تجربة الاختبار». | Instructions, answer screen, then question 2, with the original timed navy callout tags for simulation mode, timer, question/map, and passage. |
+| 06 · 23.5–27.5 s | 4 s | m_results | «التصحيح والنتائج» / «تعرف وين تغلط» / «تصحيح فوري ونتائج تفصيلية». | Original results capture followed by the real records screen; right-side copy. |
+| 07 · 27.5–31 s | 3.5 s | m_plans | «خطتك» / «كل يوم خطوة» / «مهام يومية حتى موعد اختبارك» / «التحصيلي · قريبًا». | Student dashboard then today page; left-side copy. |
+| 08 · 31–36 s | 5 s | m_outro | «اختار قدراتك… وابدأ بسلام» / qodratak.sa / «منصة تدريبية مستقلة غير تابعة لقياس · النتائج تدريبية ولا تضمن درجة». | Paper iris, official logo, mint site lockup and disclaimer; closes to the opening scatter. |
+
+The legacy browser remains a persistent 16:9 frame and retains its original paired screenshot sequences, crop behavior, floating callout tags, and continuous absolute-offset audio seeks. Music is unchanged; scene durations total exactly 36.0 s.
+
+### Marketing welcome film (`?film=marketing-welcome`) — revised, 36 s, 8 scenes
 Revision brief (verbatim): «الفديو التسويقي جدا سئ». Rebuilt the promotional film only. The takeaway is a truthful, legible path through the implemented القدرات product: choose a foundation route, practise, try the mock-test interface, then review recorded training results. No promise of an official score or guaranteed improvement, and no claim that the platform aggregates outside study sources.
 
 Focused clarity revision (verbatim): «تحفه الفديو الان ولاكن ايضا في ملباحظه بسيطه في النصوص تدخل في الصور المعروضه فهمتني». The approved story, runtime, soundtrack, and art direction stay locked. This pass separates explanatory copy from product imagery: side-column scenes retain a visible gutter between caption and browser frame; the exam interface is reduced and centered above a dedicated caption band; timed coral markers remain as small visual rings, but their former text labels no longer sit on top of screenshot content.
@@ -53,7 +72,7 @@ All starts/durations sum to 36.0 seconds. Shot timings within m_exam and m_plans
 
 Audio: unchanged marketing_music.mp3 (36.05 s), oud/plucks opening, lift at ~8.5 s and larger lift at ~17 s (previously measured RMS -30→-24 dB, -23→-15 dB), fade at 34 s. Cuts at 8.5 s and 17 s align by timeline; this revision does not re-measure beat alignment. No voiceover or sound effects.
 ## URL contract
-default = full guide · ?film=marketing · ?chapter=KEY (mock = mock+instructions+runner+passage) · ?muted=1.
+default = full guide · ?film=marketing (restored public cut) · ?film=marketing-welcome (approved revised cut) · ?chapter=KEY (mock = mock+instructions+runner+passage) · ?muted=1.
 - Embed legibility pass: critical text sized for 350x197/600x338 embeds (titles 10vmin, lines 5vmin, pins 4.2vmin, URL bar 3.2vmin, disclaimer 4.4vmin).
 
 ## Supplemental chapter clips (?chapter=KEY only) — src/components/video/ExtraChapters.tsx
@@ -62,7 +81,7 @@ Keys → routes: flashcards /flashcards · analysis /performance-report · mista
 Labels are copied from the real page sources. Only notifications uses a real screenshot (n-notif.jpg). The other pages require sign-in, so they appear as panels marked «رسم توضيحي من الصفحة», with placeholder values (—) instead of made-up numbers.
 
 ## Revision: full platform guide + role guides + personal greeting
-URL contract: default / ?film=guide = full student guide · ?film=admin · ?film=institution · ?film=teacher · ?film=marketing and every ?chapter=KEY unchanged.
+URL contract: default / ?film=guide = full student guide · ?film=admin · ?film=institution · ?film=teacher · ?film=marketing (restored public cut) · ?film=marketing-welcome (revised cut) and every ?chapter=KEY unchanged.
 
 Personalization (viewer.tsx): parent posts {type:'qodratak.guide.viewer', displayName}; accepted only when event.source===window.parent && event.origin===location.origin. The iframe posts {type:'qodratak.guide.ready'} to the parent at location.origin once the listener is attached. The name is cleaned (control and bidi characters removed, whitespace collapsed, max 32 code points) and shown only as React text in «هلا، name». With no name the greeting is «هلا». Nothing is stored or fetched.
 

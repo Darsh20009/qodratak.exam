@@ -2,7 +2,7 @@ import type { GuideChapter } from "./guideChapters";
 
 export type GuideAudience = "student" | "admin" | "institution" | "teacher";
 export type GuideFilmOptions = {
-  film?: "guide" | "marketing" | "admin" | "institution" | "teacher";
+  film?: "guide" | "marketing" | "marketing-welcome" | "admin" | "institution" | "teacher";
   chapter?: GuideChapter;
   muted?: boolean;
 };
