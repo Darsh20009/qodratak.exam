@@ -1,5 +1,6 @@
 import { useEffect } from 'react';
 import { Helmet } from 'react-helmet-async';
+import { updateRouteHead } from '@/lib/routeHead';
 
 interface SEOProps {
   title?: string;
@@ -35,23 +36,10 @@ export function SEO({
   const fullImage = image.startsWith('http') ? image : `${DOMAIN}${image}`;
 
   useEffect(() => {
-    if (manageCanonical) {
-      const canonicalLinks = Array.from(document.querySelectorAll<HTMLLinkElement>('link[rel="canonical"]'));
-      const canonicalLink = canonicalLinks[0] || document.createElement('link');
-      canonicalLink.rel = 'canonical';
-      canonicalLink.href = fullUrl;
-      if (!canonicalLink.parentNode) document.head.appendChild(canonicalLink);
-      canonicalLinks.slice(1).forEach((link) => link.remove());
-    }
-
-    if (manageRobots) {
-      const robotsTags = Array.from(document.querySelectorAll<HTMLMetaElement>('meta[name="robots"]'));
-      const robotsTag = robotsTags[0] || document.createElement('meta');
-      robotsTag.name = 'robots';
-      robotsTag.content = noIndex ? 'noindex, nofollow' : 'index, follow';
-      if (!robotsTag.parentNode) document.head.appendChild(robotsTag);
-      robotsTags.slice(1).forEach((tag) => tag.remove());
-    }
+    updateRouteHead(document.head, {
+      canonical: manageCanonical ? fullUrl : undefined,
+      robots: manageRobots ? (noIndex ? 'noindex, nofollow' : 'index, follow') : undefined,
+    });
   }, [fullUrl, manageCanonical, manageRobots, noIndex]);
 
   return (
@@ -59,7 +47,6 @@ export function SEO({
       <title>{title}</title>
       <meta name="description" content={description} />
       <meta name="author" content={PLATFORM_NAME} />
-      {manageRobots && <meta name="robots" content={noIndex ? "noindex, nofollow" : "index, follow"} />}
       
       <meta property="og:type" content={type} />
       <meta property="og:title" content={title} />
@@ -79,7 +66,6 @@ export function SEO({
       <meta name="twitter:image" content={fullImage} />
       <meta name="twitter:image:alt" content="شعار منصة قدراتك" />
       
-      {manageCanonical && <link rel="canonical" href={fullUrl} />}
       {structuredData && (
         <script type="application/ld+json">
           {JSON.stringify(structuredData)}

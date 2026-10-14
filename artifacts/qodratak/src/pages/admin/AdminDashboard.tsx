@@ -7,6 +7,7 @@ import AdminFoundationManagementTab from './AdminFoundationManagementTab';
 import AdminAccountManagementTab from './AdminAccountManagementTab';
 import AdminGeideaTransactionsTab from './AdminGeideaTransactionsTab';
 import WhatsAppAdminTab from './WhatsAppAdminTab';
+import { RoleGuideFilm } from "@/components/RoleGuideFilm";
 import EmailAdminTab from './EmailAdminTab';
 import AdminOverview from './AdminOverview';
 import AdminInstitutionsTab, { type InstitutionPrefill } from '@/components/admin/AdminInstitutionsTab';
@@ -68,6 +69,7 @@ const NAV_ITEMS = [
   { key: 'test-builder', icon: FlaskConical, label: 'إنشاء الاختبارات', color: 'text-[#7964C1]' },
   { key: 'announcements', icon: Megaphone, label: 'الإعلانات', color: 'text-[#B65D36]' },
   { key: 'support', icon: HeadphonesIcon, label: 'الدعم الفني', color: 'text-[#625D69]' },
+  { key: 'platform-reviews', icon: MessageCircle, label: 'تقييمات الطلاب', color: 'text-[#2E8B70]' },
   { key: 'roles', icon: UserCog, label: 'الأدوار والصلاحيات', color: 'text-[#7964C1]' },
   { key: 'settings', icon: Sliders, label: 'إعدادات المنصة', color: 'text-[#B65D36]' },
   { key: 'employees', icon: Briefcase, label: 'الموظفون', color: 'text-[#625D69]' },
@@ -95,6 +97,7 @@ const PRIMARY_ADMIN_NAV_KEYS = new Set([
   'questions',
   'announcements',
   'support',
+  'platform-reviews',
   'settings',
   'active-institutions',
 ]);
@@ -602,7 +605,11 @@ export default function AdminDashboard({ initialTab = 'overview' }: { initialTab
   const institutions: InstitutionRequest[] = (institutionsData as any)?.requests || [];
   const exams: any[] = (examsData as any)?.exams || [];
 
-  const handleTabChange = (key: string) => { setActiveTab(key); setIsMobileSidebarOpen(false); };
+  const handleTabChange = (key: string) => {
+    setActiveTab(key);
+    setIsMobileSidebarOpen(false);
+    if (key === 'platform-reviews') setLocation('/admin/platform-reviews');
+  };
 
   return (
     <div className="qodratak-admin-surface min-h-screen bg-[#07111F] text-slate-100 flex" dir="rtl">
@@ -775,6 +782,7 @@ export default function AdminDashboard({ initialTab = 'overview' }: { initialTab
         )}
 
         <div className="p-4 md:p-6">
+          <RoleGuideFilm audience="admin" viewerId={admin?.adminId ?? admin?.id ?? admin?._id} displayName={admin?.fullName || admin?.username} />
 
           {/* ─── OVERVIEW ─── */}
           {activeTab === 'overview' && (
@@ -2120,6 +2128,7 @@ export default function AdminDashboard({ initialTab = 'overview' }: { initialTab
           )}
 
           {activeTab === 'foundation-management' && <AdminFoundationManagementTab />}
+          {activeTab === 'platform-reviews' && <AdminFoundationManagementTab initialSection="reviews" reviewsOnly />}
 
         </div>
       </main>

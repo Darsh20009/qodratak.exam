@@ -92,10 +92,13 @@ async function getJson(url: string) {
   return data;
 }
 
-export default function AdminFoundationManagementTab() {
+export default function AdminFoundationManagementTab({
+  initialSection = 'lessons',
+  reviewsOnly = false,
+}: { initialSection?: 'lessons' | 'reviews'; reviewsOnly?: boolean }) {
   const { toast } = useToast();
   const queryClient = useQueryClient();
-  const [section, setSection] = useState<'lessons' | 'reviews'>('lessons');
+  const [section, setSection] = useState<'lessons' | 'reviews'>(reviewsOnly ? 'reviews' : initialSection);
   const [lessonDialogOpen, setLessonDialogOpen] = useState(false);
   const [editingLesson, setEditingLesson] = useState<FoundationContent | null>(null);
   const [lessonForm, setLessonForm] = useState<FoundationContent>(emptyLesson);
@@ -210,13 +213,13 @@ export default function AdminFoundationManagementTab() {
   return (
     <div className="space-y-5">
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <div><h2 className="text-xl font-bold text-white">محتوى المنتج والمراجعات</h2><p className="mt-1 text-sm text-slate-400">إدارة دروس التأسيس ومراجعات الطلاب المنشورة.</p></div>
+        <div><h2 className="text-xl font-bold text-white">{reviewsOnly ? 'تقييمات الطلاب' : 'محتوى المنتج والمراجعات'}</h2><p className="mt-1 text-sm text-slate-400">{reviewsOnly ? 'راجع تقييمات الطلاب واعتمد المناسب للنشر في الصفحة الرئيسية أو ارفضه.' : 'إدارة دروس التأسيس ومراجعات الطلاب المنشورة.'}</p></div>
         {section === 'lessons' && <Button onClick={openCreate} className="bg-emerald-600 hover:bg-emerald-500"><Plus className="ml-2 h-4 w-4" />إضافة درس</Button>}
       </div>
-      <div className="flex gap-2 border-b border-slate-800">
+      {!reviewsOnly && <div className="flex gap-2 border-b border-slate-800">
         <button onClick={() => setSection('lessons')} className={`px-4 py-3 text-sm font-medium ${section === 'lessons' ? 'border-b-2 border-emerald-400 text-emerald-300' : 'text-slate-400'}`}><BookOpen className="ml-2 inline h-4 w-4" />دروس التأسيس</button>
         <button onClick={() => setSection('reviews')} className={`px-4 py-3 text-sm font-medium ${section === 'reviews' ? 'border-b-2 border-emerald-400 text-emerald-300' : 'text-slate-400'}`}><MessageSquare className="ml-2 inline h-4 w-4" />مراجعات المنصة</button>
-      </div>
+      </div>}
       {section === 'lessons' && (
         <div className="rounded-2xl border border-slate-800 bg-slate-900/60">
           {lessonsQuery.isLoading ? <Loading /> : lessonsQuery.isError ? <ErrorState message={(lessonsQuery.error as Error).message} retry={() => lessonsQuery.refetch()} /> : lessons.length === 0 ? <EmptyState label="لا توجد دروس تأسيسية بعد." /> :

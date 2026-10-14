@@ -1,30 +1,38 @@
 import { PlayCircle } from "lucide-react";
-import type { GuideChapter } from "@/lib/guideChapters";
+import { useEffect, useRef } from "react";
+import { guideFilmSrc, isGuideReadyMessage, normalizeGuideDisplayName, type GuideFilmOptions } from "@/lib/guideViewer";
+export { guideFilmSrc } from "@/lib/guideViewer";
 
 const GUIDE_BASE = "/qodratak-guide/";
 
-export type GuideFilmOptions = { film?: "guide" | "marketing"; chapter?: GuideChapter; muted?: boolean };
-
-export function guideFilmSrc({ film = "guide", chapter, muted }: GuideFilmOptions = {}) {
-  const params = new URLSearchParams();
-  if (film === "marketing") params.set("film", "marketing");
-  else if (chapter) params.set("chapter", chapter);
-  if (muted) params.set("muted", "1");
-  const q = params.toString();
-  return q ? `${GUIDE_BASE}?${q}` : GUIDE_BASE;
-}
+export type { GuideFilmOptions } from "@/lib/guideViewer";
 
 export function GuideFilm({
-  className = "", compact = false, film, chapter, muted, title, lazy = true,
-}: { className?: string; compact?: boolean; title?: string; lazy?: boolean } & GuideFilmOptions) {
+  className = "", compact = false, film, chapter, muted, title, lazy = true, displayName,
+}: { className?: string; compact?: boolean; title?: string; lazy?: boolean; displayName?: string } & GuideFilmOptions) {
   const src = guideFilmSrc({ film, chapter, muted });
   const fullSrc = guideFilmSrc({ film, chapter });
+  const frame = useRef<HTMLIFrameElement>(null);
+  const viewerName = normalizeGuideDisplayName(displayName);
+  const sendViewer = () => frame.current?.contentWindow?.postMessage(
+    { type: "qodratak.guide.viewer", displayName: viewerName }, window.location.origin,
+  );
+  useEffect(() => {
+    const ready = (event: MessageEvent) => {
+      if (isGuideReadyMessage(event.origin, window.location.origin, event.source, frame.current?.contentWindow, event.data)) sendViewer();
+    };
+    window.addEventListener("message", ready);
+    sendViewer();
+    return () => window.removeEventListener("message", ready);
+  }, [src, viewerName]);
   return (
     <figure className={`relative ${className}`} data-testid="guide-film">
       <div className="relative overflow-hidden rounded-[22px] border border-[#24202D]/10 bg-[#0D1B2A] p-1.5 shadow-[0_24px_70px_rgba(13,27,42,.22)] dark:border-white/10">
         <div className="relative aspect-video w-full overflow-hidden rounded-[16px] bg-[#0D1B2A]">
           <iframe
+            ref={frame}
             src={src}
+            onLoad={sendViewer}
             title={title ?? "فيلم تعريفي: كيف تستخدم منصة قدراتك خطوة بخطوة"}
             className="absolute inset-0 h-full w-full border-0"
             allow="autoplay; fullscreen"

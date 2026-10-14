@@ -53,3 +53,36 @@ default = full guide · ?film=marketing · ?chapter=KEY (mock = mock+instruction
 These are not part of the 72 s guide or the 36 s promo. Each clip runs 7.5 s and loops (played as _r1/_r2), uses the existing bg_music_full.mp3 at a fixed offset, and has the same layout: a qodratak.sa/<route> frame on the left, then a title and three numbered points that appear at 1.1/2.4/3.7 s.
 Keys → routes: flashcards /flashcards · analysis /performance-report · mistakes /mistake-challenge (EnhancedMistakeChallenge: questions come from a test result you got wrong (stored in localStorage), 6 modes, then percentage/correct/points; without a stored challenge the page sends you to /test-results) · security /security-settings · preexam /pre-exam-day · tutor /ai-tutor · rooms /study-rooms · notifications /notifications.
 Labels are copied from the real page sources. Only notifications uses a real screenshot (n-notif.jpg). The other pages require sign-in, so they appear as panels marked «رسم توضيحي من الصفحة», with placeholder values (—) instead of made-up numbers.
+
+## Revision: full platform guide + role guides + personal greeting
+URL contract: default / ?film=guide = full student guide · ?film=admin · ?film=institution · ?film=teacher · ?film=marketing and every ?chapter=KEY unchanged.
+
+Personalization (viewer.tsx): parent posts {type:'qodratak.guide.viewer', displayName}; accepted only when event.source===window.parent && event.origin===location.origin. The iframe posts {type:'qodratak.guide.ready'} to the parent at location.origin once the listener is attached. The name is cleaned (control and bidi characters removed, whitespace collapsed, max 32 code points) and shown only as React text in «هلا، name». With no name the greeting is «هلا». Nothing is stored or fetched.
+
+Full student guide, 116 s, 24 scenes: intro (هلا + دليلك الكامل للمنصة + كيف تستخدم قدراتك؟) · 14 original steps unchanged · 8 extra pages as 5.5 s ClipScenes (flashcards, analysis, mistakes, security, preexam, tutor, rooms, notifications; the browser window fades out while they play) · outro 5.5 s. Audio: bg_music_full continuous 0–66.5 s; extras seek once to 4.5 s and play 4.5–48.5 s continuously; the outro seeks back to its original 66.5 s.
+
+Role films (RoleFilms.tsx), with a 4.5 s greeting intro (icon, هلا، name, film title), 6.5 s illustrative clips, and a 5 s paper/logo outro stating that the screens are illustrations with no real data. Audio: bg_music_full continuous from 0.
+- admin, 61.5 s, 10 scenes: overview · accounts · subscriptions · question bank and reports · announcements and notifications · support and email · institutions · settings and content.
+- institution, 42 s, 7 scenes: board stats · join codes · students and assignment · teachers and revoke · performance reading.
+- teacher, 48.5 s, 7 scenes: institution teacher (assigned students, student results) · independent teacher (classes, roster, progress report and CSV). Assignments and messaging are not shown.
+All role panels use placeholders (طالب ١, —) and carry the badge «رسم توضيحي من الصفحة».
+
+## Revision: platform rating (x_review) — full guide now 122.5 s, 25 scenes
+Inserted at 66.5–73.0 s (6.5 s), straight after step 14 الدعم and before the 8 extra pages. It is also available on its own at ?chapter=review (7.5 s loop).
+Source: DashboardPage DashboardHelpDetails, PlatformReviewCard. Frame: qodratak.sa/, eyebrow «لوحتي · أسفل الصفحة», title «قيّم المنصة».
+Panel timing: the outer «تقييم المنصة» row is shown; the inner «قيّم المنصة / شاركنا تجربتك» opens at 0.9 s; four of the five stars under «تقييمك من ٥» fill at 2.5–3.0 s. The panel also shows the opinion placeholder, the consent checkbox with its exact text, and the «إرسال التقييم للإدارة» button, which pulses at 3.8 s.
+Bullets at 1.1, 2.4 and 3.7 s. The note «يصل رأيك إلى الإدارة أولًا، ولا يظهر في الصفحة الرئيسية إلا بعد اعتمادها» appears at 4.2 s.
+The consent box is drawn unticked and is never described as automatic. The panel is marked «رسم توضيحي من الصفحة».
+Audio: the bed now runs 4.5–55 s during the extra pages; the outro still seeks to 66.5 s.
+
+## Accuracy fix: rating send step + runtime — full guide now 119.3 s, 25 scenes
+The Send button now follows the real rule in PlatformReviewCard: it is enabled only once there is a rating, non-empty text and consent.
+Timeline inside x_review (6.5 s), relative to the scene start:
+- 0.9 s: the inner «قيّم المنصة» section opens.
+- 2.5–3.0 s: four stars fill.
+- 3.1 s: the placeholder is replaced by «مثال توضيحي: الشرح واضح، وأتمنى أسئلة أكثر.»
+- 3.8 s: the consent box is ticked; the consent wording is unchanged.
+- Until 4.1 s the button is dimmed to 40% opacity (disabled). At 4.1 s it becomes enabled, and it pulses at 4.3–4.9 s.
+- 4.8 s: the note about review by the administration before publication appears.
+Bullet 3 now reads «ضع علامة الموافقة، ثم «إرسال التقييم للإدارة»». Nothing is submitted.
+Runtime: the 8 extra pages are 5.1 s each (were 5.5 s). Bed offsets: review 4.5 s, then extras continuous from 11 s at 5.1 s steps. x_review runs 66.5–73.0 s; flashcards starts at 73.0 s.

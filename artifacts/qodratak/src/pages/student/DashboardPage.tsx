@@ -215,7 +215,7 @@ export default function DashboardPage() {
             انتهت التجربة المجانية: اختبار تكيفي واحد يوميًا، أو اشترك لفتح المنصة.
           </p>
         </header>
-        <DashboardGuideFilm studentId={user.id ?? user._id} />
+        <DashboardGuideFilm studentId={user.id ?? user._id} displayName={userName} />
         <AdaptiveLearningCoach trialExpired />
         <InstitutionMembershipCard />
         <Link href="/records" data-testid="link-my-results" className="flex items-center justify-between gap-4 rounded-2xl border border-border bg-card p-5 text-foreground hover:border-primary/40">
@@ -280,7 +280,7 @@ export default function DashboardPage() {
     return (
       <div className="mx-auto w-full max-w-5xl space-y-6 p-5 md:p-8" dir="rtl">
         <NewStudentWelcome studentName={userName} />
-        <DashboardGuideFilm studentId={user.id ?? user._id} />
+        <DashboardGuideFilm studentId={user.id ?? user._id} displayName={userName} />
         <section data-testid="student-paths" className="space-y-3">
           <h2 className="text-lg font-black text-foreground">بعد التقييم</h2>
           <div className="grid gap-3 sm:grid-cols-2">
@@ -323,7 +323,7 @@ export default function DashboardPage() {
         </h1>
         <p className="text-sm leading-7 text-muted-foreground">خطوة واحدة الآن تكفي.</p>
       </header>
-      <DashboardGuideFilm studentId={user.id ?? user._id} />
+      <DashboardGuideFilm studentId={user.id ?? user._id} displayName={userName} />
 
       <section data-testid="student-next-step" className="overflow-hidden rounded-3xl border border-primary/20 bg-primary/5 shadow-sm">
         <div className="flex flex-col gap-5 p-5 sm:p-7 md:flex-row md:items-center md:justify-between">

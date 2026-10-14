@@ -1,6 +1,7 @@
 import { motion, AnimatePresence } from 'framer-motion';
 import { useEffect, useState, useContext } from 'react';
 import { VideoPausedContext } from '@/lib/video';
+import { Greeting } from './viewer';
 
 const B = import.meta.env.BASE_URL;
 export const C = { navy: '#0D1B2A', ink: '#171723', coral: '#FF8A70', mint: '#91D7C5', paper: '#F7F4EE' };
@@ -178,9 +179,10 @@ export function IntroScene() {
         initial={{ scale: 0, rotate: -20 }} animate={{ scale: 1, rotate: 0 }} transition={{ type: 'spring', stiffness: 260, damping: 16 }}>
         <img src={`${B}qodratak-icon-light.png`} style={{ width: '11vmin', height: '11vmin', borderRadius: '2.8vmin', background: C.paper, padding: '0.9vmin', objectFit: 'contain' }} />
       </motion.div>
-      <div className="absolute w-full flex flex-col items-center" style={{ top: '33%' }}>
+      <div className="absolute w-full flex flex-col items-center" style={{ top: '25%' }}>
+        <Greeting size="9vmin" />
         <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.45 }}
-          style={{ fontFamily: display, fontWeight: 800, fontSize: '2.4vmin', color: C.mint }}>دليلك السريع للمنصة</motion.div>
+          style={{ fontFamily: display, fontWeight: 800, fontSize: '3.4vmin', color: C.mint }}>دليلك الكامل للمنصة</motion.div>
         <Typed text="كيف تستخدم قدراتك؟" start={800} size="10vmin" color="#fff" weight={900} />
       </div>
     </motion.div>

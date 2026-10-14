@@ -1,10 +1,13 @@
 import { useState } from "react";
 import { AlertTriangle, Building2, CalendarClock, Search, Users } from "lucide-react";
 import TeacherSystemPage from "@/pages/TeacherSystemPage";
+import { RoleGuideFilm } from "@/components/RoleGuideFilm";
+import { useUser } from "@/hooks/use-user";
 import { daysLeft, fmtDate, useInstitutionDashboard, useMembership, type RosterMember } from "@/lib/institutionApi";
 import { PerformanceTag, SkeletonBoard, StudentResultsSheet } from "@/components/institution/InstitutionShared";
 
 function InstitutionTeacherPortal() {
+  const { user } = useUser();
   const { data, isLoading, error, refetch } = useInstitutionDashboard();
   const [viewing, setViewing] = useState<RosterMember | null>(null);
   const [q, setQ] = useState("");
@@ -22,6 +25,7 @@ function InstitutionTeacherPortal() {
   const left = daysLeft(data.membership.freeEndDate);
   return (
     <div className="mx-auto max-w-5xl space-y-5 px-4 py-8 sm:px-6" dir="rtl">
+      <RoleGuideFilm audience="teacher" viewerId={user?.id ?? user?._id} displayName={user?.fullName || user?.name || user?.username} />
       <header className="rounded-3xl bg-[#171723] p-6 text-white">
         <p className="flex items-center gap-2 text-[11px] font-black tracking-[.16em] text-[#91D7C5]"><Building2 className="h-4 w-4" /> معلم في مؤسسة</p>
         <h1 data-testid="text-institution-name" className="mt-2 text-2xl font-black">{data.institution.name}</h1>

@@ -3,6 +3,11 @@ import { useEffect, useRef } from 'react';
 import { VideoCanvas, type VideoAspectRatio, useVideoPlayer, VideoPausedContext } from '@/lib/video';
 import { AnimatePresence } from 'framer-motion';
 import { IntroScene, OutroScene, StepScene, STEPS, BrowserStage, Grain } from './Scenes';
+import { ClipScene, EXTRA_DURATIONS } from './ExtraChapters';
+
+/** Full student guide (?film=guide, default): the 14 core pages, then the 8 extra pages as 5.5 s beats, then the outro. */
+const EXTRA_KEYS = Object.keys(EXTRA_DURATIONS);
+
 
 export const SCENE_DURATIONS = {
   intro: 4500,
@@ -22,6 +27,14 @@ export const SCENE_DURATIONS = {
   support: 4000,
   outro: 5500,
 };
+
+export const GUIDE_DURATIONS: Record<string, number> = (() => {
+  const o: Record<string, number> = {};
+  for (const [k, v] of Object.entries(SCENE_DURATIONS)) if (k !== 'outro') o[k] = v;
+  for (const k of EXTRA_KEYS) o[`x_${k}`] = k === 'review' ? 6500 : 5100;
+  o.outro = 5500;
+  return o;
+})();
 
 const VIDEO_ASPECT_RATIO: VideoAspectRatio = '16:9';
 
@@ -45,13 +58,17 @@ const SCENE_COMPONENTS: Record<string, React.ComponentType> = {
   outro: OutroScene,
 };
 
+for (const k of EXTRA_KEYS) SCENE_COMPONENTS[`x_${k}`] = () => <ClipScene k={k} />;
 const STAGE_INDEX: Record<string, number> = Object.fromEntries(Object.keys(SCENE_DURATIONS).map((k, i) => [k, i - 1]));
+for (const k of EXTRA_KEYS) STAGE_INDEX[`x_${k}`] = STEPS.length;
 
 // bg_music_full.mp3: premix of the original 46 s bed with itself (6 s triangular crossfade at ~40 s), trimmed to 73 s with a 3 s tail fade. Seeks use absolute film offsets.
 const SCENE_START_SEC: Record<string, number> = (() => {
   const out: Record<string, number> = {};
   let c = 0;
   for (const [k, ms] of Object.entries(SCENE_DURATIONS)) { out[k] = c / 1000; c += ms; }
+  // extras play the bed continuously from 4.5 s (one seam in, one seam back to the outro's original 66.5 s)
+  { let a = 4.5; for (const k of EXTRA_KEYS) { out[`x_${k}`] = a; a += k === 'review' ? 6.5 : 5.1; } }
   return out;
 })();
 

@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Link } from "wouter";
 import { SEO } from "@/components/SEO";
+import { RoleGuideFilm } from "@/components/RoleGuideFilm";
 import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
@@ -861,6 +862,9 @@ export default function TeacherSystemPage() {
 
           {/* Main Content */}
           <main className="flex-1 overflow-y-auto relative">
+            <div className="p-4 md:p-6">
+              <RoleGuideFilm audience="teacher" viewerId={data.teacher.id} displayName={data.teacher.name} />
+            </div>
             {/* Mobile Nav toggle simulation / breadcrumb space */}
             <div className="md:hidden bg-white border-b border-slate-200 p-3 flex gap-2 overflow-x-auto no-scrollbar">
                <Button

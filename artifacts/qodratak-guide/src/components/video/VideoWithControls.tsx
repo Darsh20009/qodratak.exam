@@ -1,6 +1,8 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { ChevronDown, ChevronUp, Pause, Play, Repeat, Volume2, VolumeX } from 'lucide-react';
-import VideoTemplate, { SCENE_DURATIONS } from './VideoTemplate';
+import VideoTemplate, { SCENE_DURATIONS, GUIDE_DURATIONS } from './VideoTemplate';
+import RoleFilmTemplate, { ROLE_FILMS, roleDurations, type Role } from './RoleFilms';
+import { ViewerProvider } from './viewer';
 import MarketingTemplate, { MARKETING_DURATIONS } from './Marketing';
 import ExtraChapterTemplate, { EXTRA_DURATIONS } from './ExtraChapters';
 import { useSceneControls } from './useSceneControls';
@@ -61,11 +63,16 @@ export const CHAPTERS: Record<string, string[]> = {
   runner: ['runner'], passage: ['passage'], custom: ['custom'], results: ['results'], account: ['account'], support: ['support'],
 };
 
-/** Reads ?film=marketing | ?chapter=KEY | ?muted=1. Default = full guide. */
+type TplProps = { durations: Record<string, number>; loop?: boolean; paused?: boolean; muted?: boolean; onSceneChange?: (k: string) => void };
+const ROLE_TEMPLATES = Object.fromEntries((Object.keys(ROLE_FILMS) as Role[]).map((r) => [r, (p: TplProps) => <RoleFilmTemplate role={r} {...p} />])) as Record<Role, (p: TplProps) => React.ReactElement>;
+
+/** Reads ?film=guide(default)|admin|institution|teacher|marketing | ?chapter=KEY | ?muted=1. */
 export function readPlayerConfig() {
   const q = new URLSearchParams(typeof window !== 'undefined' ? window.location.search : '');
   const muted = q.get('muted') === '1';
   if (q.get('film') === 'marketing') return { Template: MarketingTemplate, base: MARKETING_DURATIONS as Record<string, number>, muted };
+  const film = q.get('film') ?? '';
+  if (Object.prototype.hasOwnProperty.call(ROLE_FILMS, film)) return { Template: ROLE_TEMPLATES[film as Role], base: roleDurations(film as Role), muted };
   const ch = q.get('chapter') ?? '';
   if (Object.prototype.hasOwnProperty.call(EXTRA_DURATIONS, ch)) return { Template: ExtraChapterTemplate, base: { [ch]: EXTRA_DURATIONS[ch as keyof typeof EXTRA_DURATIONS] } as Record<string, number>, muted };
   const keys = CHAPTERS[ch];
@@ -74,7 +81,7 @@ export function readPlayerConfig() {
     for (const k of keys) base[k] = SCENE_DURATIONS[k as keyof typeof SCENE_DURATIONS];
     return { Template: VideoTemplate, base, muted };
   }
-  return { Template: VideoTemplate, base: SCENE_DURATIONS as Record<string, number>, muted };
+  return { Template: VideoTemplate, base: GUIDE_DURATIONS, muted };
 }
 const CONFIG = readPlayerConfig();
 /** A single-scene segment is played as k_r1/k_r2 so the player remounts (and audio re-seeks) on every loop. */
@@ -84,6 +91,10 @@ function loopable(d: Record<string, number>) {
 }
 
 export default function VideoWithControls() {
+  return <ViewerProvider><Player /></ViewerProvider>;
+}
+
+function Player() {
   const isIframed = typeof window !== 'undefined' && window.self !== window.top;
   const { Template, base } = CONFIG;
   const c = useSceneControls(base);

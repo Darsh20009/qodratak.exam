@@ -15,18 +15,19 @@ const display = "'Tajawal', sans-serif";
 const body = "'IBM Plex Sans Arabic', sans-serif";
 
 export const EXTRA_DURATIONS = {
+  review: 7500,
   flashcards: 7500, analysis: 7500, mistakes: 7500, security: 7500,
   preexam: 7500, tutor: 7500, rooms: 7500, notifications: 7500,
 };
 /** Offsets into the existing bg_music_full.mp3 (no new music). */
-const AUDIO_AT: Record<string, number> = { flashcards: 4.5, analysis: 13, mistakes: 21, security: 29.5, preexam: 39.5, tutor: 50, rooms: 58.5, notifications: 62.5 };
+const AUDIO_AT: Record<string, number> = { review: 66.5, flashcards: 4.5, analysis: 13, mistakes: 21, security: 29.5, preexam: 39.5, tutor: 50, rooms: 58.5, notifications: 62.5 };
 
 /* ---------- small UI primitives for illustrative panels ---------- */
 const ink = '#1F2933';
-function Chip({ t, on }: { t: string; on?: boolean }) {
+export function Chip({ t, on }: { t: string; on?: boolean }) {
   return <span style={{ fontFamily: body, fontWeight: 700, fontSize: '2.4vmin', padding: '0.6vmin 1.6vmin', borderRadius: '1vmin', background: on ? C.navy : '#ECE7DD', color: on ? '#fff' : ink }}>{t}</span>;
 }
-function Tile({ k, v, tone = C.mint }: { k: string; v: string; tone?: string }) {
+export function Tile({ k, v, tone = C.mint }: { k: string; v: string; tone?: string }) {
   return (
     <div style={{ flex: 1, background: '#fff', border: '0.25vmin solid #E4DED2', borderRadius: '1.4vmin', padding: '1.4vmin', textAlign: 'center' }}>
       <div style={{ fontFamily: display, fontWeight: 900, fontSize: '4.2vmin', color: ink, borderBottom: `0.5vmin solid ${tone}`, display: 'inline-block' }}>{v}</div>
@@ -34,7 +35,7 @@ function Tile({ k, v, tone = C.mint }: { k: string; v: string; tone?: string }) 
     </div>
   );
 }
-function Row({ t, s, on }: { t: string; s?: string; on?: boolean }) {
+export function Row({ t, s, on }: { t: string; s?: string; on?: boolean }) {
   return (
     <div className="flex items-center justify-between" style={{ background: '#fff', border: '0.25vmin solid #E4DED2', borderRadius: '1.2vmin', padding: '1.2vmin 1.6vmin' }}>
       <div><div style={{ fontFamily: display, fontWeight: 800, fontSize: '2.7vmin', color: ink }}>{t}</div>{s && <div style={{ fontFamily: body, fontSize: '2vmin', color: '#56606B' }}>{s}</div>}</div>
@@ -44,18 +45,50 @@ function Row({ t, s, on }: { t: string; s?: string; on?: boolean }) {
     </div>
   );
 }
-function Btn({ t, tone = C.navy, fg = '#fff' }: { t: string; tone?: string; fg?: string }) {
+export function Btn({ t, tone = C.navy, fg = '#fff' }: { t: string; tone?: string; fg?: string }) {
   return <div style={{ textAlign: 'center', fontFamily: display, fontWeight: 900, fontSize: '2.8vmin', background: tone, color: fg, borderRadius: '1.2vmin', padding: '1.2vmin' }}>{t}</div>;
 }
-function H({ t }: { t: string }) {
+export function H({ t }: { t: string }) {
   return <div style={{ fontFamily: display, fontWeight: 900, fontSize: '4vmin', color: ink }}>{t}</div>;
 }
-const col = (gap = '1.4vmin'): React.CSSProperties => ({ display: 'flex', flexDirection: 'column', gap });
-const rowS = (gap = '1vmin'): React.CSSProperties => ({ display: 'flex', gap, flexWrap: 'wrap' });
+export const col = (gap = '1.4vmin'): React.CSSProperties => ({ display: 'flex', flexDirection: 'column', gap });
+export const rowS = (gap = '1vmin'): React.CSSProperties => ({ display: 'flex', gap, flexWrap: 'wrap' });
 
-type Clip = { url: string; eyebrow: string; title: string; bullets: string[]; note?: string; shot?: string; panel?: () => React.ReactNode };
+export type Clip = { url: string; eyebrow: string; title: string; bullets: string[]; note?: string; noteAt?: number; shot?: string; panel?: () => React.ReactNode };
 
-const CLIPS: Record<string, Clip> = {
+export const CLIPS: Record<string, Clip> = {
+  /* From DashboardPage DashboardHelpDetails + PlatformReviewCard: two collapsibles at the bottom of لوحتي. */
+  review: {
+    url: '/', eyebrow: 'لوحتي · أسفل الصفحة', title: 'قيّم المنصة',
+    bullets: ['افتح «تقييم المنصة» ثم «قيّم المنصة»', 'اختر تقييمك من ٥ واكتب رأيك', 'ضع علامة الموافقة، ثم «إرسال التقييم للإدارة»'],
+    note: 'يصل رأيك إلى الإدارة أولًا، ولا يظهر في الصفحة الرئيسية إلا بعد اعتمادها', noteAt: 4.8,
+    panel: () => (
+      <div style={col('1vmin')}>
+        <div className="flex items-center justify-between" style={{ background: '#fff', border: '0.25vmin solid #E4DED2', borderRadius: '1.6vmin', padding: '1vmin 1.6vmin' }}>
+          <span style={{ fontFamily: display, fontWeight: 900, fontSize: '2.8vmin', color: ink }}>تقييم المنصة</span><span style={{ fontSize: '2.4vmin', color: '#56606B' }}>⌃</span>
+        </div>
+        <motion.div initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.9, duration: 0.4 }} style={{ background: '#fff', border: `0.35vmin solid ${C.mint}`, borderRadius: '1.4vmin', padding: '1vmin 1.6vmin', ...col('0.9vmin') }}>
+          <div className="flex items-center justify-between"><span style={{ fontFamily: display, fontWeight: 900, fontSize: '2.7vmin', color: ink }}>قيّم المنصة</span><span style={{ fontFamily: body, fontSize: '1.9vmin', color: '#56606B' }}>شاركنا تجربتك</span></div>
+          <div style={{ fontFamily: body, fontWeight: 700, fontSize: '2vmin', color: ink }}>تقييمك من ٥</div>
+          <div dir="rtl" style={rowS('0.8vmin')}>{[1, 2, 3, 4, 5].map((n) => (
+            <motion.span key={n} initial={{ color: '#D5CFC4' }} animate={{ color: n <= 4 ? C.coral : '#D5CFC4' }} transition={{ delay: 2.4 + n * 0.12 }} style={{ fontSize: '3.6vmin', lineHeight: 1 }}>★</motion.span>
+          ))}</div>
+          <div style={{ position: 'relative', fontFamily: body, fontSize: '2vmin', border: '0.25vmin solid #E4DED2', borderRadius: '1vmin', padding: '0.8vmin 1.2vmin', minHeight: '5vmin' }}>
+            <motion.span initial={{ opacity: 1 }} animate={{ opacity: 0 }} transition={{ delay: 3.0, duration: 0.2 }} style={{ position: 'absolute', color: '#7A838C' }}>ما الذي أعجبك؟ وما الذي يحتاج تحسينًا؟</motion.span>
+            <motion.span initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 3.1, duration: 0.3 }} style={{ color: ink, fontWeight: 600 }}>مثال توضيحي: الشرح واضح، وأتمنى أسئلة أكثر.</motion.span>
+          </div>
+          <div className="flex items-start" style={{ gap: '0.8vmin', fontFamily: body, fontSize: '1.7vmin', lineHeight: 1.5, color: '#56606B' }}>
+            <motion.span initial={{ backgroundColor: '#FFFFFF', borderColor: '#9AA3AC' }} animate={{ backgroundColor: C.navy, borderColor: C.navy }} transition={{ delay: 3.8, duration: 0.15 }}
+              style={{ flexShrink: 0, width: '2vmin', height: '2vmin', marginTop: '0.3vmin', border: '0.25vmin solid', borderRadius: '0.4vmin', color: '#fff', fontSize: '1.6vmin', lineHeight: '1.6vmin', textAlign: 'center' }}>
+              <motion.span initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 3.85 }}>✓</motion.span>
+            </motion.span>
+            أوافق على نشر اسمي المسجل وتقييمي في الصفحة الرئيسية بعد موافقة الإدارة. لا يُنشر جوالي أو بريدي الإلكتروني.
+          </div>
+          <motion.div initial={{ opacity: 0.4 }} animate={{ opacity: 1, scale: [1, 1, 1.04, 1] }} transition={{ opacity: { delay: 4.1, duration: 0.2 }, scale: { delay: 4.3, duration: 0.6 } }}><Btn t="إرسال التقييم للإدارة" /></motion.div>
+        </motion.div>
+      </div>
+    ),
+  },
   flashcards: {
     url: '/flashcards', eyebrow: 'المحوسب · مراجعة سريعة', title: 'البطاقات التعليمية',
     bullets: ['فلتر: لفظي أو كمي، ومستوى الصعوبة', 'اقلب البطاقة لترى التفسير', '«عرفتها» أو «لم أعرفها» أو اسحب'],
@@ -210,8 +243,8 @@ function Frame({ clip }: { clip: Clip }) {
   );
 }
 
-function ClipScene({ k }: { k: string }) {
-  const clip = CLIPS[k];
+export function ClipScene({ k, clip: given }: { k: string; clip?: Clip }) {
+  const clip = given ?? CLIPS[k];
   return (
     <motion.div className="absolute inset-0" exit={{ opacity: 0, transition: { duration: 0.35 } }}>
       <Frame clip={clip} />
@@ -232,7 +265,7 @@ function ClipScene({ k }: { k: string }) {
           ))}
         </div>
         {clip.note && (
-          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 5 }}
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: clip.noteAt ?? 5 }}
             style={{ fontFamily: body, fontWeight: 600, fontSize: '3.2vmin', color: '#9FB0BF', marginTop: '2.4vmin' }}>{clip.note}</motion.div>
         )}
       </div>

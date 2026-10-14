@@ -152,5 +152,12 @@
     "trialEndDate": "2026-10-17T04:10:48.122Z",
     "isActive": true,
     "createdAt": "2026-10-14T04:10:48.122Z"
+  },
+  {
+    "deviceId": "6uxyss",
+    "trialStartDate": "2026-10-14T05:57:26.787Z",
+    "trialEndDate": "2026-10-17T05:57:26.787Z",
+    "isActive": true,
+    "createdAt": "2026-10-14T05:57:26.787Z"
   }
 ]
