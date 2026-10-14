@@ -19,14 +19,15 @@ export default function ApprovedPlatformReviews() {
         {reviews.isLoading ? <div role="status" className="mt-6 flex items-center gap-2 text-sm"><Loader2 className="h-4 w-4 animate-spin" /> تحميل التقييمات…</div>
           : reviews.isError ? <button onClick={() => reviews.refetch()} className="mt-6 text-sm underline">تعذر تحميل التقييمات — إعادة المحاولة</button>
           : loopReviews.length ? <div
-            className="approved-reviews-viewport mt-8 overflow-hidden py-2"
+            className="approved-reviews-viewport mt-8 w-full overflow-hidden py-2"
+            dir="ltr"
             role="region"
             aria-label="تقييمات الطلاب المتحركة"
             aria-live="off"
             tabIndex={0}
           >
             <div
-              className="approved-reviews-marquee flex w-max"
+              className="approved-reviews-marquee flex w-max flex-nowrap"
               dir="ltr"
               style={{ "--approved-reviews-duration": `${Math.max(32, loopReviews.length * 8)}s` } as React.CSSProperties}
             >
