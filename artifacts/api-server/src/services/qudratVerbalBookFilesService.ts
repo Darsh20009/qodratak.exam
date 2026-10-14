@@ -345,6 +345,7 @@ function signR2Request({
   secretAccessKey,
   range,
   body,
+  contentType,
 }: {
   method: "GET" | "HEAD" | "PUT" | "DELETE";
   host: string;
@@ -353,6 +354,7 @@ function signR2Request({
   secretAccessKey: string;
   range?: string;
   body?: Buffer;
+  contentType?: string;
 }): Record<string, string> {
   const amzDate = new Date().toISOString().replace(/[:-]|\.\d{3}/g, "");
   const dateStamp = amzDate.slice(0, 8);
@@ -363,6 +365,7 @@ function signR2Request({
     "x-amz-date": amzDate,
   };
   if (range) headers.range = range;
+  if (contentType) headers["content-type"] = contentType;
 
   const headerNames = Object.keys(headers).sort();
   const canonicalHeaders = headerNames
@@ -398,12 +401,24 @@ function signR2Request({
   };
 }
 
-export async function writeR2Object(objectKey: string, body?: Buffer) {
+export async function writeR2Object(
+  objectKey: string,
+  body?: Buffer,
+  contentType?: string,
+) {
   const { accountId, bucket, accessKeyId, secretAccessKey } = getR2Config();
   const host = `${accountId}.r2.cloudflarestorage.com`;
   const uri = `/${bucket}/${objectKey.split("/").map(encodeURIComponent).join("/")}`;
   const method = body ? "PUT" : "DELETE";
-  const headers = signR2Request({ method, host, uri, accessKeyId, secretAccessKey, body });
+  const headers = signR2Request({
+    method,
+    host,
+    uri,
+    accessKeyId,
+    secretAccessKey,
+    body,
+    contentType: body ? contentType : undefined,
+  });
   const response = await fetch(`https://${host}${uri}`, {
     method, headers, body: body ? new Uint8Array(body) : undefined,
     redirect: "error", signal: AbortSignal.timeout(30000),

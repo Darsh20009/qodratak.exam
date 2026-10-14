@@ -28,6 +28,14 @@ if (!basePath) {
   );
 }
 
+const normalizedBasePath = basePath.replace(/\/+$/, '');
+const escapedBasePath = normalizedBasePath.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+const questionImagePathPattern = String.raw`/foundation/quantitative/computer-banks/exam-\d{2}/question-\d{3}\.(?:jpe?g|png|webp)$`;
+const questionImageProxy = {
+  target: 'http://127.0.0.1:8080',
+  changeOrigin: true,
+};
+
 export default defineConfig({
   base: basePath,
   plugins: [
@@ -80,6 +88,14 @@ export default defineConfig({
         target: 'http://127.0.0.1:8080',
         changeOrigin: true,
         ws: true,
+      },
+      '^/foundation/quantitative/computer-banks/exam-\\d{2}/question-\\d{3}\\.(?:jpe?g|png|webp)$': {
+        target: 'http://127.0.0.1:8080',
+        changeOrigin: true,
+      },
+      [`^${escapedBasePath}${questionImagePathPattern}`]: {
+        ...questionImageProxy,
+        rewrite: (requestPath) => requestPath.replace(new RegExp(`^${escapedBasePath}`), ''),
       },
     },
     fs: {

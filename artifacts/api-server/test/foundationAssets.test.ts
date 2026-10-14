@@ -9,11 +9,17 @@ test("hosted foundation videos support streaming, HEAD, ranges and safe paths", 
   app.use("/foundation/quantitative", createFoundationAssetsRouter(async (key, options = {}) => {
     calls.push({ key, method: options.method, range: options.range });
     if (key.includes("missing")) return new Response(null, { status: 404 });
+    const isImage = /\.jpe?g$/i.test(key);
     if (options.method === "HEAD") {
-      return new Response(null, { headers: { "content-length": "10", "content-type": "video/mp4", "accept-ranges": "bytes" } });
+      return new Response(null, { headers: {
+        "content-length": "10",
+        "content-type": isImage ? "application/octet-stream" : "video/mp4",
+        "accept-ranges": "bytes",
+      } });
     }
     return new Response("012", { status: 206, headers: {
-      "content-type": "video/mp4", "content-length": "3", "content-range": "bytes 0-2/10", "accept-ranges": "bytes",
+      "content-type": isImage ? "application/octet-stream" : "video/mp4",
+      "content-length": "3", "content-range": "bytes 0-2/10", "accept-ranges": "bytes",
     } });
   }));
   const server = app.listen(0, "127.0.0.1");
@@ -37,6 +43,17 @@ test("hosted foundation videos support streaming, HEAD, ranges and safe paths", 
     assert.equal((await fetch(`${base}/bad%2F..%2Fsecret.mp4`)).status, 400);
     assert.equal((await fetch(`${base}/config.json`)).status, 404);
     assert.equal(calls.length, count);
+    const image = await fetch(`${base}/computer-banks/exam-51/question-001.jpeg`, {
+      headers: { Range: "bytes=0-2" },
+    });
+    assert.equal(image.status, 206);
+    assert.equal(image.headers.get("content-type"), "image/jpeg");
+    assert.match(image.headers.get("cache-control") || "", /immutable/);
+    assert.equal(calls.at(-1)?.key, "foundation/quantitative/computer-banks/exam-51/question-001.jpeg");
+    const imageHead = await fetch(`${base}/computer-banks/exam-51/question-001.jpeg`, { method: "HEAD" });
+    assert.equal(imageHead.status, 200);
+    assert.equal(imageHead.headers.get("content-type"), "image/jpeg");
+    assert.equal((await fetch(`${base}/computer-banks/exam-51/answer-key.pdf`)).status, 404);
   } finally {
     server.closeAllConnections();
     await new Promise<void>((resolve, reject) => server.close(error => error ? reject(error) : resolve()));

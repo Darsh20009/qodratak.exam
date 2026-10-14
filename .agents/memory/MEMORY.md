@@ -12,6 +12,7 @@
 - [Dark-mode page contrast](dark-mode-page-contrast.md) — legacy pages use fixed light colors; keep contrast overrides scoped to the shared app surface.
 - [Subscription entitlement consistency](subscription-entitlement-consistency.md) — keep paid access server-derived; trials are account-bound and expire into one daily Qudrat test.
 - [Question image import compatibility](question-image-import.md) — keep the first-image fields for legacy consumers while treating multi-image extraction as optional and reviewable.
+- [Computer-bank 51–70 rights](computer-bank-51-70-content-rights.md) — the user confirmed permission to publish the uploaded tests’ questions, images, and answer keys in Qodratak.
 - [Question-number badge cleanup](question-number-badge-cleanup.md) — badge positions vary; locate the capsule geometry and mask only digit ink inside the number disc.
 - [Public Forms answer-key boundary](public-forms-answer-key.md) — public respondent HTML can expose prompts and options, but its numeric metadata is not a reliable answer key.
 - [Real administrator access](development-admin-fixture.md) — shared demo admin login is removed; use active traceable administrators and isolated test fixtures.

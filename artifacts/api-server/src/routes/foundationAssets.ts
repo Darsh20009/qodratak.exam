@@ -7,7 +7,10 @@ import { fetchR2VerbalObject, VerbalBookFileStorageError } from "../services/qud
 export function createFoundationAssetsRouter(fetchAsset = fetchR2VerbalObject) {
   const router = Router();
   router.use(async (request, response, next) => {
-    if (!["GET", "HEAD"].includes(request.method) || !/\.mp4$/i.test(request.path)) {
+    const isVideo = /\.mp4$/i.test(request.path);
+    const isQuestionImage =
+      /^\/computer-banks\/exam-\d{2}\/question-\d{3}\.(?:jpe?g|png|webp)$/i.test(request.path);
+    if (!["GET", "HEAD"].includes(request.method) || (!isVideo && !isQuestionImage)) {
       next();
       return;
     }
@@ -18,7 +21,10 @@ export function createFoundationAssetsRouter(fetchAsset = fetchR2VerbalObject) {
       response.status(400).json({ message: "Invalid lesson media path." });
       return;
     }
-    if (!/^(?:[a-z0-9_-]+\/)*[a-z0-9_-]+\.mp4$/i.test(relativePath)) {
+    if (
+      !/^(?:[a-z0-9_-]+\/)*[a-z0-9_-]+\.mp4$/i.test(relativePath) &&
+      !/^computer-banks\/exam-\d{2}\/question-\d{3}\.(?:jpe?g|png|webp)$/i.test(relativePath)
+    ) {
       response.status(400).json({ message: "Invalid lesson media path." });
       return;
     }
@@ -44,7 +50,21 @@ export function createFoundationAssetsRouter(fetchAsset = fetchR2VerbalObject) {
         const value = upstream.headers.get(header);
         if (value) response.setHeader(header, value);
       }
-      if (upstream.ok) response.setHeader("Cache-Control", "public, max-age=300");
+      if (isQuestionImage) {
+        const extension = relativePath.split(".").pop()?.toLowerCase();
+        const contentType = extension === "png"
+          ? "image/png"
+          : extension === "webp"
+            ? "image/webp"
+            : "image/jpeg";
+        response.setHeader("Content-Type", contentType);
+      }
+      if (upstream.ok) {
+        response.setHeader(
+          "Cache-Control",
+          isQuestionImage ? "public, max-age=31536000, immutable" : "public, max-age=300",
+        );
+      }
       if (request.method === "HEAD" || !upstream.body) {
         await upstream.body?.cancel();
         response.end();

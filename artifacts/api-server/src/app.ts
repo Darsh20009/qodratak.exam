@@ -115,6 +115,9 @@ app.use("/api", (request, response, next) => {
 });
 
 app.use("/api/uploads", express.static("uploads"));
+// Keep question images and foundation videos on the persistent R2-backed route.
+// In development, Vite proxies only the narrowly-scoped question-image paths here.
+app.use("/foundation/quantitative", createFoundationAssetsRouter());
 app.use("/api/admin", adminRouter);
 app.use("/api", router);
 app.use("/api/multiplayer", multiplayerRouter);
@@ -161,7 +164,6 @@ if (process.env.NODE_ENV === "production") {
         `window.__FOUNDATION_ASSET_BASE_URL__=${serializedFoundationAssetBaseUrl};`,
       );
   });
-  app.use("/foundation/quantitative", createFoundationAssetsRouter());
   // Serve the instructional film before the main SPA fallback, including on Render.
   app.use("/qodratak-guide", express.static(path.resolve(
     process.cwd(), "artifacts/qodratak-guide/dist/public",
