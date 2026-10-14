@@ -22,12 +22,13 @@ export default function ApprovedPlatformReviews() {
             className="approved-reviews-viewport mt-8 overflow-hidden py-2"
             role="region"
             aria-label="تقييمات الطلاب المتحركة"
+            aria-live="off"
             tabIndex={0}
           >
             <div
               className="approved-reviews-marquee flex w-max"
               dir="ltr"
-              style={{ animationDuration: `${Math.max(32, loopReviews.length * 8)}s` }}
+              style={{ "--approved-reviews-duration": `${Math.max(32, loopReviews.length * 8)}s` } as React.CSSProperties}
             >
               {[0, 1].map(copy => (
                 <div

@@ -2366,22 +2366,8 @@ svg.lucide-sparkles-icon {
 }
 
 .approved-reviews-marquee {
-  animation: approved-reviews-marquee 40s linear infinite;
+  /* The reviews ticker is intentionally continuous; keep it infinite even when
+     the site's general reduced-motion rule disables one-shot animations. */
+  animation: approved-reviews-marquee var(--approved-reviews-duration, 40s) linear infinite !important;
   will-change: transform;
-}
-
-.approved-reviews-viewport:hover .approved-reviews-marquee,
-.approved-reviews-viewport:focus-within .approved-reviews-marquee {
-  animation-play-state: paused;
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .approved-reviews-viewport {
-    overflow-x: auto;
-  }
-
-  .approved-reviews-marquee {
-    animation: none;
-    will-change: auto;
-  }
 }
