@@ -39,6 +39,12 @@ Keep large lesson-video binaries out of the current deployment checkout while pr
 
 **How to apply:** Apply this policy to future lesson-video additions. Keep source archives recoverable, and do not extend the approval to deleting other content or rewriting history.
 
+Keep imported/source PDFs and archives in the workspace and Git history when needed for provenance, but exclude root-level `attached_assets` PDFs and ZIPs from the Render Docker context. Runtime book downloads and published lesson PDFs are packaged from the app artifact directories instead.
+
+**Why:** Root attachments included 85 redundant/import PDFs and archives totaling about 2.4 GB, although production routes serve maintained books from artifact-owned asset directories. Sending these source files slowed deployments without adding runtime content.
+
+**How to apply:** Before excluding another asset type, search the app for direct runtime references and confirm the corresponding production file remains in its artifact-owned path. Keep user state and other small JSON data separate from source-media filtering.
+
 Do not assume an R2 account has a public CDN base or require making its bucket public solely to slim deployment packaging.
 
 **Why:** Private R2 objects can be served through a server-side stream without changing existing lesson URLs, which also preserves playback and progress contracts.
