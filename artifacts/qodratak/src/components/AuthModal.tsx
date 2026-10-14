@@ -537,9 +537,9 @@ export function AuthModal({ open, mode, onClose, onModeChange }: { open: boolean
             </div>
             <button onClick={onClose} aria-label="إغلاق" className="rounded-lg p-2 text-[#8B8278] hover:bg-[#24202D]/5"><X className="h-4 w-4" /></button>
           </div>
-          <div className="grid grid-cols-2 border-b border-border bg-muted/50 p-1.5">
-            <button type="button" aria-pressed={mode === "login"} data-testid="auth-tab-login" onClick={() => resetFlow("login")} className={`rounded-xl py-2.5 text-sm font-black transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary ${mode === "login" ? "bg-primary text-primary-foreground shadow-sm" : "text-muted-foreground hover:bg-muted"}`}>تسجيل الدخول</button>
-            <button type="button" aria-pressed={mode === "signup"} data-testid="auth-tab-signup" onClick={() => resetFlow("signup")} className={`rounded-xl py-2.5 text-sm font-black transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary ${mode === "signup" ? "bg-primary text-primary-foreground shadow-sm" : "text-muted-foreground hover:bg-muted"}`}>إنشاء حساب</button>
+          <div className="grid grid-cols-2 border-b border-[#24202D]/10 bg-[#F1F3F5] p-1.5">
+            <button type="button" aria-pressed={mode === "login"} data-testid="auth-tab-login" onClick={() => resetFlow("login")} className={`rounded-xl py-2.5 text-sm font-black transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#FF8A70] ${mode === "login" ? "bg-[#0D1B2A] text-white shadow-sm" : "text-[#4F4A58] hover:bg-white"}`}>تسجيل الدخول</button>
+            <button type="button" aria-pressed={mode === "signup"} data-testid="auth-tab-signup" onClick={() => resetFlow("signup")} className={`rounded-xl py-2.5 text-sm font-black transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#FF8A70] ${mode === "signup" ? "bg-[#0D1B2A] text-white shadow-sm" : "text-[#4F4A58] hover:bg-white"}`}>إنشاء حساب</button>
           </div>
           <form onSubmit={submit} className="min-h-0 overflow-y-auto px-6 py-5 sm:px-8">
             <h2 className="text-xl font-black text-[#171723]">{mode === "login" ? "أهلًا بعودتك" : "ابدأ رحلتك الآن"}</h2>

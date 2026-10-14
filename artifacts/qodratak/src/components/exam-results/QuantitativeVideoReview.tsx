@@ -1,4 +1,5 @@
 import { quantitativeVideoQuestion } from '@/lib/questionVideoIdentity';
+import { shouldHideImageBackedQuantitativeQuestionText } from '@/lib/questionTextVisibility';
 import QuestionVideoExplanation from './QuestionVideoExplanation';
 
 /** Shared by mixed and quantitative-only result screens; no requests until a clip is opened. */
@@ -19,7 +20,8 @@ export default function QuantitativeVideoReview({
     <div className="space-y-3">
       {entries.map((question) => <details key={`${question.position}-${question.id}`} className="rounded-lg border border-border p-3">
         <summary className="cursor-pointer text-sm font-semibold">السؤال {question.position}</summary>
-        {question.text && <p className="my-3 whitespace-pre-wrap text-sm leading-7">{question.text}</p>}
+        {question.text && !shouldHideImageBackedQuantitativeQuestionText(question, true) &&
+          <p className="my-3 whitespace-pre-wrap text-sm leading-7">{question.text}</p>}
         <div className="mt-3">{question.id ? <QuestionVideoExplanation questionId={question.id} />
           : <p className="text-sm text-muted-foreground">معرّف مصدر السؤال غير محفوظ؛ لا يمكن ربطه بفيديو موثوق.</p>}</div>
       </details>)}

@@ -3,7 +3,9 @@ import multer from "multer";
 import { Institution } from "../mongodb/models";
 import { InstitutionContractDelivery, InstitutionInvite } from "../mongodb/institutionModels";
 import { institutionCreationData, findInstitution, InstitutionError, institutionDto } from "../services/institutionService";
-import { contractLink, institutionMessage, resolveContractToken, setupInstitutionOwner } from "../services/institutionLifecycle";
+import {
+  contractDeliveryAlreadyClaimed, contractLink, institutionMessage, resolveContractToken,
+} from "../services/institutionLifecycle";
 import { contractStorageReady, loadSignedContract, storeSignedContract, validateSignedPdf } from "../services/institutionContractStorage";
 
 const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 12 * 1024 * 1024, files: 1 } });
@@ -40,23 +42,57 @@ export function registerInstitutionLifecycleRoutes(app: Express, admin: RequestH
   }));
   app.post("/api/admin/institutions/:id/send-contract", admin, route(async (req, res) => {
     const institution = await findInstitution(String(req.params.id));
-    if (!institution.contract?.issuedObjectKey) throw new InstitutionError("جهّز ملف PDF وارفعه قبل إرسال العقد", 409);
+    const contract = institution.contract;
+    if (!contract?.issuedObjectKey) throw new InstitutionError("جهّز ملف PDF وارفعه قبل إرسال العقد", 409);
+    if (!["issued", "rejected"].includes(contract.status)) throw new InstitutionError("العقد أُرسل للمراجعة أو اعتُمد بالفعل؛ لا حاجة لإرسال رابط توقيع جديد", 409);
     const url = await contractLink(institution);
-    await Institution.updateOne({ _id: institution._id }, { $set: {
-      "contract.portalSentAt": new Date(), "contract.portalDeliveryStatus": "queued",
-    } });
+    if (contractDeliveryAlreadyClaimed(contract)) {
+      const delivered = ["sent", "delivered"].includes(contract.portalDeliveryStatus || "");
+      return res.json({ url, notification: {
+        status: delivered ? "sent" : "queued",
+        message: delivered
+          ? "سبق إرسال رسالة العقد الموحدة؛ لم نرسل رسالة ثانية."
+          : "إرسال رسالة العقد قيد التأكيد؛ لم نرسل رسالة ثانية.",
+      } });
+    }
+    const attemptAt = new Date();
+    const claimFilter: Record<string, unknown> = {
+      _id: institution._id, "contract.reference": contract.reference,
+      "contract.status": contract.status, "contract.issuedObjectKey": contract.issuedObjectKey,
+      "contract.portalSentAt": contract.portalSentAt ? contract.portalSentAt : { $exists: false },
+      "contract.portalDeliveryStatus": contract.portalDeliveryStatus
+        ? contract.portalDeliveryStatus : { $exists: false },
+    };
+    const claimed = await Institution.findOneAndUpdate(claimFilter, { $set: {
+      "contract.portalSentAt": attemptAt, "contract.portalDeliveryStatus": "queued",
+    } }, { new: true });
+    if (!claimed) {
+      const latest = await findInstitution(String(req.params.id));
+      if (contractDeliveryAlreadyClaimed(latest.contract || {})) {
+        const delivered = ["sent", "delivered"].includes(latest.contract.portalDeliveryStatus || "");
+        return res.json({ url, notification: {
+          status: delivered ? "sent" : "queued",
+          message: delivered
+            ? "سبق إرسال رسالة العقد الموحدة؛ لم نرسل رسالة ثانية."
+            : "إرسال رسالة العقد قيد التأكيد؛ لم نرسل رسالة ثانية.",
+        } });
+      }
+      throw new InstitutionError("بدأ إرسال رسالة العقد بالفعل؛ انتظر تأكيد الحالة قبل المحاولة مجددًا", 409);
+    }
     const notification = await institutionMessage(institution.phone || "", [
-      `عقد ${institution.name} من منصة قدراتك التعليمية`,
-      "افتح الرابط لتنزيل PDF وقراءته وتوقيعه ثم إعادة إرفاق النسخة الموقعة:", url,
-      "صلاحية الرابط ٧ أيام. التفعيل بعد مراجعة الإدارة.",
+      `مرحبًا بك في منصة قدراتك — ${institution.name}`,
+      "افتح الرابط لتنزيل العقد، ثم وقّعه وارفع النسخة الموقعة من الصفحة نفسها:",
+      url,
+      "التفعيل بعد مراجعة الإدارة واعتماد العقد. الرابط صالح لمدة ٧ أيام.",
     ].join("\n"), "institution_contract", status => Institution.updateOne({
-      _id: institution._id, "contract.reference": institution.contract.reference,
+      _id: institution._id, "contract.reference": contract.reference,
+      "contract.portalSentAt": attemptAt,
     }, { $set: { "contract.portalDeliveryStatus": status } }));
-    // Freeze the exact document once its recipient link has been distributed.
     res.json({ url, notification });
   }));
-  app.post("/api/admin/institutions/:id/send-welcome", admin, route(async (req, res) =>
-    res.json(await setupInstitutionOwner(await findInstitution(String(req.params.id)), adminActor(req)))));
+  app.post("/api/admin/institutions/:id/send-welcome", admin, route(async (_req, _res) => {
+    throw new InstitutionError("أُلغيت رسالة الترحيب المنفصلة؛ أرسل العقد من قسم العقد لتصل رسالة واحدة برابط التوقيع والرفع.", 409);
+  }));
   app.patch("/api/admin/institutions/:id", admin, route(async (req, res) => {
     const institution = await findInstitution(String(req.params.id));
     if (institution.archivedAt) throw new InstitutionError("المؤسسة محذوفة من القائمة", 409);

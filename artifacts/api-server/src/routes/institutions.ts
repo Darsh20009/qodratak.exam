@@ -158,8 +158,7 @@ export function registerInstitutionRoutes(app: Express, deps: Dependencies) {
     let setup: any;
     try { setup = await setupInstitutionOwner(institution, adminActor(req)); }
     catch {
-      setup = { ownerAccount: { status: "not_created", message: "حُفظت المؤسسة، لكن إعداد حساب المسؤول لم يكتمل؛ أعد إرسال الترحيب من تفاصيل المؤسسة." },
-        notification: { status: "failed", message: "لم تكتمل رسالة الترحيب" } };
+      setup = { ownerAccount: { status: "not_created", message: "حُفظت المؤسسة، لكن إعداد حساب المسؤول لم يكتمل؛ راجع بيانات المالك." } };
     }
     return res.status(201).json({ institution: institutionDto(institution), ...setup });
   }));
@@ -243,7 +242,10 @@ export function registerInstitutionRoutes(app: Express, deps: Dependencies) {
     if (reason.length < 5) throw new InstitutionError("وضح سبب رفض النسخة الموقعة");
     const institution = await Institution.findOneAndUpdate({
       _id: mongoose.isValidObjectId(req.params.id) ? req.params.id : null, "contract.status": "submitted",
-    }, { $set: { "contract.status": "rejected", "contract.rejectionReason": reason, isActive: false } }, { new: true });
+    }, {
+      $set: { "contract.status": "rejected", "contract.rejectionReason": reason, isActive: false },
+      $unset: { "contract.portalSentAt": "", "contract.portalDeliveryStatus": "" },
+    }, { new: true });
     if (!institution) throw new InstitutionError("لا توجد نسخة تنتظر المراجعة", 409);
     return res.json({ institution: institutionDto(institution) });
   }));

@@ -1,4 +1,5 @@
 import QuantitativeVideoReview from '@/components/exam-results/QuantitativeVideoReview';
+import { shouldHideImageBackedQuantitativeQuestionText } from '@/lib/questionTextVisibility';
 import { useState, useEffect, useRef } from "react";
 import ImageZoom from "@/components/ImageZoom";
 import { useLocation } from "wouter";
@@ -443,7 +444,9 @@ export default function ExamReviewPage() {
                         <div className={`w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 text-sm font-black text-white ${statusColors[status]}`}>
                           {currentQuestionRealIdx + 1}
                         </div>
-                        <p className="text-base text-gray-900 dark:text-white leading-loose font-semibold">{currentQuestion.text}</p>
+                        {!shouldHideImageBackedQuantitativeQuestionText(currentQuestion) && (
+                          <p className="text-base text-gray-900 dark:text-white leading-loose font-semibold">{currentQuestion.text}</p>
+                        )}
                       </div>
 
                       {/* Image */}

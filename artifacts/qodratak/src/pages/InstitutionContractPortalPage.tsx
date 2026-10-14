@@ -71,7 +71,7 @@ export default function InstitutionContractPortalPage() {
         <header className="flex items-center gap-3">
           <BrandMark />
           <div>
-            <p className="text-xs font-bold text-muted-foreground">منصة قدراتك التعليمية</p>
+            <p className="text-xs font-bold text-muted-foreground">منصة قدراتك</p>
             <h1 className="text-xl font-black">بوابة عقد المؤسسة</h1>
           </div>
         </header>

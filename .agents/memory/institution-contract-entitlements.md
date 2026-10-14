@@ -9,9 +9,9 @@ description: Business rules requested for institutional activation and introduct
 
 **How to apply:** افصل صلاحيات المؤسسة عن إدارة المنصة، ولا تمنح الوصول بمجرد إنشاء المؤسسة أو توليد عقدها. اختار المستخدم اعتمادًا إلكترونيًا داخليًا باسم المفوّض، ثم زوّد المنصة بصور التوقيع والختم الفعليين لإرفاقهما بالعقود الجديدة؛ ليس ذلك شهادة توقيع مؤهلة ولا إذنًا باختلاق توقيع. احسب الأشهر بالتقويم الميلادي وتوقيت الرياض، دون إعادة منح الفترة بتكرار كود الانضمام ودون المساس باشتراك مدفوع سابق.
 
-يعرض الطرف الأول في عقود المؤسسات اسم «منصة قدراتك التعليمية»، مع إبقاء بيانات الكيان المسجل النظامية منفصلة. لا تغيّر هوية أو توقيع العقود الصادرة سابقًا بأثر رجعي.
+يعرض الطرف الأول في العقود الجديدة اسم «منصة قدراتك» فقط، مع إبقاء بيانات الكيان المسجل النظامية منفصلة. لا تغيّر هوية أو توقيع العقود الصادرة سابقًا بأثر رجعي.
 
-**Why:** طلب المستخدم اسم المنصة للطرف الأول وزوّد صور توقيع ممثلها وختمها بعد إنشاء نظام العقود.
+**Why:** طلب المستخدم اسم «منصة قدراتك» للطرف الأول، دون «التعليمية»، وزوّد صور توقيع ممثلها وختمها بعد إنشاء نظام العقود.
 
 **How to apply:** استخدم الأصول التي زوّدها المستخدم فقط، ولا تستنتج تغييرًا في الاسم المسجل أو الرقم الوطني من تغيير اسم العرض. الصور جزء من إصدار العقد الثابت؛ لا تنشرها كوسائط عامة خارج تنزيل العقد المصرح به.
 
@@ -44,3 +44,21 @@ description: Business rules requested for institutional activation and introduct
 **Why:** التخزين الحالي يخدم وسائط عامة أيضًا؛ خصوصية التعاقد أهم من إعادة استخدام رابط عام.
 
 **How to apply:** تبقى النسخ مشفّرة ويقتصر تنزيلها على الإدارة المخوّلة. تغيير مفتاح التشفير المرتبط حاليًا بسر الجلسات يتطلب ترحيل العقود أولًا ونسخة احتياطية للمفتاح، وإلا تفقد إمكانية فتح الملفات.
+
+Keep Arabic contract headings at normal letter spacing in generated PDFs.
+
+**Why:** Nonzero CSS letter spacing broke connected Arabic characters in the rasterized contract heading.
+
+**How to apply:** Avoid tracking on Arabic copy rendered through HTML-to-canvas PDF generation; inspect the first-page header after contract typography changes.
+
+Send one WhatsApp message for contract review, only after the issued PDF is ready. Its single secure portal link must support both downloading the contract and uploading the signed copy.
+
+**Why:** Creating an institution and then sending its issued contract separately previously sent two messages with the same portal link.
+
+**How to apply:** Keep owner-account setup silent; route contract delivery through one idempotent send path. A later activation notice after approval is a separate lifecycle event.
+
+Use shorter, human-enterable references and invitation codes for new institutions. Preserve existing contract references and continue accepting already-issued 36-character invitation codes.
+
+**Why:** The user asked to reduce the length of both values without breaking existing institution invitations or contract records.
+
+**How to apply:** Generate compact identifiers for new records, keep old references immutable, and accept both legacy and compact invitation formats in server and client validation.

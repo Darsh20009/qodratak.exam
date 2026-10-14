@@ -312,9 +312,6 @@ export function uploadIssuedContract(id: string, file: Blob, reference: string) 
   fd.append("file", file instanceof File ? file : new File([file], `${reference}.pdf`, { type: "application/pdf" }));
   return instFetch<{ institution?: InstitutionDTO }>(`/api/admin/institutions/${id}/issued-contract`, { method: "POST", body: fd });
 }
-export function sendWelcome(id: string) {
-  return instFetch<Omit<CreateInstitutionResult, "institution">>(`/api/admin/institutions/${id}/send-welcome`, { method: "POST", json: {} });
-}
 export function sendContractLink(id: string) {
   return instFetch<{ url: string; notification: DeliveryNotice }>(`/api/admin/institutions/${id}/send-contract`, { method: "POST", json: {} });
 }
@@ -551,7 +548,8 @@ export function roleHome(role?: string) {
   return "/";
 }
 
-export const INVITE_CODE_RE = /^[A-Fa-f0-9]{36}$/;
+// Accept legacy 36-character invite codes as well as the shorter 16-character format.
+export const INVITE_CODE_RE = /^(?:[A-Fa-f0-9]{16}|[A-Fa-f0-9]{36})$/;
 
 /** Same OTP service as AuthModal (purpose "signup"), used to prove control of the account phone for staff joins. */
 export async function requestJoinOtp(phone: string, deviceId: string) {

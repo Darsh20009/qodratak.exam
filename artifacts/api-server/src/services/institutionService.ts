@@ -1,5 +1,5 @@
 import mongoose, { type ClientSession } from "mongoose";
-import { createHash, randomBytes, randomUUID } from "node:crypto";
+import { createHash, randomBytes } from "node:crypto";
 import { Institution, User, TestResult } from "../mongodb/models";
 import { InstitutionInvite, InstitutionMember } from "../mongodb/institutionModels";
 import { institutionIssuerName, institutionIssuerPlatform, institutionIssuerAssets } from "./institutionIssuer";
@@ -26,6 +26,13 @@ export function normalizeInstitutionPhone(value: unknown) {
   return phone;
 }
 const codeHash = (value: string) => createHash("sha256").update(value.trim().toUpperCase()).digest("hex");
+export const institutionInviteCodePattern = /^(?:[A-Fa-f0-9]{16}|[A-Fa-f0-9]{36})$/;
+export function generateInstitutionReference() {
+  return `QDR-${randomBytes(8).toString("hex").toUpperCase()}`;
+}
+export function generateInstitutionInviteCode() {
+  return randomBytes(8).toString("hex").toUpperCase();
+}
 const text = (value: unknown, max: number) => String(value || "").trim().slice(0, max);
 const institutionConditions = [
   "يحصل كل طالب على ثلاثة أشهر ميلادية مجانية من تاريخ انضمامه هو، حتى لو انضم لاحقًا؛ وتُحسب التواريخ وفق توقيت الرياض.",
@@ -100,7 +107,7 @@ export function institutionCreationData(input: any, actorId: string) {
   if (![maxStudents, maxTeachers].every(v => Number.isInteger(v) && v >= 1 && v <= 10000)) throw new InstitutionError("حدود الأعضاء يجب أن تكون بين ١ و١٠٠٠٠");
   const issuedAt = new Date();
   const contract = {
-    reference: `QDR-INS-${randomUUID()}`, issuedAt, issuerName, issuedBy: actorId,
+    reference: generateInstitutionReference(), issuedAt, issuerName, issuedBy: actorId,
     issuerLegalName: "مؤسسة قدراتك العالية", issuerNationalNumber: "7055077809",
     issuerPlatformName: institutionIssuerPlatform, ...institutionIssuerAssets,
     policies, conditions: institutionConditions, status: "issued",
@@ -162,7 +169,7 @@ export async function issueInvite(institutionId: string, input: any, actorId: st
   const validDays = Number(input.validDays ?? 30);
   if (!Number.isInteger(maxUses) || maxUses < 1 || maxUses > institution.maxStudents ||
       !Number.isInteger(validDays) || validDays < 1 || validDays > 90) throw new InstitutionError("أدخل حدود استخدام ومدة صلاحية صحيحة");
-  const code = randomBytes(18).toString("hex").toUpperCase();
+  const code = generateInstitutionInviteCode();
   const invite = await InstitutionInvite.create({
     institutionId, role: input.role, boundPhone, maxUses,
     expiresAt: new Date(Date.now() + validDays * 86400000),
@@ -179,7 +186,7 @@ export function inviteDto(invite: any) {
   };
 }
 export async function validateInvite(code: unknown, phone?: unknown, session?: ClientSession) {
-  if (typeof code !== "string" || !/^[A-Fa-f0-9]{36}$/.test(code.trim())) throw new InstitutionError("كود الانضمام غير صالح");
+  if (typeof code !== "string" || !institutionInviteCodePattern.test(code.trim())) throw new InstitutionError("كود الانضمام غير صالح");
   const invite = await InstitutionInvite.findOne({
     codeHash: codeHash(code), revokedAt: { $exists: false }, expiresAt: { $gt: new Date() },
     $expr: { $lt: ["$uses", "$maxUses"] },

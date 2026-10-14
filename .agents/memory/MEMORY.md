@@ -53,7 +53,7 @@
 - [RTL hidden controls](rtl-hidden-controls.md) — clip hidden fields in place; far-negative offsets can expand RTL document bounds.
 - [Student brand rules](student-brand-accent.md) — orange/coral highlights; full logo for installed app icons, symbol-only elsewhere.
 - [Quantitative correction videos](quantitative-correction-video-scope.md) — question-specific video explanations apply to every exam type containing quantitative questions, including mixed exams.
-- [Institutional access](institution-contract-entitlements.md) — signed, approved contracts gate activation; institutions and their students receive three free months.
+- [Institutional access](institution-contract-entitlements.md) — one contract WhatsApp, «منصة قدراتك», compact new references/codes, and legacy invite compatibility.
 - [Student platform reviews](student-platform-reviews.md) — students submit feedback privately; only admin-approved reviews appear on the landing page.
 - [Student platform guide](student-platform-guide.md) — homepage links to the guide; student hero film is hideable and explains real exam interiors with the approved logo.
 - [Geidea timeout authority](geidea-timeout-authority.md) — a ten-minute platform timeout is not a provider cancellation; verified delayed charges must remain recoverable.

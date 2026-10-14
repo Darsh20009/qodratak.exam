@@ -209,6 +209,7 @@ import {
   listLearningContentAnnotations,
   updateLearningContentAnnotation,
 } from '../services/learningContentAnnotationService';
+import { redactImageBackedQuantitativeQuestionText } from '../services/studentQuestionTextPrivacy';
 
 function getQuestionImageUrls(question: { imageUrl?: unknown; imageUrls?: unknown }): string[] {
   const urls = [
@@ -876,6 +877,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } else {
       next();
     }
+  });
+
+  // Keep source OCR/stem text server-side for image-backed quantitative questions.
+  // Explanation services can resolve it from the canonical question record.
+  app.use('/api', (req, res, next) => {
+    const requestPath = req.originalUrl.split("?")[0];
+    if (/^\/api\/(?:admin|teacher)(?:\/|$)/.test(requestPath)) return next();
+    const originalJson = res.json.bind(res);
+    (res as any).json = (body: unknown) => {
+      const session = (req as any).session;
+      const role = String(session?.role || session?.userRole || (req as any).user?.role || "").toLowerCase();
+      const isPrivileged = Boolean(
+        (req as any).admin || session?.isAdmin || session?.admin ||
+        ["admin", "teacher", "institution_admin", "institution_manager"].includes(role),
+      );
+      return originalJson(isPrivileged ? body : redactImageBackedQuantitativeQuestionText(body) as any);
+    };
+    next();
   });
 
   // Initialize passport
@@ -9795,7 +9814,11 @@ app.post("/api/auth/register", async (req: Request, res: Response) => {
   app.post('/api/ai/explain-question', async (req: Request, res: Response) => {
     try {
       const { questionText, options, correctOptionIndex, studentOptionIndex, category, explanation, imageUrl } = req.body;
-      if (!questionText || !Array.isArray(options)) return res.status(400).json({ error: 'بيانات السؤال مطلوبة' });
+      const sourceId = req.body?.sourceQuestionId ?? req.body?.questionId ?? req.body?.id;
+      const hasSourceId = sourceId !== null && sourceId !== undefined && Boolean(String(sourceId).trim());
+      if ((!String(questionText || "").trim() && !hasSourceId) || !Array.isArray(options)) {
+        return res.status(400).json({ error: 'معرّف السؤال وخياراته مطلوبة لشرح السؤال المصوّر.' });
+      }
       if (!(req.session as any)?.userId) return res.status(401).json({ error: 'سجل الدخول أولًا.' });
       const { cachedQuestionExplanation } = await import('../services/cachedQuestionExplanation');
       const saved = await cachedQuestionExplanation(String((req.session as any).userId), req.body, false);

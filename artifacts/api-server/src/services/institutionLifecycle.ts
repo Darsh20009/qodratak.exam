@@ -19,6 +19,9 @@ export async function institutionMessage(phone: string, text: string, kind: What
     return { status: "failed", message: "حُفظت البيانات، لكن تعذر إرسال رسالة واتساب؛ يمكنك إعادة الإرسال." };
   }
 }
+export function contractDeliveryAlreadyClaimed(contract: { portalSentAt?: Date | string; portalDeliveryStatus?: string }) {
+  return Boolean(contract.portalSentAt) && contract.portalDeliveryStatus !== "failed";
+}
 export async function contractLink(institution: any) {
   if (!institution.contract || institution.archivedAt) throw new InstitutionError("المؤسسة غير متاحة", 409);
   const reference = institution.contract.reference;
@@ -90,7 +93,6 @@ export async function setupInstitutionOwner(institution: any, actorId?: string) 
     institution.ownerAccountPhone = owner.phone;
     await institution.save();
   }
-  const link = await contractLink(institution);
   let inviteLink: string | undefined;
   if (!owner && activeInstitution(institution) && actorId) {
     const invite = await issueInvite(String(institution._id), {
@@ -106,14 +108,7 @@ export async function setupInstitutionOwner(institution: any, actorId?: string) 
       : inviteLink ? "الرقم مرتبط بحساب موجود ولم نغيّر دوره. أكمل الانضمام للمؤسسة برمز الدعوة المرسل بعد التحقق من الجوال."
       : "الرقم مرتبط بحساب موجود ولم نغيّر دوره. بعد اعتماد العقد تُرسل دعوة مسؤول المؤسسة إلى هذا الرقم.",
   };
-  const notification = await institutionMessage(ownerAccount.phone, [
-    `مرحبًا بك في منصة قدراتك التعليمية — ${institution.name}`,
-    ownerAccount.message, activeInstitution(institution) ? "يمكنك الاطلاع على عقد المؤسسة المعتمد من الرابط:" : "اقرأ العقد، وقّع نسخته ثم أرفقها في الرابط الآمن:",
-    link, activeInstitution(institution) ? "الرابط صالح لمدة ٧ أيام؛ الاعتماد السابق محفوظ." : "الرابط صالح لمدة ٧ أيام. تفعيل المؤسسة بعد مراجعة الإدارة واعتماد العقد.",
-    ...(inviteLink ? ["رابط الانضمام كمسؤول المؤسسة:", inviteLink] : []),
-    `الدخول برمز واتساب: ${origin}/login`,
-  ].join("\n"), "institution_welcome");
-  return { ownerAccount, contractLink: link, notification };
+  return { ownerAccount };
 }
 export async function activateInstitutionOwner(institution: any, session?: any) {
   if (!institution.adminUserId) return;

@@ -11,15 +11,35 @@ import { registerQuestionFeedbackRoutes, validateContribution } from "../src/rou
 import { InstitutionContractDelivery } from "../src/mongodb/institutionModels";
 import { QuestionContribution } from "../src/mongodb/questionContributionModels";
 import { Question, QuestionReport } from "../src/mongodb/models";
-import { createInstitution, issueInvite, joinInstitution, membershipForUser, threeMonthsAfter } from "../src/services/institutionService";
+import {
+  createInstitution, generateInstitutionInviteCode, generateInstitutionReference,
+  institutionInviteCodePattern, issueInvite, joinInstitution, membershipForUser, threeMonthsAfter,
+} from "../src/services/institutionService";
 import { ensureStudentAccountTrial } from "../src/middleware/studentTrialAccess";
 import { sealContract, openContract, validateSignedPdf } from "../src/services/institutionContractStorage";
 import { createPhoneVerificationToken, verifyPhoneVerificationToken } from "../src/services/phoneOtpService";
+import { contractDeliveryAlreadyClaimed } from "../src/services/institutionLifecycle";
 
 test("institution grants use three Saudi calendar months, including month-end", () => {
   assert.equal(threeMonthsAfter(new Date("2026-09-30T21:30:00Z")).toISOString(), "2026-12-31T21:30:00.000Z");
   assert.equal(threeMonthsAfter(new Date("2027-01-31T09:00:00Z")).toISOString(), "2027-04-30T09:00:00.000Z");
   assert.equal(threeMonthsAfter(new Date("2026-11-30T09:00:00Z")).toISOString(), "2027-02-28T09:00:00.000Z");
+});
+test("new institution references and invitation codes are shorter while legacy invite codes remain valid", () => {
+  const reference = generateInstitutionReference();
+  const inviteCode = generateInstitutionInviteCode();
+  assert.match(reference, /^QDR-[A-F0-9]{16}$/);
+  assert.equal(reference.length, 20);
+  assert.match(inviteCode, /^[A-F0-9]{16}$/);
+  assert.equal(institutionInviteCodePattern.test(inviteCode), true);
+  assert.equal(institutionInviteCodePattern.test("A".repeat(36)), true);
+  assert.equal(institutionInviteCodePattern.test("A".repeat(15)), false);
+});
+test("contract delivery is not repeated while a message is queued or sent, but failed messages can retry", () => {
+  assert.equal(contractDeliveryAlreadyClaimed({}), false);
+  assert.equal(contractDeliveryAlreadyClaimed({ portalSentAt: new Date(), portalDeliveryStatus: "queued" }), true);
+  assert.equal(contractDeliveryAlreadyClaimed({ portalSentAt: new Date(), portalDeliveryStatus: "sent" }), true);
+  assert.equal(contractDeliveryAlreadyClaimed({ portalSentAt: new Date(), portalDeliveryStatus: "failed" }), false);
 });
 test("signed PDFs are encrypted and context-bound; active PDF content is rejected", () => {
   const saved = process.env.SESSION_SECRET;

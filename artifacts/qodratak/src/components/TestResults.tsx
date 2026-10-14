@@ -1,4 +1,5 @@
 import QuantitativeVideoReview from '@/components/exam-results/QuantitativeVideoReview';
+import { shouldHideImageBackedQuantitativeQuestionText } from '@/lib/questionTextVisibility';
 import React from "react";
 import { TestDifficulty } from "@shared/types";
 import { formatDifficulty } from "@/lib/formatters";
@@ -319,7 +320,9 @@ const TestResults: React.FC<TestResultsProps> = ({
                     <Badge variant="destructive">إجابة خاطئة</Badge>
                   )}
                 </div>
-                <p className="mb-4">{question.text}</p>
+                {!shouldHideImageBackedQuantitativeQuestionText(question) && (
+                  <p className="mb-4">{question.text}</p>
+                )}
                 <div className="space-y-2">
                   {question.options.map((option: string, optIndex: number) => (
                     <div

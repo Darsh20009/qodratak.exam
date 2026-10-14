@@ -13,7 +13,7 @@ import {
   CONTRACT_STATUS_LABEL, ROLE_LABEL, TYPE_LABEL, downloadSignedContract, fmtDate, fmtDateTime,
   useAdminInstitution, useAdminInstitutions, useAdminInvites, useAdminIssueInvite, useAdminRevokeInvite,
   useApproveContract, useCreateInstitution, useRejectContract, useSetAvailability, useUploadSigned,
-  useArchiveInstitution, useUpdateInstitution, uploadIssuedContract, sendContractLink, sendWelcome, deliveryConfirmed, adminKeys,
+  useArchiveInstitution, useUpdateInstitution, uploadIssuedContract, sendContractLink, deliveryConfirmed, adminKeys,
   type InstitutionDTO, type InstitutionRole, type InstitutionType,
 } from "@/lib/institutionApi";
 import { buildContractPdfBlob, generateContractPdf, serializePublishedPolicies } from "@/lib/institutionContract";
@@ -112,9 +112,8 @@ function CreateDialog({ open, onClose, prefill, onCreated }: { open: boolean; on
     }, {
       onSuccess: async (r) => {
         const { institution } = r;
-        const welcome = r.notification ? (deliveryConfirmed(r.notification) ? "أُرسلت رسالة الترحيب." : `لم يتأكد إرسال رسالة الترحيب${r.notification.message ? `: ${r.notification.message}` : "."}`) : "";
         const owner = r.ownerAccount?.message || (r.ownerAccount ? "جُهّز حساب المالك بانتظار الاعتماد." : "");
-        toast({ title: "حُفظت المؤسسة غير مفعّلة", description: [owner, welcome, "جارٍ تجهيز العقد وإرسال رابط الرفع."].filter(Boolean).join(" ") });
+        toast({ title: "حُفظت المؤسسة غير مفعّلة", description: [owner, "جارٍ تجهيز العقد وإرسال رسالة واحدة برابط التوقيع والرفع."].filter(Boolean).join(" ") });
         onCreated(institution);
         onClose();
         const result = await runContractDelivery(institution);
@@ -169,13 +168,13 @@ function CreateDialog({ open, onClose, prefill, onCreated }: { open: boolean; on
           </div>
 
           <div className="rounded-2xl border border-[#b8f36b]/20 bg-[#b8f36b]/[0.04] p-4">
-            <p className="mb-3 text-sm font-bold text-white">الطرف الأول: منصة قدراتك التعليمية</p>
+            <p className="mb-3 text-sm font-bold text-white">الطرف الأول: منصة قدراتك</p>
             <label className={label}>ممثل المنصة والمفوّض بالتوقيع</label>
             <input data-testid="input-issuer-name" required readOnly value={form.issuerName} className={field} />
             <p className="mt-2 text-xs leading-6 text-slate-400">يُضاف التوقيع والختم المعتمدان تلقائيًا إلى العقود الجديدة فقط.</p>
             <label className="mt-3 flex items-start gap-2 text-xs leading-6 text-slate-300">
               <input data-testid="checkbox-issuer-authorized" type="checkbox" checked={authorized} onChange={(e) => setAuthorized(e.target.checked)} className="mt-1 h-4 w-4 accent-[#b8f36b]" />
-              أقر بصلاحية إصدار هذا العقد باسم منصة قدراتك التعليمية، وإرفاق توقيع ممثلها وختمها المعتمدين. يظل الاعتماد داخليًا وليس شهادة توقيع رقمي مؤهلة.
+              أقر بصلاحية إصدار هذا العقد باسم منصة قدراتك، وإرفاق توقيع ممثلها وختمها المعتمدين. يظل الاعتماد داخليًا وليس شهادة توقيع رقمي مؤهلة.
             </label>
           </div>
 
@@ -335,6 +334,7 @@ function DeliveryPanel({ inst }: { inst: InstitutionDTO }) {
     qc.invalidateQueries({ queryKey: adminKeys.list });
   };
   const status = c.portalDeliveryStatus;
+  const sendAlreadyClaimed = !!c.portalSentAt && status !== "failed";
   return (
     <div data-testid="panel-contract-delivery" className="rounded-2xl border border-white/10 p-4">
       <p className="flex items-center gap-2 text-sm font-black text-white"><Send className="h-4 w-4 text-[#b8f36b]" /> إرسال العقد إلى المؤسسة</p>
@@ -350,11 +350,11 @@ function DeliveryPanel({ inst }: { inst: InstitutionDTO }) {
         </div>
       )}
       <div className="mt-3 flex flex-wrap gap-2">
-        <button data-testid="button-prepare-send-contract" disabled={busy} onClick={() => run(false)} className="inline-flex items-center gap-2 rounded-xl bg-[#b8f36b] px-4 py-2 text-xs font-black text-[#07111F] disabled:opacity-40">
-          {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />} {c.issuedDocumentReady ? "إعادة توليد وإرسال" : "توليد العقد وإرسال الرابط"}
+        <button data-testid="button-prepare-send-contract" disabled={busy || sendAlreadyClaimed || !!c.portalSentAt} onClick={() => run(Boolean(c.status === "rejected" && c.issuedDocumentReady))} className="inline-flex items-center gap-2 rounded-xl bg-[#b8f36b] px-4 py-2 text-xs font-black text-[#07111F] disabled:opacity-40">
+          {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />} {c.status === "rejected" ? "إعادة إرسال رابط التوقيع والرفع" : c.issuedDocumentReady ? "إعادة توليد وإرسال" : "توليد العقد وإرسال الرابط"}
         </button>
-        {c.issuedDocumentReady && (
-          <button data-testid="button-resend-contract" disabled={busy} onClick={() => run(true)} className="inline-flex items-center gap-2 rounded-xl border border-white/15 px-4 py-2 text-xs font-black text-slate-200 disabled:opacity-40"><Send className="h-4 w-4" /> إعادة إرسال الرابط فقط</button>
+        {c.issuedDocumentReady && status === "failed" && (
+          <button data-testid="button-resend-contract" disabled={busy} onClick={() => run(true)} className="inline-flex items-center gap-2 rounded-xl border border-white/15 px-4 py-2 text-xs font-black text-slate-200 disabled:opacity-40"><Send className="h-4 w-4" /> إعادة المحاولة</button>
         )}
       </div>
     </div>
@@ -362,26 +362,10 @@ function DeliveryPanel({ inst }: { inst: InstitutionDTO }) {
 }
 
 function WelcomePanel({ inst }: { inst: InstitutionDTO }) {
-  const qc = useQueryClient();
-  const [busy, setBusy] = useState(false);
-  const [res, setRes] = useState<{ ok: boolean; text: string; link?: string } | null>(null);
-  const run = async () => {
-    setBusy(true); setRes(null);
-    try {
-      const r = await sendWelcome(inst.id);
-      const ok = deliveryConfirmed(r.notification);
-      setRes({ ok, link: ok ? undefined : r.contractLink, text: [r.ownerAccount?.message, r.notification?.message || (ok ? "أُرسلت رسالة الترحيب." : "لم يتأكد إرسال رسالة الترحيب.")].filter(Boolean).join(" ") });
-      qc.invalidateQueries({ queryKey: adminKeys.detail(inst.id) });
-    } catch (e) { setRes({ ok: false, text: (e as Error).message || "تعذر إرسال رسالة الترحيب" }); }
-    finally { setBusy(false); }
-  };
   return (
     <div data-testid="panel-owner-welcome" className="rounded-2xl border border-white/10 p-3 text-xs">
-      <div className="flex flex-wrap items-center justify-between gap-2">
-        <p className="text-slate-400">حساب المالك (رقم الدخول): <span dir="ltr" className="font-bold text-slate-200">{inst.ownerAccountPhone || "غير مُجهّز"}</span>{inst.ownerAccountPending ? " · بانتظار الاعتماد" : ""}</p>
-        <button data-testid="button-send-welcome" disabled={busy} onClick={run} className="inline-flex items-center gap-1.5 rounded-lg border border-white/15 px-2.5 py-1.5 text-[11px] font-black text-slate-200 disabled:opacity-40">{busy ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Send className="h-3.5 w-3.5" />} إعادة إرسال الترحيب</button>
-      </div>
-      {res && <p data-testid="status-welcome-result" className={cn("mt-2 leading-6", res.ok ? "text-[#b8f36b]" : "text-orange-200")}>{res.text}{res.link && <> الرابط: <span dir="ltr" className="break-all font-mono text-[10.5px]">{res.link}</span></>}</p>}
+      <p className="text-slate-400">حساب المالك (رقم الدخول): <span dir="ltr" className="font-bold text-slate-200">{inst.ownerAccountPhone || "غير مُجهّز"}</span>{inst.ownerAccountPending ? " · بانتظار الاعتماد" : ""}</p>
+      <p className="mt-2 leading-6 text-slate-500">تُرسل رسالة واتساب واحدة بعد تجهيز العقد، وبها رابط واحد لتنزيله ورفع النسخة الموقعة من الصفحة نفسها.</p>
     </div>
   );
 }
@@ -430,7 +414,7 @@ function EditDialog({ inst, open, onClose }: { inst: InstitutionDTO; open: boole
           {!locked && (
             <label className="flex items-start gap-2 text-xs leading-6 text-slate-300">
               <input data-testid="checkbox-edit-authorized" type="checkbox" checked={authorized} onChange={(e) => setAuthorized(e.target.checked)} className="mt-1 h-4 w-4 accent-[#b8f36b]" />
-              أقر بصلاحية تعديل بيانات العقد باسم منصة قدراتك التعليمية.
+              أقر بصلاحية تعديل بيانات العقد باسم منصة قدراتك.
             </label>
           )}
           {errMsg && <p data-testid="text-edit-error" className="flex gap-2 rounded-xl border border-red-500/30 bg-red-500/10 p-3 text-xs leading-6 text-red-200"><XCircle className="h-4 w-4 shrink-0" /> {errMsg}</p>}

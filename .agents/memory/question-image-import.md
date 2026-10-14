@@ -20,3 +20,9 @@ For quantitative computer-bank scans, preserve the source JPEGs and `imageOrigin
 **Why:** A one-pixel scan border can make literal corner pixels dark despite a white page margin; broad caption boxes can erase red diagrams. Transparent previews on dark backgrounds can also make preserved black ink appear missing.
 
 **How to apply:** Check representative layouts on a white composite, sample corners a few pixels inward, and verify every derivative's dimensions and alpha before changing active URLs. Review red masks against question text and diagrams; use image-specific exclusions or bounded forced regions only when visually confirmed, and still remove hue-matched pixels only. Keep originals available for recovery and verify that original database fields remain unchanged.
+
+For image-backed quantitative questions, keep OCR/stem text out of student-facing APIs and test/review screens. Retain canonical text on the server for trusted AI explanations, while the source image remains visible and authoritative.
+
+**Why:** OCR for mathematical questions can be inaccurate, but AI explanations still need the canonical source text without exposing duplicate or misleading text to students.
+
+**How to apply:** Redact text in student response payloads and resolve explanation requests by source question ID on the server; never delete the canonical text or replace the source image with OCR.

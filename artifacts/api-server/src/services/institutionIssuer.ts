@@ -6,7 +6,7 @@ import { fileURLToPath } from "node:url";
 // Append new versions rather than replacing these files: issued contracts keep
 // their original identity, signature, seal and hashes.
 export const institutionIssuerName = "مشاري عواض حسن الثبيتي";
-export const institutionIssuerPlatform = "منصة قدراتك التعليمية";
+export const institutionIssuerPlatform = "منصة قدراتك";
 const assetIds = ["mishari-signature-20261013", "qodratak-stamp-20261013"] as const;
 const moduleDir = path.dirname(fileURLToPath(import.meta.url));
 const roots = [

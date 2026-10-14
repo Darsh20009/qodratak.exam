@@ -56,7 +56,7 @@ export function blocksFor(inst: InstitutionDTO, assets: { signature?: string; st
   const row = (k: string, v: string, ltr = false) => `<tr><td style="padding:6px 10px;background:#F7F4EE;font-weight:700;color:${INK};width:34%;border:1px solid #E5DED3">${esc(k)}</td><td style="padding:6px 10px;border:1px solid #E5DED3;color:${MUTED};${ltr ? "direction:ltr;text-align:left;font-family:monospace;font-size:10.5px;word-break:break-all" : ""}">${esc(v)}</td></tr>`;
 
   b.push(`<div style="display:flex;align-items:center;justify-content:space-between;gap:16px;border-bottom:3px solid ${INK};padding-bottom:16px">
-    <div><p style="font-size:11px;font-weight:800;letter-spacing:.12em;color:${CORAL};margin:0">اتفاقية انضمام مؤسسة تعليمية</p>
+    <div><p style="font-size:11px;font-weight:800;letter-spacing:normal;color:${CORAL};margin:0">اتفاقية انضمام مؤسسة تعليمية</p>
     <h1 style="font-size:26px;font-weight:900;color:${INK};margin:6px 0 4px">عقد مساحة المؤسسة على منصة ${esc(BRAND_NAME)}</h1>
     <p style="font-size:12px;color:${MUTED};margin:0">صادر من ${esc(partyName)} — الرقم الوطني الموحد ${esc(c.issuerNationalNumber)}</p></div>
     <img src="/qodratak-logo.png" crossorigin="anonymous" style="height:86px;width:auto;object-fit:contain" />
@@ -101,7 +101,7 @@ export function blocksFor(inst: InstitutionDTO, assets: { signature?: string; st
       <p style="margin:0">اعتماد إلكتروني داخلي باسم المفوّض: <b style="color:${INK}">${esc(c.issuerName)}</b></p>
       ${assets.signature || assets.stamp ? `<div style="display:flex;align-items:center;gap:12px;margin:10px 0;background:white;padding:6px;border-radius:6px">
         ${assets.signature ? `<div style="flex:1;min-width:0;text-align:center"><img alt="توقيع ممثل المنصة" src="${esc(assets.signature)}" style="width:100%;height:65px;object-fit:contain"/><p style="font-size:10px;margin:0">التوقيع</p></div>` : ""}
-        ${assets.stamp ? `<div style="width:96px;flex-shrink:0;text-align:center"><img alt="ختم منصة قدراتك التعليمية" src="${esc(assets.stamp)}" style="width:96px;height:96px;object-fit:contain"/><p style="font-size:10px;margin:0">ختم المنصة</p></div>` : ""}
+        ${assets.stamp ? `<div style="width:96px;flex-shrink:0;text-align:center"><img alt="ختم منصة قدراتك" src="${esc(assets.stamp)}" style="width:96px;height:96px;object-fit:contain"/><p style="font-size:10px;margin:0">ختم المنصة</p></div>` : ""}
       </div>` : ""}
       <p style="margin:0">بتاريخ: ${esc(fmt(c.issuedAt))}</p>
       <p style="margin:0;font-size:10px;direction:ltr;text-align:left;font-family:monospace;word-break:break-all">${esc(c.reference)}</p>

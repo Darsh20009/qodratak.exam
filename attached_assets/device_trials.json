@@ -159,5 +159,12 @@
     "trialEndDate": "2026-10-17T05:57:26.787Z",
     "isActive": true,
     "createdAt": "2026-10-14T05:57:26.787Z"
+  },
+  {
+    "deviceId": "n0gp6k",
+    "trialStartDate": "2026-10-14T15:09:47.569Z",
+    "trialEndDate": "2026-10-17T15:09:47.569Z",
+    "isActive": true,
+    "createdAt": "2026-10-14T15:09:47.569Z"
   }
 ]

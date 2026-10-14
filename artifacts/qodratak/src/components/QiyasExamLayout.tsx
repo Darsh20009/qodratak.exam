@@ -11,6 +11,7 @@ import { isReadingComprehension } from "@/lib/verbalPassage";
 import { EXAM_FOCUS_EVENT, enterExamFocus, exitExamFocus, isExamFocusMode, setExamPageFocus } from "@/lib/examDisplayMode";
 import { ExamWorkspaceToolbar } from "@/components/exam/ExamWorkspaceToolbar";
 import { ExamNotebook } from "@/components/exam/ExamNotebook";
+import { shouldHideImageBackedQuantitativeQuestionText } from "@/lib/questionTextVisibility";
 
 const OPTION_LABELS = ['أ', 'ب', 'ج', 'د'];
 
@@ -151,10 +152,33 @@ export function QiyasExamLayout({
   fullscreenRequired = false,
   questionId,
 }: QiyasExamLayoutProps) {
+  const questionRecord = isRecord(questionData) ? questionData : {};
+  const recordImageUrl =
+    typeof questionRecord.imageUrl === "string" ? questionRecord.imageUrl :
+      typeof questionRecord.image_url === "string" ? questionRecord.image_url : undefined;
+  const recordImageUrls = Array.isArray(questionRecord.imageUrls)
+    ? questionRecord.imageUrls.filter((url): url is string => typeof url === "string")
+    : Array.isArray(questionRecord.image_urls)
+      ? questionRecord.image_urls.filter((url): url is string => typeof url === "string")
+      : undefined;
+  const questionImages = getQuestionImageUrls({
+    ...questionRecord,
+    imageUrl: questionImageUrl || recordImageUrl,
+    imageUrls: questionImageUrls ?? recordImageUrls,
+  });
+  const hideImageBackedQuantitativeText =
+    questionImages.length > 0 &&
+    (hideQuestionTextWhenImageBacked ||
+      shouldHideImageBackedQuantitativeQuestionText({
+        ...questionRecord,
+        imageUrl: questionImageUrl,
+        imageUrls: questionImageUrls,
+        category: questionRecord.category ?? questionTypeLabel ?? sectionLabel,
+      }, enableQuantitativeTools));
   useExamQuestionTiming({
     ...(questionData && typeof questionData === 'object' ? questionData : {}),
     id: questionId ?? (questionData as any)?.id ?? `${sectionNumber}:${questionNumber}`,
-    text: questionText, options, imageUrl: questionImageUrl,
+    text: hideImageBackedQuantitativeText ? "" : questionText, options, imageUrl: questionImageUrl,
   }, selectedAnswer, !isFinishing, examTitle || 'اختبار');
   const { passageText, passageLabel, displayQuestionText } = getQuestionDisplayParts(questionData, questionText, questionTypeLabel);
   const { setActive: setStudentExamChromeActive } = useContext(StudentExamChromeContext);
@@ -174,11 +198,6 @@ export function QiyasExamLayout({
   const [reportDesc, setReportDesc] = useState('');
   const [reportSent, setReportSent] = useState(false);
   const [reportLoading, setReportLoading] = useState(false);
-  const questionImages = getQuestionImageUrls({
-    imageUrl: questionImageUrl,
-    imageUrls: questionImageUrls,
-  });
-
   useLayoutEffect(() => {
     setStudentExamChromeActive(true);
     return () => setStudentExamChromeActive(false);
@@ -242,7 +261,7 @@ export function QiyasExamLayout({
         credentials: 'include',
         body: JSON.stringify({
           questionId: questionId ?? 0,
-          questionText: questionText.slice(0, 300),
+          questionText: hideImageBackedQuantitativeText ? "" : questionText.slice(0, 300),
           reportType,
           description: reportDesc,
         }),
@@ -509,7 +528,7 @@ export function QiyasExamLayout({
               </div>
             ) : null}
 
-            {(!hideQuestionTextWhenImageBacked || questionImages.length === 0) && (
+            {!hideImageBackedQuantitativeText && (
               <p className={`whitespace-pre-line text-gray-800 leading-relaxed mb-5 ${fontClass}`}>
                 {displayQuestionText}
               </p>

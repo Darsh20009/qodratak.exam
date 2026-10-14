@@ -404,12 +404,12 @@ export default function LandingPage({
             <h1 className="mt-6 text-[2.7rem] font-black leading-[1.12] tracking-tight text-[#171723] dark:text-white sm:text-6xl">
               <span style={{ color: SIGNAL }}>قدراتك</span>
               <br />
-              خطتك أوضح لـ
+              خطتك أوضح للقدرات
               <br />
-              <span style={{ color: SIGNAL }}>القدرات.</span>
+              <span style={{ color: SIGNAL }}>والتحصيلي.</span>
             </h1>
             <p className="mt-6 max-w-xl text-base leading-8 text-[#6B625B] dark:text-slate-300 sm:text-lg">
-              قدراتك (Qodratak) تجمع التأسيس والمحوسب والتدريب اليومي في مسار واضح يخبرك بخطوتك التالية.
+              قدراتك (Qodratak) تجمع التأسيس والمحوسب والتدريب اليومي للقدرات، ويجري تجهيز مسار التحصيلي ليكون قريبًا ضمن رحلتك التعليمية.
             </p>
             <div className="mt-8 flex flex-wrap gap-3">
               <button
