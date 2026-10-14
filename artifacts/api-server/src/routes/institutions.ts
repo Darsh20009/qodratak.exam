@@ -13,6 +13,9 @@ import {
   contractStorageReady, storeSignedContract, loadSignedContract,
   validateSignedPdf,
 } from "../services/institutionContractStorage";
+import { getInstitutionIssuerAsset } from "../services/institutionIssuer";
+import { registerInstitutionLifecycleRoutes } from "./institutionLifecycleRoutes";
+import { activateInstitutionOwner, notifyInstitutionActivation, pendingInstitutionFor, setupInstitutionOwner } from "../services/institutionLifecycle";
 
 type Dependencies = {
   requireAdmin: RequestHandler;
@@ -47,9 +50,13 @@ function handler(fn: (req: Request, res: Response) => Promise<any>): RequestHand
   }); };
 }
 function adminActor(req: Request) {
-  const actor = (req as any).admin;
-  const id = String(actor?._id || actor?.id || (req.session as any)?.adminId || "");
-  if (actor?.isDemo || !mongoose.isValidObjectId(id)) throw new InstitutionError("الاعتماد يتطلب حساب إدارة فعليًا", 403);
+  const sessionAdmin = (req.session as any)?.admin;
+  const actor = (req as any).admin || sessionAdmin;
+  if (actor?.isDemo || sessionAdmin?.isDemo)
+    throw new InstitutionError("أنت مسجل بحساب إدارة تجريبي. سجل الدخول بحساب الإدارة الفعلي لإصدار عقود المؤسسات.", 403);
+  const id = String(actor?._id || actor?.adminId || actor?.id || (req.session as any)?.adminId || "");
+  if (!mongoose.isValidObjectId(id))
+    throw new InstitutionError("تعذر التحقق من هوية حساب الإدارة؛ سجل الدخول مجددًا بحساب الإدارة الفعلي.", 403);
   return id;
 }
 async function memberActor(req: Request, roles: string[]) {
@@ -82,6 +89,7 @@ export function registerInstitutionRoutes(app: Express, deps: Dependencies) {
   });
   const manager = guard(["institution_admin"]);
   const staff = guard(["institution_admin", "teacher"]);
+  registerInstitutionLifecycleRoutes(app, admin, adminActor);
   app.use("/api/teacher", (req, res, next) => {
     const userId = String((req.session as any)?.userId || "");
     if (!mongoose.isValidObjectId(userId)) return next();
@@ -96,16 +104,35 @@ export function registerInstitutionRoutes(app: Express, deps: Dependencies) {
     res.status(409).json({ message: "تفعيل المؤسسات يتطلب عقدًا موقعًا ومعتمدًا. استخدم قسم المؤسسات الجديد.", redirectTo: "/admin/institutions" });
   });
   app.get("/api/admin/institutions", admin, handler(async (_req, res) => {
-    const institutions = await Institution.find().sort({ createdAt: -1 }).lean();
+    const institutions = await Institution.find({ archivedAt: { $exists: false } }).sort({ createdAt: -1 }).lean();
     return res.json({ institutions: institutions.map(institutionDto), storageReady: contractStorageReady() });
   }));
   app.post("/api/admin/institutions", admin, handler(async (req, res) => {
     const institution = await createInstitution(req.body, adminActor(req));
-    return res.status(201).json({ institution: institutionDto(institution) });
+    let setup: any;
+    try { setup = await setupInstitutionOwner(institution, adminActor(req)); }
+    catch {
+      setup = { ownerAccount: { status: "not_created", message: "حُفظت المؤسسة، لكن إعداد حساب المسؤول لم يكتمل؛ أعد إرسال الترحيب من تفاصيل المؤسسة." },
+        notification: { status: "failed", message: "لم تكتمل رسالة الترحيب" } };
+    }
+    return res.status(201).json({ institution: institutionDto(institution), ...setup });
   }));
   app.get("/api/admin/institutions/:id", admin, handler(async (req, res) => {
     return res.json({ institution: institutionDto(await findInstitution(String(req.params.id))),
       members: await institutionalRoster(String(req.params.id)) });
+  }));
+  app.get("/api/admin/institutions/:id/contract-assets/:kind", admin, handler(async (req, res) => {
+    const institution = await findInstitution(String(req.params.id));
+    const c = institution.contract;
+    const kind = String(req.params.kind);
+    if (!c || !["signature", "stamp"].includes(kind)) throw new InstitutionError("الصورة غير موجودة", 404);
+    const id = kind === "signature" ? c.signatureAssetId : c.stampAssetId;
+    const sha256 = kind === "signature" ? c.signatureSha256 : c.stampSha256;
+    const asset = id ? getInstitutionIssuerAsset(id) : undefined;
+    if (!asset) throw new InstitutionError("لا توجد صورة معتمدة لهذا الإصدار من العقد", 404);
+    if (asset.sha256 !== sha256) throw new InstitutionError("تغيرت صورة هذا العقد؛ لا يمكن إعادة إصداره بصورة مختلفة", 409);
+    return res.set({ "Content-Type": "image/png", "Cache-Control": "private, no-store",
+      "X-Content-Type-Options": "nosniff" }).send(asset.bytes);
   }));
   app.post("/api/admin/institutions/:id/signed-contract", admin,
     (req, res, next) => upload.single("file")(req, res, error => error ?
@@ -144,16 +171,25 @@ export function registerInstitutionRoutes(app: Express, deps: Dependencies) {
     if (req.body.reviewedSignedContract !== true) throw new InstitutionError("يجب مراجعة النسخة الموقعة والإقرار باعتمادها");
     if (typeof req.body.signedSha256 !== "string" || !/^[a-f0-9]{64}$/.test(req.body.signedSha256)) throw new InstitutionError("راجع بصمة النسخة الموقعة الحالية");
     const now = new Date();
-    const institution = await Institution.findOneAndUpdate({
+    const session = await mongoose.startSession();
+    let institution: any;
+    try { await session.withTransaction(async () => {
+    institution = await Institution.findOneAndUpdate({
       _id: mongoose.isValidObjectId(req.params.id) ? req.params.id : null,
+      archivedAt: { $exists: false },
       "contract.status": "submitted", "contract.signedObjectKey": { $exists: true },
       "contract.signedSha256": req.body.signedSha256,
     }, { $set: {
       "contract.status": "approved", "contract.approvedAt": now, "contract.approvedBy": actorId,
       isActive: true, activatedAt: now, subscriptionEndDate: threeMonthsAfter(now),
-    }, $unset: { suspendedAt: "" } }, { new: true });
+    }, $unset: { suspendedAt: "" } }, { new: true, session });
     if (!institution) throw new InstitutionError("لا توجد نسخة حالية موقعة تنتظر الاعتماد، أو سبق اعتماد العقد", 409);
-    return res.json({ institution: institutionDto(institution) });
+    await activateInstitutionOwner(institution, session);
+    }); } finally { await session.endSession(); }
+    let notification: any;
+    try { notification = await notifyInstitutionActivation(institution, actorId); }
+    catch { notification = { status: "failed", message: "تم التفعيل، لكن إرسال تعليمات الدخول لم يكتمل؛ أعد إرسال الدعوة." }; }
+    return res.json({ institution: institutionDto(institution), notification });
   }));
   app.post("/api/admin/institutions/:id/reject", admin, handler(async (req, res) => {
     adminActor(req);
@@ -256,7 +292,8 @@ export function registerInstitutionRoutes(app: Express, deps: Dependencies) {
   app.get("/api/institution/membership", handler(async (req, res) => {
     const id = String((req.session as any)?.userId || "");
     if (!mongoose.isValidObjectId(id) || !await User.exists({ _id: id })) throw new InstitutionError("سجل الدخول أولًا", 401);
-    return res.json({ membership: await membershipForUser(id) });
+    const membership = await membershipForUser(id);
+    return res.json({ membership, pendingInstitution: !membership ? await pendingInstitutionFor(id) : null });
   }));
   app.get("/api/institution/dashboard", staff, handler(async (req, res) => {
     const actor = (req as any).institutionActor;

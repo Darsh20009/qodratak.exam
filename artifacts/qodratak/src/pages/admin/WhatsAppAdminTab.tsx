@@ -101,24 +101,24 @@ export default function WhatsAppAdminTab() {
 
   const connected = status?.state === "connected";
   return (
-    <div className="space-y-5" dir="rtl">
+    <div className="space-y-5 text-foreground" dir="rtl">
       <div>
-        <h2 className="flex items-center gap-2 text-xl font-bold text-[#24202D]">
-          <MessageCircle className="h-5 w-5 text-[#2E8B70]" />
+        <h2 className="flex items-center gap-2 text-xl font-bold">
+          <MessageCircle className="h-5 w-5 text-emerald-700 dark:text-emerald-300" />
           ربط النظام بواتساب
         </h2>
-        <p className="mt-1 text-sm text-[#625D69]">اربط رقم خدمة قدراتك كجهاز مرتبط، ثم استخدمه لرموز التحقق والإشعارات.</p>
+        <p className="mt-1 text-sm text-muted-foreground">اربط رقم خدمة قدراتك كجهاز مرتبط، ثم استخدمه لرموز التحقق والإشعارات.</p>
       </div>
 
-      <div className="rounded-2xl border border-[#24202D]/10 bg-[#FFFCF7] p-5 shadow-sm">
+      <div className="rounded-2xl border border-border bg-card p-5 shadow-sm">
         <div className="flex flex-wrap items-center justify-between gap-4">
           <div className="flex items-center gap-3">
-            <div className={`flex h-11 w-11 items-center justify-center rounded-xl ${connected ? "bg-emerald-100 text-emerald-700" : "bg-[#F7F4EE] text-[#625D69]"}`}>
+            <div className={`flex h-11 w-11 items-center justify-center rounded-xl ${connected ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300" : "bg-muted text-muted-foreground"}`}>
               {isLoading || status?.state === "connecting" ? <Loader2 className="h-5 w-5 animate-spin" /> : connected ? <CheckCircle2 className="h-5 w-5" /> : <Power className="h-5 w-5" />}
             </div>
             <div>
-              <p className="font-bold text-[#24202D]">{status?.message || "جاري قراءة الحالة"}</p>
-              <p className="mt-0.5 text-xs text-[#625D69]" dir="ltr">{status?.phone || "لا يوجد رقم مرتبط"}</p>
+              <p className="font-bold">{status?.message || "جاري قراءة الحالة"}</p>
+              <p className="mt-0.5 text-xs text-muted-foreground" dir="ltr">{status?.phone || "لا يوجد رقم مرتبط"}</p>
             </div>
           </div>
           <div className="flex flex-wrap gap-2">
@@ -127,7 +127,7 @@ export default function WhatsAppAdminTab() {
                 type="button"
                 onClick={() => action.mutate({ path: "/api/admin/whatsapp/connect" })}
                 disabled={action.isPending || status?.state === "connecting"}
-                className="flex items-center gap-2 rounded-xl bg-[#24202D] px-4 py-2.5 text-sm font-bold text-white disabled:opacity-50"
+                className="flex items-center gap-2 rounded-xl bg-primary px-4 py-2.5 text-sm font-bold text-primary-foreground transition-colors enabled:hover:bg-primary/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background disabled:cursor-not-allowed disabled:bg-muted disabled:text-muted-foreground"
               >
                 <Link2 className="h-4 w-4" /> اتصال وإظهار QR
               </button>
@@ -136,7 +136,7 @@ export default function WhatsAppAdminTab() {
               type="button"
               onClick={() => action.mutate({ path: "/api/admin/whatsapp/disconnect", body: { clearSession: connected || status?.hasSavedSession } })}
               disabled={action.isPending}
-              className="flex items-center gap-2 rounded-xl border border-red-200 px-4 py-2.5 text-sm font-bold text-red-700 disabled:opacity-50"
+              className="flex items-center gap-2 rounded-xl border border-red-200 px-4 py-2.5 text-sm font-bold text-red-700 transition-colors enabled:hover:bg-red-50 dark:border-red-900 dark:text-red-300 dark:enabled:hover:bg-red-950/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-not-allowed disabled:border-border disabled:text-muted-foreground"
             >
               <RefreshCw className="h-4 w-4" /> فك الربط وتوليد جديد
             </button>
@@ -144,18 +144,18 @@ export default function WhatsAppAdminTab() {
         </div>
 
         {status?.state === "waiting_for_qr" && status.qrDataUrl && (
-          <div className="mt-6 grid gap-5 border-t border-[#24202D]/10 pt-5 md:grid-cols-[360px_1fr]">
-            <div className="rounded-2xl border border-[#24202D]/10 bg-white p-3">
+          <div className="mt-6 grid gap-5 border-t border-border pt-5 md:grid-cols-[360px_1fr]">
+            <div className="rounded-2xl border border-border p-3" style={{ backgroundColor: "#fff" }}>
               <img src={status.qrDataUrl} alt="باركود ربط واتساب" className="mx-auto aspect-square w-full max-w-[340px]" />
             </div>
-            <div className="space-y-3 text-sm leading-7 text-[#625D69]">
-              <p className="font-bold text-[#24202D]">من جوال رقم الخدمة:</p>
+            <div className="space-y-3 text-sm leading-7 text-muted-foreground">
+              <p className="font-bold text-foreground">من جوال رقم الخدمة:</p>
               <ol className="list-decimal space-y-1 pr-5">
                 <li>افتح واتساب ثم الإعدادات.</li>
                 <li>اختر الأجهزة المرتبطة ثم ربط جهاز.</li>
                 <li>امسح الباركود الظاهر هنا.</li>
               </ol>
-              <div className="flex gap-2 rounded-xl bg-amber-50 p-3 text-xs text-amber-900">
+              <div className="flex gap-2 rounded-xl bg-amber-50 p-3 text-xs text-amber-900 dark:bg-amber-950/40 dark:text-amber-200">
                 <ShieldAlert className="mt-0.5 h-4 w-4 shrink-0" />
                 لا ترسل صورة الباركود لأي شخص؛ مسحه يمنح وصولاً إلى رقم واتساب المرتبط.
               </div>
@@ -164,16 +164,16 @@ export default function WhatsAppAdminTab() {
         )}
       </div>
 
-      <div className="rounded-2xl border border-[#24202D]/10 bg-[#FFFCF7] p-5">
-        <h3 className="font-bold text-[#24202D]">اختبار الإرسال</h3>
-        <p className="mt-1 text-xs text-[#625D69]">أرسل رسالة قصيرة للتأكد من أن الرقم المرتبط يعمل.</p>
+      <div className="rounded-2xl border border-border bg-card p-5">
+        <h3 className="font-bold">اختبار الإرسال</h3>
+        <p className="mt-1 text-xs text-muted-foreground">أرسل رسالة قصيرة للتأكد من أن الرقم المرتبط يعمل.</p>
         <div className="mt-4 flex max-w-lg gap-2" dir="ltr">
-          <Input value={testPhone} onChange={(event) => setTestPhone(event.target.value)} placeholder="+9665XXXXXXXX" className="h-11" />
+          <Input aria-label="رقم جوال اختبار الإرسال" value={testPhone} onChange={(event) => setTestPhone(event.target.value)} placeholder="+9665XXXXXXXX" className="h-11 text-foreground" />
           <button
             type="button"
             onClick={() => sendTest.mutate()}
             disabled={!connected || !testPhone.trim() || sendTest.isPending}
-            className="flex shrink-0 items-center gap-2 rounded-xl bg-[#2E8B70] px-4 text-sm font-bold text-white disabled:opacity-40"
+            className="flex shrink-0 items-center gap-2 rounded-xl bg-emerald-700 px-4 text-sm font-bold text-emerald-50 transition-colors enabled:hover:bg-emerald-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-not-allowed disabled:bg-muted disabled:text-muted-foreground"
           >
             {sendTest.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
             إرسال
@@ -183,27 +183,27 @@ export default function WhatsAppAdminTab() {
           type="button"
           onClick={() => sendNotificationTest.mutate()}
           disabled={!connected || sendNotificationTest.isPending}
-          className="mt-3 flex items-center gap-2 rounded-xl border border-[#24202D]/15 px-4 py-2.5 text-sm font-bold text-[#24202D] disabled:opacity-40"
+          className="mt-3 flex items-center gap-2 rounded-xl border border-border px-4 py-2.5 text-sm font-bold text-foreground transition-colors enabled:hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-not-allowed disabled:text-muted-foreground"
         >
           {sendNotificationTest.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
           اختبار تنبيهات التسجيل والاشتراك
         </button>
       </div>
 
-      <div className="rounded-2xl border border-[#2E8B70]/20 bg-[#F2FBF7] p-5">
+      <div className="rounded-2xl border border-emerald-200 bg-emerald-50/60 p-5 dark:border-emerald-900 dark:bg-emerald-950/20">
         <div className="flex items-start gap-3">
-          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#2E8B70]/10 text-[#2E8B70]">
+          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-emerald-100 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300">
             <MessageCircle className="h-5 w-5" />
           </div>
           <div>
-            <h3 className="font-bold text-[#24202D]">حملات واتساب للطلاب</h3>
-            <p className="mt-1 text-xs leading-5 text-[#625D69]">
+            <h3 className="font-bold">حملات واتساب للطلاب</h3>
+            <p className="mt-1 text-xs leading-5 text-muted-foreground">
               أرسل رسالة مناسبة للمناسبة أو عرضًا إلى الطلاب الذين يسمحون بإشعارات واتساب. الإرسال يتم من رقم الخدمة المرتبط.
             </p>
           </div>
         </div>
         <div className="mt-4 grid gap-3 md:grid-cols-2">
-          <label className="text-sm font-bold text-[#24202D]">
+          <label className="text-sm font-bold">
             القالب
             <select
               value={campaignForm.preset}
@@ -211,41 +211,41 @@ export default function WhatsAppAdminTab() {
                 const preset = campaignPresets[event.target.value];
                 setCampaignForm((current) => ({ ...current, preset: event.target.value, title: preset.title, body: preset.body }));
               }}
-              className="mt-1 h-11 w-full rounded-xl border border-[#24202D]/10 bg-white px-3 text-sm font-normal"
+              className="mt-1 h-11 w-full rounded-xl border border-input bg-background px-3 text-sm font-normal text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
             >
               <option value="custom">رسالة مخصصة</option>
               <option value="nationalDay">اليوم الوطني</option>
               <option value="offer">عرض اشتراك</option>
             </select>
           </label>
-          <label className="text-sm font-bold text-[#24202D]">
+          <label className="text-sm font-bold">
             المستهدفون
             <select
               value={campaignForm.target}
               onChange={(event) => setCampaignForm((current) => ({ ...current, target: event.target.value as "all" | "subscribed" | "free" }))}
-              className="mt-1 h-11 w-full rounded-xl border border-[#24202D]/10 bg-white px-3 text-sm font-normal"
+              className="mt-1 h-11 w-full rounded-xl border border-input bg-background px-3 text-sm font-normal text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
             >
               <option value="all">كل الطلاب وأولياء الأمور</option>
               <option value="subscribed">المشتركون النشطون</option>
               <option value="free">الحسابات المجانية</option>
             </select>
           </label>
-          <label className="text-sm font-bold text-[#24202D] md:col-span-2">
+          <label className="text-sm font-bold md:col-span-2">
             عنوان الرسالة
             <Input
               value={campaignForm.title}
               onChange={(event) => setCampaignForm((current) => ({ ...current, preset: "custom", title: event.target.value }))}
               placeholder="مثال: عرض اليوم الوطني"
-              className="mt-1 h-11 bg-white"
+              className="mt-1 h-11 bg-background text-foreground"
             />
           </label>
-          <label className="text-sm font-bold text-[#24202D] md:col-span-2">
+          <label className="text-sm font-bold md:col-span-2">
             نص الرسالة
             <Textarea
               value={campaignForm.body}
               onChange={(event) => setCampaignForm((current) => ({ ...current, preset: "custom", body: event.target.value }))}
               placeholder="اكتب الرسالة التي ستصل عبر واتساب..."
-              className="mt-1 min-h-28 resize-y bg-white"
+              className="mt-1 min-h-28 resize-y bg-background text-foreground"
             />
           </label>
         </div>
@@ -253,19 +253,19 @@ export default function WhatsAppAdminTab() {
           type="button"
           onClick={() => sendCampaign.mutate()}
           disabled={!connected || !campaignForm.title.trim() || !campaignForm.body.trim() || sendCampaign.isPending}
-          className="mt-4 flex items-center gap-2 rounded-xl bg-[#2E8B70] px-4 py-2.5 text-sm font-bold text-white disabled:opacity-40"
+          className="mt-4 flex items-center gap-2 rounded-xl bg-emerald-700 px-4 py-2.5 text-sm font-bold text-emerald-50 transition-colors enabled:hover:bg-emerald-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-not-allowed disabled:bg-muted disabled:text-muted-foreground"
         >
           {sendCampaign.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
           إرسال الحملة الآن
         </button>
       </div>
 
-      <div className="rounded-2xl border border-[#24202D]/10 bg-[#FFFCF7] p-5">
-        <h3 className="flex items-center gap-2 font-bold text-[#24202D]">
-          <BarChart3 className="h-5 w-5 text-[#2E8B70]" />
+      <div className="rounded-2xl border border-border bg-card p-5">
+        <h3 className="flex items-center gap-2 font-bold">
+          <BarChart3 className="h-5 w-5 text-emerald-700 dark:text-emerald-300" />
           التقارير المالية عبر واتساب
         </h3>
-        <p className="mt-1 text-xs text-[#625D69]">
+        <p className="mt-1 text-xs text-muted-foreground">
           أرسل تقريرًا فوريًا إلى رقم الإدارة. تشمل التقارير الطلاب والاختبارات والاشتراكات والإيرادات والمصروفات والصافي.
         </p>
         <div className="mt-4 flex flex-wrap gap-2">
@@ -279,7 +279,7 @@ export default function WhatsAppAdminTab() {
               type="button"
               onClick={() => sendFinancialReport.mutate(period)}
               disabled={!connected || sendFinancialReport.isPending}
-              className="flex items-center gap-2 rounded-xl border border-[#2E8B70]/25 bg-[#2E8B70]/5 px-4 py-2.5 text-sm font-bold text-[#216953] disabled:opacity-40"
+              className="flex items-center gap-2 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-2.5 text-sm font-bold text-emerald-800 transition-colors enabled:hover:bg-emerald-100 dark:border-emerald-900 dark:bg-emerald-950/40 dark:text-emerald-200 dark:enabled:hover:bg-emerald-950 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-not-allowed disabled:border-border disabled:bg-muted disabled:text-muted-foreground dark:disabled:bg-muted dark:disabled:text-muted-foreground"
             >
               {sendFinancialReport.isPending && sendFinancialReport.variables === period
                 ? <Loader2 className="h-4 w-4 animate-spin" />

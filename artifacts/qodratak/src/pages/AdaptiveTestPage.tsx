@@ -9,6 +9,7 @@ import { useQuery, useMutation } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import { Link, useLocation } from "wouter";
 import { cn } from "@/lib/utils";
+import { PageGuideFilm } from "@/components/student/PageGuideFilm";
 import { resolveFoundationAssetUrl } from "@/lib/foundationVideoUrl";
 import {
   ChevronRight, Brain, Zap, TrendingUp, TrendingDown,
@@ -490,7 +491,10 @@ export default function AdaptiveTestPage() {
 
       <div className="max-w-lg mx-auto px-4 pt-4">
         {stage === "select" && (
-          <CategorySelect onSelect={startSession} />
+          <>
+            <div className="-mx-4 mb-4"><PageGuideFilm location="/adaptive-test" chapter="instructions" /></div>
+            <CategorySelect onSelect={startSession} />
+          </>
         )}
 
         {reportError && <p role="alert" className="my-3 text-sm text-red-600 dark:text-red-400">{reportError}</p>}

@@ -103,5 +103,54 @@
     "trialEndDate": "2026-10-15T23:24:41.922Z",
     "isActive": true,
     "createdAt": "2026-10-12T23:24:41.922Z"
+  },
+  {
+    "deviceId": "bng3xq",
+    "trialStartDate": "2026-10-13T13:12:51.223Z",
+    "trialEndDate": "2026-10-16T13:12:51.223Z",
+    "isActive": true,
+    "createdAt": "2026-10-13T13:12:51.223Z"
+  },
+  {
+    "deviceId": "3x2w1m",
+    "trialStartDate": "2026-10-13T14:01:43.579Z",
+    "trialEndDate": "2026-10-16T14:01:43.579Z",
+    "isActive": true,
+    "createdAt": "2026-10-13T14:01:43.579Z"
+  },
+  {
+    "deviceId": "h3sizx",
+    "trialStartDate": "2026-10-13T14:08:53.078Z",
+    "trialEndDate": "2026-10-16T14:08:53.078Z",
+    "isActive": true,
+    "createdAt": "2026-10-13T14:08:53.078Z"
+  },
+  {
+    "deviceId": "iz237k",
+    "trialStartDate": "2026-10-13T16:39:27.643Z",
+    "trialEndDate": "2026-10-16T16:39:27.643Z",
+    "isActive": true,
+    "createdAt": "2026-10-13T16:39:27.643Z"
+  },
+  {
+    "deviceId": "6iejy7",
+    "trialStartDate": "2026-10-14T03:42:11.592Z",
+    "trialEndDate": "2026-10-17T03:42:11.592Z",
+    "isActive": true,
+    "createdAt": "2026-10-14T03:42:11.592Z"
+  },
+  {
+    "deviceId": "nmeyy7",
+    "trialStartDate": "2026-10-14T04:00:43.598Z",
+    "trialEndDate": "2026-10-17T04:00:43.598Z",
+    "isActive": true,
+    "createdAt": "2026-10-14T04:00:43.598Z"
+  },
+  {
+    "deviceId": "cjmf2l",
+    "trialStartDate": "2026-10-14T04:10:48.122Z",
+    "trialEndDate": "2026-10-17T04:10:48.122Z",
+    "isActive": true,
+    "createdAt": "2026-10-14T04:10:48.122Z"
   }
 ]

@@ -268,7 +268,8 @@ export function createGeideaPaymentRouter(options: RouterOptions): Router {
         res.status(404).json({ error: "عملية الدفع غير معروفة" });
         return;
       }
-      const reconciled = await reconcileGeideaSubscriptionPayment(String(payment._id));
+      // A verified webhook must recheck the provider immediately, including after a UI timeout.
+      const reconciled = await reconcileGeideaSubscriptionPayment(String(payment._id), { alreadyClaimed: true });
       if (!reconciled) {
         res.status(404).json({ error: "عملية الدفع غير معروفة" });
         return;

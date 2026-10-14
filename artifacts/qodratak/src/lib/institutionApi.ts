@@ -9,6 +9,11 @@ export interface InstitutionContract {
   issuedAt: string;
   issuerName: string;
   issuerLegalName: string;
+  issuerPlatformName?: string;
+  signatureAssetId?: string;
+  signatureSha256?: string;
+  stampAssetId?: string;
+  stampSha256?: string;
   issuerNationalNumber: string;
   policies: string;
   conditions: string[];
@@ -19,6 +24,9 @@ export interface InstitutionContract {
   signedUploadedAt?: string;
   approvedAt?: string;
   rejectionReason?: string;
+  issuedDocumentReady?: boolean;
+  portalSentAt?: string;
+  portalDeliveryStatus?: string;
 }
 
 export interface InstitutionDTO {
@@ -36,6 +44,9 @@ export interface InstitutionDTO {
   activatedAt?: string;
   freeEndDate?: string;
   contract: InstitutionContract | null;
+  archived?: boolean;
+  ownerAccountPhone?: string;
+  ownerAccountPending?: boolean;
 }
 
 export interface MemberPerformance {
@@ -89,6 +100,8 @@ export interface Membership {
   freeActive: boolean;
   teacherIds: string[];
 }
+
+export interface PendingInstitution { name: string; status: string; contractLink?: string | null; documentReady?: boolean }
 
 export interface InvitePreview {
   institutionName: string;
@@ -192,6 +205,8 @@ export function useAdminInstitutions(enabled = true) {
     queryKey: adminKeys.list,
     queryFn: () => instFetch<{ institutions: InstitutionDTO[]; storageReady: boolean }>("/api/admin/institutions"),
     enabled,
+    refetchInterval: 15000,
+    refetchIntervalInBackground: false,
   });
 }
 export function useAdminInstitution(id: string | null) {
@@ -199,6 +214,8 @@ export function useAdminInstitution(id: string | null) {
     queryKey: adminKeys.detail(id || ""),
     queryFn: () => instFetch<{ institution: InstitutionDTO; members: RosterMember[] }>(`/api/admin/institutions/${id}`),
     enabled: !!id,
+    refetchInterval: 15000,
+    refetchIntervalInBackground: false,
   });
 }
 export function useAdminInvites(id: string | null, enabled = true) {
@@ -222,17 +239,91 @@ function useAdminRefresh() {
 
 export interface CreateInstitutionBody {
   name: string; type: InstitutionType; email: string; phone?: string; city?: string; address?: string;
-  maxStudents: number; maxTeachers: number; issuerName: string; issuerAuthorized: true; policies: string;
+  maxStudents: number; maxTeachers: number; issuerName: string; issuerAuthorized: true; policies: string; ownerName?: string;
+}
+
+export interface DeliveryNotice { status: string; message?: string }
+export interface CreateInstitutionResult {
+  institution: InstitutionDTO;
+  ownerAccount?: { status: string; phone?: string; message?: string };
+  contractLink?: string;
+  notification?: DeliveryNotice;
+}
+export interface UpdateInstitutionBody {
+  name?: string; email?: string; phone?: string; city?: string; address?: string;
+  maxStudents?: number; maxTeachers?: number; ownerName?: string; issuerAuthorized?: true;
 }
 
 export function useCreateInstitution() {
   const refresh = useAdminRefresh();
   return useMutation({
     mutationFn: (body: CreateInstitutionBody) =>
-      instFetch<{ institution: InstitutionDTO }>("/api/admin/institutions", { method: "POST", json: body }),
+      instFetch<CreateInstitutionResult>("/api/admin/institutions", { method: "POST", json: body }),
     onSuccess: (r) => refresh(r.institution.id, r.institution),
   });
 }
+export function useUpdateInstitution(id: string) {
+  const refresh = useAdminRefresh();
+  return useMutation({
+    mutationFn: (body: UpdateInstitutionBody) =>
+      instFetch<{ institution: InstitutionDTO }>(`/api/admin/institutions/${id}`, { method: "PATCH", json: body }),
+    onSuccess: (r) => refresh(id, r?.institution),
+  });
+}
+export function useArchiveInstitution(id: string) {
+  const refresh = useAdminRefresh();
+  return useMutation({
+    mutationFn: () => instFetch<{ institution?: InstitutionDTO }>(`/api/admin/institutions/${id}`, { method: "DELETE" }),
+    onSuccess: () => refresh(id),
+  });
+}
+/** Upload the platform-issued contract PDF (auth header injected by the admin fetch bridge). */
+export function uploadIssuedContract(id: string, file: Blob, reference: string) {
+  const fd = new FormData();
+  fd.append("reference", reference);
+  fd.append("file", file instanceof File ? file : new File([file], `${reference}.pdf`, { type: "application/pdf" }));
+  return instFetch<{ institution?: InstitutionDTO }>(`/api/admin/institutions/${id}/issued-contract`, { method: "POST", body: fd });
+}
+export function sendWelcome(id: string) {
+  return instFetch<Omit<CreateInstitutionResult, "institution">>(`/api/admin/institutions/${id}/send-welcome`, { method: "POST", json: {} });
+}
+export function sendContractLink(id: string) {
+  return instFetch<{ url: string; notification: DeliveryNotice }>(`/api/admin/institutions/${id}/send-contract`, { method: "POST", json: {} });
+}
+/** True only when the backend explicitly reports the message as delivered/sent. */
+export function deliveryConfirmed(n?: DeliveryNotice | null) {
+  return !!n && ["sent", "delivered", "queued_confirmed"].includes(String(n.status));
+}
+
+/* ─────────── Public contract portal (token from URL fragment, Bearer auth) ─────────── */
+export interface ContractPortalInfo {
+  institution: InstitutionDTO; documentReady: boolean; canUpload: boolean; submitted: boolean; reference: string; ownerAccountPending?: boolean;
+}
+export function portalLookup(token: string) {
+  return instFetch<ContractPortalInfo>("/api/institutions/contract-portal", { method: "POST", json: { token } });
+}
+export async function portalDownloadPdf(token: string, reference: string) {
+  const res = await fetch("/api/institutions/contract-portal/pdf", { headers: { Authorization: `Bearer ${token}` }, credentials: "omit" });
+  if (!res.ok) {
+    let msg = "تعذر تنزيل نسخة العقد";
+    try { msg = (await res.json()).message || msg; } catch { /* ignore */ }
+    throw new ApiError(msg, res.status);
+  }
+  const blob = await res.blob();
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url; a.download = `${reference}.pdf`;
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 2000);
+}
+export function portalUploadSigned(token: string, file: File, reference: string, signerName: string) {
+  const fd = new FormData();
+  fd.append("file", file); fd.append("reference", reference); fd.append("signerName", signerName); fd.append("consent", "true");
+  return instFetch<{ submitted: boolean; message?: string }>("/api/institutions/contract-portal/upload", {
+    method: "POST", body: fd, credentials: "omit", headers: { Authorization: `Bearer ${token}` },
+  });
+}
+
 export function useUploadSigned(id: string) {
   const refresh = useAdminRefresh();
   return useMutation({
@@ -309,7 +400,7 @@ export async function downloadSignedContract(id: string, reference: string) {
 export function useMembership(enabled = true) {
   return useQuery({
     queryKey: ["institution", "membership"],
-    queryFn: () => instFetch<{ membership: Membership | null }>("/api/institution/membership"),
+    queryFn: () => instFetch<{ membership: Membership | null; pendingInstitution?: PendingInstitution | null }>("/api/institution/membership"),
     enabled,
     retry: (n, e: any) => e?.status !== 401 && n < 1,
   });

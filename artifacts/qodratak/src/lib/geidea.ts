@@ -1,4 +1,4 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 
 export const GEIDEA_HOST = "www.ksamerchant.geidea.net";
@@ -49,8 +49,9 @@ export type GeideaSession = { paymentId: string; sessionId: string; checkoutUrl:
 /** Statuses after which polling must stop. refund_pending is not final but no longer "verifying". */
 export const TERMINAL_STATUSES: GeideaStatus[] = ["paid", "failed", "refunded", "refund_failed", "refund_pending"];
 
-const MAX_POLLS = 90; // ~3 minutes at 2s
+const MAX_POLLS = 300; // Up to 10 minutes at 2s; the server settles sessions independently.
 const POLL_MS = 2000;
+const PROCESSING_WINDOW_MS = 10 * 60_000;
 
 /** Only accept https URLs on the official Geidea KSA host. */
 export function safeGeideaUrl(raw?: string | null): string | null {
@@ -136,9 +137,14 @@ export const SUBSCRIPTION_QUERY_KEYS = [
 export function useGeideaPaymentStatus(paymentId: string | null | undefined) {
   const queryClient = useQueryClient();
   const polls = useRef(0);
+  const [deadlineExpired, setDeadlineExpired] = useState(false);
   const invalidatedFor = useRef<string | null>(null);
   useEffect(() => {
     polls.current = 0;
+    setDeadlineExpired(false);
+    if (!paymentId) return;
+    const timer = window.setTimeout(() => setDeadlineExpired(true), PROCESSING_WINDOW_MS);
+    return () => window.clearTimeout(timer);
   }, [paymentId]);
 
   const query = useQuery<GeideaPaymentStatus>({
@@ -152,7 +158,7 @@ export function useGeideaPaymentStatus(paymentId: string | null | undefined) {
     refetchInterval: (q) => {
       const status = q.state.data?.status;
       if (status && TERMINAL_STATUSES.includes(status)) return false;
-      return polls.current >= MAX_POLLS ? false : POLL_MS;
+      return deadlineExpired || polls.current >= MAX_POLLS ? false : POLL_MS;
     },
     refetchIntervalInBackground: false,
     refetchOnWindowFocus: false,
@@ -169,7 +175,7 @@ export function useGeideaPaymentStatus(paymentId: string | null | undefined) {
     }
   }, [status, paymentId, queryClient]);
 
-  const pollingExhausted = polls.current >= MAX_POLLS && !(status && TERMINAL_STATUSES.includes(status));
+  const pollingExhausted = (deadlineExpired || polls.current >= MAX_POLLS) && !(status && TERMINAL_STATUSES.includes(status));
   const recheck = () => {
     polls.current = 0;
     return query.refetch();
@@ -200,7 +206,7 @@ export function statusCopy(status?: GeideaStatus, exhausted = false) {
       return { title: "تم استرداد المبلغ", body: "أعيد مبلغ هذه العملية، والاشتراك المرتبط بها غير مفعل." };
     default:
       return exhausted
-        ? { title: "لم يصل التأكيد بعد", body: "لم يصل تأكيد Geidea حتى الآن. اضغط إعادة التحقق؛ لن يتم إنشاء عملية دفع جديدة." }
-        : { title: "نتحقق من عملية الدفع", body: "قد يستغرق وصول التأكيد بضع ثوانٍ. لا تغلق الصفحة." };
+        ? { title: "لم يصل التأكيد بعد", body: "لم نتمكن من حسم العملية خلال عشر دقائق. يمكنك إعادة التحقق دون إنشاء دفع جديد؛ وإذا ظهر خصم لدى البنك فتواصل مع الدعم." }
+        : { title: "نتحقق من عملية الدفع", body: "قد تستغرق معالجة العملية حتى عشر دقائق. لا تكرر الدفع أثناء التحقق." };
   }
 }

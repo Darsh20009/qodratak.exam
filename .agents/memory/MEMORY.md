@@ -2,8 +2,9 @@
 - [Deployment assets and Git LFS](deployment-assets-lfs.md) — Render must not depend on quota-limited LFS objects for files required during repository checkout.
 - [SPA metadata ownership](spa-metadata-ownership.md) — keep canonical and robots under one route-level owner when React Helmet coexists with static fallback metadata.
 - [MongoDB data preservation](mongodb-data-preservation.md) — treat the connected MongoDB as an existing dataset; future migrations must be additive and non-destructive.
+- [Historical subscriber identity](historical-subscriber-identity.md) — retain legacy financial owner references; do not guess modern students for unresolved subscriptions.
 - [QIROX WhatsApp direction](qirox-whatsapp-direction.md) — the configured QIROX API is outbound-only; inbound student conversations still depend on the linked Baileys session.
-- [Phone login fallback](phone-login-fallback.md) — keep password login available when WhatsApp OTP delivery is unavailable; OTP remains an explicit alternate path.
+- [Phone login fallback](phone-login-fallback.md) — WhatsApp OTP is the default; retain password login when delivery is unavailable.
 - [Server session authority](server-session-authority.md) — route access and the home screen must trust the server session, never stale localStorage data.
 - [Device-limit recovery](device-limit-recovery.md) — a verified login may delete one registered device through a short-lived challenge, then continue login safely.
 - [Unified plans and WhatsApp care](unified-plans-whatsapp-care.md) — purchase values use one plan setting; WhatsApp is restricted to queued OTP and essential transactional alerts.
@@ -13,7 +14,7 @@
 - [Question image import compatibility](question-image-import.md) — keep the first-image fields for legacy consumers while treating multi-image extraction as optional and reviewable.
 - [Question-number badge cleanup](question-number-badge-cleanup.md) — badge positions vary; locate the capsule geometry and mask only digit ink inside the number disc.
 - [Public Forms answer-key boundary](public-forms-answer-key.md) — public respondent HTML can expose prompts and options, but its numeric metadata is not a reliable answer key.
-- [Development admin fixture](development-admin-fixture.md) — keep the local admin demo identity independent from the removed legacy user export.
+- [Real administrator access](development-admin-fixture.md) — shared demo admin login is removed; use active traceable administrators and isolated test fixtures.
 - [Qodratak mailbox integration](mailbox-integration.md) — official mailbox settings must take precedence over legacy SMTP variables and remain secret-backed.
 - [Persistent media boundary](persistent-media-boundary.md) — production uploads must fail clearly without a persistent provider; local disk is development-only.
 - [Scanned exam OCR review boundary](tahsili-ocr-review-boundary.md) — preserve source images, use OCR as supporting text, and keep ambiguous answer-key glyphs out of scored quizzes.
@@ -50,6 +51,9 @@
 - [Landing store badge](landing-store-badge.md) — show «متجر موثّق» only on the public homepage, never on any dashboard or other page.
 - [Complaint notification boundary](customer-complaint-notifications.md) — minimal admin WhatsApp notices; full customer records stay protected, and saving does not depend on delivery.
 - [RTL hidden controls](rtl-hidden-controls.md) — clip hidden fields in place; far-negative offsets can expand RTL document bounds.
-- [Student brand accent](student-brand-accent.md) — student highlights use the landing page’s orange/coral rather than yellow; preserve semantic warning colors.
+- [Student brand rules](student-brand-accent.md) — orange/coral highlights; full logo for installed app icons, symbol-only elsewhere.
 - [Quantitative correction videos](quantitative-correction-video-scope.md) — question-specific video explanations apply to every exam type containing quantitative questions, including mixed exams.
 - [Institutional access](institution-contract-entitlements.md) — signed, approved contracts gate activation; institutions and their students receive three free months.
+- [Student platform reviews](student-platform-reviews.md) — students submit feedback privately; only admin-approved reviews appear on the landing page.
+- [Student platform guide](student-platform-guide.md) — homepage links to the guide; student hero film is hideable and explains real exam interiors with the approved logo.
+- [Geidea timeout authority](geidea-timeout-authority.md) — a ten-minute platform timeout is not a provider cancellation; verified delayed charges must remain recoverable.

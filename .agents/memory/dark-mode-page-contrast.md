@@ -16,3 +16,9 @@ All application layout branches must participate in the theme boundary; do not a
 **How to apply:** Check the actual route's layout boundary, not only the stylesheet. Explicit dark variants remain page-owned. Preserve original question/PDF pixels and the white drawing-paper surface so dark mode does not hide black ink. Transparent question scans need white paper behind them both inline and when enlarged; preserving pixels alone is insufficient.
 
 **Why:** Background-removed question scans can contain transparent pixels and dark ink. Rendering them on a dark card makes otherwise valid source content look corrupted even with no CSS filter.
+
+Verify administrative color changes with the actual application stylesheet and theme wrappers in both light and dark mode, not just isolated component colors.
+
+**Why:** Administrative compatibility styles can override a nested button's foreground independently of its background. A component can appear correct in isolation but lose contrast inside the real administrative surface.
+
+**How to apply:** Include inherited styles and disabled controls in visual checks. For a color-only fix, an offline rendering of the actual component with its real stylesheet can verify presentation without changing administrator access or sending messages.

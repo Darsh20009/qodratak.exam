@@ -1,6 +1,8 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { ChevronDown, ChevronUp, Pause, Play, Repeat, Volume2, VolumeX } from 'lucide-react';
 import VideoTemplate, { SCENE_DURATIONS } from './VideoTemplate';
+import MarketingTemplate, { MARKETING_DURATIONS } from './Marketing';
+import ExtraChapterTemplate, { EXTRA_DURATIONS } from './ExtraChapters';
 import { useSceneControls } from './useSceneControls';
 
 const F = 'src/components/video/Scenes.tsx';
@@ -10,6 +12,7 @@ const SCENE_DETAILS: Record<string, { title: string; filePath: string }> = {
   foundation: { title: 'التأسيس', filePath: F }, book: { title: 'كتاب التأسيس', filePath: F },
   computerized: { title: 'المحوسب', filePath: F }, results: { title: 'نتائجي', filePath: F },
   account: { title: 'حسابي', filePath: F }, outro: { title: 'الخاتمة', filePath: F },
+  m_hook: { title: 'ليه مشتّت؟', filePath: 'src/components/video/Marketing.tsx' },
 };
 
 function announce(index: number, keys: string[]) {
@@ -52,10 +55,39 @@ function PlaybackStatus({ sceneKeys, activeIndex, activeDuration, activeStartTim
 
 const btn = 'w-14 h-14 flex items-center justify-center text-white/60 hover:text-white hover:bg-white/10 transition-colors rounded-lg shrink-0';
 
+export const CHAPTERS: Record<string, string[]> = {
+  dashboard: ['dashboard'], course: ['course'], today: ['today'], foundation: ['foundation'], book: ['book'],
+  computerized: ['computerized'], mock: ['mock', 'instructions', 'runner', 'passage'], instructions: ['instructions'],
+  runner: ['runner'], passage: ['passage'], custom: ['custom'], results: ['results'], account: ['account'], support: ['support'],
+};
+
+/** Reads ?film=marketing | ?chapter=KEY | ?muted=1. Default = full guide. */
+export function readPlayerConfig() {
+  const q = new URLSearchParams(typeof window !== 'undefined' ? window.location.search : '');
+  const muted = q.get('muted') === '1';
+  if (q.get('film') === 'marketing') return { Template: MarketingTemplate, base: MARKETING_DURATIONS as Record<string, number>, muted };
+  const ch = q.get('chapter') ?? '';
+  if (Object.prototype.hasOwnProperty.call(EXTRA_DURATIONS, ch)) return { Template: ExtraChapterTemplate, base: { [ch]: EXTRA_DURATIONS[ch as keyof typeof EXTRA_DURATIONS] } as Record<string, number>, muted };
+  const keys = CHAPTERS[ch];
+  if (keys) {
+    const base: Record<string, number> = {};
+    for (const k of keys) base[k] = SCENE_DURATIONS[k as keyof typeof SCENE_DURATIONS];
+    return { Template: VideoTemplate, base, muted };
+  }
+  return { Template: VideoTemplate, base: SCENE_DURATIONS as Record<string, number>, muted };
+}
+const CONFIG = readPlayerConfig();
+/** A single-scene segment is played as k_r1/k_r2 so the player remounts (and audio re-seeks) on every loop. */
+function loopable(d: Record<string, number>) {
+  const ks = Object.keys(d);
+  return ks.length === 1 && !/_r[12]$/.test(ks[0]) ? { [`${ks[0]}_r1`]: d[ks[0]], [`${ks[0]}_r2`]: d[ks[0]] } : d;
+}
+
 export default function VideoWithControls() {
   const isIframed = typeof window !== 'undefined' && window.self !== window.top;
-  const c = useSceneControls(SCENE_DURATIONS);
-  const [muted, setMuted] = useState(false);
+  const { Template, base } = CONFIG;
+  const c = useSceneControls(base);
+  const [muted, setMuted] = useState(CONFIG.muted);
   const { jumpTo, sceneKeys, paused } = c;
   const handleJumpTo = useCallback((i: number) => { jumpTo(i); announce(i, sceneKeys); }, [jumpTo, sceneKeys]);
 
@@ -77,12 +109,12 @@ export default function VideoWithControls() {
     return () => document.removeEventListener('pointerdown', h);
   }, [collapsed, tapPinned]);
 
-  if (!isIframed) return <VideoTemplate />;
+  if (!isIframed) return <Template durations={loopable(base)} muted={CONFIG.muted} />;
   const visible = !collapsed || hovering || tapPinned;
 
   return (
     <div className="relative w-full h-screen">
-      <VideoTemplate key={c.mountKey} durations={c.durations} loop paused={c.paused} muted={muted} onSceneChange={c.onSceneChange} />
+      <Template key={c.mountKey} durations={loopable(c.durations)} loop paused={c.paused} muted={muted} onSceneChange={c.onSceneChange} />
       <div ref={sensorRef} className="absolute bottom-0 left-0 right-0 z-50 flex flex-col justify-end" style={{ height: '25%' }}
         onPointerEnter={(e) => { if (e.pointerType === 'mouse') setHovering(true); }}
         onPointerLeave={(e) => { if (e.pointerType === 'mouse') setHovering(false); }}

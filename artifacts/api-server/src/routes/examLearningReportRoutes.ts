@@ -19,6 +19,33 @@ export function registerExamLearningReportRoutes(app: Express, studentOnly: Requ
         ExamLearningReport.countDocuments({ studentId }),
       ]);
       const reports = rows.slice(0, 30);
+      // Repair historical incomplete corrections without changing answers, timing or attempts.
+      const pending = reports.flatMap((report: any) => report.questions
+        .filter((question: any) => question.isCorrect === null && question.selectedOptionIndex !== null)
+        .map((question: any) => ({ report, question }))).slice(0, 64);
+      for (let offset = 0; offset < pending.length; offset += 8) {
+        const refreshed = await Promise.allSettled(pending.slice(offset, offset + 8).map(async ({ report, question }) => {
+          const resolved = await resolveReportQuestion(studentId, question);
+          if (!resolved || resolved.correction.selectedAnswer !== question.selectedOptionIndex) return;
+          const correction = {
+            isCorrect: resolved.correction.isCorrect,
+            correctOptionIndex: resolved.question.correctOptionIndex,
+            sourceQuestionId: resolved.questionId,
+            ...(resolved.question.explanation?.trim() && !question.explanation ? {
+              explanation: resolved.question.explanation,
+              explanationStatus: 'approved',
+            } : {}),
+          };
+          await ExamLearningReport.updateOne({
+            studentId, runId: report.runId,
+            questions: { $elemMatch: { id: question.id, isCorrect: null, selectedOptionIndex: question.selectedOptionIndex } },
+          }, { $set: Object.fromEntries(Object.entries(correction).map(([key, value]) => [`questions.$.${key}`, value])) });
+          Object.assign(question, correction);
+        }));
+        if (refreshed.some((result) => result.status === 'rejected')) {
+          req.log.warn('Historical report correction refresh unavailable; returning saved reports');
+        }
+      }
       res.json({ reports, totalCount, nextCursor: rows.length > 30 ? String(reports[29]._id) : null });
     } catch { res.status(503).json({ error: 'تعذر تحميل التقارير.' }); }
   });
@@ -43,14 +70,14 @@ export function registerExamLearningReportRoutes(app: Express, studentOnly: Requ
           const pastSeconds = previous.flatMap((r) => r.questions.filter((x: any) => x.category === category && x.seconds > 0).map((x: any) => x.seconds));
           const sameTest = input.questions.filter((x) => (x.category || 'عام') === (item.category || 'عام')).map((x) => x.seconds);
           const baseline = timingAnalysis(pastSeconds.length >= 5 ? pastSeconds : sameTest);
-          const proofMatches = resolved && item.selectedOptionIndex !== null && Number(resolved.proof.selectedAnswer) === item.selectedOptionIndex;
+          const proofMatches = resolved && resolved.correction.selectedAnswer === item.selectedOptionIndex;
           const explanation = resolved ? await cachedQuestionExplanation(studentId, item, false) : null;
           return {
             ...item, category, subcategory, seconds: Math.round(item.seconds * 10) / 10,
             sourceQuestionId: resolved?.questionId,
             imageUrl: q?.imageUrl || '', imageUrls: q?.imageUrls || [],
             passageText: q?.source?.passageText || '',
-            isCorrect: proofMatches ? Boolean(resolved.proof.isCorrect) : null,
+            isCorrect: proofMatches ? Boolean(resolved.correction.isCorrect) : null,
             correctOptionIndex: proofMatches ? q.correctOptionIndex : null,
             explanation: proofMatches ? explanation?.explanation || '' : '',
             explanationStatus: proofMatches ? explanation?.status || 'missing' : 'unverified',
@@ -73,7 +100,7 @@ export function registerExamLearningReportRoutes(app: Express, studentOnly: Requ
         });
         report = await ExamLearningReport.findOneAndUpdate({ studentId, runId: input.runId }, { $set: { questions: corrected } }, { returnDocument: 'after' }).lean();
       }
-      const needed = report.questions.filter((q: any) => q.sourceQuestionId && q.isCorrect !== null &&
+      const needed = report.questions.filter((q: any) => q.sourceQuestionId && q.selectedOptionIndex !== null && q.isCorrect !== null &&
         (q.isCorrect === false || q.isSlow) && !q.explanation).slice(0, 2);
       const claimed = needed.length ? await ExamLearningReport.findOneAndUpdate({ studentId, runId: input.runId, generationQueued: { $ne: true } },
         { $set: { generationQueued: true } }) : null;

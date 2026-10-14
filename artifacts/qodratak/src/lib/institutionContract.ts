@@ -46,8 +46,9 @@ const MUTED = "#5E5868";
 const CORAL = "#C4553F";
 const MINT = "#2E8B70";
 
-function blocksFor(inst: InstitutionDTO): string[] {
+export function blocksFor(inst: InstitutionDTO, assets: { signature?: string; stamp?: string } = {}): string[] {
   const c = inst.contract!;
+  const partyName = c.issuerPlatformName || c.issuerLegalName;
   const b: string[] = [];
   const h = (t: string) => `<h2 style="font-size:17px;font-weight:800;color:${INK};margin:18px 0 8px;border-bottom:1px solid #E5DED3;padding-bottom:6px">${esc(t)}</h2>`;
   const p = (t: string) => `<p style="font-size:12.5px;line-height:2;color:${MUTED};margin:0 0 6px">${esc(t)}</p>`;
@@ -57,7 +58,7 @@ function blocksFor(inst: InstitutionDTO): string[] {
   b.push(`<div style="display:flex;align-items:center;justify-content:space-between;gap:16px;border-bottom:3px solid ${INK};padding-bottom:16px">
     <div><p style="font-size:11px;font-weight:800;letter-spacing:.12em;color:${CORAL};margin:0">اتفاقية انضمام مؤسسة تعليمية</p>
     <h1 style="font-size:26px;font-weight:900;color:${INK};margin:6px 0 4px">عقد مساحة المؤسسة على منصة ${esc(BRAND_NAME)}</h1>
-    <p style="font-size:12px;color:${MUTED};margin:0">صادر من ${esc(c.issuerLegalName)} — الرقم الوطني الموحد ${esc(c.issuerNationalNumber)}</p></div>
+    <p style="font-size:12px;color:${MUTED};margin:0">صادر من ${esc(partyName)} — الرقم الوطني الموحد ${esc(c.issuerNationalNumber)}</p></div>
     <img src="/qodratak-logo.png" crossorigin="anonymous" style="height:86px;width:auto;object-fit:contain" />
   </div>`);
   b.push(h("بيانات الإصدار والتحقق"));
@@ -70,7 +71,7 @@ function blocksFor(inst: InstitutionDTO): string[] {
   ].join("")}</table>`);
   b.push(h("الطرفان"));
   b.push(`<table style="width:100%;border-collapse:collapse;font-size:12px">${[
-    row("الطرف الأول", `${c.issuerLegalName} (منصة ${BRAND_NAME})، الرقم الوطني الموحد ${c.issuerNationalNumber}، ${SUPPORT_EMAIL}، ${SUPPORT_PHONE}`),
+    row("الطرف الأول", `${partyName}، يمثلها ${c.issuerName}، ${c.issuerPlatformName ? `الكيان النظامي: ${c.issuerLegalName}، ` : ""}الرقم الوطني الموحد ${c.issuerNationalNumber}، ${SUPPORT_EMAIL}، ${SUPPORT_PHONE}`),
     row("الطرف الثاني", `${inst.name} — ${TYPE_LABEL[inst.type]}`),
     row("بريد المؤسسة", inst.email),
     row("جوال المؤسسة", inst.phone || "—"),
@@ -96,8 +97,12 @@ function blocksFor(inst: InstitutionDTO): string[] {
   b.push(h("الاعتماد والتوقيع"));
   b.push(`<div style="display:flex;gap:16px;margin-top:6px">
     <div style="flex:1;border:1px solid #D8D0C4;border-radius:10px;padding:14px;font-size:12px;color:${MUTED};line-height:2">
-      <p style="font-weight:800;color:${INK};margin:0 0 4px">الطرف الأول — ${esc(c.issuerLegalName)}</p>
+      <p style="font-weight:800;color:${INK};margin:0 0 4px">الطرف الأول — ${esc(partyName)}</p>
       <p style="margin:0">اعتماد إلكتروني داخلي باسم المفوّض: <b style="color:${INK}">${esc(c.issuerName)}</b></p>
+      ${assets.signature || assets.stamp ? `<div style="display:flex;align-items:center;gap:12px;margin:10px 0;background:white;padding:6px;border-radius:6px">
+        ${assets.signature ? `<div style="flex:1;min-width:0;text-align:center"><img alt="توقيع ممثل المنصة" src="${esc(assets.signature)}" style="width:100%;height:65px;object-fit:contain"/><p style="font-size:10px;margin:0">التوقيع</p></div>` : ""}
+        ${assets.stamp ? `<div style="width:96px;flex-shrink:0;text-align:center"><img alt="ختم منصة قدراتك التعليمية" src="${esc(assets.stamp)}" style="width:96px;height:96px;object-fit:contain"/><p style="font-size:10px;margin:0">ختم المنصة</p></div>` : ""}
+      </div>` : ""}
       <p style="margin:0">بتاريخ: ${esc(fmt(c.issuedAt))}</p>
       <p style="margin:0;font-size:10px;direction:ltr;text-align:left;font-family:monospace;word-break:break-all">${esc(c.reference)}</p>
     </div>
@@ -114,13 +119,27 @@ function blocksFor(inst: InstitutionDTO): string[] {
 }
 
 async function waitImages(root: HTMLElement) {
-  await Promise.all(Array.from(root.querySelectorAll("img")).map((img) => img.complete ? Promise.resolve() :
-    new Promise<void>((r) => { img.onload = () => r(); img.onerror = () => r(); })));
+  await Promise.all(Array.from(root.querySelectorAll("img")).map(async (img) => {
+    try { await img.decode(); }
+    catch { throw new Error("تعذر تحميل إحدى صور العقد؛ لم يتم تنزيل نسخة ناقصة. أعد المحاولة."); }
+  }));
   if ((document as any).fonts?.ready) await (document as any).fonts.ready;
 }
 
-export async function generateContractPdf(inst: InstitutionDTO) {
+/** Render the approved contract (with signature and stamp) and return the PDF as a Blob. */
+export async function buildContractPdfBlob(inst: InstitutionDTO): Promise<Blob> {
   if (!inst.contract) throw new Error("لا يوجد عقد صادر لهذه المؤسسة");
+  const assetUrls: string[] = [];
+  const assets: { signature?: string; stamp?: string } = {};
+  try {
+    for (const kind of ["signature", "stamp"] as const) {
+      if (!inst.contract[`${kind}AssetId`]) continue;
+      const response = await fetch(`/api/admin/institutions/${encodeURIComponent(inst.id)}/contract-assets/${kind}`, { credentials: "include" });
+      if (!response.ok) throw new Error("تعذر تحميل التوقيع أو الختم المعتمد؛ لم يتم إنشاء نسخة ناقصة.");
+      const url = URL.createObjectURL(await response.blob());
+      assetUrls.push(url); assets[kind] = url;
+    }
+  } catch (error) { assetUrls.forEach(URL.revokeObjectURL); throw error; }
   const [{ default: html2canvas }, { jsPDF }] = await Promise.all([import("html2canvas"), import("jspdf")]);
   const host = document.createElement("div");
   host.style.cssText = "position:fixed;left:-10000px;top:0;z-index:-1;";
@@ -131,7 +150,7 @@ export async function generateContractPdf(inst: InstitutionDTO) {
   measure.style.cssText = `${base}width:${contentW}px;`;
   host.appendChild(measure);
   try {
-    const blocks = blocksFor(inst);
+    const blocks = blocksFor(inst, assets);
     const els = blocks.map((html) => {
       const w = document.createElement("div");
       w.innerHTML = html;
@@ -161,7 +180,7 @@ export async function generateContractPdf(inst: InstitutionDTO) {
       page.appendChild(inner);
       const footer = document.createElement("div");
       footer.style.cssText = `position:absolute;bottom:28px;left:${PAD_X}px;right:${PAD_X}px;display:flex;justify-content:space-between;font-size:9.5px;color:${MUTED};border-top:1px solid #E5DED3;padding-top:8px;`;
-      footer.innerHTML = `<span>${esc(inst.name)} — ${esc(LEGAL_ENTITY_NAME)}</span><span style="direction:ltr;font-family:monospace">${esc(inst.contract.reference)} · ${i + 1}/${pages.length}</span>`;
+      footer.innerHTML = `<span>${esc(inst.name)} — ${esc(inst.contract.issuerPlatformName || inst.contract.issuerLegalName)}</span><span style="direction:ltr;font-family:monospace">${esc(inst.contract.reference)} · ${i + 1}/${pages.length}</span>`;
       page.appendChild(footer);
       host.appendChild(page);
       await waitImages(page);
@@ -170,9 +189,21 @@ export async function generateContractPdf(inst: InstitutionDTO) {
       pdf.addImage(canvas.toDataURL("image/jpeg", 0.92), "JPEG", 0, 0, pw, ph);
       page.remove();
     }
-    pdf.setProperties({ title: `${inst.contract.reference}`, subject: `عقد مؤسسة ${inst.name}`, author: LEGAL_ENTITY_NAME });
-    pdf.save(`${inst.contract.reference}.pdf`);
+    pdf.setProperties({ title: `${inst.contract.reference}`, subject: `عقد مؤسسة ${inst.name}`, author: inst.contract.issuerPlatformName || inst.contract.issuerLegalName });
+    return pdf.output("blob");
   } finally {
     host.remove();
+    assetUrls.forEach(URL.revokeObjectURL);
   }
+}
+
+/** Normal download path: builds the same PDF and saves it locally. */
+export async function generateContractPdf(inst: InstitutionDTO): Promise<Blob> {
+  const blob = await buildContractPdfBlob(inst);
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url; a.download = `${inst.contract!.reference}.pdf`;
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 2000);
+  return blob;
 }

@@ -671,7 +671,7 @@ async function buildStudyPlans(
       return {
         program,
         programLabel,
-        reason: "لا توجد إجابات موثقة كافية لهذا البرنامج حتى الآن.",
+        reason: "نحتاج إلى إجابات إضافية لتحديد مستواك في هذا البرنامج.",
         confidence: "low",
         retestDue: false,
         availabilityNote: "ابدأ بتقييم تحديد المستوى لبناء مسار مناسب من نتيجتك.",
@@ -754,13 +754,13 @@ async function buildStudyPlans(
 function fallbackGuide(areas: AreaStat[], attemptCount: number): CoachReport["guide"] {
   if (attemptCount < 3 || !areas.length) {
     const summary =
-      "لا توجد إجابات موثقة كافية لتأكيد نقاط قوة أو فجوات بعد. ابدأ بتقييم القدرات أو التحصيلي، وسيتحسن التوجيه مع حفظ إجابات إضافية.";
+      "ابدأ بتقييم القدرات لنعرف مستواك ونحدد خطوتك التالية. يتحسن التوجيه كلما أجبت عن أسئلة إضافية.";
     return {
       title: "ابدأ بقياس مستواك",
       summary,
       steps: [
         "أكمل تقييم البداية للبرنامج الذي تدرسه.",
-        "راجع الإجابات الخاطئة من الشرح الموثق.",
+        "راجع شرح الأسئلة التي أخطأت فيها.",
         "تابع التدريب؛ لا نستنتج ضعفًا من إجابة واحدة.",
       ],
       markdown: `# ابدأ بقياس مستواك\n\n${summary}\n\n- أكمل تقييم البداية.\n- راجع الإجابات الخاطئة من شرح المنصة.\n- استمر في التدريب لبناء أدلة كافية.`,
@@ -772,7 +772,7 @@ function fallbackGuide(areas: AreaStat[], attemptCount: number): CoachReport["gu
     .sort((left, right) => left.accuracy - right.accuracy)
     .slice(0, 3);
   const focusLines = focus.map((area) =>
-    `- ${area.program === "qudrat" ? "القدرات" : "التحصيلي"} · ${area.subjectLabel} · ${area.subcategory}: ${area.accuracy}% (${area.totalAttempts} إجابة موثقة؛ ثقة ${area.confidence}).`,
+    `- ${area.program === "qudrat" ? "القدرات" : "التحصيلي"} · ${area.subjectLabel} · ${area.subcategory}: ${area.accuracy}% (${area.totalAttempts} إجابة مسجلة؛ ثقة ${area.confidence}).`,
   );
   const summary = focus.length
     ? `تستحق هذه المجالات مراجعة إضافية بناءً على الإجابات المحفوظة: ${focus.map((area) => `${area.subjectLabel} · ${area.subcategory}`).join("، ")}. هذا رصد للأداء وليس حكمًا على قدرة الطالب.`
@@ -988,7 +988,7 @@ export async function answerLearningCoachQuestion(
     }));
 
   const unavailableReply =
-    "الشرح الذكي غير متاح الآن. يمكنك متابعة الدرس والاختبار كالمعتاد، والاعتماد على الشرح الموثق الظاهر أسفل السؤال؛ لن تتأثر إجاباتك أو نتيجتك بتوقفه.";
+    "الشرح الذكي غير متاح الآن. يمكنك متابعة الدرس والاختبار وقراءة شرح السؤال؛ لن تتأثر إجاباتك أو نتيجتك.";
   if (!process.env.OPENAI_API_KEY?.trim()) {
     return { reply: unavailableReply, aiAvailable: false, fallback: true };
   }

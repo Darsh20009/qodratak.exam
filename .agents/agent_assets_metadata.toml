@@ -35,3 +35,10 @@ uri = "file://artifacts/qodratak-guide/public/audio/bg_music.mp3"
 type = "audio"
 title = "background music"
 description = "Generated music: Warm uplifting modern Arabic-inspired lo-fi electronic instrumental for a calm product tutorial. Soft oud plucks, warm pads, light hand percussion and gentle beat, 96 BPM. Patient in…"
+
+[[outputs]]
+id = "OynejV9Q3pvbBhXzKvYH4"
+uri = "file://artifacts/qodratak-guide/public/audio/marketing_music.mp3"
+type = "audio"
+title = "marketing film music"
+description = "Generated music: Modern Arabic-tinged electronic pop instrumental background music for a 36-second education app promo film. Soft oud motif and muted plucks for a tense, scattered opening, then a con…"

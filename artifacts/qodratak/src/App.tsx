@@ -125,6 +125,7 @@ import { ThemeToggle } from "@/components/ThemeToggle";
 import PaperModelsManagementPage from "@/pages/PaperModelsManagementPage";
 import BubbleSheetScanPage from "@/pages/BubbleSheetScanPage";
 import PlatformGuidePage from "@/pages/PlatformGuidePage";
+import HowItWorksPage from "@/pages/HowItWorksPage";
 import MyFolders from "@/pages/MyFolders";
 import FolderView from "@/pages/FolderView";
 import TestMe from "@/pages/TestMe";
@@ -136,6 +137,7 @@ import StudentAnalyticsPage from "@/pages/StudentAnalyticsPage";
 import WalletPage from "@/pages/WalletPage";
 import SeasonalExamsPage from "@/pages/SeasonalExamsPage";
 import InvitePage from "@/pages/InvitePage";
+import InstitutionContractPortalPage from "@/pages/InstitutionContractPortalPage";
 import StudyRoomsPage from "@/pages/StudyRoomsPage";
 import StudyRoomLobbyPage from "@/pages/StudyRoomLobbyPage";
 import NotificationSettingsPage from "@/pages/NotificationSettingsPage";
@@ -170,6 +172,7 @@ import { StudentAvailabilityBoundary } from "@/components/student/TahsiliComingS
 import { StudentJourneyNavigation } from "@/components/student/StudentJourneyNavigation";
 import AccountPage from "@/pages/student/AccountPage";
 import { StudentShell } from "@/components/student/StudentShell";
+import { StudentPageGuide } from "@/components/student/PageGuideFilm";
 import { StudentExamChromeContext } from "@/components/student/StudentExamChromeContext";
 import { BrandLoadingScreen, PageTransition } from "@/components/PageTransition";
 import { BrandMark } from "@/components/BrandMark";
@@ -207,6 +210,8 @@ const PUBLIC_PATHS = new Set([
   "/guide",
   "/usage-guide",
   "/platform-guide",
+  "/how-it-works",
+  "/institution-contract",
 ]);
 
 function isPublicPath(pathname: string) {
@@ -217,13 +222,24 @@ function isPublicPath(pathname: string) {
 function AuthenticatedRouteBoundary({ children }: { children: React.ReactNode }) {
   const [location, navigate] = useLocation();
   const { user, isLoading, error, refetch } = useUser();
-  const { subscription, isLoading: isSubscriptionLoading } = useSubscription();
+  const {
+    subscription, isLoading: isSubscriptionLoading,
+    error: subscriptionError, refetchSubscription,
+  } = useSubscription();
   const needsAuthentication = !isPublicPath(location);
   const cleanPath = location.split("?")[0].replace(/\/+$/, "") || "/";
-  const isExpiredStudent = user?.role === "student" && Boolean(subscription?.isExpired);
+  // The server still authorizes every API call. Close cached learning screens
+  // at the known trial deadline too, without waiting for the next status poll.
+  const trialDeadlineElapsed = Boolean(
+    subscription?.isTrialActive && subscription.trialEndDate &&
+    new Date(subscription.trialEndDate).getTime() <= Date.now(),
+  );
+  const isExpiredStudent = user?.role === "student" &&
+    Boolean(subscription?.isExpired || trialDeadlineElapsed);
   const canUseExpiredTrialRoute = [
     "/",
     "/records",
+    "/how-it-works",
     "/subscription",
     "/enhanced-subscription",
     "/payment/geidea/return",
@@ -266,6 +282,20 @@ function AuthenticatedRouteBoundary({ children }: { children: React.ReactNode })
 
   if (user?.role === "student" && isSubscriptionLoading) {
     return <RouteLoadingFallback />;
+  }
+  if (user?.role === "student" && needsAuthentication &&
+      !canUseExpiredTrialRoute && (subscriptionError || !subscription)) {
+    return (
+      <div className="flex min-h-screen flex-col items-center justify-center gap-4 bg-background p-6 text-center" dir="rtl">
+        <p className="text-sm font-medium text-muted-foreground">
+          تعذر التحقق من صلاحيات حسابك. أعد المحاولة لفتح صفحة التعلّم.
+        </p>
+        <button type="button" onClick={() => refetchSubscription()}
+          className="rounded-xl bg-primary px-5 py-2.5 text-sm font-bold text-primary-foreground">
+          إعادة المحاولة
+        </button>
+      </div>
+    );
   }
   if (isExpiredStudent && !canUseExpiredTrialRoute) {
     return <RouteLoadingFallback />;
@@ -1066,6 +1096,9 @@ function Router({ splashDone }: { splashDone: boolean }) {
       <Route path="/install">
         {() => <StudentShell><InstallPage /></StudentShell>}
       </Route>
+      <Route path="/how-it-works">
+        <HowItWorksPage />
+      </Route>
       <Route path="/usage-guide">
         {() => <StudentShell><UsageGuidePage /></StudentShell>}
       </Route>
@@ -1172,19 +1205,19 @@ function Router({ splashDone }: { splashDone: boolean }) {
         {() => <StudentShell><ProtectedRoute requiresPremium={true}><MockExamPage /></ProtectedRoute></StudentShell>}
       </Route>
       <Route path="/flashcards">
-        {() => <FlashcardsPage />}
+        {() => <StudentPageGuide location="/flashcards"><FlashcardsPage /></StudentPageGuide>}
       </Route>
       <Route path="/performance-report">
-        {() => <PerformanceReportPage />}
+        {() => <StudentPageGuide location="/performance-report"><PerformanceReportPage /></StudentPageGuide>}
       </Route>
       <Route path="/adaptive-test">
         {() => <AdaptiveTestPage />}
       </Route>
       <Route path="/error-analysis">
-        {() => <ErrorAnalysisPage />}
+        {() => <StudentPageGuide location="/error-analysis"><ErrorAnalysisPage /></StudentPageGuide>}
       </Route>
       <Route path="/study-rooms/:code">
-        {() => <StudyRoomLobbyPage />}
+        {() => <StudentPageGuide location="/study-rooms/:code"><StudyRoomLobbyPage /></StudentPageGuide>}
       </Route>
       <Route path="/study-rooms">
         {() => <StudentShell><StudyRoomsPage /></StudentShell>}
@@ -1196,10 +1229,10 @@ function Router({ splashDone }: { splashDone: boolean }) {
         {() => <StudentShell><NotificationsPage /></StudentShell>}
       </Route>
       <Route path="/pre-exam-day">
-        {() => <PreExamDayPage />}
+        {() => <StudentPageGuide location="/pre-exam-day"><PreExamDayPage /></StudentPageGuide>}
       </Route>
       <Route path="/ai-tutor">
-        {() => <AiTutorPage />}
+        {() => <StudentPageGuide location="/ai-tutor"><AiTutorPage /></StudentPageGuide>}
       </Route>
       <Route path="/ai-hub">
         {() => <StudentShell><ProtectedRoute><AiHub /></ProtectedRoute></StudentShell>}
@@ -1246,7 +1279,7 @@ function Router({ splashDone }: { splashDone: boolean }) {
         {() => <Redirect to="/account" />}
       </Route>
       <Route path="/security-settings">
-        {() => <SecuritySettingsPage />}
+        {() => <StudentPageGuide location="/security-settings"><SecuritySettingsPage /></StudentPageGuide>}
       </Route>
       <Route path="/book-exam">
         {() => <StudentShell><BookExamPage /></StudentShell>}
@@ -1284,6 +1317,7 @@ function Router({ splashDone }: { splashDone: boolean }) {
       <Route path="/wallet">
         {() => <StudentShell><WalletPage /></StudentShell>}
       </Route>
+      <Route path="/institution-contract" component={InstitutionContractPortalPage} />
       <Route path="/invite/:token">
         {(params) => <InvitePage />}
       </Route>
@@ -1300,7 +1334,7 @@ function Router({ splashDone }: { splashDone: boolean }) {
         {() => <StudentShell><TestResultsPage /></StudentShell>}
       </Route>
       <Route path="/exam-review">
-        {() => <ExamReviewPage />}
+        {() => <StudentPageGuide location="/exam-review"><ExamReviewPage /></StudentPageGuide>}
       </Route>
 
       {/* Admin Routes */}

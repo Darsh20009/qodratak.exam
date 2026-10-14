@@ -254,7 +254,7 @@ export default function AdaptiveLearningCoach({
                 نتعلم من إجاباتك، لا من التخمين
               </h2>
               <p className="mt-2 max-w-2xl text-sm leading-7 text-muted-foreground">
-                نحلل إجاباتك الموثقة في القدرات والتحصيلي، ونربط المجالات المرصودة بدرس منشور وتدريب متاح عند توفرهما.
+                نحلل إجاباتك ونقترح درسًا وتدريبًا يناسبان أداءك.
               </p>
             </div>
           </div>
@@ -317,7 +317,7 @@ export default function AdaptiveLearningCoach({
               </p>
               <div className="flex flex-wrap gap-2 text-xs font-bold text-muted-foreground">
                 <span className="rounded-full bg-muted px-3 py-1.5">
-                  {report.data.evidence.trustedAttempts} إجابة موثقة
+                  {report.data.evidence.trustedAttempts} إجابة مسجلة
                 </span>
                 <span className="rounded-full bg-muted px-3 py-1.5">
                   {report.data.evidence.repeatedWrongAnswers} أسئلة تكرر الخطأ فيها

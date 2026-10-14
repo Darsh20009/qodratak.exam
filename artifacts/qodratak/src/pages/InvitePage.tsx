@@ -78,9 +78,9 @@ export default function InvitePage() {
   };
 
   const planLabel = (type: string) =>
-    type === 'Pro Life Plus' ? 'Pro Life Plus 👑' :
-    type === 'Pro Life' ? 'Pro Life 💎' :
-    type === 'Pro' ? 'Pro ⭐' : type;
+    type === 'Pro Life Plus' ? 'Pro Life Plus' :
+    type === 'Pro Life' ? 'Pro Life' :
+    type === 'Pro' ? 'Pro' : type;
 
   return (
     <div className="min-h-screen flex items-center justify-center p-4" dir="rtl"
@@ -167,7 +167,7 @@ export default function InvitePage() {
                     style={{ background: 'linear-gradient(135deg, #6366f1, #8b5cf6)' }}>
                     <Gift className="w-7 h-7 text-white" />
                   </div>
-                  <h2 className="text-2xl font-black text-slate-800 mb-2">دعوة خاصة 🎉</h2>
+                  <h2 className="text-2xl font-black text-slate-800 mb-2">دعوة خاصة</h2>
                   <p className="text-slate-500 text-sm leading-relaxed">
                     قام <span className="font-bold text-slate-700">{inviteInfo.inviterName}</span> بدعوتك للانضمام إلى منصة قدراتك
                   </p>
@@ -179,7 +179,7 @@ export default function InvitePage() {
                   <p className="text-slate-400 text-xs mb-1.5 uppercase tracking-wide">ستحصل على اشتراك</p>
                   <p className="text-teal-700 text-xl font-black">{planLabel(inviteInfo.subscriptionType)}</p>
                   {inviteInfo.isPermanent ? (
-                    <span className="inline-block mt-2 text-[11px] bg-teal-100 text-teal-700 px-2.5 py-0.5 rounded-full font-medium">مدى الحياة ♾️</span>
+                    <span className="inline-block mt-2 text-[11px] bg-teal-100 text-teal-700 px-2.5 py-0.5 rounded-full font-medium">مدى الحياة</span>
                   ) : inviteInfo.subscriptionEndDate ? (
                     <span className="inline-block mt-2 text-[11px] bg-slate-100 text-slate-500 px-2.5 py-0.5 rounded-full font-medium">
                       حتى {new Date(inviteInfo.subscriptionEndDate).toLocaleDateString('ar-SA')}

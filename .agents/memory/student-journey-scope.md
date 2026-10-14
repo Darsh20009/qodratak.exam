@@ -9,6 +9,12 @@ Keep one clear student preparation path personalized to observed level, exam dat
 
 **How to apply:** Make the next task primary and supplementary tools optional. Explain weak/slow observations with evidence, keep reviewed source keys authoritative, and never promise completing the entire bank or a perfect official score when time/evidence does not support it.
 
+Keep the student's first dashboard view short and action-first; long instructions, the guide film, feedback form and detailed coaching should be optional disclosures.
+
+**Why:** The user explicitly said the dashboard had become too crowded with text, including after adding onboarding explanations.
+
+**How to apply:** Preserve access to these tools and the guide's hide/restore setting, but do not force the student to read them before reaching the next task.
+
 Keep Qudrat test types together under «الاختبارات» inside «المحوسب», including simulations, models and scheduled simulation booking.
 
 **Why:** The user explicitly asked for one section containing every Qudrat exam type rather than scattered entry points.

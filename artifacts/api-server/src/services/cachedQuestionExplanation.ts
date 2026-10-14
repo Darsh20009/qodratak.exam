@@ -10,7 +10,7 @@ import { generateReusableQuestionExplanation } from './aiService';
 
 const pending = new Map<string, Promise<any>>();
 export async function resolveReportQuestion(studentId: string, input: any) {
-  const id = String(input.questionId ?? input.id ?? '');
+  const id = String(input.sourceQuestionId ?? input.questionId ?? input.id ?? '');
   const text = String(input.questionText ?? input.text ?? '').trim();
   const filter: any = mongoose.isValidObjectId(id) ? { _id: id } : /^\d+$/.test(id) ? { questionId: Number(id) } : { text };
   const candidates = await Promise.all([
@@ -21,11 +21,20 @@ export async function resolveReportQuestion(studentId: string, input: any) {
     const question: any = candidates[index];
     if (!question || (text && text !== question.text) ||
       (Array.isArray(input.options) && JSON.stringify(input.options) !== JSON.stringify(question.options))) continue;
+    if (!Array.isArray(question.options) || question.options.length < 2) continue;
     const sourceType = index ? 'mongo_tahsili_question' : 'mongo_question';
     const questionId = index ? String(question.questionId) : String(question._id);
-    const proof = await LearningAttempt.findOne({ studentId, questionId, sourceType }).sort({ createdAt: -1 }).lean() as any;
-    if (!proof || Number(proof.correctAnswer) !== question.correctOptionIndex) continue; // Never pair old correction with a changed answer key.
-    return { question, proof, questionId, sourceType };
+    // Grading uses the approved server-owned key, not the optional analytics write.
+    // Exact source/content matching above prevents grading a different question.
+    const key = question.correctOptionIndex;
+    const selected = input.selectedOptionIndex ?? input.selectedAnswer ?? null;
+    if (!Number.isInteger(key) || key < 0 || key >= question.options.length ||
+      (selected !== null && (!Number.isInteger(selected) || selected < 0 || selected >= question.options.length))) continue;
+    return { question, correction: {
+      selectedAnswer: selected,
+      correctAnswer: key,
+      isCorrect: selected !== null && selected === key,
+    }, questionId, sourceType };
   }
   // Legacy Tahsili exams are server-owned JSON sources, not Mongo bank rows.
   // Source identity includes the exam; numeric IDs alone are never enough.
@@ -44,7 +53,10 @@ export async function resolveReportQuestion(studentId: string, input: any) {
       if (correctOptionIndex < 0 || correctOptionIndex !== Number(proof.correctAnswer)) continue;
       return { question: { text, options, correctOptionIndex, category: source.category,
         explanation: source.explanation || source.answerOptions[correctOptionIndex].rationale || '',
-        imageUrl: source.imageUrl, imageUrls: source.imageUrls }, proof, questionId: id, sourceType: 'legacy_json' };
+        imageUrl: source.imageUrl, imageUrls: source.imageUrls }, correction: {
+          selectedAnswer: Number(proof.selectedAnswer), correctAnswer: correctOptionIndex,
+          isCorrect: Number(proof.selectedAnswer) === correctOptionIndex,
+        }, questionId: id, sourceType: 'legacy_json' };
     } catch { /* An unavailable file is not replaced by another source. */ }
   }
   return null;

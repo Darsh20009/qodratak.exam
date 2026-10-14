@@ -8,6 +8,7 @@ import {
 } from './models';
 import bcrypt from 'bcryptjs';
 import mongoose from 'mongoose';
+import { attachSubscriptionStudents, subscriptionStudentId } from '../services/adminSubscriptionStudents';
 
 export class MongoStorage {
   private isInitialized = false;
@@ -199,8 +200,17 @@ export class MongoStorage {
     return Subscription.create(data);
   }
 
-  async getSubscriptionById(id: string): Promise<ISubscription | null> {
-    return Subscription.findById(id).populate('userId', 'username fullName email phone');
+  private async subscriptionStudents<T extends { userId: unknown }>(subscriptions: T[]) {
+    const ids = [...new Set(subscriptions.map(sub => subscriptionStudentId(sub.userId)).filter((id): id is string => !!id))];
+    const users = ids.length
+      ? await User.find({ _id: { $in: ids } }).select('_id username fullName email phone').lean()
+      : [];
+    return attachSubscriptionStudents(subscriptions, users);
+  }
+
+  async getSubscriptionById(id: string) {
+    const subscription = await Subscription.findById(id).lean();
+    return subscription ? (await this.subscriptionStudents([subscription]))[0] : null;
   }
 
   async getUserSubscriptions(userId: string): Promise<ISubscription[]> {
@@ -215,7 +225,7 @@ export class MongoStorage {
     });
   }
 
-  async getAllSubscriptions(page = 1, limit = 20, status?: string): Promise<{ subscriptions: ISubscription[], total: number }> {
+  async getAllSubscriptions(page = 1, limit = 20, status?: string) {
     const query: any = {};
     if (status) {
       query.status = status;
@@ -223,19 +233,18 @@ export class MongoStorage {
     
     const total = await Subscription.countDocuments(query);
     const subscriptions = await Subscription.find(query)
-      .populate('userId', 'username fullName email phone')
       .populate('approvedBy', 'fullName')
       .sort({ createdAt: -1 })
       .skip((page - 1) * limit)
-      .limit(limit);
+      .limit(limit)
+      .lean();
     
-    return { subscriptions, total };
+    return { subscriptions: await this.subscriptionStudents(subscriptions), total };
   }
 
-  async getPendingSubscriptions(): Promise<ISubscription[]> {
-    return Subscription.find({ status: 'pending' })
-      .populate('userId', 'username fullName email phone')
-      .sort({ createdAt: -1 });
+  async getPendingSubscriptions() {
+    const subscriptions = await Subscription.find({ status: 'pending' }).sort({ createdAt: -1 }).lean();
+    return this.subscriptionStudents(subscriptions);
   }
 
   async updateSubscription(id: string, updates: Partial<ISubscription>): Promise<ISubscription | null> {
@@ -247,6 +256,7 @@ export class MongoStorage {
     // Find the subscription being approved
     const sub = await Subscription.findById(id);
     if (!sub) return null;
+    if (sub.paymentGateway === 'geidea') return null; // Only verified provider orders may activate cards.
 
     // Calculate duration in ms from the originally requested sub
     const requestedDurationMs = sub.endDate.getTime() - sub.startDate.getTime();
@@ -317,7 +327,7 @@ export class MongoStorage {
   }
 
   async rejectSubscription(id: string, reason: string): Promise<ISubscription | null> {
-    return Subscription.findByIdAndUpdate(id, {
+    return Subscription.findOneAndUpdate({ _id: id, paymentGateway: { $ne: 'geidea' } }, {
       status: 'cancelled',
       rejectionReason: reason,
       updatedAt: new Date(),

@@ -141,19 +141,6 @@ export default function AdminLogin() {
               </div>
             ) : (
               <>
-                {import.meta.env.DEV && (
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setUsername('admin-demo');
-                      setPassword('AdminDemo@2026');
-                    }}
-                    className="mb-5 w-full rounded-xl border border-[#B65D36]/20 bg-[#F4AA85]/10 px-3 py-2.5 text-sm font-medium text-[#8D482C] transition-colors hover:bg-[#F4AA85]/20"
-                  >
-                    تعبئة حساب الإدارة التجريبي
-                  </button>
-                )}
-
                 <form onSubmit={handleSubmit} className="space-y-5">
                   <label className="block">
                     <span className="mb-2 block text-sm font-medium">اسم المستخدم أو البريد</span>

@@ -9,8 +9,10 @@ import { Switch } from "@/components/ui/switch";
 import { Shield, KeyRound, Phone, Crown, CheckCircle2, User, LogOut, Camera, Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import InstitutionMembershipCard from "@/components/institution/InstitutionMembershipCard";
+import PlatformReviewCard from "@/components/student/PlatformReviewCard";
 import { Label } from "@/components/ui/label";
 import SubscriptionRenewalDialog from "@/components/SubscriptionRenewalDialog";
+import PaymentHistory from "@/components/student/PaymentHistory";
 
 export default function AccountPage() {
   const { user, logout } = useUser();
@@ -101,6 +103,8 @@ export default function AccountPage() {
       </header>
 
       {user.role === "student" && <InstitutionMembershipCard />}
+      {user.role === "student" && <PlatformReviewCard studentId={user.id} />}
+      {user.role === "student" && <PaymentHistory studentId={String(user.id ?? user._id ?? "")} />}
 
       {/* Profile Info */}
       <section className="rounded-2xl border border-border bg-white dark:bg-card p-6 flex flex-col md:flex-row items-center gap-6 shadow-sm">

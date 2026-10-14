@@ -5,6 +5,11 @@ const contractSchema = new Schema({
   issuedAt: { type: Date, required: true },
   issuerName: { type: String, required: true },
   issuerLegalName: { type: String, required: true },
+  issuerPlatformName: String,
+  signatureAssetId: String,
+  signatureSha256: String,
+  stampAssetId: String,
+  stampSha256: String,
   issuerNationalNumber: { type: String, required: true },
   issuedBy: { type: String, required: true },
   policies: { type: String, required: true },
@@ -19,6 +24,11 @@ const contractSchema = new Schema({
   approvedAt: Date,
   approvedBy: String,
   rejectionReason: String,
+  issuedObjectKey: String,
+  issuedSha256: String,
+  issuedBytes: Number,
+  portalSentAt: Date,
+  portalDeliveryStatus: String,
 }, { _id: false });
 
 const memberSchema = new Schema({
@@ -55,3 +65,15 @@ export const InstitutionMember = mongoose.models.InstitutionMember ||
 export const InstitutionInvite = mongoose.models.InstitutionInvite ||
   mongoose.model("InstitutionInvite", inviteSchema);
 export { contractSchema };
+
+const deliverySchema = new Schema({
+  institutionId: { type: Schema.Types.ObjectId, required: true, index: true },
+  reference: { type: String, required: true },
+  tokenHash: { type: String, required: true, unique: true },
+  sealedToken: { type: Buffer, required: true, select: false },
+  targetPhone: String,
+  expiresAt: { type: Date, required: true },
+  revokedAt: Date,
+}, { timestamps: true });
+export const InstitutionContractDelivery = mongoose.models.InstitutionContractDelivery ||
+  mongoose.model("InstitutionContractDelivery", deliverySchema);

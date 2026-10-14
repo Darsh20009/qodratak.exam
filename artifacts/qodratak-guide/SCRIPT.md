@@ -1,23 +1,55 @@
-# كيف تستخدم قدراتك — فيلم إرشادي 16:9 (46 ث)
+# كيف تستخدم قدراتك — فيلم إرشادي 16:9 (72 ث، 16 مشهدًا)
 
-Treatment: Promise — "every page has one job; here is where you learn". Identity — deep navy stage (#0D1B2A), signal coral #FF8A70, mint #91D7C5, warm paper #F7F4EE; Tajawal (display, 900) + IBM Plex Sans Arabic (body). Hero — the real student screens, floating as a lit device card under a virtual camera. Motion — camera push-in on the relevant region of each screen, typewriter Arabic captions with coral caret, giant outlined step numerals sliding as transition carriers. Arc — calm logo open, steady tour rhythm (≈4.5 s/page), lift at results, resolved logo lockup. Payoff — screens collapse into a mosaic then the logo lockup on paper colour (inverted field).
+Treatment unchanged: deep navy stage #0D1B2A, coral #FF8A70, mint #91D7C5, paper #F7F4EE; Tajawal 900 + IBM Plex Sans Arabic. Real student screens, now inside a browser-window frame (traffic dots + qodratak.sa/<route> bar). Camera push-in, typewriter captions, outlined step numerals (reduced to 38vmin), and — new — sequential coral callout pins with navy labels on exam screens. Three chapters shown in the step eyebrow: التعلّم / التدريب والاختبارات / المتابعة. Ending: official logo (qodratak-logo-transparent.png) on paper field.
 
-Dev strip at top of captures is cropped out (image shifted up 6.5%).
+Shots: old captures (crop 6.6% dev strip): student-dashboard, preparation-course, today, foundation, computerized, results, account. New captures (n-*.jpg, 1600x900, synthetic student, no submission): n-book, n-mock, n-exam-instr, n-exam-answer, n-exam-q2, n-custom, n-support.
 
-| # | Time | Scene | Copy (typed) | Composition / motion | Handoff |
-|---|---|---|---|---|---|
-| 1 | 0–4.5 | intro | "دليلك السريع" / "كيف تستخدم قدراتك" | Logo pops (spring 260) centre, title types under; landing shot rises tilted from bottom | landing card zooms to fill → cut |
-| 2 | 4.5–9.5 | dashboard | ١ · لوحتي — "هنا تبدأ كل يوم" / "مهمتك اليوم تظهر أولاً، اضغط «ابدأ من هنا»" | card right 62%, text left; camera pushes to today-task panel; coral ring pulses on it | numeral slides out, next card swaps in |
-| 3 | 9.5–14 | course | ٢ · دورتي — "هنا تحجز موعد اختبارك" / "واختر مسار التحضير المناسب لك" | mirrored: card left, text right; push to top | |
-| 4 | 14–18.5 | today | ٣ · مهام اليوم — "هنا مهامك اليومية" / "ابدأ بقياس البداية لتُبنى خطتك" | full-bleed wide card, caption bar bottom | |
-| 5 | 18.5–23 | foundation | ٤ · التأسيس — "هنا تتعلم من الأساس" / "اختر الكمي أو اللفظي" | card right, push to programme cards | |
-| 6 | 23–27.5 | book | ٥ · كتاب التأسيس — "هنا تقرأ الشرح خطوة بخطوة" / "50 موضوعًا من الأساس إلى الإتقان" | full-bleed tilt, push on green hero | |
-| 7 | 27.5–32 | computerized | ٦ · المحوسب — "هنا تتدرّب مثل الاختبار الحقيقي" / "بنوك أسئلة ودروس منشورة" | card left | |
-| 8 | 32–36.5 | results | ٧ · نتائجي — "هنا تراجع نتائجك" / "تظهر تقاريرك بعد كل اختبار تُكمله" | card right | |
-| 9 | 36.5–40.5 | account | ٨ · حسابي — "هنا تدير حسابك" / "بياناتك واشتراكك في مكان واحد" | full-bleed | |
-| 10 | 40.5–46 | outro | "خطوة واحدة كل يوم" → logo "قدراتك" / "ابدأ مجانًا ٣ أيام" | 4 screens mosaic collapse, paper field, logo lockup | loop to intro |
+| # | Start | Dur | Key | Label | Line 1 / Line 2 | Layout | Callouts |
+|---|---|---|---|---|---|---|---|
+| 1 | 0 | 4.5 | intro | — | دليلك السريع / كيف تستخدم قدراتك؟ | icon + framed landing | — |
+| 2 | 4.5 | 4.5 | dashboard | ١ لوحتي | هنا تبدأ كل يوم | right | ring |
+| 3 | 9 | 4 | course | ٢ دورتي | هنا تحجز موعد اختبارك | left | ring |
+| 4 | 13 | 4 | today | ٣ مهام اليوم | هنا مهامك اليومية | full | ring |
+| 5 | 17 | 4 | foundation | ٤ التأسيس | هنا تتعلّم من الأساس | right | ring |
+| 6 | 21 | 4 | book | ٥ كتاب التأسيس | هنا تقرأ الشرح خطوة بخطوة | left | ring |
+| 7 | 25 | 4.5 | computerized | ٦ المحوسب | بنوك أسئلة ودروس منشورة | full | ring |
+| 8 | 29.5 | 5 | mock | ٧ الاختبارات المحاكية | لفظي ٦٥، كمي ٥٥، شامل ١٢٠ | right | 3 pins 1.6/2.3/3.0s |
+| 9 | 34.5 | 5 | instructions | ٨ قبل البدء | محاكاة بمراقبة أو تدريب بدون مراقبة | left | 3 pins |
+| 10 | 39.5 | 6 | runner | ٩ داخل الاختبار | سؤال واحد في كل شاشة، والمؤقت أمامك | full | timer, answer, map, mark-for-review |
+| 11 | 45.5 | 4.5 | passage | ١٠ أسئلة القطعة | اقرأ القطعة ثم «حفظ والتالي» | right | 2 pins |
+| 12 | 50 | 4 | custom | ١١ اختبار مخصص | عدد أسئلة اللفظي والكمي والوقت | left | ring |
+| 13 | 54 | 4.5 | results | ١٢ نتائجي | نتائج تدريبية داخل المنصة، وليست درجة قياس الرسمية | right | ring |
+| 14 | 58.5 | 4 | account | ١٣ حسابي | بياناتك واشتراكك | full | ring |
+| 15 | 62.5 | 4 | support | ١٤ الدعم | الأسئلة الشائعة والدعم | left | ring |
+| 16 | 66.5 | 5.5 | outro | — | خطوة واحدة كل يوم → official logo | mosaic → paper | — |
 
-Every step scene: numeral (outlined 30vmin) enters at 0, card at 0.1 s, line 1 types from 0.5 s (45 ms/char), line 2 at ~1.7 s, camera push 0.8–3.8 s, pulse ring 2.2 s, exit motion from last 0.5 s.
+## Continuity revision (transitions)
+- One persistent browser window (BrowserStage, outside AnimatePresence) lives for the whole film; it never unmounts, so there are no blank navy frames between pages.
+- Poses (transform-only, fixed 58%-wide 16:9 window): intro = lower third peeking (rises at 1.5s); right layout = x 37% y 12%; left = x 5% y 12%; full = x 21% y 4%; outro = centered, fades 0.25-0.7s as the mosaic arrives.
+- Every scene boundary: window glides to the next pose (0.95s, ease 0.65/0/0.35/1) while the new screenshot cross-dissolves over the old inside the frame (0.55s in, old held 0.25s then out) and the URL slides up to the new route. Caption column and outline numeral fade/drift (0.4-0.8s) on the shared navy + grain backdrop.
+- Removed: per-scene rotateY card flips, scale-0.9 entrances, whole-scene navy fades, intro card zoom-out.
 
-## Audio spec
-- Runtime 46 s. Music: warm lo-fi with oud, 96 BPM, lift ~23 s, resolved end, no vocals. Playback file bg_music.mp3. No VO/SFX (not requested). Cuts kept at even 4.5 s grid (~beat-aligned at 96 BPM, 7.2 beats; unverified exact onset).
+Audio: bg_music_full.mp3 (73.0 s) premixed from the original 46 s bg_music.mp3: two copies joined with a 6 s triangular crossfade around 40-46 s, trimmed to 73 s with a 3 s fade-out at 70 s. No new music, no loop attribute; each scene seeks to its absolute film start (SCENE_START_SEC), so the bed runs continuously across the whole 72 s film with no mid-film restart. No VO/SFX.
+
+## Marketing film (?film=marketing) — 36 s, src/components/video/Marketing.tsx
+Treatment: same navy/coral/mint/paper identity; hook of scattered "sources" chips that implode into the logo, then one persistent qodratak.sa browser window gliding between left/right/wide poses with timed coral pins.
+| Start | Dur | Key | Copy |
+|---|---|---|---|
+| 0 | 4.5 | m_hook | «سلام!» 22vmin coral greeting 0–1.5 s, then ليه دايمًا مشتّت؟ / مصدر هنا، وملف هناك… (8 chips pop 0.32 s apart, implode on exit) |
+| 4.5 | 4 | m_gather | icon spring + ring · جمعنا لك كل مصادرك في مكان واحد · qodratak.sa |
+| 8.5 | 4 | m_foundation | ابدأ من الصفر — foundation → n-book |
+| 12.5 | 4.5 | m_computerized | لفظي وكمي [محوسب] — computerized → n-mock pins |
+| 17 | 6.5 | m_exam | wide: n-exam-instr → n-exam-answer (timer/question/map pins) → n-exam-q2 · محاكاة تقرّبك من تجربة الاختبار |
+| 23.5 | 4 | m_results | تعرف وين تغلط — results → n-records (training results) |
+| 27.5 | 3.5 | m_plans | كل يوم خطوة [التحصيلي · قريبًا] — dashboard → today |
+| 31 | 5 | m_outro | paper aperture · اختار قدراتك… وابدأ بسلام · logo · qodratak.sa · independence/no-guarantee disclaimer |
+## Audio spec (marketing)
+- Runtime 36 s; generated marketing_music.mp3 (36.05 s): oud/plucks opening, lift at ~8.5 s and big lift at ~17 s (measured RMS -30→-24 dB, -23→-15 dB), fade at 34 s. Cuts at 8.5 and 17 s sit on those lifts. No VO/SFX.
+## URL contract
+default = full guide · ?film=marketing · ?chapter=KEY (mock = mock+instructions+runner+passage) · ?muted=1.
+- Embed legibility pass: critical text sized for 350x197/600x338 embeds (titles 10vmin, lines 5vmin, pins 4.2vmin, URL bar 3.2vmin, disclaimer 4.4vmin).
+
+## Supplemental chapter clips (?chapter=KEY only) — src/components/video/ExtraChapters.tsx
+These are not part of the 72 s guide or the 36 s promo. Each clip runs 7.5 s and loops (played as _r1/_r2), uses the existing bg_music_full.mp3 at a fixed offset, and has the same layout: a qodratak.sa/<route> frame on the left, then a title and three numbered points that appear at 1.1/2.4/3.7 s.
+Keys → routes: flashcards /flashcards · analysis /performance-report · mistakes /mistake-challenge (EnhancedMistakeChallenge: questions come from a test result you got wrong (stored in localStorage), 6 modes, then percentage/correct/points; without a stored challenge the page sends you to /test-results) · security /security-settings · preexam /pre-exam-day · tutor /ai-tutor · rooms /study-rooms · notifications /notifications.
+Labels are copied from the real page sources. Only notifications uses a real screenshot (n-notif.jpg). The other pages require sign-in, so they appear as panels marked «رسم توضيحي من الصفحة», with placeholder values (—) instead of made-up numbers.

@@ -27,6 +27,9 @@ import {
 import OfficialScoreCard from "@/components/student/OfficialScoreCard";
 import { useUser } from "@/hooks/use-user";
 import InstitutionMembershipCard from "@/components/institution/InstitutionMembershipCard";
+import { DashboardGuideFilm } from "@/components/student/DashboardGuideFilm";
+import PlatformReviewCard from "@/components/student/PlatformReviewCard";
+import { NewStudentWelcome } from "@/components/student/NewStudentWelcome";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -91,6 +94,24 @@ function DashboardSkeleton() {
         <div className="h-52 animate-pulse rounded-3xl bg-muted" />
       </div>
     </div>
+  );
+}
+
+function DashboardHelpDetails({ reviewId }: { reviewId: React.ComponentProps<typeof PlatformReviewCard>["studentId"] }) {
+  const [loaded, setLoaded] = useState(false);
+  return (
+    <details data-testid="details-help-and-review" className="group rounded-3xl border border-border bg-card shadow-sm" onToggle={(event) => {
+      if (event.currentTarget.open) setLoaded(true);
+    }}>
+      <summary className="flex min-h-12 cursor-pointer list-none items-center gap-3 p-5 font-black text-foreground focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary [&::-webkit-details-marker]:hidden">
+        <PlayCircle className="h-5 w-5 text-primary" aria-hidden="true" />
+        <span className="flex-1">تقييم المنصة</span>
+        <ChevronDown className="h-4 w-4 text-muted-foreground transition-transform group-open:rotate-180" aria-hidden="true" />
+      </summary>
+      {loaded && <div className="space-y-4 border-t border-border p-4 sm:p-5">
+        <PlatformReviewCard studentId={reviewId} />
+      </div>}
+    </details>
   );
 }
 
@@ -181,26 +202,27 @@ export default function DashboardPage() {
     );
   }
 
-  const userName = user.name || user.username || "طالب";
-  const firstName = userName.split(" ")[0];
+  const userName = user.fullName || user.name || user.username || "طالب";
   if (subscription?.isExpired) {
     return (
       <div className="mx-auto w-full max-w-5xl space-y-6 p-5 md:p-8" dir="rtl">
         <header className="space-y-2">
           <p className="text-sm font-bold text-muted-foreground">مرحبًا،</p>
           <h1 data-testid="text-student-name" className="text-3xl font-black tracking-tight text-foreground md:text-4xl">
-            {firstName}
+            {userName}
           </h1>
           <p className="text-sm leading-7 text-muted-foreground">
-            انتهت التجربة المجانية. يمكنك متابعة اختبار تكيفي واحد يوميًا أو الاشتراك لفتح بقية المنصة.
+            انتهت التجربة المجانية: اختبار تكيفي واحد يوميًا، أو اشترك لفتح المنصة.
           </p>
         </header>
-        <InstitutionMembershipCard />
+        <DashboardGuideFilm studentId={user.id ?? user._id} />
         <AdaptiveLearningCoach trialExpired />
+        <InstitutionMembershipCard />
         <Link href="/records" data-testid="link-my-results" className="flex items-center justify-between gap-4 rounded-2xl border border-border bg-card p-5 text-foreground hover:border-primary/40">
           <span className="flex items-center gap-3"><FileText className="h-6 w-6 text-primary" /><span><strong className="block">نتائجي</strong><span className="text-sm text-muted-foreground">عرض نتائج الاختبارات والتقارير التفصيلية المحفوظة</span></span></span>
           <ChevronLeft className="h-5 w-5 shrink-0" />
         </Link>
+        <DashboardHelpDetails reviewId={user.id} />
       </div>
     );
   }
@@ -249,6 +271,37 @@ export default function DashboardPage() {
     { key: "tahsili", label: "التحصيلي — قريبًا", value: dashboard.progress.tahsili.percentage },
   ];
 
+  const isNewStudent =
+    !courseQuery.isLoading && !courseQuery.isError &&
+    recentTests.length === 0 && (dashboard.stats.totalTests ?? 0) === 0 &&
+    (!course || course.level === "unassessed");
+
+  if (isNewStudent) {
+    return (
+      <div className="mx-auto w-full max-w-5xl space-y-6 p-5 md:p-8" dir="rtl">
+        <NewStudentWelcome studentName={userName} />
+        <DashboardGuideFilm studentId={user.id ?? user._id} />
+        <section data-testid="student-paths" className="space-y-3">
+          <h2 className="text-lg font-black text-foreground">بعد التقييم</h2>
+          <div className="grid gap-3 sm:grid-cols-2">
+            <Link href="/preparation-course" data-testid="link-path-preparation-course" className="flex items-center gap-3 rounded-2xl border border-border bg-card p-4 hover:border-primary/40 hover:bg-primary/5">
+              <Calendar className="h-5 w-5 shrink-0 text-primary" aria-hidden="true" />
+              <span className="min-w-0"><span className="block text-sm font-black text-foreground">دورتي ومهام اليوم</span><span className="mt-1 block text-xs text-muted-foreground">خطة بموعدك أو دون حجز، ومهام يومية موجّهة</span></span>
+              <ChevronLeft className="mr-auto h-4 w-4 shrink-0 text-muted-foreground" aria-hidden="true" />
+            </Link>
+            <Link href="/computerized" data-testid="link-path-computerized" className="flex items-center gap-3 rounded-2xl border border-border bg-card p-4 hover:border-primary/40 hover:bg-primary/5">
+              <Laptop className="h-5 w-5 shrink-0 text-primary" aria-hidden="true" />
+              <span className="min-w-0"><span className="block text-sm font-black text-foreground">التدريب المحوسب</span><span className="mt-1 block text-xs text-muted-foreground">تدرب على اللفظي والكمي متى شئت</span></span>
+              <ChevronLeft className="mr-auto h-4 w-4 shrink-0 text-muted-foreground" aria-hidden="true" />
+            </Link>
+          </div>
+        </section>
+        <InstitutionMembershipCard />
+        <DashboardHelpDetails reviewId={user.id} />
+      </div>
+    );
+  }
+
   const handleOpenExamDialog = () => {
     setExamDateStr(formatDateInput(dashboard.upcomingExam.date));
     setIsExamDialogOpen(true);
@@ -266,10 +319,11 @@ export default function DashboardPage() {
       <header className="space-y-2">
         <p className="text-sm font-bold text-muted-foreground">{new Date().getHours() < 17 ? "مرحبًا" : "مساء الخير"}،</p>
         <h1 data-testid="text-student-name" className="text-3xl font-black tracking-tight text-foreground md:text-4xl">
-          {firstName}
+          {userName}
         </h1>
-        <p className="text-sm leading-7 text-muted-foreground">خطوة واحدة الآن تكفي لتعرف ما التالي في استعدادك.</p>
+        <p className="text-sm leading-7 text-muted-foreground">خطوة واحدة الآن تكفي.</p>
       </header>
+      <DashboardGuideFilm studentId={user.id ?? user._id} />
 
       <section data-testid="student-next-step" className="overflow-hidden rounded-3xl border border-primary/20 bg-primary/5 shadow-sm">
         <div className="flex flex-col gap-5 p-5 sm:p-7 md:flex-row md:items-center md:justify-between">
@@ -329,6 +383,12 @@ export default function DashboardPage() {
           )}
         </div>
       </section>
+
+      <dl data-testid="student-key-progress" aria-label="تقدمك باختصار" className="grid grid-cols-3 divide-x divide-x-reverse divide-border rounded-2xl border border-border bg-card text-center">
+        <div className="p-3"><dt className="text-xs font-bold text-muted-foreground">الإجمالي</dt><dd data-testid="text-key-overall" className="mt-1 text-xl font-black text-foreground">{clampPercentage(dashboard.progress.overall.percentage)}%</dd></div>
+        <div className="p-3"><dt className="text-xs font-bold text-muted-foreground">اختبارات</dt><dd data-testid="text-key-tests" className="mt-1 text-xl font-black text-foreground">{dashboard.stats.totalTests}</dd></div>
+        <div className="p-3"><dt className="text-xs font-bold text-muted-foreground">حتى الاختبار</dt><dd data-testid="text-key-days" className="mt-1 text-xl font-black text-foreground">{daysToExam === null ? "—" : `${daysToExam} يوم`}</dd></div>
+      </dl>
 
       <details data-testid="details-more-guidance" className="group rounded-3xl border border-border bg-card shadow-sm">
         <summary className="flex cursor-pointer list-none items-center gap-3 p-5 font-black text-foreground [&::-webkit-details-marker]:hidden">
@@ -622,6 +682,8 @@ export default function DashboardPage() {
           </details>
         </aside>
       </div>
+
+      <DashboardHelpDetails reviewId={user.id} />
 
       <SubscriptionRenewalDialog open={subscriptionDialogOpen} onOpenChange={setSubscriptionDialogOpen} user={user} />
     </div>

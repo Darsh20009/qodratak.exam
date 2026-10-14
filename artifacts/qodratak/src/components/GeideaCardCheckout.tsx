@@ -225,6 +225,22 @@ export default function GeideaCardCheckout({ planKey, planLabel, price, onActive
     );
   }
 
+  if (payment.pollingExhausted) {
+    return (
+      <div className="space-y-3 rounded-2xl border border-border bg-card p-4 text-foreground">
+        <h3 className="font-black">انتهت مهلة انتظار تأكيد الدفع</h3>
+        <p className="text-sm leading-7 text-muted-foreground">
+          لم يصل تأكيد يمكن الاعتماد عليه خلال عشر دقائق، فتوقف نموذج الدفع هنا.
+          إذا ظهر خصم في البنك فلا تكرر الدفع؛ سيواصل الخادم التحقق من أي تأكيد متأخر،
+          ويمكنك متابعة العملية من حسابك أو التواصل مع الدعم.
+        </p>
+        <Button type="button" variant="outline" onClick={() => payment.recheck()}>
+          إعادة التحقق دون دفع جديد
+        </Button>
+      </div>
+    );
+  }
+
   if (status && status !== "session_created" && status !== "pending") {
     const copy = statusCopy(status);
     return (

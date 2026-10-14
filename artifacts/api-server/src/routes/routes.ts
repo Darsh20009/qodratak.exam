@@ -38,6 +38,7 @@ import { insertQuestionSchema } from "@workspace/db";
 import { TestType, TestDifficulty } from "../shared/types";
 import bcrypt from 'bcryptjs';
 import { registerInstitutionRoutes } from './institutions';
+import { registerQuestionFeedbackRoutes } from './questionFeedbackRoutes';
 import { exec } from 'child_process';
 import { sendTestEmail, sendOTPEmail, sendWelcomeEmail, sendSubscriptionApprovalEmail, sendExamResults, sendPasswordResetEmail, notifyAdminNewSubscription, notifyAdminReceiptUploaded, notifyAdminInstitutionRequest, sendInvitationEmail, sendCustomEmail } from '../services/emailService';
 import crypto from 'crypto';
@@ -159,6 +160,7 @@ import {
 } from '../services/studentLearningCoachService';
 import { StudentDailyAdaptiveTest } from '../mongodb/learningCoachModels';
 import { ensureStudentAccountTrial } from '../middleware/studentTrialAccess';
+import { authPhoneLookupVariants } from "../services/authPhoneLookup";
 import { TRIAL_CONFIG } from '../services/subscriptionEngine';
 import {
   allowClientTechnicalReport,
@@ -775,7 +777,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     if (pathName.startsWith('/dashboard')) return 'view_dashboard';
     if (pathName.startsWith('/users')) return readOnly ? 'view_students' : 'manage_students';
     if (pathName.startsWith('/subscriptions')) return readOnly ? 'view_subscriptions' : 'manage_subscriptions';
-    if (pathName.startsWith('/questions')) return readOnly ? 'view_questions' : 'manage_questions';
+    if (pathName.startsWith('/questions') || pathName.startsWith('/question-contributions')) return readOnly ? 'view_questions' : 'manage_questions';
     if (pathName.startsWith('/test-templates')) return 'manage_tests';
     if (pathName.startsWith('/announcements') || pathName === '/broadcast-email') return 'manage_announcements';
     if (pathName.startsWith('/support-tickets') || pathName.startsWith('/whatsapp')) return 'manage_support';
@@ -804,10 +806,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   const requireAdmin = async (req: Request, res: Response, next: Function) => {
     try {
       const sessionAdmin = (req.session as any).admin;
-      if (sessionAdmin?.isDemo && process.env.NODE_ENV !== 'production') {
-        (req as any).admin = sessionAdmin;
-        return next();
-      }
+      if (sessionAdmin?.isDemo) return res.status(401).json({ error: "أُلغي الدخول التجريبي؛ سجل الدخول بحساب الإدارة الفعلي" });
 
       if ((req.session as any).isAdmin && (req.session as any).adminId) {
         const admin = await mongoStorage.getAdminById((req.session as any).adminId);
@@ -2663,6 +2662,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       const normalizedId = loginId.toLowerCase();
+      const phoneVariants = authPhoneLookupVariants(loginId);
 
       // أولاً: تحقق من الأدمن (بالبريد أو اسم المستخدم أو رقم الجوال)
       if (mongoose.connection.readyState === 1) {
@@ -2677,7 +2677,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
               { email: normalizedId },
               { username: normalizedId },
               { username: loginId },
-              ...(normalizedPhoneId ? [{ phone: normalizedPhoneId }] : []),
+               ...(normalizedPhoneId ? [{ phone: { $in: phoneVariants.length ? phoneVariants : [normalizedPhoneId] } }] : []),
             ]
           });
           if (adminDoc) {
@@ -2732,16 +2732,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       if (process.env.NODE_ENV !== 'production') {
         const existingIds = new Set(users.map((candidate: any) => String(candidate?.id)));
-        users.push(...developmentDemoUsers().filter((candidate) => !existingIds.has(candidate.id)));
+        users.push(...developmentDemoUsers().filter((candidate) => candidate.role !== "admin" && !existingIds.has(candidate.id)));
       }
 
       // البحث عن المستخدم بالبريد أو اسم المستخدم أو رقم الجوال
       const user = users.find((u: any) => {
         if (!u) return false;
+        if (u.role === "admin" && (u.isDemo || u.id === "demo-admin" || u.username === "admin-demo")) return false;
         const emailMatch = u.email && u.email.trim().toLowerCase() === normalizedId;
         const usernameMatch = u.username && u.username.trim().toLowerCase() === normalizedId;
         const nameMatch = u.name && u.name.trim().toLowerCase() === normalizedId;
-        const phoneMatch = u.phone && (u.phone.replace(/\s/g, '') === loginId.replace(/\s/g, '') || u.phone.replace(/\s/g, '') === loginId.replace(/\s/g, '').replace(/^05/, '9665').replace(/^5/, '9665'));
+        const phoneMatch = [u.phone, u.whatsappPhone].some(value => value && (
+          String(value).replace(/\s/g, "") === loginId.replace(/\s/g, "") ||
+          authPhoneLookupVariants(String(value)).some(phone => phoneVariants.includes(phone))
+        ));
         return emailMatch || usernameMatch || nameMatch || phoneMatch;
       });
 
@@ -2755,7 +2759,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
               { username: normalizedId },
               { username: loginId },
               { phone: loginId },
-              { phone: `966${loginId.replace(/^0/, '')}` },
+               ...(phoneVariants.length ? [
+                 { phone: { $in: phoneVariants } }, { whatsappPhone: { $in: phoneVariants } },
+               ] : []),
             ]
           });
           if (mongoUser) {
@@ -4212,99 +4218,14 @@ app.post('/api/auth/signup/verify-phone-otp', async (req: Request, res: Response
 });
 
 app.post("/api/auth/register", async (req: Request, res: Response) => {
-    try {
-      const { name, fullName, email, password, phone } = req.body;
-      const displayName = fullName || name;
-
-      if (!displayName || !email || !password) {
-        return res.status(400).json({ message: "يرجى إدخال جميع البيانات المطلوبة" });
-      }
-
-      // قراءة ملف المستخدمين
-      let users = [];
-      try {
-        const data = fs.readFileSync("attached_assets/user.json", "utf-8");
-        users = JSON.parse(data);
-      } catch (error) {
-        // إنشاء ملف جديد إذا لم يكن موجوداً
-        fs.writeFileSync("attached_assets/user.json", "[]");
-      }
-
-      const normalizedRegEmail = email.trim().toLowerCase();
-
-      if (users.some((u: any) => u.email && u.email.trim().toLowerCase() === normalizedRegEmail)) {
-        return res.status(400).json({ message: "البريد الإلكتروني مستخدم من قبل" });
-      }
-
-      const today = new Date();
-      const trialEnd = new Date(
-        today.getTime() + TRIAL_CONFIG.TRIAL_DURATION_DAYS * 24 * 60 * 60 * 1000,
-      );
-
-      const newUser = {
-        id: users.length + 1,
-        name: displayName,
-        email: normalizedRegEmail,
-        phone: phone || '',
-        password,
-        subscription: {
-          type: "free_trial",
-          status: "active",
-          startDate: today.toISOString(),
-          endDate: trialEnd.toISOString(),
-          trialDays: TRIAL_CONFIG.TRIAL_DURATION_DAYS,
-        },
-        role: "student",
-        trialUsed: true,
-        trialStartDate: today.toISOString(),
-        trialEndDate: trialEnd.toISOString(),
-        points: 100, // نقاط ترحيبية
-        level: 1,
-        testsTaken: 0,
-        averageScore: 0,
-        folders: [],
-        achievements: [],
-        pointsHistory: [{
-          points: 100,
-          reason: "مكافأة الترحيب",
-          date: today.toISOString()
-        }],
-        testHistory: [],
-        savedQuestions: []
-      };
-
-      users.push(newUser);
-      fs.writeFileSync("attached_assets/user.json", JSON.stringify(users, null, 2));
-
-      // إضافة المستخدم تلقائياً للتصنيف مع 0 نقطة
-      try {
-        await storage.updateLeaderboardEntry(newUser.id, 0, newUser.name);
-        console.log(`تمت إضافة المستخدم ${newUser.name} للتصنيف`);
-      } catch (error) {
-        console.error("Error adding user to leaderboard:", error);
-      }
-
-      // Set user session for the new user
-      (req.session as any).userId = newUser.id;
-      (req.session as any).userEmail = newUser.email;
-      (req.session as any).userRole = "student";
-
-      // Save session and wait for it to complete
-      req.session.save((err) => {
-        if (err) {
-          console.error('Session save error:', err);
-          return res.status(500).json({ message: "خطأ في حفظ الجلسة" });
-        }
-
-        console.log('New user session saved:', newUser.id, newUser.email);
-
-        // Return user after session is saved
-        return res.status(201).json(newUser);
-      });
-    } catch (error) {
-      console.error("Error creating user:", error);
-      return res.status(500).json({ message: "Error creating user" });
-    }
+    // The active signup form uses register-multi: verified phone, hashed
+    // password and Mongo identity. Never create incompatible file-backed
+    // identities, expose plaintext passwords, or bypass signup verification.
+    return res.status(410).json({
+      code: "LEGACY_REGISTRATION_RETIRED",
+      message: "مسار التسجيل القديم غير متاح. أنشئ حسابك من صفحة التسجيل بعد تأكيد رقم الجوال.",
+      signupPath: "/signup",
+    });
   });
 
   // Public registration is limited to students. Teacher and institution
@@ -4583,6 +4504,7 @@ app.post("/api/auth/register", async (req: Request, res: Response) => {
   });
 
   registerInstitutionRoutes(app, { requireAdmin: requireAdmin as any, verifyPhoneVerificationToken });
+  registerQuestionFeedbackRoutes(app, requireAdmin as any);
 
   // Approve institution request (Admin only)
   app.post("/api/admin/institution-requests/:id/approve", requireAdmin, async (req: Request, res: Response) => {
@@ -5569,69 +5491,8 @@ app.post("/api/auth/register", async (req: Request, res: Response) => {
     }
   });
 
-  // Submit question error report
-  app.post("/api/questions/report", async (req: Request, res: Response) => {
-    try {
-      const { QuestionReport } = await import('./mongodb/models');
-      const { questionId, questionText, reportType, description } = req.body;
-      if (!questionId || !reportType) return res.status(400).json({ error: 'بيانات ناقصة' });
-      const userId = (req.session as any)?.userId;
-      let username = '';
-      if (userId) {
-        try {
-          const users: any[] = JSON.parse(fs.readFileSync('attached_assets/user.json', 'utf8'));
-          const u = users.find((u: any) => String(u.id) === String(userId));
-          username = u?.username || '';
-        } catch (_) {}
-      }
-      const report = await QuestionReport.create({
-        questionId: Number(questionId),
-        questionText: questionText || '',
-        reportType,
-        description: description || '',
-        reportedBy: userId ? String(userId) : undefined,
-        reportedByUsername: username,
-        status: 'pending',
-      });
-      res.json({ success: true });
-
-      // Async: call AI for suggested correction
-      try {
-        const { aiChat } = await import('./services/aiService');
-        const opts: string[] = req.body.options || [];
-        const correctIdx: number = req.body.correctOptionIndex ?? -1;
-        const prompt = `أنت خبير في اختبار القدرات العامة قياس. مراجع أبلغ عن خطأ في سؤال.
-
-السؤال: ${questionText}
-الخيارات: ${opts.map((o: string, i: number) => `${i + 1}. ${o}`).join(' | ')}
-الإجابة المحددة حالياً: ${correctIdx >= 0 ? opts[correctIdx] : 'غير محدد'}
-نوع البلاغ: ${reportType}
-وصف المشكلة: ${description || 'لا يوجد'}
-
-قيّم هذا البلاغ وأجب بـ JSON فقط:
-{
-  "isValidReport": true/false,
-  "aiSuggestedCorrectIndex": <رقم الخيار الصحيح 0-3 أو null>,
-  "aiExplanation": "شرح سبب رأيك",
-  "aiNote": "ملاحظة للمشرف"
-}`;
-        const aiReply = await aiChat([{ role: 'user', content: prompt }]);
-        const match = aiReply.match(/\{[\s\S]*\}/);
-        if (match) {
-          const aiData = JSON.parse(match[0]);
-          await QuestionReport.findByIdAndUpdate(report._id, {
-            adminNote: `اقتراح المعلم: ${aiData.aiExplanation || ''}\n${aiData.aiNote || ''}`,
-            fixedQuestion: aiData.aiSuggestedCorrectIndex !== null ? `الإجابة المقترحة: ${opts[aiData.aiSuggestedCorrectIndex] || ''}` : undefined,
-          });
-        }
-      } catch (aiErr) {
-        console.warn('AI report analysis failed:', aiErr);
-      }
-    } catch (e) {
-      console.error('question report error:', e);
-      res.status(500).json({ error: 'فشل في إرسال البلاغ' });
-    }
-  });
+  // Student reports are handled by registerQuestionFeedbackRoutes above.
+  // They remain manual-review records and never spend AI tokens on submission.
 
   // Admin: Get question reports
   app.get('/api/admin/question-reports', requireAdmin, async (req: Request, res: Response) => {
@@ -7429,6 +7290,10 @@ app.post("/api/auth/register", async (req: Request, res: Response) => {
   // Approve Subscription
   app.post("/api/admin/subscriptions/:id/approve", requireAdmin, async (req: Request, res: Response) => {
     try {
+      const { Subscription } = await import('./mongodb/models');
+      if (await Subscription.exists({ _id: req.params.id, paymentGateway: 'geidea' })) {
+        return res.status(409).json({ error: 'اشتراكات Geidea تُفعّل فقط بعد تأكيد الدفع من البوابة' });
+      }
       const adminId = (req.session as any).adminId;
       const subscription = await mongoStorage.approveSubscription(req.params.id, adminId);
 
@@ -7449,6 +7314,10 @@ app.post("/api/auth/register", async (req: Request, res: Response) => {
   // Reject Subscription
   app.post("/api/admin/subscriptions/:id/reject", requireAdmin, async (req: Request, res: Response) => {
     try {
+      const { Subscription } = await import('./mongodb/models');
+      if (await Subscription.exists({ _id: req.params.id, paymentGateway: 'geidea' })) {
+        return res.status(409).json({ error: 'حالة دفع Geidea تُحسم تلقائيًا بعد التحقق من البوابة' });
+      }
       const { reason } = req.body;
       const subscription = await mongoStorage.rejectSubscription(req.params.id, reason || 'رفض من المدير');
 
@@ -14384,38 +14253,52 @@ app.post("/api/auth/register", async (req: Request, res: Response) => {
   app.get('/api/platform-reviews/approved', async (_req: Request, res: Response) => {
     try {
       const { PlatformReview } = await import('../mongodb/models');
+      const { publicPlatformReview } = await import('../services/platformReviewService');
       const reviews = await PlatformReview.find({ status: 'approved' })
         .populate('userId', 'fullName username')
         .sort({ featured: -1, createdAt: -1 })
+        .limit(24)
         .lean() as any[];
+      res.set('Cache-Control', 'no-store');
       return res.json({
-        reviews: reviews.map(({ userId, ...review }) => ({
-          ...review,
-          authorName: userId?.fullName || userId?.username || 'طالب قدراتك',
-        })),
+        reviews: reviews.map(publicPlatformReview),
       });
     } catch (error) {
-      console.error('Approved reviews list error:', error);
+      _req.log?.error({ errorName: (error as Error).name }, 'Approved reviews list error');
       return res.status(500).json({ error: 'فشل في جلب التقييمات' });
+    }
+  });
+
+  app.get('/api/platform-reviews/mine', requireAuth, async (req: Request, res: Response) => {
+    const userId = studentOnly(req, res);
+    if (!userId) return;
+    try {
+      const { PlatformReview } = await import('../mongodb/models');
+      const reviews = await PlatformReview.find({ userId })
+        .select('rating text status adminReply createdAt').sort({ createdAt: -1 }).limit(10).lean();
+      return res.set('Cache-Control', 'private, no-store').json({ reviews });
+    } catch (error) {
+      req.log?.error({ errorName: (error as Error).name }, 'Student reviews list error');
+      return res.status(503).json({ error: 'تعذر تحميل تقييماتك؛ أعد المحاولة.' });
     }
   });
 
   app.post('/api/platform-reviews', requireAuth, async (req: Request, res: Response) => {
     const userId = studentOnly(req, res);
     if (!userId) return;
-    const rating = Number(req.body?.rating);
-    const text = typeof req.body?.text === 'string' ? req.body.text.trim() : '';
-    if (!Number.isInteger(rating) || rating < 1 || rating > 5 || !text || text.length > 2000) {
-      return res.status(400).json({ error: 'التقييم من 1 إلى 5 والنص مطلوب (حتى 2000 حرف)' });
-    }
+    const { platformReviewInput, ReviewInputError } = await import('../services/platformReviewService');
     try {
+      const input = platformReviewInput(req.body);
       const { PlatformReview } = await import('../mongodb/models');
-      const review = await PlatformReview.create({ userId, rating, text });
+      const recent = await PlatformReview.exists({ userId, createdAt: { $gte: new Date(Date.now() - 86400000) } });
+      if (recent) return res.status(429).json({ error: 'سبق أن أرسلت تقييمًا اليوم. يمكنك مشاهدة حالته أدناه.' });
+      const review = await PlatformReview.create({ userId, ...input });
       return res.status(201).json({
         review: { id: String(review._id), rating: review.rating, text: review.text, status: review.status, createdAt: review.createdAt },
       });
     } catch (error) {
-      console.error('Create platform review error:', error);
+      if (error instanceof ReviewInputError) return res.status(400).json({ error: error.message });
+      req.log?.error({ errorName: (error as Error).name }, 'Create platform review error');
       return res.status(500).json({ error: 'فشل في إرسال التقييم' });
     }
   });

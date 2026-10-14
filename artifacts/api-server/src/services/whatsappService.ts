@@ -43,7 +43,10 @@ export type WhatsAppOutboundKind =
   | "admin_daily_report"
   | "admin_email"
   | "admin_technical_error"
-  | "admin_support_ticket";
+  | "admin_support_ticket"
+  | "institution_welcome"
+  | "institution_contract"
+  | "admin_question_feedback";
 
 const outboundPriorities: Record<WhatsAppOutboundKind, number> = {
   otp: 0,
@@ -57,6 +60,9 @@ const outboundPriorities: Record<WhatsAppOutboundKind, number> = {
   admin_email: 2,
   admin_technical_error: 0,
   admin_support_ticket: 1,
+  institution_welcome: 1,
+  institution_contract: 1,
+  admin_question_feedback: 2,
 };
 
 const authDir = path.resolve(process.cwd(), ".whatsapp-auth");
@@ -139,9 +145,15 @@ export function getRecentWhatsAppMessages(phone?: string) {
 
 function recordMessage(message: WhatsAppMessageEvent) {
   if (recentMessages.some((existing) => existing.messageId === message.messageId)) return;
-  recentMessages.push(message);
+  // The document bearer link must not become readable through the general message feed.
+  const safeMessage = Object.fromEntries(Object.entries(message).map(([key, value]) => [
+    key, typeof value === "string"
+      ? value.replace(/(\/institution-contract#token=)[A-Za-z0-9_-]+/g, "$1[محجوب]")
+      : value,
+  ])) as WhatsAppMessageEvent;
+  recentMessages.push(safeMessage);
   if (recentMessages.length > 2000) recentMessages.splice(0, recentMessages.length - 2000);
-  messageEvents.emit("message", message);
+  messageEvents.emit("message", safeMessage);
 }
 
 function hasQiroxFallback() {

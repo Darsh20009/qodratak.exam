@@ -8,6 +8,10 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import RemedialPractice from './RemedialPractice';
 import QuestionVideoExplanation from './QuestionVideoExplanation';
 import { Link } from 'wouter';
+import ReportScoreSummary from './ReportScoreSummary';
+import { summarizeReportScores } from '@/lib/reportScores';
+import QuestionReportModal from './QuestionReportModal';
+import { Flag } from 'lucide-react';
 
 const minutes = (seconds: number) => seconds > 0
   ? `${(seconds / 60).toFixed(2)} دقيقة (${Math.round(seconds)} ثانية)` : 'الزمن غير مقاس';
@@ -17,6 +21,7 @@ export function ReportDetails({ report }: { report: ExamReportRecord }) {
   const [filter, setFilter] = useState<'all' | 'wrong' | 'slow'>('all');
   const [practice, setPractice] = useState(false);
   const [explanationNotice, setExplanationNotice] = useState('');
+  const [reporting, setReporting] = useState<ExamReportRecord['questions'][number] | null>(null);
   const explanation = useMutation({
     mutationFn: async (questionId: string) => {
       const res = await apiRequest('POST', '/api/student/exam-explanation', { questionId });
@@ -27,26 +32,28 @@ export function ReportDetails({ report }: { report: ExamReportRecord }) {
       void cache.invalidateQueries({ queryKey: ['/api/student/exam-reports'] });
     },
   });
-  const wrong = report.questions.filter((q) => q.isCorrect === false);
+  const wrong = report.questions.filter((q) => q.selectedOptionIndex !== null && q.isCorrect === false);
   const slow = report.questions.filter((q) => q.isSlow);
   const measured = report.timing.measuredQuestions;
-  const known = report.questions.filter((q) => q.isCorrect !== null);
   const visible = report.questions.filter((q) => filter === 'all' || (filter === 'wrong' ? q.isCorrect === false : q.isSlow));
-  const correctCount = report.questions.filter((q) => q.isCorrect === true).length;
+  const correctCount = summarizeReportScores(report.questions).overall.correct;
   const unverified = report.questions.filter((q) => q.selectedOptionIndex !== null && q.isCorrect === null).length;
   const skipped = report.questions.filter((q) => q.selectedOptionIndex === null).length;
   const nextAction = wrong.length > 0
     ? { text: `راجع ${wrong.length} سؤالًا أخطأت فيه أولًا، ثم تدرّب على المجال نفسه.`, kind: 'practice' as const }
     : slow.length > 0
-      ? { text: `أجبت بدقة موثقة، لكن ${slow.length} سؤالًا كان أبطأ من المعتاد. راجع طريقة حلها.`, kind: 'practice' as const }
+      ? { text: `${slow.length} سؤالًا استغرق وقتًا أطول من المعتاد. راجع طريقة حلها.`, kind: 'practice' as const }
       : unverified > 0
-        ? { text: 'بعض الإجابات لم يُوثّق تصحيحها بعد. أعد فتح التقرير بعد قليل.', kind: 'wait' as const }
-        : { text: 'لا أخطاء موثقة هنا. أكمل مهمتك التالية في خطة التحضير.', kind: 'course' as const };
+        ? { text: 'تصحيح بعض الإجابات لم يكتمل بعد. أعد فتح التقرير بعد قليل.', kind: 'wait' as const }
+        : skipped > 0
+          ? { text: `لديك ${skipped} سؤالًا لم تجب عنها. راجعها ثم تابع خطة التحضير.`, kind: 'course' as const }
+          : { text: 'أجبت عن جميع الأسئلة بشكل صحيح. تابع مهمتك التالية.', kind: 'course' as const };
   const weaknesses = [...new Set([...wrong, ...slow].map((q) => q.subcategory || q.category || 'عام'))];
   return <Card dir="rtl" className="my-5 text-right">
     <CardHeader><CardTitle>تقرير التعلم والوقت — {report.title}</CardTitle></CardHeader>
     <CardContent className="space-y-5">
       <Link href="/records" className="inline-block text-sm font-bold text-primary underline underline-offset-4">عرض تقاريري المحفوظة في حسابي</Link>
+      <ReportScoreSummary questions={report.questions} />
       <div className="rounded-xl border border-primary/30 bg-primary/5 p-4" data-testid="report-next-action">
         <p className="text-xs font-bold text-primary">خطوتك التالية</p>
         <p className="mt-1 font-bold">{nextAction.text}</p>
@@ -54,16 +61,16 @@ export function ReportDetails({ report }: { report: ExamReportRecord }) {
         {nextAction.kind === 'course' && <Link href="/preparation-course" className="mt-3 inline-block rounded-lg bg-primary px-4 py-2 text-sm font-bold text-primary-foreground">افتح خطة التحضير</Link>}
       </div>
       <div className="grid grid-cols-2 gap-3 md:grid-cols-5 text-sm" data-testid="report-summary">
-        <div>صحيحة موثقة<strong className="block text-lg">{correctCount}</strong></div>
-        <div>خاطئة موثقة<strong className="block text-lg">{wrong.length}</strong></div>
-        <div>غير موثقة<strong className="block text-lg">{unverified}</strong></div>
+        <div>الإجابات الصحيحة<strong className="block text-lg">{correctCount}</strong></div>
+        <div>الإجابات الخاطئة<strong className="block text-lg">{wrong.length}</strong></div>
+        <div>الأسئلة المتروكة<strong className="block text-lg">{skipped}</strong></div>
         <div>أبطأ من المعتاد<strong className="block text-lg">{slow.length}</strong></div>
         <div>الوقت النشط<strong className="block text-sm">{minutes(report.timing.totalSeconds)}</strong></div>
       </div>
       {skipped > 0 && <p className="text-xs text-muted-foreground">{skipped} سؤالًا متروكًا. تم قياس {measured} سؤالًا.</p>}
-      <p className="text-xs text-muted-foreground">الوقت مقاس في المتصفح أثناء ظهور السؤال؛ لا يشمل إخفاء الصفحة. المقارنة مع وسيط وقتك لنوع السؤال، لا مع سرعة جميع الطلاب. عند نقص العينات لا نصنف السؤال بطيئًا.</p>
-      {known.length < report.questions.filter((q) => q.selectedOptionIndex !== null).length &&
-        <p role="status" className="text-sm text-amber-700 dark:text-amber-300">بعض الإجابات لم تتوفر لها محاولة مصححة موثوقة على الخادم؛ وقتها ظاهر دون اختلاق صحة الإجابة.</p>}
+      <details className="text-xs text-muted-foreground"><summary className="cursor-pointer">كيف نحسب الوقت والنسبة؟</summary><p className="mt-2 leading-6">النسبة هي عدد الإجابات الصحيحة ÷ إجمالي أسئلة الاختبار، وتشمل الأسئلة المتروكة. الوقت يُحسب أثناء ظهور السؤال فقط، وتُقارن السرعة بأوقاتك المسجلة، لا بسرعة بقية الطلاب.</p></details>
+      {unverified > 0 &&
+        <p role="status" className="text-sm text-amber-700 dark:text-amber-300">تصحيح {unverified} إجابة لم يكتمل بعد؛ لن نعرض نسبة نهائية غير دقيقة.</p>}
       {weaknesses.length > 0 && <div className="rounded-xl bg-muted p-4 text-sm space-y-2">
         <h3 className="font-bold">خطة المراجعة من أخطائك</h3>
         {weaknesses.map((area) => <p key={area}>راجع {area}، ثم حل تدريبًا من المجال نفسه وأعد قياس وقتك. الخطأ هنا ملاحظة أداء وليس حكمًا نهائيًا على مستواك.</p>)}
@@ -77,7 +84,7 @@ export function ReportDetails({ report }: { report: ExamReportRecord }) {
       {visible.map((q) => <details key={q.id} className="rounded-xl border border-border" data-testid={`report-question-${q.id}`}>
         <summary className="cursor-pointer list-none p-4 text-sm font-bold flex flex-wrap gap-3">
           <span>السؤال {report.questions.indexOf(q) + 1}</span>
-          <span>{q.selectedOptionIndex === null ? 'متروك' : q.isCorrect === null ? 'التصحيح غير موثق' : q.isCorrect ? 'صحيح' : 'خطأ'}</span>
+          <span>{q.selectedOptionIndex === null ? 'متروك' : q.isCorrect === null ? 'جارٍ التصحيح' : q.isCorrect ? 'صحيح' : 'خطأ'}</span>
           {q.isSlow && <span className="text-amber-700 dark:text-amber-300">بطيء</span>}
           <span className="mr-auto text-xs text-primary">عرض التفاصيل</span>
         </summary>
@@ -85,11 +92,11 @@ export function ReportDetails({ report }: { report: ExamReportRecord }) {
         <div className="flex flex-wrap gap-3 text-sm font-bold">
           <span>السؤال {report.questions.indexOf(q) + 1}</span>
           <span>{minutes(q.seconds)}</span>
-          <span>{q.selectedOptionIndex === null ? 'متروك' : q.isCorrect === null ? 'التصحيح غير موثق' : q.isCorrect ? 'صحيح' : 'خطأ'}</span>
+          <span>{q.selectedOptionIndex === null ? 'متروك' : q.isCorrect === null ? 'جارٍ التصحيح' : q.isCorrect ? 'صحيح' : 'خطأ'}</span>
           {q.isSlow && <span className="text-amber-700 dark:text-amber-300">أطول من المعتاد</span>}
         </div>
         <p className="whitespace-pre-wrap">{q.text}</p>
-        {q.passageText && <div className="rounded-lg bg-muted p-4 whitespace-pre-wrap text-sm leading-7">{q.passageText}</div>}
+        {q.passageText && /استيعاب|مقروء|reading/i.test(q.subcategory || '') && <div className="rounded-lg bg-muted p-4 whitespace-pre-wrap text-sm leading-7">{q.passageText}</div>}
         {[...new Set([q.imageUrl, ...(q.imageUrls || [])].filter(Boolean))].map((url) =>
           <img key={url} src={url} alt="صورة السؤال" className="max-h-80 max-w-full object-contain bg-white rounded-lg" />)}
         <p className="text-sm text-muted-foreground">{q.subcategory || q.category}</p>
@@ -107,8 +114,10 @@ export function ReportDetails({ report }: { report: ExamReportRecord }) {
           <strong>إرشاد لتقليل الوقت: </strong>{q.speedTip}
           <p className="mt-2">افهم الحل أولًا، ثم أعد السؤال دون النظر إلى الشرح. تحسين السرعة لا يعني التخمين.</p>
         </div>}
+        <Button size="sm" variant="ghost" className="text-muted-foreground" onClick={() => setReporting(q)} data-testid={`button-report-question-${q.id}`}><Flag className="ml-1 h-4 w-4" aria-hidden />إبلاغ عن خطأ في السؤال</Button>
         </div>
       </details>)}
+      {reporting && <QuestionReportModal question={{ id: reporting.sourceQuestionId || reporting.id, text: reporting.text, options: reporting.options, correctOptionIndex: reporting.correctOptionIndex, sourceType: 'exam_report', sourceQuestionId: reporting.sourceQuestionId || undefined }} onClose={() => setReporting(null)} />}
       {explanation.isError && <p role="alert" className="text-destructive text-sm">تعذر تجهيز الشرح. قد يكون حد التوليد أو المصدر غير متاح؛ التقرير لا يتوقف.</p>}
       {explanationNotice && <p role="status" className="text-sm text-amber-700 dark:text-amber-300">{explanationNotice}</p>}
     </CardContent>
@@ -143,7 +152,7 @@ export default function ExamLearningReport() {
     refetchInterval: (query) => query.state.dataUpdateCount < 10 ? 5000 : false,
   });
   if (!snapshot || !Object.keys(snapshot.questions).length) return null;
-  if (saved.isPending) return <p role="status" className="my-4">جارٍ حفظ تقرير الوقت والتعلم دون استدعاء ذكاء اصطناعي للتحليل…</p>;
+  if (saved.isPending) return <p role="status" className="my-4">جارٍ حفظ نتيجتك وتقريرك…</p>;
   if (saved.isError) return <div role="alert" className="my-4 text-destructive">تعذر حفظ التقرير. <Button variant="outline" onClick={() => saved.refetch()}>إعادة المحاولة</Button></div>;
   const report = refreshed.data?.reports.find((r) => r.runId === snapshot.runId) || saved.data?.report;
   return report ? <ReportDetails report={report} /> : null;
@@ -166,8 +175,7 @@ export function ExamReportHistory() {
       {history.data && <span className="text-sm text-muted-foreground">{history.data.pages[0].totalCount ?? reports.length} تقرير محفوظ</span>}
     </div>
     {history.isPending ? <p>جارٍ تحميل التقارير…</p> : history.isError && !reports.length ? <p role="alert">تعذر تحميل التقارير. <Button onClick={() => history.refetch()}>إعادة المحاولة</Button></p> : reports.length ? reports.map((report) => {
-      const answered = report.questions.filter((q) => q.isCorrect !== null);
-      const correct = answered.filter((q) => q.isCorrect).length;
+      const score = summarizeReportScores(report.questions).overall;
       return <details key={report.runId} className="overflow-hidden rounded-xl border border-border bg-card" data-testid="saved-result-card" onToggle={(event) => {
         if (event.currentTarget.open) setOpenedReports((opened) => opened[report.runId] ? opened : { ...opened, [report.runId]: true });
       }}>
@@ -176,12 +184,8 @@ export function ExamReportHistory() {
             <div><h3 className="font-bold text-foreground">{report.title}</h3><p className="mt-1 text-xs text-muted-foreground">{report.createdAt ? new Date(report.createdAt).toLocaleString('ar-SA') : 'التاريخ غير متوفر'}</p></div>
             <span className="rounded-lg bg-primary/10 px-3 py-2 text-xs font-bold text-primary">عرض التقرير التفصيلي</span>
           </div>
-          <dl className="grid grid-cols-2 gap-3 border-t border-border pt-4 sm:grid-cols-4 text-sm">
-            <div><dt className="text-muted-foreground">الإجابات الصحيحة الموثقة</dt><dd className="mt-1 font-bold">{correct} من {answered.length}</dd></div>
-            <div><dt className="text-muted-foreground">دقة الإجابات الموثقة</dt><dd className="mt-1 font-bold">{answered.length ? `${Math.round(correct / answered.length * 100)}%` : 'غير متوفرة'}</dd></div>
-            <div><dt className="text-muted-foreground">الأخطاء الموثقة</dt><dd className="mt-1 font-bold">{answered.length - correct}</dd></div>
-            <div><dt className="text-muted-foreground">الوقت النشط المسجل</dt><dd className="mt-1 font-bold">{minutes(report.timing.totalSeconds)}</dd></div>
-          </dl>
+          <ReportScoreSummary questions={report.questions} />
+          <p className="text-sm text-muted-foreground">{score.correct} صحيحة · {score.wrong} خاطئة · {score.skipped} متروكة · الوقت: {minutes(report.timing.totalSeconds)}</p>
         </summary>
         {openedReports[report.runId] && <div className="border-t border-border px-2 sm:px-4"><ReportDetails report={report} /></div>}
       </details>;

@@ -2,6 +2,7 @@ import mongoose, { type ClientSession } from "mongoose";
 import { createHash, randomBytes, randomUUID } from "node:crypto";
 import { Institution, User, TestResult } from "../mongodb/models";
 import { InstitutionInvite, InstitutionMember } from "../mongodb/institutionModels";
+import { institutionIssuerName, institutionIssuerPlatform, institutionIssuerAssets } from "./institutionIssuer";
 
 export class InstitutionError extends Error {
   constructor(message: string, public status = 400) { super(message); }
@@ -41,13 +42,13 @@ const institutionConditions = [
   "لا يتسبب انتهاء الفترة المجانية في خصم أو تجديد مالي تلقائي؛ تطبق شروط الاشتراك والخدمات المعتمدة بعد انتهائها.",
 ];
 export function activeInstitution(institution: any) {
-  return Boolean(institution?.isActive && !institution.suspendedAt &&
+  return Boolean(institution?.isActive && !institution.archivedAt && !institution.suspendedAt &&
     institution.contract?.status === "approved" && institution.contract.signedObjectKey);
 }
-export async function createInstitution(input: any, actorId: string) {
+export function institutionCreationData(input: any, actorId: string) {
   const name = text(input.name, 180);
   const email = text(input.email, 180).toLowerCase();
-  const issuerName = text(input.issuerName, 160);
+  const issuerName = institutionIssuerName;
   const policies = typeof input.policies === "string" ? input.policies.trim() : "";
   if (name.length < 3 || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) ||
       !["school", "institute", "university"].includes(input.type)) throw new InstitutionError("أكمل بيانات المؤسسة بشكل صحيح");
@@ -60,17 +61,22 @@ export async function createInstitution(input: any, actorId: string) {
   const contract = {
     reference: `QDR-INS-${randomUUID()}`, issuedAt, issuerName, issuedBy: actorId,
     issuerLegalName: "مؤسسة قدراتك العالية", issuerNationalNumber: "7055077809",
+    issuerPlatformName: institutionIssuerPlatform, ...institutionIssuerAssets,
     policies, conditions: institutionConditions, status: "issued",
     digest: createHash("sha256").update(JSON.stringify({
       name, email, type: input.type, maxStudents, maxTeachers, policies,
       conditions: institutionConditions, issuerName, issuedAt,
+      issuerPlatformName: institutionIssuerPlatform, ...institutionIssuerAssets,
     })).digest("hex"),
   };
-  return Institution.create({
-    name, email, type: input.type, phone: text(input.phone, 30),
+  return {
+    name, email, type: input.type, phone: text(input.phone, 30), ownerName: text(input.ownerName, 180),
     address: text(input.address, 300), city: text(input.city, 80),
     maxStudents, maxTeachers, isActive: false, contract,
-  });
+  };
+}
+export async function createInstitution(input: any, actorId: string) {
+  return Institution.create(institutionCreationData(input, actorId));
 }
 export async function findInstitution(id: string, session?: ClientSession) {
   if (!mongoose.isValidObjectId(id)) throw new InstitutionError("المؤسسة غير موجودة", 404);
@@ -85,14 +91,22 @@ export function institutionDto(institution: any) {
     email: institution.email, phone: institution.phone, city: institution.city, address: institution.address,
     maxStudents: institution.maxStudents, maxTeachers: institution.maxTeachers,
     isActive: activeInstitution(institution), suspended: Boolean(institution.suspendedAt),
+    archived: Boolean(institution.archivedAt), ownerName: institution.ownerName,
+    ownerAccountPhone: institution.ownerAccountPhone,
+    ownerAccountPending: Boolean(institution.adminUserId && !activeInstitution(institution)),
     activatedAt: institution.activatedAt, freeEndDate: institution.subscriptionEndDate,
     contract: c ? {
       reference: c.reference, issuedAt: c.issuedAt, issuerName: c.issuerName,
       issuerLegalName: c.issuerLegalName, issuerNationalNumber: c.issuerNationalNumber,
+      issuerPlatformName: c.issuerPlatformName,
+      signatureAssetId: c.signatureAssetId, signatureSha256: c.signatureSha256,
+      stampAssetId: c.stampAssetId, stampSha256: c.stampSha256,
       policies: c.policies, conditions: c.conditions, digest: c.digest, status: c.status,
       signedSha256: c.signedSha256, signedBytes: c.signedBytes,
       signedUploadedAt: c.signedUploadedAt, approvedAt: c.approvedAt,
       rejectionReason: c.rejectionReason,
+      issuedDocumentReady: Boolean(c.issuedObjectKey),
+      portalSentAt: c.portalSentAt, portalDeliveryStatus: c.portalDeliveryStatus,
     } : null,
   };
 }

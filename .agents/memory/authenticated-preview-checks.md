@@ -9,6 +9,12 @@ An unauthenticated 401 from a session-only API during a screenshot of a public r
 
 **How to apply:** Treat the public shell and browser console as healthy when the only auth-related log is an expected 401; use an authenticated session or targeted API test to verify dashboard, notification, booking, and protected navigation behavior.
 
+Use a synthetic student backed by the actual data store when checking protected student flows; a legacy file-backed identity is not a valid substitute.
+
+**Why:** A tutorial capture used an old registration endpoint that created a numeric file-only identity. The Mongo-backed dashboard then failed, falsely suggesting the current signup flow was broken.
+
+**How to apply:** Verify that the test identity exists in the application's actual user store before interpreting dashboard failures. Keep temporary contacts notification-disabled and remove only records owned by the fixture.
+
 Exam verification must cover starting actual questions, not merely opening a catalog or following its links.
 
 **Why:** A catalog can render successfully while its start handler redirects home, its question payload has no usable identity/options, or the exam fails to load. Route-only checks previously missed those failures.

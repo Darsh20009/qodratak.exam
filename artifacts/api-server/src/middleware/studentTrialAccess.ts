@@ -247,6 +247,11 @@ export async function ensureStudentAccountTrial(
 
 export function isAllowedAfterTrial(path: string, method: string) {
   const normalizedMethod = method.toUpperCase();
+  // Feedback and token-authorized contract handling do not grant learning access.
+  if (["/api/student/question-contributions", "/api/questions/report",
+    "/api/institutions/contract-portal", "/api/institutions/contract-portal/upload",
+  ].includes(path) && normalizedMethod === "POST") return true;
+  if (path === "/api/institutions/contract-portal/pdf" && normalizedMethod === "GET") return true;
   if (path === "/api/institution/membership" && normalizedMethod === "GET") return true;
   if (["/api/institutions/join", "/api/institutions/preview", "/api/institutions/register"].includes(path) && normalizedMethod === "POST") return true;
   if (path === "/api/support-tickets" && normalizedMethod === "POST") return true;
@@ -258,6 +263,9 @@ export function isAllowedAfterTrial(path: string, method: string) {
   if (path === "/api/subscription/plan" && normalizedMethod === "GET") return true;
   if (path === "/api/subscription/start-trial" && normalizedMethod === "POST") return true;
   if (path === "/api/student/dashboard" && normalizedMethod === "GET") return true;
+  if (path === "/api/platform-reviews" && normalizedMethod === "POST") return true;
+  if (path === "/api/platform-reviews/mine" && normalizedMethod === "GET") return true;
+  if (path === "/api/platform-reviews/approved" && normalizedMethod === "GET") return true;
   if (path === "/api/student/learning-coach" && normalizedMethod === "GET") return true;
   // Reports review the already permitted daily attempt; they do not unlock
   // further bank questions. /practice remains gated by active entitlement.

@@ -10,6 +10,7 @@ import WhatsAppAdminTab from './WhatsAppAdminTab';
 import EmailAdminTab from './EmailAdminTab';
 import AdminOverview from './AdminOverview';
 import AdminInstitutionsTab, { type InstitutionPrefill } from '@/components/admin/AdminInstitutionsTab';
+import AdminQuestionContributionsTab from '@/components/admin/AdminQuestionContributionsTab';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -45,7 +46,13 @@ interface DashboardStats {
 }
 
 interface User { _id: string; username: string; fullName?: string; email?: string; phone?: string; points: number; level: number; lastVisit: string; totalVisits: number; totalTestsTaken: number; createdAt: string; isActive: boolean }
-interface Subscription { _id: string; userId: { _id: string; username: string; fullName?: string; email?: string; phone?: string }; type: string; status: string; startDate: string; endDate: string; price: number; paymentMethod?: string; transferReceiptUrl?: string; transferReceiptFilename?: string; createdAt: string; approvedBy?: { fullName: string }; approvedAt?: string; rejectionReason?: string }
+interface SubscriptionStudent { _id: string; username?: string; fullName?: string; email?: string; phone?: string }
+interface Subscription { _id: string; userId: string | number | SubscriptionStudent; student?: SubscriptionStudent | null; studentLinkStatus?: 'linked' | 'missing_account' | 'legacy_identity'; type: string; status: string; paymentGateway?: string; paymentStatus?: string; providerStatus?: string; startDate: string; endDate: string; price: number; paymentMethod?: string; transferReceiptUrl?: string; transferReceiptFilename?: string; createdAt: string; approvedBy?: { fullName: string }; approvedAt?: string; rejectionReason?: string }
+function subscriptionStudent(subscription: Subscription) {
+  if (subscription.student) return subscription.student;
+  const owner = subscription.userId;
+  return owner && typeof owner === 'object' && (owner.fullName || owner.username || owner.email || owner.phone) ? owner : null;
+}
 interface InstitutionRequest { _id: string; institutionName: string; responsibleName: string; phone: string; email: string; whatsapp: string; city: string; institutionType: string; studentsCount?: number; notes?: string; status: 'pending' | 'approved' | 'rejected'; createdAt: string }
 interface ActiveInstitutionMember { id: string; fullName: string; username: string; email: string; phone: string; lastVisit: string; createdAt: string; }
 interface ActiveInstitution { id: string; name: string; nameEn?: string; type: string; city: string; email: string; phone: string; subscriptionType: string; subscriptionEndDate: string; maxTeachers: number; maxStudents: number; teacherCount: number; studentCount: number; teachers?: ActiveInstitutionMember[]; students?: ActiveInstitutionMember[]; }
@@ -72,6 +79,7 @@ const NAV_ITEMS = [
   { key: 'notifications', icon: BellRing, label: 'مركز الإشعارات', color: 'text-[#7964C1]' },
   { key: 'whatsapp', icon: MessageCircle, label: 'واتساب CRM', color: 'text-[#2E8B70]' },
   { key: 'question-reports', icon: AlertTriangle, label: 'بلاغات الأسئلة', color: 'text-[#B65D36]' },
+  { key: 'question-contributions', icon: MessageCircle, label: 'أسئلة الطلاب للمراجعة', color: 'text-[#B65D36]' },
   { key: 'wallets', icon: Wallet, label: 'المحافظ والمكافآت', color: 'text-[#7964C1]' },
   { key: 'seasonal-exams', icon: Sparkles, label: 'الاختبارات الموسمية', color: 'text-[#B65D36]' },
   { key: 'foundation-management', icon: Video, label: 'محتوى التأسيس والمراجعات', color: 'text-[#2E8B70]' },
@@ -279,15 +287,19 @@ export default function AdminDashboard({ initialTab = 'overview' }: { initialTab
     },
     enabled: !!(session as any)?.authenticated && (activeTab === 'users' || showManualSubDialog),
   });
-  const { data: subsData, isLoading: subsLoading } = useQuery({
+  const { data: subsData, isLoading: subsLoading, isError: subsError, refetch: refetchSubs } = useQuery({
     queryKey: ['/api/admin/subscriptions', subscriptionsPage, subFilter],
     queryFn: async () => {
       const effectiveFilter = subFilter === 'all' ? '' : subFilter;
       const params = new URLSearchParams({ page: String(subscriptionsPage), limit: '20', ...(effectiveFilter && { status: effectiveFilter }) });
       const res = await fetch(`/api/admin/subscriptions?${params}`, { credentials: 'include' });
-      return res.json();
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'فشل تحميل الاشتراكات');
+      return data;
     },
     enabled: !!(session as any)?.authenticated && activeTab === 'subscriptions',
+    staleTime: 15000,
+    refetchInterval: 60000,
   });
   const { data: pendingSubs } = useQuery({ queryKey: ['/api/admin/subscriptions/pending'], enabled: !!(session as any)?.authenticated });
   const { data: institutionsData, isLoading: institutionsLoading } = useQuery({ queryKey: ['/api/admin/institution-requests'], enabled: !!(session as any)?.authenticated && activeTab === 'institutions' });
@@ -939,6 +951,8 @@ export default function AdminDashboard({ initialTab = 'overview' }: { initialTab
                     <tbody className="divide-y divide-slate-800">
                       {subsLoading ? (
                         [...Array(6)].map((_, i) => <tr key={i}><td colSpan={7} className="px-4 py-3"><div className="h-4 bg-slate-800 rounded animate-pulse" /></td></tr>)
+                      ) : subsError ? (
+                        <tr><td colSpan={7} className="px-4 py-8 text-center text-red-300">تعذر تحميل الاشتراكات. <button type="button" onClick={() => refetchSubs()} className="mr-2 underline">إعادة المحاولة</button></td></tr>
                       ) : subs.length === 0 ? (
                         <tr><td colSpan={7} className="text-center py-12 text-slate-500">
                           <CreditCard className="w-10 h-10 mx-auto mb-2 opacity-30" />
@@ -947,8 +961,15 @@ export default function AdminDashboard({ initialTab = 'overview' }: { initialTab
                       ) : subs.map(s => (
                         <tr key={s._id} className={`hover:bg-emerald-900/20 transition-colors ${s.status === 'pending' ? 'border-r-2 border-amber-500' : ''}`}>
                           <td className="px-4 py-3">
-                            <div className="text-white text-sm font-medium">{(s.userId as any)?.username || (s.userId as any)?.fullName || '-'}</div>
-                            <div className="text-slate-500 text-xs">{(s.userId as any)?.email || ''}</div>
+                            <div className="text-white text-sm font-medium">{subscriptionStudent(s)?.fullName || subscriptionStudent(s)?.username || 'حساب غير مرتبط بهذا الاشتراك'}</div>
+                            {subscriptionStudent(s) ? (
+                              <>
+                                <div className="text-slate-300 text-xs mt-1">الجوال: <bdi dir="ltr">{subscriptionStudent(s)?.phone || 'غير مسجل'}</bdi></div>
+                                <div className="text-slate-500 text-xs"><bdi dir="ltr">{subscriptionStudent(s)?.email || 'البريد غير مسجل'}</bdi></div>
+                              </>
+                            ) : (
+                              <div className="text-amber-300 text-xs mt-1">سجل قديم أو حساب غير موجود — يلزم مراجعة الربط</div>
+                            )}
                           </td>
                           <td className="px-4 py-3">
                             <span className={`text-xs font-bold px-2 py-1 rounded-full ${
@@ -974,7 +995,10 @@ export default function AdminDashboard({ initialTab = 'overview' }: { initialTab
                               <button onClick={() => setSelectedSubscription(s)} className="text-blue-400 hover:text-blue-300 transition-colors">
                                 <Eye className="w-3.5 h-3.5" />
                               </button>
-                              {s.status === 'pending' && (
+                              {s.paymentGateway === 'geidea' && s.status === 'pending' && (
+                                <span className="text-xs font-bold text-sky-300">{s.providerStatus?.startsWith('verification_mismatch') ? 'دفع يحتاج مراجعة Geidea' : 'الدفع قيد التحقق آليًا'}</span>
+                              )}
+                              {s.status === 'pending' && s.paymentGateway !== 'geidea' && (
                                 <>
                                   <button onClick={() => approveSub.mutate(s._id)} disabled={approveSub.isPending} className="text-emerald-400 hover:text-emerald-300 text-xs flex items-center gap-1 transition-colors">
                                     <UserCheck className="w-3.5 h-3.5" /> قبول
@@ -1492,7 +1516,7 @@ export default function AdminDashboard({ initialTab = 'overview' }: { initialTab
 
           {/* ─── INSTITUTIONS & CONTRACTS TAB ─── */}
           {activeTab === 'active-institutions' && (canManageInstitutions
-            ? <AdminInstitutionsTab prefill={institutionPrefill} onPrefillConsumed={() => setInstitutionPrefill(null)} />
+            ? <AdminInstitutionsTab prefill={institutionPrefill} onPrefillConsumed={() => setInstitutionPrefill(null)} isDemo={(session as any)?.admin?.isDemo === true} />
             : <div className="rounded-2xl border border-white/10 p-8 text-center text-sm text-slate-400">لا تملك صلاحية إدارة المؤسسات (manage_institutions).</div>)}
 
           {/* ─── SUPPORT TICKETS TAB ─── */}
@@ -1997,6 +2021,7 @@ export default function AdminDashboard({ initialTab = 'overview' }: { initialTab
           )}
 
           {/* ─── QUESTION REPORTS TAB ─── */}
+          {activeTab === 'question-contributions' && <AdminQuestionContributionsTab />}
           {activeTab === 'question-reports' && (
             <div className="space-y-5">
               <div className="flex items-center justify-between flex-wrap gap-3">
@@ -2537,8 +2562,9 @@ export default function AdminDashboard({ initialTab = 'overview' }: { initialTab
             <div className="space-y-3 text-sm">
               <div className="grid grid-cols-2 gap-2">
                 {[
-                  { label: 'الطالب', value: selectedSubscription.userId?.username || '-' },
-                  { label: 'البريد', value: selectedSubscription.userId?.email || '-' },
+                  { label: 'الطالب', value: subscriptionStudent(selectedSubscription)?.fullName || subscriptionStudent(selectedSubscription)?.username || 'حساب غير مرتبط' },
+                  { label: 'الجوال', value: subscriptionStudent(selectedSubscription)?.phone || 'غير مسجل' },
+                  { label: 'البريد', value: subscriptionStudent(selectedSubscription)?.email || 'غير مسجل' },
                   { label: 'نوع الاشتراك', value: selectedSubscription.type },
                   { label: 'السعر', value: `${selectedSubscription.price} ر.س` },
                   { label: 'الحالة', value: selectedSubscription.status },
@@ -2805,9 +2831,9 @@ export default function AdminDashboard({ initialTab = 'overview' }: { initialTab
             {selectedSubscription && (
               <Invoice
                 invoiceNumber={`QDR-${new Date(selectedSubscription.createdAt).getFullYear()}-${selectedSubscription._id.slice(-8).toUpperCase()}`}
-                customerName={selectedSubscription.userId?.fullName || selectedSubscription.userId?.username || 'عميل قدراتك'}
-                customerEmail={selectedSubscription.userId?.email}
-                customerPhone={selectedSubscription.userId?.phone}
+                customerName={subscriptionStudent(selectedSubscription)?.fullName || subscriptionStudent(selectedSubscription)?.username || 'حساب غير مرتبط'}
+                customerEmail={subscriptionStudent(selectedSubscription)?.email}
+                customerPhone={subscriptionStudent(selectedSubscription)?.phone}
                  planName={selectedSubscription.type === 'Pro' ? 'باقة 3 أشهر' : selectedSubscription.type === 'Pro Life Plus' ? 'باقة 6 أشهر' : selectedSubscription.type}
                 amount={selectedSubscription.price ?? 39}
                 currency="SAR"

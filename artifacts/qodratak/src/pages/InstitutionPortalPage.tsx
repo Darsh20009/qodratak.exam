@@ -9,7 +9,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useUser } from "@/hooks/use-user";
 import { cn } from "@/lib/utils";
 import {
-  ROLE_LABEL, TYPE_LABEL, daysLeft, fmtDate, roleHome, useAssignTeachers, useInstitutionDashboard,
+  ROLE_LABEL, TYPE_LABEL, daysLeft, fmtDate, roleHome, useAssignTeachers, useInstitutionDashboard, useMembership,
   useInstitutionInvites, useIssueInstitutionInvite, useRevokeInstitutionInvite, useRevokeMember,
   type InstitutionRole, type RosterMember,
 } from "@/lib/institutionApi";
@@ -138,6 +138,8 @@ function InvitesSection({ maxStudents }: { maxStudents: number }) {
 
 function Director() {
   const { data, isLoading, error, refetch } = useInstitutionDashboard();
+  const pendingQ = useMembership(!!error);
+  const pending = pendingQ.data?.pendingInstitution;
   const [tab, setTab] = useState<"students" | "teachers" | "invites">("students");
   const [q, setQ] = useState("");
   const [assigning, setAssigning] = useState<RosterMember | null>(null);
@@ -152,6 +154,19 @@ function Director() {
   const filtered = (tab === "teachers" ? teachers : students).filter((m) => !q || `${m.fullName} ${m.username} ${m.phone || ""}`.includes(q.trim()));
 
   if (isLoading) return <SkeletonBoard />;
+  if (error && pending) {
+    return (
+      <div className="grid min-h-[60dvh] place-items-center p-6 text-center" dir="rtl">
+        <div data-testid="status-pending-institution" className={cn(card, "max-w-md p-8")}>
+          <h1 className="text-lg font-black text-[#171723] dark:text-white">{pending.name}</h1>
+          <p className="mt-2 text-sm leading-7 text-[#6B625B] dark:text-slate-400">حسابك كمالك للمؤسسة جاهز، وتبقى صلاحيات المؤسسة مغلقة حتى ترفع العقد الموقع وتعتمده إدارة المنصة. بعد الاعتماد تفتح اللوحة تلقائيًا دون تسجيل جديد.</p>
+          {pending.contractLink ? (
+            <a data-testid="link-pending-contract" href={pending.contractLink} className="mt-4 inline-block rounded-xl bg-[#171723] px-5 py-2.5 text-sm font-black text-white dark:bg-[#91D7C5] dark:text-[#171723]">فتح العقد ورفع النسخة الموقعة</a>
+          ) : <p className="mt-4 text-xs font-bold text-[#6B625B] dark:text-slate-400">رابط العقد لم يُجهّز بعد. ستصلك رسالة عند جاهزيته.</p>}
+        </div>
+      </div>
+    );
+  }
   if (error || !data) {
     return (
       <div className="grid min-h-[60dvh] place-items-center p-6 text-center" dir="rtl">

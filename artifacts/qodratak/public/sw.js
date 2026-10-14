@@ -1,6 +1,6 @@
 /* ── Qodratak Service Worker v2 ── */
-const CACHE_NAME = 'qodratak-v4';
-const STATIC_ASSETS = ['/', '/manifest.json', '/qodratak-app-icon.png'];
+const CACHE_NAME = 'qodratak-v5';
+const STATIC_ASSETS = ['/', '/manifest.json', '/qodratak-install-192.png', '/qodratak-install-512.png', '/qodratak-install-180.png', '/qodratak-icon-light.png'];
 
 // ── Install ────────────────────────────────────────────────────────────────
 self.addEventListener('install', (event) => {
@@ -33,8 +33,8 @@ self.addEventListener('push', (event) => {
   const title   = data.title  || 'منصة قدراتك';
   const options = {
     body:    data.body    || '',
-    icon:    data.icon    || '/qodratak-app-icon.png',
-    badge:   data.badge   || '/qodratak-app-icon.png',
+    icon:    data.icon    || '/qodratak-icon-light.png',
+    badge:   data.badge   || '/qodratak-favicon-48.png',
     tag:     data.tag     || 'qodratak-notif',
     dir:     'rtl',
     lang:    'ar',

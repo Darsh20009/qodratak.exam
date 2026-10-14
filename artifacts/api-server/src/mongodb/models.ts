@@ -303,6 +303,10 @@ export interface IInstitution extends Document {
   address?: string;
   city?: string;
   adminUserId?: mongoose.Types.ObjectId;
+  ownerName?: string;
+  ownerAccountPhone?: string;
+  archivedAt?: Date;
+  archivedBy?: string;
   maxStudents: number;
   maxTeachers: number;
   isActive: boolean;
@@ -326,6 +330,10 @@ const institutionSchema = new Schema<IInstitution>({
   address: { type: String },
   city: { type: String },
   adminUserId: { type: Schema.Types.ObjectId, ref: 'User' },
+  ownerName: String,
+  ownerAccountPhone: String,
+  archivedAt: Date,
+  archivedBy: String,
   maxStudents: { type: Number, default: 100 },
   maxTeachers: { type: Number, default: 10 },
   isActive: { type: Boolean, default: true },
@@ -382,9 +390,11 @@ export interface ISubscription extends Document {
   currency?: string;
   providerMerchantReferenceId?: string;
   providerSessionId?: string;
+  providerNextCheckAt?: Date;
   providerOrderId?: string;
   providerStatus?: string;
   paidAt?: Date;
+  billingSnapshot?: { name: string; email: string; phone: string };
   purchaseNotificationState?: "pending" | "sending" | "sent" | "failed" | "skipped";
   purchaseNotificationAttempts?: number;
   purchaseNotificationAttemptedAt?: Date;
@@ -424,9 +434,15 @@ const subscriptionSchema = new Schema<ISubscription>({
   currency: { type: String },
   providerMerchantReferenceId: { type: String },
   providerSessionId: { type: String },
+  providerNextCheckAt: { type: Date },
   providerOrderId: { type: String },
   providerStatus: { type: String },
   paidAt: { type: Date },
+  billingSnapshot: {
+    name: { type: String },
+    email: { type: String },
+    phone: { type: String },
+  },
   purchaseNotificationState: { type: String, enum: ["pending", "sending", "sent", "failed", "skipped"] },
   purchaseNotificationAttempts: { type: Number },
   purchaseNotificationAttemptedAt: { type: Date },
@@ -1327,7 +1343,9 @@ export const TeacherClassMembership = mongoose.models['TeacherClassMembership']
 
 // ─── QUESTION REPORT ───
 export interface IQuestionReport extends Document {
-  questionId: number;
+  questionId: number | string;
+  sourceType?: string;
+  sourceQuestionId?: string;
   questionText: string;
   reportType: 'wrong_answer' | 'typo' | 'unclear' | 'missing_image' | 'other';
   description?: string;
@@ -1341,7 +1359,9 @@ export interface IQuestionReport extends Document {
 }
 
 const questionReportSchema = new Schema<IQuestionReport>({
-  questionId: { type: Number, required: true, index: true },
+  sourceType: String,
+  sourceQuestionId: String,
+  questionId: { type: Schema.Types.Mixed, required: true, index: true },
   questionText: { type: String, required: true },
   reportType: { type: String, enum: ['wrong_answer', 'typo', 'unclear', 'missing_image', 'other'], required: true },
   description: { type: String },
@@ -1756,11 +1776,13 @@ foundationContentSchema.index({ program: 1, published: 1, order: 1 });
 
 export interface IPlatformReview extends Document {
   userId: mongoose.Types.ObjectId; rating: number; text: string;
+  publishConsent?: boolean;
   status: 'pending' | 'approved' | 'rejected'; featured: boolean;
   adminReply?: string; createdAt: Date; updatedAt: Date;
 }
 const platformReviewSchema = new Schema<IPlatformReview>({
   userId: { type: Schema.Types.ObjectId, ref: 'User', required: true, index: true },
+  publishConsent: Boolean,
   rating: { type: Number, required: true, min: 1, max: 5 },
   text: { type: String, required: true, trim: true, maxlength: 2000 },
   status: { type: String, enum: ['pending', 'approved', 'rejected'], default: 'pending', index: true },

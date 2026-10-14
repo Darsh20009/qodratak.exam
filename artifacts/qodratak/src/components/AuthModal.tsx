@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { fullPhone } from "../lib/phone-input";
 import { useLocation } from "wouter";
 import { useQueryClient } from "@tanstack/react-query";
 import { CheckCircle2, ChevronDown, Eye, EyeOff, KeyRound, Laptop, Loader2, Lock, Mail, MessageCircle, Phone, Smartphone, Trash2, User, UsersRound, X } from "lucide-react";
@@ -20,26 +21,26 @@ type DeviceLimitDevice = {
 };
 
 const countries = [
-  ["السعودية", "966", "🇸🇦"], ["الإمارات", "971", "🇦🇪"], ["الكويت", "965", "🇰🇼"], ["البحرين", "973", "🇧🇭"],
-  ["قطر", "974", "🇶🇦"], ["عُمان", "968", "🇴🇲"], ["اليمن", "967", "🇾🇪"], ["العراق", "964", "🇮🇶"],
-  ["الأردن", "962", "🇯🇴"], ["لبنان", "961", "🇱🇧"], ["سوريا", "963", "🇸🇾"], ["فلسطين", "970", "🇵🇸"],
-  ["مصر", "20", "🇪🇬"], ["السودان", "249", "🇸🇩"], ["ليبيا", "218", "🇱🇾"], ["تونس", "216", "🇹🇳"],
-  ["الجزائر", "213", "🇩🇿"], ["المغرب", "212", "🇲🇦"], ["موريتانيا", "222", "🇲🇷"], ["الصومال", "252", "🇸🇴"],
-  ["تركيا", "90", "🇹🇷"], ["إيران", "98", "🇮🇷"], ["أفغانستان", "93", "🇦🇫"], ["باكستان", "92", "🇵🇰"],
-  ["الهند", "91", "🇮🇳"], ["بنغلاديش", "880", "🇧🇩"], ["سريلانكا", "94", "🇱🇰"], ["نيبال", "977", "🇳🇵"],
-  ["الصين", "86", "🇨🇳"], ["اليابان", "81", "🇯🇵"], ["كوريا الجنوبية", "82", "🇰🇷"], ["إندونيسيا", "62", "🇮🇩"],
-  ["ماليزيا", "60", "🇲🇾"], ["سنغافورة", "65", "🇸🇬"], ["تايلاند", "66", "🇹🇭"], ["الفلبين", "63", "🇵🇭"],
-  ["الولايات المتحدة", "1", "🇺🇸"], ["كندا", "1", "🇨🇦"], ["المكسيك", "52", "🇲🇽"], ["البرازيل", "55", "🇧🇷"],
-  ["الأرجنتين", "54", "🇦🇷"], ["تشيلي", "56", "🇨🇱"], ["كولومبيا", "57", "🇨🇴"], ["بيرو", "51", "🇵🇪"],
-  ["المملكة المتحدة", "44", "🇬🇧"], ["فرنسا", "33", "🇫🇷"], ["ألمانيا", "49", "🇩🇪"], ["إيطاليا", "39", "🇮🇹"],
-  ["إسبانيا", "34", "🇪🇸"], ["البرتغال", "351", "🇵🇹"], ["هولندا", "31", "🇳🇱"], ["بلجيكا", "32", "🇧🇪"],
-  ["سويسرا", "41", "🇨🇭"], ["النمسا", "43", "🇦🇹"], ["أيرلندا", "353", "🇮🇪"], ["السويد", "46", "🇸🇪"],
-  ["النرويج", "47", "🇳🇴"], ["الدنمارك", "45", "🇩🇰"], ["فنلندا", "358", "🇫🇮"], ["بولندا", "48", "🇵🇱"],
-  ["اليونان", "30", "🇬🇷"], ["رومانيا", "40", "🇷🇴"], ["أوكرانيا", "380", "🇺🇦"], ["روسيا", "7", "🇷🇺"],
-  ["كازاخستان", "7", "🇰🇿"], ["أوزبكستان", "998", "🇺🇿"], ["أذربيجان", "994", "🇦🇿"], ["جورجيا", "995", "🇬🇪"],
-  ["أستراليا", "61", "🇦🇺"], ["نيوزيلندا", "64", "🇳🇿"], ["جنوب أفريقيا", "27", "🇿🇦"], ["نيجيريا", "234", "🇳🇬"],
-  ["غانا", "233", "🇬🇭"], ["كينيا", "254", "🇰🇪"], ["تنزانيا", "255", "🇹🇿"], ["أوغندا", "256", "🇺🇬"],
-  ["إثيوبيا", "251", "🇪🇹"], ["السنغال", "221", "🇸🇳"], ["الكاميرون", "237", "🇨🇲"], ["ساحل العاج", "225", "🇨🇮"],
+  ["السعودية", "966"], ["الإمارات", "971"], ["الكويت", "965"], ["البحرين", "973"],
+  ["قطر", "974"], ["عُمان", "968"], ["اليمن", "967"], ["العراق", "964"],
+  ["الأردن", "962"], ["لبنان", "961"], ["سوريا", "963"], ["فلسطين", "970"],
+  ["مصر", "20"], ["السودان", "249"], ["ليبيا", "218"], ["تونس", "216"],
+  ["الجزائر", "213"], ["المغرب", "212"], ["موريتانيا", "222"], ["الصومال", "252"],
+  ["تركيا", "90"], ["إيران", "98"], ["أفغانستان", "93"], ["باكستان", "92"],
+  ["الهند", "91"], ["بنغلاديش", "880"], ["سريلانكا", "94"], ["نيبال", "977"],
+  ["الصين", "86"], ["اليابان", "81"], ["كوريا الجنوبية", "82"], ["إندونيسيا", "62"],
+  ["ماليزيا", "60"], ["سنغافورة", "65"], ["تايلاند", "66"], ["الفلبين", "63"],
+  ["الولايات المتحدة", "1"], ["كندا", "1"], ["المكسيك", "52"], ["البرازيل", "55"],
+  ["الأرجنتين", "54"], ["تشيلي", "56"], ["كولومبيا", "57"], ["بيرو", "51"],
+  ["المملكة المتحدة", "44"], ["فرنسا", "33"], ["ألمانيا", "49"], ["إيطاليا", "39"],
+  ["إسبانيا", "34"], ["البرتغال", "351"], ["هولندا", "31"], ["بلجيكا", "32"],
+  ["سويسرا", "41"], ["النمسا", "43"], ["أيرلندا", "353"], ["السويد", "46"],
+  ["النرويج", "47"], ["الدنمارك", "45"], ["فنلندا", "358"], ["بولندا", "48"],
+  ["اليونان", "30"], ["رومانيا", "40"], ["أوكرانيا", "380"], ["روسيا", "7"],
+  ["كازاخستان", "7"], ["أوزبكستان", "998"], ["أذربيجان", "994"], ["جورجيا", "995"],
+  ["أستراليا", "61"], ["نيوزيلندا", "64"], ["جنوب أفريقيا", "27"], ["نيجيريا", "234"],
+  ["غانا", "233"], ["كينيا", "254"], ["تنزانيا", "255"], ["أوغندا", "256"],
+  ["إثيوبيا", "251"], ["السنغال", "221"], ["الكاميرون", "237"], ["ساحل العاج", "225"],
 ] as const;
 
 const emailDomains = ["gmail.com", "outlook.com", "hotmail.com", "yahoo.com", "icloud.com"];
@@ -74,9 +75,6 @@ function normalizeInputDigits(value: string) {
     .replace(/[۰-۹]/g, (digit) => String(digit.charCodeAt(0) - 0x06f0));
 }
 
-function fullPhone(code: string, value: string) {
-  return `+${normalizeInputDigits(code)}${normalizeInputDigits(value).replace(/\D/g, "").replace(/^0+/, "")}`;
-}
 
 function PhoneField({ code, number, onCode, onNumber, disabled }: { code: string; number: string; onCode: (value: string) => void; onNumber: (value: string) => void; disabled?: boolean }) {
   return (
@@ -119,7 +117,7 @@ export function AuthModal({ open, mode, onClose, onModeChange }: { open: boolean
   const queryClient = useQueryClient();
   const { toast } = useToast();
   const [method, setMethod] = useState<LoginMethod>("phone");
-  const [phoneLoginMode, setPhoneLoginMode] = useState<"otp" | "password">("password");
+  const [phoneLoginMode, setPhoneLoginMode] = useState<"otp" | "password">("otp");
   const [accountType, setAccountType] = useState<AccountType>(null);
 
   // Student & General Login state
@@ -179,7 +177,7 @@ export function AuthModal({ open, mode, onClose, onModeChange }: { open: boolean
   const [verifiedChildren, setVerifiedChildren] = useState<{phone: string, verificationToken: string}[]>([]);
 
   const resetFlow = (nextMode?: AuthMode) => {
-    setOtp(""); setOtpSent(false); setResendAfter(0); setPhoneToken(""); setFullName(""); setUsername(""); setEmail(""); setPassword(""); setConfirmPassword(""); setPasswordSetup(""); setPasswordSetupConfirm(""); setPasswordSetupRequired(false); setPhoneLoginMode(nextMode === "login" ? "password" : "otp"); setLoading(false);
+    setOtp(""); setOtpSent(false); setResendAfter(0); setPhoneToken(""); setFullName(""); setUsername(""); setEmail(""); setPassword(""); setConfirmPassword(""); setPasswordSetup(""); setPasswordSetupConfirm(""); setPasswordSetupRequired(false); setPhoneLoginMode("otp"); setLoading(false);
     setAccountType(null);
     setJoinCode(""); setJoinPreview(null); setJoinError(""); setJoinConsent(false);
     setParentName(""); setParentPhone(""); setParentOtp(""); setParentOtpSent(false); setParentToken("");
@@ -539,9 +537,9 @@ export function AuthModal({ open, mode, onClose, onModeChange }: { open: boolean
             </div>
             <button onClick={onClose} aria-label="إغلاق" className="rounded-lg p-2 text-[#8B8278] hover:bg-[#24202D]/5"><X className="h-4 w-4" /></button>
           </div>
-          <div className="grid grid-cols-2 border-b border-[#24202D]/10 bg-[#F7F4EE] p-1.5">
-            <button onClick={() => resetFlow("login")} className={`rounded-xl py-2.5 text-sm font-black ${mode === "login" ? "bg-white text-[#171723] shadow-sm" : "text-[#8B8278]"}`}>تسجيل الدخول</button>
-            <button onClick={() => resetFlow("signup")} className={`rounded-xl py-2.5 text-sm font-black ${mode === "signup" ? "bg-white text-[#171723] shadow-sm" : "text-[#8B8278]"}`}>إنشاء حساب</button>
+          <div className="grid grid-cols-2 border-b border-border bg-muted/50 p-1.5">
+            <button type="button" aria-pressed={mode === "login"} data-testid="auth-tab-login" onClick={() => resetFlow("login")} className={`rounded-xl py-2.5 text-sm font-black transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary ${mode === "login" ? "bg-primary text-primary-foreground shadow-sm" : "text-muted-foreground hover:bg-muted"}`}>تسجيل الدخول</button>
+            <button type="button" aria-pressed={mode === "signup"} data-testid="auth-tab-signup" onClick={() => resetFlow("signup")} className={`rounded-xl py-2.5 text-sm font-black transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary ${mode === "signup" ? "bg-primary text-primary-foreground shadow-sm" : "text-muted-foreground hover:bg-muted"}`}>إنشاء حساب</button>
           </div>
           <form onSubmit={submit} className="min-h-0 overflow-y-auto px-6 py-5 sm:px-8">
             <h2 className="text-xl font-black text-[#171723]">{mode === "login" ? "أهلًا بعودتك" : "ابدأ رحلتك الآن"}</h2>

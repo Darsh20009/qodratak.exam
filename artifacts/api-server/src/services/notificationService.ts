@@ -1,6 +1,6 @@
 import { User, ExamBooking, TestResult } from '../mongodb/models';
 import { sendStudentWhatsAppNotification } from './studentWhatsAppNotifications';
-import { retryGeideaPurchaseNotifications } from './geideaPaymentService';
+import { reconcileOutstandingGeideaPayments, retryGeideaPurchaseNotifications } from './geideaPaymentService';
 import { logger } from '../lib/logger';
 
 const BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN || '';
@@ -209,6 +209,11 @@ export function startNotificationScheduler(): void {
       await retryGeideaPurchaseNotifications();
     } catch {
       logger.warn("Could not retry pending Geidea purchase notifications");
+    }
+    try {
+      await reconcileOutstandingGeideaPayments();
+    } catch {
+      logger.warn("Could not check pending Geidea payments");
     } finally {
       retryingPurchases = false;
     }

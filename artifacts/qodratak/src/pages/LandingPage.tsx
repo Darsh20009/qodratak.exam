@@ -9,6 +9,7 @@ import {
   GraduationCap,
   Languages,
   Menu,
+  PlayCircle,
   MessageCircle,
   X,
   Target,
@@ -20,6 +21,7 @@ import { ThemeToggle } from "@/components/ThemeToggle";
 import { BrandMark } from "@/components/BrandMark";
 import { SEO } from "@/components/SEO";
 import { GuideFilm } from "@/components/GuideFilm";
+import ApprovedPlatformReviews from "@/components/ApprovedPlatformReviews";
 
 const NAVY = "#171723";
 const SIGNAL = "#FF8A70";
@@ -45,6 +47,9 @@ function Header({ onSignup, onLogin }: { onSignup: () => void; onLogin: () => vo
           <a href="#plans" className="qodratak-focus-ring text-sm font-bold text-[#6B625B] transition hover:text-[#24202D] dark:text-slate-300 dark:hover:text-white">
             الباقات
           </a>
+          <Link href="/how-it-works" data-testid="link-how-it-works-nav" className="qodratak-focus-ring text-sm font-bold text-[#6B625B] transition hover:text-[#24202D] dark:text-slate-300 dark:hover:text-white">
+            كيف تعمل
+          </Link>
           <button type="button" onClick={onLogin} className="qodratak-focus-ring text-sm font-bold text-[#24202D] dark:text-white">
             تسجيل الدخول
           </button>
@@ -85,6 +90,9 @@ function Header({ onSignup, onLogin }: { onSignup: () => void; onLogin: () => vo
             <a href="#plans" onClick={() => setMenuOpen(false)} className="rounded-lg px-3 py-2.5 text-sm font-bold text-[#6B625B] dark:text-slate-300">
               الباقات
             </a>
+            <Link href="/how-it-works" onClick={() => setMenuOpen(false)} className="rounded-lg px-3 py-2.5 text-sm font-bold text-[#6B625B] dark:text-slate-300">
+              كيف تعمل المنصة
+            </Link>
             <button
               type="button"
               onClick={() => { setMenuOpen(false); onLogin(); }}
@@ -131,7 +139,7 @@ function OfferPreview({ onSignup }: { onSignup: () => void }) {
           جرّب مسار القدرات، واكتشف خطتك اليومية. التحصيلي قريبًا.
         </p>
         <div className="mt-7 space-y-3 border-y border-white/10 py-5">
-          {["كل الصلاحيات مفتوحة", "اختبار يومي طوال السنة", "تحليل واضح بعد كل محاولة"].map((item) => (
+          {["صلاحيات القدرات مفتوحة لمدة ٣ أيام", "بعدها اختبار واحد يوميًا فقط", "تحليل واضح بعد كل محاولة"].map((item) => (
             <div key={item} className="flex items-center gap-2.5 text-sm font-bold text-slate-100">
               <Check className="h-4 w-4 shrink-0 text-[#91D7C5]" />
               <span>{item}</span>
@@ -413,11 +421,33 @@ export default function LandingPage({ initialModal }: { initialModal?: "signup" 
               ))}
             </div>
           </div>
-          <div className="w-full">
-            <p className="mb-3 text-sm font-black text-[#398B79]">شاهد كيف تبدأ</p>
-            <GuideFilm />
-          </div>
+          <Link
+            href="/how-it-works"
+            data-testid="link-how-it-works-hero"
+            className="qodratak-focus-ring group flex w-full items-center gap-4 rounded-2xl border border-[#24202D]/10 bg-white/70 p-5 transition hover:border-[#FF8A70]/60 dark:border-white/10 dark:bg-white/5"
+          >
+            <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-[#0D1B2A] text-[#FF8A70]"><PlayCircle className="h-4 w-4" aria-hidden="true" /></span>
+            <span className="min-w-0 flex-1">
+              <span className="block text-sm font-black text-[#398B79]">كيف تعمل قدراتك؟</span>
+              <span className="mt-1 block text-sm leading-6 text-[#6B625B] dark:text-slate-300">فيلم تعريفي وجولة في كل صفحات الطالب: التأسيس، المحوسب، الاختبارات، والنتائج.</span>
+            </span>
+            <ArrowLeft className="h-4 w-4 shrink-0 text-[#6B625B] transition group-hover:-translate-x-1 dark:text-slate-300" aria-hidden="true" />
+          </Link>
         </div>
+        <section aria-labelledby="marketing-film-title" data-testid="section-marketing-film" className="relative mx-auto max-w-6xl px-5 pb-12 sm:px-8">
+          <div className="grid gap-6 rounded-[28px] border border-[#24202D]/10 bg-white/70 p-4 dark:border-white/10 dark:bg-white/5 sm:p-6 lg:grid-cols-[1fr_1.6fr] lg:items-center">
+            <div>
+              <p className="text-sm font-black text-[#398B79]">دقيقة واحدة تكفي</p>
+              <h2 id="marketing-film-title" className="mt-2 text-2xl font-black leading-tight text-[#171723] dark:text-white sm:text-3xl">لماذا يختار الطلاب قدراتك؟</h2>
+              <p className="mt-3 text-sm leading-7 text-[#6B625B] dark:text-slate-300">فيلم قصير يعرض كيف تجمع قدراتك التأسيس والمحوسب والخطة اليومية وتحليل النتيجة في مسار واحد. يبدأ بلا صوت، وفعّل الصوت من الفيلم.</p>
+              <div className="mt-5 flex flex-wrap gap-3">
+                <button type="button" onClick={openSignup} className="qodratak-focus-ring inline-flex items-center gap-2 rounded-xl px-5 py-3 text-sm font-black" style={{ background: SIGNAL, color: NAVY }}>ابدأ مجانًا ٣ أيام <ArrowLeft size={16} /></button>
+                <a href="#plans" className="qodratak-focus-ring inline-flex items-center rounded-xl px-2 py-3 text-sm font-bold text-[#171723] underline underline-offset-4 dark:text-white">قارن الباقات</a>
+              </div>
+            </div>
+            <GuideFilm film="marketing" muted compact title="فيلم تسويقي: لماذا تختار منصة قدراتك للاستعداد لاختبار القدرات" />
+          </div>
+        </section>
         <div className="relative mx-auto max-w-6xl px-5 pb-20 sm:px-8 lg:pb-24">
           <OfferPreview onSignup={openSignup} />
         </div>
@@ -480,8 +510,8 @@ export default function LandingPage({ initialModal }: { initialModal?: "signup" 
             <PlanCard
               title="تجربة مجانية"
               price="٣ أيام"
-              description="جرّب قدراتك بكل الصلاحيات قبل الاشتراك."
-              items={["صلاحيات القدرات مفتوحة", "اختبار يومي طوال السنة", "التحصيلي قريبًا"]}
+              description="٣ أيام للتجربة، ثم تُقفل صفحات التعلّم حتى الاشتراك."
+              items={["صلاحيات القدرات مفتوحة لمدة ٣ أيام", "بعدها لوحة التحكم واختبار واحد يوميًا", "التحصيلي قريبًا"]}
               onSignup={openSignup}
             />
             <PlanCard
@@ -575,6 +605,7 @@ export default function LandingPage({ initialModal }: { initialModal?: "signup" 
         </div>
       </section>
 
+      <ApprovedPlatformReviews />
       <Footer />
     </main>
   );

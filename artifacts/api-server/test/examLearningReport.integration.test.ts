@@ -56,7 +56,7 @@ test('reports are private, source-verified, idempotent and lead to masked, serve
         });
         return { status: response.status, body: await response.json() as any };
       };
-      const payload = { runId: marker, title: 'تقرير تجريبي', questions: bank.slice(0, 5).map((q, i) => ({
+      const payload = { runId: marker, title: 'تقرير تجريبي', questions: bank.slice(0, 6).map((q, i) => ({
         id: String(q._id), text: q.text, options: q.options, selectedOptionIndex: i < 2 ? 1 : 0,
         seconds: i === 4 ? 150 : 20, category: 'quantitative', subcategory: marker,
       })) };
@@ -65,13 +65,33 @@ test('reports are private, source-verified, idempotent and lead to masked, serve
       assert.equal(saved.body.report.questions.filter((q: any) => q.isCorrect === false).length, 2);
       assert.equal(saved.body.report.questions[4].isSlow, true);
       assert.equal(saved.body.report.questions[0].explanationStatus, 'approved');
+      assert.equal(saved.body.report.questions[5].isCorrect, true, 'Approved server keys grade correctly even when analytics were not written');
+      assert.equal(await LearningAttempt.countDocuments({ studentId, questionId: String(bank[5]._id) }), 0, 'Report grading must not fabricate analytics attempts');
       const duplicate = await request('/api/student/exam-reports', { ...payload, title: 'tampered' });
       assert.equal(duplicate.body.report.title, payload.title);
       assert.equal(await ExamLearningReport.countDocuments({ studentId, runId: marker }), 1);
       assert.equal((await request('/api/student/exam-reports', undefined, otherId)).body.reports.length, 0);
-      const unauthorized = await request('/api/student/exam-reports', { ...payload, runId: `${marker}-other` }, otherId);
-      assert.equal(unauthorized.body.report.questions[0].isCorrect, null);
-      assert.equal(unauthorized.body.report.questions[0].correctOptionIndex, null);
+      const otherStudent = await request('/api/student/exam-reports', { ...payload, runId: `${marker}-other` }, otherId);
+      assert.equal(otherStudent.body.report.questions[0].isCorrect, false);
+      assert.equal(otherStudent.body.report.questions[0].correctOptionIndex, 0);
+      const tampered = await request('/api/student/exam-reports', {
+        runId: `${marker}-tampered`, title: 'Content mismatch',
+        questions: [{ ...payload.questions[0], options: ['changed', 'wrong', 'c', 'd'] }],
+      }, otherId);
+      assert.equal(tampered.body.report.questions[0].isCorrect, null);
+      assert.equal(tampered.body.report.questions[0].correctOptionIndex, null);
+      await Question.updateOne({ _id: bank[7]._id }, { $set: { answerStatus: 'unreviewed' } });
+      const unreviewed = await request('/api/student/exam-reports', {
+        runId: `${marker}-unreviewed`, title: 'Unreviewed answer key',
+        questions: [{ ...payload.questions[0], id: String(bank[7]._id), text: bank[7].text }],
+      }, otherId);
+      assert.equal(unreviewed.body.report.questions[0].isCorrect, null, 'A report must never approve an unreviewed answer key');
+      assert.equal(unreviewed.body.report.questions[0].correctOptionIndex, null);
+      await ExamLearningReport.updateOne({ studentId, runId: marker }, { $set: {
+        'questions.5.isCorrect': null, 'questions.5.correctOptionIndex': null,
+      } });
+      const repaired = await request('/api/student/exam-reports');
+      assert.equal(repaired.body.reports.find((report: any) => report.runId === marker).questions[5].isCorrect, true);
       const practice = await request('/api/student/exam-reports/practice', { runId: marker });
       assert.equal(practice.status, 200);
       assert.ok(practice.body.questions.length > 0);

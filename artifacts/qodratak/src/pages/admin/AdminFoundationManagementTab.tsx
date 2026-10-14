@@ -117,6 +117,8 @@ export default function AdminFoundationManagementTab() {
     queryKey: ['/api/admin/platform-reviews'],
     queryFn: () => getJson('/api/admin/platform-reviews'),
     enabled: section === 'reviews',
+    staleTime: 15000,
+    refetchInterval: 30000,
   });
   const questionsQuery = useQuery({
     queryKey: ['/api/admin/foundation-content/questions', questionSearch, questionCategory, questionDifficulty, questionSubcategory, questionPage],
@@ -167,6 +169,8 @@ export default function AdminFoundationManagementTab() {
     onSuccess: () => {
       toast({ title: 'تم تحديث المراجعة' });
       queryClient.invalidateQueries({ queryKey: ['/api/admin/platform-reviews'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/platform-reviews/approved'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/platform-reviews/mine'] });
       setReviewDialog(null);
     },
     onError: (error: Error) => toast({ title: 'تعذر تحديث المراجعة', description: error.message, variant: 'destructive' }),
@@ -176,6 +180,8 @@ export default function AdminFoundationManagementTab() {
     onSuccess: () => {
       toast({ title: 'تم حذف المراجعة' });
       queryClient.invalidateQueries({ queryKey: ['/api/admin/platform-reviews'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/platform-reviews/approved'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/platform-reviews/mine'] });
     },
     onError: (error: Error) => toast({ title: 'تعذر حذف المراجعة', description: error.message, variant: 'destructive' }),
   });

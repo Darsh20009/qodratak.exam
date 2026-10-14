@@ -1017,6 +1017,8 @@ export function useSubmitFoundationDiagnostic() {
 export function usePlatformReviews() {
   return useQuery<PlatformReview[]>({
     queryKey: ["/api/platform-reviews/approved"],
+    staleTime: 30000,
+    refetchInterval: 60000,
     queryFn: async () => {
       const payload = await fetchJson<{ reviews: Array<PlatformReview & { authorName?: string }> }>("/api/platform-reviews/approved");
       return payload.reviews.map(review => ({ ...review, studentName: review.authorName || "طالب قدراتك" }));
@@ -1024,11 +1026,20 @@ export function usePlatformReviews() {
   });
 }
 
+export function useMyPlatformReviews(studentId: string | number) {
+  return useQuery({
+    queryKey: ["/api/platform-reviews/mine", String(studentId)],
+    enabled: Boolean(studentId),
+    queryFn: () => fetchJson<{ reviews: Array<PlatformReview & { status: "pending" | "approved" | "rejected" }> }>("/api/platform-reviews/mine"),
+    staleTime: 15000, refetchInterval: 60000,
+  });
+}
+
 export function useSubmitReview() {
   const queryClient = useQueryClient();
   const { toast } = useToast();
   return useMutation({
-    mutationFn: async (review: { rating: number; text: string }) => {
+    mutationFn: async (review: { rating: number; text: string; publishConsent: boolean }) => {
       return fetchJson("/api/platform-reviews", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -1036,6 +1047,7 @@ export function useSubmitReview() {
         });
     },
     onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/platform-reviews/mine"] });
       toast({
         title: "شكراً لك",
         description: "تم إرسال تقييمك بنجاح وسيتم مراجعته.",

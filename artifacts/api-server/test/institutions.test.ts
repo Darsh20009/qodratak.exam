@@ -7,6 +7,10 @@ import mongoose from "mongoose";
 import { Admin, Institution, User, TestResult, Subscription } from "../src/mongodb/models";
 import { InstitutionMember, InstitutionInvite } from "../src/mongodb/institutionModels";
 import { registerInstitutionRoutes } from "../src/routes/institutions";
+import { registerQuestionFeedbackRoutes, validateContribution } from "../src/routes/questionFeedbackRoutes";
+import { InstitutionContractDelivery } from "../src/mongodb/institutionModels";
+import { QuestionContribution } from "../src/mongodb/questionContributionModels";
+import { Question, QuestionReport } from "../src/mongodb/models";
 import { createInstitution, issueInvite, joinInstitution, membershipForUser, threeMonthsAfter } from "../src/services/institutionService";
 import { ensureStudentAccountTrial } from "../src/middleware/studentTrialAccess";
 import { sealContract, openContract, validateSignedPdf } from "../src/services/institutionContractStorage";
@@ -48,7 +52,10 @@ test("institution activation, registration, assignments, access and isolation ar
   const objects = new Map<string, Buffer>();
   globalThis.fetch = (async (target: any, init?: RequestInit) => {
     const url = String(target);
-    if (!url.includes(".r2.cloudflarestorage.com/")) return originalFetch(target, init);
+    if (!url.includes(".r2.cloudflarestorage.com/")) {
+      if (/^https:/.test(url)) return new Response('{"success":false,"message":"fixture blocks external delivery"}', { status: 503 });
+      return originalFetch(target, init);
+    }
     const key = new URL(url).pathname;
     if (init?.method === "PUT") {
       objects.set(key, Buffer.from(init.body as Uint8Array)); return new Response(null, { status: 200 });
@@ -74,18 +81,29 @@ test("institution activation, registration, assignments, access and isolation ar
     verifyPhoneVerificationToken,
     requireAdmin(req, res, next) {
       if (req.headers["x-fixture-admin"] !== actorId) return void res.sendStatus(403);
-      (req as any).admin = { _id: actorId }; next();
+      if (req.headers["x-fixture-admin-shape"] === "session") {
+        (req.session as any).admin = { adminId: actorId };
+      } else {
+        (req as any).admin = { _id: actorId, isDemo: req.headers["x-fixture-admin-shape"] === "demo" };
+      }
+      next();
     },
+  });
+  registerQuestionFeedbackRoutes(app, (req, res, next) => {
+    if (req.headers["x-fixture-admin"] !== actorId) return void res.sendStatus(403);
+    (req as any).admin = { _id: actorId };
+    next();
   });
   app.get("/api/teacher/legacy-test", (_req, res) => res.json({ legacy: true }));
   const server = app.listen(0, "127.0.0.1");
   await once(server, "listening");
   const base = `http://127.0.0.1:${(server.address() as any).port}`;
-  const request = async (path: string, body?: any, userId?: string, admin = false) => {
+  const request = async (path: string, body?: any, userId?: string, admin = false, adminShape?: "demo" | "session") => {
     const response = await fetch(base + path, {
       method: body === undefined ? "GET" : "POST",
       headers: { "Content-Type": "application/json", ...(userId ? { "x-fixture-user": userId } : {}),
-        ...(admin ? { "x-fixture-admin": actorId } : {}) }, body: body === undefined ? undefined : JSON.stringify(body),
+        ...(admin ? { "x-fixture-admin": actorId } : {}),
+        ...(adminShape ? { "x-fixture-admin-shape": adminShape } : {}) }, body: body === undefined ? undefined : JSON.stringify(body),
     });
     return { status: response.status, body: await response.json().catch(() => ({})) };
   };
@@ -104,6 +122,22 @@ test("institution activation, registration, assignments, access and isolation ar
       const created = await request("/api/admin/institutions", input("one"), undefined, true);
       assert.equal(created.status, 201); institutionIds.push(created.body.institution.id);
       assert.equal(created.body.institution.isActive, false);
+      assert.equal(created.body.institution.contract.issuerPlatformName, "منصة قدراتك التعليمية");
+      assert.equal(created.body.institution.contract.issuerName, "مشاري عواض حسن الثبيتي");
+      assert.match(created.body.institution.contract.signatureSha256, /^[a-f0-9]{64}$/);
+      assert.match(created.body.institution.contract.stampSha256, /^[a-f0-9]{64}$/);
+      const assetUrl = `${base}/api/admin/institutions/${institutionIds[0]}/contract-assets/signature`;
+      assert.equal((await fetch(assetUrl)).status, 403);
+      const signature = await fetch(assetUrl, { headers: { "x-fixture-admin": actorId } });
+      assert.equal(signature.status, 200);
+      assert.equal(signature.headers.get("content-type"), "image/png");
+      assert.equal(signature.headers.get("cache-control"), "private, no-store");
+      assert.equal(Buffer.from(await signature.arrayBuffer()).subarray(1, 4).toString(), "PNG");
+      const original = await Institution.findById(institutionIds[0]);
+      const originalHash = original!.contract.signatureSha256;
+      original!.contract.signatureSha256 = "0".repeat(64); await original!.save();
+      assert.equal((await fetch(assetUrl, { headers: { "x-fixture-admin": actorId } })).status, 409);
+      original!.contract.signatureSha256 = originalHash; await original!.save();
       assert.equal((await request(`/api/admin/institutions/${institutionIds[0]}/invites`, { role: "student" }, undefined, true)).status, 409);
       assert.equal((await request(`/api/admin/institutions/${institutionIds[0]}/approve`,
         { reviewedSignedContract: true, signedSha256: "a".repeat(64) }, undefined, true)).status, 409);
@@ -200,6 +234,88 @@ test("institution activation, registration, assignments, access and isolation ar
       assert.ok(await User.exists({ _id: student._id }));
       assert.equal((await request(`/api/institution/students/${student._id}/results`, undefined, String(teacher._id))).status, 404);
     });
+    await t.test("demo cannot issue contracts even with a real id; restored real session can create a draft", async () => {
+      const denied = await request("/api/admin/institutions", input("demo-denied"), undefined, true, "demo");
+      assert.equal(denied.status, 403);
+      assert.match(denied.body.message, /تجريبي/);
+      assert.equal(await Institution.exists({ name: input("demo-denied").name }), null);
+      const restored = await request("/api/admin/institutions", input("restored"), undefined, true, "session");
+      assert.equal(restored.status, 201);
+      institutionIds.push(restored.body.institution.id);
+      assert.equal(restored.body.institution.isActive, false);
+    });
+    await t.test("owner exists before approval; token PDF return activates only after admin approval; archive preserves records", async () => {
+      const phone = `96659${Date.now().toString().slice(-7)}`;
+      const created = await request("/api/admin/institutions", { ...input("owner-portal"), phone, ownerName: "مسؤول اختبار غير حقيقي" }, undefined, true);
+      assert.equal(created.status, 201);
+      const id = created.body.institution.id; institutionIds.push(id);
+      assert.equal(created.body.ownerAccount.status, "created");
+      const owner = await User.findOne({ institutionId: id, role: "institution_admin" });
+      assert.ok(owner); userIds.push(String(owner!._id));
+      assert.equal(owner!.password, "external-auth", "first verified OTP must prompt for a chosen password");
+      assert.equal(await InstitutionMember.exists({ userId: owner!._id }), null);
+      const pending = await request("/api/institution/membership", undefined, String(owner!._id));
+      assert.equal(pending.body.membership, null);
+      assert.ok(pending.body.pendingInstitution.contractLink);
+      const token = new URLSearchParams(new URL(created.body.contractLink).hash.slice(1)).get("token")!;
+      assert.equal((await request("/api/institutions/contract-portal", { token: "x".repeat(43) })).status, 403);
+      const portal = await request("/api/institutions/contract-portal", { token });
+      const reference = portal.body.reference;
+      const pdfBytes = Buffer.from("%PDF-1.4\n% Institutional fixture only\n%%EOF");
+      const form = () => {
+        const data = new FormData(); data.append("file", new Blob([pdfBytes], { type: "application/pdf" }), "fixture.pdf");
+        data.append("reference", reference); return data;
+      };
+      const issued = await fetch(`${base}/api/admin/institutions/${id}/issued-contract`, {
+        method: "POST", headers: { "x-fixture-admin": actorId }, body: form(),
+      });
+      assert.equal(issued.status, 200);
+      const downloaded = await fetch(`${base}/api/institutions/contract-portal/pdf`, { headers: { Authorization: `Bearer ${token}` } });
+      assert.equal(downloaded.status, 200);
+      assert.deepEqual(Buffer.from(await downloaded.arrayBuffer()), pdfBytes);
+      const signed = form(); signed.append("signerName", "مفوّض اختبار غير حقيقي"); signed.append("consent", "true");
+      const submitted = await fetch(`${base}/api/institutions/contract-portal/upload`, {
+        method: "POST", headers: { Authorization: `Bearer ${token}` }, body: signed,
+      });
+      assert.equal(submitted.status, 200);
+      assert.equal(await InstitutionMember.exists({ userId: owner!._id }), null);
+      const current = await Institution.findById(id);
+      assert.equal((await request(`/api/admin/institutions/${id}/approve`, {
+        reviewedSignedContract: true, signedSha256: current!.contract.signedSha256,
+      }, undefined, true)).status, 200);
+      assert.equal((await InstitutionMember.findOne({ userId: owner!._id }))!.role, "institution_admin");
+      const archived = await fetch(`${base}/api/admin/institutions/${id}`, {
+        method: "DELETE", headers: { "x-fixture-admin": actorId, "Content-Type": "application/json" },
+        body: JSON.stringify({ confirmation: current!.name }),
+      });
+      assert.equal(archived.status, 200);
+      assert.ok(await User.exists({ _id: owner!._id }));
+      assert.ok((await Institution.findById(id))!.contract.signedObjectKey);
+      assert.equal((await request("/api/institutions/contract-portal", { token })).status, 403);
+    });
+    await t.test("contributions require student auth and manual key; approved once; Mongo report IDs remain strings", async () => {
+      const contributor = await newUser("contributor");
+      const draft = { questionText: "سؤال اختبار غير منشور: ما ناتج واحد زائد واحد؟", category: "quantitative",
+        options: ["اثنان", "ثلاثة"], selectedOptionIndex: 1 };
+      assert.equal((await request("/api/student/question-contributions", draft)).status, 401);
+      const saved = await request("/api/student/question-contributions", draft, String(contributor._id));
+      assert.equal(saved.status, 201);
+      const approve = { ...draft, correctOptionIndex: 0, section: 9876, difficulty: "beginner",
+        explanation: "شرح اختباري فقط: جمع واحد مع واحد يعطينا اثنين." };
+      const result = await request(`/api/admin/question-contributions/${saved.body.id}/approve`, approve, undefined, true);
+      assert.equal(result.status, 200);
+      const published = await Question.findOne({ questionId: result.body.questionId });
+      assert.equal(published!.correctOptionIndex, 0);
+      assert.equal((await request(`/api/admin/question-contributions/${saved.body.id}/approve`, approve, undefined, true)).status, 409);
+      const reportId = String(published!._id);
+      const report = await request("/api/questions/report", { questionId: reportId, sourceQuestionId: reportId,
+        questionText: draft.questionText, reportType: "typo", description: "بلاغ اختباري فقط" }, String(contributor._id));
+      assert.equal(report.status, 201);
+      const stored = await QuestionReport.findById(report.body.id);
+      assert.equal(stored!.questionId, reportId);
+      assert.equal(stored!.status, "pending");
+      assert.ok(await QuestionContribution.exists({ _id: saved.body.id, status: "approved" }));
+    });
     await t.test("inactive or deleted administrators cannot reuse an institution-management session", async () => {
       await Admin.updateOne({ _id: actorId }, { $set: { isActive: false } });
       assert.equal((await request("/api/admin/institutions", undefined, undefined, true)).status, 403);
@@ -211,11 +327,23 @@ test("institution activation, registration, assignments, access and isolation ar
     globalThis.fetch = originalFetch;
     await InstitutionMember.deleteMany({ institutionId: { $in: institutionIds } });
     await InstitutionInvite.deleteMany({ institutionId: { $in: institutionIds } });
-    await User.deleteMany({ $or: [{ _id: { $in: userIds } }, { username: { $regex: `^${marker}` } }] });
+    await InstitutionContractDelivery.deleteMany({ institutionId: { $in: institutionIds } });
+    const contributions = await QuestionContribution.find({ studentId: { $in: userIds } }).select("publishedMongoId");
+    await Question.deleteMany({ _id: { $in: contributions.map((r: any) => r.publishedMongoId).filter(Boolean) } });
+    await QuestionContribution.deleteMany({ studentId: { $in: userIds } });
+    await QuestionReport.deleteMany({ reportedBy: { $in: userIds } });
+    await User.deleteMany({ $or: [{ _id: { $in: userIds } }, { username: { $regex: `^${marker}` } },
+      { institutionId: { $in: institutionIds } }] });
     await TestResult.deleteMany({ userId: { $in: userIds } });
     await Institution.deleteMany({ _id: { $in: institutionIds } });
     await new Promise<void>(resolve => server.close(() => resolve()));
     await mongoose.disconnect();
     for (const [key, value] of originalEnv) { if (value === undefined) delete process.env[key]; else process.env[key] = value; }
   }
+});
+test("student-selected answers are never accepted as approved keys; malformed content is rejected", () => {
+  const draft = { category: "verbal", questionText: "سؤال اختباري", options: ["الأول", "الثاني"], selectedOptionIndex: 1 };
+  assert.equal(validateContribution(draft).selectedOptionIndex, 1);
+  assert.throws(() => validateContribution(draft, true), /الإجابة الصحيحة/);
+  assert.throws(() => validateContribution({ ...draft, options: ["واحد", "واحد"] }), /مختلفة/);
 });

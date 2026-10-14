@@ -1,8 +1,10 @@
 import { useEffect, useMemo, useRef, useState } from "react";
+import { Link } from "wouter";
 import {
   AlertTriangle, Building2, CheckCircle2, Download, FileSignature, FileUp, Loader2, Plus,
-  Power, RefreshCw, ShieldCheck, Ticket, Users, XCircle,
+  Archive, Pencil, Power, RefreshCw, Send, ShieldCheck, Ticket, Users, XCircle,
 } from "lucide-react";
+import { useQueryClient } from "@tanstack/react-query";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useToast } from "@/hooks/use-toast";
@@ -11,9 +13,34 @@ import {
   CONTRACT_STATUS_LABEL, ROLE_LABEL, TYPE_LABEL, downloadSignedContract, fmtDate, fmtDateTime,
   useAdminInstitution, useAdminInstitutions, useAdminInvites, useAdminIssueInvite, useAdminRevokeInvite,
   useApproveContract, useCreateInstitution, useRejectContract, useSetAvailability, useUploadSigned,
+  useArchiveInstitution, useUpdateInstitution, uploadIssuedContract, sendContractLink, sendWelcome, deliveryConfirmed, adminKeys,
   type InstitutionDTO, type InstitutionRole, type InstitutionType,
 } from "@/lib/institutionApi";
-import { generateContractPdf, serializePublishedPolicies } from "@/lib/institutionContract";
+import { buildContractPdfBlob, generateContractPdf, serializePublishedPolicies } from "@/lib/institutionContract";
+
+type PipelineResult = { ok: boolean; stage: "pdf" | "upload" | "send" | "done"; message: string; url?: string; delivered?: boolean };
+
+/** Build the approved contract PDF, store it as the issued document, then request delivery of the upload link. */
+async function runContractDelivery(inst: InstitutionDTO, skipUpload = false): Promise<PipelineResult> {
+  if (!inst.contract) return { ok: false, stage: "pdf", message: "لا يوجد عقد صادر لهذه المؤسسة" };
+  if (!skipUpload) {
+    let blob: Blob;
+    try { blob = await buildContractPdfBlob(inst); }
+    catch (e) { return { ok: false, stage: "pdf", message: (e as Error).message || "تعذر توليد ملف العقد" }; }
+    try { await uploadIssuedContract(inst.id, blob, inst.contract.reference); }
+    catch (e) { return { ok: false, stage: "upload", message: (e as Error).message || "تعذر حفظ العقد الصادر على الخادم" }; }
+  }
+  try {
+    const r = await sendContractLink(inst.id);
+    const delivered = deliveryConfirmed(r.notification);
+    return {
+      ok: delivered, stage: delivered ? "done" : "send", url: r.url, delivered,
+      message: r.notification?.message || (delivered ? "أُرسل رابط العقد إلى المؤسسة." : "أُنشئ الرابط، لكن لم يتأكد إرسال الرسالة إلى المؤسسة."),
+    };
+  } catch (e) { return { ok: false, stage: "send", message: (e as Error).message || "تعذر إرسال رابط العقد" }; }
+}
+
+const STAGE_LABEL: Record<PipelineResult["stage"], string> = { pdf: "توليد ملف العقد", upload: "حفظ العقد الصادر", send: "إرسال رابط الرفع", done: "اكتمل" };
 import { CodeRevealDialog, InviteRow, PerformanceTag } from "@/components/institution/InstitutionShared";
 
 export interface InstitutionPrefill { name?: string; email?: string; phone?: string; city?: string; address?: string }
@@ -57,7 +84,7 @@ function Stepper({ inst }: { inst: InstitutionDTO }) {
 function CreateDialog({ open, onClose, prefill, onCreated }: { open: boolean; onClose: () => void; prefill?: InstitutionPrefill | null; onCreated: (i: InstitutionDTO) => void }) {
   const { toast } = useToast();
   const create = useCreateInstitution();
-  const [form, setForm] = useState({ name: "", type: "school" as InstitutionType, email: "", phone: "", city: "", address: "", maxStudents: "100", maxTeachers: "10", issuerName: "" });
+  const [form, setForm] = useState({ name: "", type: "school" as InstitutionType, email: "", phone: "", city: "", address: "", maxStudents: "100", maxTeachers: "10", ownerName: "", issuerName: "مشاري عواض حسن الثبيتي" });
   const [policies, setPolicies] = useState("");
   const [authorized, setAuthorized] = useState(false);
   const [showPolicies, setShowPolicies] = useState(false);
@@ -71,21 +98,31 @@ function CreateDialog({ open, onClose, prefill, onCreated }: { open: boolean; on
 
   const set = (k: keyof typeof form) => (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => setForm({ ...form, [k]: e.target.value });
 
+  const qc = useQueryClient();
   const submit = (e: React.FormEvent) => {
     e.preventDefault();
+    if (!form.phone.trim()) { toast({ title: "جوال المؤسسة مطلوب", description: "يستخدمه مالك المؤسسة لتسجيل الدخول برمز التحقق.", variant: "destructive" }); return; }
     if (!authorized) { toast({ title: "أكد صلاحية اعتماد العقد أولًا", variant: "destructive" }); return; }
     create.mutate({
       name: form.name.trim(), type: form.type, email: form.email.trim(),
       phone: form.phone.trim() || undefined, city: form.city.trim() || undefined, address: form.address.trim() || undefined,
       maxStudents: Number(form.maxStudents), maxTeachers: Number(form.maxTeachers),
       issuerName: form.issuerName.trim(), issuerAuthorized: true, policies,
+      ...(form.ownerName.trim() ? { ownerName: form.ownerName.trim() } : {}),
     }, {
-      onSuccess: async ({ institution }) => {
-        toast({ title: "حُفظت المؤسسة غير مفعّلة", description: "جارٍ تنزيل العقد الصادر بصيغة PDF." });
+      onSuccess: async (r) => {
+        const { institution } = r;
+        const welcome = r.notification ? (deliveryConfirmed(r.notification) ? "أُرسلت رسالة الترحيب." : `لم يتأكد إرسال رسالة الترحيب${r.notification.message ? `: ${r.notification.message}` : "."}`) : "";
+        const owner = r.ownerAccount?.message || (r.ownerAccount ? "جُهّز حساب المالك بانتظار الاعتماد." : "");
+        toast({ title: "حُفظت المؤسسة غير مفعّلة", description: [owner, welcome, "جارٍ تجهيز العقد وإرسال رابط الرفع."].filter(Boolean).join(" ") });
         onCreated(institution);
         onClose();
-        try { await generateContractPdf(institution); }
-        catch (err) { toast({ title: "حُفظت المؤسسة لكن تعذر توليد PDF", description: (err as Error).message + " — يمكنك تنزيله من صفحة المؤسسة.", variant: "destructive" }); }
+        const result = await runContractDelivery(institution);
+        qc.invalidateQueries({ queryKey: adminKeys.list });
+        qc.invalidateQueries({ queryKey: adminKeys.detail(institution.id) });
+        toast(result.ok
+          ? { title: "أُرسل رابط العقد", description: result.message }
+          : { title: `لم يكتمل: ${STAGE_LABEL[result.stage]}`, description: `${result.message} يمكنك إعادة المحاولة من تبويب العقد.`, variant: "destructive" });
       },
       onError: (err) => toast({ title: "لم تُحفظ المؤسسة", description: (err as Error).message, variant: "destructive" }),
     });
@@ -96,7 +133,7 @@ function CreateDialog({ open, onClose, prefill, onCreated }: { open: boolean; on
       <DialogContent dir="rtl" className="max-h-[92dvh] max-w-3xl overflow-y-auto border-white/10 bg-[#0B1626] text-white">
         <DialogHeader className="text-right">
           <DialogTitle className="flex items-center gap-2"><FileSignature className="h-5 w-5 text-[#b8f36b]" /> إصدار عقد مؤسسة جديدة</DialogTitle>
-          <DialogDescription className="text-right text-slate-400">تُحفظ المؤسسة غير مفعّلة، ويُنزَّل العقد تلقائيًا. التفعيل يتطلب رفع النسخة الموقعة ثم اعتمادها بشكل منفصل.</DialogDescription>
+          <DialogDescription className="text-right text-slate-400">تُحفظ المؤسسة غير مفعّلة، ويُجهَّز حساب المالك برقم الجوال، ثم يُولَّد العقد ويُرسل رابط رفع النسخة الموقعة. التفعيل يتطلب رفع النسخة الموقعة ثم اعتمادها بشكل منفصل.</DialogDescription>
         </DialogHeader>
         <form onSubmit={submit} className="space-y-5">
           <div className="grid gap-3 sm:grid-cols-2">
@@ -106,12 +143,15 @@ function CreateDialog({ open, onClose, prefill, onCreated }: { open: boolean; on
                 {(Object.keys(TYPE_LABEL) as InstitutionType[]).map((t) => <option key={t} value={t} className="bg-[#0B1626]">{TYPE_LABEL[t]}</option>)}
               </select></div>
             <div><label className={label}>البريد الرسمي *</label><input data-testid="input-inst-email" required type="email" dir="ltr" value={form.email} onChange={set("email")} className={field} /></div>
-            <div><label className={label}>الجوال</label><input data-testid="input-inst-phone" dir="ltr" value={form.phone} onChange={set("phone")} className={field} /></div>
+            <div><label className={label}>اسم مالك المؤسسة *</label><input data-testid="input-inst-owner" required minLength={3} value={form.ownerName} onChange={set("ownerName")} className={field} /></div>
+            <div><label className={label}>جوال المالك (للدخول برمز واتساب) *</label><input data-testid="input-inst-phone" required placeholder="05XXXXXXXX" dir="ltr" value={form.phone} onChange={set("phone")} className={field} /></div>
             <div><label className={label}>المدينة</label><input data-testid="input-inst-city" value={form.city} onChange={set("city")} className={field} /></div>
             <div className="sm:col-span-2"><label className={label}>العنوان</label><input data-testid="input-inst-address" value={form.address} onChange={set("address")} className={field} /></div>
             <div><label className={label}>حد الطلاب *</label><input data-testid="input-inst-max-students" required type="number" min={1} max={10000} value={form.maxStudents} onChange={set("maxStudents")} className={field} /></div>
             <div><label className={label}>حد المعلمين *</label><input data-testid="input-inst-max-teachers" required type="number" min={1} max={10000} value={form.maxTeachers} onChange={set("maxTeachers")} className={field} /></div>
           </div>
+
+          <p className="rounded-xl border border-white/10 bg-white/[0.02] p-3 text-[11px] leading-6 text-slate-400">يُنشأ حساب مالك بانتظار الاعتماد من الاسم والجوال، ولا تُرسل أي كلمة مرور؛ يدخل المالك برمز واتساب. إن وُجد حساب بالرقم نفسه فلن يُحوَّل تلقائيًا.</p>
 
           <div className="rounded-2xl border border-white/10 bg-white/[0.02] p-4">
             <div className="flex items-center justify-between gap-3">
@@ -129,18 +169,20 @@ function CreateDialog({ open, onClose, prefill, onCreated }: { open: boolean; on
           </div>
 
           <div className="rounded-2xl border border-[#b8f36b]/20 bg-[#b8f36b]/[0.04] p-4">
-            <label className={label}>اسم المفوّض بالاعتماد الإلكتروني الداخلي *</label>
-            <input data-testid="input-issuer-name" required minLength={4} value={form.issuerName} onChange={set("issuerName")} className={field} placeholder="الاسم الكامل كما يظهر في العقد" />
+            <p className="mb-3 text-sm font-bold text-white">الطرف الأول: منصة قدراتك التعليمية</p>
+            <label className={label}>ممثل المنصة والمفوّض بالتوقيع</label>
+            <input data-testid="input-issuer-name" required readOnly value={form.issuerName} className={field} />
+            <p className="mt-2 text-xs leading-6 text-slate-400">يُضاف التوقيع والختم المعتمدان تلقائيًا إلى العقود الجديدة فقط.</p>
             <label className="mt-3 flex items-start gap-2 text-xs leading-6 text-slate-300">
               <input data-testid="checkbox-issuer-authorized" type="checkbox" checked={authorized} onChange={(e) => setAuthorized(e.target.checked)} className="mt-1 h-4 w-4 accent-[#b8f36b]" />
-              أقر بأن المفوّض المذكور مخوّل باعتماد هذا العقد نيابة عن مؤسسة قدراتك العالية، وأن الاعتماد إلكتروني داخلي مسجّل باسمه وليس توقيعًا رقميًا معتمدًا.
+              أقر بصلاحية إصدار هذا العقد باسم منصة قدراتك التعليمية، وإرفاق توقيع ممثلها وختمها المعتمدين. يظل الاعتماد داخليًا وليس شهادة توقيع رقمي مؤهلة.
             </label>
           </div>
 
           <div className="flex justify-end gap-2">
             <button type="button" onClick={onClose} disabled={create.isPending} className="rounded-xl border border-white/10 px-4 py-2.5 text-sm font-bold text-slate-300">إلغاء</button>
             <button data-testid="button-create-institution" type="submit" disabled={create.isPending || !authorized || policies.trim().length < 100} className="inline-flex items-center gap-2 rounded-xl bg-[#b8f36b] px-5 py-2.5 text-sm font-black text-[#07111F] disabled:opacity-40">
-              {create.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <FileSignature className="h-4 w-4" />} حفظ وتنزيل العقد
+              {create.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <FileSignature className="h-4 w-4" />} حفظ وإرسال العقد
             </button>
           </div>
         </form>
@@ -193,6 +235,8 @@ function ContractPanel({ inst, storageReady }: { inst: InstitutionDTO; storageRe
           <div className="sm:col-span-2"><dt className="text-slate-500">بصمة المحتوى</dt><dd dir="ltr" className="break-all text-right font-mono text-[10.5px] text-slate-300">{c.digest}</dd></div>
         </dl>
       </div>
+
+      {(c.status === "issued" || c.status === "rejected") && <DeliveryPanel inst={inst} />}
 
       {c.status === "rejected" && c.rejectionReason && (
         <div className="flex gap-2 rounded-2xl border border-red-500/30 bg-red-500/10 p-3 text-xs leading-6 text-red-200"><XCircle className="h-4 w-4 shrink-0" /> سبب رفض النسخة السابقة: {c.rejectionReason}</div>
@@ -278,6 +322,157 @@ function ContractPanel({ inst, storageReady }: { inst: InstitutionDTO; storageRe
   );
 }
 
+function DeliveryPanel({ inst }: { inst: InstitutionDTO }) {
+  const c = inst.contract!;
+  const qc = useQueryClient();
+  const [busy, setBusy] = useState(false);
+  const [result, setResult] = useState<PipelineResult | null>(null);
+  const run = async (skipUpload: boolean) => {
+    setBusy(true); setResult(null);
+    const r = await runContractDelivery(inst, skipUpload);
+    setResult(r); setBusy(false);
+    qc.invalidateQueries({ queryKey: adminKeys.detail(inst.id) });
+    qc.invalidateQueries({ queryKey: adminKeys.list });
+  };
+  const status = c.portalDeliveryStatus;
+  return (
+    <div data-testid="panel-contract-delivery" className="rounded-2xl border border-white/10 p-4">
+      <p className="flex items-center gap-2 text-sm font-black text-white"><Send className="h-4 w-4 text-[#b8f36b]" /> إرسال العقد إلى المؤسسة</p>
+      <dl className="mt-2 grid gap-1 text-xs sm:grid-cols-2">
+        <div className="flex gap-2"><dt className="text-slate-500">الملف الصادر على الخادم</dt><dd className={c.issuedDocumentReady ? "text-[#b8f36b]" : "text-orange-300"}>{c.issuedDocumentReady ? "جاهز" : "غير محفوظ"}</dd></div>
+        <div className="flex gap-2"><dt className="text-slate-500">حالة الإرسال</dt><dd className="text-slate-300">{status ? (status === "sent" || status === "delivered" ? "أُرسل" : status === "failed" ? "فشل" : status) : "لم يُرسل"}{c.portalSentAt ? ` · ${fmtDateTime(c.portalSentAt)}` : ""}</dd></div>
+      </dl>
+      {result && (
+        <div data-testid="status-delivery-result" className={cn("mt-3 rounded-xl border p-3 text-xs leading-6", result.ok ? "border-[#b8f36b]/30 bg-[#b8f36b]/10 text-[#d9f9b0]" : "border-orange-500/30 bg-orange-500/10 text-orange-200")}>
+          <p className="font-black">{result.ok ? "تم الإرسال" : `لم يكتمل: ${STAGE_LABEL[result.stage]}`}</p>
+          <p>{result.message}</p>
+          {result.url && !result.delivered && <p className="mt-1">يمكنك نسخ الرابط ومشاركته يدويًا: <span dir="ltr" className="break-all font-mono text-[10.5px]">{result.url}</span></p>}
+        </div>
+      )}
+      <div className="mt-3 flex flex-wrap gap-2">
+        <button data-testid="button-prepare-send-contract" disabled={busy} onClick={() => run(false)} className="inline-flex items-center gap-2 rounded-xl bg-[#b8f36b] px-4 py-2 text-xs font-black text-[#07111F] disabled:opacity-40">
+          {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />} {c.issuedDocumentReady ? "إعادة توليد وإرسال" : "توليد العقد وإرسال الرابط"}
+        </button>
+        {c.issuedDocumentReady && (
+          <button data-testid="button-resend-contract" disabled={busy} onClick={() => run(true)} className="inline-flex items-center gap-2 rounded-xl border border-white/15 px-4 py-2 text-xs font-black text-slate-200 disabled:opacity-40"><Send className="h-4 w-4" /> إعادة إرسال الرابط فقط</button>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function WelcomePanel({ inst }: { inst: InstitutionDTO }) {
+  const qc = useQueryClient();
+  const [busy, setBusy] = useState(false);
+  const [res, setRes] = useState<{ ok: boolean; text: string; link?: string } | null>(null);
+  const run = async () => {
+    setBusy(true); setRes(null);
+    try {
+      const r = await sendWelcome(inst.id);
+      const ok = deliveryConfirmed(r.notification);
+      setRes({ ok, link: ok ? undefined : r.contractLink, text: [r.ownerAccount?.message, r.notification?.message || (ok ? "أُرسلت رسالة الترحيب." : "لم يتأكد إرسال رسالة الترحيب.")].filter(Boolean).join(" ") });
+      qc.invalidateQueries({ queryKey: adminKeys.detail(inst.id) });
+    } catch (e) { setRes({ ok: false, text: (e as Error).message || "تعذر إرسال رسالة الترحيب" }); }
+    finally { setBusy(false); }
+  };
+  return (
+    <div data-testid="panel-owner-welcome" className="rounded-2xl border border-white/10 p-3 text-xs">
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <p className="text-slate-400">حساب المالك (رقم الدخول): <span dir="ltr" className="font-bold text-slate-200">{inst.ownerAccountPhone || "غير مُجهّز"}</span>{inst.ownerAccountPending ? " · بانتظار الاعتماد" : ""}</p>
+        <button data-testid="button-send-welcome" disabled={busy} onClick={run} className="inline-flex items-center gap-1.5 rounded-lg border border-white/15 px-2.5 py-1.5 text-[11px] font-black text-slate-200 disabled:opacity-40">{busy ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Send className="h-3.5 w-3.5" />} إعادة إرسال الترحيب</button>
+      </div>
+      {res && <p data-testid="status-welcome-result" className={cn("mt-2 leading-6", res.ok ? "text-[#b8f36b]" : "text-orange-200")}>{res.text}{res.link && <> الرابط: <span dir="ltr" className="break-all font-mono text-[10.5px]">{res.link}</span></>}</p>}
+    </div>
+  );
+}
+
+function EditDialog({ inst, open, onClose }: { inst: InstitutionDTO; open: boolean; onClose: () => void }) {
+  const { toast } = useToast();
+  const update = useUpdateInstitution(inst.id);
+  const init = () => ({ name: inst.name, email: inst.email, phone: inst.phone || "", city: inst.city || "", address: inst.address || "", maxStudents: String(inst.maxStudents), maxTeachers: String(inst.maxTeachers), ownerName: "" });
+  const [form, setForm] = useState(init);
+  const [errMsg, setErrMsg] = useState("");
+  useEffect(() => { if (open) { setForm(init()); setErrMsg(""); } }, [open, inst.id]); // eslint-disable-line react-hooks/exhaustive-deps
+  const set = (k: keyof ReturnType<typeof init>) => (e: React.ChangeEvent<HTMLInputElement>) => setForm({ ...form, [k]: e.target.value });
+  const c = inst.contract;
+  const locked = !!c && (!!c.issuedDocumentReady || c.status === "submitted" || c.status === "approved" || !!c.portalSentAt || c.portalDeliveryStatus === "sent" || c.portalDeliveryStatus === "delivered");
+  const [authorized, setAuthorized] = useState(false);
+  const submit = (e: React.FormEvent) => {
+    e.preventDefault(); setErrMsg("");
+    if (!locked && !authorized) { setErrMsg("أكد صلاحية تعديل بيانات العقد قبل الحفظ."); return; }
+    const contact = { phone: form.phone.trim() || undefined, city: form.city.trim() || undefined, address: form.address.trim() || undefined };
+    update.mutate(locked ? contact : {
+      ...contact, name: form.name.trim(), email: form.email.trim(), maxStudents: Number(form.maxStudents), maxTeachers: Number(form.maxTeachers),
+      ...(form.ownerName.trim() ? { ownerName: form.ownerName.trim() } : {}), issuerAuthorized: true,
+    }, {
+      onSuccess: () => { toast({ title: "حُفظت بيانات المؤسسة" }); onClose(); },
+      onError: (e) => setErrMsg((e as Error).message),
+    });
+  };
+  return (
+    <Dialog open={open} onOpenChange={(o) => !o && !update.isPending && onClose()}>
+      <DialogContent dir="rtl" className="max-h-[92dvh] max-w-2xl overflow-y-auto border-white/10 bg-[#0B1626] text-white">
+        <DialogHeader className="text-right">
+          <DialogTitle className="flex items-center gap-2"><Pencil className="h-5 w-5 text-[#b8f36b]" /> تعديل بيانات المؤسسة</DialogTitle>
+          <DialogDescription className="text-right text-slate-400">{locked ? "حُفظ ملف العقد الصادر أو أُرسل أو رُفعت نسخته الموقعة، لذلك تُقفل الحقول القانونية (الاسم والبريد والحدود والمالك) للحفاظ على مطابقة العقد. يمكن تعديل الجوال والمدينة والعنوان فقط." : "يمكن تعديل البيانات قبل إرسال العقد. أعد توليد العقد وإرساله بعد الحفظ."}</DialogDescription>
+        </DialogHeader>
+        <form onSubmit={submit} className="space-y-4">
+          <div className="grid gap-3 sm:grid-cols-2">
+            <div className="sm:col-span-2"><label className={label}>اسم المؤسسة *</label><input data-testid="input-edit-name" disabled={locked} required minLength={3} value={form.name} onChange={set("name")} className={field} /></div>
+            <div><label className={label}>البريد الرسمي *</label><input data-testid="input-edit-email" disabled={locked} required type="email" dir="ltr" value={form.email} onChange={set("email")} className={field} /></div>
+            <div><label className={label}>الجوال</label><input data-testid="input-edit-phone" dir="ltr" value={form.phone} onChange={set("phone")} className={field} /><p className="mt-1 text-[10.5px] leading-5 text-slate-500">جوال تواصل فقط؛ لا يغيّر رقم دخول حساب المالك ولا ينقل الملكية.</p></div>
+            <div><label className={label}>اسم المالك</label><input data-testid="input-edit-owner" disabled={locked} value={form.ownerName} onChange={set("ownerName")} placeholder="اتركه فارغًا دون تغيير" className={field} /></div>
+            <div><label className={label}>المدينة</label><input data-testid="input-edit-city" value={form.city} onChange={set("city")} className={field} /></div>
+            <div className="sm:col-span-2"><label className={label}>العنوان</label><input data-testid="input-edit-address" value={form.address} onChange={set("address")} className={field} /></div>
+            <div><label className={label}>حد الطلاب *</label><input data-testid="input-edit-max-students" disabled={locked} required type="number" min={1} max={10000} value={form.maxStudents} onChange={set("maxStudents")} className={field} /></div>
+            <div><label className={label}>حد المعلمين *</label><input data-testid="input-edit-max-teachers" disabled={locked} required type="number" min={1} max={10000} value={form.maxTeachers} onChange={set("maxTeachers")} className={field} /></div>
+          </div>
+          {!locked && (
+            <label className="flex items-start gap-2 text-xs leading-6 text-slate-300">
+              <input data-testid="checkbox-edit-authorized" type="checkbox" checked={authorized} onChange={(e) => setAuthorized(e.target.checked)} className="mt-1 h-4 w-4 accent-[#b8f36b]" />
+              أقر بصلاحية تعديل بيانات العقد باسم منصة قدراتك التعليمية.
+            </label>
+          )}
+          {errMsg && <p data-testid="text-edit-error" className="flex gap-2 rounded-xl border border-red-500/30 bg-red-500/10 p-3 text-xs leading-6 text-red-200"><XCircle className="h-4 w-4 shrink-0" /> {errMsg}</p>}
+          <div className="flex justify-end gap-2">
+            <button type="button" onClick={onClose} disabled={update.isPending} className="rounded-xl border border-white/10 px-4 py-2.5 text-sm font-bold text-slate-300">إلغاء</button>
+            <button data-testid="button-save-institution" disabled={update.isPending} className="inline-flex items-center gap-2 rounded-xl bg-[#b8f36b] px-5 py-2.5 text-sm font-black text-[#07111F] disabled:opacity-40">{update.isPending && <Loader2 className="h-4 w-4 animate-spin" />} حفظ</button>
+          </div>
+        </form>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+function ArchiveDialog({ inst, open, onClose, onArchived }: { inst: InstitutionDTO; open: boolean; onClose: () => void; onArchived: () => void }) {
+  const { toast } = useToast();
+  const archive = useArchiveInstitution(inst.id);
+  const [typed, setTyped] = useState("");
+  const [errMsg, setErrMsg] = useState("");
+  useEffect(() => { if (open) { setTyped(""); setErrMsg(""); } }, [open]);
+  return (
+    <Dialog open={open} onOpenChange={(o) => !o && !archive.isPending && onClose()}>
+      <DialogContent dir="rtl" className="max-w-lg border-white/10 bg-[#0B1626] text-white">
+        <DialogHeader className="text-right">
+          <DialogTitle className="flex items-center gap-2"><Archive className="h-5 w-5 text-red-300" /> حذف المؤسسة (أرشفة)</DialogTitle>
+          <DialogDescription className="text-right leading-7 text-slate-400">
+            تُؤرشف المؤسسة ويُلغى وصول جميع أعضائها والمالك فورًا، وتتوقف أكوادها. تبقى السجلات محفوظة: العقد الصادر والنسخة الموقعة ونتائج الطلاب وسجل العضويات، ولا تُحذف نهائيًا.
+          </DialogDescription>
+        </DialogHeader>
+        <label className={label}>اكتب اسم المؤسسة للتأكيد: <span className="text-white">{inst.name}</span></label>
+        <input data-testid="input-archive-confirm" value={typed} onChange={(e) => setTyped(e.target.value)} className={field} />
+        {errMsg && <p className="rounded-xl border border-red-500/30 bg-red-500/10 p-3 text-xs text-red-200">{errMsg}</p>}
+        <div className="flex justify-end gap-2">
+          <button onClick={onClose} disabled={archive.isPending} className="rounded-xl border border-white/10 px-4 py-2.5 text-sm font-bold text-slate-300">تراجع</button>
+          <button data-testid="button-confirm-archive" disabled={typed.trim() !== inst.name.trim() || archive.isPending}
+            onClick={() => { setErrMsg(""); archive.mutate(undefined, { onSuccess: () => { toast({ title: "أُرشفت المؤسسة", description: "أُلغي الوصول مع الاحتفاظ بالسجلات." }); onArchived(); }, onError: (e) => setErrMsg((e as Error).message) }); }}
+            className="inline-flex items-center gap-2 rounded-xl bg-red-500 px-4 py-2.5 text-sm font-black text-white disabled:opacity-40">{archive.isPending && <Loader2 className="h-4 w-4 animate-spin" />} تأكيد الأرشفة</button>
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
 function InvitesPanel({ inst }: { inst: InstitutionDTO }) {
   const { toast } = useToast();
   const invites = useAdminInvites(inst.id);
@@ -334,9 +529,11 @@ function InvitesPanel({ inst }: { inst: InstitutionDTO }) {
   );
 }
 
-function DetailPane({ id, storageReady }: { id: string; storageReady: boolean }) {
+function DetailPane({ id, storageReady, onArchived }: { id: string; storageReady: boolean; onArchived: () => void }) {
   const { data, isLoading, error, refetch } = useAdminInstitution(id);
   const [tab, setTab] = useState<"contract" | "invites" | "members">("contract");
+  const [editing, setEditing] = useState(false);
+  const [archiving, setArchiving] = useState(false);
   if (isLoading) return <div className="space-y-3 p-5">{[0, 1, 2].map((i) => <Skeleton key={i} className="h-24 rounded-2xl bg-white/5" />)}</div>;
   if (error || !data) return <div className="p-8 text-center text-sm text-red-300">{(error as Error)?.message || "تعذر التحميل"} <button onClick={() => refetch()} className="mr-2 underline">إعادة المحاولة</button></div>;
   const inst = data.institution;
@@ -348,7 +545,16 @@ function DetailPane({ id, storageReady }: { id: string; storageReady: boolean })
         <div className="flex flex-wrap items-center gap-2">
           <h3 data-testid="text-institution-name" className="text-xl font-black text-white">{inst.name}</h3>
           <StatusPill inst={inst} />
+          {inst.archived && <span className="rounded-full border border-white/15 px-2 py-0.5 text-[11px] font-black text-slate-400">مؤرشفة</span>}
+          {!inst.archived && (
+            <div className="ms-auto flex gap-1.5">
+              <button data-testid="button-edit-institution" onClick={() => setEditing(true)} className="inline-flex items-center gap-1.5 rounded-lg border border-white/10 px-2.5 py-1.5 text-[11px] font-black text-slate-200 hover:bg-white/5"><Pencil className="h-3.5 w-3.5" /> تعديل</button>
+              <button data-testid="button-archive-institution" onClick={() => setArchiving(true)} className="inline-flex items-center gap-1.5 rounded-lg border border-red-400/30 px-2.5 py-1.5 text-[11px] font-black text-red-200 hover:bg-red-500/10"><Archive className="h-3.5 w-3.5" /> حذف</button>
+            </div>
+          )}
         </div>
+        <EditDialog inst={inst} open={editing} onClose={() => setEditing(false)} />
+        <ArchiveDialog inst={inst} open={archiving} onClose={() => setArchiving(false)} onArchived={() => { setArchiving(false); onArchived(); }} />
         <p className="mt-1 text-xs text-slate-400">{TYPE_LABEL[inst.type]} · {inst.city || "—"} · <span dir="ltr">{inst.email}</span>{inst.phone ? <> · <span dir="ltr">{inst.phone}</span></> : null}</p>
         <div className="mt-4"><Stepper inst={inst} /></div>
         <div className="mt-4 grid grid-cols-3 gap-2 text-center">
@@ -360,6 +566,7 @@ function DetailPane({ id, storageReady }: { id: string; storageReady: boolean })
           ))}
         </div>
       </div>
+      {!inst.archived && <WelcomePanel inst={inst} />}
       <div className="flex gap-1 rounded-xl bg-white/[0.04] p-1">
         {([["contract", "العقد والاعتماد"], ["invites", "الأكواد"], ["members", "الأعضاء"]] as const).map(([k, l]) => (
           <button key={k} data-testid={`tab-inst-${k}`} onClick={() => setTab(k)} className={cn("flex-1 rounded-lg py-2 text-xs font-black transition", tab === k ? "bg-[#b8f36b] text-[#07111F]" : "text-slate-400 hover:text-white")}>{l}</button>
@@ -384,7 +591,20 @@ function DetailPane({ id, storageReady }: { id: string; storageReady: boolean })
   );
 }
 
-export default function AdminInstitutionsTab({ prefill, onPrefillConsumed }: { prefill?: InstitutionPrefill | null; onPrefillConsumed?: () => void }) {
+export default function AdminInstitutionsTab({ prefill, onPrefillConsumed, isDemo = false }: { prefill?: InstitutionPrefill | null; onPrefillConsumed?: () => void; isDemo?: boolean }) {
+  if (isDemo) {
+    return (
+      <section data-testid="institution-demo-account-notice" className="rounded-2xl border border-orange-500/30 bg-orange-500/10 p-6 text-foreground" dir="rtl">
+        <h2 className="flex items-center gap-2 text-lg font-bold"><ShieldCheck className="h-5 w-5" /> إصدار العقود يحتاج حساب الإدارة الفعلي</h2>
+        <p className="mt-3 text-sm leading-7">أنت الآن تستخدم حساب إدارة تجريبيًا. لا يمكن لهذا الحساب إنشاء مؤسسة أو إصدار عقد يحمل توقيع المنصة وختمها. سجّل الدخول بحساب الإدارة الفعلي ثم افتح قسم المؤسسات.</p>
+        <Link href="/admin/login" className="mt-5 inline-flex rounded-xl bg-primary px-4 py-3 text-sm font-bold text-primary-foreground">الدخول بحساب الإدارة الفعلي</Link>
+      </section>
+    );
+  }
+  return <AdminInstitutionsContent prefill={prefill} onPrefillConsumed={onPrefillConsumed} />;
+}
+
+function AdminInstitutionsContent({ prefill, onPrefillConsumed }: { prefill?: InstitutionPrefill | null; onPrefillConsumed?: () => void }) {
   const { data, isLoading, error, refetch } = useAdminInstitutions();
   const [selected, setSelected] = useState<string | null>(null);
   const [creating, setCreating] = useState(false);
@@ -392,7 +612,7 @@ export default function AdminInstitutionsTab({ prefill, onPrefillConsumed }: { p
 
   useEffect(() => { if (prefill) setCreating(true); }, [prefill]);
 
-  const list = useMemo(() => (data?.institutions || []).filter((i) =>
+  const list = useMemo(() => (data?.institutions || []).filter((i) => !i.archived).filter((i) =>
     filter === "all" ? true : filter === "active" ? i.isActive : !i.isActive), [data, filter]);
 
   return (
@@ -440,7 +660,7 @@ export default function AdminInstitutionsTab({ prefill, onPrefillConsumed }: { p
           </div>
         </div>
         <div className="min-w-0">
-          {selected ? <DetailPane id={selected} storageReady={!!data?.storageReady} /> : (
+          {selected ? <DetailPane id={selected} storageReady={!!data?.storageReady} onArchived={() => setSelected(null)} /> : (
             <div className="grid h-full place-items-center p-10 text-center">
               <div><FileSignature className="mx-auto h-10 w-10 text-slate-700" /><p className="mt-3 text-sm text-slate-400">اختر مؤسسة لعرض العقد والأكواد والأعضاء.</p></div>
             </div>

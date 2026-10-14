@@ -1,10 +1,16 @@
 ---
-name: Development admin fixture
-description: Why the local admin demo account must not depend on legacy exported users.
+name: Real administrator access
+description: Demo administrator login is removed; contracts require an active traceable administrator.
 ---
 
-The development-only admin demo identity must have an explicit fixture fallback; the legacy user export is not guaranteed to exist in a fresh workspace or migrated deployment.
+Do not restore shared demo credentials or demo administrator authentication on `/admin`, including in the development preview.
 
-**Why:** The admin login screen exposed a demo account while the old JSON export was absent, making the documented local login fail even though the API and UI were otherwise healthy.
+**Why:** The user explicitly asked to remove administrator login using demonstration credentials. The former fixture fallback is no longer the desired product behavior.
 
-**How to apply:** Keep any fallback limited to non-production environments and the fixed demo identity. Never use it as a production authentication path or as a substitute for MongoDB admin records.
+**How to apply:** Use genuine active MongoDB administrators. Automated tests may create isolated temporary administrator records and remove only their own fixtures; do not reset or replace the real operator's account.
+
+Do not turn the shared demo identity into an actual contract issuer to make institutional setup succeed.
+
+**Why:** Institutional contracts carry the approved platform signature and stamp; issuing them requires a traceable, active administrator, not the shared demonstration login.
+
+**How to apply:** Explain the restriction before showing the contract-creation form and direct the operator to a real admin login. Keep account recovery separate from contract authorization.

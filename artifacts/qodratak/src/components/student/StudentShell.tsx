@@ -1,6 +1,7 @@
 import React, { useCallback, useContext, useMemo, useState, useLayoutEffect } from "react";
 import { resetExamTiming, bindExamTimingOwner } from '@/lib/examTiming';
 import { Link, useLocation } from "wouter";
+import StudentQuestionContributionButton from "./StudentQuestionContributionButton";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import NotificationBell from "@/components/NotificationBell";
 import { useUser } from "@/hooks/use-user";
@@ -10,6 +11,7 @@ import { BrandMark } from "@/components/BrandMark";
 import { StudentExamChromeContext } from "@/components/student/StudentExamChromeContext";
 import useSubscription from "@/hooks/useSubscription";
 import { StudentJourneyNavigation } from "@/components/student/StudentJourneyNavigation";
+import { PageGuideFilm } from "@/components/student/PageGuideFilm";
 
 const NAV_ITEMS = [
   { name: "لوحتي", href: "/", icon: HomeIcon },
@@ -111,6 +113,7 @@ export function StudentShell({ children }: { children: React.ReactNode }) {
           <BrandMark imageClassName="h-8 w-8" />
         </Link>
         <div className="flex items-center gap-3">
+          <StudentQuestionContributionButton />
           <ThemeToggle />
           <NotificationBell userId={user?.id ? String(user.id) : null} />
           <Link
@@ -131,7 +134,14 @@ export function StudentShell({ children }: { children: React.ReactNode }) {
           ? "h-[100dvh] overflow-hidden"
           : "md:pt-0 pt-16 pb-20 md:pb-0 h-[100dvh] overflow-y-auto"
       )}>
+          {!isExamLayoutActive && <div className="hidden md:flex items-center justify-end gap-3 border-b border-border bg-card px-5 py-3">
+            <StudentQuestionContributionButton />
+            <Link href="/account" className="flex items-center gap-2 rounded-xl px-3 py-2 text-sm font-bold hover:bg-muted">
+              <UserIcon className="h-4 w-4" /> حسابي
+            </Link>
+          </div>}
           {!isExamLayoutActive && !subscription?.isExpired && <StudentJourneyNavigation />}
+          {!isExamLayoutActive && <PageGuideFilm location={location} />}
           {children}
       </main>
 

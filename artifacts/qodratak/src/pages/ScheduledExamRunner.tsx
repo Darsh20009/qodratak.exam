@@ -1,5 +1,6 @@
 import QuantitativeVideoReview from '@/components/exam-results/QuantitativeVideoReview';
 import { useState, useEffect, useRef, useCallback } from "react";
+import { PageGuideFilm } from "@/components/student/PageGuideFilm";
 import { useParams, useLocation } from "wouter";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
@@ -554,7 +555,8 @@ export default function ScheduledExamRunner() {
   if (phase === 'countdown') {
     const booking = bookingData?.booking;
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-teal-600 to-emerald-600 px-4" dir="rtl">
+      <div className="min-h-screen flex flex-col items-center justify-center gap-4 bg-gradient-to-br from-teal-600 to-emerald-600 px-4" dir="rtl">
+        <div className="w-full max-w-3xl"><PageGuideFilm location="/scheduled-exam" chapter="instructions" /></div>
         <div className="bg-white dark:bg-gray-900 rounded-3xl p-8 max-w-md w-full text-center shadow-2xl">
           <div className="w-20 h-20 bg-teal-100 rounded-full flex items-center justify-center mx-auto mb-5">
             <Clock className="h-10 w-10 text-teal-700" />
@@ -616,7 +618,8 @@ export default function ScheduledExamRunner() {
   // ====== PHASE: ready ======
   if (phase === 'ready') {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-teal-600 to-emerald-600 px-4" dir="rtl">
+      <div className="min-h-screen flex flex-col items-center justify-center gap-4 bg-gradient-to-br from-teal-600 to-emerald-600 px-4" dir="rtl">
+        <div className="w-full max-w-3xl"><PageGuideFilm location="/scheduled-exam" chapter="instructions" /></div>
         <div className="bg-white dark:bg-gray-900 rounded-3xl p-5 sm:p-8 max-w-lg w-full text-center shadow-2xl">
           <div className="w-16 h-16 bg-teal-100 rounded-2xl flex items-center justify-center mx-auto mb-4">
             <Flag className="h-8 w-8 text-teal-700" />

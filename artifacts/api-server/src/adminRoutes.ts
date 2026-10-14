@@ -15,6 +15,7 @@ import {
   CONTROLLED_TAXONOMY_VERSION,
 } from './learning/taxonomyRegistry';
 import { sendMailboxEmail, sendSubscriptionApprovalEmail } from './services/emailService';
+import { Subscription } from './mongodb/models';
 import {
   deleteInboxMessage,
   deleteMailboxMessage,
@@ -264,7 +265,7 @@ function requiredAdminPermission(req: Request) {
   if (pathName.startsWith('/dashboard')) return 'view_dashboard';
   if (pathName.startsWith('/users')) return readOnly ? 'view_students' : 'manage_students';
   if (pathName.startsWith('/subscriptions')) return readOnly ? 'view_subscriptions' : 'manage_subscriptions';
-  if (pathName.startsWith('/questions')) return readOnly ? 'view_questions' : 'manage_questions';
+  if (pathName.startsWith('/questions') || pathName.startsWith('/question-contributions')) return readOnly ? 'view_questions' : 'manage_questions';
   if (pathName.startsWith('/test-templates')) return 'manage_tests';
   if (pathName.startsWith('/announcements') || pathName === '/broadcast-email') return 'manage_announcements';
   if (pathName.startsWith('/support-tickets') || pathName.startsWith('/whatsapp')) return 'manage_support';
@@ -304,13 +305,13 @@ function effectiveAdminPermissions(admin: any) {
 
 const requireAdminAuth = async (req: Request, res: Response, next: NextFunction) => {
   let adminSession = (req.session as any)?.admin;
+  if (adminSession?.isDemo) return res.status(401).json({ error: "أُلغي الدخول التجريبي؛ سجل الدخول بحساب الإدارة الفعلي" });
   const isAdminByFlag = (req.session as any)?.isAdmin && (req.session as any)?.adminId;
 
   if (!adminSession && !isAdminByFlag) {
     const tokenAdmin = verifyAdminAccessToken(req);
     if (tokenAdmin?.isDemo) {
-      (req.session as any).admin = tokenAdmin;
-      adminSession = tokenAdmin;
+      return res.status(401).json({ error: "أُلغي الدخول التجريبي؛ سجل الدخول بحساب الإدارة الفعلي" });
     }
 
     if (!adminSession && tokenAdmin) {
@@ -368,48 +369,6 @@ router.post('/login', async (req: Request, res: Response) => {
     const { username, password } = req.body;
     if (!username || !password) {
       return res.status(400).json({ error: 'اسم المستخدم وكلمة المرور مطلوبان' });
-    }
-
-    const demoAdmin = getDevelopmentDemoAdmin(username);
-    const demoPasswordValid = demoAdmin?.password
-      ? await bcrypt.compare(password, demoAdmin.password)
-      : false;
-
-    if (demoAdmin && demoPasswordValid) {
-      const adminIdentity = {
-        adminId: String(demoAdmin.id),
-        username: demoAdmin.username,
-        fullName: demoAdmin.fullName || demoAdmin.name,
-        role: 'system_admin',
-        permissions: ['all'],
-        isDemo: true,
-      };
-      (req.session as any).admin = adminIdentity;
-      (req.session as any).isAdmin = true;
-      (req.session as any).adminId = String(demoAdmin.id);
-      (req.session as any).adminRole = adminIdentity.role;
-      (req.session as any).adminUsername = adminIdentity.username;
-      (req.session as any).adminPermissions = adminIdentity.permissions;
-      (req.session as any).clientIp = getClientIp(req);
-
-      return req.session.save((err) => {
-        if (err) {
-          console.error('Demo admin session save error:', err);
-          return res.status(500).json({ error: 'خطأ في حفظ جلسة الإدارة' });
-        }
-
-        return res.json({
-          success: true,
-          admin: {
-            id: String(demoAdmin.id),
-            username: demoAdmin.username,
-            fullName: demoAdmin.fullName || demoAdmin.name,
-            role: 'system_admin',
-            isDemo: true,
-          },
-          adminAccessToken: createAdminAccessToken(adminIdentity),
-        });
-      });
     }
 
     if (!process.env.MONGODB_URI) {
@@ -1183,6 +1142,9 @@ router.get('/subscriptions/pending', requireAdminAuth, async (req: Request, res:
 
 router.post('/subscriptions/:id/approve', requireAdminAuth, async (req: Request, res: Response) => {
   try {
+    if (await Subscription.exists({ _id: req.params.id, paymentGateway: 'geidea' })) {
+      return res.status(409).json({ error: 'اشتراكات Geidea تُفعّل فقط بعد تأكيد الدفع من البوابة' });
+    }
     const adminSession = (req.session as any).admin;
     const sub = await mongoStorage.approveSubscription(req.params.id, adminSession.adminId);
     if (!sub) {
@@ -1249,6 +1211,9 @@ router.post('/subscriptions/:id/approve', requireAdminAuth, async (req: Request,
 
 router.post('/subscriptions/:id/reject', requireAdminAuth, async (req: Request, res: Response) => {
   try {
+    if (await Subscription.exists({ _id: req.params.id, paymentGateway: 'geidea' })) {
+      return res.status(409).json({ error: 'حالة دفع Geidea تُحسم تلقائيًا بعد التحقق من البوابة' });
+    }
     const { reason } = req.body;
     const sub = await mongoStorage.rejectSubscription(req.params.id, reason || 'تم الرفض');
     if (!sub) {

@@ -2,18 +2,24 @@
 import { useEffect, useRef } from 'react';
 import { VideoCanvas, type VideoAspectRatio, useVideoPlayer, VideoPausedContext } from '@/lib/video';
 import { AnimatePresence } from 'framer-motion';
-import { IntroScene, OutroScene, StepScene, STEPS } from './Scenes';
+import { IntroScene, OutroScene, StepScene, STEPS, BrowserStage, Grain } from './Scenes';
 
 export const SCENE_DURATIONS = {
   intro: 4500,
-  dashboard: 5000,
-  course: 4500,
-  today: 4500,
-  foundation: 4500,
-  book: 4500,
+  dashboard: 4500,
+  course: 4000,
+  today: 4000,
+  foundation: 4000,
+  book: 4000,
   computerized: 4500,
+  mock: 5000,
+  instructions: 5000,
+  runner: 6000,
+  passage: 4500,
+  custom: 4000,
   results: 4500,
   account: 4000,
+  support: 4000,
   outro: 5500,
 };
 
@@ -22,11 +28,26 @@ const VIDEO_ASPECT_RATIO: VideoAspectRatio = '16:9';
 const mk = (i: number) => () => <StepScene step={STEPS[i]} index={i} />;
 const SCENE_COMPONENTS: Record<string, React.ComponentType> = {
   intro: IntroScene,
-  dashboard: mk(0), course: mk(1), today: mk(2), foundation: mk(3),
-  book: mk(4), computerized: mk(5), results: mk(6), account: mk(7),
+  dashboard: mk(0),
+  course: mk(1),
+  today: mk(2),
+  foundation: mk(3),
+  book: mk(4),
+  computerized: mk(5),
+  mock: mk(6),
+  instructions: mk(7),
+  runner: mk(8),
+  passage: mk(9),
+  custom: mk(10),
+  results: mk(11),
+  account: mk(12),
+  support: mk(13),
   outro: OutroScene,
 };
 
+const STAGE_INDEX: Record<string, number> = Object.fromEntries(Object.keys(SCENE_DURATIONS).map((k, i) => [k, i - 1]));
+
+// bg_music_full.mp3: premix of the original 46 s bed with itself (6 s triangular crossfade at ~40 s), trimmed to 73 s with a 3 s tail fade. Seeks use absolute film offsets.
 const SCENE_START_SEC: Record<string, number> = (() => {
   const out: Record<string, number> = {};
   let c = 0;
@@ -70,10 +91,12 @@ export default function VideoTemplate({
   return (
     <VideoPausedContext.Provider value={paused}>
       <VideoCanvas aspectRatio={VIDEO_ASPECT_RATIO} style={{ backgroundColor: '#0D1B2A' }}>
+        <Grain />
+        <BrowserStage index={STAGE_INDEX[baseSceneKey] ?? -1} />
         <AnimatePresence mode="popLayout">
           {SceneComponent && <SceneComponent key={currentSceneKey} />}
         </AnimatePresence>
-        <audio ref={audioRef} src={`${import.meta.env.BASE_URL}audio/bg_music.mp3`} preload="auto" autoPlay muted={muted} />
+        <audio ref={audioRef} src={`${import.meta.env.BASE_URL}audio/bg_music_full.mp3`} preload="auto" autoPlay muted={muted} />
       </VideoCanvas>
     </VideoPausedContext.Provider>
   );
