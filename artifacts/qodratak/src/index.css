@@ -2359,3 +2359,29 @@ svg.lucide-sparkles-icon {
     scroll-behavior: auto !important;
   }
 }
+
+@keyframes approved-reviews-marquee {
+  from { transform: translateX(0); }
+  to { transform: translateX(-50%); }
+}
+
+.approved-reviews-marquee {
+  animation: approved-reviews-marquee 40s linear infinite;
+  will-change: transform;
+}
+
+.approved-reviews-viewport:hover .approved-reviews-marquee,
+.approved-reviews-viewport:focus-within .approved-reviews-marquee {
+  animation-play-state: paused;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .approved-reviews-viewport {
+    overflow-x: auto;
+  }
+
+  .approved-reviews-marquee {
+    animation: none;
+    will-change: auto;
+  }
+}
