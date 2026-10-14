@@ -3,10 +3,10 @@ import mongoose from "mongoose";
 import bcrypt from "bcryptjs";
 import multer from "multer";
 import { Admin, Institution, User, TestResult } from "../mongodb/models";
-import { InstitutionInvite, InstitutionMember } from "../mongodb/institutionModels";
+import { InstitutionInvite, InstitutionMember, InstitutionTestAssignment } from "../mongodb/institutionModels";
 import {
   InstitutionError, createInstitution, findInstitution, institutionDto, activeInstitution,
-  issueInvite, inviteDto, validateInvite, joinInstitution, membershipForUser,
+  issueInvite, inviteDto, validateInvite, joinInstitution, membershipForUser, canRestoreActiveInstitutionOwner,
   normalizeInstitutionPhone, institutionalRoster, threeMonthsAfter,
 } from "../services/institutionService";
 import {
@@ -59,13 +59,59 @@ function adminActor(req: Request) {
     throw new InstitutionError("تعذر التحقق من هوية حساب الإدارة؛ سجل الدخول مجددًا بحساب الإدارة الفعلي.", 403);
   return id;
 }
+async function institutionStudentActor(req: Request) {
+  const userId = String((req.session as any)?.userId || "");
+  if (!mongoose.isValidObjectId(userId)) throw new InstitutionError("سجل الدخول أولًا", 401);
+  const [user, membership] = await Promise.all([
+    User.findById(userId).select("role").lean() as any,
+    membershipForUser(userId),
+  ]);
+  if (!user || user.role !== "student" || membership?.role !== "student" ||
+      membership.status !== "active" || !membership.institutionActive) {
+    throw new InstitutionError("الاختبارات المؤسسية متاحة لطلاب المؤسسة النشطة فقط.", 403);
+  }
+  return { userId, institutionId: membership.institutionId, institutionName: membership.institutionName };
+}
+function institutionTestDto(test: any, submissions = 0, averagePercentage: number | null = null) {
+  return {
+    id: String(test._id), title: test.title, examId: test.examId, dueAt: test.dueAt || null,
+    status: test.status, createdAt: test.createdAt, submissions, averagePercentage,
+  };
+}
 async function memberActor(req: Request, roles: string[]) {
   const id = String((req.session as any)?.userId || "");
   if (!mongoose.isValidObjectId(id)) throw new InstitutionError("سجل الدخول أولًا", 401);
-  const user = await User.findById(id).select("role institutionId phone").lean();
-  const membership = await membershipForUser(id);
-  if (!user || !membership || !membership.institutionActive ||
-      user.role !== membership.role || !roles.includes(membership.role)) throw new InstitutionError("لا تملك صلاحية الوصول للمؤسسة", 403);
+  const user = await User.findById(id).select("role institutionId phone").lean() as any;
+  if (!user) throw new InstitutionError("الحساب غير موجود؛ سجّل الدخول مجددًا", 401);
+
+  let membership = await membershipForUser(id);
+  // Repair only a missing row for the exact owner bound to this institution's
+  // currently signed, approved contract. Never revive revoked membership.
+  if (!membership) {
+    const institution = await Institution.findOne({ _id: user.institutionId, adminUserId: id }).lean();
+    if (institution && canRestoreActiveInstitutionOwner(user, institution)) {
+      await activateInstitutionOwner(institution);
+      membership = await membershipForUser(id);
+    }
+  }
+  if (!membership) {
+    const pending = user.role === "institution_admin" ? await pendingInstitutionFor(id) : null;
+    if (pending) throw new InstitutionError("عقد المؤسسة لم يعتمد بعد. افتح رابط العقد المرسل لرفعه، ثم انتظر اعتماد إدارة المنصة.", 403);
+    throw new InstitutionError("حسابك غير مرتبط بعضوية مدير مؤسسة. تواصل مع إدارة قدراتك لمراجعة ربط الحساب.", 403);
+  }
+  if (membership.status !== "active") throw new InstitutionError("عضوية المؤسسة موقوفة أو ملغاة. تواصل مع مسؤول المؤسسة.", 403);
+  if (!membership.institutionActive) {
+    const institution = await Institution.findById(membership.institutionId)
+      .select("isActive archivedAt suspendedAt contract.status contract.signedObjectKey").lean();
+    if (!institution) throw new InstitutionError("بيانات المؤسسة غير موجودة؛ تواصل مع إدارة المنصة.", 403);
+    if (institution.archivedAt) throw new InstitutionError("المؤسسة مؤرشفة ولا يمكن فتح لوحتها.", 403);
+    if (institution.suspendedAt || !institution.isActive) throw new InstitutionError("المؤسسة موقوفة حاليًا؛ تواصل مع إدارة المنصة.", 403);
+    if (institution.contract?.status !== "approved" || !institution.contract?.signedObjectKey)
+      throw new InstitutionError("لا تفتح صلاحيات المؤسسة قبل رفع العقد الموقّع واعتماده من إدارة المنصة.", 403);
+    throw new InstitutionError("تعذر التحقق من تفعيل المؤسسة. تواصل مع إدارة المنصة.", 403);
+  }
+  if (user.role !== membership.role) throw new InstitutionError("دور الحساب لا يطابق عضوية المؤسسة. تواصل مع إدارة المنصة لمراجعته.", 403);
+  if (!roles.includes(membership.role)) throw new InstitutionError("هذا القسم متاح لمدير المؤسسة فقط.", 403);
   return { userId: id, membership };
 }
 // Explicit middleware wrapper: successful authorization must continue to the handler.
@@ -302,6 +348,101 @@ export function registerInstitutionRoutes(app: Express, deps: Dependencies) {
       actor.membership.role === "teacher" ? actor.userId : undefined);
     return res.json({ institution: institutionDto(institution), members,
       role: actor.membership.role, membership: actor.membership });
+  }));
+  app.get("/api/institution/assignments", manager, handler(async (req, res) => {
+    const { membership } = (req as any).institutionActor;
+    const assignments = await InstitutionTestAssignment.find({ institutionId: membership.institutionId })
+      .sort({ createdAt: -1 }).limit(100).lean();
+    const ids = assignments.map((test: any) => String(test._id));
+    const stats = ids.length ? await TestResult.aggregate([
+      { $match: { institutionTestAssignmentId: { $in: ids } } },
+      { $group: { _id: "$institutionTestAssignmentId", submissions: { $sum: 1 }, averagePercentage: { $avg: "$percentage" } } },
+    ]) : [];
+    const statMap = new Map(stats.map((row: any) => [String(row._id), row]));
+    return res.json({ assignments: assignments.map((test: any) => {
+      const stat: any = statMap.get(String(test._id));
+      return institutionTestDto(test, stat?.submissions || 0,
+        typeof stat?.averagePercentage === "number" ? Math.round(stat.averagePercentage) : null);
+    }) });
+  }));
+  app.post("/api/institution/assignments", manager, handler(async (req, res) => {
+    const actor = (req as any).institutionActor;
+    const title = typeof req.body.title === "string" ? req.body.title.trim().slice(0, 120) : "";
+    const examId = Number(req.body.examId);
+    if (title.length < 3 || !Number.isInteger(examId) || examId < 1 || examId > 10) {
+      throw new InstitutionError("أدخل اسمًا واضحًا واختر اختبارًا متاحًا.", 400);
+    }
+    let dueAt: Date | null = null;
+    if (req.body.dueAt) {
+      dueAt = new Date(req.body.dueAt);
+      if (Number.isNaN(dueAt.getTime()) || dueAt <= new Date() ||
+          dueAt.getTime() > Date.now() + 366 * 86400_000) {
+        throw new InstitutionError("موعد الإغلاق يجب أن يكون مستقبليًا وخلال سنة.", 400);
+      }
+    }
+    const test = await InstitutionTestAssignment.create({
+      institutionId: actor.membership.institutionId, createdBy: actor.userId,
+      title, examId, dueAt, status: "active",
+    });
+    return res.status(201).json({ assignment: institutionTestDto(test) });
+  }));
+  app.post("/api/institution/assignments/:id/close", manager, handler(async (req, res) => {
+    const { membership } = (req as any).institutionActor;
+    if (!mongoose.isValidObjectId(req.params.id)) throw new InstitutionError("الاختبار غير موجود", 404);
+    const test = await InstitutionTestAssignment.findOneAndUpdate({
+      _id: req.params.id, institutionId: membership.institutionId, status: "active",
+    }, { $set: { status: "closed" } }, { new: true });
+    if (!test) throw new InstitutionError("الاختبار غير موجود أو مغلق", 404);
+    return res.json({ assignment: institutionTestDto(test) });
+  }));
+  app.get("/api/institution/assignments/:id/results", manager, handler(async (req, res) => {
+    const { membership } = (req as any).institutionActor;
+    if (!mongoose.isValidObjectId(req.params.id)) throw new InstitutionError("الاختبار غير موجود", 404);
+    const test = await InstitutionTestAssignment.findOne({
+      _id: req.params.id, institutionId: membership.institutionId,
+    }).lean();
+    if (!test) throw new InstitutionError("الاختبار غير موجود", 404);
+    const students = await InstitutionMember.find({
+      institutionId: membership.institutionId, role: "student", status: "active",
+    }).select("userId").lean();
+    const userIds = students.map((student: any) => String(student.userId));
+    const [users, results] = await Promise.all([
+      User.find({ _id: { $in: userIds } }).select("fullName").lean(),
+      TestResult.find({ institutionTestAssignmentId: String(test._id), userId: { $in: userIds } })
+        .sort({ percentage: -1, completedAt: -1 })
+        .select("userId percentage correctAnswers wrongAnswers skippedQuestions totalQuestions timeTaken completedAt testName").lean(),
+    ]);
+    const names = new Map(users.map((user: any) => [String(user._id), user.fullName]));
+    const byUser = new Map(results.map((result: any) => [String(result.userId), result]));
+    return res.json({
+      assignment: institutionTestDto(test),
+      results: userIds.map(userId => {
+        const result: any = byUser.get(userId);
+        return result ? { ...result, fullName: names.get(userId) || "طالب", completed: true } :
+          { userId, fullName: names.get(userId) || "طالب", completed: false };
+      }).sort((a, b) => Number(b.percentage ?? -1) - Number(a.percentage ?? -1)),
+    });
+  }));
+  app.get("/api/institution/student/assignments", handler(async (req, res) => {
+    const actor = await institutionStudentActor(req);
+    const assignments = await InstitutionTestAssignment.find({
+      institutionId: actor.institutionId,
+    }).sort({ createdAt: -1 }).limit(100).lean();
+    const ids = assignments.map((test: any) => String(test._id));
+    const results = ids.length ? await TestResult.find({
+      userId: actor.userId, institutionTestAssignmentId: { $in: ids },
+    }).select("institutionTestAssignmentId percentage completedAt testName").lean() : [];
+    const resultMap = new Map(results.map((row: any) => [String(row.institutionTestAssignmentId), row]));
+    const now = new Date();
+    return res.json({ institutionName: actor.institutionName, assignments: assignments.map((test: any) => {
+      const result: any = resultMap.get(String(test._id));
+      const expired = test.status !== "active" || Boolean(test.dueAt && new Date(test.dueAt) <= now);
+      return {
+        ...institutionTestDto(test), completed: Boolean(result), expired,
+        percentage: typeof result?.percentage === "number" ? result.percentage : null,
+        completedAt: result?.completedAt || null,
+      };
+    }) });
   }));
   app.get("/api/institution/invites", manager, handler(async (req, res) => {
     const { membership } = (req as any).institutionActor;

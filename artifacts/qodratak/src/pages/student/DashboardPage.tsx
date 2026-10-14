@@ -27,6 +27,7 @@ import {
 import OfficialScoreCard from "@/components/student/OfficialScoreCard";
 import { useUser } from "@/hooks/use-user";
 import InstitutionMembershipCard from "@/components/institution/InstitutionMembershipCard";
+import InstitutionAssignmentsCard from "@/components/institution/InstitutionAssignmentsCard";
 import { DashboardGuideFilm } from "@/components/student/DashboardGuideFilm";
 import PlatformReviewCard from "@/components/student/PlatformReviewCard";
 import { NewStudentWelcome } from "@/components/student/NewStudentWelcome";
@@ -297,6 +298,7 @@ export default function DashboardPage() {
           </div>
         </section>
         <InstitutionMembershipCard />
+        <InstitutionAssignmentsCard />
         <DashboardHelpDetails reviewId={user.id} />
       </div>
     );
@@ -414,6 +416,7 @@ export default function DashboardPage() {
             )}
           </div>
           <InstitutionMembershipCard />
+          <InstitutionAssignmentsCard />
           <AdaptiveLearningCoach />
         </div>
       </details>

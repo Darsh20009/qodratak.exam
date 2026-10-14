@@ -361,6 +361,8 @@ export interface CustomExamConfiguration {
 const QiyasExamPage: React.FC<{ customConfiguration?: CustomExamConfiguration }> = ({ customConfiguration }) => {
   const [, setLocation] = useLocation();
   const search = useSearch();
+  const institutionTestParams = new URLSearchParams(search);
+  const institutionTestAssignmentId = institutionTestParams.get("institutionTestId");
   const { subscription } = useSubscription();
   const hasExamAccess = Boolean(subscription?.canAccessPremiumFeatures && !subscription?.isExpired);
   const { toast } = useToast();
@@ -418,6 +420,8 @@ const QiyasExamPage: React.FC<{ customConfiguration?: CustomExamConfiguration }>
     setSectionOnlyIndex(null);
     const params = new URLSearchParams(search);
     const examIdParam = params.get('examId');
+    const institutionTestTitle = params.get("institutionTestTitle");
+    const institutionName = params.get("institutionName");
     const sectionOnlyParam = params.get('sectionOnly'); // 1-based section number
     if (examIdParam) {
       const exam = qiyasExams.find(e => e.id === parseInt(examIdParam));
@@ -441,11 +445,14 @@ const QiyasExamPage: React.FC<{ customConfiguration?: CustomExamConfiguration }>
             };
           }
         }
+        if (institutionTestAssignmentId && institutionTestTitle) {
+          resolvedExam = { ...resolvedExam, name: `${institutionTestTitle} · ${institutionName || "اختبار المؤسسة"}` };
+        }
         setSelectedExam(resolvedExam);
         setCurrentView("instructions");
       }
     }
-  }, [search, customConfiguration]);
+  }, [search, customConfiguration, institutionTestAssignmentId]);
   const [currentSectionIdx, setCurrentSectionIdx] = useState(0);
   const [currentQuestionIdx, setCurrentQuestionIdx] = useState(0);
   const [timeLeft, setTimeLeft] = useState(0);
@@ -1195,6 +1202,10 @@ const QiyasExamPage: React.FC<{ customConfiguration?: CustomExamConfiguration }>
         
         const savedResponse = await apiRequest('POST', '/api/test-results', {
           testType: customConfiguration?.testType ?? 'qiyas',
+          ...(institutionTestAssignmentId ? {
+            institutionTestAssignmentId,
+            examId: selectedExam?.id,
+          } : {}),
           difficulty: 'advanced', // اختبارات قياس متقدمة
           score: finalStats.totalCorrect,
           totalQuestions: finalStats.totalScoredQuestions,

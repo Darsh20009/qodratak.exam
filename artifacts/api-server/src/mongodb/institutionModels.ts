@@ -64,6 +64,19 @@ export const InstitutionMember = mongoose.models.InstitutionMember ||
   mongoose.model("InstitutionMember", memberSchema);
 export const InstitutionInvite = mongoose.models.InstitutionInvite ||
   mongoose.model("InstitutionInvite", inviteSchema);
+
+const institutionTestAssignmentSchema = new Schema({
+  institutionId: { type: Schema.Types.ObjectId, ref: "Institution", required: true, index: true },
+  createdBy: { type: String, required: true },
+  title: { type: String, required: true, maxlength: 120 },
+  examId: { type: Number, required: true, min: 1, max: 10 },
+  dueAt: { type: Date, default: null },
+  status: { type: String, enum: ["active", "closed"], default: "active", index: true },
+}, { timestamps: true });
+institutionTestAssignmentSchema.index({ institutionId: 1, status: 1, createdAt: -1 });
+export const InstitutionTestAssignment = mongoose.models.InstitutionTestAssignment ||
+  mongoose.model("InstitutionTestAssignment", institutionTestAssignmentSchema);
+
 export { contractSchema };
 
 const deliverySchema = new Schema({

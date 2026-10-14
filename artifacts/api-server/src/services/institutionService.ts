@@ -45,6 +45,47 @@ export function activeInstitution(institution: any) {
   return Boolean(institution?.isActive && !institution.archivedAt && !institution.suspendedAt &&
     institution.contract?.status === "approved" && institution.contract.signedObjectKey);
 }
+export function canRestoreActiveInstitutionOwner(user: any, institution: any) {
+  const id = (value: any) => value == null ? "" : String(value?._id ?? value);
+  return user?.role === "institution_admin" &&
+    id(user._id) !== "" &&
+    id(user._id) === id(institution?.adminUserId) &&
+    id(user.institutionId) === id(institution?._id) &&
+    activeInstitution(institution);
+}
+
+export function canStudentSubmitInstitutionTest(input: {
+  userRole: unknown;
+  memberRole: unknown;
+  memberStatus: unknown;
+  memberInstitutionId: unknown;
+  institutionId: unknown;
+  institutionIsActive: boolean;
+  assignmentStatus: unknown;
+  dueAt?: Date | string | null;
+  assignedExamId: number;
+  submittedExamId: number;
+  alreadyCompleted: boolean;
+  now?: Date;
+}): { allowed: true } | { allowed: false; status: 403 | 409 | 410; message: string } {
+  if (input.userRole !== "student" || input.memberRole !== "student" ||
+      input.memberStatus !== "active" || String(input.memberInstitutionId) !== String(input.institutionId)) {
+    return { allowed: false, status: 403, message: "هذا الاختبار مخصص لطلاب المؤسسة المسجلين فقط." };
+  }
+  if (!input.institutionIsActive || input.assignmentStatus !== "active") {
+    return { allowed: false, status: 403, message: "انتهى إتاحة اختبار المؤسسة أو لم يعد حسابك ضمن طلابها النشطين." };
+  }
+  if (input.dueAt && new Date(input.dueAt).getTime() <= (input.now ?? new Date()).getTime()) {
+    return { allowed: false, status: 410, message: "انتهى موعد هذا الاختبار." };
+  }
+  if (input.submittedExamId !== input.assignedExamId) {
+    return { allowed: false, status: 403, message: "هذا الاختبار لا يطابق التكليف الصادر من المؤسسة." };
+  }
+  if (input.alreadyCompleted) {
+    return { allowed: false, status: 409, message: "سبق أن أتممت اختبار المؤسسة؛ راجع نتيجتك في صفحة نتائجي." };
+  }
+  return { allowed: true };
+}
 export function institutionCreationData(input: any, actorId: string) {
   const name = text(input.name, 180);
   const email = text(input.email, 180).toLowerCase();

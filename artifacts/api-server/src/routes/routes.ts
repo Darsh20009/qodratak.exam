@@ -1785,6 +1785,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         scoredQuestionIds,
         idempotencyKey,
         sourceKey,
+        institutionTestAssignmentId,
+        examId,
         programId = 'program.qudrat',
         subjectId,
         sessionId,
@@ -1797,6 +1799,54 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       if (!sessionUserId || (userId && String(userId) !== sessionUserId)) {
         return res.status(403).json({ message: "لا يمكنك حفظ نتيجة لحساب آخر" });
+      }
+
+      let institutionalAssignment: any = null;
+      let institutionalName = "";
+      if (institutionTestAssignmentId !== undefined && institutionTestAssignmentId !== null && institutionTestAssignmentId !== "") {
+        if (!mongoose.Types.ObjectId.isValid(String(institutionTestAssignmentId))) {
+          return res.status(400).json({ message: "معرّف اختبار المؤسسة غير صالح" });
+        }
+        const [{ Institution, User, TestResult }, { InstitutionMember, InstitutionTestAssignment }, { activeInstitution, canStudentSubmitInstitutionTest }] = await Promise.all([
+          import("../mongodb/models"),
+          import("../mongodb/institutionModels"),
+          import("../services/institutionService"),
+        ]);
+        const [student, membership] = await Promise.all([
+          User.findById(sessionUserId).select("role").lean() as any,
+          InstitutionMember.findOne({ userId: sessionUserId, role: "student", status: "active" }).lean() as any,
+        ]);
+        if (!student || student.role !== "student" || !membership) {
+          return res.status(403).json({ message: "هذا الاختبار مخصص لطلاب المؤسسة المسجلين فقط." });
+        }
+        const [institution, assignment] = await Promise.all([
+          Institution.findById(membership.institutionId).lean() as any,
+          InstitutionTestAssignment.findOne({
+            _id: institutionTestAssignmentId,
+            institutionId: membership.institutionId,
+            status: "active",
+          }).lean() as any,
+        ]);
+        const previousResult = await TestResult.findOne({
+          userId: sessionUserId,
+          institutionTestAssignmentId: String(institutionTestAssignmentId),
+        }).select("_id").lean();
+        const access = canStudentSubmitInstitutionTest({
+          userRole: student.role,
+          memberRole: membership.role,
+          memberStatus: membership.status,
+          memberInstitutionId: membership.institutionId,
+          institutionId: assignment?.institutionId || membership.institutionId,
+          institutionIsActive: activeInstitution(institution),
+          assignmentStatus: assignment?.status,
+          dueAt: assignment?.dueAt,
+          assignedExamId: Number(assignment?.examId ?? -1),
+          submittedExamId: Number(examId),
+          alreadyCompleted: Boolean(previousResult),
+        });
+        if (!access.allowed) return res.status(access.status).json({ message: access.message });
+        institutionalAssignment = assignment;
+        institutionalName = String(institution.name || "المؤسسة");
       }
 
       let resolvedScore = Number(score);
@@ -1975,7 +2025,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
           userId: sessionUserId,
           program: 'qudrat',
           testType,
-          testName: ({
+          testId: institutionalAssignment ? String(institutionalAssignment._id) : undefined,
+          institutionTestAssignmentId: institutionalAssignment ? String(institutionalAssignment._id) : undefined,
+          testName: institutionalAssignment
+            ? `${institutionalName} · ${institutionalAssignment.title}`
+            : ({
             'free-verbal': 'الاختبار اللفظي اليومي',
             'free-quantitative': 'الاختبار الكمي اليومي',
             'adaptive': 'الاختبار التكيفي',

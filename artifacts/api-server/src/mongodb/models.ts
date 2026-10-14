@@ -472,6 +472,7 @@ export interface ITestResult extends Document {
   testType: 'verbal' | 'quantitative' | 'qiyas' | 'custom' | 'paper_model' | 'standard' | 'free-verbal' | 'free-quantitative' | 'adaptive';
   testId?: string;
   testName?: string;
+  institutionTestAssignmentId?: string;
   resultNotificationKey?: string;
   difficulty: 'beginner' | 'intermediate' | 'advanced' | 'mixed';
   subcategory?: string;
@@ -502,6 +503,7 @@ const testResultSchema = new Schema<ITestResult>({
   testType: { type: String, enum: ['verbal', 'quantitative', 'qiyas', 'custom', 'paper_model', 'standard', 'free-verbal', 'free-quantitative', 'adaptive'], required: true },
   testId: { type: String },
   testName: { type: String },
+  institutionTestAssignmentId: { type: String, index: true },
   resultNotificationKey: { type: String },
   difficulty: { type: String, enum: ['beginner', 'intermediate', 'advanced', 'mixed'], required: true },
   subcategory: { type: String },

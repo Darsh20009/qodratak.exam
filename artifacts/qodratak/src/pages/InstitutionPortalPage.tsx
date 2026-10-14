@@ -1,20 +1,29 @@
-import { useMemo, useState } from "react";
-import { Redirect } from "wouter";
+import { useEffect, useMemo, useState } from "react";
+import { Redirect, useLocation, useSearch } from "wouter";
 import {
   AlertTriangle, Building2, CalendarClock, ClipboardList, GraduationCap, Loader2, Search,
-  Ticket, UserMinus, UserPlus, Users,
+  Ticket, Trophy, TrendingDown, UserMinus, UserPlus, Users,
 } from "lucide-react";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
 import { useUser } from "@/hooks/use-user";
 import { RoleGuideFilm } from "@/components/RoleGuideFilm";
+import { RoleBasedLayout } from "@/components/layouts/RoleBasedLayout";
 import { cn } from "@/lib/utils";
 import {
   ROLE_LABEL, TYPE_LABEL, daysLeft, fmtDate, roleHome, useAssignTeachers, useInstitutionDashboard, useMembership,
   useInstitutionInvites, useIssueInstitutionInvite, useRevokeInstitutionInvite, useRevokeMember,
-  type InstitutionRole, type RosterMember,
+  useInstitutionAssignments, useCreateInstitutionAssignment, useCloseInstitutionAssignment,
+  useInstitutionAssignmentResults,
+  type InstitutionRole, type RosterMember, type InstitutionTestAssignmentDTO,
 } from "@/lib/institutionApi";
 import { CodeRevealDialog, InviteRow, PerformanceTag, SkeletonBoard, StudentResultsSheet } from "@/components/institution/InstitutionShared";
+
+type InstitutionTab = "overview" | "students" | "teachers" | "invites" | "assignments";
+function readInstitutionTab(search: string): InstitutionTab {
+  const tab = new URLSearchParams(search).get("tab");
+  return tab === "students" || tab === "teachers" || tab === "invites" || tab === "assignments" ? tab : "overview";
+}
 
 const card = "rounded-2xl border border-[#24202D]/10 bg-[#FFFCF7] dark:border-white/10 dark:bg-[#151621]";
 const input = "h-10 w-full rounded-lg border border-[#24202D]/15 bg-[#F7F4EE] px-3 text-sm text-[#171723] outline-none focus:border-[#171723] dark:border-white/10 dark:bg-white/5 dark:text-white";
@@ -137,16 +146,121 @@ function InvitesSection({ maxStudents }: { maxStudents: number }) {
   );
 }
 
+const INSTITUTION_EXAMS = [
+  { id: 1, title: "اختبار قدراتك التأهيلي" },
+  { id: 2, title: "اختبار لفظي شامل — ٦٥ سؤالًا" },
+  { id: 3, title: "اختبار كمي شامل — ٥٥ سؤالًا" },
+  { id: 4, title: "اختبار قياس عام 2025" },
+];
+
+function InstitutionAssignmentRow({ assignment, onClose }: { assignment: InstitutionTestAssignmentDTO; onClose: () => void }) {
+  const [showResults, setShowResults] = useState(false);
+  const results = useInstitutionAssignmentResults(assignment.id, showResults);
+  return (
+    <article data-testid={`institution-assignment-${assignment.id}`} className="rounded-2xl border border-[#24202D]/10 p-4 dark:border-white/10">
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <h3 className="font-black text-[#171723] dark:text-white">{assignment.title}</h3>
+          <p className="mt-1 text-xs text-[#6B625B] dark:text-slate-400">
+            {INSTITUTION_EXAMS.find((exam) => exam.id === assignment.examId)?.title || "اختبار قدرات"}
+            {assignment.dueAt ? ` · يغلق ${fmtDate(assignment.dueAt)}` : " · بلا موعد إغلاق"}
+          </p>
+          <p className="mt-1 text-xs text-[#6B625B] dark:text-slate-400">
+            أتمه {assignment.submissions} طالب{assignment.averagePercentage !== null ? ` · متوسط الدرجات ${assignment.averagePercentage}%` : ""}
+          </p>
+        </div>
+        <div className="flex gap-2">
+          <button type="button" onClick={() => setShowResults((value) => !value)} className="rounded-lg border border-[#24202D]/15 px-3 py-2 text-xs font-black dark:border-white/15">
+            {showResults ? "إخفاء التسليمات" : "تسليمات الطلاب"}
+          </button>
+          {assignment.status === "active" && <button type="button" onClick={onClose} className="rounded-lg px-3 py-2 text-xs font-black text-[#A3402E] hover:bg-[#C4553F]/10">إيقاف الاختبار</button>}
+          {assignment.status === "closed" && <span className="rounded-lg bg-[#F1EEE8] px-3 py-2 text-xs font-black text-[#6B625B] dark:bg-white/5 dark:text-slate-400">موقوف</span>}
+        </div>
+      </div>
+      {showResults && (
+        <div className="mt-4 space-y-2 border-t border-[#24202D]/10 pt-3 dark:border-white/10">
+          {results.isLoading && <p className="text-xs text-[#6B625B] dark:text-slate-400">جارٍ تحميل التسليمات…</p>}
+          {results.error && <p role="alert" className="text-xs text-[#A3402E]">{(results.error as Error).message}</p>}
+          {results.data?.results.map((student) => (
+            <div key={student.userId} className="flex items-center justify-between gap-3 rounded-xl bg-[#F7F4EE] px-3 py-2 text-xs dark:bg-white/5">
+              <span className="truncate font-bold text-[#171723] dark:text-white">{student.fullName}</span>
+              <span className={student.completed ? "font-black text-[#1F6B55] dark:text-[#91D7C5]" : "text-[#8B8278] dark:text-slate-400"}>
+                {student.completed ? `${student.percentage}%` : "لم يؤد الاختبار"}
+              </span>
+            </div>
+          ))}
+        </div>
+      )}
+    </article>
+  );
+}
+
+function InstitutionAssignmentsSection() {
+  const { toast } = useToast();
+  const assignments = useInstitutionAssignments();
+  const create = useCreateInstitutionAssignment();
+  const close = useCloseInstitutionAssignment();
+  const [title, setTitle] = useState("");
+  const [examId, setExamId] = useState(1);
+  const [dueDate, setDueDate] = useState("");
+  const submit = (event: React.FormEvent) => {
+    event.preventDefault();
+    const dueAt = dueDate ? new Date(`${dueDate}T23:59:00+03:00`).toISOString() : null;
+    create.mutate({ title: title.trim(), examId, dueAt }, {
+      onSuccess: () => { setTitle(""); setDueDate(""); toast({ title: "ظهر الاختبار في لوحات طلاب المؤسسة" }); },
+      onError: (error) => toast({ title: "تعذر نشر الاختبار", description: (error as Error).message, variant: "destructive" }),
+    });
+  };
+  return (
+    <section className={cn(card, "space-y-4 p-4 sm:p-5")} data-testid="institution-assignments">
+      <div>
+        <h2 className="font-black text-[#171723] dark:text-white">اختبارات المؤسسة</h2>
+        <p className="mt-1 text-xs leading-6 text-[#6B625B] dark:text-slate-400">انشر اختبارًا من بنك قدراتك ليظهر فقط لطلاب مؤسستك المسجلين.</p>
+      </div>
+      <form onSubmit={submit} className="grid gap-3 rounded-xl bg-[#F7F4EE] p-4 dark:bg-white/[0.04] md:grid-cols-4">
+        <input required minLength={3} maxLength={120} value={title} onChange={(event) => setTitle(event.target.value)} placeholder="اسم الاختبار كما يراه الطلاب" className={cn(input, "md:col-span-2")} aria-label="اسم الاختبار" />
+        <select value={examId} onChange={(event) => setExamId(Number(event.target.value))} className={input} aria-label="نوع الاختبار">
+          {INSTITUTION_EXAMS.map((exam) => <option key={exam.id} value={exam.id}>{exam.title}</option>)}
+        </select>
+        <input type="date" value={dueDate} onChange={(event) => setDueDate(event.target.value)} min={new Date(Date.now() - new Date().getTimezoneOffset() * 60_000).toISOString().slice(0, 10)} className={input} aria-label="موعد إغلاق الاختبار اختياري" />
+        <button type="submit" disabled={create.isPending || title.trim().length < 3} className="min-h-10 rounded-lg bg-[#171723] px-4 text-xs font-black text-white disabled:opacity-50 dark:bg-[#91D7C5] dark:text-[#171723] md:col-span-4">
+          {create.isPending ? "جارٍ النشر…" : "نشر الاختبار لجميع الطلاب"}
+        </button>
+      </form>
+      {assignments.isLoading && <p className="text-sm text-[#6B625B] dark:text-slate-400">جارٍ تحميل اختبارات المؤسسة…</p>}
+      {assignments.error && <p role="alert" className="text-sm text-[#A3402E]">{(assignments.error as Error).message}</p>}
+      {!!assignments.data?.assignments.length && <div className="space-y-3">
+        {assignments.data.assignments.map((assignment) => (
+          <InstitutionAssignmentRow key={assignment.id} assignment={assignment}
+            onClose={() => close.mutate(assignment.id, {
+              onSuccess: () => toast({ title: "أُوقف الاختبار عن الطلاب الجدد" }),
+              onError: (error) => toast({ title: "تعذر إيقاف الاختبار", description: (error as Error).message, variant: "destructive" }),
+            })} />
+        ))}
+      </div>}
+      {!assignments.isLoading && !assignments.error && !assignments.data?.assignments.length && <p className="rounded-xl border border-dashed border-[#24202D]/15 p-6 text-center text-xs text-[#6B625B] dark:border-white/15 dark:text-slate-400">لم تنشر المؤسسة اختبارًا بعد.</p>}
+    </section>
+  );
+}
+
 function Director() {
   const { user } = useUser();
+  const [location, setLocation] = useLocation();
+  const search = useSearch();
   const { data, isLoading, error, refetch } = useInstitutionDashboard();
   const pendingQ = useMembership(!!error);
   const pending = pendingQ.data?.pendingInstitution;
-  const [tab, setTab] = useState<"students" | "teachers" | "invites">("students");
+  const [tab, setTab] = useState<InstitutionTab>(() => readInstitutionTab(search));
   const [q, setQ] = useState("");
   const [assigning, setAssigning] = useState<RosterMember | null>(null);
   const [revoking, setRevoking] = useState<RosterMember | null>(null);
   const [viewing, setViewing] = useState<RosterMember | null>(null);
+  useEffect(() => { setTab(readInstitutionTab(search)); }, [search]);
+  const selectTab = (next: InstitutionTab) => {
+    setTab(next);
+    const destination = next === "overview" ? "/institution" : `/institution?tab=${next}`;
+    if (destination !== location) setLocation(destination);
+  };
 
   const members = data?.members || [];
   const students = useMemo(() => members.filter((m) => m.role === "student"), [members]);
@@ -228,11 +342,11 @@ function Director() {
 
         <div className="flex flex-wrap items-center gap-3">
           <div className="flex rounded-xl border border-[#24202D]/10 bg-[#FFFCF7] p-1 dark:border-white/10 dark:bg-[#151621]">
-            {([["students", `الطلاب (${students.length})`], ["teachers", `المعلمون (${teachers.length})`], ["invites", "الأكواد"]] as const).map(([k, l]) => (
-              <button key={k} data-testid={`tab-${k}`} onClick={() => setTab(k)} className={cn("rounded-lg px-4 py-2 text-xs font-black transition", tab === k ? "bg-[#171723] text-white dark:bg-[#91D7C5] dark:text-[#171723]" : "text-[#6B625B] dark:text-slate-400")}>{l}</button>
+            {([["overview", "نظرة عامة"], ["students", `الطلاب (${students.length})`], ["teachers", `المعلمون (${teachers.length})`], ["assignments", "اختبارات المؤسسة"], ["invites", "أكواد الانضمام"]] as const).map(([k, l]) => (
+              <button key={k} data-testid={`tab-${k}`} aria-current={tab === k ? "page" : undefined} onClick={() => selectTab(k)} className={cn("rounded-lg px-4 py-2 text-xs font-black transition", tab === k ? "bg-[#171723] text-white dark:bg-[#91D7C5] dark:text-[#171723]" : "text-[#6B625B] dark:text-slate-400")}>{l}</button>
             ))}
           </div>
-          {tab !== "invites" && (
+          {(tab === "students" || tab === "teachers") && (
             <div className="relative ms-auto w-full sm:w-72">
               <Search className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#8B8278]" />
               <input data-testid="input-search-members" value={q} onChange={(e) => setQ(e.target.value)} placeholder="بحث بالاسم أو المستخدم أو الجوال" className={cn(input, "pr-9")} />
@@ -240,7 +354,52 @@ function Director() {
           )}
         </div>
 
-        {tab === "invites" ? <InvitesSection maxStudents={inst.maxStudents} /> : (
+        {tab === "overview" ? (
+          <>
+          <section className={cn(card, "grid gap-4 p-5 sm:grid-cols-2 lg:grid-cols-4")} aria-label="اختصارات إدارة المؤسسة">
+            {([
+              { tab: "students" as const, title: "إدارة الطلاب", description: `${activeStudents.length} طالب نشط · اعرض النتائج وأسنِد المعلمين`, Icon: Users },
+              { tab: "teachers" as const, title: "إدارة المعلمين", description: `${activeTeachers.length} معلم نشط · تابع أعداد الطلاب المسندين`, Icon: GraduationCap },
+              { tab: "assignments" as const, title: "اختبارات المؤسسة", description: "انشر اختبارًا يظهر لطلاب مؤسستك فقط، وتابع التسليمات", Icon: ClipboardList },
+              { tab: "invites" as const, title: "إضافة أعضاء", description: "أصدر كودًا متعدد الاستخدام للطلاب أو كودًا خاصًا بالمعلم", Icon: Ticket },
+            ]).map(({ tab: next, title, description, Icon }) => (
+              <button key={next} type="button" onClick={() => selectTab(next)} className="rounded-2xl border border-[#24202D]/10 p-5 text-right transition hover:border-[#91D7C5] hover:bg-[#F1EEE8] focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#91D7C5] dark:border-white/10 dark:hover:bg-white/5">
+                <Icon className="h-5 w-5 text-[#C4553F]" />
+                <p className="mt-3 font-black text-[#171723] dark:text-white">{title}</p>
+                <p className="mt-1 text-xs leading-6 text-[#6B625B] dark:text-slate-400">{description}</p>
+              </button>
+            ))}
+          </section>
+          {(() => {
+            const rankedStudents = activeStudents
+              .filter((student) => student.performance?.confidence === "observed" && typeof student.performance.percentage === "number")
+              .sort((a, b) => (b.performance?.percentage ?? 0) - (a.performance?.percentage ?? 0));
+            const strongestCount = Math.min(5, Math.ceil(rankedStudents.length / 2));
+            const supportCount = Math.min(5, Math.floor(rankedStudents.length / 2));
+            const renderRanks = (list: RosterMember[], isStrong: boolean) => (
+              <section className={cn(card, "p-5")} aria-label={isStrong ? "أعلى الطلاب أداءً" : "طلاب يحتاجون دعمًا"}>
+                <div className="mb-4 flex items-center gap-2">
+                  {isStrong ? <Trophy className="h-5 w-5 text-[#C4553F]" /> : <TrendingDown className="h-5 w-5 text-[#C4553F]" />}
+                  <h2 className="font-black text-[#171723] dark:text-white">{isStrong ? "أعلى الطلاب أداءً" : "الأكثر احتياجًا للدعم"}</h2>
+                </div>
+                {!list.length ? <p className="text-sm leading-6 text-[#6B625B] dark:text-slate-400">لا توجد نتائج كافية للمقارنة بعد. لا نرتّب الطالب إلا بعد توفر بيانات أداء موثوقة.</p> :
+                  <ol className="space-y-2">{list.map((student, index) => (
+                    <li key={student.userId}>
+                      <button type="button" onClick={() => setViewing(student)} className="flex w-full items-center justify-between gap-3 rounded-xl bg-[#F7F4EE] px-3 py-3 text-right transition hover:bg-[#F1EEE8] dark:bg-white/[0.04] dark:hover:bg-white/[0.08]">
+                        <span className="min-w-0 truncate text-sm font-bold text-[#171723] dark:text-white">{index + 1}. {student.fullName}</span>
+                        <span className="shrink-0 font-mono text-sm font-black text-[#1F6B55] dark:text-[#91D7C5]">{student.performance?.percentage}%</span>
+                      </button>
+                    </li>
+                  ))}</ol>}
+              </section>
+            );
+            return <div className="grid gap-4 lg:grid-cols-2">
+              {renderRanks(rankedStudents.slice(0, strongestCount), true)}
+              {renderRanks([...rankedStudents].reverse().slice(0, supportCount), false)}
+            </div>;
+          })()}
+          </>
+        ) : tab === "invites" ? <InvitesSection maxStudents={inst.maxStudents} /> : tab === "assignments" ? <InstitutionAssignmentsSection /> : (
           <section className={cn(card, "overflow-hidden")}>
             {!filtered.length ? (
               <div className="p-12 text-center">
@@ -298,9 +457,9 @@ function Director() {
 }
 
 export default function InstitutionPortalPage() {
-  const { user, isLoading } = useUser();
+  const { user, isLoading, logout } = useUser();
   if (isLoading) return <SkeletonBoard />;
   if (!user) return <Redirect to="/login?return=%2Finstitution" />;
   if ((user as any).role !== "institution_admin") return <Redirect to={roleHome((user as any).role)} />;
-  return <Director />;
+  return <RoleBasedLayout role="institution_admin" user={{ name: user.fullName || user.name || user.username, email: user.email }} onLogout={logout}><Director /></RoleBasedLayout>;
 }

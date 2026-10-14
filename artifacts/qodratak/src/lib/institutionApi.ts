@@ -88,6 +88,34 @@ export interface InviteDTO {
   revokedAt?: string;
 }
 
+export interface InstitutionTestAssignmentDTO {
+  id: string;
+  title: string;
+  examId: number;
+  dueAt: string | null;
+  status: "active" | "closed";
+  createdAt: string;
+  submissions: number;
+  averagePercentage: number | null;
+  completed?: boolean;
+  expired?: boolean;
+  percentage?: number | null;
+  completedAt?: string | null;
+}
+export interface InstitutionTestSubmissionDTO {
+  userId: string;
+  fullName: string;
+  completed: boolean;
+  percentage?: number;
+  correctAnswers?: number;
+  wrongAnswers?: number;
+  skippedQuestions?: number;
+  totalQuestions?: number;
+  timeTaken?: number;
+  completedAt?: string;
+  testName?: string;
+}
+
 export interface Membership {
   institutionId: string;
   institutionName: string;
@@ -418,6 +446,47 @@ export function useInstitutionInvites(enabled = true) {
     queryKey: ["institution", "invites"],
     queryFn: () => instFetch<{ invites: InviteDTO[] }>("/api/institution/invites"),
     enabled,
+  });
+}
+export function useInstitutionAssignments(enabled = true) {
+  return useQuery({
+    queryKey: ["institution", "assignments"],
+    queryFn: () => instFetch<{ assignments: InstitutionTestAssignmentDTO[] }>("/api/institution/assignments"),
+    enabled,
+    retry: (n, e: any) => ![401, 403].includes(e?.status) && n < 1,
+  });
+}
+export function useCreateInstitutionAssignment() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (body: { title: string; examId: number; dueAt: string | null }) =>
+      instFetch<{ assignment: InstitutionTestAssignmentDTO }>("/api/institution/assignments", { method: "POST", json: body }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["institution", "assignments"] }),
+  });
+}
+export function useCloseInstitutionAssignment() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) =>
+      instFetch(`/api/institution/assignments/${id}/close`, { method: "POST", json: {} }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["institution", "assignments"] }),
+  });
+}
+export function useInstitutionAssignmentResults(id: string, enabled = true) {
+  return useQuery({
+    queryKey: ["institution", "assignment-results", id],
+    queryFn: () => instFetch<{ assignment: InstitutionTestAssignmentDTO; results: InstitutionTestSubmissionDTO[] }>(`/api/institution/assignments/${id}/results`),
+    enabled: enabled && Boolean(id),
+    retry: (n, e: any) => ![401, 403, 404].includes(e?.status) && n < 1,
+  });
+}
+export function useStudentInstitutionAssignments(enabled = true) {
+  return useQuery({
+    queryKey: ["institution", "student-assignments"],
+    queryFn: () => instFetch<{ institutionName: string; assignments: InstitutionTestAssignmentDTO[] }>("/api/institution/student/assignments"),
+    enabled,
+    staleTime: 30_000,
+    retry: (n, e: any) => ![401, 403].includes(e?.status) && n < 1,
   });
 }
 export function useIssueInstitutionInvite() {

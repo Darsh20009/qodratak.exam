@@ -1294,7 +1294,7 @@ function Router({ splashDone }: { splashDone: boolean }) {
         {() => <AccountTypeSelection />}
       </Route>
       <Route path="/institution">
-        {() => <StudentShell><InstitutionPortalPage /></StudentShell>}
+        {() => <InstitutionPortalPage />}
       </Route>
       <Route path="/signup">
         {() => <LandingPage initialModal="signup" />}

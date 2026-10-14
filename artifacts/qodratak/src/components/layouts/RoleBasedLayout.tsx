@@ -1,4 +1,4 @@
-import { useLocation, Link } from 'wouter';
+import { useLocation, useSearch, Link } from 'wouter';
 import { 
   Sidebar, 
   SidebarContent, 
@@ -57,12 +57,11 @@ const teacherNavItems: NavItem[] = [
 ];
 
 const institutionAdminNavItems: NavItem[] = [
-  { title: 'لوحة التحكم', url: '/admin/dashboard', icon: Home },
-  { title: 'المعلمون', url: '/admin/teachers', icon: GraduationCap },
-  { title: 'الطلاب', url: '/admin/students', icon: Users },
-  { title: 'الاشتراكات', url: '/admin/subscriptions', icon: CreditCard },
-  { title: 'التقارير', url: '/admin/reports', icon: BarChart3 },
-  { title: 'إعدادات المؤسسة', url: '/admin/settings', icon: Building2 },
+  { title: 'نظرة عامة', url: '/institution', icon: Home },
+  { title: 'الطلاب', url: '/institution?tab=students', icon: Users },
+  { title: 'المعلمون', url: '/institution?tab=teachers', icon: GraduationCap },
+  { title: 'اختبارات المؤسسة', url: '/institution?tab=assignments', icon: ClipboardList },
+  { title: 'أكواد الانضمام', url: '/institution?tab=invites', icon: ClipboardList },
 ];
 
 const systemAdminNavItems: NavItem[] = [
@@ -128,8 +127,10 @@ interface RoleBasedLayoutProps {
 
 export function RoleBasedLayout({ children, role, user, onLogout }: RoleBasedLayoutProps) {
   const [location] = useLocation();
+  const search = useSearch();
   const navItems = getNavItemsForRole(role);
   const roleLabel = getRoleLabel(role);
+  const currentTab = new URLSearchParams(search).get('tab');
   
   const isAdmin = ['system_admin', 'support_admin', 'institution_admin'].includes(role);
   
@@ -162,7 +163,9 @@ export function RoleBasedLayout({ children, role, user, onLogout }: RoleBasedLay
                     <SidebarMenuItem key={item.title}>
                       <SidebarMenuButton 
                         asChild 
-                        isActive={location === item.url}
+                        isActive={role === 'institution_admin'
+                          ? location === '/institution' && new URLSearchParams(item.url.split('?')[1] || '').get('tab') === currentTab
+                          : location === item.url}
                         data-testid={`nav-${item.url.replace(/\//g, '-').slice(1) || 'home'}`}
                       >
                         <Link href={item.url}>
