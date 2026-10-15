@@ -14,6 +14,8 @@ tags:
     description: Foundation books, personalization, and question-bank practice
   - name: payments
     description: Sandbox Geidea checkout, reconciliation, and admin refunds
+  - name: admin
+    description: Restricted administration and media management
 paths:
   /student/course:
     get:
@@ -781,6 +783,89 @@ paths:
           description: Callback does not match a known payment
         "503":
           description: Geidea could not be reached; the callback can be retried
+  /admin/media/videos:
+    get:
+      operationId: listAdminMediaVideos
+      tags: [admin]
+      summary: List uploaded admin video assets
+      parameters:
+        - name: page
+          in: query
+          schema: { type: number, minimum: 1, default: 1 }
+        - name: limit
+          in: query
+          schema: { type: number, minimum: 1, maximum: 100, default: 25 }
+        - name: q
+          in: query
+          schema: { type: string, maxLength: 100 }
+      responses:
+        "200":
+          description: Paginated video library and stable numeric references
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/AdminVideoPage" }
+        "401":
+          description: Admin authentication required
+    post:
+      operationId: uploadAdminMediaVideo
+      tags: [admin]
+      summary: Store a video in persistent media storage and assign a numeric ID
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema: { $ref: "#/components/schemas/AdminVideoUploadInput" }
+            encoding:
+              video:
+                contentType: video/mp4, video/quicktime, video/webm, video/x-m4v, video/x-matroska
+      responses:
+        "201":
+          description: Video stored and assigned a stable numeric reference
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/AdminVideoAsset" }
+        "400":
+          description: Invalid title or unsupported video file
+        "401":
+          description: Admin authentication required
+        "413":
+          description: Video exceeds the 1 GiB upload limit
+        "503":
+          description: Persistent video storage is unavailable
+  /admin/media/videos/{videoNumber}/stream:
+    get:
+      operationId: streamAdminMediaVideo
+      tags: [admin]
+      summary: Stream an uploaded video to an authenticated administrator
+      parameters:
+        - name: videoNumber
+          in: path
+          required: true
+          schema: { type: number, minimum: 1 }
+        - name: Range
+          in: header
+          required: false
+          description: Optional single byte range for video seeking and preview.
+          schema: { type: string }
+      responses:
+        "200":
+          description: Complete video file
+          content:
+            application/octet-stream:
+              schema: { type: string, format: binary }
+        "206":
+          description: Requested video byte range
+          content:
+            application/octet-stream:
+              schema: { type: string, format: binary }
+        "401":
+          description: Admin authentication required
+        "404":
+          description: Video reference not found
+        "416":
+          description: Invalid or unsatisfiable byte range
+        "502":
+          description: Video storage is temporarily unavailable
   /admin/geidea/transactions:
     get:
       operationId: listGeideaTransactions
@@ -837,6 +922,36 @@ paths:
           description: Payment not found
 components:
   schemas:
+    AdminVideoAsset:
+      type: object
+      required: [videoNumber, title, originalFilename, contentType, sizeBytes, createdAt, streamUrl]
+      properties:
+        videoNumber: { type: number, minimum: 1 }
+        title: { type: string }
+        originalFilename: { type: string }
+        contentType: { type: string }
+        sizeBytes: { type: number, minimum: 0 }
+        createdAt: { type: string, format: date-time }
+        streamUrl: { type: string }
+    AdminVideoPage:
+      type: object
+      required: [items, total, page, limit]
+      properties:
+        items:
+          type: array
+          items: { $ref: "#/components/schemas/AdminVideoAsset" }
+        total: { type: number, minimum: 0 }
+        page: { type: number, minimum: 1 }
+        limit: { type: number, minimum: 1 }
+    AdminVideoUploadInput:
+      type: object
+      required: [title, video]
+      properties:
+        title: { type: string, minLength: 1, maxLength: 160 }
+        video:
+          type: string
+          contentMediaType: application/octet-stream
+          description: Video file in the multipart form; the server validates the media container before storing it.
     QuestionVideoClipOutput:
       type: object
       required: [available]

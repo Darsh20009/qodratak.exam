@@ -5,6 +5,38 @@
  * API specification
  * OpenAPI spec version: 0.1.0
  */
+export interface AdminVideoAsset {
+  /** @minimum 1 */
+  videoNumber: number;
+  title: string;
+  originalFilename: string;
+  contentType: string;
+  /** @minimum 0 */
+  sizeBytes: number;
+  createdAt: string;
+  streamUrl: string;
+}
+
+export interface AdminVideoPage {
+  items: AdminVideoAsset[];
+  /** @minimum 0 */
+  total: number;
+  /** @minimum 1 */
+  page: number;
+  /** @minimum 1 */
+  limit: number;
+}
+
+export interface AdminVideoUploadInput {
+  /**
+     * @minLength 1
+     * @maxLength 160
+     */
+  title: string;
+  /** Video file in the multipart form; the server validates the media container before storing it. */
+  video: Blob;
+}
+
 export interface QuestionVideoClipOutput {
   available: boolean;
   reason?: string;
@@ -1621,6 +1653,22 @@ export const StartFoundationPlacementAssessmentProgram = {
   qudrat: 'qudrat',
   tahsili: 'tahsili',
 } as const;
+
+export type ListAdminMediaVideosParams = {
+/**
+ * @minimum 1
+ */
+page?: number;
+/**
+ * @minimum 1
+ * @maximum 100
+ */
+limit?: number;
+/**
+ * @maxLength 100
+ */
+q?: string;
+};
 
 export type ListGeideaTransactionsParams = {
 /**

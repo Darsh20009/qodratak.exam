@@ -33,10 +33,21 @@ export default function GeideaCardCheckout({ planKey, planLabel, price, onActive
   const [errorText, setErrorText] = useState("");
   const [userClosed, setUserClosed] = useState(false);
   const [embedRetry, setEmbedRetry] = useState(0);
+  const [applePaySupported, setApplePaySupported] = useState(false);
   const attempt = useRef(0); // invalidates late responses / callbacks
   const inFlight = useRef(false);
   const onActiveRef = useRef(onActiveChange);
   onActiveRef.current = onActiveChange;
+
+  useEffect(() => {
+    const ApplePay = (window as any).ApplePaySession;
+    if (typeof ApplePay?.canMakePayments !== "function") return;
+    try {
+      setApplePaySupported(Boolean(ApplePay.canMakePayments()));
+    } catch {
+      setApplePaySupported(false);
+    }
+  }, []);
 
   const payment = useGeideaPaymentStatus(session?.paymentId);
   const status = payment.data?.status;
@@ -203,7 +214,7 @@ export default function GeideaCardCheckout({ planKey, planLabel, price, onActive
     const data = payment.data;
     return (
       <div className="space-y-3">
-        <div className="rounded-2xl border border-emerald-200 bg-emerald-50 p-4 text-emerald-800">
+          <div className="rounded-2xl border border-emerald-500/30 bg-emerald-500/10 p-4 text-emerald-700 dark:text-emerald-300">
           <div className="flex items-center gap-2 font-black">
             <CheckCircle2 className="h-5 w-5" /> {statusCopy("paid").title}
           </div>
@@ -216,9 +227,9 @@ export default function GeideaCardCheckout({ planKey, planLabel, price, onActive
             <Invoice {...data.invoice} />
           </div>
         ) : (
-          <p className="rounded-xl bg-white p-3 text-xs font-bold text-[#64748B]">جارٍ تجهيز الفاتورة، ستجدها في صفحة اشتراكاتك.</p>
+          <p className="rounded-xl bg-muted p-3 text-xs font-bold text-muted-foreground">جارٍ تجهيز الفاتورة، ستجدها في صفحة اشتراكاتك.</p>
         )}
-        <Button type="button" onClick={onDone} className="h-11 w-full rounded-xl bg-[#0D1B2A] font-black text-white hover:bg-[#1E2938]">
+        <Button type="button" onClick={onDone} className="h-11 w-full rounded-xl bg-[#FF8A70] font-black text-[#17202C] hover:bg-[#ff9b83]">
           تم
         </Button>
       </div>
@@ -244,13 +255,13 @@ export default function GeideaCardCheckout({ planKey, planLabel, price, onActive
   if (status && status !== "session_created" && status !== "pending") {
     const copy = statusCopy(status);
     return (
-      <div className="rounded-2xl border border-[#E5E7EB] bg-white p-4">
+      <div className="rounded-2xl border border-border bg-card p-4 text-card-foreground">
         <div className="flex items-center gap-2 font-black text-red-600">
           <XCircle className="h-5 w-5" /> {copy.title}
         </div>
-        <p className="mt-1 text-xs font-bold leading-6 text-[#64748B]">{copy.body}</p>
+        <p className="mt-1 text-xs font-bold leading-6 text-muted-foreground">{copy.body}</p>
         {status === "failed" && (
-          <Button type="button" onClick={reset} className="mt-3 h-11 w-full rounded-xl bg-[#0D1B2A] font-black text-white hover:bg-[#1E2938]">
+          <Button type="button" onClick={reset} className="mt-3 h-11 w-full rounded-xl bg-[#FF8A70] font-black text-[#17202C] hover:bg-[#ff9b83]">
             المحاولة بعملية جديدة
           </Button>
         )}
@@ -260,19 +271,24 @@ export default function GeideaCardCheckout({ planKey, planLabel, price, onActive
 
   if (!session) {
     return (
-      <div className="rounded-2xl border border-[#E5E7EB] bg-white p-4">
-        <p className="text-sm font-bold leading-6">ادفع بالبطاقة داخل هذه النافذة: مدى، Visa، Mastercard أو Apple Pay حسب جهازك.</p>
+      <div className="rounded-2xl border border-border bg-card p-4 text-card-foreground">
+        <p className="text-sm font-bold leading-6">أكمل الدفع داخل نموذج Geidea الآمن: مدى، Visa، Mastercard، وأي وسيلة تظهر لحسابك وجهازك.</p>
+        {applePaySupported && (
+          <p className="mt-2 rounded-xl border border-[#FF8A70]/30 bg-[#FF8A70]/10 px-3 py-2 text-xs font-bold text-foreground">
+            جهازك يدعم Apple Pay؛ سيظهر الخيار داخل Geidea إذا كان مفعّلًا لحساب التاجر.
+          </p>
+        )}
         {phase === "error" && <p className="mt-2 text-xs font-bold text-red-500">{errorText}</p>}
         <Button
           type="button"
           onClick={start}
           disabled={phase === "creating" || !planKey}
-          className="mt-4 h-11 w-full rounded-xl bg-[#0D1B2A] font-black text-white hover:bg-[#1E2938]"
+          className="mt-4 h-11 w-full rounded-xl bg-[#FF8A70] font-black text-[#17202C] hover:bg-[#ff9b83]"
         >
           {phase === "creating" ? <Loader2 className="ml-2 h-4 w-4 animate-spin" /> : <CreditCard className="ml-2 h-4 w-4" />}
           {phase === "creating" ? "جارٍ تجهيز الدفع..." : phase === "error" ? "إعادة المحاولة" : `ادفع ${price} ريال بالبطاقة`}
         </Button>
-        <p className="mt-3 flex items-center justify-center gap-1 text-center text-[11px] font-medium text-[#94A3B8]">
+        <p className="mt-3 flex items-center justify-center gap-1 text-center text-[11px] font-medium text-muted-foreground">
           <ShieldCheck className="h-3.5 w-3.5" /> لا يتم التفعيل إلا بعد تأكيد خادم قدراتك من Geidea.
         </p>
       </div>
@@ -282,15 +298,15 @@ export default function GeideaCardCheckout({ planKey, planLabel, price, onActive
   const copy = statusCopy(status, payment.pollingExhausted);
   return (
     <div className="space-y-3">
-      <div className="flex items-center justify-between rounded-xl bg-white px-3 py-2 text-xs font-bold">
+        <div className="flex items-center justify-between rounded-xl border border-border bg-card px-3 py-2 text-xs font-bold text-card-foreground">
         <span>{planLabel} · {price} ريال</span>
-        <button type="button" onClick={reset} className="text-[#64748B] underline underline-offset-4">
+          <button type="button" onClick={reset} className="text-muted-foreground underline underline-offset-4">
           إلغاء وتغيير الباقة
         </button>
       </div>
 
       {phase === "embedding" && (
-        <div className="flex items-center justify-center gap-2 rounded-2xl bg-white py-3 text-xs font-bold text-[#64748B]">
+        <div className="flex items-center justify-center gap-2 rounded-2xl border border-border bg-card py-3 text-xs font-bold text-muted-foreground">
           <Loader2 className="h-4 w-4 animate-spin" /> جارٍ تحميل نموذج الدفع...
         </div>
       )}
@@ -307,8 +323,8 @@ export default function GeideaCardCheckout({ planKey, planLabel, price, onActive
         className={`w-full overflow-hidden rounded-2xl bg-white [&_iframe]:!w-full [&_iframe]:min-h-[520px] ${phase === "sdk_error" ? "hidden" : "min-h-[520px]"}`}
       />
 
-      <div className="rounded-xl bg-white p-3 text-xs font-bold leading-6 text-[#64748B]">
-        <p className="text-[#0D1B2A]">{userClosed ? "أغلقت نموذج الدفع" : copy.title}</p>
+      <div className="rounded-xl border border-border bg-card p-3 text-xs font-bold leading-6 text-muted-foreground">
+        <p className="text-foreground">{userClosed ? "أغلقت نموذج الدفع" : copy.title}</p>
         <p>{userClosed ? "إن لم تكمل الدفع فلن يتم الخصم. يمكنك إلغاء العملية أو إعادة التحقق." : copy.body}</p>
         <div className="mt-2 flex flex-wrap gap-3">
           <button type="button" onClick={() => payment.recheck()} className="inline-flex items-center gap-1 underline underline-offset-4">
@@ -320,7 +336,7 @@ export default function GeideaCardCheckout({ planKey, planLabel, price, onActive
             </a>
           )}
         </div>
-        <p className="mt-1 text-[11px] text-[#94A3B8]">استخدم الرابط إذا لم يعمل Apple Pay أو التحقق الثلاثي داخل النافذة.</p>
+        <p className="mt-1 text-[11px] text-muted-foreground">استخدم الرابط إذا لم يعمل التحقق الثلاثي داخل النافذة.</p>
       </div>
     </div>
   );

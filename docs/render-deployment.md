@@ -17,7 +17,9 @@ GitHub does not transfer workspace secrets to Render. Configure them privately i
 - `MONGODB_URI`: the intended existing MongoDB database, including its database name. New progress, reports, and learning records are stored here. Do not replace or reseed the existing dataset.
 - `SESSION_SECRET`: keep the configured production value stable.
 - `OPENAI_API_KEY`: needed only for AI features; existing explanations and deterministic reports do not need generation.
-- `GEIDEA_TEST_PUBLIC_KEY` and `GEIDEA_TEST_API_PASSWORD`: sandbox payment credentials, not live-payment credentials.
+- `GEIDEA_MODE`: set explicitly to `live` for real payments; do not rely on the development sandbox default.
+- `GEIDEA_LIVE_PUBLIC_KEY` and `GEIDEA_LIVE_API_PASSWORD`: live Geidea credentials for the Render service. Configure both as secrets in Render; never copy them into GitHub or source files.
+- For an explicitly chosen sandbox deployment only, use `GEIDEA_MODE=sandbox` with `GEIDEA_TEST_PUBLIC_KEY` and `GEIDEA_TEST_API_PASSWORD`. Never mix live and test credentials.
 - Persistent-media and WhatsApp provider settings required by the existing installation, including `QIROX_PROJECT_API_KEY` and Cloudflare R2 credentials when those providers are used.
 - `CLOUDFLARE_R2_ACCOUNT_ID` and `CLOUDFLARE_R2_BUCKET_NAME`: the existing R2 account and bucket identifiers. These are needed alongside the R2 credential secrets for quantitative and verbal media.
 - `FOUNDATION_ASSET_BASE_URL` is optional: use it only for a verified public CDN base. Without it, production streams quantitative videos from private R2 at their existing `/foundation/quantitative/...mp4` URLs, including HEAD and byte-range requests. No public bucket or signed URL in the frontend is required.

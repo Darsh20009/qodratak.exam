@@ -20,6 +20,9 @@ import type {
 } from '@tanstack/react-query';
 
 import type {
+  AdminVideoAsset,
+  AdminVideoPage,
+  AdminVideoUploadInput,
   ExamExplanationInput,
   ExamExplanationOutput,
   ExamReportCollection,
@@ -42,6 +45,7 @@ import type {
   GetFoundationLearningStateParams,
   GetStudentExamReportsParams,
   HealthStatus,
+  ListAdminMediaVideosParams,
   ListGeideaTransactionsParams,
   MobileFreeTestResult,
   MobileFreeTestSubmission,
@@ -2656,6 +2660,241 @@ export const useReceiveGeideaPaymentCallback = <TError = ErrorType<void>,
       > => {
       return useMutation(getReceiveGeideaPaymentCallbackMutationOptions(options));
     }
+
+export const getListAdminMediaVideosUrl = (params?: ListAdminMediaVideosParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/admin/media/videos?${stringifiedParams}` : `/api/admin/media/videos`
+}
+
+/**
+ * @summary List uploaded admin video assets
+ */
+export const listAdminMediaVideos = async (params?: ListAdminMediaVideosParams, options?: Parameters<typeof customFetch>[1]): Promise<AdminVideoPage> => {
+
+  return customFetch<AdminVideoPage>(getListAdminMediaVideosUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListAdminMediaVideosQueryKey = (params?: ListAdminMediaVideosParams,) => {
+    return [
+    `/api/admin/media/videos`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getListAdminMediaVideosQueryOptions = <TData = Awaited<ReturnType<typeof listAdminMediaVideos>>, TError = ErrorType<void>>(params?: ListAdminMediaVideosParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listAdminMediaVideos>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListAdminMediaVideosQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listAdminMediaVideos>>> = ({ signal }) => listAdminMediaVideos(params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listAdminMediaVideos>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListAdminMediaVideosQueryResult = NonNullable<Awaited<ReturnType<typeof listAdminMediaVideos>>>
+export type ListAdminMediaVideosQueryError = ErrorType<void>
+
+
+/**
+ * @summary List uploaded admin video assets
+ */
+
+export function useListAdminMediaVideos<TData = Awaited<ReturnType<typeof listAdminMediaVideos>>, TError = ErrorType<void>>(
+ params?: ListAdminMediaVideosParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listAdminMediaVideos>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListAdminMediaVideosQueryOptions(params,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getUploadAdminMediaVideoUrl = () => {
+
+
+
+
+  return `/api/admin/media/videos`
+}
+
+/**
+ * @summary Store a video in persistent media storage and assign a numeric ID
+ */
+export const uploadAdminMediaVideo = async (adminVideoUploadInput: AdminVideoUploadInput, options?: Parameters<typeof customFetch>[1]): Promise<AdminVideoAsset> => {
+    const formData = new FormData();
+formData.append(`title`, adminVideoUploadInput.title);
+formData.append(`video`, adminVideoUploadInput.video);
+
+  return customFetch<AdminVideoAsset>(getUploadAdminMediaVideoUrl(),
+  {
+    ...options,
+    method: 'POST'
+    ,
+    body: formData
+  }
+);}
+
+
+
+
+
+export const getUploadAdminMediaVideoMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof uploadAdminMediaVideo>>, TError,{data: BodyType<AdminVideoUploadInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof uploadAdminMediaVideo>>, TError,{data: BodyType<AdminVideoUploadInput>}, TContext> => {
+
+const mutationKey = ['uploadAdminMediaVideo'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof uploadAdminMediaVideo>>, {data: BodyType<AdminVideoUploadInput>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  uploadAdminMediaVideo(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type UploadAdminMediaVideoMutationResult = NonNullable<Awaited<ReturnType<typeof uploadAdminMediaVideo>>>
+    export type UploadAdminMediaVideoMutationBody = BodyType<AdminVideoUploadInput>
+    export type UploadAdminMediaVideoMutationError = ErrorType<void>
+
+    /**
+ * @summary Store a video in persistent media storage and assign a numeric ID
+ */
+export const useUploadAdminMediaVideo = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof uploadAdminMediaVideo>>, TError,{data: BodyType<AdminVideoUploadInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof uploadAdminMediaVideo>>,
+        TError,
+        {data: BodyType<AdminVideoUploadInput>},
+        TContext
+      > => {
+      return useMutation(getUploadAdminMediaVideoMutationOptions(options));
+    }
+
+export const getStreamAdminMediaVideoUrl = (videoNumber: number,) => {
+
+
+
+
+  return `/api/admin/media/videos/${videoNumber}/stream`
+}
+
+/**
+ * @summary Stream an uploaded video to an authenticated administrator
+ */
+export const streamAdminMediaVideo = async (videoNumber: number, options?: Parameters<typeof customFetch>[1]): Promise<Blob> => {
+
+  return customFetch<Blob>(getStreamAdminMediaVideoUrl(videoNumber),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getStreamAdminMediaVideoQueryKey = (videoNumber: number,) => {
+    return [
+    `/api/admin/media/videos/${videoNumber}/stream`
+    ] as const;
+    }
+
+
+export const getStreamAdminMediaVideoQueryOptions = <TData = Awaited<ReturnType<typeof streamAdminMediaVideo>>, TError = ErrorType<void>>(videoNumber: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof streamAdminMediaVideo>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getStreamAdminMediaVideoQueryKey(videoNumber);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof streamAdminMediaVideo>>> = ({ signal }) => streamAdminMediaVideo(videoNumber, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: videoNumber !== null && videoNumber !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof streamAdminMediaVideo>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type StreamAdminMediaVideoQueryResult = NonNullable<Awaited<ReturnType<typeof streamAdminMediaVideo>>>
+export type StreamAdminMediaVideoQueryError = ErrorType<void>
+
+
+/**
+ * @summary Stream an uploaded video to an authenticated administrator
+ */
+
+export function useStreamAdminMediaVideo<TData = Awaited<ReturnType<typeof streamAdminMediaVideo>>, TError = ErrorType<void>>(
+ videoNumber: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof streamAdminMediaVideo>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getStreamAdminMediaVideoQueryOptions(videoNumber,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
 
 export const getListGeideaTransactionsUrl = (params?: ListGeideaTransactionsParams,) => {
   const normalizedParams = new URLSearchParams();

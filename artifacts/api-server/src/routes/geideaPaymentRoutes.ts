@@ -14,7 +14,7 @@ import {
   publicGeideaPaymentStatus,
   reconcileGeideaSubscriptionPayment,
 } from "../services/geideaPaymentService";
-import { subscriptionPeriod } from "../services/subscriptionBilling";
+import { latestFutureSubscriptionEnd, subscriptionPeriod } from "../services/subscriptionBilling";
 
 type Plan = {
   type: string;
@@ -84,10 +84,12 @@ export function createGeideaPaymentRouter(options: RouterOptions): Router {
       const activeSubscription = await Subscription.findOne({
         userId: { $in: paymentOwnerCandidates(user._id) },
         status: "active",
-        startDate: { $lte: now },
         endDate: { $gt: now },
       }).sort({ endDate: -1 });
-       const { startDate, endDate } = subscriptionPeriod(now, durationDays, activeSubscription?.endDate);
+       const existingEndDate = activeSubscription?.endDate || latestFutureSubscriptionEnd(
+         now, user.subscription?.endDate, (user as any).subscriptionExpiry,
+       );
+       const { startDate, endDate } = subscriptionPeriod(now, durationDays, existingEndDate);
       const merchantReferenceId = crypto.randomUUID();
       const payment = new Subscription({
         userId: user._id,
@@ -156,6 +158,8 @@ export function createGeideaPaymentRouter(options: RouterOptions): Router {
             {
               responseCode: error.responseCode,
               detailedResponseCode: error.detailedResponseCode,
+              responseMessage: error.responseMessage,
+              detailedResponseMessage: error.detailedResponseMessage,
             },
             "Geidea returned an HPP integration error",
           );
@@ -169,6 +173,8 @@ export function createGeideaPaymentRouter(options: RouterOptions): Router {
             statusCode: error instanceof GeideaRequestError ? error.statusCode : undefined,
             responseCode: error instanceof GeideaRequestError ? error.responseCode : undefined,
             detailedResponseCode: error instanceof GeideaRequestError ? error.detailedResponseCode : undefined,
+            responseMessage: error instanceof GeideaRequestError ? error.responseMessage : undefined,
+            detailedResponseMessage: error instanceof GeideaRequestError ? error.detailedResponseMessage : undefined,
           },
           "Geidea could not create a checkout session",
         );

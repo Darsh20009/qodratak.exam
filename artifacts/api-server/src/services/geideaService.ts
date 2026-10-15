@@ -66,7 +66,14 @@ export class GeideaRequestError extends Error {
 }
 
 export function getGeideaMode(): "sandbox" | "live" {
-  const mode = process.env.GEIDEA_MODE?.trim() || "sandbox";
+  const configuredMode = process.env.GEIDEA_MODE?.trim();
+  if (!configuredMode) {
+    if (process.env.NODE_ENV === "production") {
+      throw new GeideaConfigurationError("GEIDEA_MODE must be explicitly set to live or sandbox in production");
+    }
+    return "sandbox";
+  }
+  const mode = configuredMode;
   if (mode !== "sandbox" && mode !== "live") {
     throw new GeideaConfigurationError("Invalid Geidea payment mode");
   }

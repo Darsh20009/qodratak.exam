@@ -1710,6 +1710,94 @@ export const ReceiveGeideaPaymentCallbackResponse = zod.unknown()
 
 
 /**
+ * @summary List uploaded admin video assets
+ */
+export const listAdminMediaVideosQueryPageDefault = 1;
+
+export const listAdminMediaVideosQueryLimitDefault = 25;
+export const listAdminMediaVideosQueryLimitMax = 100;
+
+export const listAdminMediaVideosQueryQMax = 100;
+
+
+
+export const ListAdminMediaVideosQueryParams = zod.object({
+  "page": zod.coerce.number().min(1).default(listAdminMediaVideosQueryPageDefault),
+  "limit": zod.coerce.number().min(1).max(listAdminMediaVideosQueryLimitMax).default(listAdminMediaVideosQueryLimitDefault),
+  "q": zod.coerce.string().max(listAdminMediaVideosQueryQMax).optional()
+})
+
+
+export const listAdminMediaVideosResponseItemsItemSizeBytesMin = 0;
+
+export const listAdminMediaVideosResponseTotalMin = 0;
+
+
+
+
+
+export const ListAdminMediaVideosResponse = zod.object({
+  "items": zod.array(zod.object({
+  "videoNumber": zod.number().min(1),
+  "title": zod.string(),
+  "originalFilename": zod.string(),
+  "contentType": zod.string(),
+  "sizeBytes": zod.number().min(listAdminMediaVideosResponseItemsItemSizeBytesMin),
+  "createdAt": zod.coerce.date(),
+  "streamUrl": zod.string()
+})),
+  "total": zod.number().min(listAdminMediaVideosResponseTotalMin),
+  "page": zod.number().min(1),
+  "limit": zod.number().min(1)
+})
+
+
+/**
+ * @summary Store a video in persistent media storage and assign a numeric ID
+ */
+export const uploadAdminMediaVideoBodyTitleMax = 160;
+
+
+
+export const UploadAdminMediaVideoBody = zod.object({
+  "title": zod.string().min(1).max(uploadAdminMediaVideoBodyTitleMax),
+  "video": zod.instanceof(File)
+})
+
+
+export const uploadAdminMediaVideoResponseSizeBytesMin = 0;
+
+
+
+export const UploadAdminMediaVideoResponse = zod.object({
+  "videoNumber": zod.number().min(1),
+  "title": zod.string(),
+  "originalFilename": zod.string(),
+  "contentType": zod.string(),
+  "sizeBytes": zod.number().min(uploadAdminMediaVideoResponseSizeBytesMin),
+  "createdAt": zod.coerce.date(),
+  "streamUrl": zod.string()
+})
+
+
+/**
+ * @summary Stream an uploaded video to an authenticated administrator
+ */
+
+
+
+export const StreamAdminMediaVideoParams = zod.object({
+  "videoNumber": zod.coerce.number().min(1)
+})
+
+export const StreamAdminMediaVideoHeader = zod.object({
+  "Range": zod.string().optional().describe('Optional single byte range for video seeking and preview.')
+})
+
+export const StreamAdminMediaVideoResponse = zod.unknown()
+
+
+/**
  * @summary List Geidea subscription payments for authorized accounting admins
  */
 export const listGeideaTransactionsQueryPageDefault = 1;

@@ -46,6 +46,19 @@ test("Geidea defaults to sandbox and requires a complete pair for the explicit m
   assert.throws(() => getGeideaMode(), GeideaConfigurationError);
 });
 
+test("production requires an explicit Geidea mode instead of silently using sandbox", () => {
+  const previousNodeEnv = process.env.NODE_ENV;
+  process.env.NODE_ENV = "production";
+  try {
+    assert.throws(() => getGeideaMode(), GeideaConfigurationError);
+    process.env.GEIDEA_MODE = "live";
+    assert.equal(getGeideaMode(), "live");
+  } finally {
+    if (previousNodeEnv === undefined) delete process.env.NODE_ENV;
+    else process.env.NODE_ENV = previousNodeEnv;
+  }
+});
+
 test("Geidea live sessions and callbacks use only the live credential pair", async () => {
   process.env.GEIDEA_MODE = "live";
   process.env.GEIDEA_TEST_PUBLIC_KEY = "test-public";

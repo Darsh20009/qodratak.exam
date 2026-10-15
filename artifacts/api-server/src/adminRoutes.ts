@@ -5,6 +5,8 @@ import bcrypt from 'bcryptjs';
 import multer from 'multer';
 import path from 'path';
 import fs from 'fs';
+import os from 'node:os';
+import { randomUUID } from 'node:crypto';
 import mongoose from 'mongoose';
 import { mongoStorage } from './mongodb/mongoStorage';
 import { storage } from './storage';
@@ -36,7 +38,8 @@ import {
   sendWhatsAppCampaign,
 } from './services/adminWhatsAppNotifications';
 import { createAdminAccessToken, verifyAdminAccessToken } from './adminSessionToken';
-import { fetchR2VerbalObject, writeR2Object } from './services/qudratVerbalBookFilesService';
+import { fetchR2VerbalObject, isR2Configured, writeR2File, writeR2Object } from './services/qudratVerbalBookFilesService';
+import { AdminVideoAsset, AdminVideoCounter } from './mongodb/adminVideoLibraryModels';
 import { TAHSILI_PLAYLIST_REFERENCES, TAHSILI_SOURCE_CATALOG } from './services/tahsiliSourceCatalog';
 import {
   getPrivateQuestionImageOriginal,
@@ -66,6 +69,25 @@ import {
 import { subscriptionInvoiceNumber } from './services/geideaPaymentService';
 
 const router = Router();
+const ADMIN_VIDEO_MAX_BYTES = 1024 * 1024 * 1024;
+const ADMIN_VIDEO_TYPES: Record<string, string> = {
+  '.mp4': 'video/mp4',
+  '.mov': 'video/quicktime',
+  '.m4v': 'video/x-m4v',
+  '.webm': 'video/webm',
+  '.mkv': 'video/x-matroska',
+};
+const adminVideoFileUpload = multer({
+  storage: multer.diskStorage({
+    destination: (_req, _file, callback) => callback(null, os.tmpdir()),
+    filename: (_req, _file, callback) => callback(null, `qodratak-admin-video-${randomUUID()}`),
+  }),
+  limits: { fileSize: ADMIN_VIDEO_MAX_BYTES, files: 1, fields: 1, fieldSize: 1024 },
+  fileFilter: (_req, file, callback) => {
+    const extension = path.extname(file.originalname).toLowerCase();
+    callback(null, Boolean(ADMIN_VIDEO_TYPES[extension]));
+  },
+}).single('video');
 
 const uploadDir = 'uploads/receipts';
 const questionImagesDir = 'uploads/question-images';
@@ -1075,6 +1097,213 @@ async function validateFoundationQuiz(payload: Record<string, unknown>) {
   const count = await Question.countDocuments({ _id: { $in: questionIds } });
   return count === questionIds.length ? null : 'بعض الأسئلة المختارة لم تعد موجودة في بنك الأسئلة';
 }
+
+function adminVideoAssetOutput(asset: any) {
+  return {
+    videoNumber: Number(asset.videoNumber),
+    title: String(asset.title || ''),
+    originalFilename: String(asset.originalFilename || ''),
+    contentType: String(asset.contentType || 'application/octet-stream'),
+    sizeBytes: Number(asset.sizeBytes) || 0,
+    createdAt: new Date(asset.createdAt).toISOString(),
+    streamUrl: `/api/admin/media/videos/${Number(asset.videoNumber)}/stream`,
+  };
+}
+
+async function hasExpectedAdminVideoContainer(filePath: string, extension: string): Promise<boolean> {
+  const handle = await fs.promises.open(filePath, 'r');
+  const header = Buffer.alloc(12);
+  try {
+    const { bytesRead } = await handle.read(header, 0, header.length, 0);
+    if (bytesRead < 8) return false;
+    if (['.mp4', '.mov', '.m4v'].includes(extension)) {
+      return header.toString('ascii', 4, 8) === 'ftyp';
+    }
+    return ['.webm', '.mkv'].includes(extension) &&
+      header.subarray(0, 4).equals(Buffer.from([0x1a, 0x45, 0xdf, 0xa3]));
+  } finally {
+    await handle.close();
+  }
+}
+
+function parseAdminVideoUpload(req: Request, res: Response, next: NextFunction) {
+  if (!isR2Configured()) {
+    res.status(503).json({ error: 'التخزين الدائم للفيديوهات غير مهيأ؛ لم يُحفظ الملف.' });
+    return;
+  }
+  adminVideoFileUpload(req, res, (error) => {
+    if (error) {
+      const tooLarge = error instanceof multer.MulterError && error.code === 'LIMIT_FILE_SIZE';
+      res.status(tooLarge ? 413 : 400).json({
+        error: tooLarge
+          ? 'حجم الفيديو يتجاوز الحد المسموح (1 جيجابايت).'
+          : 'تعذر استقبال الفيديو؛ استخدم MP4 أو MOV أو WebM أو MKV.',
+      });
+      return;
+    }
+    next();
+  });
+}
+
+router.get('/media/videos', requireAdminAuth, async (req: Request, res: Response): Promise<void> => {
+  try {
+    const page = Math.max(1, Math.floor(Number(req.query.page) || 1));
+    const limit = Math.min(100, Math.max(1, Math.floor(Number(req.query.limit) || 25)));
+    const search = typeof req.query.q === 'string' ? req.query.q.trim().slice(0, 100) : '';
+    const filter: Record<string, unknown> = {};
+    if (search) {
+      const escaped = search.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      const alternatives: Record<string, unknown>[] = [
+        { title: { $regex: escaped, $options: 'i' } },
+        { originalFilename: { $regex: escaped, $options: 'i' } },
+      ];
+      if (/^\d+$/.test(search)) alternatives.push({ videoNumber: Number(search) });
+      filter.$or = alternatives;
+    }
+    const [total, assets] = await Promise.all([
+      AdminVideoAsset.countDocuments(filter),
+      AdminVideoAsset.find(filter)
+        .sort({ videoNumber: -1 })
+        .skip((page - 1) * limit)
+        .limit(limit)
+        .select('videoNumber title originalFilename contentType sizeBytes createdAt')
+        .lean(),
+    ]);
+    res.json({
+      items: assets.map(adminVideoAssetOutput),
+      total,
+      page,
+      limit,
+    });
+  } catch (error) {
+    req.log.error({ err: error }, 'Failed to list admin video library');
+    res.status(500).json({ error: 'تعذر تحميل مكتبة الفيديوهات.' });
+  }
+});
+
+router.post('/media/videos', requireAdminAuth, parseAdminVideoUpload, async (req: Request, res: Response): Promise<void> => {
+  const file = (req as any).file as Express.Multer.File | undefined;
+  if (!file) {
+    res.status(400).json({ error: 'اختر ملف فيديو صالحًا أولًا.' });
+    return;
+  }
+
+  let objectKey = '';
+  let assetCreated = false;
+  try {
+    const title = typeof req.body?.title === 'string' ? req.body.title.trim() : '';
+    if (!title || title.length > 160) {
+      res.status(400).json({ error: 'اكتب عنوانًا للفيديو لا يتجاوز 160 حرفًا.' });
+      return;
+    }
+    const originalFilename = path.basename(file.originalname.replace(/\\/g, '/')).slice(0, 255);
+    const extension = path.extname(originalFilename).toLowerCase();
+    const contentType = ADMIN_VIDEO_TYPES[extension];
+    if (!contentType || !await hasExpectedAdminVideoContainer(file.path, extension)) {
+      res.status(400).json({ error: 'محتوى الملف لا يطابق فيديو مدعومًا؛ استخدم MP4 أو MOV أو WebM أو MKV.' });
+      return;
+    }
+
+    objectKey = `admin-media/videos/${randomUUID()}${extension}`;
+    await writeR2File(objectKey, file.path, contentType, 60 * 60 * 1000);
+    const verification = await fetchR2VerbalObject(objectKey, {
+      method: 'HEAD',
+      signal: AbortSignal.timeout(30_000),
+    });
+    if (!verification.ok || Number(verification.headers.get('content-length') || 0) !== file.size) {
+      throw new Error('تعذر التحقق من اكتمال رفع الفيديو إلى التخزين الدائم.');
+    }
+
+    const counter = await AdminVideoCounter.findOneAndUpdate(
+      { _id: 'admin-video-library' },
+      { $inc: { sequence: 1 } },
+      { upsert: true, returnDocument: 'after', setDefaultsOnInsert: true },
+    ).lean();
+    const videoNumber = Number(counter?.sequence);
+    if (!Number.isSafeInteger(videoNumber) || videoNumber < 1) {
+      throw new Error('تعذر إنشاء رقم مرجعي للفيديو.');
+    }
+
+    const asset = await AdminVideoAsset.create({
+      videoNumber,
+      title,
+      originalFilename,
+      contentType,
+      sizeBytes: file.size,
+      objectKey,
+      uploadedBy: String((req.session as any)?.admin?.adminId || (req.session as any)?.adminId || 'admin'),
+    });
+    assetCreated = true;
+    res.status(201).json(adminVideoAssetOutput(asset));
+  } catch (error) {
+    req.log.error({ err: error, sizeBytes: file.size }, 'Failed to store admin video');
+    if (objectKey && !assetCreated) {
+      await writeR2Object(objectKey).catch((cleanupError) => {
+        req.log.warn({ err: cleanupError }, 'Could not clean up incomplete admin video upload');
+      });
+    }
+    if (!res.headersSent) res.status(503).json({ error: 'تعذر حفظ الفيديو ورقمه المرجعي؛ لم يُضف إلى المكتبة.' });
+  } finally {
+    await fs.promises.unlink(file.path).catch(() => undefined);
+  }
+});
+
+router.get('/media/videos/:videoNumber/stream', requireAdminAuth, async (req: Request, res: Response): Promise<void> => {
+  const videoNumber = Number(req.params.videoNumber);
+  if (!Number.isSafeInteger(videoNumber) || videoNumber < 1) {
+    res.status(400).json({ error: 'رقم الفيديو غير صالح.' });
+    return;
+  }
+  try {
+    const asset = await AdminVideoAsset.findOne({ videoNumber }).select('objectKey contentType').lean();
+    if (!asset) {
+      res.status(404).json({ error: 'الفيديو غير موجود في المكتبة.' });
+      return;
+    }
+
+    const controller = new AbortController();
+    const abort = () => controller.abort();
+    res.once('close', abort);
+    const timeout = setTimeout(abort, 30_000);
+    try {
+      const upstream = await fetchR2VerbalObject(asset.objectKey, {
+        method: req.method === 'HEAD' ? 'HEAD' : 'GET',
+        range: req.get('range'),
+        signal: controller.signal,
+      });
+      clearTimeout(timeout);
+      if (![200, 206, 416].includes(upstream.status)) {
+        await upstream.body?.cancel();
+        res.status(upstream.status === 404 ? 404 : 502).json({ error: 'الفيديو غير متاح مؤقتًا.' });
+        return;
+      }
+      res.status(upstream.status);
+      for (const header of ['content-length', 'content-range', 'accept-ranges', 'etag', 'last-modified']) {
+        const value = upstream.headers.get(header);
+        if (value) res.setHeader(header, value);
+      }
+      res.setHeader('Content-Type', asset.contentType);
+      res.setHeader('Content-Disposition', `inline; filename="video-${videoNumber}"`);
+      res.setHeader('Accept-Ranges', 'bytes');
+      res.setHeader('X-Content-Type-Options', 'nosniff');
+      res.setHeader('Cache-Control', 'private, no-store');
+      if (req.method === 'HEAD' || !upstream.body) {
+        await upstream.body?.cancel();
+        res.end();
+        return;
+      }
+      const stream = Readable.fromWeb(upstream.body as Parameters<typeof Readable.fromWeb>[0]);
+      stream.once('error', () => res.destroy());
+      res.once('close', () => stream.destroy());
+      stream.pipe(res);
+    } finally {
+      clearTimeout(timeout);
+    }
+  } catch (error) {
+    req.log.error({ err: error, videoNumber }, 'Failed to stream admin video');
+    if (!res.headersSent) res.status(502).json({ error: 'تعذر تشغيل الفيديو من التخزين الدائم.' });
+  }
+});
 
 router.get('/foundation-content', requireAdminAuth, async (_req: Request, res: Response) => {
   try {

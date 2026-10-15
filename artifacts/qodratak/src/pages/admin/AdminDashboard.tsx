@@ -5,6 +5,7 @@ import AdminWalletsTab from './AdminWalletsTab';
 import AdminSeasonalExamsTab from './AdminSeasonalExamsTab';
 import AdminFoundationManagementTab from './AdminFoundationManagementTab';
 import AdminTahsiliContentTab from './AdminTahsiliContentTab';
+import AdminVideoLibraryTab from './AdminVideoLibraryTab';
 import AdminAccountManagementTab from './AdminAccountManagementTab';
 import AdminGeideaTransactionsTab from './AdminGeideaTransactionsTab';
 import WhatsAppAdminTab from './WhatsAppAdminTab';
@@ -86,6 +87,7 @@ const NAV_ITEMS = [
   { key: 'wallets', icon: Wallet, label: 'المحافظ والمكافآت', color: 'text-[#7964C1]' },
   { key: 'seasonal-exams', icon: Sparkles, label: 'الاختبارات الموسمية', color: 'text-[#B65D36]' },
   { key: 'foundation-management', icon: Video, label: 'محتوى التأسيس والمراجعات', color: 'text-[#2E8B70]' },
+  { key: 'video-library', icon: Video, label: 'مكتبة الفيديوهات', color: 'text-cyan-300' },
   { key: 'tahsili-content', icon: BookOpen, label: 'محتوى التحصيلي', color: 'text-[#2E8B70]' },
 ];
 
@@ -2134,6 +2136,7 @@ export default function AdminDashboard({ initialTab = 'overview' }: { initialTab
           )}
 
           {activeTab === 'foundation-management' && <AdminFoundationManagementTab />}
+          {activeTab === 'video-library' && <AdminVideoLibraryTab />}
           {activeTab === 'tahsili-content' && <AdminTahsiliContentTab />}
           {activeTab === 'platform-reviews' && <AdminFoundationManagementTab initialSection="reviews" reviewsOnly />}
 

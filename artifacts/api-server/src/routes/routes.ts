@@ -48,7 +48,7 @@ import {
   notifyAdminSubscription,
 } from '../services/adminWhatsAppNotifications';
 import { createGeideaPaymentRouter } from '../routes/geideaPaymentRoutes';
-import { subscriptionPeriod } from '../services/subscriptionBilling';
+import { latestFutureSubscriptionEnd, subscriptionPeriod } from '../services/subscriptionBilling';
 import {
   consumePhoneOtp,
   normalizeSaudiPhone,
@@ -8071,7 +8071,7 @@ app.post("/api/auth/register", async (req: Request, res: Response) => {
       let endDate = new Date(now);
       try {
         await mongoSession.withTransaction(async () => {
-          const { Subscription, Wallet, WalletTransaction } = await import('../mongodb/models');
+          const { Subscription, Wallet, WalletTransaction, User } = await import('../mongodb/models');
           const debitedWallet = await Wallet.findOneAndUpdate(
             {
               userId: String(sessionUserId),
@@ -8096,10 +8096,15 @@ app.post("/api/auth/register", async (req: Request, res: Response) => {
           const activeSubscription = await Subscription.findOne({
             userId: { $in: subscriptionIdentityCandidates(sessionUserId, (req.session as any).userEmail) },
             status: 'active',
-            startDate: { $lte: now },
             endDate: { $gt: now },
           }).sort({ endDate: -1 }).session(mongoSession);
-          const period = subscriptionPeriod(now, selectedPlan.durationDays, activeSubscription?.endDate);
+          const renewalUser = mongoose.Types.ObjectId.isValid(String(sessionUserId))
+            ? await User.findById(sessionUserId).session(mongoSession).lean()
+            : null;
+          const currentEndDate = activeSubscription?.endDate || latestFutureSubscriptionEnd(
+            now, renewalUser?.subscription?.endDate, (renewalUser as any)?.subscriptionExpiry,
+          );
+          const period = subscriptionPeriod(now, selectedPlan.durationDays, currentEndDate);
           endDate = period.endDate;
 
           const canonicalUserId = mongoose.Types.ObjectId.isValid(String(sessionUserId))

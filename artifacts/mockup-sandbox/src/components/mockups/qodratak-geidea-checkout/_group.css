@@ -1,0 +1,12 @@
+.qodratak-checkout-demo,
+.qodratak-checkout-demo * {
+  box-sizing: border-box;
+}
+
+.qodratak-checkout-demo {
+  font-family: Arial, "Noto Sans Arabic", sans-serif;
+}
+
+.qodratak-checkout-demo button {
+  font: inherit;
+}

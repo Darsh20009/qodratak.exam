@@ -6,6 +6,9 @@
  * OpenAPI spec version: 0.1.0
  */
 
+export * from './adminVideoAsset';
+export * from './adminVideoPage';
+export * from './adminVideoUploadInput';
 export * from './coachAreaStat';
 export * from './coachAreaStatConfidence';
 export * from './coachAreaStatProgram';
@@ -89,6 +92,7 @@ export * from './getStudentExamReportsParams';
 export * from './healthStatus';
 export * from './healthStatusMongodb';
 export * from './healthStatusStatus';
+export * from './listAdminMediaVideosParams';
 export * from './listGeideaTransactionsParams';
 export * from './mobileFreeTestResult';
 export * from './mobileFreeTestSubmission';

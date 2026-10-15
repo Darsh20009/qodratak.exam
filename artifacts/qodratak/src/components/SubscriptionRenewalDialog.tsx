@@ -155,10 +155,10 @@ export default function SubscriptionRenewalDialog({
     <Dialog open={open} onOpenChange={close}>
       <DialogContent
         dir="rtl"
-        className="w-[calc(100vw-1.5rem)] max-w-lg overflow-hidden rounded-[1.75rem] border-[#E5E7EB] bg-[#F7F4EE] p-0 text-[#0D1B2A] shadow-2xl"
+        className="max-sm:fixed max-sm:inset-x-0 max-sm:bottom-0 max-sm:left-0 max-sm:top-auto max-sm:w-full max-sm:max-w-none max-sm:translate-x-0 max-sm:translate-y-0 max-sm:rounded-t-[1.75rem] max-sm:rounded-b-none max-sm:border-b-0 max-sm:max-h-[94dvh] w-[calc(100vw-1.5rem)] max-w-lg overflow-hidden rounded-[1.75rem] border border-border bg-background p-0 text-foreground shadow-2xl"
       >
         <DialogHeader className="relative overflow-hidden bg-[#0D1B2A] px-5 pb-5 pt-6 text-right text-white">
-          <div className="absolute -left-10 -top-12 h-32 w-32 rounded-full bg-[#F7F775]/15 blur-2xl" />
+          <div className="absolute -left-10 -top-12 h-32 w-32 rounded-full bg-[#FF8A70]/20 blur-2xl" />
           <button
             type="button"
             onClick={() => close(false)}
@@ -168,7 +168,7 @@ export default function SubscriptionRenewalDialog({
             <X className="h-4 w-4" />
           </button>
           <div className="relative flex items-center gap-3">
-            <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-[#F7F775] text-[#0D1B2A]">
+            <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-[#FF8A70] text-[#0D1B2A]">
               <Crown className="h-5 w-5" />
             </div>
             <div>
@@ -182,39 +182,39 @@ export default function SubscriptionRenewalDialog({
 
         {isLoading ? (
           <div className="flex min-h-64 items-center justify-center">
-            <Loader2 className="h-7 w-7 animate-spin text-[#0D1B2A]" />
+            <Loader2 className="h-7 w-7 animate-spin text-[#FF8A70]" />
           </div>
         ) : (
-          <div className="max-h-[72vh] space-y-4 overflow-y-auto p-5">
-            <div className="rounded-2xl border border-[#E5E7EB] bg-white p-4">
-              <p className="text-xs font-bold text-[#94A3B8]">اشتراكك الحالي</p>
+          <div className="max-h-[calc(94dvh-6rem)] space-y-4 overflow-y-auto overscroll-contain p-4 sm:max-h-[calc(82vh-7rem)] sm:p-5">
+            <div className="rounded-2xl border border-border bg-card p-4 text-card-foreground">
+              <p className="text-xs font-bold text-muted-foreground">اشتراكك الحالي</p>
               <div className="mt-2 flex items-center justify-between gap-3">
                 <p className="font-black">
                   {currentEndDate ? (activeSubscription?.type || user?.subscription?.type || "خطة قدراتك") : "الحساب المجاني"}
                 </p>
-                <span className={`rounded-full px-2.5 py-1 text-[11px] font-black ${currentEndDate ? "bg-emerald-50 text-emerald-700" : "bg-slate-100 text-slate-600"}`}>
+                <span className={`rounded-full px-2.5 py-1 text-[11px] font-black ${currentEndDate ? "bg-emerald-500/10 text-emerald-500" : "bg-muted text-muted-foreground"}`}>
                   {currentEndDate ? "نشط" : "غير مشترك"}
                 </span>
               </div>
-              <p className="mt-2 text-xs font-bold text-[#64748B]">
+              <p className="mt-2 text-xs font-bold text-muted-foreground">
                 {currentEndDate ? `ينتهي في ${formatDate(currentEndDate)}` : "يمكنك استخدام الحساب المجاني باختبار واحد يوميًا"}
               </p>
             </div>
 
-            <div className="rounded-2xl border border-[#398B79]/20 bg-[#EFF8F4] p-4">
-              <p className="text-sm font-black text-[#286B5C]">عندك عذر مادي؟ تواصل معنا وابشر بالخير</p>
+              <div className="rounded-2xl border border-emerald-500/20 bg-emerald-500/5 p-4">
+              <p className="text-sm font-black text-emerald-600 dark:text-emerald-300">عندك عذر مادي؟ تواصل معنا وابشر بالخير</p>
               <a
                 href={SUPPORT_WHATSAPP_URL}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="mt-2 inline-flex items-center gap-2 text-xs font-black text-[#17354A] underline underline-offset-4"
+                className="mt-2 inline-flex items-center gap-2 text-xs font-black text-foreground underline underline-offset-4"
               >
                 أحتاج اشتراك لعذر مادي <MessageCircle className="h-4 w-4" />
               </a>
             </div>
 
              <div className="space-y-2">
-               <p className="text-sm font-black">اختر الباقة</p>
+                    <p className="text-sm font-black">اختر الباقة</p>
                <div className="grid gap-2 sm:grid-cols-2">
                  {paidPlans.map((item) => (
                    <button
@@ -224,32 +224,32 @@ export default function SubscriptionRenewalDialog({
                      disabled={checkoutActive}
                      className={`rounded-2xl border-2 p-4 text-right transition ${
                        selectedPlan?.key === item.key
-                         ? "border-[#0D1B2A] bg-white shadow-sm"
-                         : "border-[#E5E7EB] bg-white/70 hover:border-[#94A3B8]"
+                          ? "border-[#FF8A70] bg-card shadow-sm"
+                          : "border-border bg-card/70 hover:border-[#FF8A70]/60"
                      }`}
                    >
                      <div className="flex items-center justify-between gap-3">
                        <div>
-                         <p className="text-xs font-bold text-[#398B79]">{item.name}</p>
-                         <p className="mt-1 text-xs font-bold text-[#64748B]">وصول كامل لمدة {item.durationDays / 30} أشهر</p>
+                          <p className="text-xs font-bold text-emerald-500">{item.name}</p>
+                          <p className="mt-1 text-xs font-bold text-muted-foreground">وصول كامل لمدة {item.durationDays / 30} أشهر</p>
                        </div>
                        <div className="text-left">
                          <p className="text-2xl font-black">{item.priceSar}</p>
-                         <p className="text-[11px] font-bold text-[#64748B]">ريال</p>
+                          <p className="text-[11px] font-bold text-muted-foreground">ريال</p>
                        </div>
                      </div>
                    </button>
                  ))}
                </div>
               {currentEndDate && (
-                <p className="mt-3 rounded-xl bg-[#F7F775]/35 p-3 text-xs font-bold">
+                  <p className="mt-3 rounded-xl border border-[#FF8A70]/30 bg-[#FF8A70]/10 p-3 text-xs font-bold">
                   تاريخ الانتهاء المتوقع بعد الشراء: {formatDate(nextEndDate)} (يُعتمد التاريخ النهائي بعد تأكيد الخادم)
                 </p>
               )}
             </div>
 
             {hasPending && (
-              <div className="rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-xs font-bold text-amber-800">
+              <div className="rounded-xl border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-xs font-bold text-amber-700 dark:text-amber-200">
                 لديك طلب اشتراك قيد المراجعة. يمكنك الدفع من جديد إذا لم يكتمل طلبك السابق.
               </div>
             )}
@@ -271,8 +271,8 @@ export default function SubscriptionRenewalDialog({
                       disabled={checkoutActive}
                       className={`rounded-2xl border p-3 text-center transition ${
                         selected
-                          ? "border-[#0D1B2A] bg-[#0D1B2A] text-white shadow-md"
-                          : "border-[#E5E7EB] bg-white hover:border-[#0D1B2A]/40"
+                          ? "border-[#FF8A70] bg-[#FF8A70] text-[#17202C] shadow-md"
+                          : "border-border bg-card text-foreground hover:border-[#FF8A70]/60"
                       }`}
                     >
                       <Icon className="mx-auto mb-1 h-5 w-5" />
@@ -284,9 +284,9 @@ export default function SubscriptionRenewalDialog({
             </div>
 
             {method === "wallet" ? (
-              <div className="rounded-2xl border border-[#E5E7EB] bg-white p-4">
+              <div className="rounded-2xl border border-border bg-card p-4 text-card-foreground">
                 <div className="flex items-center justify-between text-sm">
-                  <span className="font-bold text-[#64748B]">رصيد المحفظة</span>
+                    <span className="font-bold text-muted-foreground">رصيد المحفظة</span>
                   <span className="font-black">{walletBalance.toLocaleString("ar-SA")} ر.س</span>
                 </div>
                 {walletBalance < price && (
@@ -298,7 +298,7 @@ export default function SubscriptionRenewalDialog({
                   type="button"
                   onClick={() => walletMutation.mutate()}
                   disabled={walletBalance < price || walletMutation.isPending}
-                  className="mt-4 h-11 w-full rounded-xl bg-[#0D1B2A] font-black text-white hover:bg-[#1E2938]"
+                  className="mt-4 h-11 w-full rounded-xl bg-[#FF8A70] font-black text-[#17202C] hover:bg-[#ff9b83]"
                 >
                   {walletMutation.isPending ? <Loader2 className="ml-2 h-4 w-4 animate-spin" /> : <Check className="ml-2 h-4 w-4" />}
                   تأكيد الدفع بالمحفظة
@@ -314,7 +314,7 @@ export default function SubscriptionRenewalDialog({
               />
             )}
 
-            <p className="text-center text-[11px] font-medium leading-5 text-[#94A3B8]">
+            <p className="text-center text-[11px] font-medium leading-5 text-muted-foreground">
               التمديد يضيف {durationDays} يومًا إلى نهاية اشتراكك الحالي، أو يبدأ من اليوم إذا كان منتهيًا.
             </p>
           </div>

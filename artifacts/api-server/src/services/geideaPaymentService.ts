@@ -2,7 +2,11 @@ import mongoose from "mongoose";
 import { Subscription, User } from "../mongodb/models";
 import { logger } from "../lib/logger";
 import { notifyStudentSubscriptionActivated } from "./adminWhatsAppNotifications";
-import { subscriptionPeriod, subscriptionPlanName } from "./subscriptionBilling";
+import {
+  latestFutureSubscriptionEnd,
+  subscriptionPeriod,
+  subscriptionPlanName,
+} from "./subscriptionBilling";
 import {
   fetchGeideaOrdersByMerchantReference,
   geideaPaymentIsFailed,
@@ -250,13 +254,15 @@ export async function reconcileGeideaSubscriptionPayment(
       const activeSubscription = await Subscription.findOne({
         userId: { $in: ownerCandidates(current.userId) },
         status: "active",
-        startDate: { $lte: now },
         endDate: { $gt: now },
       })
         .sort({ endDate: -1 })
         .session(mongoSession);
+      const currentEndDate = activeSubscription?.endDate || latestFutureSubscriptionEnd(
+        now, user.subscription?.endDate, (user as any).subscriptionExpiry,
+      );
       const { startDate, endDate } = subscriptionPeriod(
-        now, Number(current.durationDays) || 30, activeSubscription?.endDate,
+        now, Number(current.durationDays) || 30, currentEndDate,
       );
       const providerOrderId = String(order.orderId || "");
 

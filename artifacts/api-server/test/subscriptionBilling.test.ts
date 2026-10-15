@@ -1,6 +1,9 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { subscriptionPeriod } from "../src/services/subscriptionBilling";
+import {
+  latestFutureSubscriptionEnd,
+  subscriptionPeriod,
+} from "../src/services/subscriptionBilling";
 
 test("first purchase begins now and retains the exact expiry time", () => {
   const now = new Date("2026-10-12T16:40:32.555Z");
@@ -25,4 +28,15 @@ test("expired subscription is not used as the base, and invalid durations fail",
   for (const duration of [0, -1, NaN, 1.5, 3651]) {
     assert.throws(() => subscriptionPeriod(now, duration));
   }
+});
+
+test("renewal uses the latest unexpired expiry across canonical and legacy records", () => {
+  const now = new Date("2026-10-12T16:40:32.555Z");
+  const canonicalEnd = new Date("2026-11-01T21:30:12.123Z");
+  const legacyEnd = "2027-01-01T00:00:00.000Z";
+  const latest = latestFutureSubscriptionEnd(now, canonicalEnd, legacyEnd, "invalid", null);
+  assert.equal(latest?.toISOString(), legacyEnd);
+  const period = subscriptionPeriod(now, 180, latest);
+  assert.equal(period.endDate.getTime(), new Date(legacyEnd).getTime() + 180 * 86_400_000);
+  assert.equal(latestFutureSubscriptionEnd(now, new Date("2026-09-01T00:00:00Z")), null);
 });
