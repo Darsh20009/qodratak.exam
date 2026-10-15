@@ -71,6 +71,7 @@ import {
   PersistentMediaStorageUnavailableError,
   storeMediaBuffer,
 } from '../services/mediaStorage';
+import { fetchR2VerbalObject } from '../services/qudratVerbalBookFilesService';
 import {
   completeLearningSession,
   createLearningSession,
@@ -932,7 +933,39 @@ export async function registerRoutes(app: Express): Promise<Server> {
     fileStream.pipe(res);
   });
 
-  // Load questions from JSON file
+  // Serve original question crops only for questions whose answer key has been
+  // reviewed; OCR draft images are available exclusively in the admin queue.
+  app.get('/api/tahsili/question-bank/:questionId/source-image', requireAuth, async (req: Request, res: Response) => {
+    try {
+      const questionId = Number(req.params.questionId);
+      if (!Number.isSafeInteger(questionId) || questionId < 1) {
+        return res.status(400).json({ error: 'معرّف السؤال غير صالح' });
+      }
+      const question = await TahsiliQuestion.findOne({
+        questionId,
+        answerConfidence: 'verified',
+      }).select('sourceImageObjectKey').lean() as any;
+      if (!question?.sourceImageObjectKey) return res.status(404).json({ error: 'صورة السؤال غير متاحة' });
+      const upstream = await fetchR2VerbalObject(question.sourceImageObjectKey, {
+        method: 'GET',
+        range: typeof req.headers.range === 'string' ? req.headers.range : undefined,
+      });
+      if (!upstream.ok && upstream.status !== 206) {
+        return res.status(upstream.status === 404 ? 404 : 502).json({ error: 'تعذر تحميل صورة السؤال' });
+      }
+      res.status(upstream.status);
+      for (const header of ['content-type', 'content-length', 'content-range', 'accept-ranges', 'etag']) {
+        const value = upstream.headers.get(header);
+        if (value) res.setHeader(header, value);
+      }
+      res.setHeader('Cache-Control', 'private, no-store');
+      if (!upstream.body) return res.end();
+      Readable.fromWeb(upstream.body as any).pipe(res);
+    } catch (error) {
+      req.log.error({ err: error }, 'Unable to serve reviewed Tahsili question image');
+      if (!res.headersSent) res.status(503).json({ error: 'تعذر تحميل صورة السؤال الآن' });
+    }
+  });
 
   // Tahsili question bank (separate from the legacy Qudrat question bank).
   app.get('/api/tahsili/question-bank', requireAuth, async (req: Request, res: Response) => {
@@ -976,7 +1009,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const subcategories = await TahsiliQuestion.distinct('subcategory', subcategoryQuery);
 
       res.json({
-        questions,
+        questions: questions.map((question: any) => {
+          const { sourceImageObjectKey, ...publicQuestion } = question;
+          return {
+            ...publicQuestion,
+            sourceImageUrl: sourceImageObjectKey
+              ? `/api/tahsili/question-bank/${question.questionId}/source-image`
+              : null,
+          };
+        }),
         total,
         page,
         limit,
@@ -7266,9 +7307,7 @@ app.post("/api/auth/register", async (req: Request, res: Response) => {
 
       await mongoStorage.updateAdminLogin(admin._id.toString());
 
-      (req.session as any).adminId = admin._id.toString();
-      (req.session as any).isAdmin = true;
-      (req.session as any).admin = {
+      const adminIdentity = {
         adminId: admin._id.toString(),
         username: admin.username,
         fullName: admin.fullName,
@@ -7276,14 +7315,30 @@ app.post("/api/auth/register", async (req: Request, res: Response) => {
         permissions: admin.permissions || ['all'],
       };
 
-      res.json({
-        success: true,
-        admin: {
-          id: admin._id,
-          username: admin.username,
-          fullName: admin.fullName,
-          role: admin.role,
+      (req.session as any).adminId = adminIdentity.adminId;
+      (req.session as any).isAdmin = true;
+      (req.session as any).admin = adminIdentity;
+      (req.session as any).adminRole = adminIdentity.role;
+      (req.session as any).adminUsername = adminIdentity.username;
+      (req.session as any).adminPermissions = adminIdentity.permissions;
+
+      req.session.save((error) => {
+        if (error) {
+          console.error('Admin session save error:', error);
+          return res.status(500).json({ error: 'تعذر حفظ جلسة الإدارة' });
         }
+        return res.json({
+          success: true,
+          admin: {
+            id: admin._id,
+            username: admin.username,
+            fullName: admin.fullName,
+            role: admin.role,
+          },
+          // The browser preview requires this short-lived token when its
+          // embedded iframe cannot retain the session cookie.
+          adminAccessToken: createAdminAccessToken(adminIdentity),
+        });
       });
     } catch (error) {
       console.error('Admin login error:', error);
@@ -12130,7 +12185,7 @@ app.post("/api/auth/register", async (req: Request, res: Response) => {
             subject: config.sourceLabel,
             answerConfidence: 'verified',
           })
-            .select('questionId subject subcategory text options correctOptionIndex difficulty topic explanation sourcePage sourceQuestionNumber sourceBook')
+            .select('questionId subject subcategory text options correctOptionIndex difficulty topic explanation sourcePage sourceQuestionNumber sourceBook sourceImageObjectKey')
             .lean() as any,
           subjectLearningHistory(studentId, config.subjectId),
         ]);
@@ -12197,7 +12252,9 @@ app.post("/api/auth/register", async (req: Request, res: Response) => {
           subcategory: String(question.subcategory || 'عام'),
           topic: String(question.topic || question.subcategory || 'عام'),
           difficulty: question.difficulty || 'intermediate',
-          imageUrl: null,
+          imageUrl: question.sourceImageObjectKey
+            ? `/api/tahsili/question-bank/${question.questionId}/source-image`
+            : null,
         }));
         const attempts = (req.session as any).tahsiliSubjectTestAttempts || {};
         const now = Date.now();
@@ -12304,7 +12361,7 @@ app.post("/api/auth/register", async (req: Request, res: Response) => {
           subject: config.sourceLabel,
           answerConfidence: 'verified',
         })
-          .select('questionId subject subcategory text options correctOptionIndex difficulty topic explanation sourcePage sourceQuestionNumber sourceBook')
+          .select('questionId subject subcategory text options correctOptionIndex difficulty topic explanation sourcePage sourceQuestionNumber sourceBook sourceImageObjectKey')
           .lean() as any[];
         const byId = new Map(questions.map((question) => [String(question.questionId), question]));
         if (questions.length !== attempt.questionIds.length) {
@@ -12382,6 +12439,9 @@ app.post("/api/auth/register", async (req: Request, res: Response) => {
               subcategory: String(question.subcategory || 'عام'),
               topic: String(question.topic || question.subcategory || 'عام'),
               difficulty: question.difficulty || 'intermediate',
+              imageUrl: question.sourceImageObjectKey
+                ? `/api/tahsili/question-bank/${question.questionId}/source-image`
+                : null,
               selectedOptionIndex,
               correctOptionIndex: Number(question.correctOptionIndex),
               isCorrect: selectedOptionIndex === null

@@ -15,6 +15,7 @@ const SCENE_DETAILS: Record<string, { title: string; filePath: string }> = {
   foundation: { title: 'التأسيس', filePath: F }, book: { title: 'كتاب التأسيس', filePath: F },
   computerized: { title: 'المحوسب', filePath: F }, results: { title: 'نتائجي', filePath: F },
   account: { title: 'حسابي', filePath: F }, outro: { title: 'الخاتمة', filePath: F },
+  x_tahsili: { title: 'مسار التحصيلي', filePath: 'src/components/video/ExtraChapters.tsx' },
 };
 
 function announce(index: number, keys: string[]) {
@@ -22,8 +23,8 @@ function announce(index: number, keys: string[]) {
   const isMarketing = key?.startsWith('m_');
   const welcome = new URLSearchParams(window.location.search).get('film') === 'marketing-welcome';
   const marketingTitles: Record<string, string> = welcome
-    ? { m_hook: 'من وين تبدأ؟', m_gather: 'خطوات واضحة', m_foundation: 'ابدأ من الأساس', m_practice: 'تدرّب على اختيارك', m_exam: 'جرّب واجهة الاختبار', m_results: 'راجع نتيجتك', m_plans: 'مهمتك التالية واضحة', m_outro: 'طريقك يبدأ بخطوة' }
-    : { m_hook: 'ليه دايمًا مشتّت؟', m_gather: 'جمعنا لك كل مصادرك', m_foundation: 'ابدأ من الصفر', m_computerized: 'لفظي وكمي', m_exam: 'محاكاة الاختبار', m_results: 'التصحيح والنتائج', m_plans: 'كل يوم خطوة', m_outro: 'اختار قدراتك وابدأ بسلام' };
+    ? { m_hook: 'من وين تبدأ؟', m_gather: 'خطوات واضحة', m_foundation: 'ابدأ من الأساس', m_practice: 'تدرّب على اختيارك', m_exam: 'جرّب واجهة الاختبار', m_results: 'راجع نتيجتك', m_plans: 'مسار التحصيلي', m_outro: 'طريقك يبدأ بخطوة' }
+    : { m_hook: 'ليه دايمًا مشتّت؟', m_gather: 'جمعنا لك كل مصادرك', m_foundation: 'ابدأ من الصفر', m_computerized: 'لفظي وكمي', m_exam: 'محاكاة الاختبار', m_results: 'التصحيح والنتائج', m_plans: 'مسار التحصيلي', m_outro: 'اختار قدراتك وابدأ بسلام' };
   const d = isMarketing
     ? { title: marketingTitles[key], filePath: `src/components/video/${welcome ? 'Marketing' : 'MarketingLegacy'}.tsx` }
     : SCENE_DETAILS[key];

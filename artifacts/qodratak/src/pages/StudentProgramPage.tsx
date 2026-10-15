@@ -29,7 +29,7 @@ const PROGRAMS: Record<ProgramKey, ProgramConfig> = {
     foundation: [
       { title: "التأسيس الكمي", description: "أساسيات الجبر والهندسة والمهارات الكمية.", href: "/foundation?program=qudrat&subject=quantitative", icon: Brain },
       { title: "التأسيس اللفظي", description: "فهم المقروء والتناظر وإكمال الجمل، مع بنوك الفيديو والاختبارات.", href: "/foundation?program=qudrat&subject=verbal", icon: BookOpen },
-      { title: "كتب القدرات", description: "كتب وملفات الشرح والمراجعة.", href: "/books", icon: FileText },
+      { title: "كتاب التأسيس الكمي", description: "افتح كتاب التأسيس من داخل مسار القدرات.", href: "/student/foundation-book/quantitative", icon: FileText },
     ],
     computer: [
       { title: "الاختبارات المحاكية", description: "تجربة محاكية لاختبار قياس الكامل.", href: "/qiyas", icon: GraduationCap },
@@ -84,8 +84,14 @@ export default function StudentProgramPage() {
   }
   const showFoundation = !section || section === "foundation";
   const showComputer = !section || section === "computer";
-  const qudratProgress = dashboard?.progress.qudrat.percentage || 0;
-  const tahsiliProgress = dashboard?.progress.tahsili.percentage || 0;
+  const programProgress = [
+    ...(dashboard?.progress.qudrat.tests
+      ? [{ key: "qudrat", label: "القدرات", value: dashboard.progress.qudrat.percentage, questions: dashboard.progress.qudrat.questions }]
+      : []),
+    ...(dashboard?.progress.tahsili.tests
+      ? [{ key: "tahsili", label: "التحصيلي", value: dashboard.progress.tahsili.percentage, questions: dashboard.progress.tahsili.questions }]
+      : []),
+  ];
   const practiceSectionTitle = "المحوسب";
   const practiceSectionDescription = "اختبارات وتدريب عملي يحاكي تجربة الاختبار.";
 
@@ -115,21 +121,20 @@ export default function StudentProgramPage() {
           </Link>
         </header>
 
-        <section className="grid gap-3 sm:grid-cols-2">
-          {[
-            { label: "تقدم القدرات", value: qudratProgress, detail: `${dashboard?.progress.qudrat.questions || 0} سؤالًا` },
-            { label: "تقدم التحصيلي", value: tahsiliProgress, detail: `${dashboard?.progress.tahsili.questions || 0} سؤالًا` },
-          ].map((item) => (
-            <div key={item.label} className="rounded-2xl border border-[#E5E7EB] bg-white p-4 shadow-sm">
-              <div className="mb-2 flex items-center justify-between gap-3">
-                <span className="text-sm font-black text-[#0D1B2A]">{item.label}</span>
-                <span className="text-lg font-black text-[#0D1B2A]">{item.value}%</span>
+        {programProgress.length > 0 && (
+          <section className="grid gap-3 sm:grid-cols-2" data-testid="program-progress">
+            {programProgress.map((item) => (
+              <div key={item.key} className="rounded-2xl border border-[#E5E7EB] bg-white p-4 shadow-sm">
+                <div className="mb-2 flex items-center justify-between gap-3">
+                  <span className="text-sm font-black text-[#0D1B2A]">تقدم {item.label}</span>
+                  <span className="text-lg font-black text-[#0D1B2A]">{item.value}%</span>
+                </div>
+                <Progress value={item.value} className="h-2 bg-[#E5E7EB] [&>div]:bg-[#0D1B2A]" />
+                <p className="mt-2 text-xs text-[#64748B]">{item.questions} سؤالًا في الاختبارات السابقة</p>
               </div>
-              <Progress value={item.value} className="h-2 bg-[#E5E7EB] [&>div]:bg-[#0D1B2A]" />
-              <p className="mt-2 text-xs text-[#64748B]">{item.detail} في الاختبارات السابقة</p>
-            </div>
-          ))}
-        </section>
+            ))}
+          </section>
+        )}
 
         {showFoundation && <section id="foundation">
           <div className="mb-3">

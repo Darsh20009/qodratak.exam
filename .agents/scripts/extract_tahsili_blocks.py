@@ -15,7 +15,7 @@ import tempfile
 from pathlib import Path
 
 import fitz
-from PIL import Image
+from PIL import Image, ImageChops
 
 
 SUBJECT_RANGES = {
@@ -48,15 +48,21 @@ def ocr(image: Image.Image, psm: int = 6) -> str:
 
 def separators(image: Image.Image) -> list[int]:
     width, height = image.size
-    rows: list[int] = []
-    for y in range(height):
-        dark = 0
-        for x in range(width):
-            r, g, b = image.getpixel((x, y))
-            if r < 235 and g < 235 and b < 235:
-                dark += 1
-        if dark > width * 0.70:
-            rows.append(y)
+    red, green, blue = image.convert("RGB").split()
+    dark_mask = ImageChops.darker(
+        ImageChops.darker(
+            red.point(lambda value: 255 if value < 235 else 0),
+            green.point(lambda value: 255 if value < 235 else 0),
+        ),
+        blue.point(lambda value: 255 if value < 235 else 0),
+    )
+    # A BOX resize computes the exact per-row dark-pixel fraction in Pillow's
+    # native code instead of a Python loop over every pixel.
+    row_darkness = dark_mask.resize((1, height), Image.Resampling.BOX)
+    rows = [
+        y for y, value in enumerate(row_darkness.tobytes())
+        if value > 255 * 0.70
+    ]
     groups: list[tuple[int, int]] = []
     for y in rows:
         if not groups or y > groups[-1][1] + 1:
@@ -109,13 +115,23 @@ def extract() -> list[dict]:
     parser = argparse.ArgumentParser()
     parser.add_argument("--pdf", type=Path, required=True)
     parser.add_argument("--output", type=Path, required=True)
+    parser.add_argument("--images-dir", type=Path, required=True)
+    parser.add_argument("--source-id", default="nasser-abdulkarim-main")
+    parser.add_argument("--source-ordinal", type=int, default=1)
+    parser.add_argument("--page-start", type=int)
+    parser.add_argument("--page-end", type=int)
     parser.add_argument("--zoom", type=float, default=2.2)
     args = parser.parse_args()
 
     document = fitz.open(args.pdf)
+    args.images_dir.mkdir(parents=True, exist_ok=True)
     records: list[dict] = []
     for subject, pages in SUBJECT_RANGES.items():
         for page_number in pages:
+            if args.page_start is not None and page_number < args.page_start:
+                continue
+            if args.page_end is not None and page_number > args.page_end:
+                continue
             page = document[page_number - 1]
             pixmap = page.get_pixmap(
                 matrix=fitz.Matrix(args.zoom, args.zoom),
@@ -124,7 +140,7 @@ def extract() -> list[dict]:
             )
             image = Image.frombytes("RGB", (pixmap.width, pixmap.height), pixmap.samples)
             cuts = [0] + separators(image) + [image.height]
-            for start, end in zip(cuts, cuts[1:]):
+            for block_index, (start, end) in enumerate(zip(cuts, cuts[1:]), start=1):
                 if end - start < 110:
                     continue
                 block = image.crop((0, start + 4, image.width, end - 4))
@@ -147,17 +163,32 @@ def extract() -> list[dict]:
                     if number_match
                     else None
                 )
+                if block_index >= 100:
+                    raise ValueError(
+                        f"Unexpected block count for one source page: {args.source_id}, page {page_number}"
+                    )
+                image_filename = f"{args.source_id}-p{page_number:03d}-b{block_index:02d}.jpg"
+                block.convert("RGB").save(
+                    args.images_dir / image_filename,
+                    format="JPEG",
+                    quality=88,
+                    optimize=True,
+                )
                 records.append(
                     {
+                        "sourceId": args.source_id,
+                        "sourceOrdinal": args.source_ordinal,
+                        "sourceKey": f"{args.source_id}:p{page_number}:b{block_index}",
                         "subject": subject,
                         "subcategory": "عام",
                         "text": stem,
                         "options": options,
-                        "correctOptionIndex": 0,
                         "difficulty": "intermediate",
                         "topic": "عام",
                         "sourcePage": page_number,
                         "sourceQuestionNumber": source_number,
+                        "sourceBlockIndex": block_index,
+                        "sourceImageFilename": image_filename,
                         "sourceBook": "كتاب ناصر عبدالكريم للتحصيلي",
                         "answerConfidence": "review",
                     }
@@ -166,12 +197,16 @@ def extract() -> list[dict]:
 
     unique: dict[tuple, dict] = {}
     for record in records:
-        key = (record["subject"], record["sourcePage"], record["sourceQuestionNumber"], record["text"])
+        key = (record["sourceId"], record["subject"], record["sourcePage"], record["sourceBlockIndex"])
         unique.setdefault(key, record)
     output = []
-    for question_id, record in enumerate(unique.values(), 1):
+    for record in unique.values():
         record = dict(record)
-        record["questionId"] = question_id
+        record["questionId"] = (
+            record["sourceOrdinal"] * 100_000
+            + record["sourcePage"] * 100
+            + record["sourceBlockIndex"]
+        )
         output.append(record)
     args.output.parent.mkdir(parents=True, exist_ok=True)
     args.output.write_text(json.dumps({"questions": output}, ensure_ascii=False, indent=2))

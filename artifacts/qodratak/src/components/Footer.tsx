@@ -2,11 +2,11 @@ import { Clock3, ExternalLink, Mail, MapPin, MessageCircle } from "lucide-react"
 import { LEGAL_ENTITY_NAME, SUPPORT_EMAIL, SUPPORT_PHONE, UNIFIED_NATIONAL_NUMBER } from "@/constants/legalIdentity";
 import { BrandMark } from "@/components/BrandMark";
 
-type FooterLink = { label: string; href: string; soon?: boolean };
+type FooterLink = { label: string; href: string };
 
 const serviceLinks: FooterLink[] = [
   { label: "تدريب اختبار القدرات", href: "/qiyas-hub" },
-  { label: "التحصيلي", href: "/tahsilik", soon: true },
+  { label: "التحصيلي", href: "/student-program/tahsili" },
   { label: "اختبارات تجريبية مجانية", href: "/free-verbal-test" },
   { label: "الدورات", href: "/courses" },
   { label: "مقالات ودلائل", href: "/learn" },
@@ -41,11 +41,6 @@ function LinkColumn({ title, links, testId }: { title: string; links: FooterLink
               data-testid={`link-footer-${link.href.replace(/[^a-z0-9]+/gi, "-").replace(/^-|-$/g, "") || "home"}`}
             >
               {link.label}
-              {link.soon && (
-                <span className="rounded-full border border-border bg-muted px-2 py-0.5 text-[10px] font-black text-muted-foreground">
-                  قريبًا
-                </span>
-              )}
             </a>
           </li>
         ))}

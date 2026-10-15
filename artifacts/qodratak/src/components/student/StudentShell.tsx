@@ -15,7 +15,7 @@ import { PageGuideFilm } from "@/components/student/PageGuideFilm";
 
 const NAV_ITEMS = [
   { name: "لوحتي", href: "/", icon: HomeIcon },
-  { name: "دورتي", href: "/preparation-course", icon: BookOpenIcon },
+  { name: "خطتي", href: "/preparation-course", icon: BookOpenIcon },
   { name: "المحوسب", href: "/computerized", icon: BrainCircuitIcon },
   { name: "نتائجي", href: "/records", icon: ClipboardList },
   { name: "حسابي", href: "/account", icon: UserIcon },

@@ -51,7 +51,7 @@ test("student home and session UI provide the core Phase 16 states", () => {
   assert.match(home, /\/learning\/today/);
   assert.match(home, /useTodayLearningSession\(hasJourneyScope, journeyProgram, journeySubjectId\)/);
   assert.match(session, /useTodayLearningSession\(true, programId, subjectId\)/);
-  for (const label of ["خطوتك التالية", "نكمل؟", "ابدأ"]) assert.match(home, new RegExp(label));
+  for (const label of ["خطوتك التالية", "نكمل من حيث توقفت", "ابدأ"]) assert.match(home, new RegExp(label));
   for (const label of ["ابدأ الآن", "أكمل القراءة", "إرسال الإجابة", "التالي", "اكتمل درس اليوم"]) {
     assert.match(session, new RegExp(label));
   }

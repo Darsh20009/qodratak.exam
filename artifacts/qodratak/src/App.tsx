@@ -475,8 +475,8 @@ function MainLayout({ children }: { children: React.ReactNode }) {
   // ─── Core nav items (always visible) ─────────────────────
   const coreNavItems = [
     { name: "الرئيسية",       href: "/",                icon: HomeIcon },
-    { name: "دورتي ومهام اليوم", href: "/preparation-course", icon: CalendarCheck },
-    { name: "التأسيس", href: "/foundation", icon: BookOpenIcon },
+    { name: "خطتي", href: "/preparation-course", icon: CalendarCheck },
+    { name: "التأسيس", href: "/student-program/qudrat?section=foundation", icon: BookOpenIcon },
     { name: "التدريب المحوسب", href: "/computerized", icon: Brain },
     { name: "نتائجي", href: "/records", icon: ClipboardIcon },
   ];
@@ -497,9 +497,23 @@ function MainLayout({ children }: { children: React.ReactNode }) {
     { group: "اختبارات وتدريب", name: "الاختبار الورقي", href: "/paper-exam", icon: Printer, description: "تدرب على نموذج ورقي." },
     { group: "اختبارات وتدريب", name: "نماذج الورقي", href: "/paper-models", icon: FileText, description: "استعرض النماذج الورقية المنشورة." },
     { group: "اختبارات وتدريب", name: "تصحيح ورقة الإجابة", href: "/bubble-sheet-scan", icon: ClipboardIcon, description: "صحح ورقة إجابتك إذا كانت الميزة متاحة لاشتراكك." },
+    { group: "اختبارات وتدريب", name: "الاختبار القياسي", href: "/standard-test", icon: ClipboardIcon, description: "ابدأ اختبارًا قياسيًا من المحتوى المتاح." },
+    { group: "اختبارات وتدريب", name: "اختبار لفظي متقدم", href: "/advanced-verbal-test", icon: BookOpenIcon, description: "تدرب على أسئلة لفظية بمستوى متقدم." },
+    { group: "اختبارات وتدريب", name: "اختبار كمي متقدم", href: "/advanced-quantitative-test", icon: Calculator, description: "تدرب على أسئلة كمية بمستوى متقدم." },
     { group: "اختبارات وتدريب", name: "الاختبارات الموسمية", href: "/seasonal-exams", icon: CalendarClock, description: "استعرض الاختبارات الموسمية المتاحة." },
     { group: "اختبارات وتدريب", name: "اختبارات القدرات", href: "/abilities", icon: Target, description: "افتح اختبارات القدرات المتاحة لحسابك." },
     { group: "اختبارات وتدريب", name: "الدورات التعليمية", href: "/courses", icon: GraduationCapIcon, description: "استعرض الدورات التعليمية المنشورة." },
+
+    { group: "التحصيلي", name: "مسار التحصيلي", href: "/student-program/tahsili", icon: GraduationCapIcon, description: "انتقل إلى التأسيس والدراسة والاختبارات المنشورة للتحصيلي." },
+    { group: "التحصيلي", name: "صفحة التحصيلي", href: "/tahsili", icon: GraduationCapIcon, description: "نظرة عامة على الدراسة ومراكز اختبارات التحصيلي." },
+    { group: "التحصيلي", name: "لوحة التحصيلي", href: "/tahsili-dashboard", icon: BarChart2, description: "تابع ملخص دراستك ونتائجك في التحصيلي." },
+    { group: "التحصيلي", name: "اختبارات التحصيلي المنشورة", href: "/tahsili/exams", icon: ClipboardIcon, description: "استعرض الاختبارات المنشورة للتحصيلي." },
+    { group: "التحصيلي", name: "مركز اختبارات التحصيلي", href: "/tahsilik/tests", icon: Brain, description: "افتح اختبارات التحصيلي حسب المادة أو الاختبار الشامل." },
+    { group: "التحصيلي", name: "مركز الدراسة", href: "/tahsilik/study", icon: BookOpenIcon, description: "تابع مواد التحصيلي والدروس المنشورة." },
+    { group: "التحصيلي", name: "بنك أسئلة التحصيلي", href: "/tahsilik/question-bank", icon: Library, description: "تدرب على أسئلة التحصيلي حسب المادة." },
+    { group: "التحصيلي", name: "اختبار تحصيلي شامل", href: "/tahsilik/comprehensive-test", icon: ClipboardIcon, description: "ابدأ اختبارًا شاملًا من المحتوى المنشور." },
+    { group: "التحصيلي", name: "اختبار تحصيلي مخصص", href: "/tahsilik/custom-test", icon: Layers, description: "خصص اختبارًا بحسب المادة والإعدادات المتاحة." },
+    { group: "التحصيلي", name: "اختبار حسب المادة", href: "/tahsilik/qualification", icon: Target, description: "اختر المادة وابدأ اختبارًا مناسبًا لها." },
 
     { group: "مراجعة وتقدم", name: "تقدم المهارات", href: "/skill-progress", icon: TrendingUp, description: "تابع تقدمك في المهارات." },
     { group: "مراجعة وتقدم", name: "تحليل الأداء", href: "/performance-report", icon: BarChart2, description: "راجع مؤشرات أدائك عبر المحاولات." },
@@ -508,6 +522,11 @@ function MainLayout({ children }: { children: React.ReactNode }) {
     { group: "مراجعة وتقدم", name: "اختبار تكيفي", href: "/adaptive-test", icon: Brain, description: "تدرب بأسئلة تتدرج حسب أدائك." },
     { group: "مراجعة وتقدم", name: "بطاقات المراجعة", href: "/flashcards", icon: Layers, description: "راجع المفاهيم بالبطاقات." },
     { group: "مراجعة وتقدم", name: "تحدي مراجعة الأخطاء", href: "/mistake-challenge", icon: GamepadIcon, description: "راجع ما أخطأت فيه بطريقة تفاعلية." },
+    { group: "مراجعة وتقدم", name: "تحدي مراجعة الأخطاء المتقدم", href: "/enhanced-mistake-challenge", icon: GamepadIcon, description: "راجع الأسئلة التي تحتاج إلى إعادة تدريب." },
+    { group: "مراجعة وتقدم", name: "مراجعة الاختبار", href: "/exam-review", icon: ClipboardIcon, description: "افتح مراجعة الأسئلة بعد تسليم الاختبار." },
+    { group: "مراجعة وتقدم", name: "نتائج الاختبارات", href: "/test-results", icon: FileText, description: "استعرض نتائج ومحاولات الاختبارات." },
+    { group: "مراجعة وتقدم", name: "نتائج الاختبار الورقي", href: "/paper-exam-results", icon: Printer, description: "راجع نتائج تصحيح النماذج الورقية." },
+    { group: "مراجعة وتقدم", name: "ملفي الدراسي", href: "/profile", icon: UserIcon, description: "راجع ملفك وإعداداتك التعليمية." },
     { group: "مراجعة وتقدم", name: "تحديات التعلم", href: "/challenges", icon: Flame, description: "أنشطة قصيرة لتحفيز الممارسة." },
     { group: "مراجعة وتقدم", name: "استراتيجيات الحل", href: "/strategy-library", icon: Lightbulb, description: "تعرف على طرق حل منظمة." },
 
@@ -518,7 +537,6 @@ function MainLayout({ children }: { children: React.ReactNode }) {
     { group: "خطة واستعداد", name: "غرف المذاكرة", href: "/study-rooms", icon: Users, description: "انضم إلى جلسة مذاكرة جماعية." },
 
     { group: "مصادر ومساعدة", name: "مسار القدرات", href: "/student-program/qudrat", icon: Brain, description: "افتح محتوى القدرات حسب مسارك." },
-    { group: "مصادر ومساعدة", name: "التحصيلي — قريبًا", href: "/student-program/tahsili", icon: GraduationCapIcon, description: "محتوى التحصيلي للطلاب غير متاح حاليًا." },
     { group: "مصادر ومساعدة", name: "مركز التعلم", href: "/learn", icon: BookOpenIcon, description: "استكشف خيارات التعلم المتاحة." },
     { group: "مصادر ومساعدة", name: "كتاب التأسيس الكمي", href: "/student/foundation-book/quantitative", icon: BookOpenIcon, description: "افتح كتاب التأسيس الكمي المنشور." },
     { group: "مصادر ومساعدة", name: "المكتبة", href: "/library", icon: Library, description: "افتح مكتبتك التعليمية." },
@@ -541,10 +559,12 @@ function MainLayout({ children }: { children: React.ReactNode }) {
     { group: "مصادر ومساعدة", name: "الاشتراك والباقات", href: "/subscription", icon: Wallet, description: "راجع تفاصيل الاشتراك والخيارات المتاحة." },
     { group: "مصادر ومساعدة", name: "الباقات والأسعار", href: "/pricing", icon: Wallet, description: "قارن الباقات قبل الاشتراك." },
     { group: "مصادر ومساعدة", name: "الأسئلة الشائعة والدعم", href: "/faq", icon: HelpCircleIcon, description: "ابحث عن إجابة أو تواصل مع الدعم." },
+    { group: "مصادر ومساعدة", name: "الدعم الفني", href: "/support", icon: MessageCircle, description: "افتح قنوات الدعم ومعلومات التواصل." },
+    { group: "مصادر ومساعدة", name: "دليل المنصة المتقدم", href: "/platform-guide", icon: HelpCircle, description: "استعرض الدليل التفصيلي لاستخدام المنصة." },
   ];
 
   const learnerGoalActions = [
-    { name: "أبني الأساس", href: "/foundation", icon: BookOpenIcon, description: "ابدأ من المفاهيم الأساسية." },
+    { name: "أبني الأساس", href: "/student-program/qudrat?section=foundation", icon: BookOpenIcon, description: "ابدأ من المفاهيم الأساسية." },
     { name: "أتدرب على اختبار", href: "/qiyas-hub", icon: Brain, description: "اختر تدريبًا أو اختبارًا محاكيًا." },
     { name: "أراجع أخطائي", href: "/error-analysis", icon: TrendingDown, description: "اكتشف ما يحتاج إلى مراجعة." },
     { name: "أستعد لموعدي", href: "/pre-exam-day", icon: CalendarCheck, description: "راجع خطة الاستعداد للاختبار." },
@@ -1046,7 +1066,7 @@ function MainLayout({ children }: { children: React.ReactNode }) {
               ] : [
                 { href: "/", icon: HomeIcon, label: "الرئيسية", exact: true },
                 { href: "/student-program/qudrat", icon: Brain, label: "القدرات", exact: false },
-                { href: "/student-program/tahsili", icon: GraduationCapIcon, label: "التحصيلي — قريبًا", exact: false },
+                { href: "/student-program/tahsili", icon: GraduationCapIcon, label: "التحصيلي", exact: false },
               ]).map((item) => {
                 const active = activeProgram && item.href.includes("?section=")
                   ? isProgramSubNavActive({ name: item.label === "التأسيس" ? "التأسيس" : "المحوسب", href: item.href })

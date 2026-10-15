@@ -1,4 +1,5 @@
 import { Router, Request as ExpressRequest, Response, NextFunction } from 'express';
+import { Readable } from 'node:stream';
 type Request = ExpressRequest<Record<string, string>>;
 import bcrypt from 'bcryptjs';
 import multer from 'multer';
@@ -7,7 +8,7 @@ import fs from 'fs';
 import mongoose from 'mongoose';
 import { mongoStorage } from './mongodb/mongoStorage';
 import { storage } from './storage';
-import { Question, ChatMessage, Admin, WhatsAppMessage, FoundationContent, PlatformReview, Institution, InstitutionRequest, User } from './mongodb/models';
+import { Question, ChatMessage, Admin, WhatsAppMessage, FoundationContent, PlatformReview, Institution, InstitutionRequest, User, TahsiliQuestion, TahsiliQuestionDraft, type TahsiliDraftSubject } from './mongodb/models';
 import { LearningContentNode, QuestionLearningMap } from './mongodb/learningContentModels';
 import {
   buildControlledSampleMappings,
@@ -35,6 +36,8 @@ import {
   sendWhatsAppCampaign,
 } from './services/adminWhatsAppNotifications';
 import { createAdminAccessToken, verifyAdminAccessToken } from './adminSessionToken';
+import { fetchR2VerbalObject, writeR2Object } from './services/qudratVerbalBookFilesService';
+import { TAHSILI_PLAYLIST_REFERENCES, TAHSILI_SOURCE_CATALOG } from './services/tahsiliSourceCatalog';
 import {
   getPrivateQuestionImageOriginal,
   prepareQuestionImage,
@@ -688,6 +691,308 @@ router.patch('/learning-taxonomy/mappings/:id/review', requireAdminAuth, async (
 // ── STUDENT PRODUCT: FOUNDATION CONTENT & REVIEW MODERATION ───────────────
 const studentPrograms = new Set(['qudrat', 'tahsili']);
 const foundationFields = ['program', 'title', 'description', 'videoUrl', 'thumbnailUrl', 'order', 'published', 'linkedQuizRoute', 'durationMinutes', 'quiz', 'attachments'];
+
+async function streamTahsiliObject(req: Request, res: Response, objectKey: string, filename?: string): Promise<void> {
+  const upstream = await fetchR2VerbalObject(objectKey, {
+    method: 'GET',
+    range: typeof req.headers.range === 'string' ? req.headers.range : undefined,
+  });
+  if (!upstream.ok && upstream.status !== 206) {
+    res.status(upstream.status === 404 ? 404 : 502).json({ error: 'ملف المصدر غير متاح حاليًا' });
+    return;
+  }
+  res.status(upstream.status);
+  for (const header of ['content-type', 'content-length', 'content-range', 'accept-ranges', 'etag']) {
+    const value = upstream.headers.get(header);
+    if (value) res.setHeader(header, value);
+  }
+  res.setHeader('Cache-Control', 'private, no-store');
+  if (filename) res.setHeader('Content-Disposition', `inline; filename*=UTF-8''${encodeURIComponent(filename)}`);
+  if (!upstream.body) {
+    res.end();
+    return;
+  }
+  Readable.fromWeb(upstream.body as any).pipe(res);
+}
+
+router.get('/tahsili/sources', requireAdminAuth, async (_req: Request, res: Response) => {
+  try {
+    const counts = await TahsiliQuestionDraft.aggregate([
+      {
+        $group: {
+          _id: '$sourceId',
+          total: { $sum: 1 },
+          pending: { $sum: { $cond: [{ $eq: ['$status', 'pending_review'] }, 1, 0] } },
+        },
+      },
+    ]);
+    const countsBySource = new Map(counts.map((item: any) => [item._id, item]));
+    res.json({
+      playlists: TAHSILI_PLAYLIST_REFERENCES,
+      sources: TAHSILI_SOURCE_CATALOG.map(({ objectKey, ...source }) => {
+        const count = countsBySource.get(source.id) as { total?: number; pending?: number } | undefined;
+        return {
+          ...source,
+          fileUrl: `/api/admin/tahsili/sources/${source.id}/file`,
+          reviewDraftCount: count?.total || 0,
+          pendingReviewCount: count?.pending || 0,
+        };
+      }),
+      totalPages: TAHSILI_SOURCE_CATALOG.reduce((sum, source) => sum + source.pages, 0),
+      totalBytes: TAHSILI_SOURCE_CATALOG.reduce((sum, source) => sum + source.bytes, 0),
+    });
+  } catch (error) {
+    console.error('[Tahsili Sources] catalog error:', error);
+    res.status(503).json({ error: 'تعذر تحميل مكتبة مصادر التحصيلي' });
+  }
+});
+
+router.get('/tahsili/sources/:sourceId/file', requireAdminAuth, async (req: Request, res: Response) => {
+  const source = TAHSILI_SOURCE_CATALOG.find((item) => item.id === String(req.params.sourceId));
+  if (!source) return res.status(404).json({ error: 'مصدر التحصيلي غير موجود' });
+  try {
+    await streamTahsiliObject(req, res, source.objectKey, source.originalName);
+  } catch (error) {
+    console.error('[Tahsili Sources] file stream error:', error);
+    if (!res.headersSent) res.status(503).json({ error: 'تعذر فتح ملف المصدر من التخزين الدائم' });
+  }
+});
+
+router.get('/tahsili/question-drafts', requireAdminAuth, async (req: Request, res: Response) => {
+  try {
+    const requestedStatus = String(req.query.status || 'pending_review');
+    if (!['pending_review', 'approved', 'rejected', 'all'].includes(requestedStatus)) {
+      return res.status(400).json({ error: 'حالة المراجعة غير صالحة' });
+    }
+    const page = Math.max(1, Number.parseInt(String(req.query.page || '1'), 10) || 1);
+    const limit = Math.min(50, Math.max(1, Number.parseInt(String(req.query.limit || '20'), 10) || 20));
+    const query: Record<string, unknown> = {};
+    if (requestedStatus !== 'all') query.status = requestedStatus;
+    const subject = String(req.query.subject || '').trim();
+    if (subject && ['رياضيات', 'فيزياء', 'كيمياء', 'أحياء', 'علم الأرض'].includes(subject)) {
+      query.subject = subject;
+    }
+    const [total, drafts, counts] = await Promise.all([
+      TahsiliQuestionDraft.countDocuments(query),
+      TahsiliQuestionDraft.find(query)
+        .sort({ sourceId: 1, sourcePage: 1, sourceBlockIndex: 1 })
+        .skip((page - 1) * limit)
+        .limit(limit)
+        .lean(),
+      TahsiliQuestionDraft.aggregate([{ $group: { _id: '$status', count: { $sum: 1 } } }]),
+    ]);
+    res.json({
+      drafts: drafts.map((draft: any) => ({
+        ...draft,
+        sourceImageUrl: draft.sourceImageObjectKey
+          ? `/api/admin/tahsili/question-drafts/${draft._id}/source-image`
+          : null,
+        sourcePdfUrl: `/api/admin/tahsili/sources/${draft.sourceId}/file#page=${draft.sourcePage}`,
+      })),
+      total,
+      page,
+      limit,
+      totalPages: Math.ceil(total / limit),
+      counts: Object.fromEntries(counts.map((item: any) => [item._id, item.count])),
+    });
+  } catch (error) {
+    console.error('[Tahsili Review] list drafts error:', error);
+    res.status(503).json({ error: 'تعذر تحميل مراجعة أسئلة التحصيلي' });
+  }
+});
+
+router.get('/tahsili/question-drafts/:id/source-image', requireAdminAuth, async (req: Request, res: Response) => {
+  try {
+    if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
+      return res.status(400).json({ error: 'معرّف السؤال غير صالح' });
+    }
+    const draft = await TahsiliQuestionDraft.findById(req.params.id).select('sourceImageObjectKey').lean();
+    if (!draft?.sourceImageObjectKey) return res.status(404).json({ error: 'صورة السؤال غير موجودة' });
+    await streamTahsiliObject(req, res, draft.sourceImageObjectKey);
+  } catch (error) {
+    console.error('[Tahsili Review] source image error:', error);
+    if (!res.headersSent) res.status(503).json({ error: 'تعذر تحميل صورة السؤال' });
+  }
+});
+
+const tahsiliQuestionImageUpload = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: 5 * 1024 * 1024 },
+}).single('file');
+
+router.post(
+  '/tahsili/question-drafts/:id/source-image',
+  requireAdminAuth,
+  (req, res, next) => {
+    tahsiliQuestionImageUpload(req, res, (error) => {
+      if (error) {
+        return res.status(400).json({
+          error: error instanceof multer.MulterError && error.code === 'LIMIT_FILE_SIZE'
+            ? 'حجم صورة السؤال يتجاوز 5 ميغابايت'
+            : 'تعذر استقبال صورة السؤال',
+        });
+      }
+      next();
+    });
+  },
+  async (req: Request, res: Response) => {
+    try {
+      if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
+        return res.status(400).json({ error: 'معرّف السؤال غير صالح' });
+      }
+      const file = (req as any).file as Express.Multer.File | undefined;
+      if (!file) return res.status(400).json({ error: 'اختر صورة بصيغة PNG أو JPEG أو WebP' });
+      const extensions: Record<string, string> = {
+        'image/jpeg': 'jpg',
+        'image/png': 'png',
+        'image/webp': 'webp',
+      };
+      const extension = extensions[file.mimetype];
+      if (!extension || !file.buffer?.length) {
+        return res.status(400).json({ error: 'صيغة الصورة غير مدعومة؛ استخدم PNG أو JPEG أو WebP' });
+      }
+      const isJpeg = file.buffer[0] === 0xff && file.buffer[1] === 0xd8 && file.buffer[2] === 0xff;
+      const isPng = file.buffer.length >= 8 && file.buffer.subarray(0, 8).equals(Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]));
+      const isWebp = file.buffer.length >= 12 && file.buffer.toString('ascii', 0, 4) === 'RIFF' && file.buffer.toString('ascii', 8, 12) === 'WEBP';
+      if ((file.mimetype === 'image/jpeg' && !isJpeg) ||
+          (file.mimetype === 'image/png' && !isPng) ||
+          (file.mimetype === 'image/webp' && !isWebp)) {
+        return res.status(400).json({ error: 'محتوى الملف لا يطابق صيغة الصورة المحددة' });
+      }
+      const draft = await TahsiliQuestionDraft.findById(req.params.id);
+      if (!draft) return res.status(404).json({ error: 'مسودة السؤال غير موجودة' });
+
+      const objectKey = `tahsili/question-images/reviewed/${draft._id}.${extension}`;
+      await writeR2Object(objectKey, file.buffer, file.mimetype);
+      const verification = await fetchR2VerbalObject(objectKey, { method: 'HEAD' });
+      if (!verification.ok || Number(verification.headers.get('content-length') || 0) !== file.buffer.length) {
+        return res.status(503).json({ error: 'تعذر التحقق من حفظ صورة السؤال في التخزين الدائم' });
+      }
+
+      draft.sourceImageObjectKey = objectKey;
+      draft.requiresImage = true;
+      await draft.save();
+      res.json({ sourceImageUrl: `/api/admin/tahsili/question-drafts/${draft._id}/source-image` });
+    } catch (error) {
+      console.error('[Tahsili Review] source image upload error:', error);
+      res.status(503).json({ error: 'تعذر حفظ صورة السؤال في التخزين الدائم' });
+    }
+  },
+);
+
+router.patch('/tahsili/question-drafts/:id/review', requireAdminAuth, async (req: Request, res: Response) => {
+  try {
+    if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
+      return res.status(400).json({ error: 'معرّف السؤال غير صالح' });
+    }
+    const draft = await TahsiliQuestionDraft.findById(req.params.id);
+    if (!draft) return res.status(404).json({ error: 'السؤال المراد مراجعته غير موجود' });
+
+    const body = req.body || {};
+    const status = String(body.status || '');
+    if (!['pending_review', 'approved', 'rejected'].includes(status)) {
+      return res.status(400).json({ error: 'اختر اعتماد السؤال أو إعادته للمراجعة أو رفضه' });
+    }
+    const text = String(body.text ?? draft.text).trim();
+    const options = Array.isArray(body.options)
+      ? body.options.map((option: unknown) => String(option).trim())
+      : draft.options;
+    const subjectValue = String(body.subject ?? draft.subject).trim();
+    const allowedSubjects = ['رياضيات', 'فيزياء', 'كيمياء', 'أحياء', 'علم الأرض', 'مختلط'] as const;
+    const subject = subjectValue as TahsiliDraftSubject;
+    const subcategory = String(body.subcategory ?? draft.subcategory).trim() || 'عام';
+    const topic = String(body.topic ?? draft.topic ?? subcategory).trim() || subcategory;
+    const difficulty = String(body.difficulty ?? draft.difficulty);
+    const explanation = String(body.explanation ?? draft.explanation ?? '').trim();
+    const reviewerNotes = String(body.reviewerNotes ?? draft.reviewerNotes ?? '').trim();
+    const requiresImage = body.requiresImage === undefined ? Boolean(draft.requiresImage) : body.requiresImage === true;
+    if (status !== 'rejected' && (text.length < 8 || text.length > 5000 || options.length !== 4 || options.some((option: string) => !option || option.length > 1000))) {
+      return res.status(400).json({ error: 'راجع نص السؤال والخيارات الأربعة قبل الحفظ' });
+    }
+    if (status !== 'rejected' && !['beginner', 'intermediate', 'advanced'].includes(difficulty)) {
+      return res.status(400).json({ error: 'مستوى الصعوبة غير صالح' });
+    }
+    if (status !== 'rejected' && !(allowedSubjects as readonly string[]).includes(subjectValue)) {
+      return res.status(400).json({ error: 'اختر مادة صالحة للسؤال' });
+    }
+    if (reviewerNotes.length > 2000) return res.status(400).json({ error: 'ملاحظة المراجع طويلة جدًا' });
+
+    const adminId = String((req as any).session?.admin?.adminId ?? (req as any).session?.adminId ?? 'admin');
+    if (status === 'approved') {
+      if (subject === 'مختلط') {
+        return res.status(400).json({ error: 'صنّف السؤال إلى مادته قبل اعتماده' });
+      }
+      const correctOptionIndex = Number(body.correctOptionIndex);
+      if (!Number.isInteger(correctOptionIndex) || correctOptionIndex < 0 || correctOptionIndex > 3) {
+        return res.status(400).json({ error: 'حدد الإجابة الصحيحة بعد مطابقتها مع المصدر' });
+      }
+      if (explanation.length < 12 || explanation.length > 5000) {
+        return res.status(400).json({ error: 'أضف شرحًا واضحًا من المصدر قبل اعتماد السؤال' });
+      }
+      if (requiresImage && !draft.sourceImageObjectKey) {
+        return res.status(400).json({ error: 'لا يمكن اعتماد السؤال دون صورة المصدر الأصلية' });
+      }
+
+      const namespacedSourceQuestionNumber =
+        draft.sourceOrdinal * 100_000 + draft.sourcePage * 100 + draft.sourceBlockIndex;
+      await TahsiliQuestion.findOneAndUpdate(
+        { sourceKey: draft.sourceKey },
+        {
+          $set: {
+            questionId: draft.questionId,
+            sourceId: draft.sourceId,
+            sourceKey: draft.sourceKey,
+            sourceOrdinal: draft.sourceOrdinal,
+            subject,
+            subcategory,
+            text,
+            options,
+            correctOptionIndex,
+            difficulty,
+            topic,
+            explanation,
+            sourcePage: draft.sourcePage,
+            sourceQuestionNumber: namespacedSourceQuestionNumber,
+            printedQuestionNumber: draft.sourceQuestionNumber,
+            sourceBlockIndex: draft.sourceBlockIndex,
+            ...(requiresImage && draft.sourceImageObjectKey ? { sourceImageObjectKey: draft.sourceImageObjectKey } : {}),
+            sourceBook: draft.sourceBook,
+            answerConfidence: 'verified',
+            reviewedBy: adminId,
+            reviewedAt: new Date(),
+            updatedAt: new Date(),
+          },
+          $setOnInsert: { createdAt: new Date() },
+        },
+        { upsert: true, new: true, runValidators: true },
+      );
+    }
+
+    draft.status = status as any;
+    if (status !== 'rejected') {
+      draft.subject = subject;
+      draft.text = text;
+      draft.options = options;
+      draft.subcategory = subcategory;
+      draft.topic = topic;
+      draft.difficulty = difficulty as any;
+      draft.explanation = explanation || undefined;
+      draft.requiresImage = requiresImage;
+    }
+    draft.reviewerNotes = reviewerNotes || undefined;
+    draft.reviewedBy = adminId;
+    draft.reviewedAt = new Date();
+    draft.publishedQuestionId = status === 'approved' ? draft.questionId : undefined;
+    await draft.save();
+    res.json({ draft });
+  } catch (error: any) {
+    if (error?.code === 11000) {
+      return res.status(409).json({ error: 'تعذر نشر السؤال بسبب تعارض مع سؤال موجود؛ راجع المصدر قبل المتابعة' });
+    }
+    console.error('[Tahsili Review] save review error:', error);
+    res.status(503).json({ error: 'تعذر حفظ مراجعة السؤال' });
+  }
+});
 
 function contentPayload(body: Record<string, unknown>, creating = false) {
   const payload: Record<string, unknown> = {};

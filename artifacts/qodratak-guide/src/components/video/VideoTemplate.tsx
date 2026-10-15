@@ -5,7 +5,7 @@ import { AnimatePresence } from 'framer-motion';
 import { IntroScene, OutroScene, StepScene, STEPS, BrowserStage, Grain } from './Scenes';
 import { ClipScene, EXTRA_DURATIONS } from './ExtraChapters';
 
-/** Full student guide (?film=guide, default): the 14 core pages, then the 8 extra pages as 5.5 s beats, then the outro. */
+/** Full student guide (?film=guide, default): the 14 core pages, Tahsili path, extra pages, then the outro. */
 const EXTRA_KEYS = Object.keys(EXTRA_DURATIONS);
 
 
@@ -31,7 +31,7 @@ export const SCENE_DURATIONS = {
 export const GUIDE_DURATIONS: Record<string, number> = (() => {
   const o: Record<string, number> = {};
   for (const [k, v] of Object.entries(SCENE_DURATIONS)) if (k !== 'outro') o[k] = v;
-  for (const k of EXTRA_KEYS) o[`x_${k}`] = k === 'review' ? 6500 : 5100;
+  for (const k of EXTRA_KEYS) o[`x_${k}`] = k === 'review' ? 6500 : 4600;
   o.outro = 5500;
   return o;
 })();
@@ -67,8 +67,8 @@ const SCENE_START_SEC: Record<string, number> = (() => {
   const out: Record<string, number> = {};
   let c = 0;
   for (const [k, ms] of Object.entries(SCENE_DURATIONS)) { out[k] = c / 1000; c += ms; }
-  // extras play the bed continuously from 4.5 s (one seam in, one seam back to the outro's original 66.5 s)
-  { let a = 4.5; for (const k of EXTRA_KEYS) { out[`x_${k}`] = a; a += k === 'review' ? 6.5 : 5.1; } }
+  // Supplemental pages share one continuous passage of the existing bed; the outro returns to its original 66.5 s offset.
+  { let a = 4.5; for (const k of EXTRA_KEYS) { out[`x_${k}`] = a; a += k === 'review' ? 6.5 : 4.6; } }
   return out;
 })();
 

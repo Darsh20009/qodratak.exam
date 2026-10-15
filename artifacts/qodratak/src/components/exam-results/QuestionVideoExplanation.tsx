@@ -34,7 +34,7 @@ export default function QuestionVideoExplanation({ questionId }: { questionId: s
     <DialogContent dir="rtl" className="max-w-3xl max-h-[90dvh] overflow-y-auto">
       <DialogHeader>
         <DialogTitle>شرح السؤال من فيديو البنك</DialogTitle>
-        <DialogDescription>يبدأ التشغيل عند شرح هذا السؤال ويتوقف عند نهاية المقطع.</DialogDescription>
+        <DialogDescription>يعرض المشغل موضع السؤال في فيديو البنك، ويوضح إذا كان التوقيت تقديريًا.</DialogDescription>
       </DialogHeader>
       {query.isLoading && <p role="status">جارٍ تحميل توقيت الشرح…</p>}
       {query.isError && <div role="alert" className="space-y-3">
@@ -46,7 +46,9 @@ export default function QuestionVideoExplanation({ questionId }: { questionId: s
         <p className="font-bold">البنك {clip.bankNumber} · السؤال {clip.questionNumber}</p>
         <p className="text-sm text-muted-foreground" dir="ltr">{time(start)} — {time(end)}</p>
         {clip.approximate && <p role="status" className="text-sm text-amber-700 dark:text-amber-300">
-          التوقيت تقريبي ولم يعتمد بمراجعة بصرية؛ قد يبدأ الشرح قبله أو بعده.
+          {typeof clip.bankNumber === 'number' && clip.bankNumber >= 51 && clip.bankNumber <= 70
+            ? 'التوقيت تقديري: قُسمت مدة الفيديو على ٤٨، وتغطي اللقطة دقيقتين حول موضع السؤال المتوقع؛ قد لا يبدأ الشرح الفعلي عند هذا الموضع.'
+            : 'التوقيت تقريبي ولم يعتمد بمراجعة بصرية؛ قد يبدأ الشرح قبله أو بعده.'}
         </p>}
         {!clip.approximate && !clip.verified && <p className="text-xs text-muted-foreground">
           التوقيت مرصود من رقم السؤال الظاهر في الفيديو، بدقة أخذ العينات، وليس بتقسيم مدة الفيديو بالتساوي.
@@ -85,9 +87,20 @@ export default function QuestionVideoExplanation({ questionId }: { questionId: s
         }}>أعد مشاهدة الشرح</Button>
       </div>}
       {clip && !available && <div className="space-y-3">
-        <p>لم يتوفر مقطع مضبوط لهذا السؤال بعد. لن نختار دقيقة عشوائية من الفيديو.</p>
-        {clip.videoUrl && <a href={resolveFoundationVideoUrl(clip.videoUrl)} target="_blank" rel="noreferrer"
-          className="text-primary underline">شاهد فيديو البنك كاملًا</a>}
+        <p>لا يتوفر توقيت دقيق لهذا السؤال بعد؛ يمكنك مشاهدة فيديو البنك كاملًا بدل عرض مقطع قد يشرح سؤالًا آخر.</p>
+        {clip.videoUrl && <>
+          <video key={`${questionId}-full-bank`}
+            src={resolveFoundationVideoUrl(clip.videoUrl)}
+            title={`فيديو البنك الكامل ${clip.bankNumber}`}
+            className="aspect-video w-full rounded-xl bg-black"
+            controls playsInline preload="metadata"
+            onError={() => setPlaybackError(true)} />
+          {playbackError && <p role="alert" className="text-sm text-destructive">
+            تعذر تشغيل الفيديو على هذا الجهاز أو الاتصال.
+          </p>}
+          <a href={resolveFoundationVideoUrl(clip.videoUrl)} target="_blank" rel="noreferrer"
+            className="text-primary underline">افتح فيديو البنك كاملًا في صفحة مستقلة</a>
+        </>}
       </div>}
     </DialogContent>
   </Dialog>;

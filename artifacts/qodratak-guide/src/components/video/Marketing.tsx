@@ -3,6 +3,7 @@ import { useContext, useEffect, useRef, useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { VideoCanvas, VideoPausedContext, useVideoPlayer } from '@/lib/video';
 import { C } from './Scenes';
+import { TahsiliFlowScreen } from './ExtraChapters';
 
 const B = import.meta.env.BASE_URL;
 const display = "'Tajawal', sans-serif";
@@ -15,9 +16,9 @@ export const MARKETING_DURATIONS = {
   m_gather: 4000,
   m_foundation: 4000,
   m_practice: 4500,
-  m_exam: 6500,
-  m_results: 4000,
-  m_plans: 3500,
+  m_exam: 5000,
+  m_results: 3500,
+  m_plans: 5500,
   m_outro: 5000,
 };
 
@@ -33,7 +34,8 @@ const START_SEC: Record<string, number> = (() => {
 
 type Pin = { x: number; y: number; at: number };
 type Shot = {
-  src: string;
+  src?: string;
+  visual?: 'tahsili-path';
   url: string;
   crop?: boolean;
   focus: [number, number];
@@ -81,7 +83,7 @@ const STAGE: Record<string, StagePlan> = {
         ],
       },
       {
-        src: 'n-exam-q2.jpg', url: '/qiyas-exam', focus: [58, 42], zoom: 1.1, at: 4.2,
+        src: 'n-exam-q2.jpg', url: '/qiyas-exam', focus: [58, 42], zoom: 1.1, at: 3.5,
         pins: [
           { x: 61, y: 23, at: 0.25 },
           { x: 48, y: 94, at: 0.95 },
@@ -95,10 +97,7 @@ const STAGE: Record<string, StagePlan> = {
   },
   m_plans: {
     pose: { left: 4, top: 13, width: 57, opacity: 1 },
-    shots: [
-      { src: 'student-dashboard.jpg', crop: true, url: '/', focus: [51, 46], zoom: 1.12, at: 0 },
-      { src: 'today.jpg', crop: true, url: '/learning/today', focus: [52, 42], zoom: 1.08, at: 1.75 },
-    ],
+    shots: [{ visual: 'tahsili-path', url: '/student-program/tahsili', focus: [50, 50], zoom: 1.04, at: 0 }],
   },
   m_outro: { pose: { left: 50, top: 50, width: 40, opacity: 0 }, shots: [] },
 };
@@ -148,7 +147,12 @@ function ShotPlane({ shot, hold }: { shot: Shot; hold: number }) {
         animate={{ scale: shot.zoom }}
         transition={{ duration: Math.max(hold, 0.45), ease: [0.45, 0, 0.25, 1] }}
       >
-        <img src={`${B}shots/${shot.src}`} className="block w-full" alt="" draggable={false} />
+        {shot.visual === 'tahsili-path'
+          ? <>
+              <TahsiliFlowScreen />
+              <div style={{ position: 'absolute', left: '1.2vmin', bottom: '0.9vmin', fontFamily: body, fontWeight: 700, fontSize: '1.5vmin', color: '#fff', background: 'rgba(13,27,42,.78)', padding: '0.35vmin 1vmin', borderRadius: '0.7vmin' }}>عرض توضيحي لمسار الطالب</div>
+            </>
+          : <img src={`${B}shots/${shot.src}`} className="block w-full" alt="" draggable={false} />}
         {shot.pins?.map((pin) => (
           <div key={`${pin.x}-${pin.y}`} className="absolute" style={{ left: `${pin.x}%`, top: `${pin.y}%` }}>
             <motion.div
@@ -274,7 +278,7 @@ function SceneMask({ children, className = '' }: { children: React.ReactNode; cl
   return (
     <motion.div
       className={`absolute inset-0 overflow-hidden ${className}`}
-      initial={{ clipPath: 'circle(4% at 50% 50%)' }}
+      initial={{ clipPath: 'circle(45% at 50% 50%)' }}
       animate={{ clipPath: 'circle(120% at 50% 50%)' }}
       exit={{ opacity: 0, scale: 1.015, transition: { duration: 0.3 } }}
       transition={{ duration: 0.55, ease: [0.22, 1, 0.36, 1] }}
@@ -506,7 +510,7 @@ const SCENES: Record<string, React.ComponentType> = {
   ),
   m_plans: () => (
     <SceneMask>
-      <Copy side="right" eyebrow="لوحة الطالب" title="مهمتك التالية واضحة" line="ارجع للوحة التحكم لتعرف من أين تتابع" compact />
+      <Copy side="right" eyebrow="مسار التحصيلي" title="ابدأ بالمادة" line="ادرس، طبّق، ثم اختبر جاهزيتك" compact />
     </SceneMask>
   ),
   m_outro: OutroScene,

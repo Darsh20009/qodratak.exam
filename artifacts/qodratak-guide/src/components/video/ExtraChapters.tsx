@@ -16,11 +16,12 @@ const body = "'IBM Plex Sans Arabic', sans-serif";
 
 export const EXTRA_DURATIONS = {
   review: 7500,
+  tahsili: 7500,
   flashcards: 7500, analysis: 7500, mistakes: 7500, security: 7500,
   preexam: 7500, tutor: 7500, rooms: 7500, notifications: 7500,
 };
 /** Offsets into the existing bg_music_full.mp3 (no new music). */
-const AUDIO_AT: Record<string, number> = { review: 66.5, flashcards: 4.5, analysis: 13, mistakes: 21, security: 29.5, preexam: 39.5, tutor: 50, rooms: 58.5, notifications: 62.5 };
+const AUDIO_AT: Record<string, number> = { review: 66.5, tahsili: 11, flashcards: 15.6, analysis: 20.2, mistakes: 24.8, security: 29.4, preexam: 34, tutor: 38.6, rooms: 43.2, notifications: 47.8 };
 
 /* ---------- small UI primitives for illustrative panels ---------- */
 const ink = '#1F2933';
@@ -54,9 +55,60 @@ export function H({ t }: { t: string }) {
 export const col = (gap = '1.4vmin'): React.CSSProperties => ({ display: 'flex', flexDirection: 'column', gap });
 export const rowS = (gap = '1vmin'): React.CSSProperties => ({ display: 'flex', gap, flexWrap: 'wrap' });
 
-export type Clip = { url: string; eyebrow: string; title: string; bullets: string[]; note?: string; noteAt?: number; shot?: string; panel?: () => React.ReactNode };
+/** Illustrative screen based on the actual Tahsili routes, not a live student capture. */
+export function TahsiliFlowScreen() {
+  const stages = [
+    { n: '١', title: 'اختر المادة', detail: 'رياضيات · فيزياء · كيمياء · أحياء', tone: C.coral },
+    { n: '٢', title: 'ادرس ثم طبّق', detail: 'مركز الدراسة والشرح، ثم بنك الأسئلة', tone: C.mint },
+    { n: '٣', title: 'اختبر جاهزيتك', detail: 'حسب المادة · مخصص · شامل', tone: '#E6BE69' },
+  ];
+  return (
+    <div dir="rtl" style={{ height: '100%', padding: '1.8vmin 2.1vmin', display: 'flex', flexDirection: 'column', color: ink, background: '#F4F1EA' }}>
+      <div className="flex items-center justify-between" style={{ gap: '1vmin' }}>
+        <div>
+          <div style={{ fontFamily: display, fontWeight: 900, fontSize: '3.4vmin', lineHeight: 1.15 }}>التحصيلي المتكامل</div>
+          <div style={{ fontFamily: body, fontWeight: 600, fontSize: '1.9vmin', color: '#65717A', marginTop: '0.45vmin' }}>مسار الدراسة والتدريب والاختبار</div>
+        </div>
+        <div style={{ flexShrink: 0, borderRadius: '2vmin', background: C.navy, color: '#fff', padding: '0.75vmin 1.5vmin', fontFamily: body, fontWeight: 700, fontSize: '1.8vmin' }}>قدراتك · التحصيلي</div>
+      </div>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '1vmin', flex: 1, marginTop: '1.5vmin', minHeight: 0 }}>
+        {stages.map((stage, i) => (
+          <motion.div key={stage.n} initial={{ opacity: 0, y: 12, scale: 0.97 }} animate={{ opacity: 1, y: 0, scale: 1 }}
+            transition={{ delay: 0.28 + i * 0.72, duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
+            style={{ minWidth: 0, minHeight: '19vmin', display: 'flex', flexDirection: 'column', justifyContent: 'center', padding: '1.4vmin', borderRadius: '1.3vmin', border: `0.28vmin solid ${stage.tone}75`, background: '#fff', boxShadow: '0 0.7vmin 1.8vmin rgba(13,27,42,.07)' }}>
+            <div className="flex items-center" style={{ gap: '0.9vmin' }}>
+              <span style={{ flexShrink: 0, width: '3.7vmin', height: '3.7vmin', display: 'grid', placeItems: 'center', borderRadius: '1vmin', background: stage.tone, color: C.navy, fontFamily: display, fontWeight: 900, fontSize: '2.2vmin' }}>{stage.n}</span>
+              <span style={{ fontFamily: display, fontWeight: 900, fontSize: '2.6vmin', lineHeight: 1.2 }}>{stage.title}</span>
+            </div>
+            <div style={{ fontFamily: body, fontWeight: 600, fontSize: '2vmin', lineHeight: 1.4, color: '#59636D', marginTop: '1.1vmin' }}>{stage.detail}</div>
+          </motion.div>
+        ))}
+      </div>
+      <div style={{ display: 'flex', justifyContent: 'space-between', gap: '0.8vmin', marginTop: '1.1vmin' }}>
+        {['شرح المادة', 'بنك الأسئلة', 'مركز الاختبارات'].map((label, i) => (
+          <motion.span key={label} initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.72 + i * 0.48 }}
+            style={{ fontFamily: body, fontWeight: 700, fontSize: '1.75vmin', color: '#43515B', background: '#E8E4DB', borderRadius: '1.5vmin', padding: '0.55vmin 1.25vmin' }}>{label}</motion.span>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+export type Clip = { url: string; eyebrow: string; title: string; bullets: string[]; note?: string; noteAt?: number; shot?: string; panel?: () => React.ReactNode; compactBullets?: boolean };
 
 export const CLIPS: Record<string, Clip> = {
+  tahsili: {
+    url: '/student-program/tahsili', eyebrow: 'مسار التحصيلي · من الدراسة إلى الاختبار', title: 'ابدأ بالمادة',
+    bullets: [
+      'اختر الرياضيات أو الفيزياء أو الكيمياء أو الأحياء',
+      'ادرس الشرح في مركز الدراسة، ثم طبّق',
+      'تدرّب من بنك المادة، ثم اختر اختبارك',
+    ],
+    note: 'اختبار حسب المادة · مخصص · شامل',
+    noteAt: 3.8,
+    compactBullets: true,
+    panel: () => <TahsiliFlowScreen />,
+  },
   /* From DashboardPage DashboardHelpDetails + PlatformReviewCard: two collapsibles at the bottom of لوحتي. */
   review: {
     url: '/', eyebrow: 'لوحتي · أسفل الصفحة', title: 'قيّم المنصة',
@@ -258,9 +310,9 @@ export function ClipScene({ k, clip: given }: { k: string; clip?: Clip }) {
         <div style={{ display: 'flex', flexDirection: 'column', gap: '1.8vmin', marginTop: '2vmin' }}>
           {clip.bullets.map((b, i) => (
             <motion.div key={b} className="flex items-start" style={{ gap: '1.4vmin' }}
-              initial={{ opacity: 0, x: 18 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 1.1 + i * 1.3, duration: 0.45 }}>
+              initial={{ opacity: 0, x: 18 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.9 + i * 0.9, duration: 0.45 }}>
               <span style={{ flexShrink: 0, fontFamily: display, fontWeight: 900, fontSize: '3.4vmin', background: C.coral, color: C.ink, borderRadius: '0.9vmin', padding: '0 1.2vmin' }}>{['١', '٢', '٣'][i]}</span>
-              <span style={{ fontFamily: body, fontWeight: 600, fontSize: '4.6vmin', lineHeight: 1.3, color: '#E3E9EE' }}>{b}</span>
+              <span style={{ fontFamily: body, fontWeight: 600, fontSize: clip.compactBullets ? '3.25vmin' : '4.6vmin', lineHeight: 1.3, color: '#E3E9EE' }}>{b}</span>
             </motion.div>
           ))}
         </div>

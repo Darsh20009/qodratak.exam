@@ -1,10 +1,10 @@
 ---
-name: Scanned exam OCR review boundary
-description: How scanned Tahsili and quantitative exam questions should be staged before answer publication.
+name: Tahsili extraction review boundary
+description: How scanned OCR and geometric PDF extraction should be staged before answer publication.
 ---
 
-Scanned-book extraction must be conservative: preserve the original question image because the PDF text layer may be empty or misleading, keep OCR as supporting text, and never publish a question as scored when its printed answer key is ambiguous.
+Scanned OCR and text-layer extraction must remain conservative: preserve a source crop for visual review because OCR may reorder Arabic columns and geometric parsing may split two-column answer choices incorrectly. Keep extracted text as a draft and never publish an answer key unless a reviewer verifies it against the source.
 
-**Why:** The source PDF has no useful text layer, RTL OCR can reorder columns, and the answer-key glyphs are easy to misread. A guessed answer would be more harmful to students than a visible review state.
+**Why:** Scanned pages may have no useful text layer, while selectable text can still be split or reordered across RTL columns. A guessed answer would be more harmful to students than a visible review state.
 
-**How to apply:** Keep the question bank able to display review questions, but exclude ambiguous items from linked scored quizzes. Treat answer-key matching and ambiguous OCR cleanup as a separate approval step; a readable printed letter can approve an image-backed question even when OCR text is imperfect.
+**How to apply:** Keep every extraction in the pending-review collection, preserve its source crop, and exclude it from scored student banks until a reviewer corrects the stem/options, assigns its subject, verifies the answer, and writes a supported explanation.

@@ -171,7 +171,7 @@ function QuestionProgressLibraryCard() {
 }
 
 const paths = [
-  { href: "/preparation-course", label: "خطة التحضير", detail: "ابدأ بموعد أو دون حجز", icon: Calendar },
+  { href: "/preparation-course", label: "خطتي", detail: "ابدأ بموعد أو دون حجز", icon: Calendar },
   { href: "/computerized", label: "التدريب المحوسب", detail: "لفظي وكمي بتركيز", icon: Laptop },
   { href: "/records", label: "تقاريري", detail: "راجع الخطأ والبطيء", icon: FileText },
 ];
@@ -187,8 +187,8 @@ export default function DashboardPage() {
     error,
     refetch: refetchDashboard,
   } = useStudentDashboard(isStudent);
-  const journeyProgram = "qudrat" as const;
-  const journeySubjectId = dashboard?.recommendedPlan?.program === "tahsili" ? undefined : dashboard?.recommendedPlan?.subjectId;
+  const journeyProgram = dashboard?.recommendedPlan?.program === "tahsili" ? "tahsili" as const : "qudrat" as const;
+  const journeySubjectId = dashboard?.recommendedPlan?.subjectId;
   const hasJourneyScope = isStudent && Boolean(dashboard) && !subscription?.isExpired;
   const todayLearning = useTodayLearningSession(hasJourneyScope, journeyProgram, journeySubjectId);
   const adaptiveDecision = useAdaptiveLearningDecision(hasJourneyScope, journeyProgram, journeySubjectId);
@@ -321,11 +321,11 @@ export default function DashboardPage() {
   const recentTests = dashboard.recentTests ?? [];
   const weaknesses = dashboard.weaknesses ?? [];
   const progressItems = [
-    { key: "overall", label: "الإجمالي", value: dashboard.progress.overall.percentage },
-    { key: "verbal", label: "اللفظي", value: dashboard.progress.verbal.percentage },
-    { key: "quantitative", label: "الكمي", value: dashboard.progress.quantitative.percentage },
-    { key: "tahsili", label: "التحصيلي — قريبًا", value: dashboard.progress.tahsili.percentage },
-  ];
+    { key: "overall", label: "الإجمالي", ...dashboard.progress.overall },
+    { key: "verbal", label: "اللفظي", ...dashboard.progress.verbal },
+    { key: "quantitative", label: "الكمي", ...dashboard.progress.quantitative },
+    { key: "tahsili", label: "التحصيلي", ...dashboard.progress.tahsili },
+  ].filter((item) => item.tests > 0);
 
   const isNewStudent =
     !courseQuery.isLoading && !courseQuery.isError &&
@@ -363,7 +363,7 @@ export default function DashboardPage() {
           <div className="grid gap-3 sm:grid-cols-2">
             <Link href="/preparation-course" data-testid="link-path-preparation-course" className="flex items-center gap-3 rounded-2xl border border-border bg-card p-4 hover:border-primary/40 hover:bg-primary/5">
               <Calendar className="h-5 w-5 shrink-0 text-primary" aria-hidden="true" />
-              <span className="min-w-0"><span className="block text-sm font-black text-foreground">دورتي ومهام اليوم</span><span className="mt-1 block text-xs text-muted-foreground">خطة بموعدك أو دون حجز، ومهام يومية موجّهة</span></span>
+              <span className="min-w-0"><span className="block text-sm font-black text-foreground">خطتي</span><span className="mt-1 block text-xs text-muted-foreground">خطة بموعدك أو دون حجز، ومهام يومية موجّهة</span></span>
               <ChevronLeft className="mr-auto h-4 w-4 shrink-0 text-muted-foreground" aria-hidden="true" />
             </Link>
             <Link href="/computerized" data-testid="link-path-computerized" className="flex items-center gap-3 rounded-2xl border border-border bg-card p-4 hover:border-primary/40 hover:bg-primary/5">
@@ -519,22 +519,28 @@ export default function DashboardPage() {
             </div>
           </div>
         </div>
-        <div className="mt-5 grid gap-x-6 gap-y-4 sm:grid-cols-2">
-          {progressItems.map((item) => {
-            const percentage = clampPercentage(item.value);
-            return (
-              <div key={item.key} data-testid={`progress-${item.key}`}>
-                <div className="mb-2 flex items-center justify-between text-sm font-bold">
-                  <span className="text-foreground">{item.label}</span>
-                  <span className="text-muted-foreground">{percentage}%</span>
+        {progressItems.length ? (
+          <div className="mt-5 grid gap-x-6 gap-y-4 sm:grid-cols-2">
+            {progressItems.map((item) => {
+              const percentage = clampPercentage(item.percentage);
+              return (
+                <div key={item.key} data-testid={`progress-${item.key}`}>
+                  <div className="mb-2 flex items-center justify-between text-sm font-bold">
+                    <span className="text-foreground">{item.label}</span>
+                    <span className="text-muted-foreground">{percentage}%</span>
+                  </div>
+                  <div className="h-2 overflow-hidden rounded-full bg-muted">
+                    <div className="h-full rounded-full bg-primary transition-all" style={{ width: `${percentage}%` }} />
+                  </div>
                 </div>
-                <div className="h-2 overflow-hidden rounded-full bg-muted">
-                  <div className="h-full rounded-full bg-primary transition-all" style={{ width: `${percentage}%` }} />
-                </div>
-              </div>
-            );
-          })}
-        </div>
+              );
+            })}
+          </div>
+        ) : (
+          <p className="mt-4 rounded-2xl bg-muted/50 p-4 text-sm leading-6 text-muted-foreground" data-testid="empty-progress-summary">
+            ستظهر نسبك هنا بعد إتمام أول اختبار. ابدأ باختبار واحد في المسار الذي تدرسه.
+          </p>
+        )}
       </div></details>
 
       <section data-testid="student-paths" className="space-y-3">

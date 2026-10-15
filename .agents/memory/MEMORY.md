@@ -18,7 +18,8 @@
 - [Real administrator access](development-admin-fixture.md) — shared demo admin login is removed; use active traceable administrators and isolated test fixtures.
 - [Qodratak mailbox integration](mailbox-integration.md) — official mailbox settings must take precedence over legacy SMTP variables and remain secret-backed.
 - [Persistent media boundary](persistent-media-boundary.md) — production uploads must fail clearly without a persistent provider; local disk is development-only.
-- [Scanned exam OCR review boundary](tahsili-ocr-review-boundary.md) — preserve source images, use OCR as supporting text, and keep ambiguous answer-key glyphs out of scored quizzes.
+- [Tahsili extraction review boundary](tahsili-ocr-review-boundary.md) — keep OCR and geometric PDF extraction in review drafts with source crops; verify subject, choices, keys, and explanations before publishing.
+- [Tahsili source rights](tahsili-source-rights.md) — PDF redistribution is batch-limited; only uploaded original videos may be processed, with the first 30 seconds removed.
 - [Foundation progress metrics](foundation-progress-metrics.md) — current percentages reflect saved test performance; lesson completion needs separate persistence.
 - [Computerized verbal video progress](computerized-verbal-video-progress.md) — keep watched coverage student-scoped and separate from quizzes, mastery, and foundation completion.
 - [Authenticated preview checks](authenticated-preview-checks.md) — a public preview can show an expected 401 for session-only APIs; validate protected flows with an authenticated browser session.

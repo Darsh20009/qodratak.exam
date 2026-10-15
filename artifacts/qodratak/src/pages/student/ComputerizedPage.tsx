@@ -891,9 +891,9 @@ export default function ComputerizedPage() {
             <div>
               <p className="mb-2 text-xs font-black text-[#F7F775]">قدرات · مركز التدريب</p>
               <h1 className="text-3xl font-black md:text-4xl">المحوسب</h1>
-              <p className="mt-3 max-w-2xl text-sm leading-7 text-[#CBD5E1]">
-                تدرّب على اللفظي أو الكمي بتركيز. التحصيلي قريبًا.
-              </p>
+                <p className="mt-3 max-w-2xl text-sm leading-7 text-[#CBD5E1]">
+                تدرّب على اللفظي أو الكمي بتركيز، وافتح مسار التحصيلي من صفحته المخصصة.
+                </p>
             </div>
             <div className="grid grid-cols-2 gap-2">
               <div className="rounded-2xl bg-white/10 px-4 py-3">
@@ -919,13 +919,13 @@ export default function ComputerizedPage() {
               const selected = activeTrack === track.key;
               if (track.key === "tahsili") {
                 return (
-                  <div key={track.key} data-testid="status-tahsili-locked" aria-disabled="true" className="flex items-center gap-4 rounded-2xl border border-dashed border-border bg-muted p-4 text-right opacity-80 md:p-5">
+                  <Link key={track.key} href="/student-program/tahsili" data-testid="link-tahsili-program" className="flex items-center gap-4 rounded-2xl border border-border bg-card p-4 text-right transition hover:border-primary/50 hover:shadow-sm md:p-5">
                     <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-card text-muted-foreground"><Icon className="h-6 w-6" /></span>
                     <span>
-                      <span className="block text-lg font-black text-muted-foreground">التحصيلي — قريبًا</span>
-                      <span className="mt-1 block text-xs leading-5 text-muted-foreground">غير متاح للتشغيل حاليًا.</span>
+                      <span className="block text-lg font-black text-foreground">التحصيلي</span>
+                      <span className="mt-1 block text-xs leading-5 text-muted-foreground">افتح التأسيس والدراسة والاختبارات المنشورة.</span>
                     </span>
-                  </div>
+                  </Link>
                 );
               }
               return (

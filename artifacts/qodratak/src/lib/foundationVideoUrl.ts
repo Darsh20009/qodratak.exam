@@ -15,6 +15,9 @@ export function isDirectFoundationVideo(rawUrl: string): boolean {
 export function resolveFoundationAssetUrl(rawUrl: string): string {
   const value = rawUrl.trim();
   if (!value || EXTERNAL_URL.test(value)) return value;
+  if (value.startsWith("/api/")) {
+    return new URL(value, window.location.origin).toString();
+  }
 
   const relativePath = value.replace(/^\/+/, "");
   const externalAssetBase =

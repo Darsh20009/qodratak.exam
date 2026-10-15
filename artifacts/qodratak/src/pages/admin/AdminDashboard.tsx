@@ -4,6 +4,7 @@ import QuestionsManagementPage from './QuestionsManagementPage';
 import AdminWalletsTab from './AdminWalletsTab';
 import AdminSeasonalExamsTab from './AdminSeasonalExamsTab';
 import AdminFoundationManagementTab from './AdminFoundationManagementTab';
+import AdminTahsiliContentTab from './AdminTahsiliContentTab';
 import AdminAccountManagementTab from './AdminAccountManagementTab';
 import AdminGeideaTransactionsTab from './AdminGeideaTransactionsTab';
 import WhatsAppAdminTab from './WhatsAppAdminTab';
@@ -85,6 +86,7 @@ const NAV_ITEMS = [
   { key: 'wallets', icon: Wallet, label: 'المحافظ والمكافآت', color: 'text-[#7964C1]' },
   { key: 'seasonal-exams', icon: Sparkles, label: 'الاختبارات الموسمية', color: 'text-[#B65D36]' },
   { key: 'foundation-management', icon: Video, label: 'محتوى التأسيس والمراجعات', color: 'text-[#2E8B70]' },
+  { key: 'tahsili-content', icon: BookOpen, label: 'محتوى التحصيلي', color: 'text-[#2E8B70]' },
 ];
 
 const PRIMARY_ADMIN_NAV_KEYS = new Set([
@@ -130,6 +132,10 @@ const ADMIN_PAGE_TIPS: Record<string, { intro: string; steps: string[] }> = {
   questions: {
     intro: 'أدر بنك الأسئلة وصحح المحتوى الذي يحتاج مراجعة.',
     steps: ['ابحث قبل إضافة سؤال مكرر.', 'راجع الصور والإجابة الصحيحة قبل الحفظ.', 'استخدم البلاغات لمتابعة ملاحظات الطلاب.'],
+  },
+  'tahsili-content': {
+    intro: 'افتح مصادر التحصيلي، ثم راجع كل سؤال وصورته ومفتاحه وشرحه قبل نشره.',
+    steps: ['استخدم ملفات المصدر الأصلية للتحقق من النص.', 'لا تعتمد الإجابة قبل مطابقتها مع المصدر.', 'الطلاب لا يرون أسئلة التحصيلي غير المعتمدة.'],
   },
   announcements: {
     intro: 'أنشئ رسائل واضحة ومحددة للفئة المستهدفة.',
@@ -2128,6 +2134,7 @@ export default function AdminDashboard({ initialTab = 'overview' }: { initialTab
           )}
 
           {activeTab === 'foundation-management' && <AdminFoundationManagementTab />}
+          {activeTab === 'tahsili-content' && <AdminTahsiliContentTab />}
           {activeTab === 'platform-reviews' && <AdminFoundationManagementTab initialSection="reviews" reviewsOnly />}
 
         </div>

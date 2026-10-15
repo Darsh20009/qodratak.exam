@@ -567,6 +567,7 @@ export interface IQuestion extends Document {
     videoEndTimestampSeconds?: number;
     videoEndTimestampInferred?: boolean;
     videoTimingVerified?: boolean;
+    videoTimingMethod?: string;
   };
   imageUrl?: string;
   imageUrls?: string[];
@@ -624,6 +625,7 @@ const questionSchema = new Schema<IQuestion>({
     videoEndTimestampSeconds: { type: Number, min: 0 },
     videoEndTimestampInferred: { type: Boolean },
     videoTimingVerified: { type: Boolean },
+    videoTimingMethod: { type: String },
   },
   imageUrl: { type: String },
   imageUrls: { type: [String], default: [] },
@@ -1282,9 +1284,13 @@ export const Question = mongoose.model<IQuestion>('Question', questionSchema);
 // Kept in a separate collection so the existing Qudrat question categories
 // (verbal/quantitative/general) remain backward compatible.
 export type TahsiliSubject = 'رياضيات' | 'فيزياء' | 'كيمياء' | 'أحياء' | 'علم الأرض';
+export type TahsiliDraftSubject = TahsiliSubject | 'مختلط';
 
 export interface ITahsiliQuestion extends Document {
   questionId: number;
+  sourceId?: string;
+  sourceKey?: string;
+  sourceOrdinal?: number;
   subject: TahsiliSubject;
   subcategory: string;
   text: string;
@@ -1295,14 +1301,22 @@ export interface ITahsiliQuestion extends Document {
   explanation?: string;
   sourcePage: number;
   sourceQuestionNumber?: number;
+  printedQuestionNumber?: number;
+  sourceBlockIndex?: number;
+  sourceImageObjectKey?: string;
   sourceBook: string;
   answerConfidence: 'verified' | 'review';
+  reviewedBy?: string;
+  reviewedAt?: Date;
   createdAt: Date;
   updatedAt?: Date;
 }
 
 const tahsiliQuestionSchema = new Schema<ITahsiliQuestion>({
   questionId: { type: Number, required: true, unique: true, index: true },
+  sourceId: { type: String, trim: true, index: true },
+  sourceKey: { type: String, trim: true },
+  sourceOrdinal: { type: Number, min: 1 },
   subject: { type: String, enum: ['رياضيات', 'فيزياء', 'كيمياء', 'أحياء', 'علم الأرض'], required: true, index: true },
   subcategory: { type: String, default: 'عام', index: true },
   text: { type: String, required: true },
@@ -1313,16 +1327,80 @@ const tahsiliQuestionSchema = new Schema<ITahsiliQuestion>({
   explanation: { type: String },
   sourcePage: { type: Number, required: true, index: true },
   sourceQuestionNumber: { type: Number },
+  printedQuestionNumber: { type: Number },
+  sourceBlockIndex: { type: Number, min: 1 },
+  sourceImageObjectKey: { type: String, trim: true },
   sourceBook: { type: String, required: true },
   answerConfidence: { type: String, enum: ['verified', 'review'], default: 'review', index: true },
+  reviewedBy: { type: String, trim: true },
+  reviewedAt: { type: Date },
   createdAt: { type: Date, default: Date.now },
   updatedAt: { type: Date },
 });
 tahsiliQuestionSchema.index({ subject: 1, sourcePage: 1, sourceQuestionNumber: 1 }, { unique: true, sparse: true });
+tahsiliQuestionSchema.index({ sourceKey: 1 }, { unique: true, sparse: true });
 
 export const TahsiliQuestion = mongoose.models['TahsiliQuestion']
   ? mongoose.model<ITahsiliQuestion>('TahsiliQuestion')
   : mongoose.model<ITahsiliQuestion>('TahsiliQuestion', tahsiliQuestionSchema);
+
+export type TahsiliQuestionDraftStatus = 'pending_review' | 'approved' | 'rejected';
+export interface ITahsiliQuestionDraft extends Document {
+  sourceKey: string;
+  sourceId: string;
+  sourceOrdinal: number;
+  questionId: number;
+  subject: TahsiliDraftSubject;
+  subcategory: string;
+  text: string;
+  options: string[];
+  difficulty: 'beginner' | 'intermediate' | 'advanced';
+  topic?: string;
+  explanation?: string;
+  sourcePage: number;
+  sourceQuestionNumber?: number;
+  sourceBlockIndex: number;
+  sourceImageObjectKey?: string;
+  requiresImage?: boolean;
+  sourceBook: string;
+  status: TahsiliQuestionDraftStatus;
+  reviewerNotes?: string;
+  reviewedBy?: string;
+  reviewedAt?: Date;
+  publishedQuestionId?: number;
+  createdAt: Date;
+  updatedAt?: Date;
+}
+
+const tahsiliQuestionDraftSchema = new Schema<ITahsiliQuestionDraft>({
+  sourceKey: { type: String, required: true, trim: true, unique: true },
+  sourceId: { type: String, required: true, trim: true, index: true },
+  sourceOrdinal: { type: Number, required: true, min: 1 },
+  questionId: { type: Number, required: true, unique: true, index: true },
+  subject: { type: String, enum: ['رياضيات', 'فيزياء', 'كيمياء', 'أحياء', 'علم الأرض', 'مختلط'], required: true, index: true },
+  subcategory: { type: String, default: 'عام', index: true },
+  text: { type: String, required: true, trim: true },
+  options: { type: [String], required: true, validate: (value: string[]) => value.length === 4 },
+  difficulty: { type: String, enum: ['beginner', 'intermediate', 'advanced'], default: 'intermediate' },
+  topic: { type: String, default: 'عام' },
+  explanation: { type: String, trim: true },
+  sourcePage: { type: Number, required: true, min: 1, index: true },
+  sourceQuestionNumber: { type: Number },
+  sourceBlockIndex: { type: Number, required: true, min: 1 },
+  sourceImageObjectKey: { type: String, trim: true },
+  requiresImage: { type: Boolean, default: false },
+  sourceBook: { type: String, required: true, trim: true },
+  status: { type: String, enum: ['pending_review', 'approved', 'rejected'], default: 'pending_review', index: true },
+  reviewerNotes: { type: String, trim: true, maxlength: 2000 },
+  reviewedBy: { type: String, trim: true },
+  reviewedAt: { type: Date },
+  publishedQuestionId: { type: Number },
+}, { timestamps: true });
+tahsiliQuestionDraftSchema.index({ status: 1, subject: 1, sourceId: 1, sourcePage: 1 });
+
+export const TahsiliQuestionDraft = mongoose.models['TahsiliQuestionDraft']
+  ? mongoose.model<ITahsiliQuestionDraft>('TahsiliQuestionDraft')
+  : mongoose.model<ITahsiliQuestionDraft>('TahsiliQuestionDraft', tahsiliQuestionDraftSchema);
 
 export const ChatMessage = mongoose.model<IChatMessage>('ChatMessage', chatMessageSchema);
 export const ActivityLog = mongoose.model<IActivityLog>('ActivityLog', activityLogSchema);
@@ -1734,6 +1812,7 @@ const foundationQuizSchema = new Schema<IFoundationQuiz>({
 }, { _id: false });
 export interface IFoundationContent extends Document {
   program: StudentProgram; title: string; description: string; videoUrl: string;
+  questionSolutionVideoUrl?: string;
   thumbnailUrl?: string; order: number; published: boolean; linkedQuizRoute?: string;
   durationMinutes?: number; subjectId?: string; taxonomyNodeId?: string;
   sections?: IFoundationContentSection[]; attachments?: IFoundationAttachment[];
@@ -1768,6 +1847,7 @@ const foundationContentSchema = new Schema<IFoundationContent>({
   title: { type: String, required: true, trim: true },
   description: { type: String, required: true, trim: true },
   videoUrl: { type: String, trim: true, default: '' },
+  questionSolutionVideoUrl: { type: String, trim: true, default: '' },
   thumbnailUrl: { type: String, trim: true },
   order: { type: Number, required: true, min: 0, index: true },
   published: { type: Boolean, default: false, index: true },

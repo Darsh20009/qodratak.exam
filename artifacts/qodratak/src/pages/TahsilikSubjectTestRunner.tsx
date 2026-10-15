@@ -27,6 +27,7 @@ interface SubjectTestStart {
     subcategory: string;
     topic: string;
     difficulty: string;
+    imageUrl?: string | null;
   }>;
 }
 interface SubjectTestResult {
@@ -49,6 +50,7 @@ interface SubjectTestResult {
     subcategory: string;
     topic: string;
     difficulty: string;
+    imageUrl?: string | null;
     selectedOptionIndex: number | null;
     correctOptionIndex: number;
     isCorrect: boolean | null;
@@ -199,7 +201,9 @@ export default function TahsilikSubjectTestRunner() {
               <Card key={question.id}>
                 <CardHeader className="pb-3">
                   <div className="flex flex-wrap items-start justify-between gap-2">
-                    <CardTitle className="text-base leading-7">{index + 1}. {question.text}</CardTitle>
+                  <CardTitle className="text-base leading-7">
+                    {index + 1}. {question.imageUrl ? <span className="sr-only">{question.text}</span> : question.text}
+                  </CardTitle>
                     <Badge variant={question.isCorrect ? "default" : question.isCorrect === false ? "destructive" : "secondary"}>
                       {question.isCorrect ? "صحيحة" : question.isCorrect === false ? "تحتاج مراجعة" : "لم تتم الإجابة"}
                     </Badge>
@@ -207,6 +211,11 @@ export default function TahsilikSubjectTestRunner() {
                   <CardDescription>{question.subcategory} · {question.topic}</CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-2">
+                  {question.imageUrl && (
+                    <div className="mb-4 flex items-center justify-center overflow-hidden rounded-xl bg-white p-3">
+                      <img src={question.imageUrl} alt={`صورة السؤال ${index + 1}`} className="max-h-[55vh] max-w-full object-contain" loading="lazy" />
+                    </div>
+                  )}
                   {question.options.map((option, optionIndex) => (
                     <div
                       key={`${question.id}-${optionIndex}`}
@@ -285,11 +294,18 @@ export default function TahsilikSubjectTestRunner() {
         <Card>
           <CardHeader>
             <div className="flex items-start justify-between gap-3">
-              <CardTitle className="text-xl leading-8">{question.text}</CardTitle>
+              <CardTitle className="text-xl leading-8">
+                {question.imageUrl ? <span className="sr-only">{question.text}</span> : question.text}
+              </CardTitle>
               <Badge variant="outline">{question.subcategory}</Badge>
             </div>
           </CardHeader>
           <CardContent className="space-y-3">
+            {question.imageUrl && (
+              <div className="flex items-center justify-center overflow-hidden rounded-xl bg-white p-3">
+                <img src={question.imageUrl} alt={`صورة السؤال ${currentIndex + 1}`} className="max-h-[55vh] max-w-full object-contain" />
+              </div>
+            )}
             {question.options.map((option, optionIndex) => {
               const selected = answers[question.id] === optionIndex;
               return (

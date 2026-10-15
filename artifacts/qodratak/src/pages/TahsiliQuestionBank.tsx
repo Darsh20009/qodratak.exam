@@ -34,6 +34,7 @@ interface TahsiliQuestion {
   sourcePage: number;
   sourceQuestionNumber?: number;
   answerConfidence: "verified" | "review";
+  sourceImageUrl?: string | null;
 }
 
 interface BankResponse {
@@ -255,7 +256,14 @@ export default function TahsiliQuestionBank() {
                       </div>
                     </CardHeader>
                     <CardContent>
-                      <p className="line-clamp-4 min-h-24 text-sm leading-7">{question.text}</p>
+                      {question.sourceImageUrl ? (
+                        <div className="flex min-h-24 items-center justify-center overflow-hidden rounded-xl bg-white p-2">
+                          <img src={question.sourceImageUrl} alt={`صورة السؤال ${question.questionId}`} className="max-h-48 max-w-full object-contain" loading="lazy" />
+                          <span className="sr-only">{question.text}</span>
+                        </div>
+                      ) : (
+                        <p className="line-clamp-4 min-h-24 text-sm leading-7">{question.text}</p>
+                      )}
                       <div className="mt-4 flex items-center justify-between border-t border-border pt-3 text-xs text-muted-foreground">
                         <span>{question.options.length} خيارات</span>
                         <span>صفحة {question.sourcePage}</span>
@@ -306,7 +314,14 @@ export default function TahsiliQuestionBank() {
               </Button>
             </CardHeader>
             <CardContent className="space-y-5">
-              <p className="text-base leading-8">{selectedQuestion.text}</p>
+              {selectedQuestion.sourceImageUrl ? (
+                <div className="flex max-h-[55vh] items-center justify-center overflow-auto rounded-xl bg-white p-3">
+                  <img src={selectedQuestion.sourceImageUrl} alt={`صورة السؤال ${selectedQuestion.questionId}`} className="max-h-[52vh] max-w-full object-contain" />
+                  <span className="sr-only">{selectedQuestion.text}</span>
+                </div>
+              ) : (
+                <p className="text-base leading-8">{selectedQuestion.text}</p>
+              )}
               <div className="space-y-2">
                 {selectedQuestion.options.map((option, index) => {
                   const isVerified = selectedQuestion.answerConfidence === "verified";

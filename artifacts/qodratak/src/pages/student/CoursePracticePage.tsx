@@ -92,14 +92,14 @@ export default function CoursePracticePage({ taskId }: { taskId: string }) {
     <h1 className="text-2xl font-black">اكتمل تدريب اليوم</h1>
     <p className="text-lg">{result.correctAnswers} إجابة صحيحة من {result.totalQuestions} — التصحيح بمفتاح الحل المعتمد على الخادم.</p>
     <ExamLearningReport />
-    <Link href="/preparation-course" className="inline-block rounded-xl bg-primary px-5 py-3 font-bold text-primary-foreground" onClick={() => resetExamTiming()}>الخطوة التالية في دورتي</Link>
+    <Link href="/preparation-course" className="inline-block rounded-xl bg-primary px-5 py-3 font-bold text-primary-foreground" onClick={() => resetExamTiming()}>الخطوة التالية في خطتي</Link>
   </div>;
   const current = test?.questions[index];
   if (!current) return <div className="mx-auto max-w-xl space-y-5 p-8 text-center" dir="rtl">
     <h1 className="text-2xl font-black">تدريب دورتك</h1>
     {busy ? <p>نجهز الأسئلة المعتمدة لهذه المهمة…</p> : <Button onClick={() => void start()}>إعادة المحاولة</Button>}
     {error && <p role="alert" className="text-destructive">{error}</p>}
-    <Link href="/preparation-course" className="block text-primary">العودة لدورتي</Link>
+    <Link href="/preparation-course" className="block text-primary">العودة لخطتي</Link>
   </div>;
   return <div dir="rtl">
     {error && <div role="alert" className="border-b bg-destructive/10 p-4 text-destructive">{error}<Button variant="outline" disabled={busy} onClick={() => void submit()}>إعادة إرسال الإجابات</Button></div>}

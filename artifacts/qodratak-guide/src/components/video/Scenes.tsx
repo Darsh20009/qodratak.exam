@@ -208,12 +208,12 @@ export function OutroScene() {
         خطوة واحدة كل يوم
       </motion.div>
       <motion.div className="absolute rounded-full" style={{ left: '50%', top: '50%', width: '10vmin', height: '10vmin', margin: '-5vmin', background: C.paper }}
-        initial={{ scale: 0 }} animate={{ scale: 30 }} transition={{ delay: 2.6, duration: 0.7, ease: [0.7, 0, 0.3, 1] }} />
+        initial={{ scale: 0 }} animate={{ scale: 30 }} transition={{ delay: 2.1, duration: 0.75, ease: [0.7, 0, 0.3, 1] }} />
       <div className="absolute inset-0 flex flex-col items-center justify-center" dir="rtl">
         <motion.img src={`${B}qodratak-logo-transparent.png`} style={{ width: '46vmin' }}
-          initial={{ scale: 0, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} transition={{ delay: 3.1, type: 'spring', stiffness: 240, damping: 15 }} />
+          initial={{ scale: 0, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} transition={{ delay: 2.45, type: 'spring', stiffness: 240, damping: 15 }} />
         <motion.div style={{ fontFamily: display, fontWeight: 800, fontSize: '3.4vmin', color: C.ink, marginTop: '1vmin' }}
-          initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 3.7 }}>دليلك داخل المنصة · ابدأ تجربتك المجانية ٣ أيام</motion.div>
+          initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 3.15 }}>دليلك داخل المنصة · ابدأ تجربتك المجانية ٣ أيام</motion.div>
       </div>
     </motion.div>
   );

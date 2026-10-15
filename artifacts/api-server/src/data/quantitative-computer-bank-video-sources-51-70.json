@@ -1,0 +1,104 @@
+{
+  "banks": [
+    {
+      "number": 51,
+      "durationSeconds": 3582.9,
+      "videoUrl": "/api/learning/computerized/quantitative/computer-bank-51.mp4"
+    },
+    {
+      "number": 52,
+      "durationSeconds": 3448.2,
+      "videoUrl": "/api/learning/computerized/quantitative/computer-bank-52.mp4"
+    },
+    {
+      "number": 53,
+      "durationSeconds": 3458.93,
+      "videoUrl": "/api/learning/computerized/quantitative/computer-bank-53.mp4"
+    },
+    {
+      "number": 54,
+      "durationSeconds": 2472.7,
+      "videoUrl": "/api/learning/computerized/quantitative/computer-bank-54.mp4"
+    },
+    {
+      "number": 55,
+      "durationSeconds": 2688.267,
+      "videoUrl": "/api/learning/computerized/quantitative/computer-bank-55.mp4"
+    },
+    {
+      "number": 56,
+      "durationSeconds": 3095.167,
+      "videoUrl": "/api/learning/computerized/quantitative/computer-bank-56.mp4"
+    },
+    {
+      "number": 57,
+      "durationSeconds": 1820.167,
+      "videoUrl": "/api/learning/computerized/quantitative/computer-bank-57.mp4"
+    },
+    {
+      "number": 58,
+      "durationSeconds": 2205.167,
+      "videoUrl": "/api/learning/computerized/quantitative/computer-bank-58.mp4"
+    },
+    {
+      "number": 59,
+      "durationSeconds": 1930.067,
+      "videoUrl": "/api/learning/computerized/quantitative/computer-bank-59.mp4"
+    },
+    {
+      "number": 60,
+      "durationSeconds": 2155.067,
+      "videoUrl": "/api/learning/computerized/quantitative/computer-bank-60.mp4"
+    },
+    {
+      "number": 61,
+      "durationSeconds": 2845.167,
+      "videoUrl": "/api/learning/computerized/quantitative/computer-bank-61.mp4"
+    },
+    {
+      "number": 62,
+      "durationSeconds": 1590.167,
+      "videoUrl": "/api/learning/computerized/quantitative/computer-bank-62.mp4"
+    },
+    {
+      "number": 63,
+      "durationSeconds": 1925.167,
+      "videoUrl": "/api/learning/computerized/quantitative/computer-bank-63.mp4"
+    },
+    {
+      "number": 64,
+      "durationSeconds": 4080.2,
+      "videoUrl": "/api/learning/computerized/quantitative/computer-bank-64.mp4"
+    },
+    {
+      "number": 65,
+      "durationSeconds": 4283.52,
+      "videoUrl": "/api/learning/computerized/quantitative/computer-bank-65.mp4"
+    },
+    {
+      "number": 66,
+      "durationSeconds": 3341.96,
+      "videoUrl": "/api/learning/computerized/quantitative/computer-bank-66.mp4"
+    },
+    {
+      "number": 67,
+      "durationSeconds": 4166.2,
+      "videoUrl": "/api/learning/computerized/quantitative/computer-bank-67.mp4"
+    },
+    {
+      "number": 68,
+      "durationSeconds": 4109.32,
+      "videoUrl": "/api/learning/computerized/quantitative/computer-bank-68.mp4"
+    },
+    {
+      "number": 69,
+      "durationSeconds": 4109.32,
+      "videoUrl": "/api/learning/computerized/quantitative/computer-bank-69.mp4"
+    },
+    {
+      "number": 70,
+      "durationSeconds": 4288.36,
+      "videoUrl": "/api/learning/computerized/quantitative/computer-bank-70.mp4"
+    }
+  ]
+}

@@ -30,3 +30,9 @@ Use bounded playback of the original bank video rather than creating thousands o
 **Why:** The existing large videos support byte-range streaming; duplicate exports would unnecessarily increase media storage and deployment size.
 
 **How to apply:** Store source-linked start/end metadata separately from grades, distinguish manual verification from detected and inferred bounds, and keep the original media intact.
+
+For banks 51–70 only, the user explicitly approved an approximate timing rule: divide each video's duration into 48 equal question positions and give each question a 120-second clip centered on its position. Keep these bounds marked inferred and unverified.
+
+**Why:** The user prefers a useful approximate clip for these specific videos, while a precise-looking but unverified timestamp must not be presented as confirmed.
+
+**How to apply:** Clamp the first and last windows to the video boundaries, disclose the equal-duration method in the player, and do not extend this exception to other banks. For other videos with ambiguous badges, leave timings unset and show the full bank video until trustworthy bounds are available.

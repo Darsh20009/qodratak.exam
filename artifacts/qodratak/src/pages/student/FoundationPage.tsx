@@ -1181,7 +1181,7 @@ function FoundationHome({
           ) : (
             <div className="rounded-xl border border-dashed border-border p-5 text-center">
               <p className="text-sm font-bold text-foreground">لم تبدأ اختبارًا بعد</p>
-              <p className="mt-1 text-xs text-muted-foreground">ابدأ إحدى الدورتين وسيظهر تقدمك هنا.</p>
+              <p className="mt-1 text-xs text-muted-foreground">ابدأ أحد المسارين وسيظهر تقدمك هنا.</p>
             </div>
           )}
         </div>

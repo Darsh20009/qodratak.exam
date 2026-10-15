@@ -1,4 +1,7 @@
 import { createHash, createHmac } from "node:crypto";
+import { createReadStream } from "node:fs";
+import { stat } from "node:fs/promises";
+import { request as httpsRequest } from "node:https";
 
 export const QUDRAT_VERBAL_BOOK_FILES = [
   {
@@ -346,6 +349,7 @@ function signR2Request({
   range,
   body,
   contentType,
+  payloadHash: explicitPayloadHash,
 }: {
   method: "GET" | "HEAD" | "PUT" | "DELETE";
   host: string;
@@ -355,10 +359,12 @@ function signR2Request({
   range?: string;
   body?: Buffer;
   contentType?: string;
+  payloadHash?: string;
 }): Record<string, string> {
   const amzDate = new Date().toISOString().replace(/[:-]|\.\d{3}/g, "");
   const dateStamp = amzDate.slice(0, 8);
-  const payloadHash = body ? createHash("sha256").update(body).digest("hex") : hash("");
+  const payloadHash = explicitPayloadHash
+    ?? (body ? createHash("sha256").update(body).digest("hex") : hash(""));
   const headers: Record<string, string> = {
     host,
     "x-amz-content-sha256": payloadHash,
@@ -405,6 +411,7 @@ export async function writeR2Object(
   objectKey: string,
   body?: Buffer,
   contentType?: string,
+  timeoutMs = 30_000,
 ) {
   const { accountId, bucket, accessKeyId, secretAccessKey } = getR2Config();
   const host = `${accountId}.r2.cloudflarestorage.com`;
@@ -421,9 +428,64 @@ export async function writeR2Object(
   });
   const response = await fetch(`https://${host}${uri}`, {
     method, headers, body: body ? new Uint8Array(body) : undefined,
-    redirect: "error", signal: AbortSignal.timeout(30000),
+    redirect: "error", signal: AbortSignal.timeout(Math.min(900_000, Math.max(30_000, timeoutMs))),
   });
   if (!response.ok) throw new Error(`تعذر حفظ ملف العقد في التخزين الدائم (${response.status})`);
+}
+
+export async function writeR2File(
+  objectKey: string,
+  filePath: string,
+  contentType: string,
+  timeoutMs = 900_000,
+) {
+  const { accountId, bucket, accessKeyId, secretAccessKey } = getR2Config();
+  const host = `${accountId}.r2.cloudflarestorage.com`;
+  const uri = `/${bucket}/${objectKey.split("/").map(encodeURIComponent).join("/")}`;
+  const fileSize = (await stat(filePath)).size;
+  const payloadHash = await new Promise<string>((resolve, reject) => {
+    const digest = createHash("sha256");
+    const source = createReadStream(filePath);
+    source.on("data", (chunk) => digest.update(chunk));
+    source.on("error", reject);
+    source.on("end", () => resolve(digest.digest("hex")));
+  });
+  const headers = signR2Request({
+    method: "PUT",
+    host,
+    uri,
+    accessKeyId,
+    secretAccessKey,
+    contentType,
+    payloadHash,
+  });
+  headers["content-length"] = String(fileSize);
+
+  await new Promise<void>((resolve, reject) => {
+    const request = httpsRequest({
+      hostname: host,
+      path: uri,
+      method: "PUT",
+      headers,
+    }, (response) => {
+      const statusCode = response.statusCode ?? 0;
+      response.resume();
+      response.on("end", () => {
+        if (statusCode >= 200 && statusCode < 300) {
+          resolve();
+        } else {
+          reject(new Error(`تعذر حفظ الفيديو في التخزين الدائم (${statusCode})`));
+        }
+      });
+    });
+    request.setTimeout(Math.min(3_600_000, Math.max(30_000, timeoutMs)), () => {
+      request.destroy(new Error("انتهت مهلة رفع الفيديو إلى التخزين الدائم."));
+    });
+    request.on("error", reject);
+    const source = createReadStream(filePath);
+    source.on("error", (error) => request.destroy(error));
+    source.pipe(request);
+  });
 }
 
 export function isR2Configured() {

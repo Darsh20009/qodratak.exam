@@ -3,6 +3,7 @@ import { useEffect, useRef, useState as useStateSafe, useContext } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { VideoCanvas, useVideoPlayer, VideoPausedContext } from '@/lib/video';
 import { C } from './Scenes';
+import { TahsiliFlowScreen } from './ExtraChapters';
 
 function Grain() {
   return <div className="absolute inset-0 pointer-events-none" style={{ background: `radial-gradient(circle at 12% 18%, ${C.mint}22, transparent 34%), radial-gradient(circle at 88% 100%, ${C.coral}26, transparent 40%)` }} />;
@@ -19,9 +20,9 @@ export const MARKETING_DURATIONS = {
   m_gather: 4000,
   m_foundation: 4000,
   m_computerized: 4500,
-  m_exam: 6500,
-  m_results: 4000,
-  m_plans: 3500,
+  m_exam: 5000,
+  m_results: 3500,
+  m_plans: 5500,
   m_outro: 5000,
 };
 const START_SEC: Record<string, number> = (() => {
@@ -31,7 +32,7 @@ const START_SEC: Record<string, number> = (() => {
 })();
 
 /* ---------- persistent browser window (stays mounted, glides between poses) ---------- */
-type Shot = { src: string; url: string; crop?: boolean; focus: [number, number]; zoom: number; pins?: { x: number; y: number; text: string; at: number }[] };
+type Shot = { src?: string; visual?: 'tahsili-path'; url: string; crop?: boolean; focus: [number, number]; zoom: number; pins?: { x: number; y: number; text: string; at: number }[] };
 type Pose = { left: number; top: number; w: number; rot: number; opacity: number };
 const STAGE: Record<string, { pose: Pose; shots: Shot[] }> = {
   m_hook: { pose: { left: 50, top: 110, w: 40, rot: 6, opacity: 0 }, shots: [{ src: 'landing-signed-out.jpg', crop: true, url: '/', focus: [50, 30], zoom: 1 }] },
@@ -50,8 +51,7 @@ const STAGE: Record<string, { pose: Pose; shots: Shot[] }> = {
     { src: 'results.jpg', crop: true, url: '/records', focus: [48, 55], zoom: 1.3 },
     { src: 'n-records.jpg', url: '/records', focus: [50, 40], zoom: 1.15 }] },
   m_plans: { pose: { left: 43, top: 20, w: 54, rot: 0, opacity: 1 }, shots: [
-    { src: 'student-dashboard.jpg', crop: true, url: '/', focus: [50, 45], zoom: 1.3 },
-    { src: 'today.jpg', crop: true, url: '/learning/today', focus: [45, 45], zoom: 1.2 }] },
+    { visual: 'tahsili-path', url: '/student-program/tahsili', focus: [50, 50], zoom: 1.04 }] },
   m_outro: { pose: { left: 30, top: 40, w: 40, rot: 0, opacity: 0 }, shots: [{ src: 'student-dashboard.jpg', crop: true, url: '/', focus: [50, 45], zoom: 1 }] },
 };
 
@@ -62,7 +62,12 @@ function ShotPlane({ shot, hold }: { shot: Shot; hold: number }) {
       {/* crop:true removes the dev-preview strip baked into old captures; the image is shifted, never stretched */}
       <motion.div className="absolute left-0 w-full" style={{ top: shot.crop ? '-6.6%' : 0, transformOrigin: `${shot.focus[0]}% ${shot.focus[1]}%` }}
         initial={{ scale: 1.02 }} animate={{ scale: shot.zoom }} transition={{ duration: hold, ease: [0.45, 0, 0.25, 1] }}>
-        <img src={`${B}shots/${shot.src}`} className="block w-full" />
+        {shot.visual === 'tahsili-path'
+          ? <>
+              <TahsiliFlowScreen />
+              <div style={{ position: 'absolute', left: '1.2vmin', bottom: '0.9vmin', fontFamily: body, fontWeight: 700, fontSize: '1.5vmin', color: '#fff', background: 'rgba(13,27,42,.78)', padding: '0.35vmin 1vmin', borderRadius: '0.7vmin' }}>عرض توضيحي لمسار الطالب</div>
+            </>
+          : <img src={`${B}shots/${shot.src}`} className="block w-full" alt="" />}
         {shot.pins?.map((p, i) => (
           <div key={i} className="absolute" style={{ left: `${p.x}%`, top: `${p.y}%` }}>
             <motion.div style={{ position: 'absolute', width: '3.6vmin', height: '3.6vmin', margin: '-1.8vmin', borderRadius: '50%', border: `0.45vmin solid ${C.coral}`, background: `${C.coral}33` }}
@@ -224,7 +229,7 @@ const SCENES: Record<string, React.ComponentType> = {
     </motion.div>
   ),
   m_results: mkCopy('r', 'التصحيح والنتائج', 'تعرف وين تغلط', 'تصحيح فوري ونتائج تفصيلية'),
-  m_plans: mkCopy('l', 'خطتك', 'كل يوم خطوة', 'مهام يومية حتى موعد اختبارك', 'التحصيلي · قريبًا'),
+  m_plans: mkCopy('l', 'مسار التحصيلي', 'ابدأ بالمادة', 'ادرس، طبّق، ثم اختبر جاهزيتك'),
   m_outro: OutroScene,
 };
 
