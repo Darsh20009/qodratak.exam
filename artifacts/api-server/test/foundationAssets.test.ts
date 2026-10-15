@@ -53,6 +53,17 @@ test("hosted foundation videos support streaming, HEAD, ranges and safe paths", 
     const imageHead = await fetch(`${base}/computer-banks/exam-51/question-001.jpeg`, { method: "HEAD" });
     assert.equal(imageHead.status, 200);
     assert.equal(imageHead.headers.get("content-type"), "image/jpeg");
+    const cleanedImage = await fetch(
+      `${base}/computer-banks/exam-71/background-removed/question-001.png`,
+      { headers: { Range: "bytes=0-2" } },
+    );
+    assert.equal(cleanedImage.status, 206);
+    assert.equal(cleanedImage.headers.get("content-type"), "image/png");
+    assert.match(cleanedImage.headers.get("cache-control") || "", /immutable/);
+    assert.equal(
+      calls.at(-1)?.key,
+      "foundation/quantitative/computer-banks/exam-71/background-removed/question-001.png",
+    );
     assert.equal((await fetch(`${base}/computer-banks/exam-51/answer-key.pdf`)).status, 404);
   } finally {
     server.closeAllConnections();

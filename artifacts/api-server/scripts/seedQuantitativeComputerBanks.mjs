@@ -17,7 +17,7 @@ const seenBankNumbers = new Set();
 const plannedQuestionIds = new Map();
 const seenSourceQuestionIds = new Set();
 for (const bank of payload.banks) {
-  if (!Number.isInteger(bank.number) || bank.number < 1 || bank.number > 70 || seenBankNumbers.has(bank.number)) {
+  if (!Number.isInteger(bank.number) || bank.number < 1 || bank.number > 90 || seenBankNumbers.has(bank.number)) {
     throw new Error(`Invalid or duplicate quantitative computer bank number: ${bank.number}`);
   }
   seenBankNumbers.add(bank.number);

@@ -14,6 +14,8 @@ const manifestPath = path.join(
 );
 const stagingRoot = path.join(root, "generated-artifacts/computer-banks-51-70");
 const dryRun = process.env.COMPUTER_BANKS_UPLOAD_DRY_RUN === "1";
+const verifyOnly = process.env.COMPUTER_BANKS_UPLOAD_VERIFY_ONLY === "1";
+const onlyKey = process.env.COMPUTER_BANKS_UPLOAD_ONLY_KEY;
 const concurrency = 8;
 
 type Question = {
@@ -53,9 +55,11 @@ function sha256(value: Buffer): string {
 async function forEachConcurrent<T>(
   entries: T[],
   limit: number,
+  label: string,
   operation: (entry: T) => Promise<void>,
 ): Promise<void> {
   let cursor = 0;
+  let completed = 0;
   const errors: string[] = [];
   await Promise.all(
     Array.from({ length: Math.min(limit, entries.length) }, async () => {
@@ -64,7 +68,14 @@ async function forEachConcurrent<T>(
         try {
           await operation(entry);
         } catch (error) {
-          errors.push(error instanceof Error ? error.message : String(error));
+          const key = (entry as { key?: unknown } | null)?.key;
+          const prefix = typeof key === "string" ? `${key}: ` : "";
+          errors.push(`${prefix}${error instanceof Error ? error.message : String(error)}`);
+        } finally {
+          completed += 1;
+          if (completed % 100 === 0 || completed === entries.length) {
+            console.log(`${label}: ${completed}/${entries.length}`);
+          }
         }
       }
     }),
@@ -107,11 +118,19 @@ async function main() {
         filePath: path.join(stagingRoot, relative.replace(/^computer-banks\//, "")),
         contentType: contentTypeFor(match[2]),
       });
+      const number = String(question.questionNumber).padStart(3, "0");
+      const cleanedRelative =
+        `computer-banks/exam-${bank.number}/background-removed/question-${number}.png`;
+      entries.push({
+        key: `foundation/quantitative/${cleanedRelative}`,
+        filePath: path.join(stagingRoot, cleanedRelative.replace(/^computer-banks\//, "")),
+        contentType: "image/png",
+      });
     }
   }
 
-  if (entries.length !== 960) {
-    throw new Error(`Expected 960 question images, found ${entries.length}.`);
+  if (entries.length !== 1_920) {
+    throw new Error(`Expected 1,920 original/cleaned question images, found ${entries.length}.`);
   }
 
   let totalBytes = 0;
@@ -127,7 +146,7 @@ async function main() {
     console.log(JSON.stringify({
       dryRun: true,
       banks: payload.banks.length,
-      images: entries.length,
+      objects: entries.length,
       totalBytes,
       firstKey: entries[0].key,
       lastKey: entries.at(-1)?.key,
@@ -135,9 +154,44 @@ async function main() {
     return;
   }
 
+  if (verifyOnly) {
+    const missing: string[] = [];
+    const sizeMismatches: string[] = [];
+    await forEachConcurrent(entries, concurrency, "R2 preflight", async (entry) => {
+      const response = await fetchR2VerbalObject(entry.key, {
+        method: "HEAD",
+        signal: AbortSignal.timeout(30_000),
+      });
+      if (response.status === 404) {
+        missing.push(entry.key);
+        return;
+      }
+      const remoteLength = Number(response.headers.get("content-length"));
+      const localLength = (await fs.stat(entry.filePath)).size;
+      if (response.status !== 200) {
+        throw new Error(`Could not inspect R2 object: status=${response.status}`);
+      }
+      if (remoteLength !== localLength) sizeMismatches.push(entry.key);
+    });
+    console.log(JSON.stringify({
+      verifyOnly: true,
+      objects: entries.length,
+      missing,
+      sizeMismatches,
+    }, null, 2));
+    return;
+  }
+
+  const operationEntries = onlyKey
+    ? entries.filter((entry) => entry.key === onlyKey)
+    : entries;
+  if (onlyKey && operationEntries.length !== 1) {
+    throw new Error(`The requested repair key is not in the 51–70 manifest: ${onlyKey}`);
+  }
+
   let uploaded = 0;
   let alreadyPresent = 0;
-  await forEachConcurrent(entries, concurrency, async (entry) => {
+  await forEachConcurrent(operationEntries, concurrency, "R2 upload", async (entry) => {
     const local = await fs.readFile(entry.filePath);
     const head = await fetchR2VerbalObject(entry.key, {
       method: "HEAD",
@@ -165,7 +219,7 @@ async function main() {
   });
 
   let verified = 0;
-  await forEachConcurrent(entries, concurrency, async (entry) => {
+  await forEachConcurrent(operationEntries, concurrency, "R2 verify", async (entry) => {
     const localStat = await fs.stat(entry.filePath);
     const response = await fetchR2VerbalObject(entry.key, {
       method: "HEAD",
@@ -183,6 +237,7 @@ async function main() {
   console.log(JSON.stringify({
     banks: payload.banks.length,
     images: entries.length,
+    operationImages: operationEntries.length,
     uploaded,
     alreadyPresent,
     verified,

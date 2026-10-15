@@ -8,8 +8,19 @@ import sharp from 'sharp';
 
 const SCRIPT_DIR = path.dirname(fileURLToPath(import.meta.url));
 const PUBLIC_ROOT = path.resolve(SCRIPT_DIR, '../../qodratak/public');
-const IMAGE_ROOT = path.join(PUBLIC_ROOT, 'foundation/quantitative/computer-banks');
-const EXPECTED_IMAGE_COUNT = 2256;
+const IMAGE_ROOT = process.env.QUANTITATIVE_BANK_IMAGE_ROOT
+  ? path.resolve(process.env.QUANTITATIVE_BANK_IMAGE_ROOT)
+  : path.join(PUBLIC_ROOT, 'foundation/quantitative/computer-banks');
+const EXPECTED_IMAGE_COUNT = Number(process.env.QUANTITATIVE_BANK_EXPECTED_IMAGE_COUNT || 2256);
+const ALLOW_UNDETECTED_QUESTION_BADGES =
+  process.env.QUANTITATIVE_BANK_ALLOW_UNDETECTED_BADGES === '1';
+const MIN_OPAQUE_RATIO = Number(process.env.QUANTITATIVE_BANK_MIN_OPAQUE_RATIO || 0.03);
+if (!Number.isSafeInteger(EXPECTED_IMAGE_COUNT) || EXPECTED_IMAGE_COUNT < 1) {
+  throw new Error('QUANTITATIVE_BANK_EXPECTED_IMAGE_COUNT must be a positive integer');
+}
+if (!Number.isFinite(MIN_OPAQUE_RATIO) || MIN_OPAQUE_RATIO <= 0 || MIN_OPAQUE_RATIO >= 1) {
+  throw new Error('QUANTITATIVE_BANK_MIN_OPAQUE_RATIO must be greater than 0 and less than 1.');
+}
 const MODE = process.argv[2] || 'process';
 const SOURCE_ID_PATTERN = /^quantitative-computer-bank-(\d+)-(\d+)$/;
 const CAPTION_DETECTION_EXCLUSIONS = new Set([
@@ -113,6 +124,86 @@ function isStrongRed(r, g, b) {
 
 function isCaptionRed(r, g, b) {
   return r > 70 && r - g > 8 && r - b > 8 && g < 250 && b < 250;
+}
+
+function maskFaintWatermarkPixels(sourcePixels, outputPixels, width, height, channels) {
+  let removedPixels = 0;
+  let restoredQuestionPixels = 0;
+  const xStart = Math.floor(width * 0.1);
+  const xEnd = Math.ceil(width * 0.9);
+  const yStart = Math.floor(height * 0.04);
+  const yEnd = Math.floor(height * 0.77);
+  const candidates = new Uint8Array(width * height);
+
+  // The publisher watermark is pale and low-chroma; preserve the dark,
+  // saturated question text and diagrams by masking only pale pixels in the
+  // recurring watermark region. Restore a candidate pixel from nearby question
+  // ink when it lies inside a text stroke.
+  for (let y = yStart; y < yEnd; y += 1) {
+    for (let x = xStart; x < xEnd; x += 1) {
+      const sourceOffset = (y * width + x) * channels;
+      const outputOffset = (y * width + x) * 4;
+      if (outputPixels[outputOffset + 3] === 0) continue;
+
+      const r = sourcePixels[sourceOffset];
+      const g = sourcePixels[sourceOffset + 1];
+      const b = sourcePixels[sourceOffset + 2];
+      const lightness = (r + g + b) / 3;
+      const spread = Math.max(r, g, b) - Math.min(r, g, b);
+      if (lightness >= 185 && spread <= 95) {
+        candidates[y * width + x] = 1;
+      }
+    }
+  }
+
+  for (let y = yStart; y < yEnd; y += 1) {
+    for (let x = xStart; x < xEnd; x += 1) {
+      const pixelIndex = y * width + x;
+      if (!candidates[pixelIndex]) continue;
+
+      let neighborCount = 0;
+      let redTotal = 0;
+      let greenTotal = 0;
+      let blueTotal = 0;
+      for (let dy = -1; dy <= 1; dy += 1) {
+        for (let dx = -1; dx <= 1; dx += 1) {
+          if (dx === 0 && dy === 0) continue;
+          const neighborX = x + dx;
+          const neighborY = y + dy;
+          if (neighborX < 0 || neighborX >= width || neighborY < 0 || neighborY >= height) continue;
+          const neighborIndex = neighborY * width + neighborX;
+          if (candidates[neighborIndex]) continue;
+          const neighborOutputOffset = neighborIndex * 4;
+          if (outputPixels[neighborOutputOffset + 3] === 0) continue;
+
+          const neighborSourceOffset = neighborIndex * channels;
+          const nr = sourcePixels[neighborSourceOffset];
+          const ng = sourcePixels[neighborSourceOffset + 1];
+          const nb = sourcePixels[neighborSourceOffset + 2];
+          const neighborLightness = (nr + ng + nb) / 3;
+          const neighborSpread = Math.max(nr, ng, nb) - Math.min(nr, ng, nb);
+          if (neighborLightness > 175 && neighborSpread < 32) continue;
+          neighborCount += 1;
+          redTotal += nr;
+          greenTotal += ng;
+          blueTotal += nb;
+        }
+      }
+
+      const outputOffset = pixelIndex * 4;
+      if (neighborCount >= 2) {
+        outputPixels[outputOffset] = Math.round(redTotal / neighborCount);
+        outputPixels[outputOffset + 1] = Math.round(greenTotal / neighborCount);
+        outputPixels[outputOffset + 2] = Math.round(blueTotal / neighborCount);
+        outputPixels[outputOffset + 3] = 255;
+        restoredQuestionPixels += 1;
+      } else {
+        outputPixels[outputOffset + 3] = 0;
+        removedPixels += 1;
+      }
+    }
+  }
+  return { removedPixels, restoredQuestionPixels };
 }
 
 function isQuestionBadgeDarkPixel(r, g, b) {
@@ -548,19 +639,29 @@ async function processImage(image, tempDir, badge, targetPath = image.outputPath
     }
   }
 
-  if ((captionGroups.length > 0 || forcedCaptionRegion) && removedCaptionPixels < 500) {
-    throw new Error(`Copyright text was detected but not sufficiently masked in ${image.sourcePath}`);
-  }
-
-  const removedQuestionNumberPixels = maskQuestionNumberPixels(
+  const watermarkCleanup = maskFaintWatermarkPixels(
     sourcePixels,
     outputPixels,
     sourceInfo.width,
     sourceInfo.height,
     sourceInfo.channels,
-    badge,
   );
-  if (removedQuestionNumberPixels < 50) {
+
+  if ((captionGroups.length > 0 || forcedCaptionRegion) && removedCaptionPixels < 500) {
+    throw new Error(`Copyright text was detected but not sufficiently masked in ${image.sourcePath}`);
+  }
+
+  const removedQuestionNumberPixels = badge
+    ? maskQuestionNumberPixels(
+      sourcePixels,
+      outputPixels,
+      sourceInfo.width,
+      sourceInfo.height,
+      sourceInfo.channels,
+      badge,
+    )
+    : 0;
+  if (badge && removedQuestionNumberPixels < 50) {
     throw new Error(`Question number was not sufficiently masked in ${image.sourcePath}`);
   }
 
@@ -573,8 +674,12 @@ async function processImage(image, tempDir, badge, targetPath = image.outputPath
   const totalPixels = sourceInfo.width * sourceInfo.height;
   if (outputPixels[3] !== 0
     || transparentPixels < totalPixels * 0.03
-    || opaquePixels < totalPixels * 0.03) {
-    throw new Error(`Transparency/content validation failed for ${image.sourcePath}`);
+    || opaquePixels < totalPixels * MIN_OPAQUE_RATIO) {
+    throw new Error(
+      `Transparency/content validation failed for ${image.sourcePath} `
+      + `(corner alpha ${outputPixels[3]}, transparent ${(transparentPixels / totalPixels).toFixed(4)}, `
+      + `opaque ${(opaquePixels / totalPixels).toFixed(4)})`,
+    );
   }
 
   if (captionGroups.length) {
@@ -629,6 +734,8 @@ async function processImage(image, tempDir, badge, targetPath = image.outputPath
   return {
     hasCaption: captionGroups.length > 0 || Boolean(forcedCaptionRegion),
     removedCaptionPixels,
+    removedWatermarkPixels: watermarkCleanup.removedPixels,
+    restoredQuestionPixels: watermarkCleanup.restoredQuestionPixels,
     removedQuestionNumberPixels,
     bytes: stat.size,
   };
@@ -663,7 +770,7 @@ async function validateDerivative(image) {
   const totalPixels = info.width * info.height;
   if (data[3] !== 0
     || transparentPixels < totalPixels * 0.03
-    || opaquePixels < totalPixels * 0.03) {
+    || opaquePixels < totalPixels * MIN_OPAQUE_RATIO) {
     throw new Error(`Derivative lacks useful transparency/content: ${image.outputPath}`);
   }
   return { bytes: (await fs.stat(image.outputPath)).size, transparentPixels };
@@ -694,29 +801,37 @@ async function runWorkers(items, concurrency, worker, onProgress) {
 async function preflightQuestionNumberBadges(images) {
   const badgesByKey = new Map();
   await runWorkers(images, 2, async (image) => {
-    const { data, info } = await sharp(image.sourcePath)
-      .removeAlpha()
-      .raw()
-      .toBuffer({ resolveWithObject: true });
-    const bbox = findQuestionNumberBadge(
-      data,
-      info.width,
-      info.height,
-      info.channels,
-      image.sourcePath,
-    );
-    const badge = inspectQuestionNumberBadge(
-      data,
-      info.width,
-      info.height,
-      info.channels,
-      bbox,
-      image.sourcePath,
-    );
-    return {
-      key: `${image.examNumber}-${image.questionNumber}`,
-      badge,
-    };
+    try {
+      const { data, info } = await sharp(image.sourcePath)
+        .removeAlpha()
+        .raw()
+        .toBuffer({ resolveWithObject: true });
+      const bbox = findQuestionNumberBadge(
+        data,
+        info.width,
+        info.height,
+        info.channels,
+        image.sourcePath,
+      );
+      const badge = inspectQuestionNumberBadge(
+        data,
+        info.width,
+        info.height,
+        info.channels,
+        bbox,
+        image.sourcePath,
+      );
+      return {
+        key: `${image.examNumber}-${image.questionNumber}`,
+        badge,
+      };
+    } catch (error) {
+      if (!ALLOW_UNDETECTED_QUESTION_BADGES) throw error;
+      return {
+        key: `${image.examNumber}-${image.questionNumber}`,
+        badge: null,
+      };
+    }
   }, (completed, total, result) => {
     badgesByKey.set(result.key, result.badge);
     if (completed % 250 === 0 || completed === total) {
@@ -732,18 +847,26 @@ async function processAll(images, mode = 'process') {
   let stageRoot;
   let captionImages = 0;
   let removedCaptionPixels = 0;
+  let removedWatermarkPixels = 0;
+  let restoredQuestionPixels = 0;
   let removedQuestionNumberPixels = 0;
+  let skippedQuestionNumberBadges = 0;
   let totalOutputBytes = 0;
   try {
     stageRoot = await fs.mkdtemp(path.join(IMAGE_ROOT, '.question-number-stage-'));
     const stagedPathFor = (image) => path.join(stageRoot, image.examDir, image.outputName);
     await runWorkers(images, 2, async (image) => {
       const badge = badgesByKey.get(`${image.examNumber}-${image.questionNumber}`);
-      if (!badge) throw new Error(`Question-number preflight is missing for ${image.sourcePath}`);
+      if (!badge && !ALLOW_UNDETECTED_QUESTION_BADGES) {
+        throw new Error(`Question-number preflight is missing for ${image.sourcePath}`);
+      }
+      if (!badge) skippedQuestionNumberBadges += 1;
       return processImage(image, tempDir, badge, stagedPathFor(image));
     }, (completed, total, result) => {
       if (result.hasCaption) captionImages += 1;
       removedCaptionPixels += result.removedCaptionPixels;
+      removedWatermarkPixels += result.removedWatermarkPixels;
+      restoredQuestionPixels += result.restoredQuestionPixels;
       removedQuestionNumberPixels += result.removedQuestionNumberPixels;
       totalOutputBytes += result.bytes;
       if (completed % 50 === 0 || completed === total) {
@@ -795,7 +918,10 @@ async function processAll(images, mode = 'process') {
     derivativesVerified: images.length,
     imagesWithDetectedRedCopyright: captionImages,
     removedCaptionPixels,
-    questionNumberBadgesVerified: badgesByKey.size,
+    removedWatermarkPixels,
+    restoredQuestionPixels,
+    questionNumberBadgesVerified: [...badgesByKey.values()].filter(Boolean).length,
+    skippedQuestionNumberBadges,
     removedQuestionNumberPixels,
     generatedBytes: totalOutputBytes,
     verifiedBytes,
@@ -828,7 +954,7 @@ async function connectDatabase() {
 
 async function loadAndValidateDatabaseRows(collection, images) {
   const docs = await collection.find({
-    'source.questionId': /^quantitative-computer-bank-\d+-\d+$/,
+    'source.questionId': { $in: images.map(expectedImageId) },
   }).project({
     _id: 1,
     'source.questionId': 1,
@@ -918,6 +1044,12 @@ async function activateAll(images) {
             $set: {
               imageUrl: derivativeUrlFor(image),
               imageUrls: [derivativeUrlFor(image)],
+              imageProcessing: {
+                status: 'processed',
+                backgroundRemoved: true,
+                watermarkCleanupApplied: true,
+                note: 'تم تنظيف الخلفية آليًا؛ عُدّل رقم السؤال فقط عند تحديد موضعه بثقة، والأصل محفوظ.',
+              },
             },
           },
         },

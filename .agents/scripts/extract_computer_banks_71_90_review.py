@@ -184,8 +184,8 @@ def main() -> None:
             "pages": len(document),
             "questionCount": len(questions),
             "copyrightNotice": cover_text,
-            "rightsStatus": "blocked_pending_explicit_distribution_permission",
-            "publicationStatus": "private_review_draft_only",
+            "rightsStatus": "user_confirmed_permission_for_publication_and_watermark_edits",
+            "publicationStatus": "private_processing_draft",
             "questions": questions,
         })
         pending[number] = questions
@@ -218,10 +218,11 @@ def main() -> None:
     output_bytes = json.dumps(
         {
             "schemaVersion": 1,
-            "purpose": "private extraction draft; not student-facing",
+            "purpose": "private processing draft; not student-facing until image and key validation completes",
             "rightsNotice": (
-                "Source covers prohibit copying/distribution. No extracted content "
-                "may be published until explicit redistribution rights are confirmed."
+                "The user explicitly confirmed permission to publish banks 71–90 "
+                "and edit/remove watermarks. Keep this draft private until processing "
+                "and validation are complete."
             ),
             "banks": banks,
         },

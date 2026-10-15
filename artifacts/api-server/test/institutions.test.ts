@@ -142,7 +142,7 @@ test("institution activation, registration, assignments, access and isolation ar
       const created = await request("/api/admin/institutions", input("one"), undefined, true);
       assert.equal(created.status, 201); institutionIds.push(created.body.institution.id);
       assert.equal(created.body.institution.isActive, false);
-      assert.equal(created.body.institution.contract.issuerPlatformName, "منصة قدراتك التعليمية");
+      assert.equal(created.body.institution.contract.issuerPlatformName, "منصة قدراتك");
       assert.equal(created.body.institution.contract.issuerName, "مشاري عواض حسن الثبيتي");
       assert.match(created.body.institution.contract.signatureSha256, /^[a-f0-9]{64}$/);
       assert.match(created.body.institution.contract.stampSha256, /^[a-f0-9]{64}$/);

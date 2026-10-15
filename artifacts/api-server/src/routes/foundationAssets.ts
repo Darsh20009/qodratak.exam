@@ -9,7 +9,7 @@ export function createFoundationAssetsRouter(fetchAsset = fetchR2VerbalObject) {
   router.use(async (request, response, next) => {
     const isVideo = /\.mp4$/i.test(request.path);
     const isQuestionImage =
-      /^\/computer-banks\/exam-\d{2}\/question-\d{3}\.(?:jpe?g|png|webp)$/i.test(request.path);
+      /^\/computer-banks\/exam-\d{2}\/(?:background-removed\/)?question-\d{3}\.(?:jpe?g|png|webp)$/i.test(request.path);
     if (!["GET", "HEAD"].includes(request.method) || (!isVideo && !isQuestionImage)) {
       next();
       return;
@@ -23,7 +23,7 @@ export function createFoundationAssetsRouter(fetchAsset = fetchR2VerbalObject) {
     }
     if (
       !/^(?:[a-z0-9_-]+\/)*[a-z0-9_-]+\.mp4$/i.test(relativePath) &&
-      !/^computer-banks\/exam-\d{2}\/question-\d{3}\.(?:jpe?g|png|webp)$/i.test(relativePath)
+      !/^computer-banks\/exam-\d{2}\/(?:background-removed\/)?question-\d{3}\.(?:jpe?g|png|webp)$/i.test(relativePath)
     ) {
       response.status(400).json({ message: "Invalid lesson media path." });
       return;
