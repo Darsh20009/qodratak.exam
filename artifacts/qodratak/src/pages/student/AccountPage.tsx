@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Switch } from "@/components/ui/switch";
-import { Shield, KeyRound, Phone, Crown, CheckCircle2, User, LogOut, Camera, Loader2 } from "lucide-react";
+import { Shield, KeyRound, Phone, Crown, CheckCircle2, User, LogOut, Camera, Loader2, ChevronDown } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import InstitutionMembershipCard from "@/components/institution/InstitutionMembershipCard";
 import PlatformReviewCard from "@/components/student/PlatformReviewCard";
@@ -106,8 +106,14 @@ export default function AccountPage() {
       {user.role === "student" && <PlatformReviewCard studentId={user.id} />}
       {user.role === "student" && <PaymentHistory studentId={String(user.id ?? user._id ?? "")} />}
 
-      {/* Profile Info */}
-      <section className="rounded-2xl border border-border bg-white dark:bg-card p-6 flex flex-col md:flex-row items-center gap-6 shadow-sm">
+      <details data-testid="account-profile-details" className="group rounded-2xl border border-border bg-card shadow-sm">
+        <summary className="flex min-h-14 cursor-pointer list-none items-center gap-3 p-5 font-black text-foreground [&::-webkit-details-marker]:hidden">
+          <User className="h-5 w-5 text-primary" aria-hidden="true" />
+          <span className="flex-1">معلومات الحساب</span>
+          <span className="text-sm font-bold text-muted-foreground">{user.name || user.email}</span>
+          <ChevronDown className="h-4 w-4 text-muted-foreground transition-transform group-open:rotate-180" aria-hidden="true" />
+        </summary>
+        <section className="flex flex-col items-center gap-6 border-t border-border bg-white p-6 dark:bg-card md:flex-row">
         <div className="relative">
           <div className="h-24 w-24 overflow-hidden rounded-full bg-muted border-4 border-white dark:border-card shadow-md flex items-center justify-center font-black text-3xl text-[#0D1B2A] dark:text-white">
             {avatarUrl
@@ -131,12 +137,13 @@ export default function AccountPage() {
             <LogOut className="ml-2 h-4 w-4" /> تسجيل الخروج
           </Button>
         </div>
-      </section>
+        </section>
+      </details>
 
       <div className="grid md:grid-cols-2 gap-6">
         {/* Subscription & Guardian */}
         <div className="space-y-6">
-          <section className="rounded-2xl border border-border bg-white dark:bg-card p-6 shadow-sm">
+          <section data-testid="account-subscription-details" className="rounded-2xl border border-border bg-white p-6 shadow-sm dark:bg-card">
             <div className="flex items-center gap-3 mb-6">
               <Crown className="h-6 w-6 text-amber-500" />
               <h2 className="text-lg font-black text-foreground">الاشتراك</h2>

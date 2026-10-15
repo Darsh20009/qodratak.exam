@@ -48,7 +48,7 @@ test("content selection and answer submission use only owned session fields", ()
 
 test("student home and session UI provide the core Phase 16 states", () => {
   assert.match(home, /data-testid="student-next-step"/);
-  assert.match(home, /\/learning\/today/);
+  assert.match(home, /todayLearningHref\(planProgram, planSubjectId\)/);
   assert.match(home, /useTodayLearningSession\(hasJourneyScope, journeyProgram, journeySubjectId\)/);
   assert.match(session, /useTodayLearningSession\(true, programId, subjectId\)/);
   for (const label of ["خطوتك التالية", "نكمل من حيث توقفت", "ابدأ"]) assert.match(home, new RegExp(label));

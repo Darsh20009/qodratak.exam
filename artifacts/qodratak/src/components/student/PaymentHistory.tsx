@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { Link } from "wouter";
-import { CreditCard, FileText, RefreshCw } from "lucide-react";
+import { ChevronDown, CreditCard, FileText, RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { formatArDate } from "@/lib/geidea";
 
@@ -44,24 +44,26 @@ export default function PaymentHistory({ studentId }: { studentId: string }) {
   });
 
   return (
-    <section aria-labelledby="payment-history-heading" className="rounded-2xl border border-border bg-card p-5 shadow-sm sm:p-6" dir="rtl">
-      <div className="flex items-center gap-3">
+    <details data-testid="payment-history-details" aria-label="عملياتي وفواتيري" className="group rounded-2xl border border-border bg-card shadow-sm" dir="rtl">
+      <summary className="flex min-h-14 cursor-pointer list-none items-center gap-3 p-5 font-black text-foreground [&::-webkit-details-marker]:hidden">
         <CreditCard className="h-5 w-5 text-primary" aria-hidden="true" />
-        <h2 id="payment-history-heading" className="text-lg font-black text-foreground">عملياتي وفواتيري</h2>
-      </div>
+        <span className="flex-1">عملياتي وفواتيري</span>
+        <ChevronDown className="h-4 w-4 text-muted-foreground transition-transform group-open:rotate-180" aria-hidden="true" />
+      </summary>
+      <div className="space-y-4 border-t border-border p-4 sm:p-5">
       {history.isLoading ? (
-        <p className="mt-4 text-sm text-muted-foreground">جارٍ تحميل العمليات...</p>
+        <p className="text-sm text-muted-foreground">جارٍ تحميل العمليات...</p>
       ) : history.isError ? (
-        <div className="mt-4 text-sm text-destructive">
+        <div className="text-sm text-destructive">
           تعذر تحميل العمليات.
           <Button type="button" variant="link" onClick={() => history.refetch()} className="gap-1 text-inherit">
             <RefreshCw className="h-4 w-4" aria-hidden="true" /> إعادة المحاولة
           </Button>
         </div>
       ) : !history.data?.length ? (
-        <p className="mt-4 text-sm text-muted-foreground">لم تسجّل أي عملية اشتراك بعد. ستظهر محاولات الدفع واشتراكاتك هنا.</p>
+        <p className="text-sm text-muted-foreground">لم تسجّل أي عملية اشتراك بعد. ستظهر محاولات الدفع واشتراكاتك هنا.</p>
       ) : (
-        <ul className="mt-4 space-y-3">
+        <ul className="space-y-3">
           {history.data.map((payment) => (
             <li key={payment._id} className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-border bg-background p-4">
               <div className="space-y-1">
@@ -86,6 +88,7 @@ export default function PaymentHistory({ studentId }: { studentId: string }) {
           ))}
         </ul>
       )}
-    </section>
+      </div>
+    </details>
   );
 }

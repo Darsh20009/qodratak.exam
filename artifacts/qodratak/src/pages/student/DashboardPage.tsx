@@ -3,7 +3,6 @@ import { Link } from "wouter";
 import { useQuery } from "@tanstack/react-query";
 import {
   AlertTriangle,
-  Award,
   BookOpen,
   Brain,
   Calendar,
@@ -31,46 +30,15 @@ import InstitutionMembershipCard from "@/components/institution/InstitutionMembe
 import InstitutionAssignmentsCard from "@/components/institution/InstitutionAssignmentsCard";
 import { DashboardGuideFilm } from "@/components/student/DashboardGuideFilm";
 import { GuideFilm } from "@/components/GuideFilm";
-import PlatformReviewCard from "@/components/student/PlatformReviewCard";
 import { NewStudentWelcome } from "@/components/student/NewStudentWelcome";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import SubscriptionRenewalDialog from "@/components/SubscriptionRenewalDialog";
 import AdaptiveLearningCoach from "@/components/student/AdaptiveLearningCoach";
 import useSubscription from "@/hooks/useSubscription";
 import { getGetStudentCourseQueryKey, useGetStudentCourse } from "@workspace/api-client-react";
 import { usePreparationPreferences } from "@/hooks/use-preparation-preferences";
 import { foundationHrefForScope, todayLearningHref } from "@/lib/foundationRoutes.mjs";
-
-const SUPPORTED_DASHBOARD_PATHS = new Set([
-  "/",
-  "/foundation",
-  "/student-program/qudrat",
-  "/student-program/tahsili",
-  "/learning/today",
-  "/tahsilik/tests",
-  "/computerized",
-  "/question-bank",
-  "/qiyas",
-  "/book-exam",
-  "/account",
-  "/records",
-]);
-
-function getSafeInternalHref(value: unknown) {
-  if (typeof value !== "string" || !value.trim()) return "/foundation";
-
-  try {
-    const url = new URL(value.trim(), "https://qodratak.internal");
-    if (url.origin !== "https://qodratak.internal" || !SUPPORTED_DASHBOARD_PATHS.has(url.pathname)) {
-      return "/foundation";
-    }
-    return `${url.pathname}${url.search}`;
-  } catch {
-    return "/foundation";
-  }
-}
 
 function clampPercentage(value: number | undefined) {
   return Math.max(0, Math.min(100, Math.round(Number(value) || 0)));
@@ -97,24 +65,6 @@ function DashboardSkeleton() {
         <div className="h-52 animate-pulse rounded-3xl bg-muted" />
       </div>
     </div>
-  );
-}
-
-function DashboardHelpDetails({ reviewId }: { reviewId: React.ComponentProps<typeof PlatformReviewCard>["studentId"] }) {
-  const [loaded, setLoaded] = useState(false);
-  return (
-    <details data-testid="details-help-and-review" className="group rounded-3xl border border-border bg-card shadow-sm" onToggle={(event) => {
-      if (event.currentTarget.open) setLoaded(true);
-    }}>
-      <summary className="flex min-h-12 cursor-pointer list-none items-center gap-3 p-5 font-black text-foreground focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary [&::-webkit-details-marker]:hidden">
-        <PlayCircle className="h-5 w-5 text-primary" aria-hidden="true" />
-        <span className="flex-1">تقييم المنصة</span>
-        <ChevronDown className="h-4 w-4 text-muted-foreground transition-transform group-open:rotate-180" aria-hidden="true" />
-      </summary>
-      {loaded && <div className="space-y-4 border-t border-border p-4 sm:p-5">
-        <PlatformReviewCard studentId={reviewId} />
-      </div>}
-    </details>
   );
 }
 
@@ -198,7 +148,6 @@ export default function DashboardPage() {
   const updateExamDate = useUpdateExamDate();
   const [examDateStr, setExamDateStr] = useState("");
   const [isExamDialogOpen, setIsExamDialogOpen] = useState(false);
-  const [subscriptionDialogOpen, setSubscriptionDialogOpen] = useState(false);
 
   if (isUserLoading || (isStudent && (isLoading || isSubscriptionLoading))) return <DashboardSkeleton />;
 
@@ -278,7 +227,6 @@ export default function DashboardPage() {
           <span className="flex items-center gap-3"><FileText className="h-6 w-6 text-primary" /><span><strong className="block">نتائجي</strong><span className="text-sm text-muted-foreground">عرض نتائج الاختبارات والتقارير التفصيلية المحفوظة</span></span></span>
           <ChevronLeft className="h-5 w-5 shrink-0" />
         </Link>
-        <DashboardHelpDetails reviewId={user.id} />
       </div>
     );
   }
@@ -308,8 +256,6 @@ export default function DashboardPage() {
     "جلسة قصيرة بخطوات واضحة تساعدك على التقدم.";
   const todayIsComplete = todayPlan?.state === "COMPLETED";
   const todayHref = todayPlan?.planStatus === "DIAGNOSTIC_REQUIRED" ? foundationHref : todaySessionHref;
-  const rawRecommended = getSafeInternalHref(dashboard.recommendedPlan?.nextAction?.href);
-  const recommendedHref = /tahsil/.test(rawRecommended) ? "/foundation?program=tahsili" : rawRecommended;
   const saudiToday = new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Riyadh" }).format(new Date());
   const course = courseQuery.data?.course ?? null;
   const dueTask = course && course.level !== "unassessed"
@@ -375,7 +321,6 @@ export default function DashboardPage() {
         </section>
         <InstitutionMembershipCard />
         <InstitutionAssignmentsCard />
-        <DashboardHelpDetails reviewId={user.id} />
       </div>
     );
   }
@@ -702,46 +647,6 @@ export default function DashboardPage() {
             </section>
           )}
 
-          <details data-testid="details-account-information" className="group rounded-3xl border border-border bg-card shadow-sm">
-            <summary className="flex cursor-pointer list-none items-center gap-3 p-5 font-black text-foreground [&::-webkit-details-marker]:hidden">
-              <Award className="h-5 w-5 text-primary" aria-hidden="true" />
-              <span className="flex-1">معلومات الحساب</span>
-              <ChevronDown className="h-4 w-4 text-muted-foreground transition-transform group-open:rotate-180" aria-hidden="true" />
-            </summary>
-            <div className="space-y-4 border-t border-border px-5 pb-5 pt-4">
-              <div className="flex items-center justify-between text-sm">
-                <span className="text-muted-foreground">حالة الاشتراك</span>
-                <span data-testid="status-subscription" className="font-black text-foreground">
-                  {dashboard.subscription.status === "active"
-                    ? `نشط — ${dashboard.subscription.daysLeft} يوم`
-                    : dashboard.subscription.status === "trial"
-                      ? `تجربة — ${dashboard.trial?.daysLeft || 0} يوم`
-                      : "حساب مجاني"}
-                </span>
-              </div>
-              <div className="flex items-center justify-between text-sm">
-                <span className="text-muted-foreground">المكتبة</span>
-                <span data-testid="text-library-counts" className="font-black text-foreground">{dashboard.booksCount} كتب، {dashboard.foldersCount} مجلدات</span>
-              </div>
-              <Button
-                type="button"
-                data-testid="button-view-subscription"
-                variant="outline"
-                onClick={() => setSubscriptionDialogOpen(true)}
-                className="w-full rounded-xl font-black"
-              >
-                عرض تفاصيل الاشتراك
-              </Button>
-              <Link href={recommendedHref} data-testid="link-recommended-plan" className="flex items-center justify-between rounded-xl bg-muted px-3 py-3 text-sm font-bold text-foreground hover:bg-primary/10">
-                <span>
-                  <span className="block text-xs text-muted-foreground">الخطة المقترحة</span>
-                  <span className="mt-1 block">{dashboard.recommendedPlan.title}</span>
-                </span>
-                <ChevronLeft className="h-4 w-4 text-muted-foreground" aria-hidden="true" />
-              </Link>
-            </div>
-          </details>
-
           <details data-testid="details-more-links" className="group rounded-3xl border border-border bg-card shadow-sm">
             <summary className="flex cursor-pointer list-none items-center gap-3 p-5 font-black text-foreground [&::-webkit-details-marker]:hidden">
               <Route className="h-5 w-5 text-primary" aria-hidden="true" />
@@ -778,9 +683,6 @@ export default function DashboardPage() {
         </aside>
       </div>
 
-      <DashboardHelpDetails reviewId={user.id} />
-
-      <SubscriptionRenewalDialog open={subscriptionDialogOpen} onOpenChange={setSubscriptionDialogOpen} user={user} />
     </div>
   );
 }

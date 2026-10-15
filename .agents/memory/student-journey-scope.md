@@ -1,6 +1,6 @@
 ---
 name: Student journey and Tahsili availability
-description: Product scope for reducing student confusion and withholding incomplete Tahsili features.
+description: Product scope for a focused student dashboard, consolidated account page, and safe Tahsili availability.
 ---
 
 Keep one clear student preparation path personalized to observed level, exam date and available daily time. The user reported getting lost in the platform despite being its creator; more separate tools are not a substitute for clear next steps.
@@ -14,6 +14,12 @@ Keep the student's first dashboard view short and action-first; long instruction
 **Why:** The user explicitly said the dashboard had become too crowded with text, including after adding onboarding explanations.
 
 **How to apply:** Preserve access to these tools and the guide's hide/restore setting, but do not force the student to read them before reaching the next task.
+
+Keep student account details, subscription status, platform rating, and payment history/invoices on «حسابي», not in the dashboard. Make reviews and payment history collapsible so the page stays compact.
+
+**Why:** On 2026-10-15, the user asked to reduce dashboard clutter and gather account-related details in one place.
+
+**How to apply:** Use the account page as the home for personal and billing information; keep the dashboard centered on the next learning action.
 
 Keep Qudrat test types together under «الاختبارات» inside «المحوسب», including simulations, models and scheduled simulation booking.
 
