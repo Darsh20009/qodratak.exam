@@ -430,6 +430,7 @@ test(
             sourceKey: `qiyas-exam:integration:${studentId}`,
             idempotencyKey: `qiyas-exam-integration:${studentId}`,
             questionIds: [examQuestion.questionId],
+            scoredQuestionIds: [questionDocumentId],
             learningAnswers: [{
               questionId: questionDocumentId,
               selectedOptionIndex: 2,

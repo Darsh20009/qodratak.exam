@@ -134,7 +134,7 @@ export default function TahsiliQuestionBank() {
               </Badge>
               <h1 className="text-3xl font-black tracking-tight md:text-4xl">أسئلة التحصيلي حسب المادة</h1>
               <p className="mt-2 max-w-2xl text-sm leading-6 text-muted-foreground">
-                أسئلة الكتاب مرتبة في خمسة أقسام: الرياضيات، الفيزياء، الكيمياء، الأحياء، وعلم الأرض.
+                تظهر هنا الأسئلة التي تمت مراجعة مفتاح إجابتها واعتمادها فقط. ملفات المراجع متاحة في مكتبة المصادر.
               </p>
             </div>
             <div className="rounded-2xl bg-muted/50 px-5 py-4 text-center">
@@ -222,8 +222,13 @@ export default function TahsiliQuestionBank() {
           <Card className="border-dashed">
             <CardContent className="flex flex-col items-center justify-center gap-3 p-12 text-center">
               <BookOpen className="h-10 w-10 text-muted-foreground" />
-              <h2 className="text-lg font-bold">لا توجد أسئلة بهذا الفلتر</h2>
-              <p className="text-sm text-muted-foreground">جرّب اختيار مادة أخرى أو حذف البحث.</p>
+              <h2 className="text-lg font-bold">لا توجد أسئلة معتمدة بهذا الفلتر</h2>
+              <p className="max-w-lg text-sm leading-6 text-muted-foreground">
+                لا نعرض الأسئلة المستخرجة قبل مراجعتها واعتماد الإجابة. يمكنك فتح ملفات المادة من مكتبة المصادر.
+              </p>
+              <a href="/tahsilik/study" className="text-sm font-bold text-primary underline underline-offset-4">
+                افتح مكتبة المصادر
+              </a>
             </CardContent>
           </Card>
         ) : (

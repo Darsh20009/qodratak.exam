@@ -72,6 +72,7 @@ import {
   storeMediaBuffer,
 } from '../services/mediaStorage';
 import { fetchR2VerbalObject } from '../services/qudratVerbalBookFilesService';
+import { TAHSILI_SOURCE_CATALOG } from '../services/tahsiliSourceCatalog';
 import {
   completeLearningSession,
   createLearningSession,
@@ -935,8 +936,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // Serve original question crops only for questions whose answer key has been
   // reviewed; OCR draft images are available exclusively in the admin queue.
-  app.get('/api/tahsili/question-bank/:questionId/source-image', requireAuth, async (req: Request, res: Response) => {
+  app.get('/api/tahsili/question-bank/:questionId/source-image', requireAuth, requireRole('student'), async (req: Request, res: Response) => {
     try {
+      if (!await requireTahsiliStudentAccess(req, res)) return;
       const questionId = Number(req.params.questionId);
       if (!Number.isSafeInteger(questionId) || questionId < 1) {
         return res.status(400).json({ error: 'معرّف السؤال غير صالح' });
@@ -968,8 +970,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Tahsili question bank (separate from the legacy Qudrat question bank).
-  app.get('/api/tahsili/question-bank', requireAuth, async (req: Request, res: Response) => {
+  app.get('/api/tahsili/question-bank', requireAuth, requireRole('student'), async (req: Request, res: Response) => {
     try {
+      if (!await requireTahsiliStudentAccess(req, res)) return;
       const { TahsiliQuestion } = await import('../mongodb/models');
       const page = Math.max(1, Number.parseInt(String(req.query.page || '1'), 10) || 1);
       const limit = Math.min(50, Math.max(1, Number.parseInt(String(req.query.limit || '12'), 10) || 12));
@@ -977,7 +980,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const search = String(req.query.search || '').trim();
       const subcategory = String(req.query.subcategory || '').trim();
       const allowedSubjects = ['رياضيات', 'فيزياء', 'كيمياء', 'أحياء', 'علم الأرض'];
-      const query: Record<string, unknown> = {};
+      const query: Record<string, unknown> = { answerConfidence: 'verified' };
 
       if (subject && subject !== 'الكل' && allowedSubjects.includes(subject)) query.subject = subject;
       if (subcategory && subcategory !== 'الكل') query.subcategory = subcategory;
@@ -995,17 +998,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
           .sort({ subject: 1, questionId: 1 })
           .skip((page - 1) * limit)
           .limit(limit)
-          .select('-__v')
+          .select('questionId subject subcategory text options correctOptionIndex difficulty topic explanation sourcePage sourceQuestionNumber printedQuestionNumber sourceImageObjectKey')
           .lean(),
         TahsiliQuestion.aggregate([
+          { $match: { answerConfidence: 'verified' } },
           { $group: { _id: '$subject', count: { $sum: 1 } } },
           { $sort: { _id: 1 } },
         ]),
       ]);
 
-      const subcategoryQuery: { subject?: TahsiliSubject } = subject && subject !== 'الكل' && allowedSubjects.includes(subject)
-        ? { subject: subject as TahsiliSubject }
-        : {};
+      const subcategoryQuery: Record<string, unknown> = { answerConfidence: 'verified' };
+      if (subject && subject !== 'الكل' && allowedSubjects.includes(subject)) {
+        subcategoryQuery.subject = subject as TahsiliSubject;
+      }
       const subcategories = await TahsiliQuestion.distinct('subcategory', subcategoryQuery);
 
       res.json({
@@ -1032,7 +1037,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Tahsili exam endpoints (protected) - using device-based approach like subscription/status
-  app.get('/api/tahsili/exams/:examId', async (req: Request, res: Response) => {
+  app.get('/api/tahsili/exams/:examId', requireAuth, requireRole('student'), async (req: Request, res: Response) => {
+    return res.status(410).json({
+      error: 'تم إيقاف هذا الاختبار القديم. استخدم مركز الاختبارات المبني على الأسئلة المعتمدة.',
+      code: 'TAHSILI_LEGACY_EXAM_RETIRED',
+      testsPath: '/tahsilik/tests',
+    });
+    /*
     try {
       // Get deviceId and userId from query parameters (like subscription/status endpoint)
       const { deviceId, userId } = req.query;
@@ -1162,9 +1173,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.error('Error loading Tahsili exam:', error);
       res.status(500).json({ error: 'Internal server error' });
     }
+    */
   });
 
-  app.post('/api/tahsili/exams/:examId/submit', requireAuth, async (req: Request, res: Response) => {
+  app.post('/api/tahsili/exams/:examId/submit', requireAuth, requireRole('student'), async (req: Request, res: Response) => {
+    return res.status(410).json({
+      error: 'تم إيقاف تصحيح الاختبارات القديمة غير المراجعة.',
+      code: 'TAHSILI_LEGACY_EXAM_RETIRED',
+      testsPath: '/tahsilik/tests',
+    });
+    /*
     const session = (req as any).session;
     const userId = String(session?.userId || '');
     if (!userId) return res.status(401).json({ error: 'يجب تسجيل الدخول أولاً' });
@@ -1290,6 +1308,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.error('Tahsili exam submission error:', error);
       return res.status(500).json({ error: 'فشل في حفظ محاولة التحصيلي' });
     }
+    */
   });
 
   // Google OAuth configuration (only if credentials are provided)
@@ -12089,6 +12108,116 @@ app.post("/api/auth/register", async (req: Request, res: Response) => {
     environment: { label: 'علم الأرض', sourceLabel: 'علم الأرض', subjectId: 'subject.tahsili.environment', minutes: 20 },
   } as const;
   type TahsiliSubjectTestKey = keyof typeof tahsiliSubjectTests;
+  const requireTahsiliStudentAccess = async (req: Request, res: Response) => {
+    const studentId = studentOnly(req, res);
+    if (!studentId) return null;
+    const access = await ensureStudentAccountTrial(
+      studentId,
+      (req as any).session?.userEmail,
+    );
+    if (!access) {
+      res.status(403).json({
+        error: 'تعذر التحقق من اشتراك أو تجربة هذا الحساب.',
+        code: 'STUDENT_ENTITLEMENT_NOT_FOUND',
+      });
+      return null;
+    }
+    if (!access.paid && !access.active) {
+      res.status(402).json({
+        error: 'انتهت الفترة التجريبية. اشترك لمتابعة الدراسة.',
+        code: 'TRIAL_EXPIRED',
+        upgradePath: '/subscription',
+      });
+      return null;
+    }
+    return studentId;
+  };
+
+  app.get(
+    '/api/tahsili/sources',
+    requireAuth,
+    requireRole('student'),
+    async (req: Request, res: Response) => {
+      try {
+        if (!await requireTahsiliStudentAccess(req, res)) return;
+        return res.json({
+          sources: TAHSILI_SOURCE_CATALOG
+            .slice()
+            .sort((a, b) => a.ordinal - b.ordinal)
+            .map(({ objectKey: _objectKey, ...source }) => ({
+              ...source,
+              fileUrl: `/api/tahsili/sources/${source.id}/file`,
+            })),
+          totalSources: TAHSILI_SOURCE_CATALOG.length,
+        });
+      } catch (error) {
+        req.log.error({ err: error }, 'Unable to load Tahsili study sources');
+        return res.status(503).json({
+          error: 'تعذر تحميل مصادر التحصيلي الآن.',
+          code: 'TAHSILI_SOURCE_CATALOG_UNAVAILABLE',
+        });
+      }
+    },
+  );
+
+  app.get(
+    '/api/tahsili/sources/:sourceId/file',
+    requireAuth,
+    requireRole('student'),
+    async (req: Request, res: Response) => {
+      const source = TAHSILI_SOURCE_CATALOG.find(
+        (item) => item.id === String(req.params.sourceId),
+      );
+      if (!source) {
+        return res.status(404).json({
+          error: 'ملف المصدر غير موجود.',
+          code: 'TAHSILI_SOURCE_NOT_FOUND',
+        });
+      }
+      try {
+        if (!await requireTahsiliStudentAccess(req, res)) return;
+        const range = typeof req.headers.range === 'string' ? req.headers.range : undefined;
+        const upstream = await fetchR2VerbalObject(source.objectKey, {
+          method: 'GET',
+          range,
+          signal: AbortSignal.timeout(30000),
+        });
+        if (!upstream.ok && upstream.status !== 206) {
+          return res.status(upstream.status === 404 ? 404 : 503).json({
+            error: upstream.status === 404
+              ? 'ملف المصدر غير متاح في التخزين.'
+              : 'تعذر فتح ملف المصدر الآن.',
+            code: upstream.status === 404
+              ? 'TAHSILI_SOURCE_FILE_MISSING'
+              : 'TAHSILI_SOURCE_FILE_UNAVAILABLE',
+          });
+        }
+        res.status(upstream.status);
+        res.setHeader('Content-Type', 'application/pdf');
+        res.setHeader('Content-Disposition', `inline; filename*=UTF-8''${encodeURIComponent(source.originalName)}`);
+        res.setHeader('Cache-Control', 'private, no-store');
+        res.setHeader('X-Content-Type-Options', 'nosniff');
+        for (const header of ['content-length', 'content-range', 'accept-ranges', 'etag']) {
+          const value = upstream.headers.get(header);
+          if (value) res.setHeader(header, value);
+        }
+        if (!upstream.body) return res.end();
+        Readable.fromWeb(upstream.body as any).pipe(res);
+      } catch (error) {
+        const statusCode = error instanceof Error && /range/i.test(error.message) ? 416 : 503;
+        req.log.error({ err: error, sourceId: source.id }, 'Unable to stream Tahsili source PDF');
+        if (!res.headersSent) {
+          return res.status(statusCode).json({
+            error: statusCode === 416 ? 'نطاق صفحات الملف المطلوب غير صالح.' : 'تعذر فتح ملف المصدر الآن.',
+            code: statusCode === 416
+              ? 'TAHSILI_SOURCE_RANGE_INVALID'
+              : 'TAHSILI_SOURCE_FILE_UNAVAILABLE',
+          });
+        }
+        res.destroy(error as Error);
+      }
+    },
+  );
 
   const subjectLearningHistory = async (studentId: string, subjectId: string) => {
     const attempts = await LearningAttempt.find({
@@ -12117,6 +12246,7 @@ app.post("/api/auth/register", async (req: Request, res: Response) => {
     async (req: Request, res: Response) => {
       const studentId = studentOnly(req, res);
       if (!studentId) return;
+      if (!await requireTahsiliStudentAccess(req, res)) return;
       try {
         const subjects = await Promise.all(
           Object.entries(tahsiliSubjectTests).map(async ([subject, config]) => {
@@ -12164,6 +12294,7 @@ app.post("/api/auth/register", async (req: Request, res: Response) => {
     async (req: Request, res: Response) => {
       const studentId = studentOnly(req, res);
       if (!studentId) return;
+      if (!await requireTahsiliStudentAccess(req, res)) return;
       const parsed = StartTahsiliSubjectTestBody.safeParse(req.body);
       if (!parsed.success) {
         return res.status(400).json({
@@ -12305,6 +12436,7 @@ app.post("/api/auth/register", async (req: Request, res: Response) => {
     async (req: Request, res: Response) => {
       const studentId = studentOnly(req, res);
       if (!studentId) return;
+      if (!await requireTahsiliStudentAccess(req, res)) return;
       const parsed = SubmitTahsiliSubjectTestBody.safeParse(req.body);
       if (!parsed.success) {
         return res.status(400).json({
@@ -14059,6 +14191,7 @@ app.post("/api/auth/register", async (req: Request, res: Response) => {
     if (!supportedPrograms.has(program)) {
       return res.status(400).json({ error: 'البرنامج المدعوم هو qudrat أو tahsili فقط' });
     }
+    if (program === 'tahsili' && !await requireTahsiliStudentAccess(req, res)) return;
     try {
       const { FoundationContent } = await import('../mongodb/models');
       const subjectId = String(req.query.subject || '').trim();
@@ -14093,6 +14226,7 @@ app.post("/api/auth/register", async (req: Request, res: Response) => {
     try {
        const { FoundationContent, Question, TestResult } = await import('../mongodb/models');
       const lesson = await FoundationContent.findOne({ _id: rawLessonId, published: true }).select('program title quiz').lean() as any;
+       if (lesson?.program === 'tahsili' && !await requireTahsiliStudentAccess(req, res)) return;
       if (!lesson?.quiz?.questionIds?.length) return res.status(404).json({ error: 'لا يوجد اختبار مرتبط بهذا الدرس' });
 
       const submitted = Array.isArray(req.body?.answers) ? req.body.answers : [];

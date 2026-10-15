@@ -1209,8 +1209,8 @@ function FoundationHome({
 
       <section>
         <div className="mb-4">
-          <h2 className="text-xl font-black text-foreground">دوراتك</h2>
-          <p className="mt-1 text-sm text-muted-foreground">اختر المسار الذي تريد أن تبدأه اليوم.</p>
+          <h2 className="text-xl font-black text-foreground">اختر مسار الدراسة</h2>
+          <p className="mt-1 text-sm text-muted-foreground">ابدأ بالقدرات أو التحصيلي، ثم اختر المادة المناسبة لك.</p>
         </div>
         <div className="grid gap-4 md:grid-cols-2">
            <Link href="/foundation?program=qudrat" onClick={(event) => { event.preventDefault(); setLocation("/foundation?program=qudrat"); }} className="foundation-card group rounded-3xl border border-border bg-card p-5">
@@ -1218,26 +1218,34 @@ function FoundationHome({
               <span className="flex h-12 w-12 items-center justify-center rounded-2xl bg-blue-500/10 text-blue-600"><Target className="h-6 w-6" /></span>
               <span className="rounded-full bg-emerald-500/10 px-3 py-1 text-xs font-black text-emerald-700 dark:text-emerald-300">ابدأ</span>
             </div>
-            <h3 className="mt-5 text-2xl font-black text-foreground">دورة القدرات</h3>
+            <h3 className="mt-5 text-2xl font-black text-foreground">مسار القدرات</h3>
             <p className="mt-2 text-sm leading-7 text-muted-foreground">اختر اللفظي أو الكمي، ثم راجع الموارد المنشورة فعلًا داخل كل قسم.</p>
-            <div className="mt-5 flex items-center gap-3">
-              <div className="flex-1"><ProgressBar value={progress?.qudrat?.percentage || 0} /></div>
-              <span className="text-sm font-black text-primary">{progress?.qudrat?.percentage || 0}%</span>
-            </div>
-            <span className="mt-4 inline-flex items-center gap-2 text-sm font-black text-primary">دخول دورة القدرات <ArrowLeft className="h-4 w-4 transition-transform group-hover:-translate-x-1" /></span>
+            {(progress?.qudrat?.tests || 0) > 0 ? (
+              <div className="mt-5 flex items-center gap-3">
+                <div className="flex-1"><ProgressBar value={progress?.qudrat?.percentage || 0} /></div>
+                <span className="text-sm font-black text-primary">{progress?.qudrat?.percentage || 0}%</span>
+              </div>
+            ) : (
+              <p className="mt-5 text-xs text-muted-foreground">ستظهر إحصاءات تقدمك بعد أول اختبار.</p>
+            )}
+            <span className="mt-4 inline-flex items-center gap-2 text-sm font-black text-primary">افتح مسار القدرات <ArrowLeft className="h-4 w-4 transition-transform group-hover:-translate-x-1" /></span>
           </Link>
            <Link href="/foundation?program=tahsili" onClick={(event) => { event.preventDefault(); setLocation("/foundation?program=tahsili"); }} className="foundation-card group rounded-3xl border border-border bg-card p-5">
             <div className="flex items-start justify-between gap-4">
               <span className="flex h-12 w-12 items-center justify-center rounded-2xl bg-amber-500/10 text-amber-600"><GraduationCap className="h-6 w-6" /></span>
               <span className="rounded-full bg-emerald-500/10 px-3 py-1 text-xs font-black text-emerald-700 dark:text-emerald-300">ابدأ</span>
             </div>
-            <h3 className="mt-5 text-2xl font-black text-foreground">دورة التحصيلي</h3>
+            <h3 className="mt-5 text-2xl font-black text-foreground">مسار التحصيلي</h3>
             <p className="mt-2 text-sm leading-7 text-muted-foreground">اختر مادة الرياضيات أو الفيزياء أو الكيمياء أو الأحياء، وتحقق من مواردها المنشورة داخل القسم.</p>
-            <div className="mt-5 flex items-center gap-3">
-              <div className="flex-1"><ProgressBar value={progress?.tahsili?.percentage || 0} /></div>
-              <span className="text-sm font-black text-primary">{progress?.tahsili?.percentage || 0}%</span>
-            </div>
-            <span className="mt-4 inline-flex items-center gap-2 text-sm font-black text-primary">دخول دورة التحصيلي <ArrowLeft className="h-4 w-4 transition-transform group-hover:-translate-x-1" /></span>
+            {(progress?.tahsili?.tests || 0) > 0 ? (
+              <div className="mt-5 flex items-center gap-3">
+                <div className="flex-1"><ProgressBar value={progress?.tahsili?.percentage || 0} /></div>
+                <span className="text-sm font-black text-primary">{progress?.tahsili?.percentage || 0}%</span>
+              </div>
+            ) : (
+              <p className="mt-5 text-xs text-muted-foreground">ستظهر إحصاءات تقدمك بعد أول اختبار.</p>
+            )}
+            <span className="mt-4 inline-flex items-center gap-2 text-sm font-black text-primary">افتح مسار التحصيلي <ArrowLeft className="h-4 w-4 transition-transform group-hover:-translate-x-1" /></span>
           </Link>
         </div>
       </section>
@@ -1281,25 +1289,37 @@ function FoundationTrackOverview({
         ))}
       </nav>
       <header className="rounded-[28px] bg-[#0D1B2A] p-6 text-white sm:p-8">
-        <p className="text-sm font-bold text-[#F7F775]">دورة {program === "qudrat" ? "القدرات" : "التحصيلي"}</p>
+        <p className="text-sm font-bold text-[#F7F775]">مسار {program === "qudrat" ? "القدرات" : "التحصيلي"}</p>
         <div className="mt-2 flex flex-wrap items-end justify-between gap-4">
           <div>
             <h1 className="text-3xl font-black">اختر قسمك وابدأ</h1>
-            <p className="mt-2 max-w-2xl text-sm leading-7 text-[#CBD5E1]">اختر المادة لمراجعة الكتاب والملفات والفيديوهات المنشورة فيها. يظهر «قريبًا» عند عدم توفر مورد.</p>
+            <p className="mt-2 max-w-2xl text-sm leading-7 text-[#CBD5E1]">
+              {program === "tahsili"
+                ? "اختر المادة لفتح ملفات التأسيس والتدريب المتاحة في مكتبة المصادر."
+                : "اختر اللفظي أو الكمي لمراجعة الشرح والملفات المنشورة والتدرب."}
+            </p>
           </div>
-          <div className="rounded-2xl bg-white/10 px-5 py-3 text-center"><span className="block text-3xl font-black">{progress?.percentage || 0}%</span><span className="text-xs text-[#CBD5E1]">تقدم المسار</span></div>
+          {(progress?.tests || 0) > 0 && (
+            <div className="rounded-2xl bg-white/10 px-5 py-3 text-center">
+              <span className="block text-3xl font-black">{progress?.percentage || 0}%</span>
+              <span className="text-xs text-[#CBD5E1]">تقدم المسار</span>
+            </div>
+          )}
         </div>
       </header>
       <div className={`grid gap-4 ${program === "qudrat" ? "md:grid-cols-2" : "md:grid-cols-2 lg:grid-cols-4"}`}>
         {foundationSections[program].map((section) => {
           const sectionContent = content.filter((item) => item.subjectId === `subject.${program}.${section.key}`);
+          const sectionHref = program === "tahsili"
+            ? `/tahsilik/study?subject=${encodeURIComponent(section.tahsiliSubject || "مختلط")}`
+            : `/foundation?program=${program}&subject=${section.key}`;
           return (
            <Link
              key={section.key}
-             href={`/foundation?program=${program}&subject=${section.key}`}
+             href={sectionHref}
              onClick={(event) => {
                event.preventDefault();
-               setLocation(`/foundation?program=${program}&subject=${section.key}`);
+                setLocation(sectionHref);
              }}
              className="foundation-card group rounded-3xl border border-border bg-card p-5"
            >
@@ -1309,13 +1329,19 @@ function FoundationTrackOverview({
             </div>
             <h2 className="mt-5 text-xl font-black text-foreground">{section.title}</h2>
             <p className="mt-2 text-sm leading-7 text-muted-foreground">{section.description}</p>
-             <FoundationResourceAvailability content={sectionContent} state={resourceState} compact />
-             <span className="mt-4 inline-flex rounded-full bg-primary/10 px-3 py-1 text-xs font-black text-primary">افتح القسم</span>
+              {program === "tahsili" ? (
+                <p className="mt-3 text-xs leading-5 text-muted-foreground">ملفات هذه المادة متاحة في مكتبة المصادر.</p>
+              ) : (
+                <FoundationResourceAvailability content={sectionContent} state={resourceState} compact />
+              )}
+              <span className="mt-4 inline-flex rounded-full bg-primary/10 px-3 py-1 text-xs font-black text-primary">
+                {program === "tahsili" ? "افتح ملفات المادة" : "افتح القسم"}
+              </span>
           </Link>
           );
         })}
       </div>
-      {resourceState === "error" && (
+      {program === "qudrat" && resourceState === "error" && (
         <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-amber-500/30 bg-amber-500/5 p-4 text-sm">
           <span className="text-foreground">تعذر التحقق من موارد المواد.</span>
           <Button type="button" variant="outline" className="rounded-xl" onClick={onRetry}>إعادة التحقق</Button>

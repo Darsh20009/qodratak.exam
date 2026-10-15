@@ -103,7 +103,7 @@ export default function CoursePracticePage({ taskId }: { taskId: string }) {
   </div>;
   return <div dir="rtl">
     {error && <div role="alert" className="border-b bg-destructive/10 p-4 text-destructive">{error}<Button variant="outline" disabled={busy} onClick={() => void submit()}>إعادة إرسال الإجابات</Button></div>}
-    <QiyasExamLayout examTitle={`تدريب دورة القدرات — اليوم ${taskId.split(':')[1] || 'الحالي'}`} questionNumber={index + 1} totalQuestions={test!.questions.length}
+    <QiyasExamLayout examTitle={`تدريب مسار القدرات — اليوم ${taskId.split(':')[1] || 'الحالي'}`} questionNumber={index + 1} totalQuestions={test!.questions.length}
       questionId={current.id} questionText={current.text} questionData={current} questionTypeLabel={current.subcategory}
       hideQuestionTextWhenImageBacked={current.category === 'quantitative'}
       options={current.options} selectedAnswer={answers[current.id] ?? null} timeLeft={remaining}

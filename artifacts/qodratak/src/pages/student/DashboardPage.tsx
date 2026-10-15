@@ -283,8 +283,8 @@ export default function DashboardPage() {
     );
   }
   const todayPlan = todayLearning.data?.plan;
-  const planProgram = "qudrat" as const;
-  const planSubjectId = todayPlan?.programId === "program.tahsili" ? journeySubjectId : (todayPlan?.subjectId || journeySubjectId);
+  const planProgram = todayPlan?.programId === "program.tahsili" ? "tahsili" : journeyProgram;
+  const planSubjectId = todayPlan?.subjectId || (planProgram === "tahsili" ? undefined : journeySubjectId);
   const foundationHref = foundationHrefForScope(planProgram, planSubjectId);
   const todaySessionHref = todayLearningHref(planProgram, planSubjectId);
   const adaptiveLabel =
@@ -309,7 +309,7 @@ export default function DashboardPage() {
   const todayIsComplete = todayPlan?.state === "COMPLETED";
   const todayHref = todayPlan?.planStatus === "DIAGNOSTIC_REQUIRED" ? foundationHref : todaySessionHref;
   const rawRecommended = getSafeInternalHref(dashboard.recommendedPlan?.nextAction?.href);
-  const recommendedHref = /tahsil/.test(rawRecommended) ? "/foundation" : rawRecommended;
+  const recommendedHref = /tahsil/.test(rawRecommended) ? "/foundation?program=tahsili" : rawRecommended;
   const saudiToday = new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Riyadh" }).format(new Date());
   const course = courseQuery.data?.course ?? null;
   const dueTask = course && course.level !== "unassessed"
@@ -764,6 +764,15 @@ export default function DashboardPage() {
                   {item.label}
                 </Link>
               ))}
+              <button
+                type="button"
+                data-testid="button-open-all-student-pages"
+                onClick={() => window.dispatchEvent(new Event("qodratak:open-student-pages"))}
+                className="mt-1 flex min-h-11 items-center justify-between rounded-xl border border-primary/20 bg-primary/5 px-3 py-2 text-right text-sm font-black text-primary hover:bg-primary/10"
+              >
+                عرض كل صفحات المنصة
+                <ChevronLeft className="h-4 w-4" aria-hidden="true" />
+              </button>
             </div>
           </details>
         </aside>

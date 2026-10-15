@@ -110,14 +110,8 @@ import FolderDetailPage from "@/pages/FolderDetailPage";
 import AdminLogin from "@/pages/admin/AdminLogin";
 import AdminDashboard from "@/pages/admin/AdminDashboard";
 import ChatPage from "@/pages/admin/ChatPage";
-import TahsiliPage from "@/pages/TahsiliPage";
-import TahsiliDashboard from "@/pages/TahsiliDashboard";
-import TahsiliExamPage from "@/pages/TahsiliExamPage";
-import TahsilikStudyCenter from "@/pages/TahsilikStudyCenter";
-import TahsilikQualificationTest from "@/pages/TahsilikQualificationTest";
-import TahsilikMobileDashboard from "@/pages/TahsilikMobileDashboard";
-import TahsilikCustomTest from "@/pages/TahsilikCustomTest";
-import TahsilikComprehensiveTest from "@/pages/TahsilikComprehensiveTest";
+import TahsiliOverviewPage from "@/pages/TahsiliOverviewPage";
+import TahsiliSourceLibrary from "@/pages/TahsiliSourceLibrary";
 import TahsilikSubjectTest from "@/pages/TahsilikSubjectTest";
 import TahsilikSubjectTestRunner from "@/pages/TahsilikSubjectTestRunner";
 import TahsilikTestsHub from "@/pages/TahsilikTestsHub";
@@ -372,6 +366,16 @@ function MainLayout({ children }: { children: React.ReactNode }) {
   }, [location]);
 
   useEffect(() => {
+    const openPageDirectory = () => {
+      setSidebarMoreOpen(true);
+      setSidebarMoreSearch("");
+      setShowMoreMenu(true);
+    };
+    window.addEventListener("qodratak:open-student-pages", openPageDirectory);
+    return () => window.removeEventListener("qodratak:open-student-pages", openPageDirectory);
+  }, []);
+
+  useEffect(() => {
     const onDismiss = () => setAiBadgeInHeader(true);
     const onShow = () => setAiBadgeInHeader(false);
     window.addEventListener('aiButtonDismissed', onDismiss);
@@ -476,7 +480,7 @@ function MainLayout({ children }: { children: React.ReactNode }) {
   const coreNavItems = [
     { name: "الرئيسية",       href: "/",                icon: HomeIcon },
     { name: "خطتي", href: "/preparation-course", icon: CalendarCheck },
-    { name: "التأسيس", href: "/student-program/qudrat?section=foundation", icon: BookOpenIcon },
+    { name: "التأسيس", href: "/foundation", icon: BookOpenIcon },
     { name: "التدريب المحوسب", href: "/computerized", icon: Brain },
     { name: "نتائجي", href: "/records", icon: ClipboardIcon },
   ];
@@ -506,8 +510,8 @@ function MainLayout({ children }: { children: React.ReactNode }) {
 
     { group: "التحصيلي", name: "مسار التحصيلي", href: "/student-program/tahsili", icon: GraduationCapIcon, description: "انتقل إلى التأسيس والدراسة والاختبارات المنشورة للتحصيلي." },
     { group: "التحصيلي", name: "صفحة التحصيلي", href: "/tahsili", icon: GraduationCapIcon, description: "نظرة عامة على الدراسة ومراكز اختبارات التحصيلي." },
-    { group: "التحصيلي", name: "لوحة التحصيلي", href: "/tahsili-dashboard", icon: BarChart2, description: "تابع ملخص دراستك ونتائجك في التحصيلي." },
-    { group: "التحصيلي", name: "اختبارات التحصيلي المنشورة", href: "/tahsili/exams", icon: ClipboardIcon, description: "استعرض الاختبارات المنشورة للتحصيلي." },
+    { group: "التحصيلي", name: "مصادر التحصيلي", href: "/tahsilik/study", icon: BookOpenIcon, description: "افتح ملفات الدراسة المرفوعة للمواد." },
+    { group: "التحصيلي", name: "اختبارات التحصيلي", href: "/tahsilik/tests", icon: ClipboardIcon, description: "اختبارات مبنية على الأسئلة التي اعتُمدت إجاباتها." },
     { group: "التحصيلي", name: "مركز اختبارات التحصيلي", href: "/tahsilik/tests", icon: Brain, description: "افتح اختبارات التحصيلي حسب المادة أو الاختبار الشامل." },
     { group: "التحصيلي", name: "مركز الدراسة", href: "/tahsilik/study", icon: BookOpenIcon, description: "تابع مواد التحصيلي والدروس المنشورة." },
     { group: "التحصيلي", name: "بنك أسئلة التحصيلي", href: "/tahsilik/question-bank", icon: Library, description: "تدرب على أسئلة التحصيلي حسب المادة." },
@@ -564,7 +568,7 @@ function MainLayout({ children }: { children: React.ReactNode }) {
   ];
 
   const learnerGoalActions = [
-    { name: "أبني الأساس", href: "/student-program/qudrat?section=foundation", icon: BookOpenIcon, description: "ابدأ من المفاهيم الأساسية." },
+    { name: "أبني الأساس", href: "/foundation", icon: BookOpenIcon, description: "اختر مسار القدرات أو التحصيلي وابدأ من الأساس." },
     { name: "أتدرب على اختبار", href: "/qiyas-hub", icon: Brain, description: "اختر تدريبًا أو اختبارًا محاكيًا." },
     { name: "أراجع أخطائي", href: "/error-analysis", icon: TrendingDown, description: "اكتشف ما يحتاج إلى مراجعة." },
     { name: "أستعد لموعدي", href: "/pre-exam-day", icon: CalendarCheck, description: "راجع خطة الاستعداد للاختبار." },
@@ -1223,14 +1227,14 @@ function Router({ splashDone }: { splashDone: boolean }) {
         {() => <StudentShell><ProtectedRoute><StudentProgramPage /></ProtectedRoute></StudentShell>}
       </Route>
 
-      <Route path="/tahsili">
-        {() => <StudentShell><ProtectedRoute requiresPremium={true}><TahsiliPage /></ProtectedRoute></StudentShell>}
+       <Route path="/tahsili">
+         {() => <StudentShell><ProtectedRoute requiresPremium={true}><TahsiliOverviewPage /></ProtectedRoute></StudentShell>}
       </Route>
       <Route path="/tahsili-dashboard">
-        {() => <StudentShell><ProtectedRoute requiresPremium={true}><TahsiliDashboard /></ProtectedRoute></StudentShell>}
+         {() => <StudentShell><ProtectedRoute requiresPremium={true}><Redirect to="/student-program/tahsili" /></ProtectedRoute></StudentShell>}
       </Route>
       <Route path="/tahsili/exams">
-        {() => <StudentShell><ProtectedRoute requiresPremium={true}><TahsiliExamPage /></ProtectedRoute></StudentShell>}
+         {() => <StudentShell><ProtectedRoute requiresPremium={true}><Redirect to="/tahsilik/tests" /></ProtectedRoute></StudentShell>}
       </Route>
 
       {/* منصة تحصيلك المتكاملة */}
@@ -1238,28 +1242,25 @@ function Router({ splashDone }: { splashDone: boolean }) {
         {() => <StudentShell><ProtectedRoute requiresPremium={true}><Redirect to="/tahsili" /></ProtectedRoute></StudentShell>}
       </Route>
       <Route path="/tahsilik/mobile-dashboard">
-        {() => <StudentShell><ProtectedRoute requiresPremium={true}><TahsilikMobileDashboard /></ProtectedRoute></StudentShell>}
+         {() => <StudentShell><ProtectedRoute requiresPremium={true}><Redirect to="/student-program/tahsili" /></ProtectedRoute></StudentShell>}
       </Route>
       <Route path="/tahsilik/study">
-        {() => <StudentShell><ProtectedRoute requiresPremium={true}><TahsilikStudyCenter /></ProtectedRoute></StudentShell>}
+         {() => <StudentShell><ProtectedRoute requiresPremium={true}><TahsiliSourceLibrary /></ProtectedRoute></StudentShell>}
       </Route>
       <Route path="/tahsilik/tests">
         {() => <StudentShell><ProtectedRoute requiresPremium={true}><TahsilikTestsHub /></ProtectedRoute></StudentShell>}
       </Route>
       <Route path="/tahsilik/qualification">
-        {() => <StudentShell><ProtectedRoute requiresPremium={true}><TahsilikQualificationTest /></ProtectedRoute></StudentShell>}
+         {() => <StudentShell><ProtectedRoute requiresPremium={true}><Redirect to="/tahsilik/tests" /></ProtectedRoute></StudentShell>}
       </Route>
       <Route path="/tahsilik/question-bank">
         {() => <StudentShell><ProtectedRoute requiresPremium={true}><TahsiliQuestionBank /></ProtectedRoute></StudentShell>}
       </Route>
-      <Route path="/tahsili/question-bank">
-        {() => <StudentShell><ProtectedRoute requiresPremium={true}><TahsiliQuestionBank /></ProtectedRoute></StudentShell>}
-      </Route>
       <Route path="/tahsilik/custom-test">
-        {() => <StudentShell><ProtectedRoute requiresPremium={true}><TahsilikCustomTest /></ProtectedRoute></StudentShell>}
+         {() => <StudentShell><ProtectedRoute requiresPremium={true}><Redirect to="/tahsilik/tests" /></ProtectedRoute></StudentShell>}
       </Route>
       <Route path="/tahsilik/comprehensive-test">
-        {() => <StudentShell><ProtectedRoute requiresPremium={true}><TahsilikComprehensiveTest /></ProtectedRoute></StudentShell>}
+         {() => <StudentShell><ProtectedRoute requiresPremium={true}><Redirect to="/tahsilik/tests" /></ProtectedRoute></StudentShell>}
       </Route>
       <Route path="/tahsilik/tests/subject">
         {() => <StudentShell><ProtectedRoute requiresPremium={true}><TahsilikSubjectTest /></ProtectedRoute></StudentShell>}
@@ -1267,6 +1268,12 @@ function Router({ splashDone }: { splashDone: boolean }) {
       <Route path="/tahsilik/test-runner/subject">
         {() => <StudentShell><ProtectedRoute requiresPremium={true}><TahsilikSubjectTestRunner /></ProtectedRoute></StudentShell>}
       </Route>
+       <Route path="/tahsilik/test-runner/custom">
+         {() => <StudentShell><ProtectedRoute requiresPremium={true}><Redirect to="/tahsilik/tests" /></ProtectedRoute></StudentShell>}
+       </Route>
+       <Route path="/tahsilik/test-runner/comprehensive">
+         {() => <StudentShell><ProtectedRoute requiresPremium={true}><Redirect to="/tahsilik/tests" /></ProtectedRoute></StudentShell>}
+       </Route>
       <Route path="/tahsilik/tests-hub">
         {() => <StudentShell><ProtectedRoute requiresPremium={true}><Redirect to="/tahsilik/tests" /></ProtectedRoute></StudentShell>}
       </Route>

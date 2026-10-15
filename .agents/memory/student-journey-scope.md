@@ -27,11 +27,11 @@ Course reading tasks must identify the specific teaching unit, not allocate a sh
 
 **How to apply:** Keep unit reading self-reported and separate from trusted practice results and whole-content completion. Source difficulty labels and text-based lesson matches are instructional hints, not calibrated difficulty or approved concept mastery.
 
-Tahsili is not ready for student use. Keep its student-facing lessons, tests and plans closed and labeled «قريبًا» until the user explicitly asks to reopen it after readiness work.
+Tahsili student pages are released, but only real resources and questions with reviewed answer keys may be shown. Do not label the whole program «قريبًا» or make tests from unreviewed OCR drafts.
 
-**Why:** The user said «المنصة التحصيلي لا يعمل بالكامل» and requested closing anything related to it.
+**Why:** On 2026-10-15, the user explicitly reversed the earlier closure request and asked for Tahsili to be available; question-key accuracy remains a stated requirement.
 
-**How to apply:** Preserve existing content, administrative maintenance and historical results; do not delete Tahsili data. Apply availability restrictions on the server as well as navigation so direct student URLs do not reopen unfinished features.
+**How to apply:** Let eligible students open uploaded source files and released Tahsili pages. Use only reviewed, verified questions for tests; keep pending OCR drafts in admin review. If there are no approved questions, explain that accurately rather than showing a generic «قريبًا» message.
 
 Students without a booked exam must be able to start assessment and daily learning without inventing an official exam date.
 
@@ -39,8 +39,8 @@ Students without a booked exam must be able to start assessment and daily learni
 
 **How to apply:** Open a daily session only when a real ready plan exists; otherwise explicitly offer published foundation material, not a fabricated personalized session or a request to wait for nonexistent new content. Intro visibility and booking-choice preferences are presentation only, never evidence of level or permission to bypass assessment/subscription checks.
 
-Keep «المزيد» a searchable directory of all active student-facing pages on desktop and mobile, with clear learning-goal shortcuts. Do not expose admin routes, context-only exam routes, or unfinished Tahsili features as available pages.
+Keep «المزيد» a searchable directory of all active student-facing pages on desktop and mobile, with clear learning-goal shortcuts. Do not expose admin routes, context-only exam routes, or unavailable content as ready.
 
 **Why:** The user explicitly asked to make every remaining student page discoverable and to improve the learning experience for students at every level.
 
-**How to apply:** Add new student-ready destinations to the shared navigation registry and verify each link resolves to a route; preserve subscription checks and keep Tahsili clearly marked «قريبًا».
+**How to apply:** Add new student-ready destinations to the shared navigation registry and verify each link resolves to a route; preserve subscription checks and distinguish published Tahsili resources from questions still awaiting review.

@@ -8,7 +8,7 @@ Shots: old captures (crop 6.6% dev strip): student-dashboard, preparation-course
 |---|---|---|---|---|---|---|---|
 | 1 | 0 | 4.5 | intro | — | دليلك السريع / كيف تستخدم قدراتك؟ | icon + framed landing | — |
 | 2 | 4.5 | 4.5 | dashboard | ١ لوحتي | هنا تبدأ كل يوم | right | ring |
-| 3 | 9 | 4 | course | ٢ دورتي | هنا تحجز موعد اختبارك | left | ring |
+| 3 | 9 | 4 | course | ٢ خطتي | هنا تتابع خطة استعدادك | left | ring |
 | 4 | 13 | 4 | today | ٣ مهام اليوم | هنا مهامك اليومية | full | ring |
 | 5 | 17 | 4 | foundation | ٤ التأسيس | هنا تتعلّم من الأساس | right | ring |
 | 6 | 21 | 4 | book | ٥ كتاب التأسيس | هنا تقرأ الشرح خطوة بخطوة | left | ring |
@@ -132,3 +132,7 @@ Runtime control: to keep the whole guide below the 120 s ceiling, each of the ei
 
 Full-guide outro frame scan found a brief paper-only interval while the official logo waited for its entrance. To keep the same real full logo and mosaic→paper payoff without a blank field, the paper iris now opens at +2.1 s, the logo starts at +2.45 s, and the existing tagline starts at +3.15 s. The brand, copy, overall 5.5 s outro, and loop handoff remain unchanged.
 Runtime: the 8 extra pages are 5.1 s each (were 5.5 s). Bed offsets: review 4.5 s, then extras continuous from 11 s at 5.1 s steps. x_review runs 66.5–73.0 s; flashcards starts at 73.0 s.
+
+## Revision: student guide naming and Tahsili availability
+
+The student guide now labels the preparation-plan page «خطتي» rather than «دورتي», including its scene title in the player controls. The on-screen explanation now describes following a preparation plan for القدرات or التحصيلي instead of booking an exam appointment. Both homepage marketing cuts and the standalone Tahsili chapter retain the implemented Tahsili study → question-bank → test-center path; the old «قريبًا» claim remains removed. This guide describes the visible route and does not claim that any unavailable question banks or backend content have been added.

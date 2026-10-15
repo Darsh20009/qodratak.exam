@@ -11,7 +11,7 @@ import { useSceneControls } from './useSceneControls';
 const F = 'src/components/video/Scenes.tsx';
 const SCENE_DETAILS: Record<string, { title: string; filePath: string }> = {
   intro: { title: 'المقدمة', filePath: F }, dashboard: { title: 'لوحتي', filePath: F },
-  course: { title: 'دورتي', filePath: F }, today: { title: 'مهام اليوم', filePath: F },
+  course: { title: 'خطتي', filePath: F }, today: { title: 'مهام اليوم', filePath: F },
   foundation: { title: 'التأسيس', filePath: F }, book: { title: 'كتاب التأسيس', filePath: F },
   computerized: { title: 'المحوسب', filePath: F }, results: { title: 'نتائجي', filePath: F },
   account: { title: 'حسابي', filePath: F }, outro: { title: 'الخاتمة', filePath: F },

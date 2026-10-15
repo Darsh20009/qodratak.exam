@@ -460,7 +460,7 @@ export default function LandingPage({
                 <a href="#plans" className="qodratak-focus-ring inline-flex items-center rounded-xl px-2 py-3 text-sm font-bold text-[#171723] underline underline-offset-4 dark:text-white">قارن الباقات</a>
               </div>
             </div>
-            <GuideFilm film="marketing" muted compact title="فيلم تسويقي: لماذا تختار منصة قدراتك للاستعداد لاختبار القدرات" />
+            <GuideFilm film="marketing" muted compact title="فيلم تسويقي: لماذا تختار منصة قدراتك للاستعداد لاختباري القدرات والتحصيلي" />
           </div>
         </section>
         <div className="relative mx-auto max-w-6xl px-5 pb-20 sm:px-8 lg:pb-24">

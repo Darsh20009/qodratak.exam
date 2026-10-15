@@ -43,10 +43,10 @@ const PROGRAMS: Record<ProgramKey, ProgramConfig> = {
     english: "Tahsili",
     description: "مسار التحصيلي بترتيب واضح للدراسة والاختبار.",
     foundation: [
-      { title: "الرياضيات", description: "شرح تأسيسي واختبار من بنك أسئلة الرياضيات.", href: "/foundation?program=tahsili&subject=math", icon: Brain },
-      { title: "الفيزياء", description: "شرح تأسيسي واختبار من بنك أسئلة الفيزياء.", href: "/foundation?program=tahsili&subject=physics", icon: Target },
-      { title: "الكيمياء", description: "شرح تأسيسي واختبار من بنك أسئلة الكيمياء.", href: "/foundation?program=tahsili&subject=chemistry", icon: BookOpen },
-      { title: "الأحياء", description: "شرح تأسيسي واختبار من بنك أسئلة الأحياء.", href: "/foundation?program=tahsili&subject=biology", icon: GraduationCap },
+      { title: "الرياضيات", description: "افتح ملفات التأسيس والتدريب الخاصة بالرياضيات.", href: "/tahsilik/study?subject=رياضيات", icon: Brain },
+      { title: "الفيزياء", description: "افتح ملفات التأسيس والتدريب الخاصة بالفيزياء.", href: "/tahsilik/study?subject=فيزياء", icon: Target },
+      { title: "الكيمياء", description: "افتح ملفات التأسيس والتدريب الخاصة بالكيمياء.", href: "/tahsilik/study?subject=كيمياء", icon: BookOpen },
+      { title: "الأحياء", description: "افتح ملفات التأسيس والتدريب الخاصة بالأحياء.", href: "/tahsilik/study?subject=أحياء", icon: GraduationCap },
     ],
     computer: [
       { title: "مركز الاختبارات", description: "اختر بين اختبار شامل أو حسب المادة أو اختبار مخصص.", href: "/tahsilik/tests", icon: GraduationCap },

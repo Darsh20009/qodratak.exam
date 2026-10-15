@@ -222,7 +222,7 @@ export function OutroScene() {
 const CH = { learn: 'التعلّم', train: 'التدريب والاختبارات', follow: 'المتابعة' };
 export const STEPS: Step[] = [
   { n: '١', chapter: CH.learn, label: 'لوحتي', line1: 'هنا تبدأ كل يوم', line2: 'مهمتك اليوم تظهر أولًا: اضغط «ابدأ من هنا»', src: 'student-dashboard.jpg', crop: true, url: '/', focus: [50, 48], zoom: 1.4, layout: 'right' },
-  { n: '٢', chapter: CH.learn, label: 'دورتي', line1: 'هنا تحجز موعد اختبارك', line2: 'واختر مسار التحضير المناسب لك', src: 'preparation-course.jpg', crop: true, url: '/preparation-course', focus: [50, 40], zoom: 1.3, layout: 'left' },
+  { n: '٢', chapter: CH.learn, label: 'خطتي', line1: 'هنا تتابع خطة استعدادك', line2: 'واختر مسارك للقدرات أو التحصيلي', src: 'preparation-course.jpg', crop: true, url: '/preparation-course', focus: [50, 40], zoom: 1.3, layout: 'left' },
   { n: '٣', chapter: CH.learn, label: 'مهام اليوم', line1: 'هنا مهامك اليومية', line2: 'ابدأ بقياس البداية لتُبنى خطتك', src: 'today.jpg', crop: true, url: '/learning/today', focus: [45, 45], zoom: 1.25, layout: 'full' },
   { n: '٤', chapter: CH.learn, label: 'التأسيس', line1: 'هنا تتعلّم من الأساس', line2: 'اختر الكمي أو اللفظي وابدأ', src: 'foundation.jpg', crop: true, url: '/foundation', focus: [55, 60], zoom: 1.4, layout: 'right' },
   { n: '٥', chapter: CH.learn, label: 'كتاب التأسيس', line1: 'هنا تقرأ الشرح خطوة بخطوة', line2: 'كتاب الكمي من الأساس إلى الإتقان', src: 'n-book.jpg', url: '/student/foundation-book/quantitative', focus: [55, 30], zoom: 1.25, layout: 'left' },
