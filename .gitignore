@@ -2,6 +2,7 @@
 
 # compiled output
 /generated-artifacts/
+/.agents/outputs/
 dist
 tmp
 out-tsc
