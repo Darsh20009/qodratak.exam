@@ -19,6 +19,7 @@ import {
 } from "@workspace/api-zod";
 import { createServer, type Server } from "http";
 import { Readable } from "node:stream";
+import { pipeline } from "node:stream/promises";
 import mongoose from 'mongoose';
 import passport from 'passport';
 import { Strategy as GoogleStrategy } from 'passport-google-oauth20';
@@ -12186,11 +12187,18 @@ app.post("/api/auth/register", async (req: Request, res: Response) => {
       try {
         if (!await requireTahsiliStudentAccess(req, res)) return;
         const range = typeof req.headers.range === 'string' ? req.headers.range : undefined;
-        const upstream = await fetchR2VerbalObject(source.objectKey, {
-          method: 'GET',
-          range,
-          signal: AbortSignal.timeout(30000),
-        });
+        const controller = new AbortController();
+        const requestTimeout = setTimeout(() => controller.abort(), 30_000);
+        let upstream: Awaited<ReturnType<typeof fetchR2VerbalObject>>;
+        try {
+          upstream = await fetchR2VerbalObject(source.objectKey, {
+            method: 'GET',
+            range,
+            signal: controller.signal,
+          });
+        } finally {
+          clearTimeout(requestTimeout);
+        }
         if (!upstream.ok && upstream.status !== 206) {
           return res.status(upstream.status === 404 ? 404 : 503).json({
             error: upstream.status === 404
@@ -12211,7 +12219,20 @@ app.post("/api/auth/register", async (req: Request, res: Response) => {
           if (value) res.setHeader(header, value);
         }
         if (!upstream.body) return res.end();
-        Readable.fromWeb(upstream.body as any).pipe(res);
+        const abortUpstreamOnDisconnect = () => {
+          if (!res.writableFinished) controller.abort();
+        };
+        res.once('close', abortUpstreamOnDisconnect);
+        try {
+          await pipeline(Readable.fromWeb(upstream.body as any), res);
+        } catch (error) {
+          if (!req.aborted) {
+            req.log.warn({ err: error, sourceId: source.id }, 'Tahsili source stream ended before completion');
+          }
+          if (!res.destroyed) res.destroy();
+        } finally {
+          res.off('close', abortUpstreamOnDisconnect);
+        }
       } catch (error) {
         const statusCode = error instanceof Error && /range/i.test(error.message) ? 416 : 503;
         req.log.error({ err: error, sourceId: source.id }, 'Unable to stream Tahsili source PDF');
