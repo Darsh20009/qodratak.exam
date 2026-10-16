@@ -141,7 +141,6 @@ def parse_page(path: Path, subject: str) -> list[dict]:
                 "subcategory": clean_text(subcategory) or "عام",
                 "text": stem,
                 "options": options,
-                "correctOptionIndex": 0,
                 "difficulty": "intermediate",
                 "topic": clean_text(subcategory) or "عام",
                 "sourcePage": source_page,

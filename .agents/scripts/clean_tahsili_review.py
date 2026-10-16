@@ -31,7 +31,9 @@ def main() -> None:
     for question_id, question in enumerate(kept, start=1):
         question["questionId"] = question_id
         question["answerConfidence"] = "review"
-        question["correctOptionIndex"] = 0
+        # OCR extraction does not determine the answer key. Never invent a
+        # default choice: only a source-verified reviewer may add this field.
+        question.pop("correctOptionIndex", None)
 
     args.output.parent.mkdir(parents=True, exist_ok=True)
     args.output.write_text(json.dumps({"questions": kept}, ensure_ascii=False, indent=2))

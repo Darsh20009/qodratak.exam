@@ -133,9 +133,12 @@ def extract() -> list[dict]:
             if args.page_end is not None and page_number > args.page_end:
                 continue
             page = document[page_number - 1]
+            # In this book the questions and their choices occupy the left
+            # column; the right column is explanatory material. Cropping the
+            # right 60% cut off question stems and half of their choices.
             pixmap = page.get_pixmap(
                 matrix=fitz.Matrix(args.zoom, args.zoom),
-                clip=fitz.Rect(page.rect.width * 0.40, 0, page.rect.width, page.rect.height),
+                clip=fitz.Rect(0, 0, page.rect.width * 0.62, page.rect.height),
                 alpha=False,
             )
             image = Image.frombytes("RGB", (pixmap.width, pixmap.height), pixmap.samples)

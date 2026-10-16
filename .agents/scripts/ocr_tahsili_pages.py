@@ -1,9 +1,8 @@
 #!/usr/bin/env python3
 """Render the question column of the scanned Tahsili PDF and run Arabic OCR.
 
-The book uses a two-column layout: questions on the right and explanations on
-the left. This script deliberately OCRs only the question column so the
-explanation text is not mixed into the question records.
+The Nasser book places questions on the left and explanations on the right.
+OCR only the question column so side explanations do not leak into the records.
 """
 
 from __future__ import annotations
@@ -22,12 +21,16 @@ PDF_PATH = Path("attached_assets/822748463-كتاب-ناصر-عبد-الكريم
 DEFAULT_OUTPUT = Path(".agents/outputs/tahsili-ocr")
 
 
-def ocr_page(page: fitz.Page, zoom: float = 3.0, crop_start: float = 0.40, psm: int = 4) -> str:
+def ocr_page(
+    page: fitz.Page,
+    zoom: float = 3.0,
+    crop_start: float = 0.0,
+    crop_end: float = 0.62,
+    psm: int = 4,
+) -> str:
     width = page.rect.width
     height = page.rect.height
-    # The question column occupies the right side of regular content pages.
-    # Keep a small overlap so equations/option labels at the boundary survive.
-    clip = fitz.Rect(width * crop_start, 0, width, height)
+    clip = fitz.Rect(width * crop_start, 0, width * crop_end, height)
     pixmap = page.get_pixmap(matrix=fitz.Matrix(zoom, zoom), clip=clip, alpha=False)
     with tempfile.NamedTemporaryFile(suffix=".png") as image_file:
         image_file.write(pixmap.tobytes("png"))
@@ -66,7 +69,8 @@ def main() -> None:
     parser.add_argument("--end", type=int)
     parser.add_argument("--output", type=Path, default=DEFAULT_OUTPUT)
     parser.add_argument("--zoom", type=float, default=3.0)
-    parser.add_argument("--crop-start", type=float, default=0.40)
+    parser.add_argument("--crop-start", type=float, default=0.0)
+    parser.add_argument("--crop-end", type=float, default=0.62)
     parser.add_argument("--psm", type=int, default=4)
     args = parser.parse_args()
 
@@ -84,7 +88,13 @@ def main() -> None:
         for page_number in range(start, end + 1):
             page = document[page_number - 1]
             text = normalize_text(
-                ocr_page(page, zoom=args.zoom, crop_start=args.crop_start, psm=args.psm)
+                ocr_page(
+                    page,
+                    zoom=args.zoom,
+                    crop_start=args.crop_start,
+                    crop_end=args.crop_end,
+                    psm=args.psm,
+                )
             )
             output_path = args.output / f"page-{page_number:03d}.txt"
             output_path.write_text(text + "\n", encoding="utf-8")
