@@ -60,3 +60,4 @@
 - [Student platform guide](student-platform-guide.md) — homepage links to the guide; student hero film is hideable and explains real exam interiors with the approved logo.
 - [Geidea timeout authority](geidea-timeout-authority.md) — a ten-minute platform timeout is not a provider cancellation; verified delayed charges must remain recoverable.
 - [Personalized question reuse](personalized-question-reuse.md) — retire correct questions, retry missed ones, and keep question selection server-owned and load-conscious.
+- [GitHub publishing authentication](github-push-auth.md) — verify remote authentication and ref updates; a local commit alone does not mean a branch was published.
