@@ -8,12 +8,18 @@ import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 
 const time = (value: number) => `${Math.floor(value / 60)}:${String(Math.floor(value % 60)).padStart(2, '0')}`;
+type TimingAwareClip = QuestionVideoClipOutput & {
+  timingMode?: 'equal_partition_48';
+  questionCount?: number;
+  clipWindowSeconds?: number;
+};
 
 export default function QuestionVideoExplanation({ questionId }: { questionId: string }) {
   const [open, setOpen] = useState(false);
   const [playbackError, setPlaybackError] = useState(false);
+  const [runtimeBounds, setRuntimeBounds] = useState<{ key: string; start: number; end: number } | null>(null);
   const playerRef = useRef<HTMLVideoElement>(null);
-  const query = useQuery<QuestionVideoClipOutput>({
+  const query = useQuery<TimingAwareClip>({
     queryKey: ['/api/student/question-video', questionId],
     enabled: open && !!questionId,
     queryFn: async () => {
@@ -23,9 +29,29 @@ export default function QuestionVideoExplanation({ questionId }: { questionId: s
     staleTime: 60_000,
   });
   const clip = query.data;
-  const start = clip?.startSeconds ?? 0, end = clip?.endSeconds ?? 0;
-  const available = clip?.available && !!clip.videoUrl && start >= 0 && end > start
-    && Number.isFinite(clip.startSeconds) && Number.isFinite(clip.endSeconds);
+  const boundsKey = `${questionId}:${clip?.videoUrl || ''}`;
+  const calculatedBounds = runtimeBounds?.key === boundsKey ? runtimeBounds : null;
+  const start = clip?.startSeconds ?? calculatedBounds?.start ?? 0;
+  const end = clip?.endSeconds ?? calculatedBounds?.end ?? 0;
+  const dynamicTiming = clip?.timingMode === 'equal_partition_48';
+  const available = !!clip?.videoUrl && (
+    (clip.available && start >= 0 && end > start &&
+      Number.isFinite(start) && Number.isFinite(end)) ||
+    (dynamicTiming && !!calculatedBounds)
+  );
+  const showPlayer = !!clip?.videoUrl && (available || dynamicTiming);
+  const getRuntimeBounds = (duration: number) => {
+    if (!clip || !Number.isFinite(duration) || duration <= 0) return null;
+    const questionCount = clip.questionCount ?? 48;
+    const questionNumber = clip.questionNumber;
+    const windowSeconds = clip.clipWindowSeconds ?? 120;
+    if (typeof questionNumber !== 'number' || !Number.isInteger(questionNumber) || questionNumber < 1 ||
+        questionNumber > questionCount || !Number.isFinite(windowSeconds) || windowSeconds <= 0) return null;
+    const center = ((questionNumber - 0.5) * duration) / questionCount;
+    const endSeconds = Math.min(duration, center + windowSeconds / 2);
+    const startSeconds = Math.max(0, Math.min(center - windowSeconds / 2, endSeconds - windowSeconds));
+    return { start: startSeconds, end: endSeconds };
+  };
   return <Dialog open={open} onOpenChange={setOpen}>
     <Button type="button" variant="outline" className="border-primary/30 text-primary"
       data-testid={`question-video-${questionId}`} onClick={() => { setPlaybackError(false); setOpen(true); }}>
@@ -42,9 +68,12 @@ export default function QuestionVideoExplanation({ questionId }: { questionId: s
           ? 'شروح الفيديو متاحة للاشتراك النشط وخلال التجربة المجانية.'
           : 'تعذر تحميل شرح الفيديو.'}</p><Button onClick={() => void query.refetch()}>حاول مجددًا</Button>
       </div>}
-      {available && <div className="space-y-3">
+      {showPlayer && <div className="space-y-3">
         <p className="font-bold">البنك {clip.bankNumber} · السؤال {clip.questionNumber}</p>
-        <p className="text-sm text-muted-foreground" dir="ltr">{time(start)} — {time(end)}</p>
+        {available && <p className="text-sm text-muted-foreground" dir="ltr">{time(start)} — {time(end)}</p>}
+        {dynamicTiming && !calculatedBounds && <p role="status" className="text-sm text-muted-foreground">
+          جارٍ قراءة مدة الفيديو لتحديد مقطع السؤال من تقسيم البنك إلى ٤٨ جزءًا…
+        </p>}
         {clip.approximate && <p role="status" className="text-sm text-amber-700 dark:text-amber-300">
           {typeof clip.bankNumber === 'number' && clip.bankNumber >= 51 && clip.bankNumber <= 70
             ? 'التوقيت تقديري: قُسمت مدة الفيديو على ٤٨، وتغطي اللقطة دقيقتين حول موضع السؤال المتوقع؛ قد لا يبدأ الشرح الفعلي عند هذا الموضع.'
@@ -53,13 +82,24 @@ export default function QuestionVideoExplanation({ questionId }: { questionId: s
         {!clip.approximate && !clip.verified && <p className="text-xs text-muted-foreground">
           التوقيت مرصود من رقم السؤال الظاهر في الفيديو، بدقة أخذ العينات، وليس بتقسيم مدة الفيديو بالتساوي.
         </p>}
-        <video ref={playerRef} key={`${questionId}-${start}-${end}`}
-          src={`${resolveFoundationVideoUrl(clip.videoUrl!)}#t=${start},${end}`}
+        <video ref={playerRef} key={`${questionId}-${clip.videoUrl}`}
+          src={dynamicTiming
+            ? resolveFoundationVideoUrl(clip.videoUrl!)
+            : `${resolveFoundationVideoUrl(clip.videoUrl!)}#t=${start},${end}`}
           title={`شرح السؤال ${clip.questionNumber} من البنك ${clip.bankNumber}`}
           className="aspect-video w-full rounded-xl bg-black" controls playsInline preload="metadata"
           controlsList="nodownload"
           onLoadedMetadata={(event) => {
             const video = event.currentTarget;
+             if (dynamicTiming && !calculatedBounds) {
+               const bounds = getRuntimeBounds(video.duration);
+               if (!bounds || bounds.start >= video.duration || bounds.end > video.duration + 1) {
+                 video.pause(); setPlaybackError(true); return;
+               }
+               setRuntimeBounds({ key: boundsKey, ...bounds });
+               video.currentTime = bounds.start;
+               return;
+             }
             if (!Number.isFinite(video.duration) || start >= video.duration || end > video.duration + 1) {
               video.pause(); setPlaybackError(true); return;
             }
@@ -67,10 +107,12 @@ export default function QuestionVideoExplanation({ questionId }: { questionId: s
           }}
           onPlay={(event) => {
             if (playbackError) { event.currentTarget.pause(); return; }
+             if (dynamicTiming && !calculatedBounds) { event.currentTarget.pause(); return; }
             if (event.currentTarget.currentTime >= end) event.currentTarget.currentTime = start;
           }}
           onSeeking={(event) => {
             const video = event.currentTarget;
+             if (!available) { video.pause(); return; }
             if (video.currentTime < start || video.currentTime > end)
               video.currentTime = Math.max(start, Math.min(end, video.currentTime));
           }}
@@ -86,7 +128,7 @@ export default function QuestionVideoExplanation({ questionId }: { questionId: s
           if (video && !playbackError) { video.currentTime = start; void video.play().catch(() => setPlaybackError(true)); }
         }}>أعد مشاهدة الشرح</Button>
       </div>}
-      {clip && !available && <div className="space-y-3">
+      {clip && !available && !dynamicTiming && <div className="space-y-3">
         <p>لا يتوفر توقيت دقيق لهذا السؤال بعد؛ يمكنك مشاهدة فيديو البنك كاملًا بدل عرض مقطع قد يشرح سؤالًا آخر.</p>
         {clip.videoUrl && <>
           <video key={`${questionId}-full-bank`}

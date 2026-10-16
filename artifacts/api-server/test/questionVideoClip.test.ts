@@ -3,6 +3,7 @@ import test from 'node:test';
 import {
   buildQuestionVideoClip,
   computerBankQuestionIdentity,
+  COMPUTER_BANK_VIDEO_LIBRARY_REFERENCES,
   equalPartitionClipBounds,
 } from '../src/services/questionVideoClip.ts';
 
@@ -123,11 +124,38 @@ test('available new computerized bank videos use their own duration and 48-part 
       questionNumber,
     });
   }
-  assert.equal(
-    buildQuestionVideoClip(
-      { questionId: 'quantitative-computer-bank-72-34' },
-      '/api/learning/computerized/quantitative/computer-bank-72.mp4',
-    ).reason,
-    'video_unavailable',
-  );
+  assert.deepEqual(COMPUTER_BANK_VIDEO_LIBRARY_REFERENCES, { 72: 2, 78: 8, 85: 17, 90: 22 });
+  for (const [bankNumber, videoNumber] of Object.entries(COMPUTER_BANK_VIDEO_LIBRARY_REFERENCES)) {
+    const numericBank = Number(bankNumber);
+    const url = `/api/learning/computerized/quantitative/computer-bank-${numericBank}.mp4`;
+    assert.deepEqual(buildQuestionVideoClip({
+      questionId: `quantitative-computer-bank-${numericBank}-34`,
+    }, url), {
+      available: false,
+      reason: 'timing_unavailable',
+      videoUrl: url,
+      timingMode: 'equal_partition_48',
+      questionCount: 48,
+      clipWindowSeconds: 120,
+      approximate: true,
+      verified: false,
+      bankNumber: numericBank,
+      questionNumber: 34,
+    });
+    assert.ok(videoNumber > 0);
+  }
+  assert.deepEqual(buildQuestionVideoClip({
+    questionId: 'quantitative-computer-bank-72-34',
+    videoTimestampSeconds: 100,
+    videoEndTimestampSeconds: 220,
+  }, '/api/learning/computerized/quantitative/computer-bank-72.mp4'), {
+    available: true,
+    videoUrl: '/api/learning/computerized/quantitative/computer-bank-72.mp4',
+    startSeconds: 100,
+    endSeconds: 220,
+    approximate: false,
+    verified: false,
+    bankNumber: 72,
+    questionNumber: 34,
+  });
 });

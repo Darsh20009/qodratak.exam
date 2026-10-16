@@ -2,8 +2,13 @@ import type { Express, RequestHandler } from 'express';
 import mongoose from 'mongoose';
 import { Readable } from 'node:stream';
 import { FoundationContent, Question } from '../mongodb/models';
+import { AdminVideoAsset } from '../mongodb/adminVideoLibraryModels';
 import { ensureStudentAccountTrial } from '../middleware/studentTrialAccess';
-import { buildQuestionVideoClip, computerBankQuestionIdentity } from '../services/questionVideoClip';
+import {
+  buildQuestionVideoClip,
+  computerBankQuestionIdentity,
+  COMPUTER_BANK_VIDEO_LIBRARY_REFERENCES,
+} from '../services/questionVideoClip';
 import { fetchR2VerbalObject } from '../services/qudratVerbalBookFilesService';
 
 async function hasActiveStudentAccess(req: Parameters<RequestHandler>[0]) {
@@ -30,15 +35,31 @@ export function registerQuestionVideoRoutes(
         return;
       }
       const filename = `computer-bank-${bankNumber}.mp4`;
+      const videoReference = COMPUTER_BANK_VIDEO_LIBRARY_REFERENCES[bankNumber];
+      const libraryAsset = videoReference
+        ? await AdminVideoAsset.findOne({ videoNumber: videoReference })
+          .select('objectKey contentType')
+          .lean()
+        : null;
+      if (videoReference && !libraryAsset) {
+        res.status(404).json({ message: `الفيديو المرجعي رقم ${videoReference} للبنك غير موجود.` });
+        return;
+      }
       const upstream = await fetchR2VerbalObject(
-        `foundation/quantitative/computer-banks/${filename}`,
+        libraryAsset?.objectKey || `foundation/quantitative/computer-banks/${filename}`,
         {
           method: req.method === 'HEAD' ? 'HEAD' : 'GET',
           range: typeof req.headers.range === 'string' ? req.headers.range : undefined,
         },
       );
+      if (!upstream.ok && upstream.status !== 206) {
+        await upstream.body?.cancel();
+        res.status(upstream.status === 404 ? 404 : 502)
+          .json({ message: 'تعذر تحميل فيديو البنك.' });
+        return;
+      }
       res.status(upstream.status);
-      res.setHeader('Content-Type', 'video/mp4');
+      res.setHeader('Content-Type', libraryAsset?.contentType || 'video/mp4');
       res.setHeader('Content-Disposition', `inline; filename="${filename}"`);
       res.setHeader('Accept-Ranges', 'bytes');
       res.setHeader('Cache-Control', 'private, max-age=3600');
@@ -46,12 +67,6 @@ export function registerQuestionVideoRoutes(
       for (const headerName of ['content-length', 'content-range', 'etag']) {
         const value = upstream.headers.get(headerName);
         if (value) res.setHeader(headerName, value);
-      }
-
-      if (!upstream.ok && upstream.status !== 206) {
-        await upstream.body?.cancel();
-        res.json({ message: 'تعذر تحميل فيديو البنك.' });
-        return;
       }
       if (req.method === 'HEAD' || !upstream.body) {
         await upstream.body?.cancel();
@@ -84,6 +99,15 @@ export function registerQuestionVideoRoutes(
       }
       const identity = computerBankQuestionIdentity(question.source?.questionId);
       if (!identity) return res.json({ available: false, reason: 'unmapped_question' });
+      const videoReference = COMPUTER_BANK_VIDEO_LIBRARY_REFERENCES[identity.bankNumber];
+      if (videoReference && !await AdminVideoAsset.exists({ videoNumber: videoReference })) {
+        return res.json({
+          available: false,
+          reason: 'video_unavailable',
+          videoReference,
+          ...identity,
+        });
+      }
       const lesson = await FoundationContent.findOne({
         published: true, subjectId: 'subject.qudrat.quantitative',
         title: `بنك الكمي المحوسب ${identity.bankNumber}`,

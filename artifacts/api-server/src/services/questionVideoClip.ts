@@ -18,6 +18,14 @@ const COMPUTER_BANK_VIDEO_DURATIONS_SECONDS: Record<number, number> = {
   84: 2167.447211,
 };
 
+/** Admin video-library references supplied for the remaining bank videos. */
+export const COMPUTER_BANK_VIDEO_LIBRARY_REFERENCES: Readonly<Record<number, number>> = {
+  72: 2,
+  78: 8,
+  85: 17,
+  90: 22,
+};
+
 /** Assigns a two-minute clip around each question's center in an equal 48-part split. */
 export function equalPartitionClipBounds(
   durationSeconds: number,
@@ -65,10 +73,6 @@ export function buildQuestionVideoClip(source: VideoTimingSource, videoUrl: stri
     /^https?:\/\//i.test(videoUrl);
   if (!safeScheme || !videoUrl.split(/[?#]/, 1)[0].endsWith(expectedFile))
     return { available: false, reason: 'video_unavailable', ...identity };
-  if (identity.bankNumber > 70 &&
-      !Object.hasOwn(COMPUTER_BANK_VIDEO_DURATIONS_SECONDS, identity.bankNumber)) {
-    return { available: false, reason: 'video_unavailable', videoUrl, ...identity };
-  }
   const start = source.videoTimestampSeconds, end = source.videoEndTimestampSeconds;
   if (typeof start === 'number' && typeof end === 'number' &&
       Number.isFinite(start) && Number.isFinite(end) && start >= 0 && end > start) {
@@ -91,6 +95,23 @@ export function buildQuestionVideoClip(source: VideoTimingSource, videoUrl: stri
         ...identity,
       };
     }
+  }
+  if (identity.bankNumber > 70 &&
+      !Object.hasOwn(COMPUTER_BANK_VIDEO_DURATIONS_SECONDS, identity.bankNumber)) {
+    if (Object.hasOwn(COMPUTER_BANK_VIDEO_LIBRARY_REFERENCES, identity.bankNumber)) {
+      return {
+        available: false,
+        reason: 'timing_unavailable',
+        videoUrl,
+        timingMode: 'equal_partition_48',
+        questionCount: 48,
+        clipWindowSeconds: 120,
+        approximate: true,
+        verified: false,
+        ...identity,
+      };
+    }
+    return { available: false, reason: 'video_unavailable', videoUrl, ...identity };
   }
   return { available: false, reason: 'timing_unavailable', videoUrl, ...identity };
 }
