@@ -1,10 +1,23 @@
 import type { Express, Request as ExpressRequest, Response } from "express";
 type Request = ExpressRequest<Record<string, string>>;
 import type { ISubscription, StudentProgram, TahsiliSubject } from "../mongodb/models";
-import { Question, TahsiliQuestion } from "../mongodb/models";
+import {
+  Question,
+  TahsiliQuestion,
+  TahsiliQuestionDraft,
+  TahsiliUnscoredPracticeAttempt,
+} from "../mongodb/models";
 import {
   DownloadQudratVerbalBookFileParams,
+  GetTahsiliUnscoredPracticeResultParams,
+  GetTahsiliUnscoredPracticeResultResponse,
+  GetTahsiliUnscoredPracticeSourceImageParams,
+  ListTahsiliUnscoredPracticeHistoryResponse,
+  StartTahsiliUnscoredPracticeBody,
+  StartTahsiliUnscoredPracticeResponse,
   StartTahsiliSubjectTestBody,
+  SubmitTahsiliUnscoredPracticeBody,
+  SubmitTahsiliUnscoredPracticeResponse,
   SubmitTahsiliSubjectTestBody,
   GetQudratQuantitativeBookLessonParams,
   GetQudratVerbalBookLessonParams,
@@ -12117,6 +12130,82 @@ app.post("/api/auth/register", async (req: Request, res: Response) => {
     environment: { label: 'علم الأرض', sourceLabel: 'علم الأرض', subjectId: 'subject.tahsili.environment', minutes: 20 },
   } as const;
   type TahsiliSubjectTestKey = keyof typeof tahsiliSubjectTests;
+  const tahsiliUnscoredPracticeSubjects = {
+    ...tahsiliSubjectTests,
+    mixed: { label: 'مختلط', sourceLabel: 'مختلط', minutes: 30 },
+  } as const;
+  type TahsiliUnscoredPracticeSubjectKey = keyof typeof tahsiliUnscoredPracticeSubjects;
+  const isUsableUnscoredDraft = (draft: any) => {
+    const text = typeof draft?.text === 'string' ? draft.text.trim() : '';
+    const options = Array.isArray(draft?.options) ? draft.options : [];
+    return text.length >= 8 &&
+      text.length <= 2000 &&
+      options.length === 4 &&
+      options.every((option: unknown) =>
+        typeof option === 'string' && option.trim().length > 0 && option.length <= 1000,
+      ) &&
+      (!draft.requiresImage || Boolean(draft.sourceImageObjectKey));
+  };
+  const createUnscoredPracticeResult = (attempt: any) => {
+    const answers = new Map(
+      (attempt.answers || []).map((answer: any) => [String(answer.draftId), answer]),
+    );
+    return {
+      attemptId: String(attempt.attemptId),
+      subject: String(attempt.subject),
+      label: String(attempt.label),
+      totalQuestions: attempt.questions.length,
+      answeredQuestions: attempt.answers.filter((answer: any) => answer.selectedOptionIndex !== null).length,
+      skippedQuestions: attempt.questions.length - attempt.answers.filter((answer: any) => answer.selectedOptionIndex !== null).length,
+      durationSeconds: Math.max(0, Number(attempt.durationSeconds || 0)),
+      completedAt: new Date(attempt.completedAt || attempt.startedAt).toISOString(),
+      unscored: true as const,
+      questions: attempt.questions.map((question: any) => {
+        const answer: any = answers.get(String(question.draftId));
+        return {
+          id: String(question.draftId),
+          text: String(question.text),
+          options: question.options,
+          subcategory: String(question.subcategory || 'عام'),
+          topic: String(question.topic || question.subcategory || 'عام'),
+          difficulty: question.difficulty || 'intermediate',
+          selectedOptionIndex: answer?.selectedOptionIndex ?? null,
+          responseTimeSeconds: Math.max(0, Number(answer?.responseTimeSeconds || 0)),
+          sourceBook: String(question.sourceBook || 'مصدر التحصيلي'),
+          sourcePage: Math.max(1, Number(question.sourcePage || 1)),
+          imageUrl: question.sourceImageObjectKey
+            ? `/api/tahsili/unscored-practice/${encodeURIComponent(String(attempt.attemptId))}/questions/${encodeURIComponent(String(question.draftId))}/source-image`
+            : null,
+        };
+      }),
+    };
+  };
+  let unscoredPracticeCountsCache: {
+    expiresAt: number;
+    counts: Map<TahsiliUnscoredPracticeSubjectKey, number>;
+  } | null = null;
+  const getUnscoredPracticeCounts = async () => {
+    if (unscoredPracticeCountsCache && unscoredPracticeCountsCache.expiresAt > Date.now()) {
+      return unscoredPracticeCountsCache.counts;
+    }
+    const drafts = await TahsiliQuestionDraft.find({ status: 'pending_review' })
+      .select('subject text options requiresImage sourceImageObjectKey')
+      .lean() as any[];
+    const counts = new Map<TahsiliUnscoredPracticeSubjectKey, number>(
+      Object.keys(tahsiliUnscoredPracticeSubjects).map((subject) => [subject as TahsiliUnscoredPracticeSubjectKey, 0]),
+    );
+    let mixedCount = 0;
+    for (const draft of drafts) {
+      if (!isUsableUnscoredDraft(draft)) continue;
+      mixedCount += 1;
+      const key = (Object.entries(tahsiliUnscoredPracticeSubjects) as Array<[TahsiliUnscoredPracticeSubjectKey, { sourceLabel: string }]>)
+        .find(([, config]) => config.sourceLabel === draft.subject)?.[0];
+      if (key && key !== 'mixed') counts.set(key, (counts.get(key) || 0) + 1);
+    }
+    counts.set('mixed', mixedCount);
+    unscoredPracticeCountsCache = { expiresAt: Date.now() + 60_000, counts };
+    return counts;
+  };
   const requireTahsiliStudentAccess = async (req: Request, res: Response) => {
     const studentId = studentOnly(req, res);
     if (!studentId) return null;
@@ -12278,41 +12367,325 @@ app.post("/api/auth/register", async (req: Request, res: Response) => {
       if (!studentId) return;
       if (!await requireTahsiliStudentAccess(req, res)) return;
       try {
-        const subjects = await Promise.all(
-          Object.entries(tahsiliSubjectTests).map(async ([subject, config]) => {
-            const [verifiedQuestionCount, history] = await Promise.all([
-              TahsiliQuestion.countDocuments({ subject: config.sourceLabel, answerConfidence: 'verified' }),
-              subjectLearningHistory(studentId, config.subjectId),
-            ]);
-            const attempts = history.attempts.length;
-            const correctAttempts = history.attempts.filter((attempt: any) => attempt.isCorrect).length;
-            const focusAreas = Array.from(history.bySubcategory.entries())
-              .map(([subcategory, stats]) => ({
-                subcategory,
-                attempts: stats.attempts,
-                accuracy: stats.attempts ? Math.round((stats.correct / stats.attempts) * 100) : 0,
-              }))
-              .filter((area) => area.attempts >= 2 && area.accuracy < 70)
-              .sort((a, b) => a.accuracy - b.accuracy || b.attempts - a.attempts)
-              .slice(0, 3);
-            return {
-              subject,
-              label: config.label,
-              verifiedQuestionCount,
-              attempts,
-              correctAttempts,
-              accuracy: attempts ? Math.round((correctAttempts / attempts) * 100) : null,
-              focusAreas,
-            };
-          }),
-        );
-        return res.json({ subjects });
+        const [subjects, unscoredCounts] = await Promise.all([
+          Promise.all(
+            Object.entries(tahsiliSubjectTests).map(async ([subject, config]) => {
+              const [verifiedQuestionCount, history] = await Promise.all([
+                TahsiliQuestion.countDocuments({ subject: config.sourceLabel, answerConfidence: 'verified' }),
+                subjectLearningHistory(studentId, config.subjectId),
+              ]);
+              const attempts = history.attempts.length;
+              const correctAttempts = history.attempts.filter((attempt: any) => attempt.isCorrect).length;
+              const focusAreas = Array.from(history.bySubcategory.entries())
+                .map(([subcategory, stats]) => ({
+                  subcategory,
+                  attempts: stats.attempts,
+                  accuracy: stats.attempts ? Math.round((stats.correct / stats.attempts) * 100) : 0,
+                }))
+                .filter((area) => area.attempts >= 2 && area.accuracy < 70)
+                .sort((a, b) => a.accuracy - b.accuracy || b.attempts - a.attempts)
+                .slice(0, 3);
+              return {
+                subject,
+                label: config.label,
+                verifiedQuestionCount,
+                attempts,
+                correctAttempts,
+                accuracy: attempts ? Math.round((correctAttempts / attempts) * 100) : null,
+                focusAreas,
+              };
+            }),
+          ),
+          getUnscoredPracticeCounts(),
+        ]);
+        const unscoredSubjects = (Object.entries(tahsiliUnscoredPracticeSubjects) as Array<[TahsiliUnscoredPracticeSubjectKey, { label: string }]>)
+          .map(([subject, config]) => ({
+            subject,
+            label: config.label,
+            questionCount: unscoredCounts.get(subject) || 0,
+          }));
+        return res.json({ subjects, unscoredSubjects });
       } catch (error) {
         req.log.error({ err: error }, 'Unable to load Tahsili subject test overview');
         return res.status(503).json({
           error: 'تعذر تحميل مواد التحصيلي الآن.',
           code: 'TAHSILI_SUBJECT_TEST_OVERVIEW_UNAVAILABLE',
         });
+      }
+    },
+  );
+
+  app.post(
+    '/api/tahsili/unscored-practice/start',
+    requireAuth,
+    requireRole('student'),
+    async (req: Request, res: Response) => {
+      const studentId = studentOnly(req, res);
+      if (!studentId) return;
+      if (!await requireTahsiliStudentAccess(req, res)) return;
+      const parsed = StartTahsiliUnscoredPracticeBody.safeParse(req.body);
+      if (!parsed.success) {
+        return res.status(400).json({
+          error: 'المادة أو عدد الأسئلة غير صالح.',
+          code: 'INVALID_TAHSILI_UNSCORED_PRACTICE',
+        });
+      }
+      const subject = parsed.data.subject as TahsiliUnscoredPracticeSubjectKey;
+      const config = tahsiliUnscoredPracticeSubjects[subject];
+      if (!config) {
+        return res.status(400).json({ error: 'المادة المحددة غير مدعومة.' });
+      }
+      try {
+        const draftQuery = TahsiliQuestionDraft.find({ status: 'pending_review' });
+        if (subject !== 'mixed') draftQuery.where('subject').equals(config.sourceLabel);
+        const drafts = await draftQuery
+          .select('_id subject subcategory text options difficulty topic sourcePage sourceImageObjectKey requiresImage sourceBook')
+          .lean() as any[];
+        const eligible = drafts.filter(isUsableUnscoredDraft);
+        if (eligible.length === 0) {
+          return res.status(503).json({
+            error: `لا توجد أسئلة قابلة للعرض كتدريب في مادة ${config.label} حاليًا.`,
+            code: 'TAHSILI_UNSCORED_PRACTICE_POOL_EMPTY',
+          });
+        }
+        const requestedCount = parsed.data.questionCount ?? 20;
+        const selectedCount = Math.min(requestedCount, eligible.length);
+        const selected = [...eligible]
+          .sort(() => Math.random() - 0.5)
+          .slice(0, selectedCount);
+        const timeLimitMinutes = Math.ceil((selected.length / 20) * config.minutes);
+        const attemptId = crypto.randomUUID();
+        const startedAt = new Date();
+        const snapshot = selected.map((draft: any) => ({
+          draftId: String(draft._id),
+          text: draft.text.trim(),
+          options: draft.options.map((option: string) => option.trim()),
+          subcategory: String(draft.subcategory || 'عام'),
+          topic: String(draft.topic || draft.subcategory || 'عام'),
+          difficulty: draft.difficulty || 'intermediate',
+          sourceBook: String(draft.sourceBook || 'مصدر التحصيلي'),
+          sourcePage: Math.max(1, Number(draft.sourcePage || 1)),
+          ...(draft.sourceImageObjectKey ? { sourceImageObjectKey: String(draft.sourceImageObjectKey) } : {}),
+        }));
+        await TahsiliUnscoredPracticeAttempt.create({
+          attemptId,
+          studentId,
+          subject,
+          label: config.label,
+          startedAt,
+          timeLimitMinutes,
+          questions: snapshot,
+          answers: [],
+          state: 'in_progress',
+        });
+        return res.json(StartTahsiliUnscoredPracticeResponse.parse({
+          attemptId,
+          mode: 'unscored',
+          subject,
+          label: config.label,
+          questionCount: snapshot.length,
+          timeLimitMinutes,
+          rationale: 'هذا تدريب من أسئلة قيد المراجعة. سيُحفظ اختيارك والوقت فقط، من دون تصحيح أو درجة، ولن يدخل في تحليل مستواك.',
+          questions: snapshot.map((question) => ({
+            id: question.draftId,
+            text: question.text,
+            options: question.options,
+            subcategory: question.subcategory,
+            topic: question.topic,
+            difficulty: question.difficulty,
+            imageUrl: question.sourceImageObjectKey
+              ? `/api/tahsili/unscored-practice/${encodeURIComponent(attemptId)}/questions/${encodeURIComponent(question.draftId)}/source-image`
+              : null,
+          })),
+        }));
+      } catch (error) {
+        req.log.error({ err: error, subject }, 'Unable to start unscored Tahsili practice');
+        return res.status(503).json({
+          error: 'تعذر بدء التدريب غير المصحح الآن.',
+          code: 'TAHSILI_UNSCORED_PRACTICE_START_FAILED',
+        });
+      }
+    },
+  );
+
+  app.post(
+    '/api/tahsili/unscored-practice/submit',
+    requireAuth,
+    requireRole('student'),
+    async (req: Request, res: Response) => {
+      const studentId = studentOnly(req, res);
+      if (!studentId) return;
+      if (!await requireTahsiliStudentAccess(req, res)) return;
+      const parsed = SubmitTahsiliUnscoredPracticeBody.safeParse(req.body);
+      if (!parsed.success) {
+        return res.status(400).json({
+          error: 'إجابات التدريب غير صالحة.',
+          code: 'INVALID_TAHSILI_UNSCORED_PRACTICE_SUBMISSION',
+        });
+      }
+      try {
+        const attempt = await TahsiliUnscoredPracticeAttempt.findOne({
+          attemptId: parsed.data.attemptId,
+          studentId,
+        });
+        if (!attempt) {
+          return res.status(404).json({ error: 'جلسة التدريب غير موجودة.' });
+        }
+        if (attempt.state === 'completed') {
+          return res.json(SubmitTahsiliUnscoredPracticeResponse.parse(createUnscoredPracticeResult(attempt)));
+        }
+        if (Date.now() - attempt.startedAt.getTime() > 24 * 60 * 60 * 1000) {
+          return res.status(410).json({ error: 'انتهت صلاحية جلسة التدريب؛ ابدأ تدريبًا جديدًا.' });
+        }
+        const submittedAnswers = new Map<string, { selectedOptionIndex: number | null; responseTime: number }>();
+        for (const answer of parsed.data.answers) {
+          if (submittedAnswers.has(answer.questionId)) {
+            return res.status(400).json({ error: 'تم إرسال إجابة مكررة للسؤال نفسه.' });
+          }
+          submittedAnswers.set(answer.questionId, {
+            selectedOptionIndex: answer.selectedOptionIndex,
+            responseTime: Math.max(0, Math.min(14400, Math.floor(answer.responseTime || 0))),
+          });
+        }
+        const questionIds = attempt.questions.map((question) => String(question.draftId));
+        if (
+          submittedAnswers.size !== questionIds.length ||
+          questionIds.some((id) => !submittedAnswers.has(id)) ||
+          [...submittedAnswers.keys()].some((id) => !questionIds.includes(id))
+        ) {
+          return res.status(400).json({ error: 'الإجابات لا تطابق أسئلة جلسة التدريب.' });
+        }
+        for (const question of attempt.questions) {
+          const answer = submittedAnswers.get(String(question.draftId))!;
+          if (answer.selectedOptionIndex !== null && answer.selectedOptionIndex >= question.options.length) {
+            return res.status(400).json({ error: 'أحد الاختيارات لا يطابق خيارات السؤال.' });
+          }
+        }
+        attempt.answers = attempt.questions.map((question) => {
+          const answer = submittedAnswers.get(String(question.draftId))!;
+          return {
+            draftId: String(question.draftId),
+            selectedOptionIndex: answer.selectedOptionIndex,
+            responseTimeSeconds: answer.responseTime,
+          };
+        });
+        attempt.durationSeconds = Math.max(
+          0,
+          Math.min(14400, Math.floor(parsed.data.timeTakenSeconds ?? (Date.now() - attempt.startedAt.getTime()) / 1000)),
+        );
+        attempt.completedAt = new Date();
+        attempt.state = 'completed';
+        await attempt.save();
+        return res.json(SubmitTahsiliUnscoredPracticeResponse.parse(createUnscoredPracticeResult(attempt)));
+      } catch (error) {
+        req.log.error({ err: error, attemptId: parsed.data.attemptId }, 'Unable to save unscored Tahsili practice');
+        return res.status(503).json({
+          error: 'تعذر حفظ سجل التدريب الآن. حاول الإرسال مرة أخرى.',
+          code: 'TAHSILI_UNSCORED_PRACTICE_SUBMIT_FAILED',
+        });
+      }
+    },
+  );
+
+  app.get(
+    '/api/tahsili/unscored-practice/history',
+    requireAuth,
+    requireRole('student'),
+    async (req: Request, res: Response) => {
+      const studentId = studentOnly(req, res);
+      if (!studentId) return;
+      if (!await requireTahsiliStudentAccess(req, res)) return;
+      try {
+        const attempts = await TahsiliUnscoredPracticeAttempt.find({
+          studentId,
+          state: 'completed',
+        })
+          .sort({ completedAt: -1 })
+          .limit(20)
+          .select('attemptId subject label questions answers durationSeconds completedAt startedAt')
+          .lean() as any[];
+        const summaries = attempts.map((attempt) => {
+          const answeredQuestions = attempt.answers.filter((answer: any) => answer.selectedOptionIndex !== null).length;
+          return {
+            attemptId: String(attempt.attemptId),
+            subject: String(attempt.subject),
+            label: String(attempt.label),
+            totalQuestions: attempt.questions.length,
+            answeredQuestions,
+            skippedQuestions: attempt.questions.length - answeredQuestions,
+            durationSeconds: Math.max(0, Number(attempt.durationSeconds || 0)),
+            completedAt: new Date(attempt.completedAt || attempt.startedAt).toISOString(),
+            unscored: true as const,
+          };
+        });
+        return res.json(ListTahsiliUnscoredPracticeHistoryResponse.parse({ attempts: summaries }));
+      } catch (error) {
+        req.log.error({ err: error }, 'Unable to load unscored Tahsili practice history');
+        return res.status(503).json({ error: 'تعذر تحميل سجل التدريب الآن.' });
+      }
+    },
+  );
+
+  app.get(
+    '/api/tahsili/unscored-practice/history/:attemptId',
+    requireAuth,
+    requireRole('student'),
+    async (req: Request, res: Response) => {
+      const studentId = studentOnly(req, res);
+      if (!studentId) return;
+      if (!await requireTahsiliStudentAccess(req, res)) return;
+      const parsed = GetTahsiliUnscoredPracticeResultParams.safeParse(req.params);
+      if (!parsed.success) return res.status(400).json({ error: 'معرّف النتيجة غير صالح.' });
+      try {
+        const attempt = await TahsiliUnscoredPracticeAttempt.findOne({
+          attemptId: parsed.data.attemptId,
+          studentId,
+          state: 'completed',
+        }).lean() as any;
+        if (!attempt) return res.status(404).json({ error: 'لم يتم العثور على سجل التدريب.' });
+        return res.json(GetTahsiliUnscoredPracticeResultResponse.parse(createUnscoredPracticeResult(attempt)));
+      } catch (error) {
+        req.log.error({ err: error, attemptId: parsed.data.attemptId }, 'Unable to load unscored Tahsili result');
+        return res.status(503).json({ error: 'تعذر تحميل نتيجة التدريب الآن.' });
+      }
+    },
+  );
+
+  app.get(
+    '/api/tahsili/unscored-practice/:attemptId/questions/:questionId/source-image',
+    requireAuth,
+    requireRole('student'),
+    async (req: Request, res: Response) => {
+      const studentId = studentOnly(req, res);
+      if (!studentId) return;
+      if (!await requireTahsiliStudentAccess(req, res)) return;
+      const params = GetTahsiliUnscoredPracticeSourceImageParams.safeParse(req.params);
+      if (!params.success) return res.status(400).json({ error: 'مرجع صورة السؤال غير صالح.' });
+      const { attemptId, questionId } = params.data;
+      try {
+        const attempt = await TahsiliUnscoredPracticeAttempt.findOne({ attemptId, studentId })
+          .select('questions.draftId questions.sourceImageObjectKey')
+          .lean() as any;
+        const question = attempt?.questions?.find((item: any) => String(item.draftId) === questionId);
+        if (!question?.sourceImageObjectKey) return res.status(404).json({ error: 'صورة السؤال غير متاحة.' });
+        const upstream = await fetchR2VerbalObject(question.sourceImageObjectKey, {
+          method: 'GET',
+          range: typeof req.headers.range === 'string' ? req.headers.range : undefined,
+        });
+        if (!upstream.ok && upstream.status !== 206) {
+          return res.status(upstream.status === 404 ? 404 : 502).json({ error: 'تعذر تحميل صورة السؤال.' });
+        }
+        res.status(upstream.status);
+        for (const header of ['content-type', 'content-length', 'content-range', 'accept-ranges', 'etag']) {
+          const value = upstream.headers.get(header);
+          if (value) res.setHeader(header, value);
+        }
+        res.setHeader('Cache-Control', 'private, no-store');
+        if (!upstream.body) return res.end();
+        Readable.fromWeb(upstream.body as any).pipe(res);
+      } catch (error) {
+        req.log.error({ err: error, attemptId, questionId }, 'Unable to serve unscored Tahsili question image');
+        if (!res.headersSent) res.status(503).json({ error: 'تعذر تحميل صورة السؤال الآن.' });
       }
     },
   );

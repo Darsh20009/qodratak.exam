@@ -9,17 +9,18 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
-import { ArrowLeft, ArrowRight, CheckCircle2, Clock3, Loader2, Trophy } from "lucide-react";
+import { ArrowLeft, ArrowRight, CheckCircle2, Clock3, FileText, Loader2, Trophy } from "lucide-react";
 
 interface SubjectTestStart {
   attemptId: string;
+  mode?: "unscored";
   subject: string;
   label: string;
   questionCount: number;
   timeLimitMinutes: number;
-  personalizationMode: "diagnostic" | "weakness_focus";
+  personalizationMode?: "diagnostic" | "weakness_focus";
   rationale: string;
-  focusSubcategories: string[];
+  focusSubcategories?: string[];
   questions: Array<{
     id: string;
     text: string;
@@ -57,6 +58,30 @@ interface SubjectTestResult {
     explanation: string;
   }>;
 }
+interface UnscoredPracticeResult {
+  attemptId: string;
+  subject: string;
+  label: string;
+  totalQuestions: number;
+  answeredQuestions: number;
+  skippedQuestions: number;
+  durationSeconds: number;
+  completedAt: string;
+  unscored: true;
+  questions: Array<{
+    id: string;
+    text: string;
+    options: string[];
+    subcategory: string;
+    topic: string;
+    difficulty: string;
+    selectedOptionIndex: number | null;
+    responseTimeSeconds: number;
+    sourceBook: string;
+    sourcePage: number;
+    imageUrl?: string | null;
+  }>;
+}
 
 function errorMessage(error: unknown): string {
   if (!(error instanceof Error)) return "تعذر إرسال الاختبار.";
@@ -72,6 +97,11 @@ function formatTime(seconds: number) {
   return `${Math.floor(seconds / 60)}:${String(seconds % 60).padStart(2, "0")}`;
 }
 
+function formatDuration(seconds: number) {
+  const safeSeconds = Math.max(0, Math.floor(seconds));
+  return `${Math.floor(safeSeconds / 60)} دقيقة و${safeSeconds % 60} ثانية`;
+}
+
 export default function TahsilikSubjectTestRunner() {
   const [, setLocation] = useLocation();
   const queryClient = useQueryClient();
@@ -82,14 +112,59 @@ export default function TahsilikSubjectTestRunner() {
   const [timeLeft, setTimeLeft] = useState(0);
   const [started, setStarted] = useState(false);
   const [result, setResult] = useState<SubjectTestResult | null>(null);
+  const [unscoredResult, setUnscoredResult] = useState<UnscoredPracticeResult | null>(null);
+  const [unscoredQuestionTimes, setUnscoredQuestionTimes] = useState<Record<string, number>>({});
   const submitLock = useRef(false);
   const timeoutHandled = useRef(false);
+  const activeUnscoredTimer = useRef<{ questionId: string; startedAt: number } | null>(null);
   const timedQuestion = test?.questions[currentIndex];
-  useExamQuestionTiming(timedQuestion, timedQuestion ? answers[timedQuestion.id] ?? null : null, started && !result, test?.label || 'اختبار مادة');
+  const isUnscoredPractice = test?.mode === "unscored";
+  useExamQuestionTiming(
+    timedQuestion,
+    timedQuestion ? answers[timedQuestion.id] ?? null : null,
+    started && !result && !unscoredResult && !isUnscoredPractice,
+    test?.label || 'اختبار مادة',
+  );
+  useEffect(() => {
+    if (!started || !isUnscoredPractice || !timedQuestion) {
+      activeUnscoredTimer.current = null;
+      return;
+    }
+    const questionId = timedQuestion.id;
+    activeUnscoredTimer.current = { questionId, startedAt: performance.now() };
+    return () => {
+      const active = activeUnscoredTimer.current;
+      if (active?.questionId !== questionId) return;
+      const elapsed = Math.max(0, (performance.now() - active.startedAt) / 1000);
+      activeUnscoredTimer.current = null;
+      setUnscoredQuestionTimes((previous) => ({
+        ...previous,
+        [questionId]: (previous[questionId] || 0) + elapsed,
+      }));
+    };
+  }, [started, isUnscoredPractice, timedQuestion?.id]);
+  const unscoredQuestionSeconds = (questionId: string) => {
+    const accumulated = unscoredQuestionTimes[questionId] || 0;
+    const active = activeUnscoredTimer.current;
+    if (!active || active.questionId !== questionId) return Math.round(accumulated);
+    return Math.round(accumulated + Math.max(0, (performance.now() - active.startedAt) / 1000));
+  };
 
   const submitMutation = useMutation({
     mutationFn: async () => {
       if (!test) throw new Error("جلسة الاختبار غير موجودة.");
+      if (test.mode === "unscored") {
+        const response = await apiRequest("POST", "/api/tahsili/unscored-practice/submit", {
+          attemptId: test.attemptId,
+          timeTakenSeconds: Math.max(0, test.timeLimitMinutes * 60 - timeLeft),
+          answers: test.questions.map((question) => ({
+            questionId: question.id,
+            selectedOptionIndex: answers[question.id] ?? null,
+            responseTime: unscoredQuestionSeconds(question.id),
+          })),
+        });
+        return { kind: "unscored" as const, value: await response.json() as UnscoredPracticeResult };
+      }
       const response = await apiRequest("POST", "/api/tahsili/subject-tests/submit", {
         attemptId: test.attemptId,
         timeTakenSeconds: Math.max(0, test.timeLimitMinutes * 60 - timeLeft),
@@ -99,18 +174,27 @@ export default function TahsilikSubjectTestRunner() {
           responseTime: examQuestionSeconds(question.id),
         })),
       });
-      return response.json() as Promise<SubjectTestResult>;
+      return { kind: "scored" as const, value: await response.json() as SubjectTestResult };
     },
     onSuccess: (saved) => {
-      setResult(saved);
       setStarted(false);
       sessionStorage.removeItem("tahsiliSubjectTestStart");
-      void queryClient.invalidateQueries({ queryKey: ["/api/student/learning-coach"] });
-      void queryClient.invalidateQueries({ queryKey: ["/api/tahsili/subject-tests/overview"] });
-      toast({
-        title: "تم حفظ الاختبار",
-        description: `نتيجتك ${saved.percentage}%، وأضيفت الإجابات إلى سجل تعلمك.`,
-      });
+      if (saved.kind === "unscored") {
+        setUnscoredResult(saved.value);
+        void queryClient.invalidateQueries({ queryKey: ["/api/tahsili/unscored-practice/history"] });
+        toast({
+          title: "تم حفظ سجل التدريب",
+          description: "حُفظت إجاباتك وأوقاتها فقط، دون تصحيح أو درجة.",
+        });
+      } else {
+        setResult(saved.value);
+        void queryClient.invalidateQueries({ queryKey: ["/api/student/learning-coach"] });
+        void queryClient.invalidateQueries({ queryKey: ["/api/tahsili/subject-tests/overview"] });
+        toast({
+          title: "تم حفظ الاختبار",
+          description: `نتيجتك ${saved.value.percentage}%، وأضيفت الإجابات إلى سجل تعلمك.`,
+        });
+      }
     },
     onError: (error) => {
       submitLock.current = false;
@@ -134,19 +218,19 @@ export default function TahsilikSubjectTestRunner() {
   }, []);
 
   const submitTest = () => {
-    if (!test || submitLock.current || result) return;
+    if (!test || submitLock.current || result || unscoredResult) return;
     submitLock.current = true;
     submitMutation.mutate();
   };
 
   useEffect(() => {
-    if (!started || result || submitMutation.isPending || timeLeft <= 0) return;
+    if (!started || result || unscoredResult || submitMutation.isPending || timeLeft <= 0) return;
     const timer = window.setInterval(() => setTimeLeft((value) => Math.max(0, value - 1)), 1000);
     return () => window.clearInterval(timer);
   }, [started, result, submitMutation.isPending, timeLeft]);
 
   useEffect(() => {
-    if (started && timeLeft === 0 && !timeoutHandled.current && !result && !submitMutation.isPending) {
+    if (started && timeLeft === 0 && !timeoutHandled.current && !result && !unscoredResult && !submitMutation.isPending) {
       timeoutHandled.current = true;
       submitTest();
     }
@@ -168,6 +252,81 @@ export default function TahsilikSubjectTestRunner() {
             </Button>
           </CardContent>
         </Card>
+      </main>
+    );
+  }
+
+  if (unscoredResult) {
+    return (
+      <main className="qodratak-tahsili-surface min-h-[100dvh] px-4 py-8" dir="rtl">
+        <div className="mx-auto max-w-4xl space-y-6">
+          <Card className="border-amber-500/30 bg-amber-500/[0.04]">
+            <CardContent className="py-8 text-center">
+              <FileText className="mx-auto mb-3 h-11 w-11 text-amber-600" />
+              <h1 className="text-2xl font-black">ملخص تدريب {unscoredResult.label}</h1>
+              <p className="mx-auto mt-2 max-w-2xl text-sm leading-6 text-muted-foreground">
+                هذا التدريب غير مصحح لأن مفاتيح إجاباته لم تراجع بعد. لا توجد درجة أو نسبة أو تحديد للصحيح والخطأ.
+              </p>
+              <div className="mx-auto mt-5 grid max-w-2xl gap-3 sm:grid-cols-3">
+                <div className="rounded-xl bg-background/70 p-4">
+                  <p className="text-2xl font-black">{unscoredResult.answeredQuestions}</p>
+                  <p className="text-sm text-muted-foreground">إجابات مسجلة</p>
+                </div>
+                <div className="rounded-xl bg-background/70 p-4">
+                  <p className="text-2xl font-black">{unscoredResult.skippedQuestions}</p>
+                  <p className="text-sm text-muted-foreground">أسئلة دون إجابة</p>
+                </div>
+                <div className="rounded-xl bg-background/70 p-4">
+                  <p className="flex items-center justify-center gap-2 text-lg font-black">
+                    <Clock3 className="h-5 w-5" /> {formatDuration(unscoredResult.durationSeconds)}
+                  </p>
+                  <p className="text-sm text-muted-foreground">الوقت الكلي</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+          <section className="space-y-3" aria-label="سجل اختيارات التدريب">
+            <h2 className="text-xl font-bold">اختياراتك ووقتك لكل سؤال</h2>
+            {unscoredResult.questions.map((question, index) => (
+              <Card key={question.id}>
+                <CardHeader className="pb-3">
+                  <CardTitle className="text-base leading-7">
+                    {index + 1}. {question.text}
+                  </CardTitle>
+                  <CardDescription>{question.subcategory} · {question.sourceBook} · صفحة {question.sourcePage}</CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-2">
+                  {question.imageUrl && (
+                    <div className="mb-3 flex items-center justify-center overflow-hidden rounded-xl bg-white p-3">
+                      <img src={question.imageUrl} alt={`صورة السؤال ${index + 1}`} className="max-h-[45vh] max-w-full object-contain" loading="lazy" />
+                    </div>
+                  )}
+                  {question.options.map((option, optionIndex) => (
+                    <div
+                      key={`${question.id}-${optionIndex}`}
+                      className={`rounded-lg border px-3 py-2 text-sm ${
+                        optionIndex === question.selectedOptionIndex ? "border-primary bg-primary/5 font-semibold" : "border-border"
+                      }`}
+                    >
+                      {option}
+                      {optionIndex === question.selectedOptionIndex && " — اختيارك"}
+                    </div>
+                  ))}
+                  <p className="flex items-center gap-2 pt-1 text-sm text-muted-foreground">
+                    <Clock3 className="h-4 w-4" />
+                    {question.selectedOptionIndex === null
+                      ? `لم تتم الإجابة · الوقت: ${formatDuration(question.responseTimeSeconds)}`
+                      : `وقت السؤال: ${formatDuration(question.responseTimeSeconds)}`}
+                  </p>
+                </CardContent>
+              </Card>
+            ))}
+          </section>
+          <div className="flex flex-wrap gap-3">
+            <Button onClick={() => setLocation("/tahsilik/tests/subject")}>تدريب آخر</Button>
+            <Button variant="outline" onClick={() => setLocation("/tahsilik")}>العودة للتحصيلي</Button>
+          </div>
+        </div>
       </main>
     );
   }
@@ -256,12 +415,16 @@ export default function TahsilikSubjectTestRunner() {
           </CardHeader>
           <CardContent className="space-y-5">
             <div className="flex flex-wrap gap-2">
-              <Badge variant="secondary">{test.questionCount} سؤالًا معتمدًا</Badge>
+              <Badge variant="secondary">
+                {test.questionCount} سؤالًا {test.mode === "unscored" ? "قيد المراجعة" : "معتمدًا"}
+              </Badge>
               <Badge variant="secondary">{test.timeLimitMinutes} دقيقة</Badge>
-              {test.focusSubcategories.map((area) => <Badge key={area} variant="outline">{area}</Badge>)}
+              {(test.focusSubcategories || []).map((area) => <Badge key={area} variant="outline">{area}</Badge>)}
             </div>
             <p className="text-sm text-muted-foreground">
-              لن تظهر الإجابات الصحيحة إلا بعد إرسال الاختبار. يمكنك تخطي أي سؤال وسيُحتسب ضمن الأسئلة غير المجابة.
+              {test.mode === "unscored"
+                ? "هذا تدريب بلا تصحيح أو درجة. سيُحفظ اختيارك والوقت لكل سؤال فقط، ويمكنك تخطي أي سؤال."
+                : "لن تظهر الإجابات الصحيحة إلا بعد إرسال الاختبار. يمكنك تخطي أي سؤال وسيُحتسب ضمن الأسئلة غير المجابة."}
             </p>
             <div className="flex flex-wrap gap-3">
               <Button size="lg" onClick={() => setStarted(true)}>
@@ -283,6 +446,7 @@ export default function TahsilikSubjectTestRunner() {
           <div>
             <h1 className="text-2xl font-black">{test.label}</h1>
             <p className="text-sm text-muted-foreground">
+              {test.mode === "unscored" && <span className="ml-2 rounded-full bg-amber-500/10 px-2 py-1 text-amber-700">تدريب غير مصحح</span>}
               السؤال {currentIndex + 1} من {test.questions.length} · تمت الإجابة عن {Object.keys(answers).length}
             </p>
           </div>

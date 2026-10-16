@@ -361,6 +361,127 @@ paths:
           description: Test questions have changed or are no longer verified
         "410":
           description: Test expired
+  /tahsili/unscored-practice/start:
+    post:
+      operationId: startTahsiliUnscoredPractice
+      tags: [learning]
+      summary: Start Tahsili practice from pending-review drafts without answer keys or scoring
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/TahsiliUnscoredPracticeStartInput"
+      responses:
+        "200":
+          description: Practice questions without any answer key
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TahsiliUnscoredPracticeStartOutput"
+        "400":
+          description: Invalid subject or question count
+        "401":
+          description: Authentication required
+        "403":
+          description: Students only
+        "503":
+          description: No usable draft questions are available
+  /tahsili/unscored-practice/submit:
+    post:
+      operationId: submitTahsiliUnscoredPractice
+      tags: [learning]
+      summary: Save an unscored Tahsili practice report without grading or learning mastery
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/TahsiliUnscoredPracticeSubmitInput"
+      responses:
+        "200":
+          description: Attempt report with selected answers and timing only
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TahsiliUnscoredPracticeResult"
+        "400":
+          description: Invalid answers or practice session
+        "401":
+          description: Authentication required
+        "403":
+          description: Students only
+        "404":
+          description: Practice session not found
+        "410":
+          description: Practice session expired
+  /tahsili/unscored-practice/history:
+    get:
+      operationId: listTahsiliUnscoredPracticeHistory
+      tags: [learning]
+      summary: List the student's saved unscored Tahsili practice summaries
+      responses:
+        "200":
+          description: Recent practice summaries
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TahsiliUnscoredPracticeHistory"
+        "401":
+          description: Authentication required
+        "403":
+          description: Students only
+  /tahsili/unscored-practice/history/{attemptId}:
+    get:
+      operationId: getTahsiliUnscoredPracticeResult
+      tags: [learning]
+      summary: Get a saved unscored Tahsili practice report owned by the student
+      parameters:
+        - name: attemptId
+          in: path
+          required: true
+          schema: { type: string, minLength: 1 }
+      responses:
+        "200":
+          description: Saved report with responses and timing only
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TahsiliUnscoredPracticeResult"
+        "401":
+          description: Authentication required
+        "403":
+          description: Students only
+        "404":
+          description: Report not found
+  /tahsili/unscored-practice/{attemptId}/questions/{questionId}/source-image:
+    get:
+      operationId: getTahsiliUnscoredPracticeSourceImage
+      tags: [learning]
+      summary: Stream a source image from the student's own unscored practice attempt
+      parameters:
+        - name: attemptId
+          in: path
+          required: true
+          schema: { type: string, minLength: 1 }
+        - name: questionId
+          in: path
+          required: true
+          schema: { type: string, minLength: 1 }
+      responses:
+        "200":
+          description: Private question image
+          content:
+            image/jpeg:
+              schema: { type: string, format: binary }
+            image/png:
+              schema: { type: string, format: binary }
+        "401":
+          description: Authentication required
+        "403":
+          description: Students only
+        "404":
+          description: Image not found in this student's attempt
   /student/learning-coach/chat:
     post:
       operationId: askStudentLearningCoach
@@ -1547,7 +1668,7 @@ components:
     TahsiliSubjectTestsOverview:
       type: object
       additionalProperties: false
-      required: [subjects]
+      required: [subjects, unscoredSubjects]
       properties:
         subjects:
           type: array
@@ -1574,6 +1695,18 @@ components:
                     subcategory: { type: string }
                     attempts: { type: number, multipleOf: 1, minimum: 0 }
                     accuracy: { type: number, minimum: 0, maximum: 100 }
+        unscoredSubjects:
+          type: array
+          items:
+            type: object
+            additionalProperties: false
+            required: [subject, label, questionCount]
+            properties:
+              subject:
+                type: string
+                enum: [math, physics, chemistry, biology, environment, mixed]
+              label: { type: string }
+              questionCount: { type: number, multipleOf: 1, minimum: 0 }
     TahsiliSubjectTestStartInput:
       type: object
       additionalProperties: false
@@ -1671,6 +1804,123 @@ components:
               correctOptionIndex: { type: number, multipleOf: 1, minimum: 0, maximum: 3 }
               isCorrect: { type: ["boolean", "null"] }
               explanation: { type: string }
+    TahsiliUnscoredPracticeStartInput:
+      type: object
+      additionalProperties: false
+      required: [subject]
+      properties:
+        subject:
+          type: string
+          enum: [math, physics, chemistry, biology, environment, mixed]
+        questionCount: { type: number, multipleOf: 1, minimum: 5, maximum: 110, default: 20 }
+    TahsiliUnscoredPracticeStartOutput:
+      type: object
+      additionalProperties: false
+      required: [attemptId, mode, subject, label, questionCount, timeLimitMinutes, rationale, questions]
+      properties:
+        attemptId: { type: string }
+        mode: { type: string, enum: [unscored] }
+        subject:
+          type: string
+          enum: [math, physics, chemistry, biology, environment, mixed]
+        label: { type: string }
+        questionCount: { type: number, multipleOf: 1, minimum: 1 }
+        timeLimitMinutes: { type: number, multipleOf: 1, minimum: 1 }
+        rationale: { type: string }
+        questions:
+          type: array
+          items:
+            type: object
+            additionalProperties: false
+            required: [id, text, options, subcategory, topic, difficulty]
+            properties:
+              id: { type: string }
+              text: { type: string }
+              options:
+                type: array
+                items: { type: string }
+                minItems: 2
+              subcategory: { type: string }
+              topic: { type: string }
+              difficulty: { type: string, enum: [beginner, intermediate, advanced] }
+              imageUrl: { type: ["string", "null"] }
+    TahsiliUnscoredPracticeSubmitInput:
+      type: object
+      additionalProperties: false
+      required: [attemptId, answers]
+      properties:
+        attemptId: { type: string, minLength: 1 }
+        timeTakenSeconds: { type: number, multipleOf: 1, minimum: 0, maximum: 14400 }
+        answers:
+          type: array
+          maxItems: 110
+          items:
+            type: object
+            additionalProperties: false
+            required: [questionId, selectedOptionIndex]
+            properties:
+              questionId: { type: string, minLength: 1 }
+              selectedOptionIndex: { type: ["number", "null"], multipleOf: 1, minimum: 0, maximum: 3 }
+              responseTime: { type: number, multipleOf: 1, minimum: 0, maximum: 14400 }
+    TahsiliUnscoredPracticeResult:
+      type: object
+      additionalProperties: false
+      required: [attemptId, subject, label, totalQuestions, answeredQuestions, skippedQuestions, durationSeconds, completedAt, unscored, questions]
+      properties:
+        attemptId: { type: string }
+        subject:
+          type: string
+          enum: [math, physics, chemistry, biology, environment, mixed]
+        label: { type: string }
+        totalQuestions: { type: number, multipleOf: 1, minimum: 1 }
+        answeredQuestions: { type: number, multipleOf: 1, minimum: 0 }
+        skippedQuestions: { type: number, multipleOf: 1, minimum: 0 }
+        durationSeconds: { type: number, multipleOf: 1, minimum: 0 }
+        completedAt: { type: string, format: date-time }
+        unscored: { type: boolean, enum: [true] }
+        questions:
+          type: array
+          items:
+            type: object
+            additionalProperties: false
+            required: [id, text, options, subcategory, topic, difficulty, selectedOptionIndex, responseTimeSeconds, sourceBook, sourcePage]
+            properties:
+              id: { type: string }
+              text: { type: string }
+              options:
+                type: array
+                items: { type: string }
+              subcategory: { type: string }
+              topic: { type: string }
+              difficulty: { type: string, enum: [beginner, intermediate, advanced] }
+              selectedOptionIndex: { type: ["number", "null"], multipleOf: 1, minimum: 0, maximum: 3 }
+              responseTimeSeconds: { type: number, minimum: 0 }
+              sourceBook: { type: string }
+              sourcePage: { type: number, multipleOf: 1, minimum: 1 }
+              imageUrl: { type: ["string", "null"] }
+    TahsiliUnscoredPracticeHistory:
+      type: object
+      additionalProperties: false
+      required: [attempts]
+      properties:
+        attempts:
+          type: array
+          items:
+            type: object
+            additionalProperties: false
+            required: [attemptId, subject, label, totalQuestions, answeredQuestions, skippedQuestions, durationSeconds, completedAt, unscored]
+            properties:
+              attemptId: { type: string }
+              subject:
+                type: string
+                enum: [math, physics, chemistry, biology, environment, mixed]
+              label: { type: string }
+              totalQuestions: { type: number, multipleOf: 1, minimum: 1 }
+              answeredQuestions: { type: number, multipleOf: 1, minimum: 0 }
+              skippedQuestions: { type: number, multipleOf: 1, minimum: 0 }
+              durationSeconds: { type: number, multipleOf: 1, minimum: 0 }
+              completedAt: { type: string, format: date-time }
+              unscored: { type: boolean, enum: [true] }
     StudentLearningCoachChatMessage:
       type: object
       additionalProperties: false

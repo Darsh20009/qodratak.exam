@@ -170,7 +170,8 @@ export function ExamReportHistory() {
   });
   const reports = history.data?.pages.flatMap((page) => page.reports) || [];
   const reportProgram = (report: ExamReportRecord): 'qudrat' | 'tahsili' => {
-    if (report.program === 'tahsili' || report.program === 'qudrat') return report.program;
+    const program = (report as ExamReportRecord & { program?: unknown }).program;
+    if (program === 'tahsili' || program === 'qudrat') return program;
     const title = report.title.toLocaleLowerCase();
     const areas = report.questions.map((question) => `${question.category} ${question.subcategory}`).join(' ').toLocaleLowerCase();
     return /تحصيلي|tahsili|فيزياء|كيمياء|أحياء|احياء|علم البيئة|الرياضيات|physics|chemistry|biology/.test(`${title} ${areas}`)

@@ -63,3 +63,13 @@ it understates skipped counts and disagrees with the saved exam result.
 **How to apply:** Include unvisited questions as skipped with unknown timing.
 Keep measured-time counts separate from exam question counts, preserve existing
 positive measurements, and never interpret zero/unmeasured time as fast work.
+
+Pending Tahsili drafts may be offered as explicitly unscored practice. Save the
+student's choices and timing in a separate practice history, but never derive
+correctness, a grade, or mastery/error evidence from those attempts.
+
+**Why:** Draft answer keys and OCR content are not yet reviewed, so using these
+attempts as performance evidence would contaminate scores and personalization.
+
+**How to apply:** Keep the unscored report separate from `LearningAttempt`,
+official exam reports, and level analytics until the source content is reviewed.

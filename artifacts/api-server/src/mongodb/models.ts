@@ -1415,6 +1415,80 @@ export const TahsiliQuestionDraft = mongoose.models['TahsiliQuestionDraft']
   ? mongoose.model<ITahsiliQuestionDraft>('TahsiliQuestionDraft')
   : mongoose.model<ITahsiliQuestionDraft>('TahsiliQuestionDraft', tahsiliQuestionDraftSchema);
 
+export interface ITahsiliUnscoredPracticeQuestion {
+  draftId: string;
+  text: string;
+  options: string[];
+  subcategory: string;
+  topic: string;
+  difficulty: 'beginner' | 'intermediate' | 'advanced';
+  sourceBook: string;
+  sourcePage: number;
+  sourceImageObjectKey?: string;
+}
+
+export interface ITahsiliUnscoredPracticeAnswer {
+  draftId: string;
+  selectedOptionIndex: number | null;
+  responseTimeSeconds: number;
+}
+
+export interface ITahsiliUnscoredPracticeAttempt extends Document {
+  attemptId: string;
+  studentId: string;
+  subject: string;
+  label: string;
+  startedAt: Date;
+  timeLimitMinutes: number;
+  questions: ITahsiliUnscoredPracticeQuestion[];
+  answers: ITahsiliUnscoredPracticeAnswer[];
+  state: 'in_progress' | 'completed';
+  durationSeconds?: number;
+  completedAt?: Date;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+const tahsiliUnscoredPracticeQuestionSchema = new Schema<ITahsiliUnscoredPracticeQuestion>({
+  draftId: { type: String, required: true },
+  text: { type: String, required: true },
+  options: { type: [String], required: true },
+  subcategory: { type: String, required: true },
+  topic: { type: String, required: true },
+  difficulty: { type: String, enum: ['beginner', 'intermediate', 'advanced'], required: true },
+  sourceBook: { type: String, required: true },
+  sourcePage: { type: Number, required: true, min: 1 },
+  sourceImageObjectKey: { type: String },
+}, { _id: false });
+
+const tahsiliUnscoredPracticeAnswerSchema = new Schema<ITahsiliUnscoredPracticeAnswer>({
+  draftId: { type: String, required: true },
+  selectedOptionIndex: { type: Number, min: 0, max: 3, default: null },
+  responseTimeSeconds: { type: Number, min: 0, max: 14400, default: 0 },
+}, { _id: false });
+
+const tahsiliUnscoredPracticeAttemptSchema = new Schema<ITahsiliUnscoredPracticeAttempt>({
+  attemptId: { type: String, required: true, unique: true, index: true },
+  studentId: { type: String, required: true, index: true },
+  subject: { type: String, required: true, index: true },
+  label: { type: String, required: true },
+  startedAt: { type: Date, required: true },
+  timeLimitMinutes: { type: Number, required: true, min: 1 },
+  questions: { type: [tahsiliUnscoredPracticeQuestionSchema], required: true },
+  answers: { type: [tahsiliUnscoredPracticeAnswerSchema], default: [] },
+  state: { type: String, enum: ['in_progress', 'completed'], default: 'in_progress', index: true },
+  durationSeconds: { type: Number, min: 0, max: 14400 },
+  completedAt: { type: Date },
+}, { timestamps: true });
+tahsiliUnscoredPracticeAttemptSchema.index({ studentId: 1, completedAt: -1 });
+
+export const TahsiliUnscoredPracticeAttempt = mongoose.models['TahsiliUnscoredPracticeAttempt']
+  ? mongoose.model<ITahsiliUnscoredPracticeAttempt>('TahsiliUnscoredPracticeAttempt')
+  : mongoose.model<ITahsiliUnscoredPracticeAttempt>(
+    'TahsiliUnscoredPracticeAttempt',
+    tahsiliUnscoredPracticeAttemptSchema,
+  );
+
 export const ChatMessage = mongoose.model<IChatMessage>('ChatMessage', chatMessageSchema);
 export const ActivityLog = mongoose.model<IActivityLog>('ActivityLog', activityLogSchema);
 export const LeaderboardEntry = mongoose.model<ILeaderboardEntry>('LeaderboardEntry', leaderboardEntrySchema);

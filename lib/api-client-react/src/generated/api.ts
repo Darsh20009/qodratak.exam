@@ -78,6 +78,11 @@ import type {
   TahsiliSubjectTestSubmitInput,
   TahsiliSubjectTestSubmitOutput,
   TahsiliSubjectTestsOverview,
+  TahsiliUnscoredPracticeHistory,
+  TahsiliUnscoredPracticeResult,
+  TahsiliUnscoredPracticeStartInput,
+  TahsiliUnscoredPracticeStartOutput,
+  TahsiliUnscoredPracticeSubmitInput,
   VerbalBookLesson
 } from './api.schemas';
 
@@ -1401,6 +1406,384 @@ export const useSubmitTahsiliSubjectTest = <TError = ErrorType<void>,
       > => {
       return useMutation(getSubmitTahsiliSubjectTestMutationOptions(options));
     }
+
+export const getStartTahsiliUnscoredPracticeUrl = () => {
+
+
+
+
+  return `/api/tahsili/unscored-practice/start`
+}
+
+/**
+ * @summary Start Tahsili practice from pending-review drafts without answer keys or scoring
+ */
+export const startTahsiliUnscoredPractice = async (tahsiliUnscoredPracticeStartInput: TahsiliUnscoredPracticeStartInput, options?: Parameters<typeof customFetch>[1]): Promise<TahsiliUnscoredPracticeStartOutput> => {
+
+  return customFetch<TahsiliUnscoredPracticeStartOutput>(getStartTahsiliUnscoredPracticeUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(tahsiliUnscoredPracticeStartInput)
+  }
+);}
+
+
+
+
+
+export const getStartTahsiliUnscoredPracticeMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof startTahsiliUnscoredPractice>>, TError,{data: BodyType<TahsiliUnscoredPracticeStartInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof startTahsiliUnscoredPractice>>, TError,{data: BodyType<TahsiliUnscoredPracticeStartInput>}, TContext> => {
+
+const mutationKey = ['startTahsiliUnscoredPractice'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof startTahsiliUnscoredPractice>>, {data: BodyType<TahsiliUnscoredPracticeStartInput>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  startTahsiliUnscoredPractice(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type StartTahsiliUnscoredPracticeMutationResult = NonNullable<Awaited<ReturnType<typeof startTahsiliUnscoredPractice>>>
+    export type StartTahsiliUnscoredPracticeMutationBody = BodyType<TahsiliUnscoredPracticeStartInput>
+    export type StartTahsiliUnscoredPracticeMutationError = ErrorType<void>
+
+    /**
+ * @summary Start Tahsili practice from pending-review drafts without answer keys or scoring
+ */
+export const useStartTahsiliUnscoredPractice = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof startTahsiliUnscoredPractice>>, TError,{data: BodyType<TahsiliUnscoredPracticeStartInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof startTahsiliUnscoredPractice>>,
+        TError,
+        {data: BodyType<TahsiliUnscoredPracticeStartInput>},
+        TContext
+      > => {
+      return useMutation(getStartTahsiliUnscoredPracticeMutationOptions(options));
+    }
+
+export const getSubmitTahsiliUnscoredPracticeUrl = () => {
+
+
+
+
+  return `/api/tahsili/unscored-practice/submit`
+}
+
+/**
+ * @summary Save an unscored Tahsili practice report without grading or learning mastery
+ */
+export const submitTahsiliUnscoredPractice = async (tahsiliUnscoredPracticeSubmitInput: TahsiliUnscoredPracticeSubmitInput, options?: Parameters<typeof customFetch>[1]): Promise<TahsiliUnscoredPracticeResult> => {
+
+  return customFetch<TahsiliUnscoredPracticeResult>(getSubmitTahsiliUnscoredPracticeUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(tahsiliUnscoredPracticeSubmitInput)
+  }
+);}
+
+
+
+
+
+export const getSubmitTahsiliUnscoredPracticeMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof submitTahsiliUnscoredPractice>>, TError,{data: BodyType<TahsiliUnscoredPracticeSubmitInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof submitTahsiliUnscoredPractice>>, TError,{data: BodyType<TahsiliUnscoredPracticeSubmitInput>}, TContext> => {
+
+const mutationKey = ['submitTahsiliUnscoredPractice'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof submitTahsiliUnscoredPractice>>, {data: BodyType<TahsiliUnscoredPracticeSubmitInput>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  submitTahsiliUnscoredPractice(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type SubmitTahsiliUnscoredPracticeMutationResult = NonNullable<Awaited<ReturnType<typeof submitTahsiliUnscoredPractice>>>
+    export type SubmitTahsiliUnscoredPracticeMutationBody = BodyType<TahsiliUnscoredPracticeSubmitInput>
+    export type SubmitTahsiliUnscoredPracticeMutationError = ErrorType<void>
+
+    /**
+ * @summary Save an unscored Tahsili practice report without grading or learning mastery
+ */
+export const useSubmitTahsiliUnscoredPractice = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof submitTahsiliUnscoredPractice>>, TError,{data: BodyType<TahsiliUnscoredPracticeSubmitInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof submitTahsiliUnscoredPractice>>,
+        TError,
+        {data: BodyType<TahsiliUnscoredPracticeSubmitInput>},
+        TContext
+      > => {
+      return useMutation(getSubmitTahsiliUnscoredPracticeMutationOptions(options));
+    }
+
+export const getListTahsiliUnscoredPracticeHistoryUrl = () => {
+
+
+
+
+  return `/api/tahsili/unscored-practice/history`
+}
+
+/**
+ * @summary List the student's saved unscored Tahsili practice summaries
+ */
+export const listTahsiliUnscoredPracticeHistory = async ( options?: Parameters<typeof customFetch>[1]): Promise<TahsiliUnscoredPracticeHistory> => {
+
+  return customFetch<TahsiliUnscoredPracticeHistory>(getListTahsiliUnscoredPracticeHistoryUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListTahsiliUnscoredPracticeHistoryQueryKey = () => {
+    return [
+    `/api/tahsili/unscored-practice/history`
+    ] as const;
+    }
+
+
+export const getListTahsiliUnscoredPracticeHistoryQueryOptions = <TData = Awaited<ReturnType<typeof listTahsiliUnscoredPracticeHistory>>, TError = ErrorType<void>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listTahsiliUnscoredPracticeHistory>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListTahsiliUnscoredPracticeHistoryQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listTahsiliUnscoredPracticeHistory>>> = ({ signal }) => listTahsiliUnscoredPracticeHistory({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listTahsiliUnscoredPracticeHistory>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListTahsiliUnscoredPracticeHistoryQueryResult = NonNullable<Awaited<ReturnType<typeof listTahsiliUnscoredPracticeHistory>>>
+export type ListTahsiliUnscoredPracticeHistoryQueryError = ErrorType<void>
+
+
+/**
+ * @summary List the student's saved unscored Tahsili practice summaries
+ */
+
+export function useListTahsiliUnscoredPracticeHistory<TData = Awaited<ReturnType<typeof listTahsiliUnscoredPracticeHistory>>, TError = ErrorType<void>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listTahsiliUnscoredPracticeHistory>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListTahsiliUnscoredPracticeHistoryQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getGetTahsiliUnscoredPracticeResultUrl = (attemptId: string,) => {
+
+
+
+
+  return `/api/tahsili/unscored-practice/history/${attemptId}`
+}
+
+/**
+ * @summary Get a saved unscored Tahsili practice report owned by the student
+ */
+export const getTahsiliUnscoredPracticeResult = async (attemptId: string, options?: Parameters<typeof customFetch>[1]): Promise<TahsiliUnscoredPracticeResult> => {
+
+  return customFetch<TahsiliUnscoredPracticeResult>(getGetTahsiliUnscoredPracticeResultUrl(attemptId),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetTahsiliUnscoredPracticeResultQueryKey = (attemptId: string,) => {
+    return [
+    `/api/tahsili/unscored-practice/history/${attemptId}`
+    ] as const;
+    }
+
+
+export const getGetTahsiliUnscoredPracticeResultQueryOptions = <TData = Awaited<ReturnType<typeof getTahsiliUnscoredPracticeResult>>, TError = ErrorType<void>>(attemptId: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getTahsiliUnscoredPracticeResult>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetTahsiliUnscoredPracticeResultQueryKey(attemptId);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getTahsiliUnscoredPracticeResult>>> = ({ signal }) => getTahsiliUnscoredPracticeResult(attemptId, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: attemptId !== null && attemptId !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getTahsiliUnscoredPracticeResult>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetTahsiliUnscoredPracticeResultQueryResult = NonNullable<Awaited<ReturnType<typeof getTahsiliUnscoredPracticeResult>>>
+export type GetTahsiliUnscoredPracticeResultQueryError = ErrorType<void>
+
+
+/**
+ * @summary Get a saved unscored Tahsili practice report owned by the student
+ */
+
+export function useGetTahsiliUnscoredPracticeResult<TData = Awaited<ReturnType<typeof getTahsiliUnscoredPracticeResult>>, TError = ErrorType<void>>(
+ attemptId: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getTahsiliUnscoredPracticeResult>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetTahsiliUnscoredPracticeResultQueryOptions(attemptId,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getGetTahsiliUnscoredPracticeSourceImageUrl = (attemptId: string,
+    questionId: string,) => {
+
+
+
+
+  return `/api/tahsili/unscored-practice/${attemptId}/questions/${questionId}/source-image`
+}
+
+/**
+ * @summary Stream a source image from the student's own unscored practice attempt
+ */
+export const getTahsiliUnscoredPracticeSourceImage = async (attemptId: string,
+    questionId: string, options?: Parameters<typeof customFetch>[1]): Promise<Blob> => {
+
+  return customFetch<Blob>(getGetTahsiliUnscoredPracticeSourceImageUrl(attemptId,questionId),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetTahsiliUnscoredPracticeSourceImageQueryKey = (attemptId: string,
+    questionId: string,) => {
+    return [
+    `/api/tahsili/unscored-practice/${attemptId}/questions/${questionId}/source-image`
+    ] as const;
+    }
+
+
+export const getGetTahsiliUnscoredPracticeSourceImageQueryOptions = <TData = Awaited<ReturnType<typeof getTahsiliUnscoredPracticeSourceImage>>, TError = ErrorType<void>>(attemptId: string,
+    questionId: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getTahsiliUnscoredPracticeSourceImage>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetTahsiliUnscoredPracticeSourceImageQueryKey(attemptId,questionId);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getTahsiliUnscoredPracticeSourceImage>>> = ({ signal }) => getTahsiliUnscoredPracticeSourceImage(attemptId,questionId, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: attemptId !== null && attemptId !== undefined && questionId !== null && questionId !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getTahsiliUnscoredPracticeSourceImage>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetTahsiliUnscoredPracticeSourceImageQueryResult = NonNullable<Awaited<ReturnType<typeof getTahsiliUnscoredPracticeSourceImage>>>
+export type GetTahsiliUnscoredPracticeSourceImageQueryError = ErrorType<void>
+
+
+/**
+ * @summary Stream a source image from the student's own unscored practice attempt
+ */
+
+export function useGetTahsiliUnscoredPracticeSourceImage<TData = Awaited<ReturnType<typeof getTahsiliUnscoredPracticeSourceImage>>, TError = ErrorType<void>>(
+ attemptId: string,
+    questionId: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getTahsiliUnscoredPracticeSourceImage>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetTahsiliUnscoredPracticeSourceImageQueryOptions(attemptId,questionId,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
 
 export const getAskStudentLearningCoachUrl = () => {
 

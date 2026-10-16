@@ -6,7 +6,9 @@
  * OpenAPI spec version: 0.1.0
  */
 import type { TahsiliSubjectTestsOverviewSubjectsItem } from './tahsiliSubjectTestsOverviewSubjectsItem';
+import type { TahsiliSubjectTestsOverviewUnscoredSubjectsItem } from './tahsiliSubjectTestsOverviewUnscoredSubjectsItem';
 
 export interface TahsiliSubjectTestsOverview {
   subjects: TahsiliSubjectTestsOverviewSubjectsItem[];
+  unscoredSubjects: TahsiliSubjectTestsOverviewUnscoredSubjectsItem[];
 }

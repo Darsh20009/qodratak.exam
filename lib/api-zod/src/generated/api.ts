@@ -965,6 +965,9 @@ export const getTahsiliSubjectTestsOverviewResponseSubjectsItemFocusAreasItemAtt
 export const getTahsiliSubjectTestsOverviewResponseSubjectsItemFocusAreasItemAccuracyMin = 0;
 export const getTahsiliSubjectTestsOverviewResponseSubjectsItemFocusAreasItemAccuracyMax = 100;
 
+export const getTahsiliSubjectTestsOverviewResponseUnscoredSubjectsItemQuestionCountMin = 0;
+export const getTahsiliSubjectTestsOverviewResponseUnscoredSubjectsItemQuestionCountMultipleOf = 1;
+
 
 
 export const GetTahsiliSubjectTestsOverviewResponse = zod.object({
@@ -980,6 +983,11 @@ export const GetTahsiliSubjectTestsOverviewResponse = zod.object({
   "attempts": zod.number().min(getTahsiliSubjectTestsOverviewResponseSubjectsItemFocusAreasItemAttemptsMin).multipleOf(getTahsiliSubjectTestsOverviewResponseSubjectsItemFocusAreasItemAttemptsMultipleOf),
   "accuracy": zod.number().min(getTahsiliSubjectTestsOverviewResponseSubjectsItemFocusAreasItemAccuracyMin).max(getTahsiliSubjectTestsOverviewResponseSubjectsItemFocusAreasItemAccuracyMax)
 }))
+})),
+  "unscoredSubjects": zod.array(zod.object({
+  "subject": zod.enum(['math', 'physics', 'chemistry', 'biology', 'environment', 'mixed']),
+  "label": zod.string(),
+  "questionCount": zod.number().min(getTahsiliSubjectTestsOverviewResponseUnscoredSubjectsItemQuestionCountMin).multipleOf(getTahsiliSubjectTestsOverviewResponseUnscoredSubjectsItemQuestionCountMultipleOf)
 }))
 })
 
@@ -1111,6 +1119,230 @@ export const SubmitTahsiliSubjectTestResponse = zod.object({
   "explanation": zod.string()
 }))
 })
+
+
+/**
+ * @summary Start Tahsili practice from pending-review drafts without answer keys or scoring
+ */
+export const startTahsiliUnscoredPracticeBodyQuestionCountDefault = 20;
+export const startTahsiliUnscoredPracticeBodyQuestionCountMin = 5;
+export const startTahsiliUnscoredPracticeBodyQuestionCountMax = 110;
+export const startTahsiliUnscoredPracticeBodyQuestionCountMultipleOf = 1;
+
+
+
+export const StartTahsiliUnscoredPracticeBody = zod.object({
+  "subject": zod.enum(['math', 'physics', 'chemistry', 'biology', 'environment', 'mixed']),
+  "questionCount": zod.number().min(startTahsiliUnscoredPracticeBodyQuestionCountMin).max(startTahsiliUnscoredPracticeBodyQuestionCountMax).multipleOf(startTahsiliUnscoredPracticeBodyQuestionCountMultipleOf).default(startTahsiliUnscoredPracticeBodyQuestionCountDefault)
+})
+
+export const startTahsiliUnscoredPracticeResponseQuestionCountMultipleOf = 1;
+
+export const startTahsiliUnscoredPracticeResponseTimeLimitMinutesMultipleOf = 1;
+
+export const startTahsiliUnscoredPracticeResponseQuestionsItemOptionsMin = 2;
+
+
+
+export const StartTahsiliUnscoredPracticeResponse = zod.object({
+  "attemptId": zod.string(),
+  "mode": zod.enum(['unscored']),
+  "subject": zod.enum(['math', 'physics', 'chemistry', 'biology', 'environment', 'mixed']),
+  "label": zod.string(),
+  "questionCount": zod.number().min(1).multipleOf(startTahsiliUnscoredPracticeResponseQuestionCountMultipleOf),
+  "timeLimitMinutes": zod.number().min(1).multipleOf(startTahsiliUnscoredPracticeResponseTimeLimitMinutesMultipleOf),
+  "rationale": zod.string(),
+  "questions": zod.array(zod.object({
+  "id": zod.string(),
+  "text": zod.string(),
+  "options": zod.array(zod.string()).min(startTahsiliUnscoredPracticeResponseQuestionsItemOptionsMin),
+  "subcategory": zod.string(),
+  "topic": zod.string(),
+  "difficulty": zod.enum(['beginner', 'intermediate', 'advanced']),
+  "imageUrl": zod.string().nullish()
+}))
+})
+
+
+/**
+ * @summary Save an unscored Tahsili practice report without grading or learning mastery
+ */
+
+export const submitTahsiliUnscoredPracticeBodyTimeTakenSecondsMin = 0;
+export const submitTahsiliUnscoredPracticeBodyTimeTakenSecondsMax = 14400;
+export const submitTahsiliUnscoredPracticeBodyTimeTakenSecondsMultipleOf = 1;
+
+
+export const submitTahsiliUnscoredPracticeBodyAnswersItemSelectedOptionIndexMin = 0;
+export const submitTahsiliUnscoredPracticeBodyAnswersItemSelectedOptionIndexMax = 3;
+export const submitTahsiliUnscoredPracticeBodyAnswersItemSelectedOptionIndexMultipleOf = 1;
+
+export const submitTahsiliUnscoredPracticeBodyAnswersItemResponseTimeMin = 0;
+export const submitTahsiliUnscoredPracticeBodyAnswersItemResponseTimeMax = 14400;
+export const submitTahsiliUnscoredPracticeBodyAnswersItemResponseTimeMultipleOf = 1;
+
+export const submitTahsiliUnscoredPracticeBodyAnswersMax = 110;
+
+
+
+export const SubmitTahsiliUnscoredPracticeBody = zod.object({
+  "attemptId": zod.string().min(1),
+  "timeTakenSeconds": zod.number().min(submitTahsiliUnscoredPracticeBodyTimeTakenSecondsMin).max(submitTahsiliUnscoredPracticeBodyTimeTakenSecondsMax).multipleOf(submitTahsiliUnscoredPracticeBodyTimeTakenSecondsMultipleOf).optional(),
+  "answers": zod.array(zod.object({
+  "questionId": zod.string().min(1),
+  "selectedOptionIndex": zod.number().min(submitTahsiliUnscoredPracticeBodyAnswersItemSelectedOptionIndexMin).max(submitTahsiliUnscoredPracticeBodyAnswersItemSelectedOptionIndexMax).multipleOf(submitTahsiliUnscoredPracticeBodyAnswersItemSelectedOptionIndexMultipleOf).nullable(),
+  "responseTime": zod.number().min(submitTahsiliUnscoredPracticeBodyAnswersItemResponseTimeMin).max(submitTahsiliUnscoredPracticeBodyAnswersItemResponseTimeMax).multipleOf(submitTahsiliUnscoredPracticeBodyAnswersItemResponseTimeMultipleOf).optional()
+})).max(submitTahsiliUnscoredPracticeBodyAnswersMax)
+})
+
+export const submitTahsiliUnscoredPracticeResponseTotalQuestionsMultipleOf = 1;
+
+export const submitTahsiliUnscoredPracticeResponseAnsweredQuestionsMin = 0;
+export const submitTahsiliUnscoredPracticeResponseAnsweredQuestionsMultipleOf = 1;
+
+export const submitTahsiliUnscoredPracticeResponseSkippedQuestionsMin = 0;
+export const submitTahsiliUnscoredPracticeResponseSkippedQuestionsMultipleOf = 1;
+
+export const submitTahsiliUnscoredPracticeResponseDurationSecondsMin = 0;
+export const submitTahsiliUnscoredPracticeResponseDurationSecondsMultipleOf = 1;
+
+export const submitTahsiliUnscoredPracticeResponseQuestionsItemSelectedOptionIndexMin = 0;
+export const submitTahsiliUnscoredPracticeResponseQuestionsItemSelectedOptionIndexMax = 3;
+export const submitTahsiliUnscoredPracticeResponseQuestionsItemSelectedOptionIndexMultipleOf = 1;
+
+export const submitTahsiliUnscoredPracticeResponseQuestionsItemResponseTimeSecondsMin = 0;
+
+export const submitTahsiliUnscoredPracticeResponseQuestionsItemSourcePageMultipleOf = 1;
+
+
+
+export const SubmitTahsiliUnscoredPracticeResponse = zod.object({
+  "attemptId": zod.string(),
+  "subject": zod.enum(['math', 'physics', 'chemistry', 'biology', 'environment', 'mixed']),
+  "label": zod.string(),
+  "totalQuestions": zod.number().min(1).multipleOf(submitTahsiliUnscoredPracticeResponseTotalQuestionsMultipleOf),
+  "answeredQuestions": zod.number().min(submitTahsiliUnscoredPracticeResponseAnsweredQuestionsMin).multipleOf(submitTahsiliUnscoredPracticeResponseAnsweredQuestionsMultipleOf),
+  "skippedQuestions": zod.number().min(submitTahsiliUnscoredPracticeResponseSkippedQuestionsMin).multipleOf(submitTahsiliUnscoredPracticeResponseSkippedQuestionsMultipleOf),
+  "durationSeconds": zod.number().min(submitTahsiliUnscoredPracticeResponseDurationSecondsMin).multipleOf(submitTahsiliUnscoredPracticeResponseDurationSecondsMultipleOf),
+  "completedAt": zod.coerce.date(),
+  "unscored": zod.literal(true),
+  "questions": zod.array(zod.object({
+  "id": zod.string(),
+  "text": zod.string(),
+  "options": zod.array(zod.string()),
+  "subcategory": zod.string(),
+  "topic": zod.string(),
+  "difficulty": zod.enum(['beginner', 'intermediate', 'advanced']),
+  "selectedOptionIndex": zod.number().min(submitTahsiliUnscoredPracticeResponseQuestionsItemSelectedOptionIndexMin).max(submitTahsiliUnscoredPracticeResponseQuestionsItemSelectedOptionIndexMax).multipleOf(submitTahsiliUnscoredPracticeResponseQuestionsItemSelectedOptionIndexMultipleOf).nullable(),
+  "responseTimeSeconds": zod.number().min(submitTahsiliUnscoredPracticeResponseQuestionsItemResponseTimeSecondsMin),
+  "sourceBook": zod.string(),
+  "sourcePage": zod.number().min(1).multipleOf(submitTahsiliUnscoredPracticeResponseQuestionsItemSourcePageMultipleOf),
+  "imageUrl": zod.string().nullish()
+}))
+})
+
+
+/**
+ * @summary List the student's saved unscored Tahsili practice summaries
+ */
+export const listTahsiliUnscoredPracticeHistoryResponseAttemptsItemTotalQuestionsMultipleOf = 1;
+
+export const listTahsiliUnscoredPracticeHistoryResponseAttemptsItemAnsweredQuestionsMin = 0;
+export const listTahsiliUnscoredPracticeHistoryResponseAttemptsItemAnsweredQuestionsMultipleOf = 1;
+
+export const listTahsiliUnscoredPracticeHistoryResponseAttemptsItemSkippedQuestionsMin = 0;
+export const listTahsiliUnscoredPracticeHistoryResponseAttemptsItemSkippedQuestionsMultipleOf = 1;
+
+export const listTahsiliUnscoredPracticeHistoryResponseAttemptsItemDurationSecondsMin = 0;
+export const listTahsiliUnscoredPracticeHistoryResponseAttemptsItemDurationSecondsMultipleOf = 1;
+
+
+
+export const ListTahsiliUnscoredPracticeHistoryResponse = zod.object({
+  "attempts": zod.array(zod.object({
+  "attemptId": zod.string(),
+  "subject": zod.enum(['math', 'physics', 'chemistry', 'biology', 'environment', 'mixed']),
+  "label": zod.string(),
+  "totalQuestions": zod.number().min(1).multipleOf(listTahsiliUnscoredPracticeHistoryResponseAttemptsItemTotalQuestionsMultipleOf),
+  "answeredQuestions": zod.number().min(listTahsiliUnscoredPracticeHistoryResponseAttemptsItemAnsweredQuestionsMin).multipleOf(listTahsiliUnscoredPracticeHistoryResponseAttemptsItemAnsweredQuestionsMultipleOf),
+  "skippedQuestions": zod.number().min(listTahsiliUnscoredPracticeHistoryResponseAttemptsItemSkippedQuestionsMin).multipleOf(listTahsiliUnscoredPracticeHistoryResponseAttemptsItemSkippedQuestionsMultipleOf),
+  "durationSeconds": zod.number().min(listTahsiliUnscoredPracticeHistoryResponseAttemptsItemDurationSecondsMin).multipleOf(listTahsiliUnscoredPracticeHistoryResponseAttemptsItemDurationSecondsMultipleOf),
+  "completedAt": zod.coerce.date(),
+  "unscored": zod.literal(true)
+}))
+})
+
+
+/**
+ * @summary Get a saved unscored Tahsili practice report owned by the student
+ */
+
+
+
+export const GetTahsiliUnscoredPracticeResultParams = zod.object({
+  "attemptId": zod.coerce.string().min(1)
+})
+
+export const getTahsiliUnscoredPracticeResultResponseTotalQuestionsMultipleOf = 1;
+
+export const getTahsiliUnscoredPracticeResultResponseAnsweredQuestionsMin = 0;
+export const getTahsiliUnscoredPracticeResultResponseAnsweredQuestionsMultipleOf = 1;
+
+export const getTahsiliUnscoredPracticeResultResponseSkippedQuestionsMin = 0;
+export const getTahsiliUnscoredPracticeResultResponseSkippedQuestionsMultipleOf = 1;
+
+export const getTahsiliUnscoredPracticeResultResponseDurationSecondsMin = 0;
+export const getTahsiliUnscoredPracticeResultResponseDurationSecondsMultipleOf = 1;
+
+export const getTahsiliUnscoredPracticeResultResponseQuestionsItemSelectedOptionIndexMin = 0;
+export const getTahsiliUnscoredPracticeResultResponseQuestionsItemSelectedOptionIndexMax = 3;
+export const getTahsiliUnscoredPracticeResultResponseQuestionsItemSelectedOptionIndexMultipleOf = 1;
+
+export const getTahsiliUnscoredPracticeResultResponseQuestionsItemResponseTimeSecondsMin = 0;
+
+export const getTahsiliUnscoredPracticeResultResponseQuestionsItemSourcePageMultipleOf = 1;
+
+
+
+export const GetTahsiliUnscoredPracticeResultResponse = zod.object({
+  "attemptId": zod.string(),
+  "subject": zod.enum(['math', 'physics', 'chemistry', 'biology', 'environment', 'mixed']),
+  "label": zod.string(),
+  "totalQuestions": zod.number().min(1).multipleOf(getTahsiliUnscoredPracticeResultResponseTotalQuestionsMultipleOf),
+  "answeredQuestions": zod.number().min(getTahsiliUnscoredPracticeResultResponseAnsweredQuestionsMin).multipleOf(getTahsiliUnscoredPracticeResultResponseAnsweredQuestionsMultipleOf),
+  "skippedQuestions": zod.number().min(getTahsiliUnscoredPracticeResultResponseSkippedQuestionsMin).multipleOf(getTahsiliUnscoredPracticeResultResponseSkippedQuestionsMultipleOf),
+  "durationSeconds": zod.number().min(getTahsiliUnscoredPracticeResultResponseDurationSecondsMin).multipleOf(getTahsiliUnscoredPracticeResultResponseDurationSecondsMultipleOf),
+  "completedAt": zod.coerce.date(),
+  "unscored": zod.literal(true),
+  "questions": zod.array(zod.object({
+  "id": zod.string(),
+  "text": zod.string(),
+  "options": zod.array(zod.string()),
+  "subcategory": zod.string(),
+  "topic": zod.string(),
+  "difficulty": zod.enum(['beginner', 'intermediate', 'advanced']),
+  "selectedOptionIndex": zod.number().min(getTahsiliUnscoredPracticeResultResponseQuestionsItemSelectedOptionIndexMin).max(getTahsiliUnscoredPracticeResultResponseQuestionsItemSelectedOptionIndexMax).multipleOf(getTahsiliUnscoredPracticeResultResponseQuestionsItemSelectedOptionIndexMultipleOf).nullable(),
+  "responseTimeSeconds": zod.number().min(getTahsiliUnscoredPracticeResultResponseQuestionsItemResponseTimeSecondsMin),
+  "sourceBook": zod.string(),
+  "sourcePage": zod.number().min(1).multipleOf(getTahsiliUnscoredPracticeResultResponseQuestionsItemSourcePageMultipleOf),
+  "imageUrl": zod.string().nullish()
+}))
+})
+
+
+/**
+ * @summary Stream a source image from the student's own unscored practice attempt
+ */
+
+
+
+
+export const GetTahsiliUnscoredPracticeSourceImageParams = zod.object({
+  "attemptId": zod.coerce.string().min(1),
+  "questionId": zod.coerce.string().min(1)
+})
+
+export const GetTahsiliUnscoredPracticeSourceImageResponse = zod.unknown()
 
 
 /**

@@ -432,7 +432,6 @@ export type ExamReportQuestionView = ExamTimingQuestionInput & ({
 export interface ExamReportRecord {
   runId: string;
   title: string;
-  program?: "qudrat" | "tahsili";
   createdAt?: string;
   questions: ExamReportQuestionView[];
   timing: ExamReportTiming;
@@ -794,8 +793,28 @@ export type TahsiliSubjectTestsOverviewSubjectsItem = {
   focusAreas: TahsiliSubjectTestsOverviewSubjectsItemFocusAreasItem[];
 };
 
+export type TahsiliSubjectTestsOverviewUnscoredSubjectsItemSubject = typeof TahsiliSubjectTestsOverviewUnscoredSubjectsItemSubject[keyof typeof TahsiliSubjectTestsOverviewUnscoredSubjectsItemSubject];
+
+
+export const TahsiliSubjectTestsOverviewUnscoredSubjectsItemSubject = {
+  math: 'math',
+  physics: 'physics',
+  chemistry: 'chemistry',
+  biology: 'biology',
+  environment: 'environment',
+  mixed: 'mixed',
+} as const;
+
+export type TahsiliSubjectTestsOverviewUnscoredSubjectsItem = {
+  subject: TahsiliSubjectTestsOverviewUnscoredSubjectsItemSubject;
+  label: string;
+  /** @minimum 0 */
+  questionCount: number;
+};
+
 export interface TahsiliSubjectTestsOverview {
   subjects: TahsiliSubjectTestsOverviewSubjectsItem[];
+  unscoredSubjects: TahsiliSubjectTestsOverviewUnscoredSubjectsItem[];
 }
 
 export type TahsiliSubjectTestStartInputSubject = typeof TahsiliSubjectTestStartInputSubject[keyof typeof TahsiliSubjectTestStartInputSubject];
@@ -974,6 +993,200 @@ export interface TahsiliSubjectTestSubmitOutput {
   personalizationMode: TahsiliSubjectTestSubmitOutputPersonalizationMode;
   focusSubcategories: string[];
   questions: TahsiliSubjectTestSubmitOutputQuestionsItem[];
+}
+
+export type TahsiliUnscoredPracticeStartInputSubject = typeof TahsiliUnscoredPracticeStartInputSubject[keyof typeof TahsiliUnscoredPracticeStartInputSubject];
+
+
+export const TahsiliUnscoredPracticeStartInputSubject = {
+  math: 'math',
+  physics: 'physics',
+  chemistry: 'chemistry',
+  biology: 'biology',
+  environment: 'environment',
+  mixed: 'mixed',
+} as const;
+
+export interface TahsiliUnscoredPracticeStartInput {
+  subject: TahsiliUnscoredPracticeStartInputSubject;
+  /**
+     * @minimum 5
+     * @maximum 110
+     */
+  questionCount?: number;
+}
+
+export type TahsiliUnscoredPracticeStartOutputMode = typeof TahsiliUnscoredPracticeStartOutputMode[keyof typeof TahsiliUnscoredPracticeStartOutputMode];
+
+
+export const TahsiliUnscoredPracticeStartOutputMode = {
+  unscored: 'unscored',
+} as const;
+
+export type TahsiliUnscoredPracticeStartOutputSubject = typeof TahsiliUnscoredPracticeStartOutputSubject[keyof typeof TahsiliUnscoredPracticeStartOutputSubject];
+
+
+export const TahsiliUnscoredPracticeStartOutputSubject = {
+  math: 'math',
+  physics: 'physics',
+  chemistry: 'chemistry',
+  biology: 'biology',
+  environment: 'environment',
+  mixed: 'mixed',
+} as const;
+
+export type TahsiliUnscoredPracticeStartOutputQuestionsItemDifficulty = typeof TahsiliUnscoredPracticeStartOutputQuestionsItemDifficulty[keyof typeof TahsiliUnscoredPracticeStartOutputQuestionsItemDifficulty];
+
+
+export const TahsiliUnscoredPracticeStartOutputQuestionsItemDifficulty = {
+  beginner: 'beginner',
+  intermediate: 'intermediate',
+  advanced: 'advanced',
+} as const;
+
+export type TahsiliUnscoredPracticeStartOutputQuestionsItem = {
+  id: string;
+  text: string;
+  /** @minItems 2 */
+  options: string[];
+  subcategory: string;
+  topic: string;
+  difficulty: TahsiliUnscoredPracticeStartOutputQuestionsItemDifficulty;
+  /** @nullable */
+  imageUrl?: string | null;
+};
+
+export interface TahsiliUnscoredPracticeStartOutput {
+  attemptId: string;
+  mode: TahsiliUnscoredPracticeStartOutputMode;
+  subject: TahsiliUnscoredPracticeStartOutputSubject;
+  label: string;
+  /** @minimum 1 */
+  questionCount: number;
+  /** @minimum 1 */
+  timeLimitMinutes: number;
+  rationale: string;
+  questions: TahsiliUnscoredPracticeStartOutputQuestionsItem[];
+}
+
+export type TahsiliUnscoredPracticeSubmitInputAnswersItem = {
+  /** @minLength 1 */
+  questionId: string;
+  /**
+     * @minimum 0
+     * @maximum 3
+     * @nullable
+     */
+  selectedOptionIndex: number | null;
+  /**
+     * @minimum 0
+     * @maximum 14400
+     */
+  responseTime?: number;
+};
+
+export interface TahsiliUnscoredPracticeSubmitInput {
+  /** @minLength 1 */
+  attemptId: string;
+  /**
+     * @minimum 0
+     * @maximum 14400
+     */
+  timeTakenSeconds?: number;
+  /** @maxItems 110 */
+  answers: TahsiliUnscoredPracticeSubmitInputAnswersItem[];
+}
+
+export type TahsiliUnscoredPracticeResultSubject = typeof TahsiliUnscoredPracticeResultSubject[keyof typeof TahsiliUnscoredPracticeResultSubject];
+
+
+export const TahsiliUnscoredPracticeResultSubject = {
+  math: 'math',
+  physics: 'physics',
+  chemistry: 'chemistry',
+  biology: 'biology',
+  environment: 'environment',
+  mixed: 'mixed',
+} as const;
+
+export type TahsiliUnscoredPracticeResultQuestionsItemDifficulty = typeof TahsiliUnscoredPracticeResultQuestionsItemDifficulty[keyof typeof TahsiliUnscoredPracticeResultQuestionsItemDifficulty];
+
+
+export const TahsiliUnscoredPracticeResultQuestionsItemDifficulty = {
+  beginner: 'beginner',
+  intermediate: 'intermediate',
+  advanced: 'advanced',
+} as const;
+
+export type TahsiliUnscoredPracticeResultQuestionsItem = {
+  id: string;
+  text: string;
+  options: string[];
+  subcategory: string;
+  topic: string;
+  difficulty: TahsiliUnscoredPracticeResultQuestionsItemDifficulty;
+  /**
+     * @minimum 0
+     * @maximum 3
+     * @nullable
+     */
+  selectedOptionIndex: number | null;
+  /** @minimum 0 */
+  responseTimeSeconds: number;
+  sourceBook: string;
+  /** @minimum 1 */
+  sourcePage: number;
+  /** @nullable */
+  imageUrl?: string | null;
+};
+
+export interface TahsiliUnscoredPracticeResult {
+  attemptId: string;
+  subject: TahsiliUnscoredPracticeResultSubject;
+  label: string;
+  /** @minimum 1 */
+  totalQuestions: number;
+  /** @minimum 0 */
+  answeredQuestions: number;
+  /** @minimum 0 */
+  skippedQuestions: number;
+  /** @minimum 0 */
+  durationSeconds: number;
+  completedAt: string;
+  unscored: true;
+  questions: TahsiliUnscoredPracticeResultQuestionsItem[];
+}
+
+export type TahsiliUnscoredPracticeHistoryAttemptsItemSubject = typeof TahsiliUnscoredPracticeHistoryAttemptsItemSubject[keyof typeof TahsiliUnscoredPracticeHistoryAttemptsItemSubject];
+
+
+export const TahsiliUnscoredPracticeHistoryAttemptsItemSubject = {
+  math: 'math',
+  physics: 'physics',
+  chemistry: 'chemistry',
+  biology: 'biology',
+  environment: 'environment',
+  mixed: 'mixed',
+} as const;
+
+export type TahsiliUnscoredPracticeHistoryAttemptsItem = {
+  attemptId: string;
+  subject: TahsiliUnscoredPracticeHistoryAttemptsItemSubject;
+  label: string;
+  /** @minimum 1 */
+  totalQuestions: number;
+  /** @minimum 0 */
+  answeredQuestions: number;
+  /** @minimum 0 */
+  skippedQuestions: number;
+  /** @minimum 0 */
+  durationSeconds: number;
+  completedAt: string;
+  unscored: true;
+};
+
+export interface TahsiliUnscoredPracticeHistory {
+  attempts: TahsiliUnscoredPracticeHistoryAttemptsItem[];
 }
 
 export type StudentLearningCoachChatMessageRole = typeof StudentLearningCoachChatMessageRole[keyof typeof StudentLearningCoachChatMessageRole];
