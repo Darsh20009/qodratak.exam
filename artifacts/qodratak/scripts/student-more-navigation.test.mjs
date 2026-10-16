@@ -38,9 +38,12 @@ test("the More directory covers the active learning pages without duplicate or b
     assert.ok(!item.href.startsWith("/login"), "authentication pages must not appear in the student directory");
   }
 
-  const tahsiliTeaser = menuItems.find((item) => item.href === "/student-program/tahsili");
-  assert.match(tahsiliTeaser?.name ?? "", /قريبًا/, "unfinished Tahsili must remain clearly labeled as coming soon");
-  assert.ok(!menuItems.some((item) => item.href.startsWith("/tahsilik/")), "unfinished Tahsili study and test pages must stay out of student navigation");
+  const tahsiliEntry = menuItems.find((item) => item.href === "/tahsili");
+  assert.match(tahsiliEntry?.name ?? "", /التحصيلي/, "the Tahsili program should be discoverable as an active student destination");
+  assert.ok(menuItems.some((item) => item.href === "/tahsilik/tests"), "the active Tahsili subject-test center should be discoverable");
+  assert.ok(menuItems.some((item) => item.href === "/tahsilik/question-bank"), "the Tahsili question bank should be discoverable");
+  assert.ok(!menuItems.some((item) => /قريبًا/.test(item.name)), "active learning programs must not be presented as coming soon");
+  assert.match(appSource, /<Route path="\/tahsili">[\s\S]*?<TahsiliOverviewPage \/>/, "the Tahsili overview route should show its live study and test links");
   for (const href of ["/foundation/coverage-test", "/bubble-sheet-scan", "/student/foundation-book/quantitative", "/ai-hub/pattern-analysis", "/subscription", "/install"]) {
     assert.ok(menuItems.some((item) => item.href === href), `student-ready destination should be discoverable: ${href}`);
   }

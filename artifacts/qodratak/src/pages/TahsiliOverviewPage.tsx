@@ -7,7 +7,7 @@ import { ArrowLeft, BookOpen, FileQuestion, GraduationCap, Loader2, Target } fro
 
 interface TahsiliSourceResponse {
   totalSources: number;
-  sources: Array<{ primary: boolean; pages: number }>;
+  sources: Array<{ id: string; primary: boolean; pages: number; subject: string; kind: string; title: string }>;
 }
 
 interface SubjectOverviewResponse {
@@ -32,6 +32,12 @@ export default function TahsiliOverviewPage() {
     queryFn: () => getJson<SubjectOverviewResponse>("/api/tahsili/subject-tests/overview"),
   });
   const verifiedCount = testsQuery.data?.subjects.reduce((total, subject) => total + subject.verifiedQuestionCount, 0);
+  const studySubjects = [
+    { key: "رياضيات", title: "الرياضيات", query: "math" },
+    { key: "فيزياء", title: "الفيزياء", query: "physics" },
+    { key: "كيمياء", title: "الكيمياء", query: "chemistry" },
+    { key: "أحياء", title: "الأحياء", query: "biology" },
+  ];
 
   return (
     <main className="qodratak-tahsili-surface min-h-[100dvh] px-4 py-6 pb-24 sm:px-6 sm:py-8" dir="rtl">
@@ -98,6 +104,47 @@ export default function TahsiliOverviewPage() {
               </Button>
             </CardContent>
           </Card>
+        </section>
+
+        <section aria-labelledby="tahsili-subjects-heading">
+          <div className="mb-3">
+            <h2 id="tahsili-subjects-heading" className="text-xl font-black text-foreground">مواد الدراسة</h2>
+            <p className="mt-1 text-sm leading-6 text-muted-foreground">
+              اختر المادة لفتح كتب التأسيس والتدريبات المتاحة لها. الملفات المرفوعة للقراءة الآن؛ فيديوهات الدروس الأصلية تُضاف عند رفعها.
+            </p>
+          </div>
+          <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+            {studySubjects.map((subject) => {
+              const available = sourcesQuery.data?.sources.filter((source) => source.subject === subject.key).length ?? 0;
+              return (
+                <Card key={subject.key} className="border-border bg-card">
+                  <CardHeader className="pb-3">
+                    <div className="flex items-center gap-3">
+                      <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10 text-primary">
+                        <BookOpen className="h-5 w-5" />
+                      </span>
+                      <div>
+                        <CardTitle className="text-base">{subject.title}</CardTitle>
+                        <CardDescription>{sourcesQuery.isLoading ? "جارٍ التحقق" : `${available} ملفًا متاحًا`}</CardDescription>
+                      </div>
+                    </div>
+                  </CardHeader>
+                  <CardContent>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      className="w-full"
+                      onClick={() => setLocation(`/foundation?program=tahsili&subject=${subject.query}`)}
+                      disabled={available === 0}
+                      data-testid={`button-tahsili-subject-${subject.query}`}
+                    >
+                      افتح موادها <ArrowLeft className="mr-2 h-4 w-4" />
+                    </Button>
+                  </CardContent>
+                </Card>
+              );
+            })}
+          </div>
         </section>
 
         <Card className="border-primary/20 bg-primary/[0.03]">

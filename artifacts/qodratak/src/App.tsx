@@ -114,6 +114,7 @@ import ChatPage from "@/pages/admin/ChatPage";
 import TahsilikSubjectTest from "@/pages/TahsilikSubjectTest";
 import TahsilikSubjectTestRunner from "@/pages/TahsilikSubjectTestRunner";
 import TahsilikTestsHub from "@/pages/TahsilikTestsHub";
+import TahsiliOverviewPage from "@/pages/TahsiliOverviewPage";
 import LandingPage from "@/pages/LandingPage";
 import { SplashScreen } from "@/components/SplashScreen";
 import { RouteSEO } from "@/components/RouteSEO";
@@ -506,16 +507,10 @@ function MainLayout({ children }: { children: React.ReactNode }) {
     { group: "اختبارات وتدريب", name: "اختبارات القدرات", href: "/abilities", icon: Target, description: "افتح اختبارات القدرات المتاحة لحسابك." },
     { group: "اختبارات وتدريب", name: "الدورات التعليمية", href: "/courses", icon: GraduationCapIcon, description: "استعرض الدورات التعليمية المنشورة." },
 
-    { group: "التحصيلي", name: "مسار التحصيلي", href: "/student-program/tahsili", icon: GraduationCapIcon, description: "انتقل إلى التأسيس والدراسة والاختبارات المنشورة للتحصيلي." },
-    { group: "التحصيلي", name: "صفحة التحصيلي", href: "/tahsili", icon: GraduationCapIcon, description: "نظرة عامة على الدراسة ومراكز اختبارات التحصيلي." },
+    { group: "التحصيلي", name: "مسار التحصيلي", href: "/tahsili", icon: GraduationCapIcon, description: "افتح مواد الدراسة ومكتبة المصادر ومركز الاختبارات." },
     { group: "التحصيلي", name: "مصادر التحصيلي", href: "/foundation?program=tahsili", icon: BookOpenIcon, description: "افتح مواد التأسيس المنشورة لكل مادة." },
-    { group: "التحصيلي", name: "اختبارات التحصيلي", href: "/tahsilik/tests", icon: ClipboardIcon, description: "اختبارات مبنية على الأسئلة التي اعتُمدت إجاباتها." },
-    { group: "التحصيلي", name: "مركز اختبارات التحصيلي", href: "/tahsilik/tests", icon: Brain, description: "افتح اختبارات التحصيلي حسب المادة أو الاختبار الشامل." },
-    { group: "التحصيلي", name: "مركز الدراسة", href: "/foundation?program=tahsili", icon: BookOpenIcon, description: "افتح تأسيس التحصيلي وخطة الدراسة حسب المواد المنشورة." },
+    { group: "التحصيلي", name: "اختبارات التحصيلي حسب المادة", href: "/tahsilik/tests", icon: ClipboardIcon, description: "اعرض المواد التي يتوفر لها بنك أسئلة معتمد." },
     { group: "التحصيلي", name: "بنك أسئلة التحصيلي", href: "/tahsilik/question-bank", icon: Library, description: "تدرب على أسئلة التحصيلي حسب المادة." },
-    { group: "التحصيلي", name: "اختبار تحصيلي شامل", href: "/tahsilik/comprehensive-test", icon: ClipboardIcon, description: "ابدأ اختبارًا شاملًا من المحتوى المنشور." },
-    { group: "التحصيلي", name: "اختبار تحصيلي مخصص", href: "/tahsilik/custom-test", icon: Layers, description: "خصص اختبارًا بحسب المادة والإعدادات المتاحة." },
-    { group: "التحصيلي", name: "اختبار حسب المادة", href: "/tahsilik/qualification", icon: Target, description: "اختر المادة وابدأ اختبارًا مناسبًا لها." },
 
     { group: "مراجعة وتقدم", name: "تقدم المهارات", href: "/skill-progress", icon: TrendingUp, description: "تابع تقدمك في المهارات." },
     { group: "مراجعة وتقدم", name: "تحليل الأداء", href: "/performance-report", icon: BarChart2, description: "راجع مؤشرات أدائك عبر المحاولات." },
@@ -1230,10 +1225,10 @@ function Router({ splashDone }: { splashDone: boolean }) {
       </Route>
 
        <Route path="/tahsili">
-         {() => <StudentShell><ProtectedRoute><Redirect to="/foundation?program=tahsili" /></ProtectedRoute></StudentShell>}
+         {() => <StudentShell><ProtectedRoute><TahsiliOverviewPage /></ProtectedRoute></StudentShell>}
       </Route>
       <Route path="/tahsili-dashboard">
-         {() => <StudentShell><ProtectedRoute><Redirect to="/foundation?program=tahsili" /></ProtectedRoute></StudentShell>}
+         {() => <StudentShell><ProtectedRoute><Redirect to="/tahsili" /></ProtectedRoute></StudentShell>}
       </Route>
       <Route path="/tahsili/exams">
          {() => <StudentShell><ProtectedRoute requiresPremium={true}><Redirect to="/tahsilik/tests" /></ProtectedRoute></StudentShell>}
@@ -1241,13 +1236,13 @@ function Router({ splashDone }: { splashDone: boolean }) {
 
       {/* منصة تحصيلك المتكاملة */}
       <Route path="/tahsilik">
-        {() => <StudentShell><ProtectedRoute><Redirect to="/foundation?program=tahsili" /></ProtectedRoute></StudentShell>}
+         {() => <StudentShell><ProtectedRoute><Redirect to="/tahsili" /></ProtectedRoute></StudentShell>}
       </Route>
       <Route path="/tahsilik/mobile-dashboard">
-         {() => <StudentShell><ProtectedRoute><Redirect to="/foundation?program=tahsili" /></ProtectedRoute></StudentShell>}
+         {() => <StudentShell><ProtectedRoute><Redirect to="/tahsili" /></ProtectedRoute></StudentShell>}
       </Route>
       <Route path="/tahsilik/study">
-         {() => <StudentShell><ProtectedRoute><Redirect to="/foundation?program=tahsili" /></ProtectedRoute></StudentShell>}
+         {() => <StudentShell><ProtectedRoute><Redirect to="/tahsili" /></ProtectedRoute></StudentShell>}
       </Route>
       <Route path="/tahsilik/tests">
         {() => <StudentShell><ProtectedRoute requiresPremium={true}><TahsilikTestsHub /></ProtectedRoute></StudentShell>}

@@ -35,6 +35,12 @@ const KIND_LABELS: Record<SourceKind, string> = {
 };
 
 const SUBJECT_FILTERS = ["الكل", "رياضيات", "فيزياء", "كيمياء", "أحياء", "مختلط"];
+const SUBJECT_QUERY_ALIASES: Record<string, string> = {
+  math: "رياضيات",
+  physics: "فيزياء",
+  chemistry: "كيمياء",
+  biology: "أحياء",
+};
 
 function formatFileSize(bytes: number) {
   if (!Number.isFinite(bytes) || bytes <= 0) return "الحجم غير متاح";
@@ -52,7 +58,8 @@ async function loadSources(): Promise<SourceResponse> {
 
 export default function TahsiliSourceLibrary() {
   const [location] = useLocation();
-  const requestedSubject = new URLSearchParams(location.split("?")[1] || "").get("subject") || "الكل";
+  const subjectParam = new URLSearchParams(location.split("?")[1] || "").get("subject") || "الكل";
+  const requestedSubject = SUBJECT_QUERY_ALIASES[subjectParam] || subjectParam;
   const initialSubject = SUBJECT_FILTERS.includes(requestedSubject) ? requestedSubject : "الكل";
   const [subjectFilter, setSubjectFilter] = useState(initialSubject);
   const [selectedSourceId, setSelectedSourceId] = useState<string | null>(null);
