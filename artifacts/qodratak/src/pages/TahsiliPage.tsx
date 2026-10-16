@@ -238,7 +238,7 @@ export default function TahsiliPage() {
                 <h2 className="font-bold text-foreground">مركز الدراسة</h2>
                 <p className="mt-1 text-sm leading-6 text-muted-foreground">تابع المادة والشروحات من مساحة الدراسة.</p>
               </div>
-              <Button variant="outline" size="sm" onClick={() => setLocation("/tahsilik/study")}>
+              <Button variant="outline" size="sm" onClick={() => setLocation("/foundation?program=tahsili")}>
                 فتح
               </Button>
             </CardContent>

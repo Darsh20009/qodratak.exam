@@ -783,6 +783,65 @@ paths:
           description: Callback does not match a known payment
         "503":
           description: Geidea could not be reached; the callback can be retried
+  /admin/bootstrap/status:
+    get:
+      operationId: getAdminBootstrapStatus
+      tags: [admin]
+      summary: Check whether the first administrator can be created in a Replit preview
+      responses:
+        "200":
+          description: Preview-only first-admin setup availability
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/AdminBootstrapStatus" }
+  /admin/bootstrap:
+    post:
+      operationId: bootstrapInitialAdmin
+      tags: [admin]
+      summary: Create the first administrator in a protected Replit preview
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/AdminBootstrapInput" }
+      responses:
+        "201":
+          description: First administrator created and authenticated
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/AdminBootstrapResult" }
+        "400":
+          description: Invalid setup details
+        "401":
+          description: Bootstrap token was not accepted
+        "409":
+          description: An administrator already exists
+        "503":
+          description: Preview setup or database is not configured
+  /admin/recovery:
+    post:
+      operationId: recoverAdminAccess
+      tags: [admin]
+      summary: Recover the single existing administrator in a protected Replit preview
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/AdminRecoveryInput" }
+      responses:
+        "201":
+          description: Existing administrator credentials updated and authenticated
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/AdminRecoveryResult" }
+        "400":
+          description: Invalid recovery details
+        "401":
+          description: Bootstrap token was not accepted
+        "409":
+          description: Recovery is already used or multiple administrators exist
+        "503":
+          description: Preview recovery or database is not configured
   /admin/media/videos:
     get:
       operationId: listAdminMediaVideos
@@ -922,6 +981,70 @@ paths:
           description: Payment not found
 components:
   schemas:
+    AdminBootstrapStatus:
+      type: object
+      additionalProperties: false
+      required: [available, recoveryAvailable, reason]
+      properties:
+        available: { type: boolean }
+        recoveryAvailable: { type: boolean }
+        reason:
+          type: string
+          enum: [available, recovery_available, already_configured, already_recovered, multiple_admins, production_disabled, preview_only, database_unavailable, bootstrap_secret_missing]
+    AdminBootstrapInput:
+      type: object
+      additionalProperties: false
+      required: [bootstrapToken, username, fullName, email, password]
+      properties:
+        bootstrapToken: { type: string, minLength: 32, maxLength: 512 }
+        username: { type: string, minLength: 3, maxLength: 32, pattern: "^[A-Za-z0-9_.-]+$" }
+        fullName: { type: string, minLength: 2, maxLength: 100 }
+        email: { type: string, maxLength: 254, pattern: '^[^\s@]+@[^\s@]+\.[^\s@]+$' }
+        password: { type: string, minLength: 14, maxLength: 128 }
+    AdminBootstrapResult:
+      type: object
+      additionalProperties: false
+      required: [success, admin, adminAccessToken]
+      properties:
+        success: { type: boolean }
+        admin:
+          type: object
+          additionalProperties: false
+          required: [id, username, fullName, email, role]
+          properties:
+            id: { type: string }
+            username: { type: string }
+            fullName: { type: string }
+            email: { type: string, pattern: '^[^\s@]+@[^\s@]+\.[^\s@]+$' }
+            role: { type: string, enum: [super_admin] }
+        adminAccessToken: { type: string }
+    AdminRecoveryInput:
+      type: object
+      additionalProperties: false
+      required: [bootstrapToken, username, fullName, email, password]
+      properties:
+        bootstrapToken: { type: string, minLength: 32, maxLength: 512 }
+        username: { type: string, minLength: 3, maxLength: 32, pattern: "^[A-Za-z0-9_.-]+$" }
+        fullName: { type: string, minLength: 2, maxLength: 100 }
+        email: { type: string, maxLength: 254, pattern: '^[^\s@]+@[^\s@]+\.[^\s@]+$' }
+        password: { type: string, minLength: 14, maxLength: 128 }
+    AdminRecoveryResult:
+      type: object
+      additionalProperties: false
+      required: [success, admin, adminAccessToken]
+      properties:
+        success: { type: boolean }
+        admin:
+          type: object
+          additionalProperties: false
+          required: [id, username, fullName, email, role]
+          properties:
+            id: { type: string }
+            username: { type: string }
+            fullName: { type: string }
+            email: { type: string, pattern: '^[^\s@]+@[^\s@]+\.[^\s@]+$' }
+            role: { type: string }
+        adminAccessToken: { type: string }
     AdminVideoAsset:
       type: object
       required: [videoNumber, title, originalFilename, contentType, sizeBytes, createdAt, streamUrl]

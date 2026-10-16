@@ -108,10 +108,9 @@ import CoursesPage from "@/pages/CoursesPage";
 import TahsiliQuestionBank from "@/pages/TahsiliQuestionBank";
 import FolderDetailPage from "@/pages/FolderDetailPage";
 import AdminLogin from "@/pages/admin/AdminLogin";
+import AdminSetupPage from "@/pages/admin/AdminSetupPage";
 import AdminDashboard from "@/pages/admin/AdminDashboard";
 import ChatPage from "@/pages/admin/ChatPage";
-import TahsiliOverviewPage from "@/pages/TahsiliOverviewPage";
-import TahsiliSourceLibrary from "@/pages/TahsiliSourceLibrary";
 import TahsilikSubjectTest from "@/pages/TahsilikSubjectTest";
 import TahsilikSubjectTestRunner from "@/pages/TahsilikSubjectTestRunner";
 import TahsilikTestsHub from "@/pages/TahsilikTestsHub";
@@ -479,7 +478,6 @@ function MainLayout({ children }: { children: React.ReactNode }) {
   // ─── Core nav items (always visible) ─────────────────────
   const coreNavItems = [
     { name: "الرئيسية",       href: "/",                icon: HomeIcon },
-    { name: "خطتي", href: "/preparation-course", icon: CalendarCheck },
     { name: "التأسيس", href: "/foundation", icon: BookOpenIcon },
     { name: "التدريب المحوسب", href: "/computerized", icon: Brain },
     { name: "نتائجي", href: "/records", icon: ClipboardIcon },
@@ -510,10 +508,10 @@ function MainLayout({ children }: { children: React.ReactNode }) {
 
     { group: "التحصيلي", name: "مسار التحصيلي", href: "/student-program/tahsili", icon: GraduationCapIcon, description: "انتقل إلى التأسيس والدراسة والاختبارات المنشورة للتحصيلي." },
     { group: "التحصيلي", name: "صفحة التحصيلي", href: "/tahsili", icon: GraduationCapIcon, description: "نظرة عامة على الدراسة ومراكز اختبارات التحصيلي." },
-    { group: "التحصيلي", name: "مصادر التحصيلي", href: "/tahsilik/study", icon: BookOpenIcon, description: "افتح ملفات الدراسة المرفوعة للمواد." },
+    { group: "التحصيلي", name: "مصادر التحصيلي", href: "/foundation?program=tahsili", icon: BookOpenIcon, description: "افتح مواد التأسيس المنشورة لكل مادة." },
     { group: "التحصيلي", name: "اختبارات التحصيلي", href: "/tahsilik/tests", icon: ClipboardIcon, description: "اختبارات مبنية على الأسئلة التي اعتُمدت إجاباتها." },
     { group: "التحصيلي", name: "مركز اختبارات التحصيلي", href: "/tahsilik/tests", icon: Brain, description: "افتح اختبارات التحصيلي حسب المادة أو الاختبار الشامل." },
-    { group: "التحصيلي", name: "مركز الدراسة", href: "/tahsilik/study", icon: BookOpenIcon, description: "تابع مواد التحصيلي والدروس المنشورة." },
+    { group: "التحصيلي", name: "مركز الدراسة", href: "/foundation?program=tahsili", icon: BookOpenIcon, description: "افتح تأسيس التحصيلي وخطة الدراسة حسب المواد المنشورة." },
     { group: "التحصيلي", name: "بنك أسئلة التحصيلي", href: "/tahsilik/question-bank", icon: Library, description: "تدرب على أسئلة التحصيلي حسب المادة." },
     { group: "التحصيلي", name: "اختبار تحصيلي شامل", href: "/tahsilik/comprehensive-test", icon: ClipboardIcon, description: "ابدأ اختبارًا شاملًا من المحتوى المنشور." },
     { group: "التحصيلي", name: "اختبار تحصيلي مخصص", href: "/tahsilik/custom-test", icon: Layers, description: "خصص اختبارًا بحسب المادة والإعدادات المتاحة." },
@@ -858,8 +856,10 @@ function MainLayout({ children }: { children: React.ReactNode }) {
           {/* More menu overlay */}
           {showMoreMenu && (
             <div
-              className="fixed inset-0 z-40 bg-black/40 backdrop-blur-sm md:hidden"
+              className="fixed inset-0 z-40 bg-black/40 backdrop-blur-sm"
               onClick={() => setShowMoreMenu(false)}
+              aria-hidden="true"
+              data-testid="overlay-student-more"
             />
           )}
 
@@ -867,8 +867,10 @@ function MainLayout({ children }: { children: React.ReactNode }) {
           {showMoreMenu && (
             <div
               id="student-more-drawer"
-              className="fixed left-0 right-0 z-50 md:hidden rounded-t-3xl bg-white dark:bg-gray-900 shadow-2xl"
-              style={{ bottom: 'calc(4rem + env(safe-area-inset-bottom, 0px))' }}
+              role="dialog"
+              aria-modal="true"
+              aria-labelledby="student-more-title"
+              className="fixed inset-x-0 bottom-16 z-50 max-h-[76vh] overflow-hidden rounded-t-3xl bg-white shadow-2xl dark:bg-gray-900 md:inset-0 md:m-auto md:h-[min(82vh,760px)] md:w-[min(92vw,960px)] md:max-h-[85vh] md:rounded-3xl"
               dir="rtl"
               aria-label="كل صفحات الطالب"
             >
@@ -885,7 +887,7 @@ function MainLayout({ children }: { children: React.ReactNode }) {
               >
                 <div className="mb-4 flex items-center justify-between">
                   <div>
-                    <p className="text-sm font-black text-gray-900 dark:text-white">كل صفحات الطالب</p>
+                    <p id="student-more-title" className="text-sm font-black text-gray-900 dark:text-white">كل صفحات الطالب</p>
                     <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">{filteredMoreNavItems.length} صفحة متاحة للتنقل</p>
                   </div>
                   <button
@@ -1188,7 +1190,7 @@ function Router({ splashDone }: { splashDone: boolean }) {
         {(params) => <StudentShell><ProtectedRoute><CoursePracticePage taskId={params.taskId} /></ProtectedRoute></StudentShell>}
       </Route>
       <Route path="/preparation-course">
-        {() => <StudentShell><ProtectedRoute><PreparationCoursePage /></ProtectedRoute></StudentShell>}
+        {() => <StudentShell><ProtectedRoute><Redirect to="/foundation?program=qudrat&view=plan" /></ProtectedRoute></StudentShell>}
       </Route>
       <Route path="/student/foundation-book/quantitative">
         {() => <StudentShell><ProtectedRoute><QuantitativeBookOverviewPage /></ProtectedRoute></StudentShell>}
@@ -1228,10 +1230,10 @@ function Router({ splashDone }: { splashDone: boolean }) {
       </Route>
 
        <Route path="/tahsili">
-         {() => <StudentShell><ProtectedRoute requiresPremium={true}><TahsiliOverviewPage /></ProtectedRoute></StudentShell>}
+         {() => <StudentShell><ProtectedRoute><Redirect to="/foundation?program=tahsili" /></ProtectedRoute></StudentShell>}
       </Route>
       <Route path="/tahsili-dashboard">
-         {() => <StudentShell><ProtectedRoute requiresPremium={true}><Redirect to="/student-program/tahsili" /></ProtectedRoute></StudentShell>}
+         {() => <StudentShell><ProtectedRoute><Redirect to="/foundation?program=tahsili" /></ProtectedRoute></StudentShell>}
       </Route>
       <Route path="/tahsili/exams">
          {() => <StudentShell><ProtectedRoute requiresPremium={true}><Redirect to="/tahsilik/tests" /></ProtectedRoute></StudentShell>}
@@ -1239,13 +1241,13 @@ function Router({ splashDone }: { splashDone: boolean }) {
 
       {/* منصة تحصيلك المتكاملة */}
       <Route path="/tahsilik">
-        {() => <StudentShell><ProtectedRoute requiresPremium={true}><Redirect to="/tahsili" /></ProtectedRoute></StudentShell>}
+        {() => <StudentShell><ProtectedRoute><Redirect to="/foundation?program=tahsili" /></ProtectedRoute></StudentShell>}
       </Route>
       <Route path="/tahsilik/mobile-dashboard">
-         {() => <StudentShell><ProtectedRoute requiresPremium={true}><Redirect to="/student-program/tahsili" /></ProtectedRoute></StudentShell>}
+         {() => <StudentShell><ProtectedRoute><Redirect to="/foundation?program=tahsili" /></ProtectedRoute></StudentShell>}
       </Route>
       <Route path="/tahsilik/study">
-         {() => <StudentShell><ProtectedRoute requiresPremium={true}><TahsiliSourceLibrary /></ProtectedRoute></StudentShell>}
+         {() => <StudentShell><ProtectedRoute><Redirect to="/foundation?program=tahsili" /></ProtectedRoute></StudentShell>}
       </Route>
       <Route path="/tahsilik/tests">
         {() => <StudentShell><ProtectedRoute requiresPremium={true}><TahsilikTestsHub /></ProtectedRoute></StudentShell>}
@@ -1564,6 +1566,9 @@ function Router({ splashDone }: { splashDone: boolean }) {
       </Route>
       <Route path="/admin/login">
         {() => <AdminLogin />}
+      </Route>
+      <Route path="/admin/setup">
+        {() => <AdminSetupPage />}
       </Route>
       <Route path="/admin/dashboard">
         {() => <AdminDashboard />}

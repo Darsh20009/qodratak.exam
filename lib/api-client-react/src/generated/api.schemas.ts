@@ -5,6 +5,122 @@
  * API specification
  * OpenAPI spec version: 0.1.0
  */
+export type AdminBootstrapStatusReason = typeof AdminBootstrapStatusReason[keyof typeof AdminBootstrapStatusReason];
+
+
+export const AdminBootstrapStatusReason = {
+  available: 'available',
+  recovery_available: 'recovery_available',
+  already_configured: 'already_configured',
+  already_recovered: 'already_recovered',
+  multiple_admins: 'multiple_admins',
+  production_disabled: 'production_disabled',
+  preview_only: 'preview_only',
+  database_unavailable: 'database_unavailable',
+  bootstrap_secret_missing: 'bootstrap_secret_missing',
+} as const;
+
+export interface AdminBootstrapStatus {
+  available: boolean;
+  recoveryAvailable: boolean;
+  reason: AdminBootstrapStatusReason;
+}
+
+export interface AdminBootstrapInput {
+  /**
+     * @minLength 32
+     * @maxLength 512
+     */
+  bootstrapToken: string;
+  /**
+     * @minLength 3
+     * @maxLength 32
+     * @pattern ^[A-Za-z0-9_.-]+$
+     */
+  username: string;
+  /**
+     * @minLength 2
+     * @maxLength 100
+     */
+  fullName: string;
+  /**
+     * @maxLength 254
+     * @pattern ^[^\s@]+@[^\s@]+\.[^\s@]+$
+     */
+  email: string;
+  /**
+     * @minLength 14
+     * @maxLength 128
+     */
+  password: string;
+}
+
+export type AdminBootstrapResultAdminRole = typeof AdminBootstrapResultAdminRole[keyof typeof AdminBootstrapResultAdminRole];
+
+
+export const AdminBootstrapResultAdminRole = {
+  super_admin: 'super_admin',
+} as const;
+
+export type AdminBootstrapResultAdmin = {
+  id: string;
+  username: string;
+  fullName: string;
+  /** @pattern ^[^\s@]+@[^\s@]+\.[^\s@]+$ */
+  email: string;
+  role: AdminBootstrapResultAdminRole;
+};
+
+export interface AdminBootstrapResult {
+  success: boolean;
+  admin: AdminBootstrapResultAdmin;
+  adminAccessToken: string;
+}
+
+export interface AdminRecoveryInput {
+  /**
+     * @minLength 32
+     * @maxLength 512
+     */
+  bootstrapToken: string;
+  /**
+     * @minLength 3
+     * @maxLength 32
+     * @pattern ^[A-Za-z0-9_.-]+$
+     */
+  username: string;
+  /**
+     * @minLength 2
+     * @maxLength 100
+     */
+  fullName: string;
+  /**
+     * @maxLength 254
+     * @pattern ^[^\s@]+@[^\s@]+\.[^\s@]+$
+     */
+  email: string;
+  /**
+     * @minLength 14
+     * @maxLength 128
+     */
+  password: string;
+}
+
+export type AdminRecoveryResultAdmin = {
+  id: string;
+  username: string;
+  fullName: string;
+  /** @pattern ^[^\s@]+@[^\s@]+\.[^\s@]+$ */
+  email: string;
+  role: string;
+};
+
+export interface AdminRecoveryResult {
+  success: boolean;
+  admin: AdminRecoveryResultAdmin;
+  adminAccessToken: string;
+}
+
 export interface AdminVideoAsset {
   /** @minimum 1 */
   videoNumber: number;

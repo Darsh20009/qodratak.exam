@@ -48,23 +48,67 @@ export function Grain() {
 
 export type Callout = { x: number; y: number; text: string; at: number; side?: 'l' | 'r' };
 
+/** A visible cursor makes the account walkthrough read as an action, not a paused screenshot. */
+function AccountCursor() {
+  return (
+    <motion.div
+      aria-hidden="true"
+      className="absolute pointer-events-none"
+      style={{ zIndex: 4, width: '4.2vmin', height: '5.3vmin', margin: '-0.4vmin 0 0 -0.3vmin', filter: 'drop-shadow(0 0.35vmin 0.5vmin rgba(13,27,42,.45))' }}
+      initial={{ left: '45%', top: '39%', scale: 0.65, opacity: 0 }}
+      animate={{
+        left: ['45%', '57%', '30%', '27%'],
+        top: ['39%', '69%', '70%', '67%'],
+        scale: [0.65, 1, 0.88, 1, 0.88, 1],
+        opacity: [0, 1, 1, 1],
+      }}
+      transition={{
+        left: { duration: 3.7, times: [0, 0.28, 0.68, 1], ease: [0.22, 1, 0.36, 1] },
+        top: { duration: 3.7, times: [0, 0.28, 0.68, 1], ease: [0.22, 1, 0.36, 1] },
+        scale: { duration: 3.7, times: [0, 0.16, 0.22, 0.53, 0.59, 1], ease: 'easeInOut' },
+        opacity: { duration: 0.24, times: [0, 0.08, 0.85, 1] },
+      }}
+    >
+      <svg viewBox="0 0 28 36" width="100%" height="100%" fill="none">
+        <path d="M3 2.5v27l7.1-7.2 4.7 10.5 4.2-1.9-4.7-10.3 10-.7L3 2.5Z" fill="#fff" stroke="#0D1B2A" strokeWidth="2.2" strokeLinejoin="round" />
+        <path d="m15 30.4 2.1-.9" stroke="#FF8A70" strokeWidth="2" strokeLinecap="round" />
+      </svg>
+    </motion.div>
+  );
+}
+
 /** Image layer inside the persistent browser frame: camera push + timed callouts. */
 function ShotLayer({ step }: { step: Step }) {
   const { src, focus, zoom, crop = false, callouts = [] } = step;
   const delay = 0.9;
+  const isAccount = step.url === '/account';
   return (
     <motion.div className="absolute inset-0 overflow-hidden" style={{ background: C.paper }}
       initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0, transition: { duration: 0.5, delay: 0.25 } }}
       transition={{ duration: 0.55, delay: 0.15, ease: 'easeOut' }}>
       <motion.div className="absolute left-0 w-full" style={{ top: crop ? '-6.6%' : 0, transformOrigin: `${focus[0]}% ${focus[1]}%` }}
-        initial={{ scale: 1.04 }} animate={{ scale: zoom }} transition={{ delay: 0.15, duration: delay + 2.6, ease: [0.45, 0, 0.25, 1] }}>
+        initial={{ scale: 1.04, x: '0%', y: '0%' }}
+        animate={isAccount
+          ? { scale: [1.04, 1.16, 1.31, 1.34], x: ['0%', '-2%', '-8%', '2%'], y: ['0%', '-2%', '-7%', '-7%'] }
+          : { scale: zoom }}
+        transition={isAccount
+          ? { duration: 3.85, times: [0, 0.28, 0.68, 1], ease: [0.45, 0, 0.25, 1] }
+          : { delay: 0.15, duration: delay + 2.6, ease: [0.45, 0, 0.25, 1] }}>
         <img src={`${B}shots/${src}`} className="block w-full" />
         {callouts.map((c, i) => (
           <div key={i} className="absolute" style={{ left: `${c.x}%`, top: `${c.y}%` }}>
             <motion.div style={{ position: 'absolute', width: '2.4vmin', height: '2.4vmin', margin: '-1.2vmin', borderRadius: '50%', border: `0.45vmin solid ${C.coral}`, background: `${C.coral}33` }}
-              initial={{ scale: 0, opacity: 0 }} animate={{ scale: [0, 1.3, 1], opacity: 1 }} transition={{ delay: c.at, duration: 0.45 }} />
-            <motion.div dir="rtl" style={{ position: 'absolute', top: '-1.9vmin', [c.side === 'l' ? 'right' : 'left']: '2vmin', whiteSpace: 'nowrap', background: C.navy, color: '#fff', fontFamily: display, fontWeight: 800, fontSize: '1.9vmin', padding: '0.7vmin 1.4vmin', borderRadius: '0.9vmin', boxShadow: '0 1vmin 3vmin rgba(13,27,42,.35)', borderInlineStart: `0.5vmin solid ${C.coral}` }}
-              initial={{ opacity: 0, x: c.side === 'l' ? 12 : -12 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: c.at + 0.15, duration: 0.4 }}>
+              initial={{ scale: 0, opacity: 0 }}
+              animate={isAccount ? { scale: [0, 1.3, 1.65], opacity: [0, 1, 0] } : { scale: [0, 1.3, 1], opacity: 1 }}
+              transition={isAccount
+                ? { delay: c.at, duration: 0.8, times: [0, 0.3, 1] }
+                : { delay: c.at, duration: 0.45 }} />
+            <motion.div dir="rtl" style={{ position: 'absolute', top: '-1.9vmin', [c.side === 'l' ? 'right' : 'left']: '2vmin', whiteSpace: 'nowrap', background: C.navy, color: '#fff', fontFamily: display, fontWeight: 800, fontSize: isAccount ? '2.5vmin' : '1.9vmin', padding: '0.7vmin 1.4vmin', borderRadius: '0.9vmin', boxShadow: '0 1vmin 3vmin rgba(13,27,42,.35)', borderInlineStart: `0.5vmin solid ${C.coral}` }}
+              initial={{ opacity: 0, x: c.side === 'l' ? 12 : -12 }}
+              animate={isAccount ? { opacity: [0, 1, 1, 0], x: [c.side === 'l' ? 12 : -12, 0, 0, c.side === 'l' ? -8 : 8] } : { opacity: 1, x: 0 }}
+              transition={isAccount
+                ? { delay: c.at + 0.15, duration: 1.1, times: [0, 0.12, 0.82, 1] }
+                : { delay: c.at + 0.15, duration: 0.4 }}>
               {c.text}
             </motion.div>
           </div>
@@ -76,6 +120,7 @@ function ShotLayer({ step }: { step: Step }) {
           initial={{ scale: 0.3, opacity: 0 }} animate={{ scale: [0.3, 1, 1.4], opacity: [0, 0.9, 0] }}
           transition={{ delay: delay + 1.5, duration: 1.4, times: [0, 0.4, 1] }} />
       )}
+      {isAccount && <AccountCursor />}
     </motion.div>
   );
 }
@@ -237,6 +282,11 @@ export const STEPS: Step[] = [
     callouts: [{ x: 60, y: 22, text: 'نص القطعة', at: 1.6, side: 'l' }, { x: 46, y: 94, text: 'حفظ والتالي', at: 2.4, side: 'l' }] },
   { n: '١١', chapter: CH.train, label: 'اختبار مخصص', line1: 'اصنع اختبارك بنفسك', line2: 'حدّد عدد أسئلة اللفظي والكمي والوقت', src: 'n-custom.jpg', url: '/custom-exam', focus: [50, 35], zoom: 1.3, layout: 'left' },
   { n: '١٢', chapter: CH.follow, label: 'نتائجي', line1: 'هنا تراجع نتائجك', line2: 'نتائج تدريبية داخل المنصة، وليست درجة قياس الرسمية', src: 'results.jpg', crop: true, url: '/records', focus: [48, 58], zoom: 1.4, layout: 'right' },
-  { n: '١٣', chapter: CH.follow, label: 'حسابي', line1: 'هنا تدير حسابك', line2: 'بياناتك واشتراكك في مكان واحد', src: 'account.jpg', crop: true, url: '/account', focus: [45, 40], zoom: 1.25, layout: 'full' },
+  { n: '١٣', chapter: CH.follow, label: 'حسابي', line1: 'هنا تدير حسابك', line2: 'بياناتك واشتراكك وإعدادات الأمان', src: 'account.jpg', crop: true, url: '/account', focus: [45, 40], zoom: 1.25, layout: 'full',
+    callouts: [
+      { x: 45, y: 39, text: 'بيانات الحساب', at: 0.55 },
+      { x: 57, y: 68, text: 'الاشتراك', at: 1.65 },
+      { x: 29, y: 70, text: 'الأمان', at: 2.75 },
+    ] },
   { n: '١٤', chapter: CH.follow, label: 'الدعم', line1: 'عندك سؤال؟', line2: 'الأسئلة الشائعة والدعم في صفحة واحدة', src: 'n-support.jpg', url: '/support', focus: [50, 40], zoom: 1.25, layout: 'left' },
 ];

@@ -353,6 +353,9 @@ export interface IAdmin extends Document {
   password: string;
   email: string;
   phone?: string;
+  bootstrapClaim?: string;
+  bootstrapSetupCompletedAt?: Date;
+  bootstrapRecoveryAt?: Date;
   fullName: string;
   role: 'super_admin' | 'admin' | 'moderator';
   permissions: string[];
@@ -366,6 +369,9 @@ const adminSchema = new Schema<IAdmin>({
   password: { type: String, required: true },
   email: { type: String, required: true, unique: true },
   phone: { type: String, sparse: true, unique: true },
+  bootstrapClaim: { type: String, select: false },
+  bootstrapSetupCompletedAt: { type: Date, default: undefined },
+  bootstrapRecoveryAt: { type: Date, default: undefined },
   fullName: { type: String, required: true },
   role: { type: String, enum: ['super_admin', 'admin', 'moderator'], default: 'admin' },
   permissions: { type: [String], default: ['view_students', 'view_subscriptions'] },
@@ -373,6 +379,13 @@ const adminSchema = new Schema<IAdmin>({
   lastLogin: { type: Date, default: Date.now },
   isActive: { type: Boolean, default: true },
 });
+adminSchema.index(
+  { bootstrapClaim: 1 },
+  {
+    unique: true,
+    partialFilterExpression: { bootstrapClaim: 'replit-preview-first-admin' },
+  },
+);
 
 export interface ISubscription extends Document {
   userId: mongoose.Types.ObjectId | string | number;

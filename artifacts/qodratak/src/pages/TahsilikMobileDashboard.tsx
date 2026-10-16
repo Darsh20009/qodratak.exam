@@ -86,7 +86,7 @@ const TahsilikMobileDashboard: React.FC = () => {
       icon: School,
       gradient: 'from-emerald-500 via-teal-500 to-cyan-500',
       bgGradient: 'from-emerald-50 to-teal-50 dark:from-emerald-900/20 dark:to-teal-900/20',
-      path: '/tahsilik/study',
+      path: '/foundation?program=tahsili',
       stats: { books: '12 كتاب', lessons: '150 درس' },
       features: ['مفاهيم أساسية', 'شرح مبسط', 'أمثلة تطبيقية']
     },

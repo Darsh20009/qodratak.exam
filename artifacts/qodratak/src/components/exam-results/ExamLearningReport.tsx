@@ -58,7 +58,7 @@ export function ReportDetails({ report }: { report: ExamReportRecord }) {
         <p className="text-xs font-bold text-primary">خطوتك التالية</p>
         <p className="mt-1 font-bold">{nextAction.text}</p>
         {nextAction.kind === 'practice' && weaknesses.length > 0 && <Button className="mt-3" onClick={() => setPractice(true)}>ابدأ تدريبًا من مجالات أخطائي</Button>}
-        {nextAction.kind === 'course' && <Link href="/preparation-course" className="mt-3 inline-block rounded-lg bg-primary px-4 py-2 text-sm font-bold text-primary-foreground">افتح خطة التحضير</Link>}
+        {nextAction.kind === 'course' && <Link href="/foundation?program=qudrat&view=plan" className="mt-3 inline-block rounded-lg bg-primary px-4 py-2 text-sm font-bold text-primary-foreground">افتح خطة المسار</Link>}
       </div>
       <div className="grid grid-cols-2 gap-3 md:grid-cols-5 text-sm" data-testid="report-summary">
         <div>الإجابات الصحيحة<strong className="block text-lg">{correctCount}</strong></div>

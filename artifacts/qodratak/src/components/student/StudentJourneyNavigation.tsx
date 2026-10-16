@@ -2,7 +2,6 @@ import { Link, useLocation } from "wouter";
 import { cn } from "@/lib/utils";
 
 const STEPS = [
-  { href: "/preparation-course", label: "خطة الاختبار", match: ["/preparation-course"] },
   { href: "/foundation", label: "التأسيس", match: ["/foundation"] },
   { href: "/learning/today", label: "تدريب موجّه", match: ["/learning/today"] },
   { href: "/computerized", label: "التدريب", match: ["/computerized"] },

@@ -65,7 +65,7 @@ export default function TahsiliOverviewPage() {
                     ? "تعذر التحقق من المصادر الآن."
                     : `${sourcesQuery.data?.totalSources ?? 0} ملفًا متاحًا للقراءة`}
               </p>
-              <Button onClick={() => setLocation("/tahsilik/study")} data-testid="button-open-tahsili-sources">
+              <Button onClick={() => setLocation("/foundation?program=tahsili")} data-testid="button-open-tahsili-sources">
                 افتح المكتبة <ArrowLeft className="mr-2 h-4 w-4" />
               </Button>
             </CardContent>

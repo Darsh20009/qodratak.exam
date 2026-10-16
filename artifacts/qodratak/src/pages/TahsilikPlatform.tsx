@@ -34,7 +34,7 @@ const TahsilikPlatform: React.FC = () => {
       title: 'مركز الدراسة',
       description: 'كتب ومواد تعليمية شاملة',
       icon: BookOpen,
-      route: '/tahsilik/study',
+      route: '/foundation?program=tahsili',
       color: 'from-blue-500 to-cyan-500'
     },
     {

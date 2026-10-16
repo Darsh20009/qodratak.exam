@@ -121,7 +121,7 @@ function QuestionProgressLibraryCard() {
 }
 
 const paths = [
-  { href: "/preparation-course", label: "خطتي", detail: "ابدأ بموعد أو دون حجز", icon: Calendar },
+  { href: "/foundation", label: "التأسيس", detail: "القدرات والتحصيلي وخطة كل مسار", icon: Calendar },
   { href: "/computerized", label: "التدريب المحوسب", detail: "لفظي وكمي بتركيز", icon: Laptop },
   { href: "/records", label: "تقاريري", detail: "راجع الخطأ والبطيء", icon: FileText },
 ];
@@ -307,9 +307,9 @@ export default function DashboardPage() {
         <section data-testid="student-paths" className="space-y-3">
           <h2 className="text-lg font-black text-foreground">بعد التقييم</h2>
           <div className="grid gap-3 sm:grid-cols-2">
-            <Link href="/preparation-course" data-testid="link-path-preparation-course" className="flex items-center gap-3 rounded-2xl border border-border bg-card p-4 hover:border-primary/40 hover:bg-primary/5">
+            <Link href="/foundation" data-testid="link-path-foundation" className="flex items-center gap-3 rounded-2xl border border-border bg-card p-4 hover:border-primary/40 hover:bg-primary/5">
               <Calendar className="h-5 w-5 shrink-0 text-primary" aria-hidden="true" />
-              <span className="min-w-0"><span className="block text-sm font-black text-foreground">خطتي</span><span className="mt-1 block text-xs text-muted-foreground">خطة بموعدك أو دون حجز، ومهام يومية موجّهة</span></span>
+              <span className="min-w-0"><span className="block text-sm font-black text-foreground">التأسيس</span><span className="mt-1 block text-xs text-muted-foreground">مواد القدرات والتحصيلي، وخطة كل مسار</span></span>
               <ChevronLeft className="mr-auto h-4 w-4 shrink-0 text-muted-foreground" aria-hidden="true" />
             </Link>
             <Link href="/computerized" data-testid="link-path-computerized" className="flex items-center gap-3 rounded-2xl border border-border bg-card p-4 hover:border-primary/40 hover:bg-primary/5">
@@ -397,7 +397,7 @@ export default function DashboardPage() {
             </Button>
           ) : (
             <Link
-              href="/preparation-course"
+              href="/foundation?program=qudrat&view=plan"
               data-testid="link-start-next-step"
               className="inline-flex min-h-11 shrink-0 items-center justify-center gap-2 rounded-xl bg-foreground px-5 text-sm font-black text-background transition-opacity hover:opacity-90"
             >

@@ -612,7 +612,7 @@ export default function FoundationReaderPage() {
   const courseFinish = useCompleteStudentCourseTask({ mutation: { onSuccess: () => {
     void queryClient.invalidateQueries({ queryKey: getGetStudentCourseQueryKey() });
     void queryClient.invalidateQueries({ queryKey: ["/api/student/dashboard"] });
-    setLocation("/preparation-course");
+     setLocation("/foundation?program=qudrat&view=plan");
   } } });
   const fromToday = searchParams.get("from") === "today";
   const todaySessionId = searchParams.get("sessionId") || "";

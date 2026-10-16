@@ -20,6 +20,11 @@ import type {
 } from '@tanstack/react-query';
 
 import type {
+  AdminBootstrapInput,
+  AdminBootstrapResult,
+  AdminBootstrapStatus,
+  AdminRecoveryInput,
+  AdminRecoveryResult,
   AdminVideoAsset,
   AdminVideoPage,
   AdminVideoUploadInput,
@@ -2659,6 +2664,225 @@ export const useReceiveGeideaPaymentCallback = <TError = ErrorType<void>,
         TContext
       > => {
       return useMutation(getReceiveGeideaPaymentCallbackMutationOptions(options));
+    }
+
+export const getGetAdminBootstrapStatusUrl = () => {
+
+
+
+
+  return `/api/admin/bootstrap/status`
+}
+
+/**
+ * @summary Check whether the first administrator can be created in a Replit preview
+ */
+export const getAdminBootstrapStatus = async ( options?: Parameters<typeof customFetch>[1]): Promise<AdminBootstrapStatus> => {
+
+  return customFetch<AdminBootstrapStatus>(getGetAdminBootstrapStatusUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetAdminBootstrapStatusQueryKey = () => {
+    return [
+    `/api/admin/bootstrap/status`
+    ] as const;
+    }
+
+
+export const getGetAdminBootstrapStatusQueryOptions = <TData = Awaited<ReturnType<typeof getAdminBootstrapStatus>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getAdminBootstrapStatus>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetAdminBootstrapStatusQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getAdminBootstrapStatus>>> = ({ signal }) => getAdminBootstrapStatus({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getAdminBootstrapStatus>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetAdminBootstrapStatusQueryResult = NonNullable<Awaited<ReturnType<typeof getAdminBootstrapStatus>>>
+export type GetAdminBootstrapStatusQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary Check whether the first administrator can be created in a Replit preview
+ */
+
+export function useGetAdminBootstrapStatus<TData = Awaited<ReturnType<typeof getAdminBootstrapStatus>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getAdminBootstrapStatus>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetAdminBootstrapStatusQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getBootstrapInitialAdminUrl = () => {
+
+
+
+
+  return `/api/admin/bootstrap`
+}
+
+/**
+ * @summary Create the first administrator in a protected Replit preview
+ */
+export const bootstrapInitialAdmin = async (adminBootstrapInput: AdminBootstrapInput, options?: Parameters<typeof customFetch>[1]): Promise<AdminBootstrapResult> => {
+
+  return customFetch<AdminBootstrapResult>(getBootstrapInitialAdminUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(adminBootstrapInput)
+  }
+);}
+
+
+
+
+
+export const getBootstrapInitialAdminMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof bootstrapInitialAdmin>>, TError,{data: BodyType<AdminBootstrapInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof bootstrapInitialAdmin>>, TError,{data: BodyType<AdminBootstrapInput>}, TContext> => {
+
+const mutationKey = ['bootstrapInitialAdmin'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof bootstrapInitialAdmin>>, {data: BodyType<AdminBootstrapInput>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  bootstrapInitialAdmin(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type BootstrapInitialAdminMutationResult = NonNullable<Awaited<ReturnType<typeof bootstrapInitialAdmin>>>
+    export type BootstrapInitialAdminMutationBody = BodyType<AdminBootstrapInput>
+    export type BootstrapInitialAdminMutationError = ErrorType<void>
+
+    /**
+ * @summary Create the first administrator in a protected Replit preview
+ */
+export const useBootstrapInitialAdmin = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof bootstrapInitialAdmin>>, TError,{data: BodyType<AdminBootstrapInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof bootstrapInitialAdmin>>,
+        TError,
+        {data: BodyType<AdminBootstrapInput>},
+        TContext
+      > => {
+      return useMutation(getBootstrapInitialAdminMutationOptions(options));
+    }
+
+export const getRecoverAdminAccessUrl = () => {
+
+
+
+
+  return `/api/admin/recovery`
+}
+
+/**
+ * @summary Recover the single existing administrator in a protected Replit preview
+ */
+export const recoverAdminAccess = async (adminRecoveryInput: AdminRecoveryInput, options?: Parameters<typeof customFetch>[1]): Promise<AdminRecoveryResult> => {
+
+  return customFetch<AdminRecoveryResult>(getRecoverAdminAccessUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(adminRecoveryInput)
+  }
+);}
+
+
+
+
+
+export const getRecoverAdminAccessMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof recoverAdminAccess>>, TError,{data: BodyType<AdminRecoveryInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof recoverAdminAccess>>, TError,{data: BodyType<AdminRecoveryInput>}, TContext> => {
+
+const mutationKey = ['recoverAdminAccess'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof recoverAdminAccess>>, {data: BodyType<AdminRecoveryInput>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  recoverAdminAccess(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type RecoverAdminAccessMutationResult = NonNullable<Awaited<ReturnType<typeof recoverAdminAccess>>>
+    export type RecoverAdminAccessMutationBody = BodyType<AdminRecoveryInput>
+    export type RecoverAdminAccessMutationError = ErrorType<void>
+
+    /**
+ * @summary Recover the single existing administrator in a protected Replit preview
+ */
+export const useRecoverAdminAccess = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof recoverAdminAccess>>, TError,{data: BodyType<AdminRecoveryInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof recoverAdminAccess>>,
+        TError,
+        {data: BodyType<AdminRecoveryInput>},
+        TContext
+      > => {
+      return useMutation(getRecoverAdminAccessMutationOptions(options));
     }
 
 export const getListAdminMediaVideosUrl = (params?: ListAdminMediaVideosParams,) => {

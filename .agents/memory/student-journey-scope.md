@@ -39,6 +39,18 @@ Tahsili student pages are released, but only real resources and questions with r
 
 **How to apply:** Let eligible students open uploaded source files and released Tahsili pages. Use only reviewed, verified questions for tests; keep pending OCR drafts in admin review. If there are no approved questions, explain that accurately rather than showing a generic «قريبًا» message.
 
+Use «التأسيس» as the single student-facing destination for preparation. Inside it, keep distinct «القدرات» and «التحصيلي» tracks, and expose each track’s foundation materials and plan together; do not add a separate main-navigation page named «خطتي».
+
+**Why:** The user explicitly corrected the navigation: the student should choose the program under «التأسيس» and find that program’s content and plan there.
+
+**How to apply:** Keep legacy plan URLs routed into the corresponding track’s plan view and keep Tahsili materials reachable from its foundation track rather than requiring a separate study destination.
+
+The «عرض كل صفحات المنصة» shortcut on the student dashboard must reveal a visible page directory on both desktop and mobile, not silently toggle a desktop sidebar while only opening a drawer on mobile.
+
+**Why:** The user reported that the shortcut did nothing on larger screens.
+
+**How to apply:** When changing the student page directory, verify its visible open state at desktop and mobile breakpoints.
+
 Students without a booked exam must be able to start assessment and daily learning without inventing an official exam date.
 
 **Why:** Booking is not a prerequisite for beginning preparation; a fabricated deadline would distort urgency and the student's course.

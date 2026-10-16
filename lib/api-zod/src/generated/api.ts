@@ -1710,6 +1710,110 @@ export const ReceiveGeideaPaymentCallbackResponse = zod.unknown()
 
 
 /**
+ * @summary Check whether the first administrator can be created in a Replit preview
+ */
+export const GetAdminBootstrapStatusResponse = zod.object({
+  "available": zod.boolean(),
+  "recoveryAvailable": zod.boolean(),
+  "reason": zod.enum(['available', 'recovery_available', 'already_configured', 'already_recovered', 'multiple_admins', 'production_disabled', 'preview_only', 'database_unavailable', 'bootstrap_secret_missing'])
+})
+
+
+/**
+ * @summary Create the first administrator in a protected Replit preview
+ */
+export const bootstrapInitialAdminBodyBootstrapTokenMin = 32;
+export const bootstrapInitialAdminBodyBootstrapTokenMax = 512;
+
+export const bootstrapInitialAdminBodyUsernameMin = 3;
+export const bootstrapInitialAdminBodyUsernameMax = 32;
+
+
+export const bootstrapInitialAdminBodyUsernameRegExp = new RegExp('^[A-Za-z0-9_.-]+$');
+export const bootstrapInitialAdminBodyFullNameMin = 2;
+export const bootstrapInitialAdminBodyFullNameMax = 100;
+
+export const bootstrapInitialAdminBodyEmailMax = 254;
+
+
+export const bootstrapInitialAdminBodyEmailRegExp = new RegExp('^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$');
+export const bootstrapInitialAdminBodyPasswordMin = 14;
+export const bootstrapInitialAdminBodyPasswordMax = 128;
+
+
+
+export const BootstrapInitialAdminBody = zod.object({
+  "bootstrapToken": zod.string().min(bootstrapInitialAdminBodyBootstrapTokenMin).max(bootstrapInitialAdminBodyBootstrapTokenMax),
+  "username": zod.string().min(bootstrapInitialAdminBodyUsernameMin).max(bootstrapInitialAdminBodyUsernameMax).regex(bootstrapInitialAdminBodyUsernameRegExp),
+  "fullName": zod.string().min(bootstrapInitialAdminBodyFullNameMin).max(bootstrapInitialAdminBodyFullNameMax),
+  "email": zod.string().max(bootstrapInitialAdminBodyEmailMax).regex(bootstrapInitialAdminBodyEmailRegExp),
+  "password": zod.string().min(bootstrapInitialAdminBodyPasswordMin).max(bootstrapInitialAdminBodyPasswordMax)
+})
+
+export const bootstrapInitialAdminResponseAdminEmailRegExp = new RegExp('^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$');
+
+
+export const BootstrapInitialAdminResponse = zod.object({
+  "success": zod.boolean(),
+  "admin": zod.object({
+  "id": zod.string(),
+  "username": zod.string(),
+  "fullName": zod.string(),
+  "email": zod.string().regex(bootstrapInitialAdminResponseAdminEmailRegExp),
+  "role": zod.enum(['super_admin'])
+}),
+  "adminAccessToken": zod.string()
+})
+
+
+/**
+ * @summary Recover the single existing administrator in a protected Replit preview
+ */
+export const recoverAdminAccessBodyBootstrapTokenMin = 32;
+export const recoverAdminAccessBodyBootstrapTokenMax = 512;
+
+export const recoverAdminAccessBodyUsernameMin = 3;
+export const recoverAdminAccessBodyUsernameMax = 32;
+
+
+export const recoverAdminAccessBodyUsernameRegExp = new RegExp('^[A-Za-z0-9_.-]+$');
+export const recoverAdminAccessBodyFullNameMin = 2;
+export const recoverAdminAccessBodyFullNameMax = 100;
+
+export const recoverAdminAccessBodyEmailMax = 254;
+
+
+export const recoverAdminAccessBodyEmailRegExp = new RegExp('^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$');
+export const recoverAdminAccessBodyPasswordMin = 14;
+export const recoverAdminAccessBodyPasswordMax = 128;
+
+
+
+export const RecoverAdminAccessBody = zod.object({
+  "bootstrapToken": zod.string().min(recoverAdminAccessBodyBootstrapTokenMin).max(recoverAdminAccessBodyBootstrapTokenMax),
+  "username": zod.string().min(recoverAdminAccessBodyUsernameMin).max(recoverAdminAccessBodyUsernameMax).regex(recoverAdminAccessBodyUsernameRegExp),
+  "fullName": zod.string().min(recoverAdminAccessBodyFullNameMin).max(recoverAdminAccessBodyFullNameMax),
+  "email": zod.string().max(recoverAdminAccessBodyEmailMax).regex(recoverAdminAccessBodyEmailRegExp),
+  "password": zod.string().min(recoverAdminAccessBodyPasswordMin).max(recoverAdminAccessBodyPasswordMax)
+})
+
+export const recoverAdminAccessResponseAdminEmailRegExp = new RegExp('^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$');
+
+
+export const RecoverAdminAccessResponse = zod.object({
+  "success": zod.boolean(),
+  "admin": zod.object({
+  "id": zod.string(),
+  "username": zod.string(),
+  "fullName": zod.string(),
+  "email": zod.string().regex(recoverAdminAccessResponseAdminEmailRegExp),
+  "role": zod.string()
+}),
+  "adminAccessToken": zod.string()
+})
+
+
+/**
  * @summary List uploaded admin video assets
  */
 export const listAdminMediaVideosQueryPageDefault = 1;

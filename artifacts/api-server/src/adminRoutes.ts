@@ -8,6 +8,7 @@ import fs from 'fs';
 import os from 'node:os';
 import { randomUUID } from 'node:crypto';
 import mongoose from 'mongoose';
+import { BootstrapInitialAdminBody, RecoverAdminAccessBody } from '@workspace/api-zod';
 import { mongoStorage } from './mongodb/mongoStorage';
 import { storage } from './storage';
 import { Question, ChatMessage, Admin, WhatsAppMessage, FoundationContent, PlatformReview, Institution, InstitutionRequest, User, TahsiliQuestion, TahsiliQuestionDraft, type TahsiliDraftSubject } from './mongodb/models';
@@ -67,8 +68,10 @@ import {
   refundGeideaOrder,
 } from './services/geideaService';
 import { subscriptionInvoiceNumber } from './services/geideaPaymentService';
+import { adminBootstrapReason, matchesAdminBootstrapToken } from './services/adminBootstrap';
 
 const router = Router();
+const adminBootstrapAttempts = new Map<string, { count: number; resetAt: number }>();
 const ADMIN_VIDEO_MAX_BYTES = 1024 * 1024 * 1024;
 const ADMIN_VIDEO_TYPES: Record<string, string> = {
   '.mp4': 'video/mp4',
@@ -388,6 +391,277 @@ const requireAdminAuth = async (req: Request, res: Response, next: NextFunction)
 };
 
 // ── AUTH ───────────────────────────────────────────────────────
+
+function previewAdminBootstrapReason(hasAdmin: boolean) {
+  return adminBootstrapReason({
+    nodeEnv: process.env.NODE_ENV,
+    replId: process.env.REPL_ID,
+    hasMongoUri: Boolean(process.env.MONGODB_URI),
+    bootstrapToken: process.env.ADMIN_BOOTSTRAP_TOKEN,
+    hasAdmin,
+  });
+}
+
+function allowAdminBootstrapAttempt(ip: string): boolean {
+  const now = Date.now();
+  const windowMs = 15 * 60 * 1000;
+  const existing = adminBootstrapAttempts.get(ip);
+  if (!existing || existing.resetAt <= now) {
+    adminBootstrapAttempts.set(ip, { count: 1, resetAt: now + windowMs });
+    return true;
+  }
+  if (existing.count >= 10) return false;
+  existing.count += 1;
+  return true;
+}
+
+router.get('/bootstrap/status', async (req: Request, res: Response): Promise<void> => {
+  res.setHeader('Cache-Control', 'no-store');
+  const environmentReason = previewAdminBootstrapReason(false);
+  if (environmentReason === 'production_disabled' || environmentReason === 'preview_only' || environmentReason === 'database_unavailable') {
+    res.json({ available: false, recoveryAvailable: false, reason: environmentReason });
+    return;
+  }
+
+  try {
+    const admins = await Admin.find({}).select('bootstrapRecoveryAt bootstrapSetupCompletedAt').limit(2).lean();
+    if (admins.length > 1) {
+      res.json({ available: false, recoveryAvailable: false, reason: 'multiple_admins' });
+      return;
+    }
+    if (admins.length === 0) {
+      const reason = previewAdminBootstrapReason(false);
+      res.json({ available: reason === 'available', recoveryAvailable: false, reason });
+      return;
+    }
+    if (admins[0].bootstrapRecoveryAt) {
+      res.json({ available: false, recoveryAvailable: false, reason: 'already_recovered' });
+      return;
+    }
+    if (admins[0].bootstrapSetupCompletedAt) {
+      res.json({ available: false, recoveryAvailable: false, reason: 'already_configured' });
+      return;
+    }
+    const reason = previewAdminBootstrapReason(false);
+    const recoveryAvailable = reason === 'available';
+    res.json({
+      available: false,
+      recoveryAvailable,
+      reason: recoveryAvailable ? 'recovery_available' : reason,
+    });
+  } catch (error) {
+    req.log.warn({ err: error }, 'Admin bootstrap status could not reach MongoDB');
+    res.status(503).json({ available: false, recoveryAvailable: false, reason: 'database_unavailable' });
+  }
+});
+
+router.post('/bootstrap', async (req: Request, res: Response): Promise<void> => {
+  res.setHeader('Cache-Control', 'no-store');
+  if (!allowAdminBootstrapAttempt(getClientIp(req) || 'unknown')) {
+    res.status(429).json({ error: 'محاولات كثيرة. انتظر 15 دقيقة ثم حاول مرة أخرى.' });
+    return;
+  }
+
+  const environmentReason = previewAdminBootstrapReason(false);
+  if (environmentReason === 'production_disabled' || environmentReason === 'preview_only') {
+    res.status(404).json({ error: 'الإعداد الأول متاح في معاينة Replit فقط.' });
+    return;
+  }
+  if (environmentReason === 'database_unavailable' || environmentReason === 'bootstrap_secret_missing') {
+    res.status(503).json({ error: 'إعداد الحساب الأول غير مكتمل في معاينة Replit.' });
+    return;
+  }
+
+  const parsed = BootstrapInitialAdminBody.safeParse(req.body);
+  if (!parsed.success) {
+    res.status(400).json({ error: 'تحقق من الاسم والبريد واسم المستخدم وكلمة المرور ورمز الإعداد.' });
+    return;
+  }
+  const input = parsed.data;
+  if (!matchesAdminBootstrapToken(process.env.ADMIN_BOOTSTRAP_TOKEN, input.bootstrapToken)) {
+    res.status(401).json({ error: 'رمز الإعداد غير صحيح.' });
+    return;
+  }
+
+  try {
+    if (await Admin.exists({})) {
+      res.status(409).json({ error: 'تم إعداد حساب الإدارة الأول بالفعل. استخدم صفحة تسجيل الدخول.' });
+      return;
+    }
+
+    await Admin.init();
+    const admin = await Admin.create({
+      username: input.username.trim(),
+      password: await bcrypt.hash(input.password, 12),
+      email: input.email.trim().toLowerCase(),
+      fullName: input.fullName.trim(),
+      role: 'super_admin',
+      permissions: ['all'],
+      isActive: true,
+      bootstrapClaim: 'replit-preview-first-admin',
+      bootstrapSetupCompletedAt: new Date(),
+    });
+    const adminIdentity = {
+      adminId: String(admin._id),
+      username: admin.username,
+      fullName: admin.fullName,
+      role: admin.role,
+      permissions: effectiveAdminPermissions(admin),
+    };
+    (req.session as any).admin = adminIdentity;
+    (req.session as any).isAdmin = true;
+    (req.session as any).adminId = String(admin._id);
+    (req.session as any).adminRole = adminIdentity.role;
+    (req.session as any).adminUsername = adminIdentity.username;
+    (req.session as any).adminPermissions = adminIdentity.permissions;
+    (req.session as any).clientIp = getClientIp(req);
+
+    req.session.save((err) => {
+      if (err) {
+        req.log.error({ err, adminId: String(admin._id) }, 'Initial admin was created but the session could not be saved');
+        res.status(500).json({ error: 'تم إنشاء الحساب، لكن تعذر فتح الجلسة. سجّل الدخول من صفحة الإدارة.' });
+        return;
+      }
+      res.status(201).json({
+        success: true,
+        admin: {
+          id: String(admin._id),
+          username: admin.username,
+          fullName: admin.fullName,
+          email: admin.email,
+          role: 'super_admin',
+        },
+        adminAccessToken: createAdminAccessToken(adminIdentity),
+      });
+    });
+  } catch (error: any) {
+    if (error?.code === 11000) {
+      res.status(409).json({ error: 'تم إعداد حساب الإدارة الأول بالفعل، أو أن اسم المستخدم/البريد مستخدم.' });
+      return;
+    }
+    req.log.error({ err: error }, 'Initial administrator setup failed');
+    res.status(500).json({ error: 'تعذر إنشاء حساب الإدارة. حاول مرة أخرى.' });
+  }
+});
+
+router.post('/recovery', async (req: Request, res: Response): Promise<void> => {
+  res.setHeader('Cache-Control', 'no-store');
+  if (!allowAdminBootstrapAttempt(getClientIp(req) || 'unknown')) {
+    res.status(429).json({ error: 'محاولات كثيرة. انتظر 15 دقيقة ثم حاول مرة أخرى.' });
+    return;
+  }
+
+  const environmentReason = previewAdminBootstrapReason(false);
+  if (environmentReason === 'production_disabled' || environmentReason === 'preview_only') {
+    res.status(404).json({ error: 'استعادة الحساب متاحة في معاينة Replit فقط.' });
+    return;
+  }
+  if (environmentReason === 'database_unavailable' || environmentReason === 'bootstrap_secret_missing') {
+    res.status(503).json({ error: 'إعداد الاستعادة غير مكتمل في معاينة Replit.' });
+    return;
+  }
+
+  const parsed = RecoverAdminAccessBody.safeParse(req.body);
+  if (!parsed.success) {
+    res.status(400).json({ error: 'تحقق من الاسم والبريد واسم المستخدم وكلمة المرور ورمز الإعداد.' });
+    return;
+  }
+  const input = parsed.data;
+  if (!matchesAdminBootstrapToken(process.env.ADMIN_BOOTSTRAP_TOKEN, input.bootstrapToken)) {
+    res.status(401).json({ error: 'رمز الإعداد غير صحيح.' });
+    return;
+  }
+
+  try {
+    const adminCount = await Admin.countDocuments({});
+    if (adminCount !== 1) {
+      res.status(409).json({
+        error: adminCount > 1
+          ? 'يوجد أكثر من حساب إدارة. لم يتم تغيير أي حساب؛ يلزم تحديد الحساب المقصود أولًا.'
+          : 'لم يعد هناك حساب إدارة لاستعادته. حدّث الصفحة للتحقق من إعداد أول حساب.',
+      });
+      return;
+    }
+
+    const admin = await Admin.findOne({}).select('-password');
+    if (!admin) {
+      res.status(409).json({ error: 'تعذر العثور على سجل الإدارة. حدّث الصفحة وحاول مرة أخرى.' });
+      return;
+    }
+    if (admin.bootstrapRecoveryAt || admin.bootstrapSetupCompletedAt) {
+      res.status(409).json({ error: 'تمت استعادة هذا الحساب من قبل. استخدم صفحة تسجيل الدخول.' });
+      return;
+    }
+
+    const passwordHash = await bcrypt.hash(input.password, 12);
+    const recoveredAdmin = await Admin.findOneAndUpdate(
+      {
+        _id: admin._id,
+        $or: [
+          { bootstrapRecoveryAt: { $exists: false } },
+          { bootstrapRecoveryAt: null },
+        ],
+      },
+      {
+        $set: {
+          username: input.username.trim().toLowerCase(),
+          email: input.email.trim().toLowerCase(),
+          fullName: input.fullName.trim(),
+          password: passwordHash,
+          isActive: true,
+          lastLogin: new Date(),
+          bootstrapRecoveryAt: new Date(),
+        },
+      },
+      { returnDocument: 'after', runValidators: true },
+    ).select('-password');
+    if (!recoveredAdmin) {
+      res.status(409).json({ error: 'تمت استعادة هذا الحساب من قبل. استخدم صفحة تسجيل الدخول.' });
+      return;
+    }
+
+    const adminIdentity = {
+      adminId: String(recoveredAdmin._id),
+      username: recoveredAdmin.username,
+      fullName: recoveredAdmin.fullName,
+      role: recoveredAdmin.role,
+      permissions: effectiveAdminPermissions(recoveredAdmin),
+    };
+    (req.session as any).admin = adminIdentity;
+    (req.session as any).isAdmin = true;
+    (req.session as any).adminId = String(admin._id);
+    (req.session as any).adminRole = adminIdentity.role;
+    (req.session as any).adminUsername = adminIdentity.username;
+    (req.session as any).adminPermissions = adminIdentity.permissions;
+    (req.session as any).clientIp = getClientIp(req);
+
+    req.session.save((err) => {
+      if (err) {
+        req.log.error({ err, adminId: String(recoveredAdmin._id) }, 'Admin credentials were recovered but the session could not be saved');
+        res.status(500).json({ error: 'تم تحديث بيانات الدخول. سجّل الدخول من صفحة الإدارة بالبيانات الجديدة.' });
+        return;
+      }
+      res.status(201).json({
+        success: true,
+        admin: {
+          id: String(recoveredAdmin._id),
+          username: recoveredAdmin.username,
+          fullName: recoveredAdmin.fullName,
+          email: recoveredAdmin.email,
+          role: String(recoveredAdmin.role),
+        },
+        adminAccessToken: createAdminAccessToken(adminIdentity),
+      });
+    });
+  } catch (error: any) {
+    if (error?.code === 11000) {
+      res.status(409).json({ error: 'اسم المستخدم أو البريد الإلكتروني مستخدم لحساب آخر.' });
+      return;
+    }
+    req.log.error({ err: error }, 'Administrator access recovery failed');
+    res.status(500).json({ error: 'تعذرت استعادة الدخول. لم يتم استبدال بيانات الدخول بنجاح.' });
+  }
+});
 
 router.post('/login', async (req: Request, res: Response) => {
   try {

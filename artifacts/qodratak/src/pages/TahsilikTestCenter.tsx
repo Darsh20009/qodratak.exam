@@ -461,7 +461,7 @@ const TahsilikTestCenter: React.FC = () => {
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <Button
-              onClick={() => setLocation('/tahsilik/study')}
+              onClick={() => setLocation('/foundation?program=tahsili')}
               className="bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white px-8 py-3 rounded-xl font-semibold shadow-lg hover:shadow-xl transition-all duration-300"
               data-testid="button-back-to-study"
             >

@@ -133,6 +133,26 @@ Runtime control: to keep the whole guide below the 120 s ceiling, each of the ei
 Full-guide outro frame scan found a brief paper-only interval while the official logo waited for its entrance. To keep the same real full logo and mosaic→paper payoff without a blank field, the paper iris now opens at +2.1 s, the logo starts at +2.45 s, and the existing tagline starts at +3.15 s. The brand, copy, overall 5.5 s outro, and loop handoff remain unchanged.
 Runtime: the 8 extra pages are 5.1 s each (were 5.5 s). Bed offsets: review 4.5 s, then extras continuous from 11 s at 5.1 s steps. x_review runs 66.5–73.0 s; flashcards starts at 73.0 s.
 
+## Revision: make the account chapter visibly play as a walkthrough
+
+User feedback (verbatim): «هذا اللي بقى بيظهر مش الفديوهات». The supplied image shows the account chapter inside the guide page, but its dominant visual is a near-static account-page capture. Keep the existing account-specific `?chapter=account` route, the surrounding iframe/player, the 16:9 ratio, all scene boundaries, and the existing audio. No MP4 screen recordings were supplied, so this revision makes the account scene read as an animated browser film rather than claiming to add recorded footage.
+
+### Shot 13 / 58.5–62.5 s / 4.0 s — «حسابي»
+
+Purpose: Show that account details, subscription, and security are distinct parts of the same page, and make the clip unmistakably move from one to the next.
+
+Exact content: outside the browser, «حسابي», «هنا تدير حسابك», «بياناتك واشتراكك وإعدادات الأمان». Inside the existing account capture, three sequential labels: «بيانات الحساب», «الاشتراك», «الأمان». No account value is added or changed.
+
+Composition and artistic idea: Retain the established full-frame layout and persistent browser stage. The authentic `account.jpg` capture is cropped above its development banner. A single visible cursor becomes the tour guide, travelling from the profile card to the subscription card, then back across to the security card; each stop is met by a coral target pulse and a navy label. The camera tightens and reframes in three measured steps, turning the original still capture into a directed page tour rather than leaving it as a static screen.
+
+Timed choreography: 0.00–0.55 s: the browser glides into the centered full pose from «نتائجي» as the account capture cross-dissolves in; the image starts at 1.04×. 0.55–1.65 s: camera moves to 1.16×, cursor arrives at the profile card, and «بيانات الحساب» resolves. 1.65–2.75 s: camera advances toward 1.31× and reframes right/down onto the subscription card; cursor clicks, coral ring pulses, and «الاشتراك» appears. 2.75–3.75 s: cursor crosses left to the security card; the camera settles at 1.34×, a second click pulse appears, and «الأمان» resolves. 3.75–4.00 s: the browser starts its glide toward the next support-page pose while the cursor and third label remain in motion; no static tail.
+
+Transition contract: incoming from results by the existing browser-stage glide and screenshot cross-dissolve. Outgoing to support through the same persistent browser moving from centered/full to left; the next screenshot replaces the account capture inside the same frame. The moving cursor is removed with this shot and is not a persistent layer.
+
+Assets and technique: Existing genuine account screenshot `public/shots/account.jpg`; existing Tajawal / IBM Plex Sans Arabic and browser frame; deterministic Framer Motion camera keyframes, cursor path, and timed coral callouts. No new media assets or footage. Sound: existing `bg_music_full.mp3` and existing account offset; no VO/SFX or newly asserted beat sync.
+
+Runtime lock: account remains 4.0 s; the guide's existing durations, chapter map, and iframe/player controls are unchanged. The page-specific chapter remains the account shot.
+
 ## Revision: student guide naming and Tahsili availability
 
 The student guide now labels the preparation-plan page «خطتي» rather than «دورتي», including its scene title in the player controls. The on-screen explanation now describes following a preparation plan for القدرات or التحصيلي instead of booking an exam appointment. Both homepage marketing cuts and the standalone Tahsili chapter retain the implemented Tahsili study → question-bank → test-center path; the old «قريبًا» claim remains removed. This guide describes the visible route and does not claim that any unavailable question banks or backend content have been added.

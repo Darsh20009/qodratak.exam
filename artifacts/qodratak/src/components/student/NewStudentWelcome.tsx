@@ -25,7 +25,7 @@ export function NewStudentWelcome({ studentName }: { studentName: string }) {
             ابدأ التقييم التشخيصي
             <ChevronLeft className="h-4 w-4" aria-hidden="true" />
           </Link>
-          <Link href="/preparation-course" data-testid="link-welcome-course" className="inline-flex min-h-11 items-center justify-center rounded-xl px-4 text-sm font-black text-foreground underline-offset-4 hover:underline">
+          <Link href="/foundation" data-testid="link-welcome-course" className="inline-flex min-h-11 items-center justify-center rounded-xl px-4 text-sm font-black text-foreground underline-offset-4 hover:underline">
             حدد موعد اختبارك
           </Link>
         </div>

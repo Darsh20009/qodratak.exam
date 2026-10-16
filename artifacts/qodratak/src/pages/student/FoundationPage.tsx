@@ -32,6 +32,8 @@ import {
 } from "@/lib/foundationVideoUrl";
 import { getQuestionImageUrls } from "@/lib/questionImages";
 import { StudentWorkflow, workflowStageForLevel, type WorkflowStage } from "@/components/student/StudentWorkflow";
+import PreparationCoursePage from "@/pages/student/PreparationCoursePage";
+import LearningTodayPage from "@/pages/student/LearningTodayPage";
 
 function ProgressBar({ value, className = "" }: { value: number; className?: string }) {
   const safeValue = Number.isFinite(value) ? Math.max(0, Math.min(100, value)) : 0;
@@ -1112,7 +1114,7 @@ function FoundationHome({
             </div>
             <h1 className="text-3xl font-black sm:text-4xl">ابدأ من المكان المناسب لك</h1>
             <p className="mt-3 max-w-2xl text-sm leading-7 text-[#CBD5E1]">
-              اختر دورتك، تابع آخر نتائجك، وخذ خطتك خطوة خطوة من الصفر حتى الاحتراف.
+              اختر القدرات أو التحصيلي، وافتح مواد التأسيس وخطة المسار من المكان نفسه.
             </p>
           </div>
           <div className="rounded-2xl border border-white/10 bg-white/5 p-4 text-center">
@@ -1189,19 +1191,22 @@ function FoundationHome({
           <div className="flex items-start gap-3">
             <Route className="mt-0.5 h-5 w-5 text-primary" />
             <div>
-              <p className="text-sm font-bold text-muted-foreground">خطتك المحددة لك</p>
+                <p className="text-sm font-bold text-muted-foreground">خطة المسار</p>
               <h2 className="mt-1 text-xl font-black text-foreground">{plan?.title || "ابدأ بالتأسيس"}</h2>
               <p className="mt-2 text-sm leading-7 text-muted-foreground">{plan?.description || "ابدأ بالشرح، ثم طبّق، ثم اختبر نفسك."}</p>
-              <Link
-                href={plan?.nextAction?.href || "/foundation?program=qudrat"}
-                onClick={(event) => {
-                  event.preventDefault();
-                  setLocation(plan?.nextAction?.href || "/foundation?program=qudrat");
-                }}
-                className="mt-4 inline-flex items-center gap-2 text-sm font-black text-primary hover:underline"
-              >
-                {plan?.nextAction?.label || "ابدأ الآن"} <ArrowLeft className="h-4 w-4" />
-              </Link>
+              <div className="mt-4 flex flex-wrap gap-3">
+                <Link
+                  href={`/foundation?program=${plan?.program === "tahsili" ? "tahsili" : "qudrat"}&view=plan`}
+                  className="inline-flex items-center gap-2 text-sm font-black text-primary hover:underline"
+                >
+                  عرض الخطة <ArrowLeft className="h-4 w-4" />
+                </Link>
+                {plan?.nextAction?.href ? (
+                  <Link href={plan.nextAction.href} className="inline-flex items-center gap-2 text-sm font-bold text-muted-foreground hover:text-foreground hover:underline">
+                    {plan.nextAction.label || "ابدأ المهمة التالية"}
+                  </Link>
+                ) : null}
+              </div>
             </div>
           </div>
         </div>
@@ -1288,6 +1293,21 @@ function FoundationTrackOverview({
           </Link>
         ))}
       </nav>
+      <nav aria-label="أقسام مسار التأسيس" className="flex flex-wrap gap-2">
+        <Link
+          href={`/foundation?program=${program}`}
+          aria-current="page"
+          className="rounded-xl bg-primary px-4 py-2 text-sm font-black text-primary-foreground"
+        >
+          مواد التأسيس
+        </Link>
+        <Link
+          href={`/foundation?program=${program}&view=plan`}
+          className="rounded-xl border border-border bg-card px-4 py-2 text-sm font-black text-foreground transition hover:border-primary/40"
+        >
+          خطة المسار
+        </Link>
+      </nav>
       <header className="rounded-[28px] bg-[#0D1B2A] p-6 text-white sm:p-8">
         <p className="text-sm font-bold text-[#F7F775]">مسار {program === "qudrat" ? "القدرات" : "التحصيلي"}</p>
         <div className="mt-2 flex flex-wrap items-end justify-between gap-4">
@@ -1310,9 +1330,7 @@ function FoundationTrackOverview({
       <div className={`grid gap-4 ${program === "qudrat" ? "md:grid-cols-2" : "md:grid-cols-2 lg:grid-cols-4"}`}>
         {foundationSections[program].map((section) => {
           const sectionContent = content.filter((item) => item.subjectId === `subject.${program}.${section.key}`);
-          const sectionHref = program === "tahsili"
-            ? `/tahsilik/study?subject=${encodeURIComponent(section.tahsiliSubject || "مختلط")}`
-            : `/foundation?program=${program}&subject=${section.key}`;
+          const sectionHref = `/foundation?program=${program}&subject=${section.key}`;
           return (
            <Link
              key={section.key}
@@ -1329,13 +1347,9 @@ function FoundationTrackOverview({
             </div>
             <h2 className="mt-5 text-xl font-black text-foreground">{section.title}</h2>
             <p className="mt-2 text-sm leading-7 text-muted-foreground">{section.description}</p>
-              {program === "tahsili" ? (
-                <p className="mt-3 text-xs leading-5 text-muted-foreground">ملفات هذه المادة متاحة في مكتبة المصادر.</p>
-              ) : (
-                <FoundationResourceAvailability content={sectionContent} state={resourceState} compact />
-              )}
+              <FoundationResourceAvailability content={sectionContent} state={resourceState} compact />
               <span className="mt-4 inline-flex rounded-full bg-primary/10 px-3 py-1 text-xs font-black text-primary">
-                {program === "tahsili" ? "افتح ملفات المادة" : "افتح القسم"}
+                افتح مواد التأسيس
               </span>
           </Link>
           );
@@ -1351,12 +1365,40 @@ function FoundationTrackOverview({
   );
 }
 
+function FoundationPlanView({ program }: { program: FoundationProgram }) {
+  return (
+    <div className="mx-auto max-w-6xl space-y-5 p-4 md:p-8" dir="rtl">
+      <header className="rounded-3xl border border-border bg-card p-5 shadow-sm sm:p-7">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <p className="text-xs font-black text-primary">التأسيس · {program === "qudrat" ? "القدرات" : "التحصيلي"}</p>
+            <h1 className="mt-2 text-2xl font-black text-foreground">خطة المسار</h1>
+            <p className="mt-2 max-w-2xl text-sm leading-7 text-muted-foreground">
+              {program === "qudrat"
+                ? "خطتك المرتبطة بموعد اختبارك ومستواك، مع المهام والتدريب المخصص."
+                : "جلسة التحصيلي اليومية مبنية على المواد المنشورة وتقدمك؛ افتحها وابدأ بخطوة واضحة."}
+            </p>
+          </div>
+          <Link
+            href={`/foundation?program=${program}`}
+            className="rounded-xl border border-border bg-background px-4 py-2.5 text-sm font-black text-foreground hover:border-primary/40"
+          >
+            العودة إلى مواد التأسيس
+          </Link>
+        </div>
+      </header>
+      {program === "qudrat" ? <PreparationCoursePage /> : <LearningTodayPage />}
+    </div>
+  );
+}
+
 function FoundationPageContent() {
   const [, setLocation] = useLocation();
   const queryString = useSearch();
   const params = new URLSearchParams(queryString);
   const hasProgram = params.get("program") === "qudrat" || params.get("program") === "tahsili";
   const hasSubject = Boolean(params.get("subject"));
+  const isPlanView = params.get("view") === "plan";
   const program: FoundationProgram = params.get("program") === "tahsili" ? "tahsili" : "qudrat";
   const requestedSection = getFoundationSection(program, params.get("subject"));
   const requestedLessonId = params.get("lesson");
@@ -1489,6 +1531,10 @@ function FoundationPageContent() {
     );
   }
 
+  if (isPlanView) {
+    return <FoundationPlanView program={program} />;
+  }
+
   if (!hasSubject) {
     return (
       <FoundationTrackOverview
@@ -1528,6 +1574,12 @@ function FoundationPageContent() {
          <Button type="button" className="mt-4 rounded-xl font-black" onClick={() => setLocation(subjectActionHref)}>
            {program === "tahsili" ? "ابدأ اختبار هذه المادة" : "ابدأ مهمة اليوم"}
          </Button>
+          <Link
+            href={`/foundation?program=${program}&view=plan`}
+            className="mt-4 mr-2 inline-flex items-center gap-2 rounded-xl border border-border bg-card px-4 py-3 text-sm font-black text-foreground hover:border-primary/40"
+          >
+            خطة المسار <ArrowLeft className="h-4 w-4" />
+          </Link>
           {program === "qudrat" && activeSection.key === "quantitative" && (
             <Link href="/student/foundation-book/quantitative" className="mt-4 inline-flex items-center gap-2 rounded-xl border border-[#9daa86] bg-[#edf0e2] px-4 py-3 text-sm font-black text-[#365846] transition hover:bg-[#e2e8d3]">
               <BookOpen className="h-4 w-4" />

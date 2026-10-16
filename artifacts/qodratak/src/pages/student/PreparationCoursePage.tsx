@@ -238,7 +238,7 @@ export default function PreparationCoursePage() {
       </fieldset>
       {actionError && <p role="alert" className="mt-4 text-sm font-bold text-destructive" data-testid="text-course-error">{actionError}</p>}
       <Button type="button" onClick={submit} disabled={create.isPending} className="mt-6 min-h-12 w-full rounded-xl font-black sm:w-auto sm:px-8" data-testid="button-create-course">
-        {create.isPending ? "جارٍ بناء الخطة..." : course ? "أعد بناء الخطة" : "ابنِ خطتي"}
+        {create.isPending ? "جارٍ بناء الخطة..." : course ? "أعد بناء الخطة" : "أنشئ خطة الاستعداد"}
       </Button>
       {course && <p className="mt-3 text-xs text-muted-foreground">إعادة البناء تستبدل الخطة الحالية. لن يحدث ذلك إلا بضغطك.</p>}
     </section>

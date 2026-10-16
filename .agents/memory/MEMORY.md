@@ -49,7 +49,7 @@
 - [React runtime error stacks](react-runtime-error-stack.md) — format JavaScript and React component stacks as strings in development logs so browser collectors preserve them.
 - [Large attachment staging](large-attachment-staging.md) — keep temporary hard links on the workspace filesystem; `/tmp` is mounted separately.
 - [Reusable explanations and reports](reusable-explanations-and-reports.md) — deterministic reporting, AI only for missing explanations, reusable content-aware caches with generated text clearly labeled.
-- [Student journey scope](student-journey-scope.md) — one personalized preparation path; keep incomplete Tahsili student features closed and labeled «قريبًا».
+- [Student journey scope](student-journey-scope.md) — use «التأسيس» as the single entry for separate Qudrat/Tahsili tracks, with each track’s materials and plan together.
 - [Landing store badge](landing-store-badge.md) — show «متجر موثّق» only on the public homepage, never on any dashboard or other page.
 - [Complaint notification boundary](customer-complaint-notifications.md) — minimal admin WhatsApp notices; full customer records stay protected, and saving does not depend on delivery.
 - [RTL hidden controls](rtl-hidden-controls.md) — clip hidden fields in place; far-negative offsets can expand RTL document bounds.
@@ -58,6 +58,7 @@
 - [Institutional access](institution-contract-entitlements.md) — one contract WhatsApp, «منصة قدراتك», compact new references/codes, and legacy invite compatibility.
 - [Student platform reviews](student-platform-reviews.md) — students submit feedback privately; only admin-approved reviews appear on the landing page.
 - [Student platform guide](student-platform-guide.md) — homepage links to the guide; student hero film is hideable and explains real exam interiors with the approved logo.
+- [Student page guide films](student-page-guide-films.md) — keep the matching chapter embedded on each page; the full guide remains separate.
 - [Geidea timeout authority](geidea-timeout-authority.md) — a ten-minute platform timeout is not a provider cancellation; verified delayed charges must remain recoverable.
 - [Personalized question reuse](personalized-question-reuse.md) — retire correct questions, retry missed ones, and keep question selection server-owned and load-conscious.
 - [GitHub publishing authentication](github-push-auth.md) — verify remote authentication and ref updates; a local commit alone does not mean a branch was published.

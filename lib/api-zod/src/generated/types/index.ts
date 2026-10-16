@@ -6,6 +6,15 @@
  * OpenAPI spec version: 0.1.0
  */
 
+export * from './adminBootstrapInput';
+export * from './adminBootstrapResult';
+export * from './adminBootstrapResultAdmin';
+export * from './adminBootstrapResultAdminRole';
+export * from './adminBootstrapStatus';
+export * from './adminBootstrapStatusReason';
+export * from './adminRecoveryInput';
+export * from './adminRecoveryResult';
+export * from './adminRecoveryResultAdmin';
 export * from './adminVideoAsset';
 export * from './adminVideoPage';
 export * from './adminVideoUploadInput';

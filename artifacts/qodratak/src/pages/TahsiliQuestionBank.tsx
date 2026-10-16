@@ -226,7 +226,7 @@ export default function TahsiliQuestionBank() {
               <p className="max-w-lg text-sm leading-6 text-muted-foreground">
                 لا نعرض الأسئلة المستخرجة قبل مراجعتها واعتماد الإجابة. يمكنك فتح ملفات المادة من مكتبة المصادر.
               </p>
-              <a href="/tahsilik/study" className="text-sm font-bold text-primary underline underline-offset-4">
+              <a href="/foundation?program=tahsili" className="text-sm font-bold text-primary underline underline-offset-4">
                 افتح مكتبة المصادر
               </a>
             </CardContent>
