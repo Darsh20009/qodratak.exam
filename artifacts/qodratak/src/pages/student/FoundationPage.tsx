@@ -34,6 +34,8 @@ import { getQuestionImageUrls } from "@/lib/questionImages";
 import { StudentWorkflow, workflowStageForLevel, type WorkflowStage } from "@/components/student/StudentWorkflow";
 import PreparationCoursePage from "@/pages/student/PreparationCoursePage";
 import LearningTodayPage from "@/pages/student/LearningTodayPage";
+import TahsiliOverviewPage from "@/pages/TahsiliOverviewPage";
+import TahsiliSourceLibrary from "@/pages/TahsiliSourceLibrary";
 
 function ProgressBar({ value, className = "" }: { value: number; className?: string }) {
   const safeValue = Number.isFinite(value) ? Math.max(0, Math.min(100, value)) : 0;
@@ -1974,6 +1976,15 @@ function CourseDiagnosticLauncher() {
 }
 
 export default function FoundationPage() {
+  const search = useSearch();
+  const params = new URLSearchParams(search);
+  const showTahsiliSources = params.get("program") === "tahsili" && params.get("view") !== "plan";
+  const hasTahsiliSubject = Boolean(params.get("subject"));
+
+  if (showTahsiliSources) {
+    return hasTahsiliSubject ? <TahsiliSourceLibrary /> : <TahsiliOverviewPage />;
+  }
+
   return (
     <ErrorBoundary fallback={(error) => <FoundationPageErrorFallback error={error} />}>
       <FoundationPageContent />

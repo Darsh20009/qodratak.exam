@@ -1,11 +1,21 @@
 export type VideoTimingSource = {
   questionId?: string;
-  videoTimestampSeconds?: number;
-  videoEndTimestampSeconds?: number;
+  videoTimestampSeconds?: number | null;
+  videoEndTimestampSeconds?: number | null;
   videoTimestampInferred?: boolean;
   videoEndTimestampInferred?: boolean;
   videoTimingVerified?: boolean;
   videoTimingMethod?: string;
+};
+
+const COMPUTER_BANK_VIDEO_DURATIONS_SECONDS: Record<number, number> = {
+  71: 3686.92,
+  79: 2053.855011,
+  80: 2199.607007,
+  81: 2169.513991,
+  82: 1948.645011,
+  83: 2697.885215,
+  84: 2167.447211,
 };
 
 /** Assigns a two-minute clip around each question's center in an equal 48-part split. */
@@ -41,7 +51,7 @@ export function computerBankQuestionIdentity(id?: string) {
   const match = /^quantitative-computer-bank-(\d+)-(\d+)$/.exec(id || '');
   if (!match) return null;
   const bankNumber = Number(match[1]), questionNumber = Number(match[2]);
-  return bankNumber >= 1 && bankNumber <= 70 && questionNumber >= 1 && questionNumber <= 48
+  return bankNumber >= 1 && bankNumber <= 90 && questionNumber >= 1 && questionNumber <= 48
     ? { bankNumber, questionNumber } : null;
 }
 
@@ -55,12 +65,32 @@ export function buildQuestionVideoClip(source: VideoTimingSource, videoUrl: stri
     /^https?:\/\//i.test(videoUrl);
   if (!safeScheme || !videoUrl.split(/[?#]/, 1)[0].endsWith(expectedFile))
     return { available: false, reason: 'video_unavailable', ...identity };
-  const start = source.videoTimestampSeconds, end = source.videoEndTimestampSeconds;
-  if (typeof start !== 'number' || typeof end !== 'number' ||
-      !Number.isFinite(start) || !Number.isFinite(end) || start < 0 || end <= start) {
-    return { available: false, reason: 'timing_unavailable', videoUrl, ...identity };
+  if (identity.bankNumber > 70 &&
+      !Object.hasOwn(COMPUTER_BANK_VIDEO_DURATIONS_SECONDS, identity.bankNumber)) {
+    return { available: false, reason: 'video_unavailable', videoUrl, ...identity };
   }
-  const approximate = source.videoTimestampInferred === true || source.videoEndTimestampInferred === true;
-  return { available: true, videoUrl, startSeconds: start, endSeconds: end,
-    approximate, verified: source.videoTimingVerified === true && !approximate, ...identity };
+  const start = source.videoTimestampSeconds, end = source.videoEndTimestampSeconds;
+  if (typeof start === 'number' && typeof end === 'number' &&
+      Number.isFinite(start) && Number.isFinite(end) && start >= 0 && end > start) {
+    const approximate = source.videoTimestampInferred === true || source.videoEndTimestampInferred === true;
+    return { available: true, videoUrl, startSeconds: start, endSeconds: end,
+      approximate, verified: source.videoTimingVerified === true && !approximate, ...identity };
+  }
+
+  if ((start === undefined || start === null) &&
+      (end === undefined || end === null)) {
+    const durationSeconds = COMPUTER_BANK_VIDEO_DURATIONS_SECONDS[identity.bankNumber];
+    if (durationSeconds) {
+      const bounds = equalPartitionClipBounds(durationSeconds, identity.questionNumber);
+      return {
+        available: true,
+        videoUrl,
+        ...bounds,
+        approximate: true,
+        verified: false,
+        ...identity,
+      };
+    }
+  }
+  return { available: false, reason: 'timing_unavailable', videoUrl, ...identity };
 }

@@ -62,11 +62,17 @@ test('reports are private, source-verified, idempotent and lead to masked, serve
       })) };
       const saved = await request('/api/student/exam-reports', payload);
       assert.equal(saved.status, 200);
+      assert.equal(saved.body.report.program, 'qudrat');
       assert.equal(saved.body.report.questions.filter((q: any) => q.isCorrect === false).length, 2);
       assert.equal(saved.body.report.questions[4].isSlow, true);
       assert.equal(saved.body.report.questions[0].explanationStatus, 'approved');
       assert.equal(saved.body.report.questions[5].isCorrect, true, 'Approved server keys grade correctly even when analytics were not written');
       assert.equal(await LearningAttempt.countDocuments({ studentId, questionId: String(bank[5]._id) }), 0, 'Report grading must not fabricate analytics attempts');
+      const tahsili = await request('/api/student/exam-reports', {
+        ...payload, runId: `${marker}-tahsili`, title: 'الرياضيات',
+      });
+      assert.equal(tahsili.status, 200);
+      assert.equal(tahsili.body.report.program, 'tahsili');
       const duplicate = await request('/api/student/exam-reports', { ...payload, title: 'tampered' });
       assert.equal(duplicate.body.report.title, payload.title);
       assert.equal(await ExamLearningReport.countDocuments({ studentId, runId: marker }), 1);
@@ -116,14 +122,14 @@ test('reports are private, source-verified, idempotent and lead to masked, serve
         generationQueued: true,
       })));
       const firstPage = await request('/api/student/exam-reports');
-      assert.equal(firstPage.body.totalCount, 32);
+      assert.equal(firstPage.body.totalCount, 33);
       assert.equal(firstPage.body.reports.length, 30);
       assert.ok(firstPage.body.nextCursor);
       const lastPage = await request(`/api/student/exam-reports?before=${firstPage.body.nextCursor}`);
-      assert.equal(lastPage.body.reports.length, 2);
+      assert.equal(lastPage.body.reports.length, 3);
       assert.equal(lastPage.body.nextCursor, null);
       const allRunIds = [...firstPage.body.reports, ...lastPage.body.reports].map((report: any) => report.runId);
-      assert.equal(new Set(allRunIds).size, 32);
+      assert.equal(new Set(allRunIds).size, 33);
       assert.ok(allRunIds.includes(marker));
       assert.equal((await request('/api/student/exam-reports?before=invalid')).status, 400);
       assert.equal((await request(`/api/student/exam-reports?before=${firstPage.body.nextCursor}`, undefined, otherId)).body.reports.some((report: any) => report.runId === marker), false);

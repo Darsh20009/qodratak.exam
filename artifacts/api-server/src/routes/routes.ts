@@ -72,7 +72,10 @@ import {
   storeMediaBuffer,
 } from '../services/mediaStorage';
 import { fetchR2VerbalObject } from '../services/qudratVerbalBookFilesService';
-import { TAHSILI_SOURCE_CATALOG } from '../services/tahsiliSourceCatalog';
+import {
+  TAHSILI_PLAYLIST_REFERENCES,
+  TAHSILI_SOURCE_CATALOG,
+} from '../services/tahsiliSourceCatalog';
 import {
   completeLearningSession,
   createLearningSession,
@@ -12153,6 +12156,7 @@ app.post("/api/auth/register", async (req: Request, res: Response) => {
               ...source,
               fileUrl: `/api/tahsili/sources/${source.id}/file`,
             })),
+          playlists: TAHSILI_PLAYLIST_REFERENCES,
           totalSources: TAHSILI_SOURCE_CATALOG.length,
         });
       } catch (error) {

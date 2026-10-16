@@ -115,6 +115,7 @@ import TahsilikSubjectTest from "@/pages/TahsilikSubjectTest";
 import TahsilikSubjectTestRunner from "@/pages/TahsilikSubjectTestRunner";
 import TahsilikTestsHub from "@/pages/TahsilikTestsHub";
 import TahsiliOverviewPage from "@/pages/TahsiliOverviewPage";
+import TahsiliSourceLibrary from "@/pages/TahsiliSourceLibrary";
 import LandingPage from "@/pages/LandingPage";
 import { SplashScreen } from "@/components/SplashScreen";
 import { RouteSEO } from "@/components/RouteSEO";
@@ -508,7 +509,7 @@ function MainLayout({ children }: { children: React.ReactNode }) {
     { group: "اختبارات وتدريب", name: "الدورات التعليمية", href: "/courses", icon: GraduationCapIcon, description: "استعرض الدورات التعليمية المنشورة." },
 
     { group: "التحصيلي", name: "مسار التحصيلي", href: "/tahsili", icon: GraduationCapIcon, description: "افتح مواد الدراسة ومكتبة المصادر ومركز الاختبارات." },
-    { group: "التحصيلي", name: "مصادر التحصيلي", href: "/foundation?program=tahsili", icon: BookOpenIcon, description: "افتح مواد التأسيس المنشورة لكل مادة." },
+    { group: "التحصيلي", name: "مصادر التحصيلي", href: "/tahsili/sources", icon: BookOpenIcon, description: "افتح ملفات التأسيس والتدريب المتاحة لكل مادة." },
     { group: "التحصيلي", name: "اختبارات التحصيلي حسب المادة", href: "/tahsilik/tests", icon: ClipboardIcon, description: "اعرض المواد التي يتوفر لها بنك أسئلة معتمد." },
     { group: "التحصيلي", name: "بنك أسئلة التحصيلي", href: "/tahsilik/question-bank", icon: Library, description: "تدرب على أسئلة التحصيلي حسب المادة." },
 
@@ -1226,6 +1227,9 @@ function Router({ splashDone }: { splashDone: boolean }) {
 
        <Route path="/tahsili">
          {() => <StudentShell><ProtectedRoute><TahsiliOverviewPage /></ProtectedRoute></StudentShell>}
+      </Route>
+      <Route path="/tahsili/sources">
+        {() => <StudentShell><ProtectedRoute><TahsiliSourceLibrary /></ProtectedRoute></StudentShell>}
       </Route>
       <Route path="/tahsili-dashboard">
          {() => <StudentShell><ProtectedRoute><Redirect to="/tahsili" /></ProtectedRoute></StudentShell>}

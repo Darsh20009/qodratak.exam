@@ -4,6 +4,7 @@ const reportSchema = new Schema({
   studentId: { type: String, required: true },
   runId: { type: String, required: true },
   title: { type: String, required: true },
+  program: { type: String, enum: ['qudrat', 'tahsili'] },
   questions: { type: [Schema.Types.Mixed], required: true },
   timing: { type: Schema.Types.Mixed, required: true },
   generationQueued: { type: Boolean, default: false },

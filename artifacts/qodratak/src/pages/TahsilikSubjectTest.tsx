@@ -136,6 +136,22 @@ export default function TahsilikSubjectTest() {
         )}
 
         {overviewQuery.data && !selected && (
+          <>
+          {overviewQuery.data.subjects.every((subject) => subject.verifiedQuestionCount === 0) && (
+            <Card className="border-amber-500/30 bg-amber-500/[0.04]" role="status">
+              <CardContent className="flex flex-col items-start gap-3 p-5 sm:flex-row sm:items-center sm:justify-between">
+                <div>
+                  <p className="font-black text-foreground">الاختبارات غير متاحة الآن لعدم وجود أسئلة معتمدة</p>
+                  <p className="mt-1 max-w-2xl text-sm leading-6 text-muted-foreground">
+                    لن نضع أسئلة بمفاتيح غير مراجعة في اختبار الطالب. يمكنك فتح ملفات التأسيس والتدريب المتاحة إلى أن تكتمل مراجعة مفاتيح الإجابة.
+                  </p>
+                </div>
+                <Button variant="outline" onClick={() => setLocation("/tahsili/sources")} className="shrink-0">
+                  افتح مكتبة المصادر
+                </Button>
+              </CardContent>
+            </Card>
+          )}
           <section className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3" aria-label="مواد التحصيلي">
             {overviewQuery.data.subjects.map((subject) => {
               const display = subjectPresentation[subject.subject];
@@ -199,6 +215,7 @@ export default function TahsilikSubjectTest() {
               );
             })}
           </section>
+          </>
         )}
 
         {selected && (

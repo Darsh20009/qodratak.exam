@@ -10,7 +10,9 @@ test('source identity binds question 34 to bank 6, never to displayed shuffled p
   assert.deepEqual(computerBankQuestionIdentity('quantitative-computer-bank-6-34'), { bankNumber: 6, questionNumber: 34 });
   assert.deepEqual(computerBankQuestionIdentity('quantitative-computer-bank-51-34'), { bankNumber: 51, questionNumber: 34 });
   assert.deepEqual(computerBankQuestionIdentity('quantitative-computer-bank-70-48'), { bankNumber: 70, questionNumber: 48 });
-  assert.equal(computerBankQuestionIdentity('quantitative-computer-bank-71-34'), null);
+  assert.deepEqual(computerBankQuestionIdentity('quantitative-computer-bank-71-34'), { bankNumber: 71, questionNumber: 34 });
+  assert.deepEqual(computerBankQuestionIdentity('quantitative-computer-bank-90-48'), { bankNumber: 90, questionNumber: 48 });
+  assert.equal(computerBankQuestionIdentity('quantitative-computer-bank-91-34'), null);
   assert.equal(computerBankQuestionIdentity('quantitative-computer-bank-6-49'), null);
   assert.equal(computerBankQuestionIdentity('verbal-6-34'), null);
 });
@@ -88,6 +90,43 @@ test('new computerized banks resolve only to their matching streamed video', () 
     buildQuestionVideoClip(
       { ...source, questionId: 'quantitative-computer-bank-70-1' },
       '/api/learning/computerized/quantitative/computer-bank-69.mp4',
+    ).reason,
+    'video_unavailable',
+  );
+});
+
+test('available new computerized bank videos use their own duration and 48-part two-minute approximation', () => {
+  const durations: Record<number, number> = {
+    71: 3686.92,
+    79: 2053.855011,
+    80: 2199.607007,
+    81: 2169.513991,
+    82: 1948.645011,
+    83: 2697.885215,
+    84: 2167.447211,
+  };
+  for (const [bankText, duration] of Object.entries(durations)) {
+    const bankNumber = Number(bankText);
+    const questionNumber = 34;
+    const url = `/api/learning/computerized/quantitative/computer-bank-${bankNumber}.mp4`;
+    const actual = buildQuestionVideoClip({
+      questionId: `quantitative-computer-bank-${bankNumber}-${questionNumber}`,
+    }, url);
+    const bounds = equalPartitionClipBounds(duration, questionNumber);
+    assert.deepEqual(actual, {
+      available: true,
+      videoUrl: url,
+      ...bounds,
+      approximate: true,
+      verified: false,
+      bankNumber,
+      questionNumber,
+    });
+  }
+  assert.equal(
+    buildQuestionVideoClip(
+      { questionId: 'quantitative-computer-bank-72-34' },
+      '/api/learning/computerized/quantitative/computer-bank-72.mp4',
     ).reason,
     'video_unavailable',
   );

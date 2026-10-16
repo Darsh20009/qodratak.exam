@@ -12,16 +12,20 @@ async function hasActiveStudentAccess(req: Parameters<RequestHandler>[0]) {
   return Boolean(access?.active);
 }
 
-export function registerQuestionVideoRoutes(app: Express, middleware: RequestHandler[]) {
+export function registerQuestionVideoRoutes(
+  app: Express,
+  middleware: RequestHandler[],
+  studentAccessCheck: (req: Parameters<RequestHandler>[0]) => Promise<boolean> = hasActiveStudentAccess,
+) {
   app.get('/api/learning/computerized/quantitative/computer-bank-:bankNumber.mp4', ...middleware, async (req, res) => {
     const bankNumber = Number(req.params.bankNumber);
-    if (!Number.isInteger(bankNumber) || bankNumber < 51 || bankNumber > 70) {
+    if (!Number.isInteger(bankNumber) || bankNumber < 51 || bankNumber > 90) {
       res.status(404).json({ message: 'فيديو البنك غير موجود.' });
       return;
     }
 
     try {
-      if (!await hasActiveStudentAccess(req)) {
+      if (!await studentAccessCheck(req)) {
         res.status(403).json({ message: 'يلزم اشتراك أو تجربة نشطة لمشاهدة شرح السؤال.' });
         return;
       }
@@ -63,7 +67,7 @@ export function registerQuestionVideoRoutes(app: Express, middleware: RequestHan
 
   app.get('/api/student/question-video/:questionId', ...middleware, async (req, res) => {
     try {
-      if (!await hasActiveStudentAccess(req)) {
+      if (!await studentAccessCheck(req)) {
         return res.status(403).json({
           available: false,
           reason: 'subscription_required',
@@ -85,10 +89,9 @@ export function registerQuestionVideoRoutes(app: Express, middleware: RequestHan
         title: `بنك الكمي المحوسب ${identity.bankNumber}`,
         'quiz.questionIds': String(question._id),
       }).select('title questionSolutionVideoUrl').lean();
-      const output = buildQuestionVideoClip(
-        question.source || {},
-        lesson?.questionSolutionVideoUrl || '',
-      );
+      const videoUrl = lesson?.questionSolutionVideoUrl ||
+        `/api/learning/computerized/quantitative/computer-bank-${String(identity.bankNumber).padStart(2, '0')}.mp4`;
+      const output = buildQuestionVideoClip(question.source || {}, videoUrl);
       return res.json({ ...output, title: lesson?.title });
     } catch (error) {
       req.log.error({ err: error }, 'Question video lookup failed');

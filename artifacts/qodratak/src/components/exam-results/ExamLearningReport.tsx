@@ -169,27 +169,48 @@ export function ExamReportHistory() {
     staleTime: 10000,
   });
   const reports = history.data?.pages.flatMap((page) => page.reports) || [];
+  const reportProgram = (report: ExamReportRecord): 'qudrat' | 'tahsili' => {
+    if (report.program === 'tahsili' || report.program === 'qudrat') return report.program;
+    const title = report.title.toLocaleLowerCase();
+    const areas = report.questions.map((question) => `${question.category} ${question.subcategory}`).join(' ').toLocaleLowerCase();
+    return /تحصيلي|tahsili|فيزياء|كيمياء|أحياء|احياء|علم البيئة|الرياضيات|physics|chemistry|biology/.test(`${title} ${areas}`)
+      ? 'tahsili'
+      : 'qudrat';
+  };
+  const reportGroups = [
+    { program: 'qudrat' as const, title: 'تقارير القدرات' },
+    { program: 'tahsili' as const, title: 'تقارير التحصيلي' },
+  ];
   return <section dir="rtl" className="my-6 space-y-4" data-testid="my-results-history">
     <div className="flex flex-wrap items-center justify-between gap-2">
-      <h2 className="text-xl font-bold">نتائج الاختبارات والتقارير التفصيلية</h2>
+      <h2 className="text-xl font-bold">التقارير التفصيلية</h2>
       {history.data && <span className="text-sm text-muted-foreground">{history.data.pages[0].totalCount ?? reports.length} تقرير محفوظ</span>}
     </div>
-    {history.isPending ? <p>جارٍ تحميل التقارير…</p> : history.isError && !reports.length ? <p role="alert">تعذر تحميل التقارير. <Button onClick={() => history.refetch()}>إعادة المحاولة</Button></p> : reports.length ? reports.map((report) => {
-      const score = summarizeReportScores(report.questions).overall;
-      return <details key={report.runId} className="overflow-hidden rounded-xl border border-border bg-card" data-testid="saved-result-card" onToggle={(event) => {
-        if (event.currentTarget.open) setOpenedReports((opened) => opened[report.runId] ? opened : { ...opened, [report.runId]: true });
-      }}>
-        <summary className="cursor-pointer list-none space-y-4 p-5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary">
-          <div className="flex flex-wrap items-start justify-between gap-3">
-            <div><h3 className="font-bold text-foreground">{report.title}</h3><p className="mt-1 text-xs text-muted-foreground">{report.createdAt ? new Date(report.createdAt).toLocaleString('ar-SA') : 'التاريخ غير متوفر'}</p></div>
-            <span className="rounded-lg bg-primary/10 px-3 py-2 text-xs font-bold text-primary">عرض التقرير التفصيلي</span>
-          </div>
-          <ReportScoreSummary questions={report.questions} />
-          <p className="text-sm text-muted-foreground">{score.correct} صحيحة · {score.wrong} خاطئة · {score.skipped} متروكة · الوقت: {minutes(report.timing.totalSeconds)}</p>
-        </summary>
-        {openedReports[report.runId] && <div className="border-t border-border px-2 sm:px-4"><ReportDetails report={report} /></div>}
-      </details>;
-    }) : <div className="rounded-xl border border-dashed border-border bg-card p-7 text-center"><p className="font-bold">لا توجد تقارير محفوظة بعد</p><p className="mt-2 text-sm text-muted-foreground">ستظهر نتائج اختباراتك وتقاريرها هنا بعد إكمالها. لا نفترض زمنًا للأسئلة القديمة.</p></div>}
+    {history.isPending ? <p>جارٍ تحميل التقارير…</p> : history.isError && !reports.length ? <p role="alert">تعذر تحميل التقارير. <Button onClick={() => history.refetch()}>إعادة المحاولة</Button></p> : reportGroups.map((group) => {
+      const groupReports = reports.filter((report) => reportProgram(report) === group.program);
+      return <section key={group.program} className="space-y-3" data-testid={`detailed-reports-${group.program}`}>
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <h3 className="text-lg font-bold">{group.title}</h3>
+          <span className="rounded-full bg-muted px-3 py-1 text-xs font-bold text-muted-foreground">{groupReports.length} تقرير</span>
+        </div>
+        {groupReports.length ? groupReports.map((report) => {
+          const score = summarizeReportScores(report.questions).overall;
+          return <details key={report.runId} className="overflow-hidden rounded-xl border border-border bg-card" data-testid="saved-result-card" onToggle={(event) => {
+            if (event.currentTarget.open) setOpenedReports((opened) => opened[report.runId] ? opened : { ...opened, [report.runId]: true });
+          }}>
+            <summary className="cursor-pointer list-none space-y-4 p-5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary">
+              <div className="flex flex-wrap items-start justify-between gap-3">
+                <div><h4 className="font-bold text-foreground">{report.title}</h4><p className="mt-1 text-xs text-muted-foreground">{report.createdAt ? new Date(report.createdAt).toLocaleString('ar-SA') : 'التاريخ غير متوفر'}</p></div>
+                <span className="rounded-lg bg-primary/10 px-3 py-2 text-xs font-bold text-primary">عرض التقرير التفصيلي</span>
+              </div>
+              <ReportScoreSummary questions={report.questions} />
+              <p className="text-sm text-muted-foreground">{score.correct} صحيحة · {score.wrong} خاطئة · {score.skipped} متروكة · الوقت: {minutes(report.timing.totalSeconds)}</p>
+            </summary>
+            {openedReports[report.runId] && <div className="border-t border-border px-2 sm:px-4"><ReportDetails report={report} /></div>}
+          </details>;
+        }) : <div className="rounded-xl border border-dashed border-border bg-card p-5 text-sm text-muted-foreground">لا توجد تقارير تفصيلية لهذا المسار بعد. ستظهر هنا بعد إكمال اختبار وحفظ تقريره.</div>}
+      </section>;
+    })}
     {history.isFetchNextPageError && <p role="alert" className="text-sm text-destructive">تعذر تحميل النتائج الأقدم. النتائج المعروضة محفوظة، ويمكنك إعادة المحاولة.</p>}
     {history.hasNextPage && <Button variant="outline" disabled={history.isFetchingNextPage} onClick={() => history.fetchNextPage()} data-testid="button-older-results">{history.isFetchingNextPage ? 'جارٍ تحميل النتائج…' : history.isFetchNextPageError ? 'إعادة تحميل النتائج الأقدم' : 'عرض النتائج الأقدم'}</Button>}
   </section>;

@@ -1,6 +1,7 @@
 
 import React, { useEffect, useState, useMemo } from 'react';
 import { ExamReportHistory } from '@/components/exam-results/ExamLearningReport';
+import ProgramResultHistory from '@/components/exam-results/ProgramResultHistory';
 import { useLocation } from 'wouter';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -659,6 +660,7 @@ export default function EnhancedExamRecordsPage() {
           <h1 className="mt-2 text-3xl font-bold text-foreground" data-testid="heading-my-results">نتائجي</h1>
           <p className="mt-3 text-sm leading-7 text-muted-foreground">نتائج اختباراتك المحفوظة، وتفاصيل الإجابات والوقت والشروح وخطة المراجعة. هذه نتائج تدريبية من المنصة وليست نتائج رسمية من قياس.</p>
         </header>
+        <ProgramResultHistory />
         <ExamReportHistory />
         {allRecords.length > 0 && <>
         {/* ===== قسم الاختبارات الرسمية - النمط الرسمي لقياس ===== */}
@@ -891,22 +893,11 @@ export default function EnhancedExamRecordsPage() {
               <BarChart3 className="relative h-32 w-32 text-slate-400 dark:text-slate-600 mx-auto mb-8 opacity-60" />
             </div>
             <h2 className="text-3xl font-bold mb-4 text-slate-700 dark:text-slate-300">
-              {allRecords.length > 0 && filterType !== "all" ? "لا توجد سجلات تطابق الفلتر الحالي" : "ابدأ رحلتك الاختبارية الآن!"}
+              {allRecords.length > 0 && filterType !== "all" ? "لا توجد سجلات تطابق الفلتر الحالي" : "نتائجك المحفوظة تظهر في الأقسام أعلاه"}
             </h2>
             <p className="text-lg text-slate-500 dark:text-slate-400 mb-10 max-w-md mx-auto">
-              {allRecords.length === 0 ? "كل اختبار جديد هو خطوة نحو تحقيق أهدافك الأكاديمية" : "جرّب تغيير خيارات الفلترة أو الترتيب"}
+              {allRecords.length === 0 ? "يعرض هذا الجزء سجلات قديمة محفوظة محليًا فقط. تقارير القدرات والتحصيلي المحفوظة في حسابك تظهر أعلاه." : "جرّب تغيير خيارات الفلترة أو الترتيب"}
             </p>
-            {allRecords.length === 0 && (
-              <Button 
-                onClick={() => setLocation('/')} 
-                size="lg" 
-                className="text-white px-8 py-4 text-lg shadow-xl hover:shadow-2xl transition-all duration-300"
-                style={{ background: '#1a7c3e' }}
-              >
-                <Sparkles className="h-6 w-6 ml-2" />
-                ابدأ اختبارك الأول
-              </Button>
-            )}
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-8">

@@ -432,6 +432,7 @@ export type ExamReportQuestionView = ExamTimingQuestionInput & ({
 export interface ExamReportRecord {
   runId: string;
   title: string;
+  program?: "qudrat" | "tahsili";
   createdAt?: string;
   questions: ExamReportQuestionView[];
   timing: ExamReportTiming;

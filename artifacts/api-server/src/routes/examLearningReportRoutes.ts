@@ -6,6 +6,13 @@ import { cachedQuestionExplanation, resolveReportQuestion } from '../services/ca
 import { speedAdvice, timingAnalysis } from '../services/examReportMath';
 
 const inputSchema = SaveStudentExamReportBody;
+function inferReportProgram(input: { title: string; questions: Array<{ category?: string; subcategory?: string }> }): 'qudrat' | 'tahsili' {
+  const title = input.title.toLocaleLowerCase();
+  if (/تحصيلي|tahsili|فيزياء|كيمياء|أحياء|احياء|علم البيئة|الرياضيات/.test(title)) return 'tahsili';
+  const questionAreas = input.questions.map((question) => `${question.category ?? ''} ${question.subcategory ?? ''}`).join(' ').toLocaleLowerCase();
+  if (/تحصيلي|tahsili|physics|chemistry|biology|فيزياء|كيمياء|أحياء|احياء|علم البيئة/.test(questionAreas)) return 'tahsili';
+  return 'qudrat';
+}
 export function registerExamLearningReportRoutes(app: Express, studentOnly: RequestHandler[]) {
   app.get('/api/student/exam-reports', ...studentOnly, async (req, res) => {
     try {
@@ -19,6 +26,9 @@ export function registerExamLearningReportRoutes(app: Express, studentOnly: Requ
         ExamLearningReport.countDocuments({ studentId }),
       ]);
       const reports = rows.slice(0, 30);
+      for (const report of reports as any[]) {
+        if (!report.program) report.program = inferReportProgram(report);
+      }
       // Repair historical incomplete corrections without changing answers, timing or attempts.
       const pending = reports.flatMap((report: any) => report.questions
         .filter((question: any) => question.isCorrect === null && question.selectedOptionIndex !== null)
@@ -90,7 +100,7 @@ export function registerExamLearningReportRoutes(app: Express, studentOnly: Requ
       }
       const existing: any = await ExamLearningReport.findOne({ studentId, runId: input.runId }).lean();
       let report: any = existing || await ExamLearningReport.findOneAndUpdate({ studentId, runId: input.runId },
-        { $setOnInsert: { title: input.title, questions, timing } }, { upsert: true, returnDocument: 'after' }).lean();
+        { $setOnInsert: { title: input.title, program: inferReportProgram(input), questions, timing } }, { upsert: true, returnDocument: 'after' }).lean();
       if (existing) {
         const corrected = existing.questions.map((old: any) => {
           const newQuestion = questions.find((q) => q.id === old.id && q.selectedOptionIndex === old.selectedOptionIndex);

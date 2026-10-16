@@ -1,11 +1,11 @@
 import { useEffect, useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { useLocation } from "wouter";
+import { useSearch } from "wouter";
 import { apiRequest } from "@/lib/queryClient";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { BookOpen, Download, FileText, Loader2, RefreshCw, Search } from "lucide-react";
+import { BookOpen, Download, ExternalLink, FileText, Loader2, RefreshCw, Search } from "lucide-react";
 
 type SourceKind = "primary_book" | "foundation_book" | "question_collection" | "practice" | "exam_collection";
 
@@ -24,6 +24,7 @@ interface TahsiliSource {
 interface SourceResponse {
   sources: TahsiliSource[];
   totalSources: number;
+  playlists?: Array<{ subject: string; url: string }>;
 }
 
 const KIND_LABELS: Record<SourceKind, string> = {
@@ -57,8 +58,8 @@ async function loadSources(): Promise<SourceResponse> {
 }
 
 export default function TahsiliSourceLibrary() {
-  const [location] = useLocation();
-  const subjectParam = new URLSearchParams(location.split("?")[1] || "").get("subject") || "الكل";
+  const search = useSearch();
+  const subjectParam = new URLSearchParams(search).get("subject") || "الكل";
   const requestedSubject = SUBJECT_QUERY_ALIASES[subjectParam] || subjectParam;
   const initialSubject = SUBJECT_FILTERS.includes(requestedSubject) ? requestedSubject : "الكل";
   const [subjectFilter, setSubjectFilter] = useState(initialSubject);
@@ -119,6 +120,34 @@ export default function TahsiliSourceLibrary() {
         )}
 
         {sourceQuery.data && (
+          <>
+          {sourceQuery.data.playlists?.length ? (
+            <section aria-labelledby="tahsili-playlists-heading" className="rounded-3xl border border-border bg-card p-5 shadow-sm sm:p-6">
+              <div className="mb-4">
+                <h2 id="tahsili-playlists-heading" className="text-lg font-black text-foreground">فيديوهات التأسيس على YouTube</h2>
+                <p className="mt-1 text-sm leading-6 text-muted-foreground">
+                  هذه روابط قوائم الفيديو الأصلية. تفتح على YouTube؛ ولا توجد منها نسخة فيديو مرفوعة أو مقصوصة داخل المنصة حتى الآن.
+                </p>
+              </div>
+              <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+                {sourceQuery.data.playlists
+                  .filter((playlist) => subjectFilter === "الكل" || playlist.subject === subjectFilter)
+                  .map((playlist) => (
+                    <a
+                      key={playlist.subject}
+                      href={playlist.url}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="flex min-h-12 items-center justify-between gap-3 rounded-xl border border-border bg-background px-4 py-3 text-sm font-bold text-foreground transition hover:border-primary/50 hover:bg-primary/[0.03]"
+                    >
+                      <span>تأسيس {playlist.subject}</span>
+                      <ExternalLink className="h-4 w-4 shrink-0 text-primary" aria-hidden="true" />
+                    </a>
+                  ))}
+              </div>
+            </section>
+          ) : null}
+
           <div className="grid items-start gap-5 lg:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)]">
             <section className="space-y-4" aria-label="مصادر التحصيلي">
               <div className="flex flex-wrap gap-2">
@@ -230,6 +259,7 @@ export default function TahsiliSourceLibrary() {
               )}
             </section>
           </div>
+          </>
         )}
       </div>
     </main>
