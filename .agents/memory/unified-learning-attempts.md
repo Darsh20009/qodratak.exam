@@ -73,3 +73,13 @@ attempts as performance evidence would contaminate scores and personalization.
 
 **How to apply:** Keep the unscored report separate from `LearningAttempt`,
 official exam reports, and level analytics until the source content is reviewed.
+
+On the Tahsili test page, clearly distinguish scored tests from available
+unscored practice. When no verified bank exists, make the unscored entry obvious
+and directly reachable rather than leaving students with only disabled cards.
+
+**Why:** Students can mistake the absence of approved scoring questions for a
+broken test system if the usable practice path is hidden below unavailable tests.
+
+**How to apply:** Keep the no-score/no-correction boundary visible and offer a
+direct jump to the unscored practice section whenever all verified counts are zero.

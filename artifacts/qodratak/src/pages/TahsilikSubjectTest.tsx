@@ -198,9 +198,9 @@ export default function TahsilikSubjectTest() {
           <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-primary/10 text-primary">
             <Target className="h-7 w-7" />
           </div>
-          <h1 className="text-3xl font-black text-foreground">اختبار تحصيلي شخصي لكل مادة</h1>
+          <h1 className="text-3xl font-black text-foreground">اختبارات التحصيلي</h1>
           <p className="mx-auto mt-2 max-w-2xl text-muted-foreground">
-            الأسئلة تأتي من البنك المعتمد. ومع كل اختبار محفوظ، يتجه التدريب تدريجيًا إلى المجالات التي تحتاج مراجعة.
+            الاختبار المصحح متاح عند وجود أسئلة معتمدة. ويمكنك الآن بدء تدريب غير مصحح من الأسئلة المتاحة ومراجعة إجاباتك ووقتك بعد الانتهاء.
           </p>
         </header>
 
@@ -226,14 +226,23 @@ export default function TahsilikSubjectTest() {
             <Card className="border-amber-500/30 bg-amber-500/[0.04]" role="status">
               <CardContent className="flex flex-col items-start gap-3 p-5 sm:flex-row sm:items-center sm:justify-between">
                 <div>
-                  <p className="font-black text-foreground">الاختبارات غير متاحة الآن لعدم وجود أسئلة معتمدة</p>
+                  <p className="font-black text-foreground">الاختبارات المصححة غير متاحة الآن</p>
                   <p className="mt-1 max-w-2xl text-sm leading-6 text-muted-foreground">
-                    لا نستخدم الأسئلة غير المراجعة في اختبار أو درجة. ستجدها أدناه كتدريب منفصل يحفظ اختياراتك ووقتك فقط.
+                    لا توجد أسئلة معتمدة لاحتساب الدرجات حاليًا. لكن يمكنك حل الأسئلة المتاحة كتدريب غير مصحح؛ تُحفظ اختياراتك ووقتك فقط.
                   </p>
                 </div>
-                <Button variant="outline" onClick={() => setLocation("/tahsili/sources")} className="shrink-0">
-                  افتح مكتبة المصادر
-                </Button>
+                <div className="flex shrink-0 flex-wrap gap-2">
+                  {overviewQuery.data.unscoredSubjects.some((subject) => subject.questionCount > 0) && (
+                    <Button
+                      onClick={() => document.getElementById("unscored-practice")?.scrollIntoView({ behavior: "smooth", block: "start" })}
+                    >
+                      ابدأ تدريبًا متاحًا
+                    </Button>
+                  )}
+                  <Button variant="outline" onClick={() => setLocation("/tahsili/sources")}>
+                    مكتبة المصادر
+                  </Button>
+                </div>
               </CardContent>
             </Card>
           )}
@@ -268,7 +277,11 @@ export default function TahsilikSubjectTest() {
                       </div>
                     </CardHeader>
                     <CardContent>
-                      {subject.attempts > 0 ? (
+                      {subject.verifiedQuestionCount === 0 ? (
+                        <p className="text-sm text-muted-foreground">
+                          لا يمكن بدء اختبار مصحح لهذه المادة قبل اعتماد أسئلتها.
+                        </p>
+                      ) : subject.attempts > 0 ? (
                         <div className="space-y-3">
                           <div className="flex items-center justify-between rounded-lg bg-muted/60 px-3 py-2 text-sm">
                             <span className="text-muted-foreground">دقتك من إجاباتك المعتمدة</span>
@@ -300,7 +313,7 @@ export default function TahsilikSubjectTest() {
               );
             })}
           </section>
-          <section className="space-y-4" aria-labelledby="unscored-practice-heading">
+          <section id="unscored-practice" className="scroll-mt-6 space-y-4" aria-labelledby="unscored-practice-heading">
             <div className="rounded-2xl border border-amber-500/30 bg-amber-500/[0.05] p-4 sm:p-5">
               <h2 id="unscored-practice-heading" className="flex items-center gap-2 text-lg font-black text-foreground">
                 <FileText className="h-5 w-5 text-amber-600" />
