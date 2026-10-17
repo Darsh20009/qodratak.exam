@@ -1,0 +1,114 @@
+import { connectToMongoDB, disconnectFromMongoDB } from "../../artifacts/api-server/src/mongodb/connection";
+import { TahsiliQuestion, TahsiliQuestionDraft } from "../../artifacts/api-server/src/mongodb/models";
+
+const SOURCE_ID = "ghasham-biology-2023";
+const REVIEWER = "source-verified-content-audit";
+const approvals = [
+  { id: "6ad0103163cd9c24f9f40dbd", page: 75, number: 12, subcategory: "أجهزة جسم الإنسان - التنفس والإخراج", text: "أين يحدث تبادل الغازات بين الهواء والدم في الرئتين؟", options: ["الشعب الهوائية", "الحويصلات الهوائية", "القصبات الهوائية", "القصيبات الهوائية"], answer: 1, explanation: "تحدث عملية تبادل الأكسجين وثاني أكسيد الكربون عبر الجدران الرقيقة للحويصلات الهوائية المحاطة بالشعيرات الدموية." },
+  { id: "6ad0103163cd9c24f9f40dbe", page: 75, number: 14, subcategory: "أجهزة جسم الإنسان - الإخراج", text: "أي الأعضاء الآتية ترشح الفضلات والماء والأملاح الزائدة من الدم لتكوين البول؟", options: ["القلب", "الكلية", "المعدة", "الرئة"], answer: 1, explanation: "ترشح الكليتان الدم وتزيلان الفضلات النيتروجينية والماء والأملاح الزائدة لتكوين البول." },
+  { id: "6ad0103163cd9c24f9f40dbf", page: 75, number: 15, subcategory: "أجهزة جسم الإنسان - الإخراج", text: "في أي جزء من الوحدة الكلوية يعاد امتصاص معظم الجلوكوز إلى الدم؟", options: ["الحالب", "محفظة بومان", "النبيب الكلوي", "الشريان الكلوي"], answer: 2, explanation: "يُعاد امتصاص الجلوكوز المرشح إلى الدم، ويحدث معظم ذلك في النبيب الملتوي القريب من الوحدة الكلوية." },
+  { id: "6ad0103163cd9c24f9f40dc0", page: 75, number: 16, subcategory: "أجهزة جسم الإنسان - الإخراج", text: "أي الأعضاء الآتية ليس من الأعضاء التي تطرح فضلات من الجسم؟", options: ["الطحال", "الكلية", "الرئة", "الجلد"], answer: 0, explanation: "تطرح الكلية الفضلات في البول، وتطرح الرئة ثاني أكسيد الكربون، ويسهم الجلد في طرح الماء والأملاح؛ أما الطحال فليس عضوًا إخراجيًا." },
+  { id: "6ad0103163cd9c24f9f40dc1", page: 75, number: 17, subcategory: "أجهزة جسم الإنسان - الإخراج", text: "أي تركيب في الكلية يرشح الدم ويسهم في تكوين البولينا في البول؟", options: ["قشرة الكلية", "النفرون", "الحالب", "المثانة"], answer: 1, explanation: "النفرون هو الوحدة الوظيفية للكلية؛ يرشح الدم ويعالج الراشح لإخراج الفضلات مثل اليوريا." },
+  { id: "6ad0103163cd9c24f9f40dc2", page: 75, number: 18, subcategory: "أجهزة جسم الإنسان - الدم", text: "ما المادة التي يتأثر تكوينها بنقص الحديد، فيضعف نقل الأكسجين؟", options: ["خلايا الدم البيضاء", "الهيموغلوبين", "إفراز البول", "بناء الثيروكسين"], answer: 1, explanation: "يدخل الحديد في تركيب الهيموغلوبين داخل خلايا الدم الحمراء؛ وقد يؤدي نقصه إلى فقر الدم وضعف نقل الأكسجين." },
+  { id: "6ad0103163cd9c24f9f40dc3", page: 75, number: 19, subcategory: "أجهزة جسم الإنسان - الدم", text: "لدى سعيد مولد الضد A وأجسام مضادة B، بينما لا يوجد لدى أحمد مولد ضد وتوجد لديه أجسام مضادة A وB. ما فصيلتا دمهما؟", options: ["أحمد O وسعيد A", "أحمد A وسعيد B", "أحمد AB وسعيد A", "أحمد B وسعيد A"], answer: 0, explanation: "وجود مولد الضد A مع الجسم المضاد B يدل على فصيلة A. وغياب مولدات الضد مع وجود الجسمين المضادين A وB يدل على فصيلة O." },
+  { id: "6ad0103163cd9c24f9f40dc4", page: 75, number: 20, subcategory: "أجهزة جسم الإنسان - الدم", text: "أين يقاس ضغط الدم عادةً باستخدام الكُفّة الطبية؟", options: ["في الشرايين", "داخل القلب", "بسرعة تدفق الدم", "في الأوردة"], answer: 0, explanation: "يقيس الجهاز ضغط الدم في الشرايين، وغالبًا في الشريان العضدي في الذراع." },
+  { id: "6ad0103163cd9c24f9f40dc5", page: 75, number: 21, subcategory: "أجهزة جسم الإنسان - الدم", text: "ضمن نظام ABO فقط، ما الفصائل التي يمكن أن يستقبل منها صاحب فصيلة A خلايا دم حمراء؟", options: ["A فقط", "A أو O", "AB", "B"], answer: 1, explanation: "يمكن لصاحب فصيلة A استقبال خلايا حمراء من A أو O ضمن نظام ABO؛ ويجب أيضًا التحقق من عامل Rh والتوافق الطبي." },
+  { id: "6ad0103163cd9c24f9f40dc6", page: 75, number: 22, subcategory: "أجهزة جسم الإنسان - الدم", text: "أي عملية نقل دم في المخطط غير متوافقة؟", options: ["O إلى A", "O إلى B", "O إلى AB", "AB إلى B"], answer: 3, explanation: "لا يمكن لصاحب فصيلة B استقبال خلايا حمراء من AB؛ لأن خلايا AB تحمل مولد الضد A الذي يهاجمه الجسم المضاد A لدى متلقي B. حُولت الأسهم إلى أزواج نصية." },
+  { id: "6ad0103163cd9c24f9f40dc7", page: 75, number: 23, subcategory: "أجهزة جسم الإنسان - الدم", text: "ما الوظيفة الأساسية للفيبرين في الجسم؟", options: ["تجلط الدم", "نقل الأكسجين", "مقاومة الجراثيم", "نقل الفضلات"], answer: 0, explanation: "تكوّن خيوط الفيبرين شبكة الخثرة التي تساعد على إيقاف النزف." },
+  { id: "6ad0103163cd9c24f9f40dc8", page: 76, number: 24, subcategory: "أجهزة جسم الإنسان - الدم", text: "أي مكوّن من مكونات الدم يشارك في الاستجابة لعدوى بكتيرية؟", options: ["كريات الدم الحمراء", "الصفائح الدموية", "كريات الدم البيضاء", "البلازما"], answer: 2, explanation: "تدافع كريات الدم البيضاء عن الجسم ضد مسببات المرض، ومنها البكتيريا." },
+  { id: "6ad0103163cd9c24f9f40dc9", page: 76, number: 25, subcategory: "أجهزة جسم الإنسان - الدم", text: "أي فصيلة دم لا تحمل خلاياها مولد الضد A ولا مولد الضد B؟", options: ["A", "AB", "B", "O"], answer: 3, explanation: "لا تحمل خلايا الدم الحمراء من فصيلة O مولدَي الضد A وB." },
+  { id: "6ad0103163cd9c24f9f40dcb", page: 76, number: 27, subcategory: "أجهزة جسم الإنسان - الدوران", text: "أي الأوعية الدموية تكون طبقة العضلات الملساء في جدارها أكثر سماكة؟", options: ["الأوردة", "البلازما", "الشرايين", "الشعيرات الدموية"], answer: 2, explanation: "تحتاج الشرايين إلى جدران عضلية أكثر سماكة ومرونة لتحمل ضغط الدم الخارج من القلب." },
+  { id: "6ad0103163cd9c24f9f40dcc", page: 76, number: 28, subcategory: "أجهزة جسم الإنسان - الدوران", text: "أي وعاء دموي ينقل الدم غير المؤكسج من القلب إلى الرئتين؟", options: ["الشريان الأبهر", "الأوردة الرئوية", "الشريان الرئوي", "الصمامات"], answer: 2, explanation: "ينقل الشريان الرئوي الدم غير المؤكسج من البطين الأيمن إلى الرئتين." },
+  { id: "6ad0103163cd9c24f9f40dcd", page: 76, number: 29, subcategory: "أجهزة جسم الإنسان - الدم", text: "إذا حملت خلايا الدم الحمراء مولد الضد A فقط، فما فصيلة الدم؟", options: ["O", "AB", "A", "B"], answer: 2, explanation: "وجود مولد الضد A دون B على خلايا الدم الحمراء يدل على فصيلة A. استُبدل الاعتماد على الشكل بوصف المعلومة." },
+  { id: "6ad0103163cd9c24f9f40dce", page: 76, number: 30, subcategory: "أجهزة جسم الإنسان - الدوران", text: "أي شريان يحمل دمًا غير مؤكسج من القلب؟", options: ["الكلوي", "الأبهر", "الرئوي", "الكعبري"], answer: 2, explanation: "الشريان الرئوي استثناء بين الشرايين؛ إذ ينقل الدم غير المؤكسج من القلب إلى الرئتين." },
+  { id: "6ad0103163cd9c24f9f40dcf", page: 76, number: 31, subcategory: "أجهزة جسم الإنسان - الدوران", text: "أي حجرة من القلب تضخ الدم المؤكسج إلى أنحاء الجسم؟", options: ["الأذين الأيمن", "البطين الأيسر", "الأذين الأيسر", "البطين الأيمن"], answer: 1, explanation: "يضخ البطين الأيسر الدم المؤكسج عبر الشريان الأبهر إلى أنحاء الجسم. استُبدل رقم الرسم باسم الحجرة." },
+  { id: "6ad0103163cd9c24f9f40dd0", page: 76, number: 32, subcategory: "أجهزة جسم الإنسان - الإخراج", text: "أين يبدأ ترشيح الماء والمواد الذائبة من الدم في الوحدة الكلوية؟", options: ["الكبيبة داخل محفظة بومان", "النبيب الملتوي القريب", "عروة هنلي", "القناة الجامعة"], answer: 0, explanation: "يبدأ الترشيح في الكبيبة، ويدخل الراشح إلى محفظة بومان قبل مروره بأجزاء النبيب الكلوي." },
+  { id: "6ad0103163cd9c24f9f40dd1", page: 76, number: 33, subcategory: "أجهزة جسم الإنسان - الدم", text: "أي مكوّن في الدم ينقل معظم الأدوية الذائبة إلى أنحاء الجسم؟", options: ["الصفائح الدموية", "البلازما", "كريات الدم الحمراء", "كريات الدم البيضاء"], answer: 1, explanation: "تنقل بلازما الدم كثيرًا من المواد الذائبة، ومنها أدوية عديدة، إلى أنسجة الجسم." },
+  { id: "6ad0103163cd9c24f9f40dd2", page: 76, number: 34, subcategory: "أجهزة جسم الإنسان - الدوران", text: "أي حجرة من القلب تضخ الدم إلى الجسم؟", options: ["الأذين الأيمن", "البطين الأيسر", "الأذين الأيسر", "البطين الأيمن"], answer: 1, explanation: "يضخ البطين الأيسر الدم إلى الدورة الدموية الجهازية عبر الشريان الأبهر." },
+  { id: "6ad0103163cd9c24f9f40dd3", page: 76, number: 35, subcategory: "أجهزة جسم الإنسان - الدم", text: "إذا حملت خلايا الدم الحمراء مولد الضد B فقط، فما فصيلة الدم؟", options: ["A", "AB", "B", "O"], answer: 2, explanation: "وجود مولد الضد B دون A على خلايا الدم الحمراء يدل على فصيلة B. استُبدل الاعتماد على الشكل بوصف المعلومة." },
+  { id: "6ad0103163cd9c24f9f40dd4", page: 76, number: 36, subcategory: "أجهزة جسم الإنسان - التنفس", text: "ما التركيب الذي يفصل التجويف الصدري عن التجويف البطني؟", options: ["عضلات الصدر", "الحجاب الحاجز", "عظام الأضلاع", "القصبة الهوائية"], answer: 1, explanation: "يفصل الحجاب الحاجز التجويف الصدري عن التجويف البطني، ويساعد أيضًا على التنفس." },
+  { id: "6ad0103163cd9c24f9f40dd5", page: 77, number: 37, subcategory: "أجهزة جسم الإنسان - الدوران", text: "ما وظيفة الصمامات الموجودة في الأوردة؟", options: ["منع رجوع الدم في الاتجاه المعاكس", "تحمل ضغط الدم القادم من القلب", "ترشيح الدم من الجراثيم", "زيادة سماكة جدار الوريد"], answer: 0, explanation: "تساعد صمامات الأوردة على منع رجوع الدم، خصوصًا عند عودته من الأطراف باتجاه القلب." },
+  { id: "6ad0103163cd9c24f9f40dd6", page: 77, number: 38, subcategory: "أجهزة جسم الإنسان - الدم", text: "ما الدور الذي يؤديه الحديد في الدم؟", options: ["بناء العظام", "تقوية الأسنان", "الدخول في تركيب الهيموغلوبين", "تكوين المفاصل"], answer: 2, explanation: "يدخل الحديد في تركيب الهيموغلوبين الذي يحمل الأكسجين داخل كريات الدم الحمراء." },
+  { id: "6ad0103163cd9c24f9f40dd7", page: 77, number: 39, subcategory: "أجهزة جسم الإنسان - الدم", text: "إذا لم تُعرف فصيلة المريض بعد وكانت الحاجة طارئة، فما فصيلة خلايا الدم الحمراء التي تُستخدم عادةً كمتبرع عام؟", options: ["O سالب", "A", "B", "AB"], answer: 0, explanation: "تُستخدم خلايا O سالب عند الحاجة إلى متبرع عام قبل معرفة الفصيلة، مع اتباع بروتوكولات بنك الدم والتحقق من التوافق بأسرع وقت." },
+  { id: "6ad0103163cd9c24f9f40dd8", page: 77, number: 40, subcategory: "أجهزة جسم الإنسان - الدم", text: "أي مكونات الدم تنقل معظم الأكسجين إلى خلايا الجسم؟", options: ["كريات الدم الحمراء", "كريات الدم البيضاء", "الصفائح الدموية", "البلازما"], answer: 0, explanation: "يحمل الهيموغلوبين في كريات الدم الحمراء معظم الأكسجين من الرئتين إلى أنسجة الجسم." },
+  { id: "6ad0103163cd9c24f9f40dd9", page: 77, number: 41, subcategory: "أجهزة جسم الإنسان - الدم", text: "إذا كانت فصيلة المتبرع AB، فأي فصيلة يمكنها استقبال خلايا دمه الحمراء ضمن نظام ABO؟", options: ["A", "B", "AB", "O"], answer: 2, explanation: "تحمل خلايا AB مولدَي الضد A وB؛ لذلك لا يستقبلها ضمن نظام ABO إلا صاحب فصيلة AB. يجب أيضًا مراعاة عامل Rh." },
+  { id: "6ad0103163cd9c24f9f40dda", page: 77, number: 42, subcategory: "أجهزة جسم الإنسان - التنفس", text: "أي تركيب ينقبض وينبسط ليساعد على الشهيق والزفير؟", options: ["الحجاب الحاجز", "القصبة الهوائية", "الحويصلات الهوائية", "الشعب الهوائية"], answer: 0, explanation: "ينقبض الحجاب الحاجز في الشهيق وينبسط في الزفير، مع مساهمة العضلات الوربية في حركة القفص الصدري." },
+  { id: "6ad0103163cd9c24f9f40ddb", page: 77, number: 43, subcategory: "أجهزة جسم الإنسان - الدوران", text: "أي الأوعية الدموية سميكة ومرنة لتتحمل ضغط الدم المرتفع الخارج من القلب؟", options: ["الأوردة", "الشرايين", "الشعيرات الدموية", "العظام"], answer: 1, explanation: "تمتلك الشرايين جدرانًا سميكة ومرنة تساعدها على تحمل ضغط الدم النابض الخارج من القلب." },
+  { id: "6ad0103163cd9c24f9f40ddc", page: 77, number: 44, subcategory: "أجهزة جسم الإنسان - الدم", text: "ضمن نظام ABO، إلى أي فصيلة يمكن لصاحب فصيلة AB التبرع بخلايا الدم الحمراء؟", options: ["A", "B", "AB", "O"], answer: 2, explanation: "يمكن لصاحب فصيلة AB التبرع بخلايا الدم الحمراء لصاحب AB فقط ضمن نظام ABO، بسبب وجود مولدَي الضد A وB." },
+  { id: "6ad0103163cd9c24f9f40ddd", page: 77, number: 45, subcategory: "أجهزة جسم الإنسان - الدوران", text: "أي صمام يفصل البطين الأيمن عن الشريان الرئوي؟", options: ["الصمام ثلاثي الشرفات", "الصمام الرئوي", "الصمام التاجي", "الصمام الأبهري"], answer: 1, explanation: "يقع الصمام الرئوي بين البطين الأيمن والشريان الرئوي، ويمنع رجوع الدم إلى البطين." },
+  { id: "6ad0103163cd9c24f9f40dde", page: 77, number: 46, subcategory: "أجهزة جسم الإنسان - الدوران", text: "ما نوع الأوعية الدقيقة التي تصل الشرايين بالأوردة ويحدث عبر جدرانها تبادل المواد؟", options: ["الشرايين", "الأوردة", "الشعيرات الدموية", "الصمامات"], answer: 2, explanation: "تصل الشعيرات الدموية بين الشُرينات والوريدات، وتسمح جدرانها الرقيقة بتبادل الغازات والمواد." },
+  { id: "6ad0103163cd9c24f9f40ddf", page: 77, number: 47, subcategory: "أجهزة جسم الإنسان - الدوران", text: "أين يحدث تبادل الأكسجين وثاني أكسيد الكربون بين الدم وأنسجة الجسم؟", options: ["العقد اللمفاوية", "الشعيرات الدموية", "الأوردة", "الشرايين"], answer: 1, explanation: "يحدث تبادل الغازات والمواد بين الدم والأنسجة عبر الجدران الرقيقة للشعيرات الدموية." },
+  { id: "6ad0103163cd9c24f9f40de0", page: 77, number: 48, subcategory: "أجهزة جسم الإنسان - الدوران", text: "أي حجرة من القلب تستقبل الدم غير المؤكسج العائد من الجسم؟", options: ["الأذين الأيمن", "الأذين الأيسر", "البطين الأيمن", "البطين الأيسر"], answer: 0, explanation: "يصل الدم غير المؤكسج العائد من الجسم إلى الأذين الأيمن عبر الوريدين الأجوفين." },
+  { id: "6ad0103163cd9c24f9f40de1", page: 78, number: 1, subcategory: "أجهزة جسم الإنسان - الهرمونات والتغذية", text: "بعد تناول كمية كبيرة من الكربوهيدرات وارتفاع سكر الدم، ماذا يحدث عادة لإفراز الإنسولين؟", options: ["يقل", "يزداد", "لا يتغير", "ينعدم"], answer: 1, explanation: "يحفز ارتفاع الجلوكوز في الدم خلايا بيتا في البنكرياس على زيادة إفراز الإنسولين للمساعدة على خفضه." },
+  { id: "6ad0103163cd9c24f9f40de2", page: 78, number: 2, subcategory: "أجهزة جسم الإنسان - الهرمونات والتغذية", text: "أين تقع الغدتان الكظريتان؟", options: ["أسفل الدماغ", "أسفل الرقبة", "أعلى الغدة الدرقية", "فوق الكليتين"], answer: 3, explanation: "تقع غدة كظرية فوق كل كلية." },
+  { id: "6ad0103163cd9c24f9f40de3", page: 78, number: 3, subcategory: "أجهزة جسم الإنسان - الهرمونات والتغذية", text: "أي مركب يدخل في تركيب الدهون الثلاثية مع الأحماض الدهنية؟", options: ["الأملاح", "الجليسرول", "الأحماض الأمينية", "البروتينات"], answer: 1, explanation: "يتكون جزيء الدهون الثلاثية من جليسرول مرتبط بثلاثة أحماض دهنية." },
+  { id: "6ad0103163cd9c24f9f40de4", page: 78, number: 4, subcategory: "أجهزة جسم الإنسان - الهرمونات والتغذية", text: "كيف يخزن الجسم الفائض من السكريات الأحادية بعد تحويلها؟", options: ["جلوكوز حر", "سليلوز", "جلايكوجين", "جليسرول"], answer: 2, explanation: "يحول الجسم فائض الجلوكوز إلى جلايكوجين ويخزنه أساسًا في الكبد والعضلات." },
+  { id: "6ad0103163cd9c24f9f40de5", page: 78, number: 5, subcategory: "أجهزة جسم الإنسان - الهرمونات والتغذية", text: "أي المواد الآتية بروتين؟", options: ["السليلوز", "إنزيم البيبسين", "الجلوكوز", "الجليسرول"], answer: 1, explanation: "البيبسين إنزيم بروتيني يهضم البروتينات في المعدة؛ أما الجلوكوز والجليسرول فليسَا بروتينين." },
+  { id: "6ad0103163cd9c24f9f40de6", page: 78, number: 6, subcategory: "أجهزة جسم الإنسان - الهرمونات والتغذية", text: "أي هرمون يساعد على تحفيز انقباضات الرحم أثناء الولادة؟", options: ["الأوكسيتوسين", "التستوستيرون", "الكورتيزول", "الإنسولين"], answer: 0, explanation: "يساعد هرمون الأوكسيتوسين على تحفيز انقباض عضلات الرحم أثناء المخاض." },
+  { id: "6ad0103163cd9c24f9f40de7", page: 78, number: 7, subcategory: "أجهزة جسم الإنسان - الهرمونات والتغذية", text: "أي مجموعة تصف وظائف تؤديها بروتينات الجسم؟", options: ["تخزين الطاقة وتشكيل الحواجز فقط", "نقل المواد وتسريع التفاعلات وتكوين بعض الهرمونات", "تخزين المعلومات الوراثية ونقلها", "تخزين الطاقة وتوفير الدعم التركيبي فقط"], answer: 1, explanation: "تؤدي البروتينات وظائف متنوعة، منها نقل المواد والعمل إنزيمات وتكوين بعض الهرمونات. صيغ السؤال عن البروتينات المصنوعة من الأحماض الأمينية، لا عن الأحماض الأمينية منفردة." },
+  { id: "6ad0103163cd9c24f9f40de8", page: 78, number: 8, subcategory: "أجهزة جسم الإنسان - الهرمونات والتغذية", text: "أي هرمون يفرز في الاستجابة السريعة للخوف والطوارئ ويرفع نبض القلب؟", options: ["الكورتيزول", "الإبينفرين", "الإنسولين", "الألدوستيرون"], answer: 1, explanation: "يفرز الإبينفرين (الأدرينالين) في استجابة الكر والفر السريعة، فيرفع نبض القلب ويهيئ الجسم للطوارئ." },
+  { id: "6ad0103163cd9c24f9f40de9", page: 78, number: 9, subcategory: "أجهزة جسم الإنسان - الهرمونات والتغذية", text: "أي مما يأتي مثال على الهضم الكيميائي لا الهضم الميكانيكي؟", options: ["مضغ الطعام وتقطيعه بالفم", "انقباض عضلات المعدة لتفتيت الطعام", "دفع الطعام بالحركة الدودية", "تحليل النشا بإنزيم الأميليز في اللعاب"], answer: 3, explanation: "الهضم الكيميائي يكسر الجزيئات بوساطة الإنزيمات؛ فالأميليز يحلل النشا، بينما المضغ والانقباض والحركة الدودية عمليات ميكانيكية." },
+  { id: "6ad0103163cd9c24f9f40dea", page: 78, number: 10, subcategory: "أجهزة جسم الإنسان - الهرمونات والتغذية", text: "أي مما يأتي لا يرتفع عادة بتأثير الإبينفرين في استجابة الطوارئ؟", options: ["ضغط الدم", "مستوى الكالسيوم", "مستوى السكر", "نبضات القلب"], answer: 1, explanation: "يرفع الإبينفرين نبض القلب وضغط الدم وسكر الدم ضمن استجابة الطوارئ؛ وليس ارتفاع الكالسيوم أثرًا مباشرًا معتادًا له." },
+  { id: "6ad0103163cd9c24f9f40deb", page: 78, number: 11, subcategory: "أجهزة جسم الإنسان - الهرمونات والتغذية", text: "ما الرقم الهيدروجيني التقريبي المناسب لعمل إنزيم البيبسين في المعدة؟", options: ["8", "2", "6", "12"], answer: 1, explanation: "يعمل البيبسين بكفاءة في الوسط الحمضي للمعدة، ويقارب الرقم الهيدروجيني 2." },
+  { id: "6ad0103163cd9c24f9f40dec", page: 78, number: 12, subcategory: "أجهزة جسم الإنسان - الهرمونات والتغذية", text: "ما التغير الذي قد يسهم في حدوث الإمساك؟", options: ["زيادة الماء في الكيموس", "تسارع الهضم", "قلة الماء في محتويات الأمعاء", "زيادة الألبان وحدها"], answer: 2, explanation: "يؤدي امتصاص كمية كبيرة من الماء من محتويات الأمعاء إلى براز أكثر صلابة، وقد يسهم ذلك في الإمساك." },
+] as const;
+
+const rejected = [
+  { id: "6ad0103163cd9c24f9f40dca", page: 76, number: 26, note: "السؤال يطلب عضوًا يمر به الجهازان التنفسي والهضمي، لكن الخيارات لا تتضمن البلعوم، وهو الإجابة الصحيحة. المريء لا يمر به الهواء طبيعيًا؛ لذا لا يوجد خيار صحيح بين الخيارات المنشورة." },
+] as const;
+
+async function main() {
+  const apply = process.argv.includes("--apply");
+  if (!await connectToMongoDB()) throw new Error("MongoDB connection unavailable.");
+  if (TahsiliQuestionDraft.db.name !== "test") throw new Error("Refusing any database except Replit preview database test.");
+  const ids = [...approvals.map((item) => item.id), ...rejected.map((item) => item.id)];
+  const drafts = await TahsiliQuestionDraft.find({ _id: { $in: ids }, sourceId: SOURCE_ID })
+    .select("_id questionId sourceKey sourceId sourceOrdinal sourcePage sourceBlockIndex sourceBook topic difficulty status")
+    .lean() as any[];
+  const byId = new Map(drafts.map((draft) => [String(draft._id), draft]));
+  const failures: string[] = [];
+  if (drafts.length !== ids.length) failures.push(`expected ${ids.length} source rows, found ${drafts.length}`);
+  for (const item of approvals) {
+    const draft = byId.get(item.id);
+    if (!draft || draft.sourcePage !== item.page || !draft.sourceKey || !["pending_review", "approved"].includes(draft.status)) failures.push(`q${item.number}: source/page/status mismatch`);
+    if (item.options.length !== 4 || new Set(item.options).size !== 4 || item.options.some((option) => !option.trim()) || item.answer < 0 || item.answer > 3) failures.push(`q${item.number}: invalid cleaned options/key`);
+    const published = draft?.sourceKey ? await TahsiliQuestion.findOne({ sourceKey: draft.sourceKey }).select("text correctOptionIndex").lean() as any : null;
+    if (draft?.status === "approved" && (!published || published.text !== item.text || published.correctOptionIndex !== item.answer)) failures.push(`q${item.number}: approved draft does not match its published record`);
+    if (published && (published.text !== item.text || published.correctOptionIndex !== item.answer)) failures.push(`q${item.number}: published record conflicts with this review`);
+  }
+  for (const item of rejected) {
+    const draft = byId.get(item.id);
+    if (!draft || draft.sourcePage !== item.page || !draft.sourceKey || !["pending_review", "rejected"].includes(draft.status)) failures.push(`rejected q${item.number}: source/page/status mismatch`);
+    const published = draft?.sourceKey ? await TahsiliQuestion.findOne({ sourceKey: draft.sourceKey }).select("_id").lean() : null;
+    if (published) failures.push(`rejected q${item.number}: a published record exists and requires explicit reconciliation`);
+  }
+  if (failures.length) throw new Error(JSON.stringify({ mode: apply ? "apply" : "dry-run", failures }));
+  const summary = { mode: apply ? "apply" : "dry-run", database: TahsiliQuestionDraft.db.name, sourceId: SOURCE_ID, reviewed: drafts.length, approved: approvals.length, rejected: rejected.length, changed: false };
+  if (!apply) { console.log(JSON.stringify(summary, null, 2)); return; }
+  const reviewedAt = new Date();
+  for (const item of approvals) {
+    const draft = byId.get(item.id)!;
+    const sourceQuestionNumber = draft.sourceOrdinal * 100_000 + draft.sourcePage * 100 + draft.sourceBlockIndex;
+    await TahsiliQuestion.findOneAndUpdate({ sourceKey: draft.sourceKey }, { $set: {
+      questionId: draft.questionId, sourceId: draft.sourceId, sourceKey: draft.sourceKey, sourceOrdinal: draft.sourceOrdinal,
+      subject: "أحياء", subcategory: item.subcategory, text: item.text, options: [...item.options], correctOptionIndex: item.answer,
+      difficulty: draft.difficulty || "intermediate", topic: item.subcategory, explanation: item.explanation,
+      sourcePage: draft.sourcePage, sourceQuestionNumber, printedQuestionNumber: item.number, sourceBlockIndex: draft.sourceBlockIndex,
+      ...(draft.sourceImageObjectKey ? { sourceImageObjectKey: draft.sourceImageObjectKey } : {}),
+      sourceBook: draft.sourceBook, answerConfidence: "verified", reviewedBy: REVIEWER, reviewedAt, updatedAt: reviewedAt,
+    }, $setOnInsert: { createdAt: reviewedAt } }, { upsert: true, returnDocument: "after", runValidators: true });
+    await TahsiliQuestionDraft.updateOne({ _id: draft._id, sourceId: SOURCE_ID, status: { $in: ["pending_review", "approved"] } }, { $set: {
+      status: "approved", subject: "أحياء", subcategory: item.subcategory, text: item.text, options: [...item.options], explanation: item.explanation,
+      reviewedBy: REVIEWER, reviewedAt, reviewerNotes: "تمت مراجعة المفتاح والشرح مع المصدر والمعلومة العلمية، مع تصحيح الخيارات الملتبسة وتحويل الإشارات البصرية إلى أسئلة نصية واضحة عند الحاجة.", updatedAt: reviewedAt,
+    } });
+  }
+  for (const item of rejected) {
+    const draft = byId.get(item.id)!;
+    await TahsiliQuestionDraft.updateOne({ _id: draft._id, sourceId: SOURCE_ID, status: { $in: ["pending_review", "rejected"] } }, { $set: {
+      status: "rejected", reviewedBy: REVIEWER, reviewedAt, reviewerNotes: item.note, updatedAt: reviewedAt,
+    } });
+  }
+  summary.changed = true; console.log(JSON.stringify(summary, null, 2));
+}
+main().catch((error) => { console.error(error instanceof Error ? error.message : "Review batch failed."); process.exitCode = 1; })
+  .finally(async () => { await disconnectFromMongoDB(); });
