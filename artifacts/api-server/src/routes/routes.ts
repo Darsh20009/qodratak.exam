@@ -70,6 +70,7 @@ import {
   verifyPhoneOtp,
   verifyPhoneVerificationToken,
 } from '../services/phoneOtpService';
+import { authPhoneStorageCandidates } from '../services/authPhoneLookup';
 import { sendWhatsAppText } from '../services/whatsappService';
 import { readDeviceTrials, writeDeviceTrials } from '../services/deviceTrialStore';
 import { getClientIp } from '../middleware/sessionIp';
@@ -3327,11 +3328,7 @@ function hasUsableUserPassword(password: unknown) {
 }
 
 function phoneStorageCandidates(phone: string) {
-  const candidates = new Set([phone, `+${phone}`]);
-  if (phone.startsWith('966') && phone.length === 12) {
-    candidates.add(`0${phone.slice(3)}`);
-  }
-  return [...candidates];
+  return authPhoneStorageCandidates(phone);
 }
 
 function developmentDemoUsers() {
@@ -3481,7 +3478,7 @@ function developmentDemoUsers() {
       if (mongoose.connection.readyState === 1) {
         const { Admin } = await import('./mongodb/models');
         const adminDoc = await Admin.findOne({
-          phone: verification.phone,
+          phone: { $in: phoneStorageCandidates(verification.phone) },
           isActive: true,
         });
         if (adminDoc) {
