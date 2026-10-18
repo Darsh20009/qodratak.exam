@@ -12,7 +12,7 @@
 - [Dark-mode page contrast](dark-mode-page-contrast.md) — legacy pages use fixed light colors; keep contrast overrides scoped to the shared app surface.
 - [Subscription entitlement consistency](subscription-entitlement-consistency.md) — keep paid access server-derived; trials are account-bound and expire into one daily Qudrat test.
 - [Question image import compatibility](question-image-import.md) — keep the first-image fields for legacy consumers while treating multi-image extraction as optional and reviewable.
-- [Computer-bank content rights](computer-bank-51-70-content-rights.md) — permission covers uploaded banks 51–90, including watermark edits to their images.
+- [Computer-bank content rights](computer-bank-51-70-content-rights.md) — permission covers uploaded banks 51–110 and image-mark cleanup; keep uncertain keys unscored.
 - [Question-number badge cleanup](question-number-badge-cleanup.md) — badge positions vary; locate the capsule geometry and mask only digit ink inside the number disc.
 - [Public Forms answer-key boundary](public-forms-answer-key.md) — public respondent HTML can expose prompts and options, but its numeric metadata is not a reliable answer key.
 - [Real administrator access](development-admin-fixture.md) — shared demo admin login is removed; use active traceable administrators and isolated test fixtures.
@@ -42,6 +42,7 @@
 - [Local foundation video playback](local-foundation-video-playback.md) — local MP4 lessons need native video playback and byte-range serving, not provider iframes.
 - [Foundation resource availability](foundation-resource-availability.md) — show only resources present in published content; mark missing books, files, and videos «قريبًا».
 - [Artifact build environment](artifact-build-environment.md) — standalone Vite builds need the artifact’s injected PORT and BASE_PATH values.
+- [Foundation media routing](foundation-media-preview-routing.md) — route R2-backed foundation assets through the API artifact path in Replit previews to avoid Vite’s HTML fallback.
 - [Quantitative video timing calibration](quantitative-video-timing-calibration.md) — visually verify each question-badge prototype against its actual video frame before using it.
 - [Arabic PDF text normalization](arabic-pdf-text-normalization.md) — normalize PyMuPDF Arabic text with NFKC before matching printed answer labels.
 - [FFmpeg progress reporting](ffmpeg-progress-reporting.md) — configure progress at launch; SIGUSR1 terminated a running FFmpeg job and left partial output.

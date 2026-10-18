@@ -38,6 +38,10 @@ export function resolveFoundationAssetUrl(rawUrl: string): string {
     return new URL(relativePath, baseUrl).toString();
   }
 
+  if (relativePath.startsWith(QUANTITATIVE_ASSET_PREFIX)) {
+    return new URL(`/api/${relativePath}`, window.location.origin).toString();
+  }
+
   const configuredBase = import.meta.env.BASE_URL || "/";
   const basePath = configuredBase.endsWith("/") ? configuredBase : `${configuredBase}/`;
   const baseUrl = new URL(basePath, window.location.origin);

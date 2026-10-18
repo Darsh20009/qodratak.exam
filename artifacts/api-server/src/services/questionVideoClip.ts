@@ -59,7 +59,7 @@ export function computerBankQuestionIdentity(id?: string) {
   const match = /^quantitative-computer-bank-(\d+)-(\d+)$/.exec(id || '');
   if (!match) return null;
   const bankNumber = Number(match[1]), questionNumber = Number(match[2]);
-  return bankNumber >= 1 && bankNumber <= 90 && questionNumber >= 1 && questionNumber <= 48
+  return bankNumber >= 1 && bankNumber <= 110 && questionNumber >= 1 && questionNumber <= 48
     ? { bankNumber, questionNumber } : null;
 }
 

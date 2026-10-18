@@ -492,7 +492,9 @@ function FoundationQuizCard({ lesson }: { lesson: FoundationContent }) {
         <div>
           <div className="flex items-center gap-2 text-primary">
             <ListChecks className="h-4 w-4" />
-            <p className="text-xs font-black">اختبار في صفحة مستقلة</p>
+            <p className="text-xs font-black">
+              {quiz.scoringMode === "unscored" ? "تدريب بلا درجة" : "اختبار في صفحة مستقلة"}
+            </p>
           </div>
           <h3 className="mt-1 text-base font-black text-foreground">{quiz.title}</h3>
           <p className="mt-1 text-xs leading-6 text-muted-foreground">
@@ -504,7 +506,7 @@ function FoundationQuizCard({ lesson }: { lesson: FoundationContent }) {
           className="shrink-0 rounded-xl font-black"
           onClick={() => setLocation(`/foundation/computer-bank-test/${lesson._id}`)}
         >
-          ابدأ الاختبار
+          {quiz.scoringMode === "unscored" ? "ابدأ التدريب" : "ابدأ الاختبار"}
         </Button>
       </div>
     </section>

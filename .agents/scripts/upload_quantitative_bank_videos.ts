@@ -1,16 +1,25 @@
 import { execFileSync } from "node:child_process";
 import { mkdir, readFile, stat } from "node:fs/promises";
-import { resolve } from "node:path";
+import { dirname, resolve } from "node:path";
+import { fileURLToPath } from "node:url";
 import { fetchR2VerbalObject, writeR2File } from "../../artifacts/api-server/src/services/qudratVerbalBookFilesService";
 
 type BankVideo = { bankNumber: number; sourceFile: string };
 
 async function main() {
-  const root = resolve(process.cwd(), "..");
-  const manifestPath = resolve(root, ".agents/scripts/quantitative-bank-51-70-video-manifest.json");
+  const root = resolve(dirname(fileURLToPath(import.meta.url)), "../..");
+  const manifestPath = resolve(
+    root,
+    process.env.QUANTITATIVE_BANK_VIDEO_MANIFEST ??
+      ".agents/scripts/quantitative-bank-51-70-video-manifest.json",
+  );
   const manifest = JSON.parse(await readFile(manifestPath, "utf8")) as BankVideo[];
   const attached = resolve(root, "attached_assets");
-  const normalized = resolve(root, "generated-artifacts/quantitative-bank-51-70/normalized");
+  const normalized = resolve(
+    root,
+    process.env.QUANTITATIVE_BANK_VIDEO_OUTPUT_DIR ??
+      "generated-artifacts/quantitative-bank-51-70/normalized",
+  );
   await mkdir(normalized, { recursive: true });
 
   for (const item of manifest) {

@@ -14660,6 +14660,53 @@ app.post("/api/auth/register", async (req: Request, res: Response) => {
            return res.status(400).json({ error: 'الإجابة خارج خيارات السؤال' });
          }
        }
+      if (lesson.quiz.scoringMode === 'unscored') {
+        const answeredQuestions = answerMap.size;
+        const totalQuestions = questionIds.length;
+        const skippedQuestions = totalQuestions - answeredQuestions;
+        const durationSeconds = Math.min(
+          10_800,
+          Math.max(0, Number(req.body?.timeTakenSeconds) || 0),
+        );
+        const idempotencyKey = typeof req.body?.idempotencyKey === 'string'
+          && req.body.idempotencyKey.trim().length <= 120
+          ? req.body.idempotencyKey.trim()
+          : crypto.randomUUID();
+        const attemptId = crypto.createHash('sha256')
+          .update(`${String(userId)}:${String(lesson._id)}:${idempotencyKey}`)
+          .digest('hex')
+          .slice(0, 24);
+        const questionDetails = questionIds.map((questionId: string) => ({
+          questionId,
+          selectedOptionIndex: answerMap.get(questionId) ?? null,
+        }));
+        await mongoose.connection.collection('foundationunscoredquizattempts').updateOne(
+          { _id: new mongoose.Types.ObjectId(attemptId) },
+          {
+            $setOnInsert: {
+              studentId: String(userId),
+              lessonId: String(lesson._id),
+              lessonTitle: String(lesson.title || lesson.quiz.title || 'تدريب تأسيسي'),
+              idempotencyKey,
+              totalQuestions,
+              answeredQuestions,
+              skippedQuestions,
+              durationSeconds,
+              questionDetails,
+              completedAt: new Date(),
+            },
+          },
+          { upsert: true },
+        );
+        return res.json({
+          unscored: true,
+          totalQuestions,
+          answeredQuestions,
+          skippedQuestions,
+          durationSeconds,
+          questionDetails,
+        });
+      }
       let correctAnswers = 0;
       let answeredQuestions = 0;
       const questionDetails = questionIds.map((questionId: string) => {
@@ -14743,7 +14790,7 @@ app.post("/api/auth/register", async (req: Request, res: Response) => {
       });
     } catch (error) {
       console.error('Foundation quiz submission error:', error);
-      return res.status(500).json({ error: 'فشل في تصحيح الاختبار' });
+      return res.status(500).json({ error: 'فشل في حفظ نتيجة الاختبار' });
     }
   });
 

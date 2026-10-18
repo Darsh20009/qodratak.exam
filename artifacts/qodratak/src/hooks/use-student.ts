@@ -63,6 +63,7 @@ export interface FoundationContent {
     instructions?: string;
     passingScore: number;
     timeLimitMinutes?: number;
+    scoringMode?: "scored" | "unscored";
     questionIds: Array<{
       _id: string;
       questionId?: number;

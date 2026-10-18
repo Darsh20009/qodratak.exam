@@ -3,6 +3,7 @@ import { once } from 'node:events';
 import crypto from 'node:crypto';
 import test from 'node:test';
 import bcrypt from 'bcryptjs';
+import mongoose from 'mongoose';
 
 import {
   connectToMongoDB,
@@ -99,6 +100,7 @@ test(
     const studentIds: string[] = [];
     const questionIds: unknown[] = [];
     let lessonId: string | undefined;
+    let unscoredLessonId: string | undefined;
     let unrelatedLessonId: string | undefined;
     let server: import('node:http').Server | undefined;
     let application: any;
@@ -274,11 +276,72 @@ test(
           },
         ],
       );
+
+      const unscoredLesson = await FoundationContent.create({
+        program: 'qudrat',
+        subjectId: 'subject.qudrat.quantitative',
+        title: `${marker} unscored lesson`,
+        description: 'Unscored practice fixture.',
+        order: 999_997,
+        published: true,
+        quiz: {
+          title: `${marker} unscored practice`,
+          instructions: 'This practice must not reveal or grade answer keys.',
+          questionIds: questions.slice(0, 2).map((question) => question._id),
+          passingScore: 60,
+          timeLimitMinutes: 5,
+          scoringMode: 'unscored',
+        },
+      });
+      unscoredLessonId = String(unscoredLesson._id);
+      await Question.updateMany(
+        { _id: { $in: questions.slice(0, 2).map((question) => question._id) } },
+        { $set: { correctOptionIndex: null, answerStatus: 'review' } },
+      );
+      const unscoredIdempotencyKey = `${marker}-unscored-submission`;
+      const unscored = await jsonRequest(
+        studentHttp,
+        `/api/foundation-content/${unscoredLessonId}/quiz/submit`,
+        {
+          method: 'POST',
+          body: JSON.stringify({
+            answers: [{
+              questionId: String(questions[0]._id),
+              selectedOptionIndex: 2,
+            }],
+            timeTakenSeconds: 12,
+            idempotencyKey: unscoredIdempotencyKey,
+          }),
+        },
+      );
+      assert.equal(unscored.response.status, 200);
+      assert.equal(unscored.body.unscored, true);
+      assert.equal(unscored.body.answeredQuestions, 1);
+      assert.equal(unscored.body.skippedQuestions, 1);
+      assert.equal('score' in unscored.body, false);
+      assert.equal('correctOptionIndex' in unscored.body.questionDetails[0], false);
+      const attemptId = crypto.createHash('sha256')
+        .update(`${studentId}:${unscoredLessonId}:${unscoredIdempotencyKey}`)
+        .digest('hex')
+        .slice(0, 24);
+      const savedPractice = await mongoose.connection
+        .collection('foundationunscoredquizattempts')
+        .findOne({ _id: new mongoose.Types.ObjectId(attemptId) });
+      assert.equal(savedPractice?.studentId, studentId);
+      assert.equal(savedPractice?.answeredQuestions, 1);
+      assert.equal(
+        await TestResult.countDocuments({ userId: studentId, testId: `foundation-${unscoredLessonId}` }),
+        0,
+        'unscored practice must not create a graded result',
+      );
     } finally {
       if (server) await close(server);
       if (application) await closeSessionStore(application);
       if (studentIds.length) {
         const studentId = studentIds[0];
+        await mongoose.connection
+          .collection('foundationunscoredquizattempts')
+          .deleteMany({ studentId });
         await Promise.all([
           TestResult.deleteMany({ userId: studentId }),
           LearningAttempt.deleteMany({ studentId }),
@@ -291,6 +354,7 @@ test(
         await User.deleteMany({ _id: { $in: studentIds } });
       }
       if (lessonId) await FoundationContent.deleteMany({ _id: lessonId });
+      if (unscoredLessonId) await FoundationContent.deleteMany({ _id: unscoredLessonId });
       if (unrelatedLessonId) await FoundationContent.deleteMany({ _id: unrelatedLessonId });
       if (questionIds.length) await Question.deleteMany({ _id: { $in: questionIds } });
       if (connectedByTest && getConnectionStatus()) await disconnectFromMongoDB();

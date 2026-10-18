@@ -13,7 +13,9 @@ test('source identity binds question 34 to bank 6, never to displayed shuffled p
   assert.deepEqual(computerBankQuestionIdentity('quantitative-computer-bank-70-48'), { bankNumber: 70, questionNumber: 48 });
   assert.deepEqual(computerBankQuestionIdentity('quantitative-computer-bank-71-34'), { bankNumber: 71, questionNumber: 34 });
   assert.deepEqual(computerBankQuestionIdentity('quantitative-computer-bank-90-48'), { bankNumber: 90, questionNumber: 48 });
-  assert.equal(computerBankQuestionIdentity('quantitative-computer-bank-91-34'), null);
+  assert.deepEqual(computerBankQuestionIdentity('quantitative-computer-bank-91-34'), { bankNumber: 91, questionNumber: 34 });
+  assert.deepEqual(computerBankQuestionIdentity('quantitative-computer-bank-110-48'), { bankNumber: 110, questionNumber: 48 });
+  assert.equal(computerBankQuestionIdentity('quantitative-computer-bank-111-34'), null);
   assert.equal(computerBankQuestionIdentity('quantitative-computer-bank-6-49'), null);
   assert.equal(computerBankQuestionIdentity('verbal-6-34'), null);
 });
@@ -43,6 +45,36 @@ test('clips use stored bounds and retain timing uncertainty', () => {
   const inferred = buildQuestionVideoClip({ ...source, videoEndTimestampInferred: true }, url);
   assert.equal(inferred.approximate, true);
   assert.equal(inferred.verified, false);
+});
+
+test('new bank videos use stored question clips and leave unindexed banks as full-video fallbacks', () => {
+  const bank91Url = '/foundation/quantitative/computer-banks/computer-bank-91.mp4';
+  assert.deepEqual(buildQuestionVideoClip({
+    questionId: 'quantitative-computer-bank-91-1',
+    videoTimestampSeconds: 0,
+    videoEndTimestampSeconds: 70,
+    videoTimingMethod: 'visual_badge_detection_5s_samples',
+  }, bank91Url), {
+    available: true,
+    videoUrl: bank91Url,
+    startSeconds: 0,
+    endSeconds: 70,
+    approximate: false,
+    verified: false,
+    bankNumber: 91,
+    questionNumber: 1,
+  });
+
+  const bank97Url = '/foundation/quantitative/computer-banks/computer-bank-97.mp4';
+  assert.deepEqual(buildQuestionVideoClip({
+    questionId: 'quantitative-computer-bank-97-1',
+  }, bank97Url), {
+    available: false,
+    reason: 'video_unavailable',
+    videoUrl: bank97Url,
+    bankNumber: 97,
+    questionNumber: 1,
+  });
 });
 
 test('equal-duration timing creates a two-minute window around each of 48 question positions', () => {

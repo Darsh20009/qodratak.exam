@@ -9,17 +9,20 @@ import { useFoundationContent } from "@/hooks/use-student";
 import { getQuestionImageUrls } from "@/lib/questionImages";
 
 type QuizResult = {
-  score: number;
-  correctAnswers: number;
+  unscored?: boolean;
+  score?: number | null;
+  correctAnswers?: number | null;
   totalQuestions: number;
   skippedQuestions: number;
-  passed: boolean;
-  passingScore: number;
+  answeredQuestions?: number;
+  durationSeconds?: number;
+  passed?: boolean;
+  passingScore?: number;
   questionDetails?: Array<{
     questionId: string;
     selectedOptionIndex: number | null;
-    isCorrect: boolean;
-    correctOptionIndex: number | null;
+    isCorrect?: boolean | null;
+    correctOptionIndex?: number | null;
     videoTimestampSeconds?: number | null;
   }>;
 };
@@ -68,7 +71,11 @@ export default function FoundationBankTestPage({ contentId }: { contentId: strin
         }),
       });
       const payload = await response.json().catch(() => ({}));
-      if (!response.ok) throw new Error(payload.error || "تعذر تصحيح الاختبار");
+      if (!response.ok) {
+        throw new Error(payload.error || (quiz.scoringMode === "unscored"
+          ? "تعذر حفظ التدريب"
+          : "تعذر تصحيح الاختبار"));
+      }
       setResult(payload as QuizResult);
     } catch (submitError) {
       setError(
@@ -131,23 +138,36 @@ export default function FoundationBankTestPage({ contentId }: { contentId: strin
 
     return (
       <main className="mx-auto max-w-5xl space-y-5 px-4 py-6 sm:py-10" dir="rtl">
-        <ExamLearningReport />
+        {!result.unscored && <ExamLearningReport />}
         <section className="rounded-3xl border border-primary/20 bg-card p-5 shadow-sm sm:p-7">
           <div className="text-center">
             <Trophy className="mx-auto h-10 w-10 text-primary" />
             <p className="mt-3 text-sm font-bold text-muted-foreground">{lesson.title}</p>
-            <p className="mt-2 text-4xl font-black text-foreground">{result.score}%</p>
-            <p className="mt-2 text-sm text-muted-foreground">
-              أجبت عن {result.correctAnswers} من {result.totalQuestions} بشكل صحيح
-              {result.skippedQuestions
-                ? `، وتركت ${result.skippedQuestions} دون إجابة.`
-                : "."}
-            </p>
-            <p className={`mt-2 text-sm font-black ${result.passed ? "text-emerald-600" : "text-amber-600"}`}>
-              {result.passed
-                ? "أحسنت، اجتزت الاختبار."
-                : `تحتاج إلى ${result.passingScore}% للنجاح.`}
-            </p>
+              {result.unscored ? (
+                <>
+                  <p className="mt-2 text-2xl font-black text-foreground">تم حفظ التدريب بلا درجة</p>
+                  <p className="mt-2 text-sm text-muted-foreground">
+                    أجبت عن {result.answeredQuestions ?? result.totalQuestions - result.skippedQuestions} من {result.totalQuestions}
+                    {result.skippedQuestions ? `، وتركت ${result.skippedQuestions} دون إجابة.` : "."}
+                    {" "}لا يتوفر مفتاح إجابة موثوق لهذا البنك، لذلك لم نصحح إجاباتك.
+                  </p>
+                </>
+              ) : (
+                <>
+                  <p className="mt-2 text-4xl font-black text-foreground">{result.score}%</p>
+                  <p className="mt-2 text-sm text-muted-foreground">
+                    أجبت عن {result.correctAnswers} من {result.totalQuestions} بشكل صحيح
+                    {result.skippedQuestions
+                      ? `، وتركت ${result.skippedQuestions} دون إجابة.`
+                      : "."}
+                  </p>
+                  <p className={`mt-2 text-sm font-black ${result.passed ? "text-emerald-600" : "text-amber-600"}`}>
+                    {result.passed
+                      ? "أحسنت، اجتزت الاختبار."
+                      : `تحتاج إلى ${result.passingScore}% للنجاح.`}
+                  </p>
+                </>
+              )}
             <div className="mt-5 flex flex-wrap justify-center gap-2">
               <Button type="button" variant="outline" className="rounded-xl" onClick={retry}>
                 إعادة الاختبار
@@ -161,9 +181,13 @@ export default function FoundationBankTestPage({ contentId }: { contentId: strin
 
         <section className="space-y-3">
           <div>
-            <h2 className="text-xl font-black text-foreground">مراجعة الأسئلة وشرح الفيديو</h2>
+            <h2 className="text-xl font-black text-foreground">
+              {result.unscored ? "مراجعة إجاباتك" : "مراجعة الأسئلة وشرح الفيديو"}
+            </h2>
             <p className="mt-1 text-sm leading-6 text-muted-foreground">
-              افتح رابط الشرح للانتقال إلى موضع السؤال في الفيديو.
+              {result.unscored
+                ? "يمكنك مراجعة الأسئلة وإجاباتك المحفوظة؛ لم نعرض إجابة صحيحة أو نصححها."
+                : "افتح رابط الشرح للانتقال إلى موضع السؤال في الفيديو."}
             </p>
           </div>
           {questions.map((question, index) => {
@@ -176,17 +200,21 @@ export default function FoundationBankTestPage({ contentId }: { contentId: strin
                 <div className="flex flex-wrap items-start justify-between gap-2">
                   <h3 className="font-black text-foreground">السؤال {index + 1}</h3>
                   <span className={`text-xs font-bold ${
-                    detail?.isCorrect
-                      ? "text-emerald-600"
-                      : selectedIndex === null || selectedIndex === undefined
-                        ? "text-amber-600"
-                        : "text-destructive"
+                    result.unscored
+                      ? selectedIndex === null || selectedIndex === undefined ? "text-amber-600" : "text-primary"
+                      : detail?.isCorrect
+                        ? "text-emerald-600"
+                        : selectedIndex === null || selectedIndex === undefined
+                          ? "text-amber-600"
+                          : "text-destructive"
                   }`}>
-                    {detail?.isCorrect
-                      ? "إجابة صحيحة"
-                      : selectedIndex === null || selectedIndex === undefined
-                        ? "دون إجابة"
-                        : "إجابة غير صحيحة"}
+                    {result.unscored
+                      ? selectedIndex === null || selectedIndex === undefined ? "دون إجابة" : "إجابة محفوظة"
+                      : detail?.isCorrect
+                        ? "إجابة صحيحة"
+                        : selectedIndex === null || selectedIndex === undefined
+                          ? "دون إجابة"
+                          : "إجابة غير صحيحة"}
                   </span>
                 </div>
                 <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-sm text-muted-foreground">
@@ -195,11 +223,15 @@ export default function FoundationBankTestPage({ contentId }: { contentId: strin
                       ? "—"
                       : question.options[selectedIndex] ?? "—"}
                   </span>
-                  <span>
-                    الصحيحة: {correctIndex === null || correctIndex === undefined
-                      ? "غير متاحة"
-                      : question.options[correctIndex] ?? "—"}
-                  </span>
+                  {result.unscored ? (
+                    <span>التصحيح: غير متاح لهذا التدريب</span>
+                  ) : (
+                    <span>
+                      الصحيحة: {correctIndex === null || correctIndex === undefined
+                        ? "غير متاحة"
+                        : question.options[correctIndex] ?? "—"}
+                    </span>
+                  )}
                 </div>
                 {lesson.videoUrl && <div className="mt-3">
                   <QuestionVideoExplanation questionId={question._id} />
@@ -243,7 +275,7 @@ export default function FoundationBankTestPage({ contentId }: { contentId: strin
       {isSubmitting && (
         <div className="flex items-center justify-center gap-2 text-sm font-bold text-primary" role="status">
           <Loader2 className="h-4 w-4 animate-spin" />
-          جارٍ تصحيح الاختبار
+          {quiz.scoringMode === "unscored" ? "جارٍ حفظ التدريب" : "جارٍ تصحيح الاختبار"}
         </div>
       )}
 

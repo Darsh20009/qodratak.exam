@@ -6,7 +6,7 @@ import { createFoundationAssetsRouter } from "../src/routes/foundationAssets";
 test("hosted foundation videos support streaming, HEAD, ranges and safe paths", async () => {
   const calls: Array<{ key: string; method?: string; range?: string }> = [];
   const app = express();
-  app.use("/foundation/quantitative", createFoundationAssetsRouter(async (key, options = {}) => {
+  const fetchAsset = async (key: string, options: { method?: string; range?: string } = {}) => {
     calls.push({ key, method: options.method, range: options.range });
     if (key.includes("missing")) return new Response(null, { status: 404 });
     const isImage = /\.jpe?g$/i.test(key);
@@ -21,7 +21,9 @@ test("hosted foundation videos support streaming, HEAD, ranges and safe paths", 
       "content-type": isImage ? "application/octet-stream" : "video/mp4",
       "content-length": "3", "content-range": "bytes 0-2/10", "accept-ranges": "bytes",
     } });
-  }));
+  };
+  app.use("/foundation/quantitative", createFoundationAssetsRouter(fetchAsset));
+  app.use("/api/foundation/quantitative", createFoundationAssetsRouter(fetchAsset));
   const server = app.listen(0, "127.0.0.1");
   await new Promise<void>(resolve => server.once("listening", resolve));
   const address = server.address();
@@ -63,6 +65,27 @@ test("hosted foundation videos support streaming, HEAD, ranges and safe paths", 
     assert.equal(
       calls.at(-1)?.key,
       "foundation/quantitative/computer-banks/exam-71/background-removed/question-001.png",
+    );
+    const finalBankImage = await fetch(
+      `${base}/computer-banks/exam-110/background-removed/question-048.png`,
+      { headers: { Range: "bytes=0-2" } },
+    );
+    assert.equal(finalBankImage.status, 206);
+    assert.equal(finalBankImage.headers.get("content-type"), "image/png");
+    assert.equal(
+      calls.at(-1)?.key,
+      "foundation/quantitative/computer-banks/exam-110/background-removed/question-048.png",
+    );
+    const apiBase = `http://127.0.0.1:${address.port}/api/foundation/quantitative`;
+    const proxiedImage = await fetch(
+      `${apiBase}/computer-banks/exam-110/background-removed/question-048.png`,
+      { headers: { Range: "bytes=0-2" } },
+    );
+    assert.equal(proxiedImage.status, 206);
+    assert.equal(proxiedImage.headers.get("content-type"), "image/png");
+    assert.equal(
+      calls.at(-1)?.key,
+      "foundation/quantitative/computer-banks/exam-110/background-removed/question-048.png",
     );
     assert.equal((await fetch(`${base}/computer-banks/exam-51/answer-key.pdf`)).status, 404);
   } finally {

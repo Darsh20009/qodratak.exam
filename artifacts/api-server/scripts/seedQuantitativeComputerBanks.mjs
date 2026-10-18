@@ -17,7 +17,7 @@ const seenBankNumbers = new Set();
 const plannedQuestionIds = new Map();
 const seenSourceQuestionIds = new Set();
 for (const bank of payload.banks) {
-  if (!Number.isInteger(bank.number) || bank.number < 1 || bank.number > 90 || seenBankNumbers.has(bank.number)) {
+  if (!Number.isInteger(bank.number) || bank.number < 1 || bank.number > 110 || seenBankNumbers.has(bank.number)) {
     throw new Error(`Invalid or duplicate quantitative computer bank number: ${bank.number}`);
   }
   seenBankNumbers.add(bank.number);
@@ -35,10 +35,13 @@ for (const bank of payload.banks) {
       throw new Error(`Invalid or duplicate question number in quantitative computer bank ${bank.number}`);
     }
     seenQuestionNumbers.add(question.questionNumber);
+    const unscoredBank = bank.scoringMode === 'unscored';
+    const hasValidAnswer = Number.isInteger(question.correctOptionIndex)
+      && question.correctOptionIndex >= 0
+      && question.correctOptionIndex < question.options?.length;
     if (!Array.isArray(question.options) || question.options.length < 2
-      || !Number.isInteger(question.correctOptionIndex)
-      || question.correctOptionIndex < 0
-      || question.correctOptionIndex >= question.options.length) {
+      || (question.answerStatus === 'approved' && !hasValidAnswer)
+      || (question.answerStatus !== 'approved' && !unscoredBank)) {
       throw new Error(`Invalid answer options for quantitative computer bank ${bank.number}, question ${question.questionNumber}`);
     }
     const sourceQuestionId = `quantitative-computer-bank-${bank.number}-${question.questionNumber}`;
@@ -108,7 +111,7 @@ try {
     const matchingAttachment = bank?.attachment?.id
       && lesson.attachments?.some((attachment) => attachment.id === bank.attachment.id);
     const expectedQuestionIds = (bank?.questions || [])
-      .filter((question) => question.answerStatus === 'approved')
+      .filter((question) => question.answerStatus === 'approved' || bank?.scoringMode === 'unscored')
       .map((question) => {
         const sourceQuestionId = `quantitative-computer-bank-${bank.number}-${question.questionNumber}`;
         return existingSourceQuestionById.get(sourceQuestionId)?._id?.toString();
@@ -116,9 +119,12 @@ try {
       .filter(Boolean)
       .sort();
     const lessonQuestionIds = (lesson.quiz?.questionIds || []).map(String).sort();
-    const matchingQuiz = lesson.quiz?.title === `اختبار ${lesson.title}`
+    const matchingQuiz = lesson.quiz?.title === (bank?.scoringMode === 'unscored'
+      ? `تدريب ${lesson.title}`
+      : `اختبار ${lesson.title}`)
+      && (lesson.quiz?.scoringMode || 'scored') === (bank?.scoringMode || 'scored')
       && expectedQuestionIds.length === (bank?.questions || [])
-        .filter((question) => question.answerStatus === 'approved').length
+        .filter((question) => question.answerStatus === 'approved' || bank?.scoringMode === 'unscored').length
       && lessonQuestionIds.length === expectedQuestionIds.length
       && lessonQuestionIds.every((questionId, index) => questionId === expectedQuestionIds[index]);
     const matchingVideoOnly = bank
@@ -167,15 +173,17 @@ try {
             subcategory: question.subcategory || 'العمليات الحسابية',
             text: question.text,
             options: question.options,
-            correctOptionIndex: question.correctOptionIndex,
+            correctOptionIndex: Number.isInteger(question.correctOptionIndex)
+              ? question.correctOptionIndex
+              : null,
             difficulty: 'intermediate',
             topic: question.subcategory || 'العمليات الحسابية',
             dialect: 'standard',
             keywords: ['كمي', 'محوسب', `بنك ${bank.number}`, question.subcategory || 'كمي'],
             section: 1,
-            explanation: question.answerToken
+            explanation: question.answerToken && question.answerStatus === 'approved'
               ? `الإجابة المطبوعة في النسخة المحلولة هي: ${question.answerToken}.`
-              : 'تحتاج الإجابة المطبوعة إلى مراجعة قبل اعتمادها.',
+              : 'تدريب دون تصحيح أو درجة؛ مفتاح الإجابة غير متاح للتحقق.',
             studentTip: 'اعتمد على صورة السؤال المرفقة؛ فهي تحفظ النص الرياضي والأشكال كما وردت في المصدر.',
             answerStatus: question.answerStatus,
             source: {
@@ -189,6 +197,12 @@ try {
                 ? question.videoTimestampSeconds
                 : undefined,
               videoTimestampInferred: question.videoTimestampInferred === true,
+              videoEndTimestampSeconds: Number.isInteger(question.videoEndTimestampSeconds)
+                ? question.videoEndTimestampSeconds
+                : undefined,
+              videoEndTimestampInferred: question.videoEndTimestampInferred === true,
+              videoTimingVerified: question.videoTimingVerified === true,
+              videoTimingMethod: question.videoTimingMethod || undefined,
             },
             imageUrl: question.imageUrl,
             imageUrls: question.imageUrls,
@@ -213,7 +227,7 @@ try {
         { upsert: true, returnDocument: 'after' },
       );
       const document = updateResult.value || updateResult;
-      if (question.answerStatus === 'approved') {
+      if (question.answerStatus === 'approved' || bank.scoringMode === 'unscored') {
         questionIds.push(document._id);
       }
     }
@@ -222,13 +236,16 @@ try {
     const hasVideo = Boolean(bank.video?.url);
     const quiz = bank.questions.length
       ? {
-          title: `اختبار ${titleFor(bank.number)}`,
-        instructions: hasVideo
+          title: `${bank.scoringMode === 'unscored' ? 'تدريب' : 'اختبار'} ${titleFor(bank.number)}`,
+        instructions: bank.scoringMode === 'unscored'
+          ? 'أجب عن الأسئلة المصوّرة. حُفظت إجاباتك للمراجعة دون تصحيح أو درجة لعدم توفر مفتاح موثوق.'
+          : hasVideo
             ? 'شاهد الفيديو، ثم أجب عن أسئلة النسخة المحلولة. تظهر صورة السؤال كاملة للحفاظ على الأشكال والرموز الرياضية.'
           : 'أجب عن الأسئلة بالاعتماد على صورة كل سؤال. لا يتضمن عرض الأسئلة شريط مفتاح الإجابة.',
           questionIds,
           passingScore: 60,
           timeLimitMinutes: 45,
+          scoringMode: bank.scoringMode || 'scored',
         }
       : undefined;
 
@@ -248,6 +265,7 @@ try {
       order: 8 + bank.number,
       published: true,
       videoUrl: hasVideo ? bank.video.url : '',
+      questionSolutionVideoUrl: hasVideo ? bank.video.url : '',
       durationMinutes: hasVideo && Number.isFinite(bank.video.durationSeconds)
         ? Math.ceil(bank.video.durationSeconds / 60)
         : undefined,

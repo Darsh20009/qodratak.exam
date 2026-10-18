@@ -1889,6 +1889,7 @@ export interface IFoundationQuiz {
   questionIds: mongoose.Types.ObjectId[];
   passingScore: number;
   timeLimitMinutes?: number;
+  scoringMode?: 'scored' | 'unscored';
 }
 const foundationQuizSchema = new Schema<IFoundationQuiz>({
   title: { type: String, required: true, trim: true, maxlength: 160 },
@@ -1896,6 +1897,7 @@ const foundationQuizSchema = new Schema<IFoundationQuiz>({
   questionIds: [{ type: Schema.Types.ObjectId, ref: 'Question', required: true }],
   passingScore: { type: Number, min: 0, max: 100, default: 60 },
   timeLimitMinutes: { type: Number, min: 1, max: 180 },
+  scoringMode: { type: String, enum: ['scored', 'unscored'], default: 'scored' },
 }, { _id: false });
 export interface IFoundationContent extends Document {
   program: StudentProgram; title: string; description: string; videoUrl: string;

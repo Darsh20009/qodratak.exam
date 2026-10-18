@@ -116,8 +116,11 @@ app.use("/api", (request, response, next) => {
 
 app.use("/api/uploads", express.static("uploads"));
 // Keep question images and foundation videos on the persistent R2-backed route.
-// In development, Vite proxies only the narrowly-scoped question-image paths here.
-app.use("/foundation/quantitative", createFoundationAssetsRouter());
+// The /api alias is needed by the Replit path proxy; retain the root route for
+// the production server and existing media links.
+const foundationAssetsRouter = createFoundationAssetsRouter();
+app.use("/foundation/quantitative", foundationAssetsRouter);
+app.use("/api/foundation/quantitative", foundationAssetsRouter);
 app.use("/api/admin", adminRouter);
 app.use("/api", router);
 app.use("/api/multiplayer", multiplayerRouter);

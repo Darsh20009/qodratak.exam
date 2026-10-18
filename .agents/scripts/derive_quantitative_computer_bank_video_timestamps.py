@@ -160,7 +160,10 @@ def glyph_from_badge_roi(roi: Image.Image) -> int | None:
     return int.from_bytes(mask, "big")
 
 
-def question_image_glyph(path: Path) -> int | None:
+def question_image_glyph(
+    path: Path,
+    badge_region_bottom: float = 0.22,
+) -> int | None:
     with Image.open(path) as source:
         image = source.convert("RGB")
         scale = 640 / image.width
@@ -172,9 +175,12 @@ def question_image_glyph(path: Path) -> int | None:
             round(image.width * 0.78),
             0,
             round(image.width * 0.98),
-            max(1, round(image.height * 0.22)),
+            max(1, round(image.height * badge_region_bottom)),
         ))
         return glyph_from_badge_roi(roi)
+
+
+FRAME_TOP_Y = 0
 
 
 def video_frame_glyph(path: Path, seconds: int) -> int | None:
@@ -184,7 +190,7 @@ def video_frame_glyph(path: Path, seconds: int) -> int | None:
         "-ss", str(seconds),
         "-i", str(path),
         "-frames:v", "1",
-        "-vf", f"scale=640:360,crop={FRAME_WIDTH}:{FRAME_HEIGHT}:480:0",
+        "-vf", f"scale=640:360,crop={FRAME_WIDTH}:{FRAME_HEIGHT}:480:{FRAME_TOP_Y}",
         "-f", "image2pipe",
         "-vcodec", "png",
         "-",
@@ -201,10 +207,13 @@ def family_for_bank(number: int) -> str:
 
 def load_reference_glyphs(
     bank_numbers: Iterable[int],
+    image_root: Path | None = None,
+    badge_region_bottom: float = 0.22,
 ) -> dict[int, list[int]]:
     references: dict[int, list[int]] = {number: [] for number in range(1, 49)}
+    source_root = image_root or PUBLIC
     for bank_number in bank_numbers:
-        bank_dir = PUBLIC / f"exam-{bank_number:02d}"
+        bank_dir = source_root / f"exam-{bank_number:02d}"
         for question_number in range(1, 49):
             image_path = bank_dir / f"question-{question_number:03d}.jpeg"
             if not image_path.exists():
@@ -214,7 +223,7 @@ def load_reference_glyphs(
                 image_path = alternatives[0] if alternatives else image_path
             if not image_path.exists():
                 continue
-            glyph = question_image_glyph(image_path)
+            glyph = question_image_glyph(image_path, badge_region_bottom)
             if glyph is not None and glyph not in references[question_number]:
                 references[question_number].append(glyph)
     return references
@@ -246,7 +255,7 @@ def frame_predictions(path: Path, references: dict[int, list[int]]) -> list[dict
         "-vf",
         (
             f"fps=1/{SAMPLE_INTERVAL_SECONDS},"
-            f"scale=640:360,crop={FRAME_WIDTH}:{FRAME_HEIGHT}:480:0,"
+            f"scale=640:360,crop={FRAME_WIDTH}:{FRAME_HEIGHT}:480:{FRAME_TOP_Y},"
             "format=rgb24"
         ),
         "-pix_fmt", "rgb24",

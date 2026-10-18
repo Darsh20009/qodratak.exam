@@ -8,13 +8,18 @@ import {
 } from "../../artifacts/api-server/src/services/qudratVerbalBookFilesService";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../..");
+const bankStart = Number(process.env.COMPUTER_BANKS_START || 71);
+const bankEnd = Number(process.env.COMPUTER_BANKS_END || 90);
+const rangeName = `${bankStart}-${bankEnd}`;
+const expectedBankCount = bankEnd - bankStart + 1;
+const expectedQuestionCount = expectedBankCount * 48;
 const manifestPath = path.join(
   root,
-  ".agents/outputs/quantitative-computer-banks/computer-banks-71-90.json",
+  `.agents/outputs/quantitative-computer-banks/computer-banks-${rangeName}.json`,
 );
 const imageRoot = path.join(
   root,
-  "generated-artifacts/quantitative-banks-71-90/source-images",
+  `generated-artifacts/quantitative-banks-${rangeName}/source-images`,
 );
 const concurrency = 4;
 const dryRun = process.env.COMPUTER_BANKS_UPLOAD_DRY_RUN === "1";
@@ -37,6 +42,30 @@ type Entry = {
 
 function sha256(value: Buffer): string {
   return createHash("sha256").update(value).digest("hex");
+}
+
+function delay(milliseconds: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, milliseconds));
+}
+
+async function fetchR2WithRetry(key: string, options: RequestInit = {}): Promise<Response> {
+  const { signal: _signal, ...requestOptions } = options;
+  let lastError: unknown;
+  for (let attempt = 1; attempt <= 4; attempt += 1) {
+    try {
+      const response = await fetchR2VerbalObject(key, {
+        ...requestOptions,
+        signal: AbortSignal.timeout(30_000),
+      });
+      if (response.status < 500 || attempt === 4) return response;
+      await response.body?.cancel().catch(() => {});
+      lastError = new Error(`Temporary R2 response ${response.status}.`);
+    } catch (error) {
+      lastError = error;
+    }
+    if (attempt < 4) await delay(500 * 2 ** (attempt - 1));
+  }
+  throw lastError instanceof Error ? lastError : new Error(String(lastError));
 }
 
 async function runConcurrent(
@@ -74,13 +103,14 @@ async function main() {
     sourceRightsConfirmed?: boolean;
     banks: Bank[];
   };
-  if (!payload.sourceRightsConfirmed || payload.banks.length !== 20) {
-    throw new Error("Expected explicit rights confirmation and exactly 20 banks (71–90).");
+  if (!Number.isInteger(bankStart) || !Number.isInteger(bankEnd) || expectedBankCount < 1
+    || !payload.sourceRightsConfirmed || payload.banks.length !== expectedBankCount) {
+    throw new Error(`Expected explicit rights confirmation and exactly ${expectedBankCount} banks (${rangeName}).`);
   }
 
   const entries: Entry[] = [];
   for (const bank of payload.banks) {
-    if (!Number.isInteger(bank.number) || bank.number < 71 || bank.number > 90 || bank.questions.length !== 48) {
+    if (!Number.isInteger(bank.number) || bank.number < bankStart || bank.number > bankEnd || bank.questions.length !== 48) {
       throw new Error(`Invalid bank payload for bank ${bank.number}.`);
     }
     for (const question of bank.questions) {
@@ -102,8 +132,23 @@ async function main() {
       });
     }
   }
-  if (entries.length !== 1_920) {
-    throw new Error(`Expected 1,920 original/cleaned images; found ${entries.length}.`);
+  if (entries.length !== expectedQuestionCount * 2) {
+    throw new Error(`Expected ${expectedQuestionCount * 2} original/cleaned images; found ${entries.length}.`);
+  }
+  const requestedKeys = new Set(
+    (process.env.COMPUTER_BANKS_UPLOAD_ONLY || "")
+      .split(",")
+      .map((key) => key.trim())
+      .filter(Boolean),
+  );
+  const uploadEntries = requestedKeys.size
+    ? entries.filter((entry) => requestedKeys.has(entry.key))
+    : entries;
+  if (requestedKeys.size && uploadEntries.length !== requestedKeys.size) {
+    const found = new Set(uploadEntries.map((entry) => entry.key));
+    throw new Error(
+      `Unknown upload key(s): ${[...requestedKeys].filter((key) => !found.has(key)).join(", ")}`,
+    );
   }
 
   let totalBytes = 0;
@@ -119,8 +164,9 @@ async function main() {
     console.log(JSON.stringify({
       dryRun: true,
       banks: payload.banks.length,
-      questionImages: 960,
+      questionImages: expectedQuestionCount,
       objects: entries.length,
+      uploadObjects: uploadEntries.length,
       totalBytes,
       firstKey: entries[0].key,
       lastKey: entries.at(-1)?.key,
@@ -130,16 +176,13 @@ async function main() {
 
   let uploaded = 0;
   let alreadyPresent = 0;
-  await runConcurrent(entries, "R2 upload", async (entry) => {
+  await runConcurrent(uploadEntries, "R2 upload", async (entry) => {
     const local = await fs.readFile(entry.filePath);
-    const head = await fetchR2VerbalObject(entry.key, {
+    const head = await fetchR2WithRetry(entry.key, {
       method: "HEAD",
-      signal: AbortSignal.timeout(30_000),
     });
     if (head.status === 200) {
-      const existing = await fetchR2VerbalObject(entry.key, {
-        signal: AbortSignal.timeout(30_000),
-      });
+      const existing = await fetchR2WithRetry(entry.key);
       if (!existing.ok) {
         throw new Error(`Could not verify existing R2 object (${existing.status}).`);
       }
@@ -153,17 +196,36 @@ async function main() {
     if (head.status !== 404) {
       throw new Error(`Could not check R2 object (${head.status}).`);
     }
-    await writeR2Object(entry.key, local, entry.contentType);
+    let writeError: unknown;
+    for (let attempt = 1; attempt <= 4; attempt += 1) {
+      try {
+        await writeR2Object(entry.key, local, entry.contentType);
+        writeError = undefined;
+        break;
+      } catch (error) {
+        writeError = error;
+        const afterWrite = await fetchR2WithRetry(entry.key, { method: "HEAD" }).catch(() => null);
+        if (afterWrite?.status === 200) {
+          const existing = await fetchR2WithRetry(entry.key);
+          if (existing.ok && sha256(Buffer.from(await existing.arrayBuffer())) === sha256(local)) {
+            writeError = undefined;
+            break;
+          }
+          if (existing.ok) throw new Error("Refusing to overwrite a different existing R2 object.");
+        }
+        if (attempt < 4) await delay(500 * 2 ** (attempt - 1));
+      }
+    }
+    if (writeError) {
+      throw writeError instanceof Error ? writeError : new Error(String(writeError));
+    }
     uploaded += 1;
   });
 
   let verified = 0;
   await runConcurrent(entries, "R2 verify", async (entry) => {
     const localStat = await fs.stat(entry.filePath);
-    const response = await fetchR2VerbalObject(entry.key, {
-      method: "HEAD",
-      signal: AbortSignal.timeout(30_000),
-    });
+    const response = await fetchR2WithRetry(entry.key, { method: "HEAD" });
     const remoteLength = Number(response.headers.get("content-length"));
     if (response.status !== 200 || remoteLength !== localStat.size) {
       throw new Error(`R2 verification failed: status=${response.status}, bytes=${remoteLength}.`);
@@ -173,7 +235,7 @@ async function main() {
 
   console.log(JSON.stringify({
     banks: payload.banks.length,
-    questionImages: 960,
+    questionImages: expectedQuestionCount,
     objects: entries.length,
     uploaded,
     alreadyPresent,
