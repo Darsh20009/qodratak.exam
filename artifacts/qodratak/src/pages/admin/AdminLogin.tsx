@@ -181,12 +181,6 @@ export default function AdminLogin() {
                     {isLoading ? 'جارٍ تسجيل الدخول...' : 'الدخول إلى لوحة الإدارة'}
                   </button>
                 </form>
-                <p className="mt-5 text-center text-xs text-[#625D69]">
-                  لا يوجد حساب إدارة في المعاينة؟{' '}
-                  <a href="/admin/setup" className="font-bold text-[#B65D36] underline underline-offset-4">
-                    إعداد أول حساب لمعاينة Replit
-                  </a>
-                </p>
               </>
             )}
           </section>
