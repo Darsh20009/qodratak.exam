@@ -8,6 +8,9 @@ const inputPath = process.env.COMPUTER_BANKS_INPUT
   || new URL('../../../.agents/outputs/quantitative-computer-banks/computer-banks.json', import.meta.url);
 const payload = JSON.parse(fs.readFileSync(inputPath, 'utf8'));
 const dryRun = process.env.COMPUTER_BANKS_DRY_RUN === '1';
+if (payload.sourceRightsConfirmed === false) {
+  throw new Error('The source files are not confirmed for publication.');
+}
 if (!Array.isArray(payload.banks) || payload.banks.length === 0) {
   throw new Error('Expected at least one quantitative computer bank');
 }
@@ -17,11 +20,11 @@ const seenBankNumbers = new Set();
 const plannedQuestionIds = new Map();
 const seenSourceQuestionIds = new Set();
 for (const bank of payload.banks) {
-  if (!Number.isInteger(bank.number) || bank.number < 1 || bank.number > 110 || seenBankNumbers.has(bank.number)) {
+  if (!Number.isInteger(bank.number) || bank.number < 1 || bank.number > 130 || seenBankNumbers.has(bank.number)) {
     throw new Error(`Invalid or duplicate quantitative computer bank number: ${bank.number}`);
   }
   seenBankNumbers.add(bank.number);
-  if (!Array.isArray(bank.questions) || bank.questions.length > 50) {
+  if (!Array.isArray(bank.questions) || bank.questions.length > 100) {
     throw new Error(`Invalid question list for quantitative computer bank ${bank.number}`);
   }
   if ([15, 23].includes(bank.number)
@@ -30,11 +33,26 @@ for (const bank of payload.banks) {
   }
   const seenQuestionNumbers = new Set();
   for (const question of bank.questions) {
-    if (!Number.isInteger(question.questionNumber) || question.questionNumber < 1 || question.questionNumber > 50
+    if (!Number.isInteger(question.questionNumber) || question.questionNumber < 1 || question.questionNumber > 99
       || seenQuestionNumbers.has(question.questionNumber)) {
       throw new Error(`Invalid or duplicate question number in quantitative computer bank ${bank.number}`);
     }
     seenQuestionNumbers.add(question.questionNumber);
+    const activeImageUrls = Array.isArray(question.imageUrls) && question.imageUrls.length
+      ? question.imageUrls
+      : [question.imageUrl].filter(Boolean);
+    const fallbackOriginalImageUrls = activeImageUrls;
+    const originalImageUrls = Array.isArray(question.imageOriginalUrls) && question.imageOriginalUrls.length
+      ? question.imageOriginalUrls
+      : question.imageOriginalUrl
+        ? [question.imageOriginalUrl, ...fallbackOriginalImageUrls.slice(1)]
+        : fallbackOriginalImageUrls;
+    if (!question.imageUrl
+      || activeImageUrls.some((url) => typeof url !== 'string' || !url)
+      || originalImageUrls.length !== activeImageUrls.length
+      || originalImageUrls.some((url) => typeof url !== 'string' || !url)) {
+      throw new Error(`Invalid question image URLs for quantitative computer bank ${bank.number}, question ${question.questionNumber}`);
+    }
     const unscoredBank = bank.scoringMode === 'unscored';
     const hasValidAnswer = Number.isInteger(question.correctOptionIndex)
       && question.correctOptionIndex >= 0
@@ -205,15 +223,21 @@ try {
               videoTimingMethod: question.videoTimingMethod || undefined,
             },
             imageUrl: question.imageUrl,
-            imageUrls: question.imageUrls,
-            imageOriginalUrl: question.imageUrl,
-            imageOriginalUrls: question.imageUrls,
+            imageUrls: question.imageUrls?.length ? question.imageUrls : [question.imageUrl],
+            imageOriginalUrl: question.imageOriginalUrl || question.imageUrl,
+            imageOriginalUrls: question.imageOriginalUrls?.length
+              ? question.imageOriginalUrls
+              : question.imageOriginalUrl
+                ? [question.imageOriginalUrl, ...(question.imageUrls || []).slice(1)]
+                : question.imageUrls?.length
+                  ? question.imageUrls
+                  : [question.imageUrl],
             imageMetadata: {
               source: question.sourcePdf,
               examNumber: bank.number,
               questionNumber: question.questionNumber,
             },
-            imageProcessing: {
+            imageProcessing: question.imageProcessing || {
               status: 'original_only',
               backgroundRemoved: false,
               watermarkCleanupApplied: false,
