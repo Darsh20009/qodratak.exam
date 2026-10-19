@@ -8,22 +8,26 @@ import {
 } from "../../artifacts/api-server/src/services/qudratVerbalBookFilesService";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../..");
-const rangeName = "111-130";
+const rangeName = process.env.COMPUTER_BANKS_RANGE ?? "111-130";
 const manifestPath = path.join(
   root,
   `.agents/outputs/quantitative-computer-banks/computer-banks-${rangeName}.json`,
 );
 const imageRoot = path.join(
   root,
-  `generated-artifacts/quantitative-banks-${rangeName}/source-images`,
+  rangeName === "131"
+    ? "generated-artifacts/quantitative-bank-131/source-images"
+    : `generated-artifacts/quantitative-banks-${rangeName}/source-images`,
 );
 const concurrency = 4;
 const dryRun = process.env.COMPUTER_BANKS_UPLOAD_DRY_RUN === "1";
 const verifyOnly = process.env.COMPUTER_BANKS_UPLOAD_VERIFY_ONLY === "1";
-const expectedBankNumbers = [
-  ...Array.from({ length: 13 }, (_, index) => 111 + index),
-  ...Array.from({ length: 6 }, (_, index) => 125 + index),
-];
+const expectedBankNumbers = rangeName === "131"
+  ? [131]
+  : [
+    ...Array.from({ length: 13 }, (_, index) => 111 + index),
+    ...Array.from({ length: 6 }, (_, index) => 125 + index),
+  ];
 
 type Question = {
   questionNumber: number;
@@ -119,7 +123,8 @@ async function main() {
   const seenBanks = new Set<number>();
   const seenQuestionIds = new Set<string>();
   for (const bank of payload.banks) {
-    if (!Number.isInteger(bank.number) || bank.number < 111 || bank.number > 130
+    if (!Number.isInteger(bank.number)
+      || !expectedBankNumbers.includes(bank.number)
       || seenBanks.has(bank.number) || !Array.isArray(bank.questions) || bank.questions.length < 40) {
       throw new Error(`Invalid bank payload for bank ${bank.number}.`);
     }
