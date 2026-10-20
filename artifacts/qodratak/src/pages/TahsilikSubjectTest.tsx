@@ -1,5 +1,5 @@
-import { useMemo, useState } from "react";
-import { useLocation } from "wouter";
+import { useEffect, useMemo, useState } from "react";
+import { useLocation, useSearch } from "wouter";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
@@ -110,10 +110,22 @@ function formatDuration(totalSeconds: number): string {
 
 export default function TahsilikSubjectTest() {
   const [, setLocation] = useLocation();
+  const search = useSearch();
   const { toast } = useToast();
   const [selectedSubject, setSelectedSubject] = useState<VerifiedSubjectKey | null>(null);
   const [historyResult, setHistoryResult] = useState<UnscoredPracticeResult | null>(null);
   const [practiceQuestionCount, setPracticeQuestionCount] = useState(20);
+
+  useEffect(() => {
+    const requestedSubject = new URLSearchParams(search).get("subject");
+    if (
+      requestedSubject &&
+      requestedSubject !== "mixed" &&
+      Object.prototype.hasOwnProperty.call(subjectPresentation, requestedSubject)
+    ) {
+      setSelectedSubject(requestedSubject as VerifiedSubjectKey);
+    }
+  }, [search]);
 
   const overviewQuery = useQuery<OverviewResponse>({
     queryKey: ["/api/tahsili/subject-tests/overview"],
@@ -306,6 +318,12 @@ export default function TahsilikSubjectTest() {
                           <BookOpenCheck className="mt-0.5 h-4 w-4 shrink-0" />
                           اختبار تشخيصي متوازن؛ يبدأ التخصيص بعد حفظ إجاباتك.
                         </div>
+                      )}
+                      {subject.attempts > 0 && (
+                        <p className="mt-3 border-t border-border pt-3 text-xs leading-5 text-muted-foreground">
+                          {subject.attempts.toLocaleString("ar-SA")} إجابة موثقة مسجلة
+                          {subject.accuracy !== null ? ` · الدقة المرصودة ${subject.accuracy}%` : ""}
+                        </p>
                       )}
                     </CardContent>
                   </Card>

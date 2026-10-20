@@ -62,3 +62,9 @@ Keep «المزيد» a searchable directory of all active student-facing pages 
 **Why:** The user explicitly asked to make every remaining student page discoverable and to improve the learning experience for students at every level.
 
 **How to apply:** Add new student-ready destinations to the shared navigation registry and verify each link resolves to a route; preserve subscription checks and distinguish published Tahsili resources from questions still awaiting review.
+
+The Tahsili experience needs a connected foundation-and-computerized course, not just a PDF library and an exam link. Build it in stages using published source units, subject-specific practice, and reviewed question keys.
+
+**Why:** The user explicitly said both the Tahsili foundation and computerized courses need substantial development and requested that work proceed in phases.
+
+**How to apply:** Organize available materials by subject and lesson, connect each lesson to practice and a useful result, and do not claim missing videos or unreviewed questions are ready.

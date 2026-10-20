@@ -35,12 +35,13 @@ const KIND_LABELS: Record<SourceKind, string> = {
   exam_collection: "اختبارات مجمعة",
 };
 
-const SUBJECT_FILTERS = ["الكل", "رياضيات", "فيزياء", "كيمياء", "أحياء", "مختلط"];
+const SUBJECT_FILTERS = ["الكل", "رياضيات", "فيزياء", "كيمياء", "أحياء", "علم الأرض", "مختلط"];
 const SUBJECT_QUERY_ALIASES: Record<string, string> = {
   math: "رياضيات",
   physics: "فيزياء",
   chemistry: "كيمياء",
   biology: "أحياء",
+  environment: "علم الأرض",
 };
 
 function formatFileSize(bytes: number) {
