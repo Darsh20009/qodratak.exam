@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { ArrowLeft, BookOpen, CheckCircle2, ClipboardCheck, FileQuestion, GraduationCap, Loader2, Target } from "lucide-react";
+import TahsiliStudyUnits from "@/pages/TahsiliStudyUnits";
 
 interface TahsiliSourceResponse {
   totalSources: number;
@@ -15,6 +16,7 @@ interface TahsiliSourceResponse {
     subject: string;
     kind: string;
     title: string;
+    fileUrl: string;
   }>;
   playlists?: Array<{ subject: string; url: string }>;
 }
@@ -233,6 +235,10 @@ export default function TahsiliOverviewPage() {
             })}
           </div>
         </section>
+
+        {sourcesQuery.data && (
+          <TahsiliStudyUnits sources={sourcesQuery.data.sources} />
+        )}
 
         <Card className="border-primary/20 bg-primary/[0.03]">
           <CardContent className="flex items-start gap-3 p-5">

@@ -60,11 +60,14 @@ async function loadSources(): Promise<SourceResponse> {
 
 export default function TahsiliSourceLibrary() {
   const search = useSearch();
-  const subjectParam = new URLSearchParams(search).get("subject") || "الكل";
+  const searchParams = new URLSearchParams(search);
+  const subjectParam = searchParams.get("subject") || "الكل";
+  const requestedSourceId = searchParams.get("source");
+  const requestedPage = Number.parseInt(searchParams.get("page") || "", 10);
   const requestedSubject = SUBJECT_QUERY_ALIASES[subjectParam] || subjectParam;
   const initialSubject = SUBJECT_FILTERS.includes(requestedSubject) ? requestedSubject : "الكل";
   const [subjectFilter, setSubjectFilter] = useState(initialSubject);
-  const [selectedSourceId, setSelectedSourceId] = useState<string | null>(null);
+  const [selectedSourceId, setSelectedSourceId] = useState<string | null>(requestedSourceId);
   const sourceQuery = useQuery({
     queryKey: ["/api/tahsili/sources"],
     queryFn: loadSources,
@@ -79,7 +82,8 @@ export default function TahsiliSourceLibrary() {
 
   useEffect(() => {
     setSubjectFilter(initialSubject);
-  }, [initialSubject]);
+    setSelectedSourceId(requestedSourceId);
+  }, [initialSubject, requestedSourceId]);
 
   return (
     <main className="qodratak-tahsili-surface min-h-[100dvh] px-4 py-6 pb-24 sm:px-6 sm:py-8" dir="rtl">
@@ -242,7 +246,9 @@ export default function TahsiliSourceLibrary() {
                     <iframe
                       key={selectedSource.id}
                       title={`معاينة ${selectedSource.title}`}
-                      src={selectedSource.fileUrl}
+                      src={Number.isInteger(requestedPage) && requestedPage > 0
+                        ? `${selectedSource.fileUrl}#page=${requestedPage}`
+                        : selectedSource.fileUrl}
                       className="h-[72vh] min-h-[480px] w-full rounded-xl border border-border bg-muted"
                       loading="lazy"
                       data-testid="iframe-tahsili-source-preview"
