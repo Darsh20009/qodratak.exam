@@ -1702,6 +1702,10 @@ export interface IDailyProgress extends Document {
   questionsAnswered: number;
   goalTarget: number;
   completedGoal: boolean;
+  verifiedQuestionsAnswered?: number;
+  verifiedQuestionIds?: string[];
+  verifiedGoalTarget?: number;
+  verifiedGoalCompleted?: boolean;
   updatedAt: Date;
 }
 const dailyProgressSchema = new Schema<IDailyProgress>({
@@ -1710,6 +1714,10 @@ const dailyProgressSchema = new Schema<IDailyProgress>({
   questionsAnswered: { type: Number, default: 0 },
   goalTarget: { type: Number, default: 20 },
   completedGoal: { type: Boolean, default: false },
+  verifiedQuestionsAnswered: { type: Number, default: 0, min: 0 },
+  verifiedQuestionIds: { type: [String], default: [] },
+  verifiedGoalTarget: { type: Number, default: 20 },
+  verifiedGoalCompleted: { type: Boolean, default: false },
   updatedAt: { type: Date, default: Date.now },
 });
 dailyProgressSchema.index({ userId: 1, date: 1 }, { unique: true });

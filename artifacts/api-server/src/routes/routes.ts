@@ -95,6 +95,7 @@ import {
   completeLearningSession,
   createLearningSession,
   LearningAttemptError,
+  recordVerifiedDailyStudyQuestion,
   recordVerifiedLearningAttempt,
 } from '../services/learningProfileService';
 import { ExamGradingError, gradeTrustedExam } from '../services/trustedExamGrade';
@@ -2507,7 +2508,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           _id: { $in: validIds },
           answerStatus: "approved",
           category: { $in: ["verbal", "quantitative"] },
-        }).select("_id").lean();
+        }).select("_id category subcategory options").lean();
         if (questions.length !== validIds.length) {
           return res.status(400).json({ success: false, message: "بعض أسئلة الاختبار لم تعد متاحة." });
         }
@@ -2517,6 +2518,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const canonical = await Question.find({ _id: { $in: validIds } })
           .select("_id correctOptionIndex")
           .lean();
+        const questionById = new Map<string, any>(
+          questions.map((question: any) => [String(question._id), question]),
+        );
+        const correctById = new Map<string, any>(
+          canonical.map((question: any) => [String(question._id), question]),
+        );
         const outcomes = canonical.map((question: any) => {
           const selected = selectedById.get(String(question._id));
           return {
@@ -2527,6 +2534,32 @@ export async function registerRoutes(app: Express): Promise<Server> {
           };
         });
         await mongoStorage.recordQuestionPracticeOutcomes(sessionUserId, outcomes);
+        const submittedDateKey = getKsaDateStr();
+        await mapWithConcurrency(submittedAnswers, 8, (answer: any) => {
+          const questionId = String(answer.questionId);
+          const question = questionById.get(questionId);
+          const answerKey = correctById.get(questionId);
+          return recordVerifiedLearningAttempt(sessionUserId, {
+            questionId,
+            sourceType: 'mongo_question',
+            sourceKey: `free-test:${submittedDateKey}`,
+            programId: 'program.qudrat',
+            subjectId: question?.category === 'verbal'
+              ? 'subject.qudrat.verbal'
+              : question?.category === 'quantitative'
+                ? 'subject.qudrat.quantitative'
+                : undefined,
+            selectedAnswer: answer.selectedOptionIndex ?? null,
+            idempotencyKey: `free-test:${submittedDateKey}:${questionId}`,
+            metadata: {
+              flow: 'free-test-submission',
+              subcategory: question?.subcategory,
+            },
+          }, answerKey ? {
+            correctOptionIndex: Number(answerKey.correctOptionIndex),
+            optionsCount: Number((question as any)?.options?.length || 0),
+          } : undefined);
+        });
         return res.json({ success: true, tracked: outcomes.length });
       }
       if (questionIds?.length && sessionUserId) {
@@ -9176,7 +9209,10 @@ app.post("/api/auth/register", async (req: Request, res: Response) => {
 
   async function calcStreak(userId: string): Promise<{ current: number; longest: number; weekDays: boolean[] }> {
     const { DailyProgress } = await import('./mongodb/models');
-    const docs = await DailyProgress.find({ userId, completedGoal: true }).sort({ date: -1 }).lean();
+    const docs = await DailyProgress.find({ userId, verifiedGoalCompleted: true })
+      .select('date')
+      .sort({ date: -1 })
+      .lean();
     const completedSet = new Set(docs.map((d: any) => d.date));
 
     let current = 0;
@@ -9219,9 +9255,16 @@ app.post("/api/auth/register", async (req: Request, res: Response) => {
         DailyProgress.findOne({ userId, date: getKsaDateStr() }).lean(),
       ]);
       const target = (goalDoc as any)?.targetQuestions ?? 20;
-      const answered = (todayDoc as any)?.questionsAnswered ?? 0;
+      const answered = (todayDoc as any)?.verifiedQuestionsAnswered ?? 0;
       const streak = await calcStreak(userId);
-      res.json({ target, answered, date: getKsaDateStr(), streak });
+      res.json({
+        target,
+        answered,
+        verifiedAnswered: answered,
+        legacyAnswered: (todayDoc as any)?.questionsAnswered ?? 0,
+        date: getKsaDateStr(),
+        streak,
+      });
     } catch (err) {
       res.status(500).json({ error: 'خطأ في جلب الهدف اليومي' });
     }
@@ -9239,6 +9282,24 @@ app.post("/api/auth/register", async (req: Request, res: Response) => {
         { targetQuestions: Number(target), updatedAt: new Date() },
         { upsert: true, new: true }
       );
+      const date = getKsaDateStr();
+      const today = await DailyProgress.findOne({ userId: String(sessionUserId), date })
+        .select('verifiedQuestionsAnswered verifiedGoalCompleted')
+        .lean() as any;
+      if (today && !today.verifiedGoalCompleted) {
+        await DailyProgress.updateOne(
+          { userId: String(sessionUserId), date },
+          {
+            $set: {
+              verifiedGoalTarget: Number(target),
+              ...(Number(today.verifiedQuestionsAnswered || 0) >= Number(target)
+                ? { verifiedGoalCompleted: true }
+                : {}),
+              updatedAt: new Date(),
+            },
+          },
+        );
+      }
       res.json({ success: true, target: Number(target) });
     } catch (err) {
       res.status(500).json({ error: 'فشل في حفظ الهدف' });
@@ -9250,23 +9311,40 @@ app.post("/api/auth/register", async (req: Request, res: Response) => {
       const sessionUserId = (req.session as any)?.userId;
       if (!sessionUserId) return res.status(401).json({ error: 'يجب تسجيل الدخول' });
       const userId = String(sessionUserId);
-      const count = Math.max(1, parseInt(req.body.count ?? '1'));
-      const { DailyGoal, DailyProgress } = await import('./mongodb/models');
-      const goalDoc = await DailyGoal.findOne({ userId }).lean();
-      const target = (goalDoc as any)?.targetQuestions ?? 20;
-      const date = getKsaDateStr();
-      const updated = await DailyProgress.findOneAndUpdate(
-        { userId, date },
-        {
-          $inc: { questionsAnswered: count },
-          $set: { goalTarget: target, updatedAt: new Date() },
-        },
-        { upsert: true, new: true }
-      );
-      if (!updated.completedGoal && updated.questionsAnswered >= target) {
-        await DailyProgress.findOneAndUpdate({ userId, date }, { $set: { completedGoal: true } });
+      const rawAttemptIds = Array.isArray(req.body?.attemptIds) ? req.body.attemptIds : [];
+      const attemptIds = [...new Set(rawAttemptIds.map(String))];
+      if (!attemptIds.length || attemptIds.length > 100 ||
+          attemptIds.some((id) => !mongoose.Types.ObjectId.isValid(id))) {
+        return res.status(400).json({ error: 'أرسل معرّفات محاولات محفوظة وصالحة فقط.' });
       }
-      res.json({ success: true, answered: updated.questionsAnswered, target, completed: updated.questionsAnswered >= target });
+      const { LearningAttempt } = await import('./mongodb/learningProfileModels');
+      const attempts = await LearningAttempt.find({
+        _id: { $in: attemptIds },
+        studentId: userId,
+        isAnswered: true,
+      }).select('questionId createdAt').lean() as any[];
+      if (attempts.length !== attemptIds.length) {
+        return res.status(403).json({ error: 'لا يمكن احتساب محاولات غير محفوظة لهذا الحساب.' });
+      }
+      await mapWithConcurrency(attempts, 8, (attempt) =>
+        recordVerifiedDailyStudyQuestion(userId, String(attempt.questionId), new Date(attempt.createdAt)),
+      );
+      const { DailyGoal, DailyProgress } = await import('./mongodb/models');
+      const [goalDoc, todayDoc] = await Promise.all([
+        DailyGoal.findOne({ userId }).select('targetQuestions').lean() as any,
+        DailyProgress.findOne({ userId, date: getKsaDateStr() })
+          .select('verifiedQuestionsAnswered verifiedGoalCompleted')
+          .lean() as any,
+      ]);
+      const target = Number(goalDoc?.targetQuestions) || 20;
+      const answered = Number(todayDoc?.verifiedQuestionsAnswered) || 0;
+      return res.json({
+        success: true,
+        answered,
+        verifiedAnswered: answered,
+        target,
+        completed: Boolean(todayDoc?.verifiedGoalCompleted),
+      });
     } catch (err) {
       res.status(500).json({ error: 'فشل في تسجيل التقدم' });
     }
@@ -9278,8 +9356,17 @@ app.post("/api/auth/register", async (req: Request, res: Response) => {
       if (!sessionUserId) return res.status(401).json({ error: 'يجب تسجيل الدخول' });
       const days = Math.min(400, Math.max(7, parseInt(String(req.query.days || '30'))));
       const { DailyProgress } = await import('./mongodb/models');
-      const history = await DailyProgress.find({ userId: String(sessionUserId) })
-        .sort({ date: -1 }).limit(days).lean();
+      const records = await DailyProgress.find({ userId: String(sessionUserId) })
+        .sort({ date: -1 }).limit(days).lean() as any[];
+      const history = records.map((record) => ({
+        date: record.date,
+        questionsAnswered: Number(record.verifiedQuestionsAnswered || 0),
+        verifiedQuestionsAnswered: Number(record.verifiedQuestionsAnswered || 0),
+        completedGoal: Boolean(record.verifiedGoalCompleted),
+        verifiedGoalCompleted: Boolean(record.verifiedGoalCompleted),
+        goalTarget: Number(record.verifiedGoalTarget || record.goalTarget || 20),
+        legacyQuestionsAnswered: Number(record.questionsAnswered || 0),
+      }));
       res.json({ history });
     } catch (err) {
       res.status(500).json({ error: 'خطأ' });
@@ -10387,27 +10474,6 @@ app.post("/api/auth/register", async (req: Request, res: Response) => {
       const { questionIds } = req.body;
       if (!Array.isArray(questionIds)) return res.status(400).json({ error: 'بيانات غير صحيحة' });
       await mongoStorage.markQuestionsAsSeen(sessionUserId, questionIds);
-      // Track daily goal progress (fire and forget)
-      const count = questionIds.length;
-      if (count > 0) {
-        (async () => {
-          try {
-            const { DailyGoal, DailyProgress } = await import('./mongodb/models');
-            const userId = String(sessionUserId);
-            const goalDoc = await DailyGoal.findOne({ userId }).lean();
-            const target = (goalDoc as any)?.targetQuestions ?? 20;
-            const date = getKsaDateStr();
-            const updated = await DailyProgress.findOneAndUpdate(
-              { userId, date },
-              { $inc: { questionsAnswered: count }, $set: { goalTarget: target, updatedAt: new Date() } },
-              { upsert: true, new: true }
-            );
-            if (!updated.completedGoal && updated.questionsAnswered >= target) {
-              await DailyProgress.findOneAndUpdate({ userId, date }, { $set: { completedGoal: true } });
-            }
-          } catch {}
-        })();
-      }
       res.json({ success: true });
     } catch (error) {
       res.status(500).json({ error: 'فشل في حفظ سجل الأسئلة' });
@@ -15312,6 +15378,10 @@ app.post("/api/auth/register", async (req: Request, res: Response) => {
     if (!userId) return;
     const { User } = await import('../mongodb/models');
     const now = new Date();
+    if (req.body?.active === false) {
+      await User.updateOne({ _id: userId }, { $set: { studyTimeHeartbeatAt: null } });
+      return res.status(204).send();
+    }
     const current = await User.findById(userId).select('activeStudySeconds studyTimeHeartbeatAt').lean() as any;
     if (!current) return res.status(404).json({ error: 'المستخدم غير موجود' });
 

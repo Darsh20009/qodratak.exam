@@ -1,5 +1,12 @@
 import mongoose from 'mongoose';
-import { ActivityLog, StudentLearningProfile, TahsiliQuestion, Question } from '../mongodb/models';
+import {
+  ActivityLog,
+  DailyGoal,
+  DailyProgress,
+  StudentLearningProfile,
+  TahsiliQuestion,
+  Question,
+} from '../mongodb/models';
 import {
   LearningAttempt,
   LearningAttemptSequence,
@@ -78,6 +85,91 @@ export class LearningAttemptError extends Error {
   ) {
     super(message);
     this.name = 'LearningAttemptError';
+  }
+}
+
+const DAILY_STUDY_TIME_ZONE = 'Asia/Riyadh';
+
+export function dailyStudyDateKey(at: Date): string {
+  return at.toLocaleDateString('en-CA', { timeZone: DAILY_STUDY_TIME_ZONE });
+}
+
+export async function recordVerifiedDailyStudyQuestion(
+  studentId: string,
+  questionId: string,
+  occurredAt: Date = new Date(),
+  retryAfterConcurrentCreate = true,
+): Promise<void> {
+  const normalizedQuestionId = String(questionId || '').trim();
+  const timestamp = new Date(occurredAt);
+  if (!studentId || !normalizedQuestionId || !Number.isFinite(timestamp.getTime())) return;
+
+  const date = dailyStudyDateKey(timestamp);
+  const goal = await DailyGoal.findOne({ userId: studentId }).select('targetQuestions').lean() as any;
+  const target = [5, 10, 20, 30, 50].includes(Number(goal?.targetQuestions))
+    ? Number(goal.targetQuestions)
+    : 20;
+  const update = await DailyProgress.findOneAndUpdate(
+    {
+      userId: studentId,
+      date,
+      verifiedGoalCompleted: { $ne: true },
+      verifiedQuestionIds: { $ne: normalizedQuestionId },
+      $or: [
+        { verifiedQuestionsAnswered: { $lt: target } },
+        { verifiedQuestionsAnswered: { $exists: false } },
+      ],
+    },
+    {
+      $addToSet: { verifiedQuestionIds: normalizedQuestionId },
+      $inc: { verifiedQuestionsAnswered: 1 },
+      $set: { verifiedGoalTarget: target, updatedAt: timestamp },
+    },
+    { new: true },
+  ).select('verifiedQuestionsAnswered').lean() as any;
+
+  if (update) {
+    if (Number(update.verifiedQuestionsAnswered || 0) >= target) {
+      await DailyProgress.updateOne(
+        { userId: studentId, date },
+        { $set: { verifiedGoalCompleted: true, verifiedGoalTarget: target, updatedAt: timestamp } },
+      );
+    }
+    return;
+  }
+
+  const existing = await DailyProgress.findOne({ userId: studentId, date })
+    .select('verifiedQuestionsAnswered verifiedQuestionIds verifiedGoalCompleted')
+    .lean() as any;
+  if (existing) {
+    if (Number(existing.verifiedQuestionsAnswered || 0) >= target) {
+      await DailyProgress.updateOne(
+        { userId: studentId, date },
+        { $set: { verifiedGoalCompleted: true, verifiedGoalTarget: target, updatedAt: timestamp } },
+      );
+    }
+    return;
+  }
+
+  try {
+    await DailyProgress.create({
+      userId: studentId,
+      date,
+      questionsAnswered: 0,
+      goalTarget: target,
+      completedGoal: false,
+      verifiedQuestionsAnswered: 1,
+      verifiedQuestionIds: [normalizedQuestionId],
+      verifiedGoalTarget: target,
+      verifiedGoalCompleted: target <= 1,
+      updatedAt: timestamp,
+    });
+  } catch (error: any) {
+    if (error?.code === 11000 && retryAfterConcurrentCreate) {
+      await recordVerifiedDailyStudyQuestion(studentId, normalizedQuestionId, timestamp, false);
+      return;
+    }
+    throw error;
   }
 }
 
@@ -424,6 +516,14 @@ export async function recordVerifiedLearningAttempt(
     idempotencyKey: input.idempotencyKey,
     metadata: input.metadata,
   });
+
+  if (result.attempt && Boolean((result.attempt as any).isAnswered)) {
+    await recordVerifiedDailyStudyQuestion(
+      studentId,
+      String((result.attempt as any).questionId),
+      new Date((result.attempt as any).createdAt || Date.now()),
+    );
+  }
 
   if (!result.duplicate && result.attempt) {
     const questionMetadata = serverQuestion ? undefined : {

@@ -353,35 +353,91 @@ function StudentStudyTimeTracker({ active }: { active: boolean }) {
   const [location] = useLocation();
   const studyPath = location.split("?")[0];
   const trackablePrefixes = [
-    "/foundation", "/student-program/", "/computerized", "/qiyas", "/paper-exam",
-    "/paper-models", "/learning/today", "/tahsili", "/tahsilik", "/question-bank",
-    "/verbal-tests", "/quantitative-tests", "/test-me", "/free-verbal-test",
-    "/free-quantitative-test", "/abilities", "/custom-exam", "/adaptive-test",
-    "/flashcards", "/courses",
+    "/foundation", "/student-program/", "/computerized", "/learning/today",
+    "/tahsili", "/question-bank", "/flashcards", "/courses",
   ];
-  const isStudyPage = trackablePrefixes.some((prefix) => studyPath.startsWith(prefix));
+  const isExcludedExamPage = [
+    "/qiyas", "/paper-exam", "/paper-models", "/tahsili/exams", "/tahsilik/tests", "/abilities",
+    "/custom-exam", "/adaptive-test", "/book-exam", "/test-results", "/exam-review",
+  ].some((prefix) => studyPath.startsWith(prefix)) ||
+    /^\/question-bank\/[^/]+\/\d+$/.test(studyPath);
+  const isStudyPage = !isExcludedExamPage && trackablePrefixes.some((prefix) => studyPath.startsWith(prefix));
 
   React.useEffect(() => {
     if (!active || !isStudyPage) return;
 
-    const heartbeat = () => {
-      void fetch("/api/student/study-time/heartbeat", {
+    let disposed = false;
+    let eligible = false;
+    let ready = false;
+    let inFlight = false;
+    let pendingReset = false;
+
+    const sendHeartbeat = async (isActive: boolean, keepalive = false): Promise<boolean> => {
+      if (isActive && (disposed || !eligible)) return false;
+      if (inFlight) {
+        if (!isActive) pendingReset = true;
+        return false;
+      }
+      inFlight = true;
+      try {
+        const response = await fetch("/api/student/study-time/heartbeat", {
         method: "POST",
         credentials: "include",
-        keepalive: true,
-      }).catch(() => {});
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ active: isActive }),
+          keepalive,
+        });
+        if (!response.ok) throw new Error("تعذر حفظ وقت الدراسة");
+        ready = isActive;
+        return true;
+      } catch {
+        ready = false;
+        return false;
+      } finally {
+        inFlight = false;
+        if (pendingReset) {
+          pendingReset = false;
+          void sendHeartbeat(false, true);
+        }
+      }
     };
-    heartbeat();
+
+    const activate = async () => {
+      if (disposed || !eligible || ready) return;
+      // Reset the server baseline before starting after a route/tab pause. This
+      // prevents hidden or unrelated time from being included in the next ping.
+      const reset = await sendHeartbeat(false);
+      if (!reset || disposed || !eligible) return;
+      await sendHeartbeat(true);
+    };
+
+    const syncEligibility = () => {
+      eligible = !disposed && document.visibilityState === "visible";
+      if (eligible) void activate();
+      else {
+        ready = false;
+        void sendHeartbeat(false, true);
+      }
+    };
+
     const timer = window.setInterval(() => {
-      if (document.visibilityState === "visible") heartbeat();
+      if (!eligible) return;
+      if (!ready) void activate();
+      else void sendHeartbeat(true);
     }, 30_000);
-    const onVisibilityChange = () => heartbeat();
+    const onVisibilityChange = syncEligibility;
     document.addEventListener("visibilitychange", onVisibilityChange);
+    syncEligibility();
+
     return () => {
+      eligible = false;
+      ready = false;
       window.clearInterval(timer);
       document.removeEventListener("visibilitychange", onVisibilityChange);
+      void sendHeartbeat(false, true);
+      disposed = true;
     };
-  }, [active, isStudyPage, studyPath]);
+  }, [active, isStudyPage]);
 
   return null;
 }
@@ -653,7 +709,6 @@ function MainLayout({ children }: { children: React.ReactNode }) {
 
   return (
     <StudentExamChromeContext.Provider value={{ isActive: isExamLayoutActive, setActive: setIsExamLayoutActive }}>
-    <StudentStudyTimeTracker active={layoutUser?.role === "student"} />
     <div className={cn(
       "qodratak-app-shell flex min-h-screen bg-background text-foreground",
       isInTestMode && "h-[100dvh] max-h-[100dvh] overflow-hidden"
@@ -1102,6 +1157,7 @@ function Router({ splashDone }: { splashDone: boolean }) {
       <TestModeBadgeController />
       {splashDone && <RotateDevicePrompt />}
        <RouteSEO isAuthenticated={Boolean(serverUser)} isLoading={isUserLoading} />
+      <StudentStudyTimeTracker active={serverUser?.role === "student"} />
       <AuthenticatedRouteBoundary>
       <StudentAvailabilityBoundary>
       <PageTransition>
