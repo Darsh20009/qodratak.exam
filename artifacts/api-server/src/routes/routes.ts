@@ -15368,6 +15368,7 @@ app.post("/api/auth/register", async (req: Request, res: Response) => {
       return res.json({
         totals: { tests: 0, questions: 0, correct: 0, wrong: 0, skipped: 0, averagePercentage: 0 },
         studySeconds: 0,
+        targetScore: null,
         progress: {
           overall: { percentage: 0, tests: 0, questions: 0 },
           qudrat: { percentage: 0, tests: 0, questions: 0 },
@@ -15387,7 +15388,7 @@ app.post("/api/auth/register", async (req: Request, res: Response) => {
       const { User, TestResult, ErrorLog, ExamBooking, Subscription, Folder, FolderQuestion } = await import('../mongodb/models');
       const now = new Date();
       const [user, testAggregate, recentTests, weakAreas, upcomingBooking, activeSubscription, folderCount, savedQuestionCount, progressAggregates] = await Promise.all([
-        User.findById(userId).select('level targetExamDate trialUsed trialStartDate trialEndDate subscription officialScores academicTrack activeStudySeconds').lean(),
+        User.findById(userId).select('level targetExamDate targetScore trialUsed trialStartDate trialEndDate subscription officialScores academicTrack activeStudySeconds').lean(),
         TestResult.aggregate([{ $match: { userId } }, { $group: { _id: null, total: { $sum: 1 }, averagePercentage: { $avg: '$percentage' }, correct: { $sum: '$correctAnswers' }, wrong: { $sum: '$wrongAnswers' }, skipped: { $sum: '$skippedQuestions' }, questions: { $sum: '$totalQuestions' } } }]),
         TestResult.find({ userId }).sort({ completedAt: -1 }).limit(5).select('testName testType percentage score totalQuestions completedAt weakAreas').lean(),
         ErrorLog.aggregate([{ $match: { userId } }, { $group: { _id: '$subcategory', count: { $sum: 1 } } }, { $sort: { count: -1, _id: 1 } }, { $limit: 5 }]),
@@ -15486,6 +15487,9 @@ app.post("/api/auth/register", async (req: Request, res: Response) => {
       return res.json({
         totals: { tests: totals.total, questions: totals.questions, correct: totals.correct, wrong: totals.wrong, skipped: totals.skipped, averagePercentage: Number((totals.averagePercentage || 0).toFixed(2)) },
         studySeconds: Math.max(0, Number((user as any).activeStudySeconds || 0)),
+        targetScore: Number.isFinite(Number((user as any).targetScore))
+          ? Math.max(0, Math.min(100, Number((user as any).targetScore)))
+          : null,
         progress: Object.fromEntries(Object.entries(progressBuckets).map(([key, value]) => [key, toProgress(value)])),
         recentTests,
         weaknesses: weakAreas.filter((area: any) => area._id).map((area: any) => ({ name: area._id, errorCount: area.count })),

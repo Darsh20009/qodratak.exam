@@ -30,6 +30,7 @@ import InstitutionMembershipCard from "@/components/institution/InstitutionMembe
 import InstitutionAssignmentsCard from "@/components/institution/InstitutionAssignmentsCard";
 import { DashboardGuideFilm } from "@/components/student/DashboardGuideFilm";
 import { StudentQuestionContributionButton } from "@/components/student/StudentQuestionContributionButton";
+import StudentProgressPathChart from "@/components/student/StudentProgressPathChart";
 import { GuideFilm } from "@/components/GuideFilm";
 import { NewStudentWelcome } from "@/components/student/NewStudentWelcome";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
@@ -279,13 +280,6 @@ export default function DashboardPage() {
   const daysToExam = dashboard.upcomingExam.date
     ? Math.max(0, Math.ceil((new Date(dashboard.upcomingExam.date).getTime() - Date.now()) / 86400000))
     : null;
-  const progressItems = [
-    { key: "overall", label: "الإجمالي", ...dashboard.progress.overall },
-    { key: "verbal", label: "اللفظي", ...dashboard.progress.verbal },
-    { key: "quantitative", label: "الكمي", ...dashboard.progress.quantitative },
-    { key: "tahsili", label: "التحصيلي", ...dashboard.progress.tahsili },
-  ].filter((item) => item.tests > 0);
-
   const isNewStudent =
     !courseQuery.isLoading && !courseQuery.isError &&
     recentTests.length === 0 && (dashboard.stats.totalTests ?? 0) === 0 &&
@@ -467,51 +461,16 @@ export default function DashboardPage() {
         </div>
       </details>
 
-      <section data-testid="student-progress-summary" aria-labelledby="student-progress-title" className="rounded-3xl border border-border bg-card p-5 shadow-sm md:p-6"><div className="mt-1">
-        <div className="flex flex-col gap-4 border-b border-border pb-5 sm:flex-row sm:items-end sm:justify-between">
-          <div>
-            <p className="text-xs font-black text-primary">بياناتك</p>
-            <h2 id="student-progress-title" className="mt-1 text-xl font-black text-foreground">رسم بيانات تقدمك</h2>
-            <p className="mt-1 text-xs text-muted-foreground">النسب محسوبة من إجابات الاختبارات المحفوظة.</p>
-          </div>
-          <div className="flex gap-5 text-sm">
-            <div data-testid="stat-average-score">
-              <p className="text-2xl font-black text-foreground">{dashboard.stats.averageScore}%</p>
-              <p className="text-xs font-bold text-muted-foreground">متوسط الأداء</p>
-            </div>
-            <div data-testid="stat-total-tests">
-              <p className="text-2xl font-black text-foreground">{dashboard.stats.totalTests}</p>
-              <p className="text-xs font-bold text-muted-foreground">اختبارات منجزة</p>
-            </div>
-            <div data-testid="stat-points">
-              <p className="text-2xl font-black text-foreground">{dashboard.stats.points}</p>
-              <p className="text-xs font-bold text-muted-foreground">إجابة صحيحة</p>
-            </div>
-          </div>
-        </div>
-        {progressItems.length ? (
-          <div className="mt-5 grid gap-x-6 gap-y-4 sm:grid-cols-2">
-            {progressItems.map((item) => {
-              const percentage = clampPercentage(item.percentage);
-              return (
-                <div key={item.key} data-testid={`progress-${item.key}`}>
-                  <div className="mb-2 flex items-center justify-between text-sm font-bold">
-                    <span className="text-foreground">{item.label}</span>
-                    <span className="text-muted-foreground">{percentage}%</span>
-                  </div>
-                  <div className="h-2 overflow-hidden rounded-full bg-muted">
-                    <div className="h-full rounded-full bg-primary transition-all" style={{ width: `${percentage}%` }} />
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        ) : (
-          <p className="mt-4 rounded-2xl bg-muted/50 p-4 text-sm leading-6 text-muted-foreground" data-testid="empty-progress-summary">
-            ستظهر نسبك هنا بعد إتمام أول اختبار. ابدأ باختبار واحد في المسار الذي تدرسه.
-          </p>
-        )}
-      </div></section>
+      <StudentProgressPathChart
+        progress={{
+          qudrat: dashboard.progress.qudrat,
+          tahsili: dashboard.progress.tahsili,
+        }}
+        targetScore={dashboard.targetScore}
+        initialProgram={journeyProgram}
+        nextStepTitle={todayTitle}
+        nextStepHref={todayHref}
+      />
 
       <Link href="/account" data-testid="link-platform-review" className="flex items-center justify-between gap-4 rounded-2xl border border-border bg-card p-4 text-sm font-black text-foreground transition hover:border-primary/40 hover:bg-primary/5">
         <span>تقييم المنصة ومعلومات حسابك</span>

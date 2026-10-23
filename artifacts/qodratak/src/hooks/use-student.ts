@@ -14,6 +14,7 @@ export interface StudentDashboard {
   recentTests: Array<{ id: string; title: string; score: number; date: string; type: string }>;
   weaknesses: Array<{ subject: string; topic: string; errorRate: number }>;
   upcomingExam: { date: string | null; targetScore?: number };
+  targetScore?: number | null;
   recommendedPlan: {
     title: string;
     description: string;
@@ -476,6 +477,9 @@ export function useStudentDashboard(enabled = true) {
           errorRate: Math.round((Number(item.errorCount || 0) / maxErrors) * 100),
         })),
         upcomingExam: { date: examDate },
+        targetScore: data.targetScore !== undefined && data.targetScore !== null
+          ? Number(data.targetScore)
+          : null,
         recommendedPlan: {
           title: data.recommendedPlan?.focusSubject === "verbal"
             ? "ابدأ بخطة اللفظي"
