@@ -41,11 +41,10 @@ interface NavItem {
 }
 
 const studentNavItems: NavItem[] = [
-  { title: 'الرئيسية', url: '/', icon: Home },
-  { title: 'الاختبارات', url: '/tests', icon: ClipboardList },
-  { title: 'بنك الأسئلة', url: '/questions', icon: BookOpen },
-  { title: 'تقدمي', url: '/progress', icon: BarChart3 },
-  { title: 'الاشتراك', url: '/subscription', icon: CreditCard },
+  { title: 'لوحة التحكم', url: '/', icon: Home },
+  { title: 'التأسيس', url: '/foundation', icon: BookOpen },
+  { title: 'التدريب', url: '/training', icon: ClipboardList },
+  { title: 'حسابي', url: '/account', icon: FileText },
 ];
 
 const teacherNavItems: NavItem[] = [

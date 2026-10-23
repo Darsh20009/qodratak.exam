@@ -1,31 +1,14 @@
 import React, { useCallback, useContext, useMemo, useState, useLayoutEffect } from "react";
-import { resetExamTiming, bindExamTimingOwner } from '@/lib/examTiming';
-import { Link, useLocation } from "wouter";
-import StudentQuestionContributionButton from "./StudentQuestionContributionButton";
-import { ThemeToggle } from "@/components/ThemeToggle";
-import NotificationBell from "@/components/NotificationBell";
+import { bindExamTimingOwner } from '@/lib/examTiming';
+import { useLocation } from "wouter";
 import { useUser } from "@/hooks/use-user";
-import { cn } from "@/lib/utils";
-import { HomeIcon, BookOpenIcon, BrainCircuitIcon, UserIcon, MenuIcon, XIcon, LogOut, CreditCard, ClipboardList } from "lucide-react";
-import { BrandMark } from "@/components/BrandMark";
 import { StudentExamChromeContext } from "@/components/student/StudentExamChromeContext";
-import useSubscription from "@/hooks/useSubscription";
 import { PageGuideFilm } from "@/components/student/PageGuideFilm";
-
-const NAV_ITEMS = [
-  { name: "لوحتي", href: "/", icon: HomeIcon },
-  { name: "التأسيس", href: "/foundation", icon: BookOpenIcon },
-  { name: "المحوسب", href: "/computerized", icon: BrainCircuitIcon },
-  { name: "نتائجي", href: "/records", icon: ClipboardList },
-  { name: "حسابي", href: "/account", icon: UserIcon },
-];
 
 export function StudentShell({ children }: { children: React.ReactNode }) {
   const [location] = useLocation();
-  const { user, logout } = useUser();
+  const { user } = useUser();
   useLayoutEffect(() => { bindExamTimingOwner(user?.id ? String(user.id) : null); }, [user?.id]);
-  const { subscription } = useSubscription();
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const inheritedExamChrome = useContext(StudentExamChromeContext);
   const [localExamActive, setLocalExamActive] = useState(false);
   const setExamActive = useCallback((active: boolean) => {
@@ -37,137 +20,11 @@ export function StudentShell({ children }: { children: React.ReactNode }) {
     () => ({ isActive: isExamLayoutActive, setActive: setExamActive }),
     [isExamLayoutActive, setExamActive],
   );
-  const visibleNavItems = subscription?.isExpired
-    ? [
-        NAV_ITEMS[0],
-        NAV_ITEMS.find((item) => item.href === "/records")!,
-        { name: "الاشتراك", href: "/subscription", icon: CreditCard },
-      ]
-    : NAV_ITEMS;
-
-  const userName = user?.name || user?.username || "طالب";
-  const userInitial = userName.charAt(0);
-
-  const handleLogout = () => {
-    resetExamTiming();
-    logout();
-  };
 
   return (
     <StudentExamChromeContext.Provider value={examChrome}>
-    <div className={cn("qodratak-app-shell flex min-h-[100dvh] bg-background text-foreground", isExamLayoutActive && "h-[100dvh] max-h-[100dvh] overflow-hidden")} dir="rtl">
-      {/* Desktop Sidebar */}
-      {!isExamLayoutActive && <aside className="hidden md:flex w-64 flex-col border-l border-border bg-card">
-        <div className="p-5 border-b border-border">
-          <Link href="/" className="flex items-center gap-3 qodratak-focus-ring rounded-lg">
-            <BrandMark />
-          </Link>
-        </div>
-
-        <nav className="flex-1 px-4 py-6 space-y-2 overflow-y-auto">
-          {visibleNavItems.map((item) => {
-            const isActive = location === item.href || (item.href !== "/" && location.startsWith(item.href));
-            return (
-              <Link key={item.href} href={item.href}>
-                <div className={cn(
-                  "flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-bold transition-all duration-200 qodratak-focus-ring cursor-pointer",
-                  isActive
-                    ? "bg-[#0D1B2A] text-white dark:bg-primary dark:text-primary-foreground shadow-sm"
-                    : "text-muted-foreground hover:bg-muted hover:text-foreground"
-                )}>
-                  <item.icon className="h-5 w-5 flex-shrink-0" />
-                  <span>{item.name}</span>
-                </div>
-              </Link>
-            );
-          })}
-        </nav>
-
-        <div className="p-4 border-t border-border space-y-4">
-          <div className="flex items-center justify-between px-2">
-            <div className="flex items-center gap-2">
-              <ThemeToggle />
-              <span className="text-xs font-bold text-muted-foreground">المظهر</span>
-            </div>
-            <NotificationBell userId={user?.id ? String(user.id) : null} />
-          </div>
-
-          <div className="flex items-center gap-3 px-2">
-            <div className="h-10 w-10 rounded-full bg-muted flex items-center justify-center font-black text-[#0D1B2A] dark:text-white flex-shrink-0">
-              {userInitial}
-            </div>
-            <div className="flex-1 min-w-0">
-              <p className="text-sm font-bold text-foreground truncate">{userName}</p>
-              <button onClick={handleLogout} className="text-xs text-red-500 font-bold hover:underline flex items-center gap-1 mt-0.5">
-                <LogOut className="h-3 w-3" /> تسجيل خروج
-              </button>
-            </div>
-          </div>
-        </div>
-      </aside>}
-
-      {/* Mobile Top Header */}
-      {!isExamLayoutActive && <div className="md:hidden fixed top-0 left-0 right-0 h-16 bg-card border-b border-border z-40 flex items-center justify-between px-4">
-        <Link href="/" className="flex items-center gap-2">
-          <BrandMark imageClassName="h-8 w-8" />
-        </Link>
-        <div className="flex items-center gap-3">
-          <StudentQuestionContributionButton />
-          <ThemeToggle />
-          <NotificationBell userId={user?.id ? String(user.id) : null} />
-          <Link
-            href="/account"
-            aria-label="فتح الحساب"
-            data-testid="link-mobile-account"
-            className="h-8 w-8 rounded-full bg-muted flex items-center justify-center font-black text-sm qodratak-focus-ring"
-          >
-            {userInitial}
-          </Link>
-        </div>
-      </div>}
-
-      {/* Main Content Area */}
-      <main className={cn(
-        "qodratak-page-surface min-w-0 flex-1 flex flex-col bg-[#F7F8FA] dark:bg-background",
-        isExamLayoutActive
-          ? "h-[100dvh] overflow-hidden"
-          : "md:pt-0 pt-16 pb-20 md:pb-0 h-[100dvh] overflow-y-auto"
-      )}>
-          {!isExamLayoutActive && <div className="hidden md:flex items-center justify-end gap-3 border-b border-border bg-card px-5 py-3">
-            <StudentQuestionContributionButton />
-            <Link href="/account" className="flex items-center gap-2 rounded-xl px-3 py-2 text-sm font-bold hover:bg-muted">
-              <UserIcon className="h-4 w-4" /> حسابي
-            </Link>
-          </div>}
-          {!isExamLayoutActive && <PageGuideFilm location={location} />}
-          {children}
-      </main>
-
-      {/* Mobile Bottom Navigation */}
-      {!isExamLayoutActive && <div className="md:hidden fixed bottom-0 left-0 right-0 bg-card border-t border-border z-40 px-2 pb-[env(safe-area-inset-bottom)]">
-        <nav className="flex items-center justify-around h-16">
-          {visibleNavItems.map((item) => {
-            const isActive = location === item.href || (item.href !== "/" && location.startsWith(item.href));
-            return (
-              <Link key={item.href} href={item.href} className="min-w-0 flex-1">
-                <div className="flex flex-col items-center justify-center w-full h-full qodratak-focus-ring cursor-pointer">
-                  <div className={cn(
-                    "flex items-center justify-center h-8 w-12 rounded-full transition-colors",
-                    isActive ? "bg-[#0D1B2A] text-white dark:bg-primary dark:text-primary-foreground" : "text-muted-foreground"
-                  )}>
-                    <item.icon className="h-5 w-5" />
-                  </div>
-                  <span className={cn(
-                    "text-[10px] font-bold mt-1",
-                    isActive ? "text-[#0D1B2A] dark:text-primary" : "text-muted-foreground"
-                  )}>{item.name}</span>
-                </div>
-              </Link>
-            );
-          })}
-        </nav>
-      </div>}
-    </div>
+      {!isExamLayoutActive && <PageGuideFilm location={location} />}
+      {children}
     </StudentExamChromeContext.Provider>
   );
 }

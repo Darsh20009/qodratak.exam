@@ -29,6 +29,7 @@ import { useUser } from "@/hooks/use-user";
 import InstitutionMembershipCard from "@/components/institution/InstitutionMembershipCard";
 import InstitutionAssignmentsCard from "@/components/institution/InstitutionAssignmentsCard";
 import { DashboardGuideFilm } from "@/components/student/DashboardGuideFilm";
+import { StudentQuestionContributionButton } from "@/components/student/StudentQuestionContributionButton";
 import { GuideFilm } from "@/components/GuideFilm";
 import { NewStudentWelcome } from "@/components/student/NewStudentWelcome";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
@@ -351,12 +352,15 @@ export default function DashboardPage() {
 
   return (
     <div className="mx-auto w-full max-w-5xl space-y-7 p-5 md:p-8" dir="rtl">
-      <header className="space-y-2">
-        <p className="text-sm font-bold text-muted-foreground">{new Date().getHours() < 17 ? "مرحبًا" : "مساء الخير"}،</p>
-        <h1 data-testid="text-student-name" className="text-3xl font-black tracking-tight text-foreground md:text-4xl">
-          {userName}
-        </h1>
-        <p className="text-sm leading-7 text-muted-foreground">خطوة واحدة الآن تكفي.</p>
+      <header className="flex flex-wrap items-start justify-between gap-3">
+        <div className="space-y-2">
+          <p className="text-sm font-bold text-muted-foreground">{new Date().getHours() < 17 ? "مرحبًا" : "مساء الخير"}،</p>
+          <h1 data-testid="text-student-name" className="text-3xl font-black tracking-tight text-foreground md:text-4xl">
+            {userName}
+          </h1>
+          <p className="text-sm leading-7 text-muted-foreground">خطوة واحدة الآن تكفي.</p>
+        </div>
+        <StudentQuestionContributionButton />
       </header>
       <details data-testid="details-guide-and-question-library" className="group rounded-3xl border border-border bg-card shadow-sm">
         <summary className="flex cursor-pointer list-none items-center gap-3 p-4 text-sm font-black text-foreground [&::-webkit-details-marker]:hidden">
