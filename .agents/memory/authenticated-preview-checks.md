@@ -9,6 +9,12 @@ An unauthenticated 401 from a session-only API during a screenshot of a public r
 
 **How to apply:** Treat the public shell and browser console as healthy when the only auth-related log is an expected 401; use an authenticated session or targeted API test to verify dashboard, notification, booking, and protected navigation behavior.
 
+Protected dashboard visual checks should use a real login-issued session for a synthetic database-backed student, dismiss first-run security setup through its normal UI, and wait for task sources to finish loading before judging the empty state.
+
+**Why:** The unauthenticated preview cannot prove protected rendering; account-security setup can cover the dashboard, and an early render can look empty before recommendations arrive.
+
+**How to apply:** Confirm the session with protected API data, inspect task title/status/reason/destination after loading settles, capture desktop and mobile, and verify logout without weakening authentication.
+
 Use a synthetic student backed by the actual data store when checking protected student flows; a legacy file-backed identity is not a valid substitute.
 
 **Why:** A tutorial capture used an old registration endpoint that created a numeric file-only identity. The Mongo-backed dashboard then failed, falsely suggesting the current signup flow was broken.
