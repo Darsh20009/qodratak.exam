@@ -18,6 +18,8 @@ import {
   useStudentDashboard,
   useStudentLearningRecommendations,
   useTodayLearningSession,
+  useFoundationSubjectCatalog,
+  useFoundationLearningState,
   useLearningContentProgressSummary,
   useUpdateExamDate,
 } from "@/hooks/use-student";
@@ -35,11 +37,12 @@ import { Input } from "@/components/ui/input";
 import AdaptiveLearningCoach from "@/components/student/AdaptiveLearningCoach";
 import useSubscription from "@/hooks/useSubscription";
 import { getGetStudentCourseQueryKey, useGetStudentCourse } from "@workspace/api-client-react";
-import { foundationHrefForScope, todayLearningHref } from "@/lib/foundationRoutes.mjs";
+import { foundationDiagnosticHref, foundationHrefForScope, todayLearningHref } from "@/lib/foundationRoutes.mjs";
 import {
   buildStudentDashboardJourney,
   buildStudentDashboardTasks,
   buildStudentDashboardTrend,
+  listAvailableStudentDashboardSubjects,
   type StudentDashboardProgram,
 } from "@/lib/studentDashboardProgress";
 
@@ -122,6 +125,7 @@ export default function DashboardPage() {
     staleTime: 60_000,
   });
   const [activeProgram, setActiveProgram] = useState<StudentDashboardProgram>("qudrat");
+  const [selectedSubjects, setSelectedSubjects] = useState<Partial<Record<StudentDashboardProgram, string>>>({});
   useEffect(() => {
     const suggestedProgram = dashboard?.recommendedPlan?.program;
     if (suggestedProgram === "qudrat" || suggestedProgram === "tahsili") {
@@ -129,11 +133,21 @@ export default function DashboardPage() {
     }
   }, [dashboard?.recommendedPlan?.program]);
   const journeyProgram = activeProgram;
-  const journeySubjectId = dashboard?.recommendedPlan?.program === activeProgram
+  const hasJourneyScope = isStudent && Boolean(dashboard) && !subscription?.isExpired;
+  const foundationCatalog = useFoundationSubjectCatalog(journeyProgram, hasJourneyScope);
+  const subjectOptions = listAvailableStudentDashboardSubjects(journeyProgram, foundationCatalog.data?.subjectIds);
+  const subjectEmptyMessage = "لا توجد مواد تأسيس منشورة ومصنفة حسب المادة لهذا المسار؛ لا ندمج مواد غير محددة.";
+  const recommendedSubjectId = dashboard?.recommendedPlan?.program === activeProgram
     ? dashboard.recommendedPlan.subjectId
     : undefined;
-  const hasJourneyScope = isStudent && Boolean(dashboard) && !subscription?.isExpired;
+  const requestedSubjectId = selectedSubjects[activeProgram];
+  const journeySubjectId = requestedSubjectId && subjectOptions.some((item) => item.id === requestedSubjectId)
+    ? requestedSubjectId
+    : recommendedSubjectId && subjectOptions.some((item) => item.id === recommendedSubjectId)
+      ? recommendedSubjectId
+      : subjectOptions[0]?.id;
   const foundationProgress = useLearningContentProgressSummary(journeyProgram, journeySubjectId, hasJourneyScope);
+  const foundationLearningState = useFoundationLearningState(journeyProgram, hasJourneyScope);
   const todayLearning = useTodayLearningSession(hasJourneyScope, journeyProgram, journeySubjectId);
   const recommendations = useStudentLearningRecommendations(hasJourneyScope, journeyProgram);
   const courseQuery = useGetStudentCourse({
@@ -221,6 +235,7 @@ export default function DashboardPage() {
   const taskSourcesUnavailable = todayLearning.isError
     && recommendations.isError
     && (planProgram !== "qudrat" || courseQuery.isError)
+    && foundationLearningState.isError
     && !reviewResult;
   const tasks = buildStudentDashboardTasks({
     diagnosticRequired,
@@ -238,7 +253,7 @@ export default function DashboardPage() {
         }
       : null,
     sessionHref,
-    recommendation: matchingRecommendation?.title
+    recommendation: planStatus !== "CONTENT_UNAVAILABLE" && matchingRecommendation?.title
       ? {
           title: matchingRecommendation.title,
           reason: matchingRecommendation.reason,
@@ -263,6 +278,8 @@ export default function DashboardPage() {
     ? "loading" as const
     : taskSourcesUnavailable
       ? "unavailable" as const
+      : planStatus === "CONTENT_UNAVAILABLE" && tasks.length === 0
+        ? "content-unavailable" as const
       : "ready" as const;
   const foundationTotal = typeof foundationProgress.data?.total === "number"
     ? foundationProgress.data.total
@@ -272,6 +289,16 @@ export default function DashboardPage() {
     : null;
   const stages = buildStudentDashboardJourney({
     program: activeProgram,
+    diagnosticStatus: foundationLearningState.isError
+      ? "UNAVAILABLE"
+      : foundationLearningState.isLoading
+        ? "LOADING"
+      : foundationLearningState.data?.status === "diagnostic_completed"
+        ? "COMPLETED"
+        : diagnosticRequired ? "NOT_ASSESSED" : undefined,
+    nextActionType: todayPlan?.recommendationType,
+    planStatus,
+    subjectLabel: subjectOptions.find((item) => item.id === journeySubjectId)?.label,
     foundation: {
       loaded: dashboard.metricsAvailable !== false && !foundationProgress.isLoading && !foundationProgress.isError,
       total: foundationTotal,
@@ -290,6 +317,7 @@ export default function DashboardPage() {
       : null,
     links: {
       foundation: foundationHrefForScope(activeProgram, journeySubjectId),
+      diagnostic: foundationDiagnosticHref(activeProgram),
       training: "/training",
       simulation: activeProgram === "tahsili" ? "/tahsilik/tests" : "/qiyas",
       analysis: "/records",
@@ -375,6 +403,14 @@ export default function DashboardPage() {
           }}
           program={activeProgram}
           onProgramChange={setActiveProgram}
+          subjectId={journeySubjectId}
+          subjectOptions={subjectOptions}
+          onSubjectChange={(subjectId) => setSelectedSubjects((current) => ({ ...current, [activeProgram]: subjectId }))}
+          subjectState={foundationCatalog.isLoading || foundationCatalog.isFetching
+            ? "loading"
+            : foundationCatalog.isError ? "unavailable" : "ready"}
+          subjectEmptyMessage={subjectEmptyMessage}
+          subjectFallbackHref={activeProgram === "tahsili" ? "/tahsilik/tests" : "/training"}
           stages={stages}
           tasks={tasks}
           tasksState={tasksState}
@@ -421,6 +457,14 @@ export default function DashboardPage() {
         }}
         program={activeProgram}
         onProgramChange={setActiveProgram}
+        subjectId={journeySubjectId}
+        subjectOptions={subjectOptions}
+        onSubjectChange={(subjectId) => setSelectedSubjects((current) => ({ ...current, [activeProgram]: subjectId }))}
+        subjectState={foundationCatalog.isLoading || foundationCatalog.isFetching
+          ? "loading"
+          : foundationCatalog.isError ? "unavailable" : "ready"}
+        subjectEmptyMessage={subjectEmptyMessage}
+        subjectFallbackHref={activeProgram === "tahsili" ? "/tahsilik/tests" : "/training"}
         stages={stages}
         tasks={tasks}
         tasksState={tasksState}

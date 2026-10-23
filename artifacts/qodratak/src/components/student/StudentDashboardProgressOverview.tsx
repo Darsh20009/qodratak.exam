@@ -42,7 +42,23 @@ function StageIcon({ status }: { status: StudentDashboardEvidenceStatus }) {
 }
 
 export default function StudentDashboardProgressOverview(props: StudentDashboardProgressOverviewProps) {
-  const { metrics, metricsState, stages, tasks, tasksState, program, onProgramChange, trendState, trendPoints } = props;
+  const {
+    metrics,
+    metricsState,
+    stages,
+    tasks,
+    tasksState,
+    program,
+    onProgramChange,
+    subjectId,
+    subjectOptions,
+    onSubjectChange,
+    subjectState,
+    subjectEmptyMessage,
+    subjectFallbackHref,
+    trendState,
+    trendPoints,
+  } = props;
   const metricsItems = [
     {
       label: "وقت التعلّم المسجّل",
@@ -114,6 +130,54 @@ export default function StudentDashboardProgressOverview(props: StudentDashboard
         </p>
       )}
 
+      <section aria-labelledby="student-subject-scope-title" className="rounded-2xl border border-border bg-card px-4 py-4 sm:px-5">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <p className="text-xs font-black text-primary">مواد التأسيس والجلسة اليومية</p>
+            <h3 id="student-subject-scope-title" className="mt-1 text-sm font-black text-foreground">
+              {program === "tahsili" ? "اختر مادة التحصيلي" : "اختر القسم"}
+            </h3>
+          </div>
+          {subjectState === "loading" ? (
+            <span role="status" className="text-xs text-muted-foreground">جارٍ تحميل المواد المنشورة…</span>
+          ) : subjectOptions.length > 0 ? (
+            <div role="group" aria-labelledby="student-subject-scope-title" className="flex flex-wrap gap-2">
+              {subjectOptions.map((subject) => (
+                <button
+                  key={subject.id}
+                  type="button"
+                  aria-pressed={subject.id === subjectId}
+                  onClick={() => onSubjectChange(subject.id)}
+                  className={`min-h-10 rounded-xl border px-4 text-sm font-bold transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary ${
+                    subject.id === subjectId
+                      ? "border-primary bg-primary text-primary-foreground"
+                      : "border-border bg-background text-foreground hover:border-primary/40 hover:bg-primary/5"
+                  }`}
+                >
+                  {subject.label}
+                </button>
+              ))}
+            </div>
+          ) : (
+            <div className="flex flex-wrap items-center gap-3">
+              <p role={subjectState === "unavailable" ? "alert" : "status"} className="text-xs leading-5 text-muted-foreground">
+                {subjectState === "unavailable"
+                  ? "تعذر تحميل المواد المنشورة؛ لم نفترض توفرها."
+                  : subjectEmptyMessage || "لا توجد مواد تأسيس منشورة لهذا المسار حاليًا."}
+              </p>
+              {subjectFallbackHref && (
+                <Link href={subjectFallbackHref} className="inline-flex min-h-9 items-center rounded-lg border border-border px-3 text-xs font-black text-primary hover:bg-primary/5">
+                  استعرض الاختبارات المتاحة
+                </Link>
+              )}
+            </div>
+          )}
+        </div>
+        <p className="mt-3 text-xs leading-5 text-muted-foreground">
+          تقدم الدروس والجلسة يتبعان المادة المختارة؛ منحنى الاختبارات يعرض نتائج البرنامج كاملًا.
+        </p>
+      </section>
+
       <section aria-labelledby="student-stages-title" className="rounded-3xl border border-border bg-card p-5 sm:p-6">
         <div className="mb-5 flex flex-wrap items-end justify-between gap-2">
           <div>
@@ -129,7 +193,16 @@ export default function StudentDashboardProgressOverview(props: StudentDashboard
             {stages.map((stage, index) => {
               const state = stageStatus[stage.status];
               return (
-                <li key={stage.id} data-testid={`progress-stage-${stage.id}`} className="relative min-w-0 rounded-2xl border border-border/80 bg-background/60 p-4">
+                <li
+                  key={stage.id}
+                  data-testid={`progress-stage-${stage.id}`}
+                  data-current={stage.isCurrent ? "true" : "false"}
+                  className={`relative min-w-0 rounded-2xl border p-4 ${
+                    stage.isCurrent
+                      ? "border-primary/50 bg-primary/[0.045] shadow-sm"
+                      : "border-border/80 bg-background/60"
+                  }`}
+                >
                   <div className="flex items-start gap-3">
                     <span className={`grid h-9 w-9 shrink-0 place-items-center rounded-xl ${state.tone}`} aria-hidden="true">
                       <StageIcon status={stage.status} />
@@ -137,7 +210,10 @@ export default function StudentDashboardProgressOverview(props: StudentDashboard
                     <div className="min-w-0 flex-1">
                       <div className="flex flex-wrap items-center justify-between gap-2">
                         <h4 className="font-black text-foreground">{stage.title}</h4>
-                        <span className={`rounded-full border px-2 py-1 text-[10px] font-black ${state.tone}`}>{state.label}</span>
+                        <div className="flex items-center gap-1.5">
+                          {stage.isCurrent && <span className="rounded-full bg-primary px-2 py-1 text-[10px] font-black text-primary-foreground">أنت هنا</span>}
+                          <span className={`rounded-full border px-2 py-1 text-[10px] font-black ${state.tone}`}>{state.label}</span>
+                        </div>
                       </div>
                       <p className="mt-2 text-xs leading-6 text-muted-foreground">{stage.detail}</p>
                       {typeof stage.completedCount === "number" && typeof stage.totalCount === "number" && stage.totalCount > 0 && (
@@ -187,6 +263,16 @@ export default function StudentDashboardProgressOverview(props: StudentDashboard
             <p className="font-black text-foreground">تعذر تحميل المهام الآن</p>
             <p className="mt-1 text-sm text-muted-foreground">لا نعرض مهام بديلة غير محفوظة.</p>
           </div>
+        ) : tasksState === "content-unavailable" ? (
+          <div data-testid="progress-tasks-content-unavailable" className="rounded-2xl border border-dashed border-border bg-muted/20 px-5 py-8 text-center">
+            <p className="font-black text-foreground">لا توجد خطوة تعلم منشورة لهذا النطاق الآن</p>
+            <p className="mt-1 text-sm leading-6 text-muted-foreground">لم نُنشئ مهمة بديلة أو نخلط مواد المسارات. يمكنك اختيار مادة أخرى أو فتح الاختبارات المتاحة.</p>
+            {subjectFallbackHref && (
+              <Link href={subjectFallbackHref} className="mt-4 inline-flex min-h-10 items-center rounded-xl border border-border px-4 text-sm font-black text-primary hover:bg-primary/5">
+                استعرض الاختبارات المتاحة
+              </Link>
+            )}
+          </div>
         ) : tasks.length === 0 ? (
           <div className="rounded-2xl border border-dashed border-border bg-muted/20 px-5 py-8 text-center">
             <div className="mx-auto grid h-11 w-11 place-items-center rounded-2xl bg-primary/10 text-primary"><Sparkles className="h-5 w-5" aria-hidden="true" /></div>
@@ -205,6 +291,11 @@ export default function StudentDashboardProgressOverview(props: StudentDashboard
                       <span className={`rounded-full px-2.5 py-1 text-[10px] font-black ${state.tone}`}>{state.label}</span>
                     </div>
                     <p className="mt-1 text-sm leading-6 text-muted-foreground">{task.reason}</p>
+                    {task.followUp && (
+                      <p className="mt-1 text-xs leading-5 text-muted-foreground">
+                        <span className="font-black text-foreground">بعدها: </span>{task.followUp}
+                      </p>
+                    )}
                     {typeof task.estimatedMinutes === "number" && task.estimatedMinutes > 0 && (
                       <p className="mt-1 text-xs font-bold text-muted-foreground">الوقت التقديري: {task.estimatedMinutes.toLocaleString("ar-SA")} دقيقة</p>
                     )}

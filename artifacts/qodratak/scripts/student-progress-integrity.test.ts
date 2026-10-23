@@ -14,10 +14,13 @@ import {
   buildStudentDashboardJourney,
   buildStudentDashboardTasks,
   buildStudentDashboardTrend,
+  listAvailableStudentDashboardSubjects,
 } from "../src/lib/studentDashboardProgress";
 import { isTrackableStudyPath } from "../src/lib/studentStudyTimePolicy";
+import { foundationDiagnosticHref } from "../src/lib/foundationRoutes.mjs";
 
 const appSource = readFileSync(new URL("../src/App.tsx", import.meta.url), "utf8");
+const foundationPageSource = readFileSync(new URL("../src/pages/student/FoundationPage.tsx", import.meta.url), "utf8");
 const routesSource = readFileSync(new URL("../../api-server/src/routes/routes.ts", import.meta.url), "utf8");
 const learningProfileSource = readFileSync(new URL("../../api-server/src/services/learningProfileService.ts", import.meta.url), "utf8");
 const modelsSource = readFileSync(new URL("../../api-server/src/mongodb/models.ts", import.meta.url), "utf8");
@@ -260,11 +263,14 @@ test("student dashboard journey keeps Qudrat and Tahsili evidence separate", () 
       remediation: "/learning/today?programId=tahsili",
     },
   });
-  assert.equal(qudrat[0].status, "IN_PROGRESS");
-  assert.equal(qudrat[1].status, "NOT_STARTED");
-  assert.equal(qudrat[2].status, "IN_PROGRESS");
-  assert.equal(tahsili[1].status, "IN_PROGRESS");
-  assert.equal(tahsili[2].status, "NOT_STARTED");
+  const qudratStages = Object.fromEntries(qudrat.map((stage) => [stage.id, stage]));
+  const tahsiliStages = Object.fromEntries(tahsili.map((stage) => [stage.id, stage]));
+  assert.equal(qudratStages.foundation.status, "IN_PROGRESS");
+  assert.equal(qudratStages.training.status, "NOT_STARTED");
+  assert.equal(qudratStages.simulation.status, "IN_PROGRESS");
+  assert.equal(tahsiliStages.foundation.status, "NOT_STARTED");
+  assert.equal(tahsiliStages.training.status, "IN_PROGRESS");
+  assert.equal(tahsiliStages.simulation.status, "NOT_STARTED");
 });
 
 test("dashboard foundation completion requires all published lessons to be saved complete", () => {
@@ -283,15 +289,15 @@ test("dashboard foundation completion requires all published lessons to be saved
   assert.equal(buildStudentDashboardJourney({
     ...base,
     foundation: { loaded: true, total: 3, completed: 2 },
-  })[0].status, "IN_PROGRESS");
+  }).find((stage) => stage.id === "foundation")?.status, "IN_PROGRESS");
   assert.equal(buildStudentDashboardJourney({
     ...base,
     foundation: { loaded: true, total: 3, completed: 3 },
-  })[0].status, "COMPLETED");
+  }).find((stage) => stage.id === "foundation")?.status, "COMPLETED");
   assert.equal(buildStudentDashboardJourney({
     ...base,
     foundation: { loaded: true, total: 0, completed: 0 },
-  })[0].status, "NOT_ASSESSED");
+  }).find((stage) => stage.id === "foundation")?.status, "NOT_ASSESSED");
 });
 
 test("a finished corrective session does not complete the broader remediation stage", () => {
@@ -326,9 +332,83 @@ test("a finished corrective session does not complete the broader remediation st
       steps: [{ stepType: "CORRECT", status: "COMPLETED" }],
     },
   });
-  assert.equal(incomplete[4].status, "IN_PROGRESS");
-  assert.equal(complete[4].status, "IN_PROGRESS");
-  assert.match(complete[4].detail, /أنجزت 1 من 1 خطوة تصحيحية/);
+  const incompleteRemediation = incomplete.find((stage) => stage.id === "remediation");
+  const completeRemediation = complete.find((stage) => stage.id === "remediation");
+  assert.equal(incompleteRemediation?.status, "IN_PROGRESS");
+  assert.equal(completeRemediation?.status, "IN_PROGRESS");
+  assert.match(completeRemediation?.detail || "", /أنجزت 1 من 1 خطوة تصحيحية/);
+});
+
+test("the active stage follows the saved learning decision and diagnostic state", () => {
+  const input = {
+    program: "qudrat" as const,
+    foundation: { loaded: true, total: 4, completed: 1 },
+    testEvidence: [{ program: "qudrat" as const, testType: "practice", tests: 1 }],
+    reviewTopics: [],
+    diagnosticStatus: "COMPLETED" as const,
+    planStatus: "READY",
+    nextActionType: "PRACTICE",
+    links: {
+      diagnostic: "/foundation?program=qudrat&reassess=1",
+      foundation: "/foundation",
+      training: "/training",
+      simulation: "/qiyas",
+      analysis: "/records",
+      remediation: "/learning/today",
+    },
+  };
+  const stages = buildStudentDashboardJourney(input);
+  assert.equal(stages.find((stage) => stage.isCurrent)?.id, "training");
+  assert.equal(buildStudentDashboardJourney({ ...input, diagnosticStatus: "NOT_ASSESSED" })
+    .find((stage) => stage.isCurrent)?.id, "diagnostic");
+  assert.equal(buildStudentDashboardJourney({ ...input, planStatus: "CONTENT_UNAVAILABLE" })
+    .some((stage) => stage.isCurrent), false);
+});
+
+test("placement results do not inflate the student's training count", () => {
+  const stages = buildStudentDashboardJourney({
+    program: "tahsili",
+    diagnosticStatus: "COMPLETED",
+    foundation: { loaded: true, total: 0, completed: 0 },
+    testEvidence: [
+      { program: "tahsili", testType: "placement-diagnostic", tests: 1 },
+      { program: "tahsili", testType: "custom", tests: 2 },
+    ],
+    reviewTopics: [],
+    links: {
+      diagnostic: "/foundation?program=tahsili&reassess=1",
+      foundation: "/foundation?program=tahsili",
+      training: "/training",
+      simulation: "/tahsilik/tests",
+      analysis: "/records",
+      remediation: "/learning/today?programId=tahsili",
+    },
+  });
+  assert.match(stages.find((stage) => stage.id === "training")?.detail || "", /^2 نتيجة تدريب/);
+});
+
+test("only subjects with published foundation content are selectable, with separate Tahsili scopes", () => {
+  const content = [
+    "subject.tahsili.math",
+    "subject.tahsili.physics",
+    "subject.qudrat.verbal",
+    "subject.tahsili.unmapped",
+  ];
+  assert.deepEqual(
+    listAvailableStudentDashboardSubjects("tahsili", content).map((item) => item.id),
+    ["subject.tahsili.math", "subject.tahsili.physics"],
+  );
+  assert.deepEqual(
+    listAvailableStudentDashboardSubjects("qudrat", content).map((item) => item.id),
+    ["subject.qudrat.verbal"],
+  );
+});
+
+test("both student diagnostic links launch the correct program in the existing assessment dialog", () => {
+  assert.equal(foundationDiagnosticHref("qudrat"), "/foundation?program=qudrat&reassess=1&returnTo=preparation");
+  assert.equal(foundationDiagnosticHref("tahsili"), "/foundation?program=tahsili&reassess=1");
+  assert.match(foundationPageSource, /const program: FoundationProgram = params\.get\("program"\) === "tahsili" \? "tahsili" : "qudrat"/);
+  assert.match(foundationPageSource, /<CourseDiagnosticLauncher \/>/);
 });
 
 test("dashboard tasks contain only sourced items and are capped at three", () => {

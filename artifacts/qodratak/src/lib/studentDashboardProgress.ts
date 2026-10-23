@@ -14,13 +14,26 @@ export type StudentDashboardTaskStatus =
   | "NEEDS_REVIEW";
 
 export interface StudentDashboardStage {
-  id: "foundation" | "training" | "simulation" | "analysis" | "remediation";
+  id: "diagnostic" | "foundation" | "training" | "simulation" | "analysis" | "remediation";
   title: string;
   status: StudentDashboardEvidenceStatus;
   detail: string;
   href: string;
+  isCurrent: boolean;
   completedCount?: number;
   totalCount?: number;
+}
+
+export type StudentDashboardDiagnosticStatus =
+  | "LOADING"
+  | "NOT_ASSESSED"
+  | "IN_PROGRESS"
+  | "COMPLETED"
+  | "UNAVAILABLE";
+
+export interface StudentDashboardSubjectOption {
+  id: string;
+  label: string;
 }
 
 export interface StudentDashboardTestEvidence {
@@ -54,6 +67,7 @@ export interface StudentDashboardTask {
   href: string;
   status: StudentDashboardTaskStatus;
   estimatedMinutes?: number;
+  followUp?: string;
 }
 
 export interface StudentDashboardProgressOverviewProps {
@@ -66,9 +80,15 @@ export interface StudentDashboardProgressOverviewProps {
   };
   program: StudentDashboardProgram;
   onProgramChange: (program: StudentDashboardProgram) => void;
+  subjectId?: string;
+  subjectOptions: StudentDashboardSubjectOption[];
+  onSubjectChange: (subjectId: string) => void;
+  subjectState: "loading" | "ready" | "unavailable";
+  subjectEmptyMessage?: string;
+  subjectFallbackHref?: string;
   stages: StudentDashboardStage[];
   tasks: StudentDashboardTask[];
-  tasksState: "loading" | "ready" | "unavailable";
+  tasksState: "loading" | "ready" | "unavailable" | "content-unavailable";
   trendState: "loading" | "error" | "empty" | "insufficient" | "ready";
   trendPoints: StudentDashboardTrendPoint[];
 }
@@ -93,6 +113,10 @@ export interface StudentDashboardTaskCandidate {
 
 export interface StudentDashboardJourneyInput {
   program: StudentDashboardProgram;
+  diagnosticStatus?: StudentDashboardDiagnosticStatus;
+  nextActionType?: string;
+  planStatus?: string;
+  subjectLabel?: string;
   foundation: {
     loaded: boolean;
     total: number | null;
@@ -103,6 +127,7 @@ export interface StudentDashboardJourneyInput {
   session?: StudentDashboardSessionEvidence | null;
   links: {
     foundation: string;
+    diagnostic?: string;
     training: string;
     simulation: string;
     analysis: string;
@@ -111,7 +136,22 @@ export interface StudentDashboardJourneyInput {
 }
 
 const SIMULATION_TEST_TYPES = new Set(["qiyas", "paper_model", "standard"]);
+const DIAGNOSTIC_TEST_TYPE = /diagnostic|placement|baseline|initial/;
 const REMEDIATION_STEP_TYPES = new Set(["CORRECT", "SIMILAR"]);
+
+const SUBJECT_CATALOG: Record<StudentDashboardProgram, StudentDashboardSubjectOption[]> = {
+  qudrat: [
+    { id: "subject.qudrat.quantitative", label: "الكمي" },
+    { id: "subject.qudrat.verbal", label: "اللفظي" },
+  ],
+  tahsili: [
+    { id: "subject.tahsili.math", label: "الرياضيات" },
+    { id: "subject.tahsili.physics", label: "الفيزياء" },
+    { id: "subject.tahsili.chemistry", label: "الكيمياء" },
+    { id: "subject.tahsili.biology", label: "الأحياء" },
+    { id: "subject.tahsili.environment", label: "علم الأرض" },
+  ],
+};
 
 function safeCount(value: unknown): number {
   const count = Number(value);
@@ -133,13 +173,59 @@ function evidenceCount(
   }, 0);
 }
 
+export function listAvailableStudentDashboardSubjects(
+  program: StudentDashboardProgram,
+  availableSubjectIds: Array<string> | null | undefined,
+): StudentDashboardSubjectOption[] {
+  const availableIds = new Set((availableSubjectIds || []).map((id) => String(id || "").trim()).filter(Boolean));
+  return SUBJECT_CATALOG[program].filter((subject) => availableIds.has(subject.id));
+}
+
+function resolveCurrentStageId(input: StudentDashboardJourneyInput, counts: {
+  training: number;
+  simulation: number;
+  results: number;
+  topics: number;
+}): StudentDashboardStage["id"] | null {
+  if (input.planStatus === "CONTENT_UNAVAILABLE" || input.planStatus === "NO_ACTIONABLE_CONTENT") return null;
+
+  const diagnosticStatus = input.diagnosticStatus;
+  if (diagnosticStatus === "LOADING") return null;
+  if (diagnosticStatus === "NOT_ASSESSED" || diagnosticStatus === "IN_PROGRESS") return "diagnostic";
+
+  const actionType = normalizeStatus(input.nextActionType);
+  const actionStage: Record<string, StudentDashboardStage["id"]> = {
+    DIAGNOSTIC: "diagnostic",
+    LEARN: "foundation",
+    PRACTICE: "training",
+    REVIEW: "analysis",
+    CORRECT: "remediation",
+    SIMILAR: "remediation",
+    RECOVERY: "remediation",
+    MASTERY_CHECK: "simulation",
+    ADVANCE: "training",
+  };
+  if (actionStage[actionType]) return actionStage[actionType];
+
+  if (input.foundation.loaded && input.foundation.total !== null) {
+    const total = safeCount(input.foundation.total);
+    const completed = safeCount(input.foundation.completed);
+    if (total > completed) return "foundation";
+  }
+  if (counts.topics > 0) return "analysis";
+  if (counts.training > 0 && counts.simulation === 0) return "training";
+  if (counts.simulation > 0 || counts.results > 0) return "analysis";
+  if (diagnosticStatus === "UNAVAILABLE") return null;
+  return "diagnostic";
+}
+
 export function buildStudentDashboardJourney(
   input: StudentDashboardJourneyInput,
 ): StudentDashboardStage[] {
   const trainingCount = evidenceCount(
     input.testEvidence,
     input.program,
-    (type) => !SIMULATION_TEST_TYPES.has(type),
+    (type) => !SIMULATION_TEST_TYPES.has(type) && !DIAGNOSTIC_TEST_TYPE.test(type),
   );
   const simulationCount = evidenceCount(
     input.testEvidence,
@@ -151,20 +237,38 @@ export function buildStudentDashboardJourney(
 
   const total = input.foundation.total === null ? null : safeCount(input.foundation.total);
   const completed = input.foundation.completed === null ? null : safeCount(input.foundation.completed);
+  const currentStageId = resolveCurrentStageId(input, {
+    training: trainingCount,
+    simulation: simulationCount,
+    results: savedTestCount,
+    topics: topics.length,
+  });
+  const diagnosticStatus: StudentDashboardEvidenceStatus = input.diagnosticStatus === "COMPLETED"
+    ? "COMPLETED"
+    : input.diagnosticStatus === "IN_PROGRESS" ? "IN_PROGRESS" : "NOT_ASSESSED";
+  const diagnosticDetail = input.diagnosticStatus === "COMPLETED"
+    ? "تم حفظ تقييم البداية لهذا المسار."
+    : input.diagnosticStatus === "IN_PROGRESS"
+      ? "بدأ تقييم البداية ولم تُحفظ نتيجته النهائية بعد."
+      : input.diagnosticStatus === "UNAVAILABLE"
+        ? "تعذر تحميل حالة تقييم البداية؛ لم نفترض أنه مكتمل."
+        : input.diagnosticStatus === "LOADING"
+          ? "جارٍ تحميل حالة تقييم البداية."
+        : "لم يُحفظ تقييم بداية لهذا المسار بعد.";
   let foundationStatus: StudentDashboardEvidenceStatus = "NOT_ASSESSED";
   let foundationDetail = "بيانات إنجاز الدروس غير متاحة الآن.";
   if (input.foundation.loaded && total !== null && completed !== null) {
     if (total === 0) {
-      foundationDetail = "لا توجد دروس منشورة لهذا المسار بعد.";
+      foundationDetail = `لا توجد دروس منشورة${input.subjectLabel ? ` في ${input.subjectLabel}` : " لهذا المسار"} بعد.`;
     } else if (completed >= total) {
       foundationStatus = "COMPLETED";
-      foundationDetail = `أكملت ${total} من ${total} درسًا منشورًا.`;
+      foundationDetail = `أكملت ${total} من ${total} درسًا منشورًا${input.subjectLabel ? ` في ${input.subjectLabel}` : ""}.`;
     } else if (completed > 0) {
       foundationStatus = "IN_PROGRESS";
-      foundationDetail = `أكملت ${completed} من ${total} درسًا منشورًا.`;
+      foundationDetail = `أكملت ${completed} من ${total} درسًا منشورًا${input.subjectLabel ? ` في ${input.subjectLabel}` : ""}.`;
     } else {
       foundationStatus = "NOT_STARTED";
-      foundationDetail = `لم يبدأ بعد — 0 من ${total} درسًا مكتملًا.`;
+      foundationDetail = `لم يبدأ بعد — 0 من ${total} درسًا مكتملًا${input.subjectLabel ? ` في ${input.subjectLabel}` : ""}.`;
     }
   }
 
@@ -200,11 +304,20 @@ export function buildStudentDashboardJourney(
 
   return [
     {
+      id: "diagnostic",
+      title: "تحديد نقطة البداية",
+      status: diagnosticStatus,
+      detail: diagnosticDetail,
+      href: input.links.diagnostic || input.links.foundation,
+      isCurrent: currentStageId === "diagnostic",
+    },
+    {
       id: "foundation",
       title: "التأسيس",
       status: foundationStatus,
       detail: foundationDetail,
       href: input.links.foundation,
+      isCurrent: currentStageId === "foundation",
       ...(total !== null && completed !== null ? { completedCount: Math.min(completed, total), totalCount: total } : {}),
     },
     {
@@ -215,6 +328,7 @@ export function buildStudentDashboardJourney(
         ? `${trainingCount} نتيجة تدريب محفوظة في هذا المسار.`
         : "لا توجد نتيجة تدريب محفوظة لهذا المسار بعد.",
       href: input.links.training,
+      isCurrent: currentStageId === "training",
     },
     {
       id: "simulation",
@@ -224,6 +338,7 @@ export function buildStudentDashboardJourney(
         ? `${simulationCount} نتيجة محاكاة محفوظة في هذا المسار.`
         : "لا توجد نتيجة محاكاة محفوظة لهذا المسار بعد.",
       href: input.links.simulation,
+      isCurrent: currentStageId === "simulation",
     },
     {
       id: "analysis",
@@ -235,6 +350,7 @@ export function buildStudentDashboardJourney(
           ? "لم تُسجل موضوعات للمراجعة في النتائج المعروضة لهذا المسار."
           : "سيظهر التحليل بعد حفظ أول نتيجة في هذا المسار.",
       href: input.links.analysis,
+      isCurrent: currentStageId === "analysis",
     },
     {
       id: "remediation",
@@ -246,6 +362,7 @@ export function buildStudentDashboardJourney(
           ? "لديك موضوعات للمراجعة، ولم تُسجل خطوة تصحيحية مكتملة بعد."
           : "ستظهر هنا خطوات التصحيح بعد تسجيلها في جلسة تعلم.",
       href: input.links.remediation,
+      isCurrent: currentStageId === "remediation",
     },
   ];
 }
@@ -280,6 +397,7 @@ export function buildStudentDashboardTasks(input: {
       reason: "لا يوجد تقييم بداية محفوظ لهذا المسار.",
       href: input.diagnosticHref,
       status: "PENDING",
+      followUp: "بعد حفظ النتيجة، تتحدد لك نقطة البداية المناسبة من المسار.",
     });
   } else if (input.session?.title) {
     const state = taskStatus(input.session.state);
@@ -290,6 +408,7 @@ export function buildStudentDashboardTasks(input: {
         || "هذه الجلسة محفوظة ضمن خطة التعلم لهذا المسار.",
       href: input.sessionHref,
       status: input.session.started && state === "PENDING" ? "IN_PROGRESS" : state,
+      followUp: "بعد إكمال الجلسة، تُحدّث الخطوة التالية من التقدم والنتيجة المحفوظة.",
       ...(safeCount(input.session.estimatedMinutes) > 0
         ? { estimatedMinutes: safeCount(input.session.estimatedMinutes) }
         : {}),
@@ -302,6 +421,7 @@ export function buildStudentDashboardTasks(input: {
         || "اقتراح من محرك التعلم لهذا المسار.",
       href: input.recommendation.href,
       status: "PENDING",
+      followUp: "بعد تنفيذ الخطوة، يُعاد تحديد التالي من بيانات التقدم المحفوظة.",
       ...(safeCount(input.recommendation.estimatedMinutes) > 0
         ? { estimatedMinutes: safeCount(input.recommendation.estimatedMinutes) }
         : {}),
@@ -341,7 +461,10 @@ export function buildStudentDashboardTasks(input: {
     if (seen.has(key)) return false;
     seen.add(key);
     return true;
-  }).slice(0, 3);
+  }).slice(0, 3).map((task) => ({
+    ...task,
+    followUp: task.followUp || "بعد حفظ تقدمك أو نتيجتك، تُحدّث الخطوة التالية بناءً على بياناتك.",
+  }));
 }
 
 export function buildStudentDashboardTrend(

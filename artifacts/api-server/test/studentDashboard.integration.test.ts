@@ -311,6 +311,17 @@ test(
         else assert.equal(item.progress, 100, 'C: explicitly completed lesson retains its saved completion');
       }
 
+      const subjectCatalog = await jsonRequest(
+        studentB,
+        '/api/foundation-content/subjects?program=qudrat',
+      );
+      assert.equal(subjectCatalog.response.status, 200, 'student can read the lightweight published-subject catalog');
+      assert.deepEqual(Object.keys(subjectCatalog.body).sort(), ['program', 'subjectIds']);
+      assert.ok(
+        subjectCatalog.body.subjectIds.includes('subject.qudrat.quantitative'),
+        'published lesson subjects are available without loading lesson or question documents',
+      );
+
       const dashboardD = await jsonRequest(studentD, '/api/student/dashboard');
       assert.equal(dashboardD.response.status, 200);
       assert.equal(dashboardD.body.totals.tests, 2, 'D: count saved results, not visits');

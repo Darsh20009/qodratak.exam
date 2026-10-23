@@ -1980,12 +1980,14 @@ function FoundationPageContent() {
 
 function CourseDiagnosticLauncher() {
   const search = useSearch();
-  const returnToPreparation = new URLSearchParams(search).get("returnTo") === "preparation";
+  const params = new URLSearchParams(search);
+  const program: FoundationProgram = params.get("program") === "tahsili" ? "tahsili" : "qudrat";
+  const returnToPreparation = program === "qudrat" && params.get("returnTo") === "preparation";
   const [open, setOpen] = useState(false);
   useEffect(() => {
-    if (new URLSearchParams(search).get("reassess") === "1") setOpen(true);
+    setOpen(params.get("reassess") === "1");
   }, [search]);
-  return <FoundationDiagnosticDialog open={open} program="qudrat" onOpenChange={setOpen} continueHref={returnToPreparation ? "/preparation-course" : undefined} />;
+  return <FoundationDiagnosticDialog open={open} program={program} onOpenChange={setOpen} continueHref={returnToPreparation ? "/preparation-course" : undefined} />;
 }
 
 export default function FoundationPage() {
@@ -1995,7 +1997,12 @@ export default function FoundationPage() {
   const hasTahsiliSubject = Boolean(params.get("subject"));
 
   if (showTahsiliSources) {
-    return hasTahsiliSubject ? <TahsiliSourceLibrary /> : <TahsiliOverviewPage />;
+    return (
+      <ErrorBoundary fallback={(error) => <FoundationPageErrorFallback error={error} />}>
+        {hasTahsiliSubject ? <TahsiliSourceLibrary /> : <TahsiliOverviewPage />}
+        <CourseDiagnosticLauncher />
+      </ErrorBoundary>
+    );
   }
 
   return (

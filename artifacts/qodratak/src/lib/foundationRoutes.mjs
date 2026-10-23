@@ -20,6 +20,15 @@ export function foundationHrefForScope(program, subjectId) {
   return `/foundation?${params.toString()}`;
 }
 
+export function foundationDiagnosticHref(program) {
+  const routeProgram = resolveProgram(program);
+  if (!routeProgram) return "/foundation?program=qudrat&reassess=1&returnTo=preparation";
+
+  const params = new URLSearchParams({ program: routeProgram, reassess: "1" });
+  if (routeProgram === "qudrat") params.set("returnTo", "preparation");
+  return `/foundation?${params.toString()}`;
+}
+
 export function todayLearningHref(program, subjectId) {
   const routeProgram = resolveProgram(program, subjectId);
   const params = new URLSearchParams();

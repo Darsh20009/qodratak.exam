@@ -330,6 +330,7 @@ export interface TodayLearningPlan {
   planId: string;
   programId?: string;
   subjectId?: string;
+  recommendationType?: string;
   title: string;
   estimatedMinutes: number;
   steps: TodayLearningStep[];
@@ -852,6 +853,22 @@ export function useFoundationContent(program: 'qudrat' | 'tahsili', enabled = tr
     queryFn: async () => (await fetchJson<{ content: FoundationContent[] }>(
       `/api/foundation-content?program=${program}${subjectId ? `&subject=${encodeURIComponent(subjectId)}` : ""}`,
     )).content,
+    enabled,
+    staleTime: 5 * 60 * 1000,
+  });
+}
+
+export interface FoundationSubjectCatalog {
+  program: "qudrat" | "tahsili";
+  subjectIds: string[];
+}
+
+export function useFoundationSubjectCatalog(program: "qudrat" | "tahsili", enabled = true) {
+  return useQuery<FoundationSubjectCatalog>({
+    queryKey: ["/api/foundation-content/subjects", program],
+    queryFn: () => fetchJson<FoundationSubjectCatalog>(
+      `/api/foundation-content/subjects?program=${encodeURIComponent(program)}`,
+    ),
     enabled,
     staleTime: 5 * 60 * 1000,
   });

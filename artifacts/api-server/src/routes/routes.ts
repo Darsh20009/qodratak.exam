@@ -14638,6 +14638,37 @@ app.post("/api/auth/register", async (req: Request, res: Response) => {
     }
   });
 
+  app.get('/api/foundation-content/subjects', requireAuth, async (req: Request, res: Response) => {
+    if (!studentOnly(req, res)) return;
+    const program = String(req.query.program || '');
+    if (!supportedPrograms.has(program)) {
+      return res.status(400).json({ error: 'البرنامج المدعوم هو qudrat أو tahsili فقط' });
+    }
+    if (program === 'tahsili' && !await requireTahsiliStudentAccess(req, res)) return;
+    try {
+      const scopedProgram = program as 'qudrat' | 'tahsili';
+      const allowedSubjectIds = program === 'qudrat'
+        ? ['subject.qudrat.verbal', 'subject.qudrat.quantitative']
+        : [
+            'subject.tahsili.math',
+            'subject.tahsili.physics',
+            'subject.tahsili.chemistry',
+            'subject.tahsili.biology',
+            'subject.tahsili.environment',
+          ];
+      const { FoundationContent } = await import('../mongodb/models');
+      const subjectIds = await FoundationContent.distinct('subjectId', {
+        program: scopedProgram,
+        published: true,
+        subjectId: { $in: allowedSubjectIds },
+      });
+      return res.json({ program: scopedProgram, subjectIds });
+    } catch (error) {
+      console.error('Foundation subject catalog error:', error);
+      return res.status(500).json({ error: 'تعذر تحميل مواد التأسيس المنشورة' });
+    }
+  });
+
   app.get('/api/foundation-content', requireAuth, async (req: Request, res: Response) => {
     if (!studentOnly(req, res)) return;
     const program = String(req.query.program || '');
