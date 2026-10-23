@@ -4,6 +4,7 @@ import { useLocation } from "wouter";
 import { useUser } from "@/hooks/use-user";
 import { StudentExamChromeContext } from "@/components/student/StudentExamChromeContext";
 import { PageGuideFilm } from "@/components/student/PageGuideFilm";
+import { StudentNavigation } from "@/components/student/StudentNavigation";
 
 export function StudentShell({ children }: { children: React.ReactNode }) {
   const [location] = useLocation();
@@ -24,7 +25,10 @@ export function StudentShell({ children }: { children: React.ReactNode }) {
   return (
     <StudentExamChromeContext.Provider value={examChrome}>
       {!isExamLayoutActive && <PageGuideFilm location={location} />}
-      {children}
+      <div className="flex min-h-[100dvh] flex-col md:flex-row" dir="rtl">
+        <StudentNavigation hidden={isExamLayoutActive || user?.role !== "student"} />
+        <div className="min-w-0 flex-1">{children}</div>
+      </div>
     </StudentExamChromeContext.Provider>
   );
 }

@@ -69,8 +69,8 @@ The Tahsili experience needs a connected foundation-and-computerized course, not
 
 **How to apply:** Organize available materials by subject and lesson, connect each lesson to practice and a useful result, and do not claim missing videos or unreviewed questions are ready.
 
-Keep the student's four primary destinations as «لوحة التحكم»، «التأسيس»، «التدريب»، and «حسابي». The dashboard summarizes active study time, completed tests, current practice streak, today's task, progress by track, results, and a route to platform feedback. Account details include billing, guardian contact, the student's school reference, and the linked institution's short reference.
+Keep the student's five primary destinations as «لوحة التحكم»، «التأسيس»، «التدريب»، «نتائجي»، and «حسابي». The dashboard summarizes active study time, completed tests, current practice streak, today's task, progress by track, and a route to platform feedback. Account details include billing, guardian contact, the student's school reference, and the linked institution's short reference.
 
-**Why:** The user explicitly defined this navigation and dashboard/account information set on 2026-10-23.
+**Why:** On 2026-10-23, the user first described a four-destination layout, then confirmed the five-link navigation with «نتائجي» as its own destination.
 
-**How to apply:** Keep existing student pages discoverable under «المزيد» without adding duplicate primary navigation. Track study time from active student use going forward; do not fabricate historical hours. Keep the student's entered school reference distinct from the generated institution reference.
+**How to apply:** Keep existing student pages discoverable under «المزيد» without duplicating any of the five primary destinations. Track study time from active student use going forward; do not fabricate historical hours. Keep the student's entered school reference distinct from the generated institution reference.
