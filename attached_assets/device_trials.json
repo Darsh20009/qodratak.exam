@@ -173,5 +173,12 @@
     "trialEndDate": "2026-10-19T15:00:01.516Z",
     "isActive": true,
     "createdAt": "2026-10-16T15:00:01.516Z"
+  },
+  {
+    "deviceId": "x104ab",
+    "trialStartDate": "2026-10-23T05:28:45.242Z",
+    "trialEndDate": "2026-10-26T05:28:45.242Z",
+    "isActive": true,
+    "createdAt": "2026-10-23T05:28:45.242Z"
   }
 ]
