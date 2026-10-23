@@ -498,6 +498,7 @@ subscriptionSchema.index({ paymentGateway: 1, paymentStatus: 1, createdAt: -1 })
 export interface ITestResult extends Document {
   userId: string;
   program: 'qudrat' | 'tahsili' | 'general';
+  subjectId?: string;
   testType: 'verbal' | 'quantitative' | 'qiyas' | 'custom' | 'paper_model' | 'standard' | 'free-verbal' | 'free-quantitative' | 'adaptive';
   testId?: string;
   testName?: string;
@@ -529,6 +530,7 @@ const testResultSchema = new Schema<ITestResult>({
     default: 'general',
     index: true,
   },
+  subjectId: { type: String, trim: true },
   testType: { type: String, enum: ['verbal', 'quantitative', 'qiyas', 'custom', 'paper_model', 'standard', 'free-verbal', 'free-quantitative', 'adaptive'], required: true },
   testId: { type: String },
   testName: { type: String },

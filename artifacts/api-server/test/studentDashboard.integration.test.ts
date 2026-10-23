@@ -12,6 +12,7 @@ import {
 import {
   DailyProgress,
   FoundationContent,
+  TahsiliQuestion,
   TestResult,
   User,
 } from '../src/mongodb/models.ts';
@@ -92,6 +93,7 @@ test(
     const emailByKey = new Map(keys.map((key) => [key, `${marker}-${key.toLowerCase()}@example.test`]));
     const studentIds: string[] = [];
     const contentIds: string[] = [];
+    const tahsiliQuestionIds: number[] = [];
     let server: import('node:http').Server | undefined;
     let application: any;
     let connectedByTest = false;
@@ -132,9 +134,11 @@ test(
         percentage: number,
         completedAt: Date,
         weakAreas: string[] = [],
+        subjectId?: string,
       ) => ({
         userId: String(userByKey.get(key)!._id),
         program,
+        ...(subjectId ? { subjectId } : {}),
         testType,
         testName: title,
         difficulty: 'intermediate' as const,
@@ -161,9 +165,26 @@ test(
         makeSavedResult('E', 'qudrat', 'quantitative', `${marker}-E-Q-old`, 70, older),
         makeSavedResult('E', 'qudrat', 'verbal', `${marker}-E-Q-new`, 80, recent, ['النسب']),
         makeSavedResult('E', 'tahsili', 'standard', `${marker}-E-T-old`, 50, older),
-        makeSavedResult('E', 'tahsili', 'standard', `${marker}-E-T-new`, 60, now, ['الفيزياء']),
+        makeSavedResult('E', 'tahsili', 'standard', `${marker}-E-T-new`, 60, now, ['الفيزياء'], 'subject.tahsili.physics'),
         makeSavedResult('F', 'qudrat', 'quantitative', `${marker}-F-returning`, 65, old),
       ]);
+      const syntheticQuestionId = 2_000_000_000 + Math.floor(Math.random() * 100_000_000);
+      tahsiliQuestionIds.push(syntheticQuestionId);
+      await TahsiliQuestion.create({
+        questionId: syntheticQuestionId,
+        sourceKey: `${marker}-verified-physics-question`,
+        subject: 'فيزياء',
+        subcategory: 'حركة',
+        text: 'إذا تحرك جسم بسرعة ثابتة، فماذا يصف ذلك؟',
+        options: ['تسارع صفري', 'تسارع متزايد', 'سرعة متزايدة', 'توقف الجسم'],
+        correctOptionIndex: 0,
+        difficulty: 'beginner',
+        topic: 'الحركة',
+        explanation: 'السرعة الثابتة تعني أن التسارع يساوي صفرًا.',
+        sourcePage: 1,
+        sourceBook: 'بيانات اختبار اصطناعية',
+        answerConfidence: 'verified',
+      });
 
       const foundationLessons = await FoundationContent.create([
         {
@@ -344,6 +365,106 @@ test(
         new Set(dashboardE.body.recentTests.map((item: any) => item.program)),
         new Set(['qudrat', 'tahsili']),
       );
+      const tahsiliPhysicsResults = await jsonRequest(
+        studentE,
+        '/api/student/tahsili/results?subjectId=subject.tahsili.physics',
+      );
+      assert.equal(tahsiliPhysicsResults.response.status, 200);
+      assert.equal(tahsiliPhysicsResults.body.subjectResultCount, 1);
+      assert.equal(tahsiliPhysicsResults.body.generalResultCount, 1);
+      assert.deepEqual(
+        tahsiliPhysicsResults.body.subjectResults.map((item: any) => item.title),
+        [`${marker}-E-T-new`],
+        'only saved results with the exact trusted subject ID appear in the subject list',
+      );
+      assert.equal(tahsiliPhysicsResults.body.subjectResults[0].subjectId, 'subject.tahsili.physics');
+      assert.deepEqual(
+        tahsiliPhysicsResults.body.generalResults.map((item: any) => item.title),
+        [`${marker}-E-T-old`],
+        'legacy Tahsili results without a source-backed subject stay explicitly unclassified',
+      );
+      const tahsiliMathResults = await jsonRequest(
+        studentE,
+        '/api/student/tahsili/results?subjectId=subject.tahsili.math',
+      );
+      assert.equal(tahsiliMathResults.response.status, 200);
+      assert.deepEqual(tahsiliMathResults.body.subjectResults, [], 'results are not inferred into a different subject');
+      const otherStudentTahsiliResults = await jsonRequest(
+        studentD,
+        '/api/student/tahsili/results?subjectId=subject.tahsili.physics',
+      );
+      assert.equal(otherStudentTahsiliResults.response.status, 200);
+      assert.deepEqual(otherStudentTahsiliResults.body.subjectResults, [], 'subject results remain session-owner scoped');
+
+      const startedTahsiliTest = await studentE.request('/api/tahsili/subject-tests/start', {
+        method: 'POST',
+        body: JSON.stringify({ subject: 'physics', questionCount: 5 }),
+      });
+      const startedText = await startedTahsiliTest.text();
+      assert.equal(startedTahsiliTest.status, 200, `synthetic Tahsili subject assessment starts: ${startedText}`);
+      const startedBody = JSON.parse(startedText) as any;
+      assert.equal(startedBody.subject, 'physics');
+      assert.equal(startedBody.questions.length, 5);
+      const startedQuestionIds = startedBody.questions.map((question: any) => Number(question.id));
+      const trustedQuestionRows = await TahsiliQuestion.find({
+        questionId: { $in: startedQuestionIds },
+        subject: 'فيزياء',
+        answerConfidence: 'verified',
+      }).select('questionId correctOptionIndex').lean();
+      const correctIndexById = new Map(trustedQuestionRows.map((question: any) => [
+        String(question.questionId),
+        Number(question.correctOptionIndex),
+      ]));
+      const submittedAnswers = startedBody.questions.map((question: any) => ({
+        questionId: String(question.id),
+        selectedOptionIndex: correctIndexById.get(String(question.id)),
+        responseTime: 12,
+      }));
+      assert.ok(submittedAnswers.every((answer: any) => Number.isInteger(answer.selectedOptionIndex)));
+      const submitBody = {
+        attemptId: startedBody.attemptId,
+        timeTakenSeconds: 12,
+        subjectId: 'subject.tahsili.chemistry',
+        subject: 'chemistry',
+        answers: submittedAnswers,
+      };
+      const submittedTahsiliTest = await studentE.request('/api/tahsili/subject-tests/submit', {
+        method: 'POST',
+        body: JSON.stringify(submitBody),
+      });
+      const submittedText = await submittedTahsiliTest.text();
+      assert.equal(submittedTahsiliTest.status, 200, `synthetic Tahsili result saves: ${submittedText}`);
+      const savedTahsiliTest = JSON.parse(submittedText) as any;
+      assert.equal(savedTahsiliTest.subjectId, 'subject.tahsili.physics', 'subject attribution comes from the server attempt');
+      assert.ok(savedTahsiliTest.testResultId, 'the completed assessment has a persistent result record');
+      const repeatedSubmit = await studentE.request('/api/tahsili/subject-tests/submit', {
+        method: 'POST',
+        body: JSON.stringify(submitBody),
+      });
+      assert.equal(repeatedSubmit.status, 200);
+      assert.equal((await repeatedSubmit.json() as any).testResultId, savedTahsiliTest.testResultId);
+      assert.equal(
+        await TestResult.countDocuments({
+          userId: studentEId,
+          program: 'tahsili',
+          testId: startedBody.attemptId,
+        }),
+        1,
+        'a repeated submit does not duplicate the persisted subject result',
+      );
+      const persistedSubjectResults = await jsonRequest(
+        studentE,
+        '/api/student/tahsili/results?subjectId=subject.tahsili.physics',
+      );
+      assert.ok(
+        persistedSubjectResults.body.subjectResults.some((item: any) => item.id === savedTahsiliTest.testResultId),
+        'the saved result is readable from the same student-owned subject history',
+      );
+      const dashboardEAfterSubjectTest = await jsonRequest(studentE, '/api/student/dashboard');
+      assert.ok(
+        dashboardEAfterSubjectTest.body.recentTests.some((item: any) => item.subjectId === 'subject.tahsili.physics'),
+        'dashboard evidence exposes the saved, trusted subject ID',
+      );
       assert.equal(dailyE.body.verifiedStudyDays, 2, 'E: only dates with verified answers count, not legacy-only activity');
 
       const dashboardF = await jsonRequest(studentF, '/api/student/dashboard');
@@ -381,6 +502,7 @@ test(
         ]);
       }
       if (contentIds.length) await FoundationContent.deleteMany({ _id: { $in: contentIds } });
+      if (tahsiliQuestionIds.length) await TahsiliQuestion.deleteMany({ questionId: { $in: tahsiliQuestionIds } });
       if (connectedByTest && getConnectionStatus()) await disconnectFromMongoDB();
     }
   },

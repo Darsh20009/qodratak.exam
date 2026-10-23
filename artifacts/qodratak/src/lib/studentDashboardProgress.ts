@@ -40,12 +40,14 @@ export interface StudentDashboardTestEvidence {
   program: StudentDashboardProgram | "general";
   testType: string;
   tests: number;
+  subjectId?: string;
 }
 
 export interface StudentDashboardSavedTest {
   id: string;
   title: string;
   program: StudentDashboardProgram | "general";
+  subjectId?: string;
   score: number | null;
   date: string | null;
   totalQuestions?: number | null;
@@ -91,6 +93,9 @@ export interface StudentDashboardProgressOverviewProps {
   tasksState: "loading" | "ready" | "unavailable" | "content-unavailable";
   trendState: "loading" | "error" | "empty" | "insufficient" | "ready";
   trendPoints: StudentDashboardTrendPoint[];
+  trendEmptyTitle?: string;
+  trendEmptyMessage?: string;
+  generalResults?: StudentDashboardSavedTest[];
 }
 
 export interface StudentDashboardSessionEvidence {
@@ -113,6 +118,7 @@ export interface StudentDashboardTaskCandidate {
 
 export interface StudentDashboardJourneyInput {
   program: StudentDashboardProgram;
+  subjectId?: string;
   diagnosticStatus?: StudentDashboardDiagnosticStatus;
   nextActionType?: string;
   planStatus?: string;
@@ -166,9 +172,11 @@ function evidenceCount(
   entries: StudentDashboardTestEvidence[],
   program: StudentDashboardProgram,
   predicate: (testType: string) => boolean,
+  subjectId?: string,
 ): number {
   return entries.reduce((sum, entry) => {
     if (entry.program !== program || !predicate(String(entry.testType || "").toLowerCase())) return sum;
+    if (program === "tahsili" && (!subjectId || entry.subjectId !== subjectId)) return sum;
     return sum + safeCount(entry.tests);
   }, 0);
 }
@@ -226,13 +234,15 @@ export function buildStudentDashboardJourney(
     input.testEvidence,
     input.program,
     (type) => !SIMULATION_TEST_TYPES.has(type) && !DIAGNOSTIC_TEST_TYPE.test(type),
+    input.subjectId,
   );
   const simulationCount = evidenceCount(
     input.testEvidence,
     input.program,
     (type) => SIMULATION_TEST_TYPES.has(type),
+    input.subjectId,
   );
-  const savedTestCount = evidenceCount(input.testEvidence, input.program, () => true);
+  const savedTestCount = evidenceCount(input.testEvidence, input.program, () => true, input.subjectId);
   const topics = [...new Set(input.reviewTopics.map((topic) => topic.trim()).filter(Boolean))];
 
   const total = input.foundation.total === null ? null : safeCount(input.foundation.total);
@@ -470,12 +480,14 @@ export function buildStudentDashboardTasks(input: {
 export function buildStudentDashboardTrend(
   tests: StudentDashboardSavedTest[],
   program: StudentDashboardProgram,
+  subjectId?: string,
 ): StudentDashboardTrendPoint[] {
   return tests
     .filter((test) => {
       const score = test.score === null ? Number.NaN : Number(test.score);
       const timestamp = test.date ? Date.parse(test.date) : Number.NaN;
       return test.program === program
+        && (program !== "tahsili" || Boolean(subjectId && test.subjectId === subjectId))
         && Number.isFinite(score)
         && score >= 0
         && score <= 100

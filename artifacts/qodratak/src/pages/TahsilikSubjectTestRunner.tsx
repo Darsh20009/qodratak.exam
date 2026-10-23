@@ -34,6 +34,8 @@ interface SubjectTestStart {
 interface SubjectTestResult {
   attemptId: string;
   subject: string;
+  subjectId: string;
+  testResultId?: string;
   label: string;
   totalQuestions: number;
   answeredQuestions: number;
@@ -190,6 +192,8 @@ export default function TahsilikSubjectTestRunner() {
         setResult(saved.value);
         void queryClient.invalidateQueries({ queryKey: ["/api/student/learning-coach"] });
         void queryClient.invalidateQueries({ queryKey: ["/api/tahsili/subject-tests/overview"] });
+        void queryClient.invalidateQueries({ queryKey: ["/api/student/dashboard"] });
+        void queryClient.invalidateQueries({ queryKey: ["/api/student/tahsili/results"] });
         toast({
           title: "تم حفظ الاختبار",
           description: `نتيجتك ${saved.value.percentage}%، وأضيفت الإجابات إلى سجل تعلمك.`,

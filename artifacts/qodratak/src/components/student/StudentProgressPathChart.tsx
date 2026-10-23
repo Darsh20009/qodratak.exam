@@ -17,7 +17,7 @@ import type {
 
 type Props = Pick<
   StudentDashboardProgressOverviewProps,
-  "program" | "onProgramChange" | "trendState" | "trendPoints"
+  "program" | "onProgramChange" | "trendState" | "trendPoints" | "trendEmptyTitle" | "trendEmptyMessage"
 >;
 
 function formatDate(value: string) {
@@ -67,7 +67,14 @@ function StateMessage({ icon: Icon, title, body, loading = false }: {
   );
 }
 
-export default function StudentProgressPathChart({ program, onProgramChange, trendState, trendPoints }: Props) {
+export default function StudentProgressPathChart({
+  program,
+  onProgramChange,
+  trendState,
+  trendPoints,
+  trendEmptyTitle,
+  trendEmptyMessage,
+}: Props) {
   const orderedPoints = useMemo(
     () => [...trendPoints].sort((left, right) => Date.parse(left.date) - Date.parse(right.date)),
     [trendPoints],
@@ -134,8 +141,8 @@ export default function StudentProgressPathChart({ program, onProgramChange, tre
         ) : trendState === "empty" || orderedPoints.length === 0 ? (
           <StateMessage
             icon={BarChart3}
-            title="لا توجد نتائج محفوظة بعد"
-            body={`عند حفظ نتيجة اختبار في مسار ${programName}، ستظهر دقّة الإجابة هنا.`}
+            title={trendEmptyTitle || "لا توجد نتائج محفوظة بعد"}
+            body={trendEmptyMessage || `عند حفظ نتيجة اختبار في مسار ${programName}، ستظهر دقّة الإجابة هنا.`}
           />
         ) : oneResult ? (
           <article data-testid="progress-chart-one-result" className="flex flex-col gap-4 rounded-2xl border border-primary/15 bg-primary/[0.045] p-4 sm:flex-row sm:items-center sm:justify-between sm:p-5">

@@ -21,6 +21,7 @@ import {
   useFoundationSubjectCatalog,
   useFoundationLearningState,
   useLearningContentProgressSummary,
+  useStudentTahsiliResults,
   useUpdateExamDate,
 } from "@/hooks/use-student";
 import OfficialScoreCard from "@/components/student/OfficialScoreCard";
@@ -146,6 +147,10 @@ export default function DashboardPage() {
     : recommendedSubjectId && subjectOptions.some((item) => item.id === recommendedSubjectId)
       ? recommendedSubjectId
       : subjectOptions[0]?.id;
+  const tahsiliResults = useStudentTahsiliResults(
+    activeProgram === "tahsili" ? journeySubjectId : undefined,
+    isStudent && activeProgram === "tahsili" && hasJourneyScope,
+  );
   const foundationProgress = useLearningContentProgressSummary(journeyProgram, journeySubjectId, hasJourneyScope);
   const foundationLearningState = useFoundationLearningState(journeyProgram, hasJourneyScope);
   const todayLearning = useTodayLearningSession(hasJourneyScope, journeyProgram, journeySubjectId);
@@ -212,9 +217,7 @@ export default function DashboardPage() {
     : journeyProgram;
   const planSubjectId = todayPlan?.subjectId || (planProgram === "tahsili" ? undefined : journeySubjectId);
   const foundationHref = foundationHrefForScope(planProgram, planSubjectId);
-  const diagnosticHref = planProgram === "tahsili"
-    ? "/foundation?program=tahsili"
-    : "/foundation?program=qudrat&reassess=1&returnTo=preparation";
+  const diagnosticHref = foundationDiagnosticHref(planProgram);
   const sessionHref = todayLearningHref(planProgram, planSubjectId);
   const planStatus = todayPlan?.planStatus;
   const diagnosticRequired = planStatus === "DIAGNOSTIC_REQUIRED"
@@ -226,11 +229,14 @@ export default function DashboardPage() {
       .flatMap((day) => day.tasks.map((task) => ({ task, day: day.day })))
       .find(({ task }) => task.status === "pending")
     : undefined;
-  const programTests = recentTests.filter((test) => test.program === activeProgram);
+  const programTests = activeProgram === "tahsili"
+    ? tahsiliResults.data?.subjectResults ?? []
+    : recentTests.filter((test) => test.program === activeProgram);
   const reviewResult = programTests.find((test) => test.weakAreas.length > 0);
   const reviewTopics = [...new Set((reviewResult?.weakAreas || []).map((topic) => topic.trim()).filter(Boolean))];
   const taskLoading = todayLearning.isLoading
     || recommendations.isLoading
+    || (activeProgram === "tahsili" && tahsiliResults.isLoading)
     || (planProgram === "qudrat" && courseQuery.isLoading);
   const taskSourcesUnavailable = todayLearning.isError
     && recommendations.isError
@@ -289,6 +295,7 @@ export default function DashboardPage() {
     : null;
   const stages = buildStudentDashboardJourney({
     program: activeProgram,
+    subjectId: journeySubjectId,
     diagnosticStatus: foundationLearningState.isError
       ? "UNAVAILABLE"
       : foundationLearningState.isLoading
@@ -324,10 +331,14 @@ export default function DashboardPage() {
       remediation: todayLearningHref(activeProgram, journeySubjectId),
     },
   });
-  const trendPoints = buildStudentDashboardTrend(recentTests, activeProgram);
-  const trendState = dashboardQuery.isError || dashboard.metricsAvailable === false
+  const trendPoints = activeProgram === "tahsili"
+    ? buildStudentDashboardTrend(tahsiliResults.data?.subjectResults ?? [], activeProgram, journeySubjectId)
+    : buildStudentDashboardTrend(recentTests, activeProgram);
+  const trendState = (activeProgram === "tahsili" ? tahsiliResults.isError : dashboardQuery.isError)
+    || dashboard.metricsAvailable === false
     ? "error" as const
     : dashboardQuery.isLoading || dashboardQuery.isFetching
+      || (activeProgram === "tahsili" && (tahsiliResults.isLoading || tahsiliResults.isFetching))
       ? "loading" as const
       : trendPoints.length >= 2
         ? "ready" as const
@@ -397,7 +408,11 @@ export default function DashboardPage() {
           metricsState={metricsState}
           metrics={{
             studySeconds: dashboard.stats.studySeconds,
-            completedTests: dashboard.stats.totalTests,
+            completedTests: activeProgram === "tahsili"
+              ? journeySubjectId && tahsiliResults.data
+                ? tahsiliResults.data.subjectResultCount
+                : null
+              : dashboard.progress.qudrat.tests,
             verifiedStudyDays,
             currentGoalStreak,
           }}
@@ -416,6 +431,17 @@ export default function DashboardPage() {
           tasksState={tasksState}
           trendState={trendState}
           trendPoints={trendPoints}
+          trendEmptyTitle={activeProgram === "tahsili"
+            ? journeySubjectId
+              ? `لا توجد نتائج محفوظة لمادة ${subjectOptions.find((item) => item.id === journeySubjectId)?.label || "التحصيلي"} بعد`
+              : "لا توجد مادة تحصيلي محددة"
+            : undefined}
+          trendEmptyMessage={activeProgram === "tahsili"
+            ? journeySubjectId
+              ? "أكمل اختبارًا محفوظًا في هذه المادة ليظهر تقدّمك هنا. النتائج العامة تبقى منفصلة."
+              : "لا نخلط النتائج العامة أو القديمة مع مواد غير محددة."
+            : undefined}
+          generalResults={tahsiliResults.data?.generalResults}
         />
         <details data-testid="details-new-student-support" className="group rounded-2xl border border-border bg-card">
           <summary className="flex cursor-pointer list-none items-center gap-3 p-4 font-black text-foreground">
@@ -451,7 +477,11 @@ export default function DashboardPage() {
         metricsState={metricsState}
         metrics={{
           studySeconds: dashboard.stats.studySeconds,
-          completedTests: dashboard.stats.totalTests,
+          completedTests: activeProgram === "tahsili"
+            ? journeySubjectId && tahsiliResults.data
+              ? tahsiliResults.data.subjectResultCount
+              : null
+            : dashboard.progress.qudrat.tests,
           verifiedStudyDays,
           currentGoalStreak,
         }}
@@ -470,6 +500,17 @@ export default function DashboardPage() {
         tasksState={tasksState}
         trendState={trendState}
         trendPoints={trendPoints}
+        trendEmptyTitle={activeProgram === "tahsili"
+          ? journeySubjectId
+            ? `لا توجد نتائج محفوظة لمادة ${subjectOptions.find((item) => item.id === journeySubjectId)?.label || "التحصيلي"} بعد`
+            : "لا توجد مادة تحصيلي محددة"
+          : undefined}
+        trendEmptyMessage={activeProgram === "tahsili"
+          ? journeySubjectId
+            ? "أكمل اختبارًا محفوظًا في هذه المادة ليظهر تقدّمك هنا. النتائج العامة تبقى منفصلة."
+            : "لا نخلط النتائج العامة أو القديمة مع مواد غير محددة."
+          : undefined}
+        generalResults={tahsiliResults.data?.generalResults}
       />
 
       <section className="grid gap-4 md:grid-cols-2">

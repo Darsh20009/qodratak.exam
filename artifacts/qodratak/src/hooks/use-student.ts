@@ -9,6 +9,7 @@ export interface StudentDashboard {
     program: "qudrat" | "tahsili" | "general";
     testType: string;
     tests: number;
+    subjectId?: string;
   }>;
   progress: {
     overall: { percentage: number; tests: number; questions: number };
@@ -24,6 +25,7 @@ export interface StudentDashboard {
     date: string | null;
     type: string;
     program: "qudrat" | "tahsili" | "general";
+    subjectId?: string;
     totalQuestions: number | null;
     weakAreas: string[];
   }>;
@@ -490,6 +492,7 @@ export function useStudentDashboard(enabled = true) {
                   : "general" as const,
               testType: String(item?.testType || ""),
               tests: Math.max(0, Number(item?.tests || 0)),
+              ...(typeof item?.subjectId === "string" ? { subjectId: item.subjectId } : {}),
             }))
           : [],
         recentTests: recentTests.map((test: any) => ({
@@ -507,6 +510,7 @@ export function useStudentDashboard(enabled = true) {
             : test.program === "qudrat"
               ? "qudrat" as const
               : "general" as const,
+          ...(typeof test.subjectId === "string" ? { subjectId: test.subjectId } : {}),
           totalQuestions: Number.isFinite(Number(test.totalQuestions)) && Number(test.totalQuestions) > 0
             ? Math.floor(Number(test.totalQuestions))
             : null,
@@ -599,6 +603,48 @@ function scopedLearningUrl(path: string, scope: StudentJourneyScope) {
 
 function scopedLearningKey(path: string, scope: StudentJourneyScope) {
   return [path, scope.programId || "all-programs", scope.subjectId || "all-subjects"];
+}
+
+export interface StudentTahsiliResultSummary {
+  id: string;
+  title: string;
+  program: "tahsili";
+  subjectId?: string;
+  score: number | null;
+  date: string | null;
+  totalQuestions: number | null;
+  weakAreas: string[];
+}
+
+export interface StudentTahsiliResultsResponse {
+  subjectId: string | null;
+  subjectResultCount: number;
+  generalResultCount: number;
+  subjectResults: StudentTahsiliResultSummary[];
+  generalResults: StudentTahsiliResultSummary[];
+}
+
+export function useStudentTahsiliResults(subjectId: string | undefined, enabled = true) {
+  return useQuery<StudentTahsiliResultsResponse>({
+    queryKey: ["/api/student/tahsili/results", subjectId || "general"],
+    queryFn: async () => {
+      const params = new URLSearchParams();
+      if (subjectId) params.set("subjectId", subjectId);
+      const query = params.toString();
+      const data = await fetchJson<StudentTahsiliResultsResponse>(
+        `/api/student/tahsili/results${query ? `?${query}` : ""}`,
+      );
+      return {
+        subjectId: data.subjectId || null,
+        subjectResultCount: Math.max(0, Number(data.subjectResultCount || 0)),
+        generalResultCount: Math.max(0, Number(data.generalResultCount || 0)),
+        subjectResults: Array.isArray(data.subjectResults) ? data.subjectResults : [],
+        generalResults: Array.isArray(data.generalResults) ? data.generalResults : [],
+      };
+    },
+    enabled,
+    staleTime: 30_000,
+  });
 }
 
 export function useTodayLearningSession(

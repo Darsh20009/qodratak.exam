@@ -20,6 +20,7 @@ import { isTrackableStudyPath } from "../src/lib/studentStudyTimePolicy";
 import { foundationDiagnosticHref } from "../src/lib/foundationRoutes.mjs";
 
 const appSource = readFileSync(new URL("../src/App.tsx", import.meta.url), "utf8");
+const dashboardPageSource = readFileSync(new URL("../src/pages/student/DashboardPage.tsx", import.meta.url), "utf8");
 const foundationPageSource = readFileSync(new URL("../src/pages/student/FoundationPage.tsx", import.meta.url), "utf8");
 const routesSource = readFileSync(new URL("../../api-server/src/routes/routes.ts", import.meta.url), "utf8");
 const learningProfileSource = readFileSync(new URL("../../api-server/src/services/learningProfileService.ts", import.meta.url), "utf8");
@@ -249,10 +250,12 @@ test("student dashboard journey keeps Qudrat and Tahsili evidence separate", () 
   });
   const tahsili = buildStudentDashboardJourney({
     program: "tahsili",
+    subjectId: "subject.tahsili.physics",
     foundation: { loaded: true, total: 5, completed: 0 },
     testEvidence: [
       { program: "qudrat", testType: "verbal", tests: 4 },
-      { program: "tahsili", testType: "custom", tests: 2 },
+      { program: "tahsili", subjectId: "subject.tahsili.physics", testType: "custom", tests: 2 },
+      { program: "tahsili", testType: "qiyas", tests: 5 },
     ],
     reviewTopics: [],
     links: {
@@ -368,11 +371,12 @@ test("the active stage follows the saved learning decision and diagnostic state"
 test("placement results do not inflate the student's training count", () => {
   const stages = buildStudentDashboardJourney({
     program: "tahsili",
+    subjectId: "subject.tahsili.physics",
     diagnosticStatus: "COMPLETED",
     foundation: { loaded: true, total: 0, completed: 0 },
     testEvidence: [
-      { program: "tahsili", testType: "placement-diagnostic", tests: 1 },
-      { program: "tahsili", testType: "custom", tests: 2 },
+      { program: "tahsili", subjectId: "subject.tahsili.physics", testType: "placement-diagnostic", tests: 1 },
+      { program: "tahsili", subjectId: "subject.tahsili.physics", testType: "custom", tests: 2 },
     ],
     reviewTopics: [],
     links: {
@@ -385,6 +389,12 @@ test("placement results do not inflate the student's training count", () => {
     },
   });
   assert.match(stages.find((stage) => stage.id === "training")?.detail || "", /^2 نتيجة تدريب/);
+});
+
+test("Tahsili dashboard results and diagnostic links stay subject-scoped", () => {
+  assert.match(dashboardPageSource, /const diagnosticHref = foundationDiagnosticHref\(planProgram\)/);
+  assert.match(dashboardPageSource, /buildStudentDashboardTrend\(tahsiliResults\.data\?\.subjectResults \?\? \[\], activeProgram, journeySubjectId\)/);
+  assert.match(dashboardPageSource, /generalResults=\{tahsiliResults\.data\?\.generalResults\}/);
 });
 
 test("only subjects with published foundation content are selectable, with separate Tahsili scopes", () => {
@@ -458,6 +468,12 @@ test("dashboard trend contains only dated saved results for the selected program
   ], "qudrat");
   assert.deepEqual(points.map((point) => point.id), ["earlier-q", "later-q"]);
   assert.deepEqual(points.map((point) => point.percentage), [61, 72]);
+  const physicsPoints = buildStudentDashboardTrend([
+    { id: "physics", title: "اختبار فيزياء", score: 77, date: "2026-10-22T12:00:00.000Z", program: "tahsili", subjectId: "subject.tahsili.physics" },
+    { id: "chemistry", title: "اختبار كيمياء", score: 88, date: "2026-10-21T12:00:00.000Z", program: "tahsili", subjectId: "subject.tahsili.chemistry" },
+    { id: "general", title: "اختبار تحصيلي عام", score: 94, date: "2026-10-23T12:00:00.000Z", program: "tahsili" },
+  ], "tahsili", "subject.tahsili.physics");
+  assert.deepEqual(physicsPoints.map((point) => point.id), ["physics"], "Tahsili charts include only the selected subject, never old general results");
 });
 
 test("dashboard API returns only verified study days and a bounded saved-test history", () => {
@@ -466,5 +482,6 @@ test("dashboard API returns only verified study days and a bounded saved-test hi
   assert.match(routesSource, /verifiedStudyDays,/);
   assert.match(routesSource, /metricsAvailable:\s*false/);
   assert.match(routesSource, /metricsAvailable:\s*true/);
-  assert.match(routesSource, /program testName testType percentage score totalQuestions completedAt weakAreas/);
+  assert.match(routesSource, /program subjectId testName testType percentage score totalQuestions completedAt weakAreas/);
+  assert.match(routesSource, /app\.get\('\/api\/student\/tahsili\/results'/);
 });

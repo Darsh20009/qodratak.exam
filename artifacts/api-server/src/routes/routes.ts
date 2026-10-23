@@ -13002,6 +13002,8 @@ app.post("/api/auth/register", async (req: Request, res: Response) => {
         const result = {
           attemptId,
           subject: attempt.subject,
+          subjectId: config.subjectId,
+          testResultId: undefined as string | undefined,
           label: config.label,
           totalQuestions,
           answeredQuestions,
@@ -13036,6 +13038,53 @@ app.post("/api/auth/register", async (req: Request, res: Response) => {
             };
           }),
         };
+        const { TestResult } = await import('../mongodb/models');
+        let savedResult = await TestResult.findOne({
+          userId: studentId,
+          program: 'tahsili',
+          testId: attemptId,
+        });
+        if (savedResult && (
+          savedResult.subjectId !== config.subjectId ||
+          savedResult.totalQuestions !== totalQuestions ||
+          savedResult.correctAnswers !== correctAnswers
+        )) {
+          return res.status(409).json({
+            error: 'سبق حفظ نتيجة هذه الجلسة بهوية مختلفة؛ لم يتم استبدالها.',
+            code: 'TAHSILI_SUBJECT_TEST_RESULT_CONFLICT',
+          });
+        }
+        if (!savedResult) {
+          const elapsedSeconds = Math.min(
+            14_400,
+            Math.max(0, Math.floor((Date.now() - Number(attempt.createdAt || Date.now())) / 1000)),
+          );
+          savedResult = await TestResult.create({
+            userId: studentId,
+            program: 'tahsili',
+            subjectId: config.subjectId,
+            testType: 'custom',
+            testId: attemptId,
+            testName: `اختبار التحصيلي - ${config.label}`,
+            difficulty: 'mixed',
+            subcategory: config.label,
+            score: correctAnswers,
+            totalQuestions,
+            correctAnswers,
+            wrongAnswers,
+            skippedQuestions: totalQuestions - answeredQuestions,
+            percentage: result.percentage,
+            timeTaken: elapsedSeconds,
+            timeLimit: config.minutes,
+            pointsEarned: 0,
+            isOfficial: false,
+            questionDetails: result.questions,
+            weakAreas: attempt.focusSubcategories || [],
+            strongAreas: [],
+            completedAt: new Date(),
+          });
+        }
+        result.testResultId = String(savedResult._id);
         attempt.result = result;
         attempts[attemptId] = attempt;
         (req.session as any).tahsiliSubjectTestAttempts = attempts;
@@ -15446,6 +15495,82 @@ app.post("/api/auth/register", async (req: Request, res: Response) => {
     }
   });
 
+  app.get('/api/student/tahsili/results', requireAuth, async (req: Request, res: Response) => {
+    const userId = studentOnly(req, res);
+    if (!userId) return;
+    const requestedSubjectId = typeof req.query.subjectId === 'string'
+      ? req.query.subjectId.trim()
+      : '';
+    const knownSubjectIds = new Set(
+      Object.values(tahsiliSubjectTests).map((subject) => subject.subjectId),
+    );
+    if (requestedSubjectId && !knownSubjectIds.has(requestedSubjectId as any)) {
+      return res.status(400).json({
+        error: 'المادة المحددة غير صالحة.',
+        code: 'INVALID_TAHSILI_RESULTS_SUBJECT',
+      });
+    }
+    try {
+      const { TestResult } = await import('../mongodb/models');
+      const projection = 'program subjectId testName testType percentage score totalQuestions completedAt weakAreas';
+      const generalFilter = {
+        userId,
+        program: 'tahsili' as const,
+        $or: [
+          { subjectId: { $exists: false } },
+          { subjectId: null },
+          { subjectId: '' },
+        ],
+      };
+      const subjectFilter = requestedSubjectId
+        ? { userId, program: 'tahsili' as const, subjectId: requestedSubjectId }
+        : null;
+      const [subjectResults, generalResults, subjectResultCount, generalResultCount] = await Promise.all([
+        requestedSubjectId
+          ? TestResult.find(subjectFilter!).sort({ completedAt: -1 }).limit(20).select(projection).lean()
+          : Promise.resolve([]),
+        TestResult.find(generalFilter)
+          .sort({ completedAt: -1 })
+          .limit(20)
+          .select(projection)
+          .lean(),
+        subjectFilter ? TestResult.countDocuments(subjectFilter) : Promise.resolve(0),
+        TestResult.countDocuments(generalFilter),
+      ]);
+      const toSummary = (result: any, includeSubject: boolean) => ({
+        id: String(result._id),
+        title: String(result.testName || 'اختبار تحصيلي'),
+        program: 'tahsili' as const,
+        ...(includeSubject && typeof result.subjectId === 'string'
+          ? { subjectId: result.subjectId }
+          : {}),
+        score: Number.isFinite(Number(result.percentage))
+          ? Math.max(0, Math.min(100, Number(result.percentage)))
+          : null,
+        date: result.completedAt ? new Date(result.completedAt).toISOString() : null,
+        totalQuestions: Number.isFinite(Number(result.totalQuestions))
+          ? Math.max(0, Math.floor(Number(result.totalQuestions)))
+          : null,
+        weakAreas: Array.isArray(result.weakAreas)
+          ? result.weakAreas.map((area: unknown) => String(area || '').trim()).filter(Boolean)
+          : [],
+      });
+      return res.json({
+        subjectId: requestedSubjectId || null,
+        subjectResultCount,
+        generalResultCount,
+        subjectResults: (subjectResults as any[]).map((result) => toSummary(result, true)),
+        generalResults: (generalResults as any[]).map((result) => toSummary(result, false)),
+      });
+    } catch (error) {
+      req.log.error({ err: error, userId, subjectId: requestedSubjectId }, 'Unable to load Tahsili results by subject');
+      return res.status(503).json({
+        error: 'تعذر تحميل نتائج التحصيلي الآن.',
+        code: 'TAHSILI_RESULTS_UNAVAILABLE',
+      });
+    }
+  });
+
   app.get('/api/student/dashboard', requireAuth, async (req: Request, res: Response) => {
     const userId = studentOnly(req, res);
     if (!userId) return;
@@ -15478,7 +15603,7 @@ app.post("/api/auth/register", async (req: Request, res: Response) => {
       const [user, testAggregate, recentTests, weakAreas, upcomingBooking, activeSubscription, folderCount, savedQuestionCount, progressAggregates] = await Promise.all([
         User.findById(userId).select('level targetExamDate targetScore trialUsed trialStartDate trialEndDate subscription officialScores academicTrack activeStudySeconds').lean(),
         TestResult.aggregate([{ $match: { userId } }, { $group: { _id: null, total: { $sum: 1 }, averagePercentage: { $avg: '$percentage' }, correct: { $sum: '$correctAnswers' }, wrong: { $sum: '$wrongAnswers' }, skipped: { $sum: '$skippedQuestions' }, questions: { $sum: '$totalQuestions' } } }]),
-         TestResult.find({ userId }).sort({ completedAt: -1 }).limit(20).select('program testName testType percentage score totalQuestions completedAt weakAreas').lean(),
+         TestResult.find({ userId }).sort({ completedAt: -1 }).limit(20).select('program subjectId testName testType percentage score totalQuestions completedAt weakAreas').lean(),
         ErrorLog.aggregate([{ $match: { userId } }, { $group: { _id: '$subcategory', count: { $sum: 1 } } }, { $sort: { count: -1, _id: 1 } }, { $limit: 5 }]),
         ExamBooking.findOne({ userId, scheduledAt: { $gte: now }, status: { $in: ['pending', 'active'] } }).sort({ scheduledAt: 1 }).select('scheduledAt status examType').lean(),
         Subscription.findOne({ userId: { $in: subscriptionIdentityCandidates(userId) }, status: 'active', startDate: { $lte: now }, endDate: { $gt: now } }).sort({ endDate: -1 }).lean(),
@@ -15488,7 +15613,7 @@ app.post("/api/auth/register", async (req: Request, res: Response) => {
           { $match: { userId } },
           {
             $group: {
-              _id: { program: '$program', testType: '$testType' },
+              _id: { program: '$program', testType: '$testType', subjectId: '$subjectId' },
               tests: { $sum: 1 },
               questions: { $sum: '$totalQuestions' },
               correct: { $sum: '$correctAnswers' },
@@ -15592,6 +15717,9 @@ app.post("/api/auth/register", async (req: Request, res: Response) => {
         testTypeEvidence: (progressAggregates as Array<any>).map((aggregate) => ({
           program: classifySavedTestProgram(aggregate._id?.program, aggregate._id?.testType),
           testType: String(aggregate._id?.testType || ''),
+          ...(typeof aggregate._id?.subjectId === 'string'
+            ? { subjectId: aggregate._id.subjectId }
+            : {}),
           tests: Number(aggregate.tests || 0),
         })),
         recentTests: recentTestsWithProgram,
