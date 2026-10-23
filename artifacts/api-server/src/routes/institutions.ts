@@ -1,4 +1,5 @@
 import type { Express, Request, RequestHandler, Response } from "express";
+import { randomBytes } from "node:crypto";
 import mongoose from "mongoose";
 import bcrypt from "bcryptjs";
 import multer from "multer";
@@ -23,6 +24,27 @@ type Dependencies = {
 };
 const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 12 * 1024 * 1024, files: 1 } });
 const invitationWindows = new Map<string, { count: number; until: number }>();
+async function ensureInstitutionReferenceCode(institutionId: unknown): Promise<string | null> {
+  const id = String(institutionId || "");
+  if (!mongoose.isValidObjectId(id)) return null;
+  for (let attempt = 0; attempt < 5; attempt += 1) {
+    const current = await Institution.findById(id).select("referenceCode").lean() as { referenceCode?: string } | null;
+    if (!current) return null;
+    if (current.referenceCode) return current.referenceCode;
+    const candidate = randomBytes(5).toString("hex").toUpperCase();
+    try {
+      const updated = await Institution.findOneAndUpdate(
+        { _id: id, $or: [{ referenceCode: { $exists: false } }, { referenceCode: null }, { referenceCode: "" }] },
+        { $set: { referenceCode: candidate } },
+        { new: true },
+      ).select("referenceCode").lean() as { referenceCode?: string } | null;
+      if (updated?.referenceCode) return updated.referenceCode;
+    } catch (error: any) {
+      if (error?.code !== 11000) throw error;
+    }
+  }
+  return (await Institution.findById(id).select("referenceCode").lean() as { referenceCode?: string } | null)?.referenceCode || null;
+}
 const invitationLimit: RequestHandler = (req, res, next) => {
   const now = Date.now();
   const key = `${req.path}:${req.ip}`;
@@ -341,7 +363,13 @@ export function registerInstitutionRoutes(app: Express, deps: Dependencies) {
     const id = String((req.session as any)?.userId || "");
     if (!mongoose.isValidObjectId(id) || !await User.exists({ _id: id })) throw new InstitutionError("سجل الدخول أولًا", 401);
     const membership = await membershipForUser(id);
-    return res.json({ membership, pendingInstitution: !membership ? await pendingInstitutionFor(id) : null });
+    const institutionReferenceCode = membership
+      ? await ensureInstitutionReferenceCode(membership.institutionId)
+      : null;
+    return res.json({
+      membership: membership ? { ...membership, institutionReferenceCode } : null,
+      pendingInstitution: !membership ? await pendingInstitutionFor(id) : null,
+    });
   }));
   app.get("/api/institution/dashboard", staff, handler(async (req, res) => {
     const actor = (req as any).institutionActor;

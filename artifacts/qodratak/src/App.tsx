@@ -73,6 +73,7 @@ import AbilitiesTestPage from "@/pages/AbilitiesTestPage";
 import ProtectedRoute from "@/components/NewProtectedRoute";
 import QiyasExamPage from "@/pages/QiyasExamPage";
 import QiyasHubPage from "@/pages/QiyasHubPage";
+import TrainingHubPage from "@/pages/TrainingHubPage";
 import CustomExamPage from "@/pages/CustomExamPage";
 import MockExamPage from "@/pages/MockExamPage";
 import LibraryPage from "@/pages/LibraryPage";
@@ -168,7 +169,6 @@ import ComputerizedPage from "@/pages/student/ComputerizedPage";
 import PreparationCoursePage from "@/pages/student/PreparationCoursePage";
 import CoursePracticePage from "@/pages/student/CoursePracticePage";
 import { StudentAvailabilityBoundary } from "@/components/student/TahsiliComingSoon";
-import { StudentJourneyNavigation } from "@/components/student/StudentJourneyNavigation";
 import AccountPage from "@/pages/student/AccountPage";
 import { StudentShell } from "@/components/student/StudentShell";
 import { StudentPageGuide } from "@/components/student/PageGuideFilm";
@@ -349,6 +349,43 @@ function isTestModeLocation(
   return false;
 }
 
+function StudentStudyTimeTracker({ active }: { active: boolean }) {
+  const [location] = useLocation();
+  const studyPath = location.split("?")[0];
+  const trackablePrefixes = [
+    "/foundation", "/student-program/", "/computerized", "/qiyas", "/paper-exam",
+    "/paper-models", "/learning/today", "/tahsili", "/tahsilik", "/question-bank",
+    "/verbal-tests", "/quantitative-tests", "/test-me", "/free-verbal-test",
+    "/free-quantitative-test", "/abilities", "/custom-exam", "/adaptive-test",
+    "/flashcards", "/courses",
+  ];
+  const isStudyPage = trackablePrefixes.some((prefix) => studyPath.startsWith(prefix));
+
+  React.useEffect(() => {
+    if (!active || !isStudyPage) return;
+
+    const heartbeat = () => {
+      void fetch("/api/student/study-time/heartbeat", {
+        method: "POST",
+        credentials: "include",
+        keepalive: true,
+      }).catch(() => {});
+    };
+    heartbeat();
+    const timer = window.setInterval(() => {
+      if (document.visibilityState === "visible") heartbeat();
+    }, 30_000);
+    const onVisibilityChange = () => heartbeat();
+    document.addEventListener("visibilitychange", onVisibilityChange);
+    return () => {
+      window.clearInterval(timer);
+      document.removeEventListener("visibilitychange", onVisibilityChange);
+    };
+  }, [active, isStudyPage, studyPath]);
+
+  return null;
+}
+
 function MainLayout({ children }: { children: React.ReactNode }) {
   const [location] = useLocation();
   const { user: layoutUser } = useUser();
@@ -479,91 +516,91 @@ function MainLayout({ children }: { children: React.ReactNode }) {
   // مسارات الطالب الأساسية بالترتيب المتفق عليه
   // ─── Core nav items (always visible) ─────────────────────
   const coreNavItems = [
-    { name: "الرئيسية",       href: "/",                icon: HomeIcon },
+    { name: "لوحة التحكم", href: "/", icon: HomeIcon },
     { name: "التأسيس", href: "/foundation", icon: BookOpenIcon },
-    { name: "التدريب المحوسب", href: "/computerized", icon: Brain },
-    { name: "نتائجي", href: "/records", icon: ClipboardIcon },
+    { name: "التدريب", href: "/training", icon: Brain },
+    { name: "حسابي", href: "/account", icon: UserIcon },
   ];
 
   // ─── Complete student learning directory ───────────────────
   const moreNavItems = [
-    { group: "اختبارات وتدريب", name: "مركز الاختبارات", href: "/qiyas-hub", icon: Brain, description: "اختر اختبارًا محوسبًا أو محاكاة مناسبة." },
-    { group: "اختبارات وتدريب", name: "اختبارات اللفظي", href: "/verbal-tests", icon: BookOpenIcon, description: "تدرب على أقسام اللفظي." },
-    { group: "اختبارات وتدريب", name: "اختبارات الكمي", href: "/quantitative-tests", icon: Calculator, description: "تدرب على أقسام الكمي." },
-    { group: "اختبارات وتدريب", name: "بنك الأسئلة", href: "/question-bank", icon: BookOpenIcon, description: "ابحث عن أسئلة التدريب المتاحة." },
-    { group: "اختبارات وتدريب", name: "اختبار القدرات المحوسب", href: "/qiyas", icon: Brain, description: "ابدأ اختبار قدرات محوسبًا من الإعدادات المتاحة." },
-    { group: "اختبارات وتدريب", name: "اختبار تغطية التأسيس", href: "/foundation/coverage-test", icon: ClipboardIcon, description: "تحقق من تغطية مهارات التأسيس." },
-    { group: "اختبارات وتدريب", name: "اختبرني من الأسئلة", href: "/test-me", icon: Target, description: "ابدأ تدريبًا من الأسئلة المتاحة لحسابك." },
-    { group: "اختبارات وتدريب", name: "اختبار يومي لفظي", href: "/free-verbal-test", icon: ClipboardIcon, description: "اختبار لفظي يومي للحسابات المسجلة." },
-    { group: "اختبارات وتدريب", name: "اختبار يومي كمي", href: "/free-quantitative-test", icon: Calculator, description: "اختبار كمي يومي للحسابات المسجلة." },
-    { group: "اختبارات وتدريب", name: "الاختبارات المحاكية", href: "/mock-exams", icon: BrainCircuitIcon, description: "تدرب في تجربة أقرب للاختبار." },
-    { group: "اختبارات وتدريب", name: "اختبار مخصص", href: "/custom-exam", icon: Layers, description: "اختر إعدادات التدريب التي تناسبك." },
-    { group: "اختبارات وتدريب", name: "الاختبار الورقي", href: "/paper-exam", icon: Printer, description: "تدرب على نموذج ورقي." },
-    { group: "اختبارات وتدريب", name: "نماذج الورقي", href: "/paper-models", icon: FileText, description: "استعرض النماذج الورقية المنشورة." },
-    { group: "اختبارات وتدريب", name: "تصحيح ورقة الإجابة", href: "/bubble-sheet-scan", icon: ClipboardIcon, description: "صحح ورقة إجابتك إذا كانت الميزة متاحة لاشتراكك." },
-    { group: "اختبارات وتدريب", name: "الاختبار القياسي", href: "/standard-test", icon: ClipboardIcon, description: "ابدأ اختبارًا قياسيًا من المحتوى المتاح." },
-    { group: "اختبارات وتدريب", name: "اختبار لفظي متقدم", href: "/advanced-verbal-test", icon: BookOpenIcon, description: "تدرب على أسئلة لفظية بمستوى متقدم." },
-    { group: "اختبارات وتدريب", name: "اختبار كمي متقدم", href: "/advanced-quantitative-test", icon: Calculator, description: "تدرب على أسئلة كمية بمستوى متقدم." },
-    { group: "اختبارات وتدريب", name: "الاختبارات الموسمية", href: "/seasonal-exams", icon: CalendarClock, description: "استعرض الاختبارات الموسمية المتاحة." },
-    { group: "اختبارات وتدريب", name: "اختبارات القدرات", href: "/abilities", icon: Target, description: "افتح اختبارات القدرات المتاحة لحسابك." },
-    { group: "اختبارات وتدريب", name: "الدورات التعليمية", href: "/courses", icon: GraduationCapIcon, description: "استعرض الدورات التعليمية المنشورة." },
+    { group: "التدريب", name: "مركز الاختبارات", href: "/qiyas-hub", icon: Brain, description: "اختر اختبارًا محوسبًا أو محاكاة مناسبة." },
+    { group: "التدريب", name: "اختبارات اللفظي", href: "/verbal-tests", icon: BookOpenIcon, description: "تدرب على أقسام اللفظي." },
+    { group: "التدريب", name: "اختبارات الكمي", href: "/quantitative-tests", icon: Calculator, description: "تدرب على أقسام الكمي." },
+    { group: "التدريب", name: "بنك الأسئلة", href: "/question-bank", icon: BookOpenIcon, description: "ابحث عن أسئلة التدريب المتاحة." },
+    { group: "التدريب", name: "اختبار القدرات المحوسب", href: "/qiyas", icon: Brain, description: "ابدأ اختبار قدرات محوسبًا من الإعدادات المتاحة." },
+    { group: "التدريب", name: "اختبار تغطية التأسيس", href: "/foundation/coverage-test", icon: ClipboardIcon, description: "تحقق من تغطية مهارات التأسيس." },
+    { group: "التدريب", name: "اختبرني من الأسئلة", href: "/test-me", icon: Target, description: "ابدأ تدريبًا من الأسئلة المتاحة لحسابك." },
+    { group: "التدريب", name: "اختبار يومي لفظي", href: "/free-verbal-test", icon: ClipboardIcon, description: "اختبار لفظي يومي للحسابات المسجلة." },
+    { group: "التدريب", name: "اختبار يومي كمي", href: "/free-quantitative-test", icon: Calculator, description: "اختبار كمي يومي للحسابات المسجلة." },
+    { group: "التدريب", name: "الاختبارات المحاكية", href: "/mock-exams", icon: BrainCircuitIcon, description: "تدرب في تجربة أقرب للاختبار." },
+    { group: "التدريب", name: "اختبار مخصص", href: "/custom-exam", icon: Layers, description: "اختر إعدادات التدريب التي تناسبك." },
+    { group: "التدريب", name: "الاختبار الورقي", href: "/paper-exam", icon: Printer, description: "تدرب على نموذج ورقي." },
+    { group: "التدريب", name: "نماذج الورقي", href: "/paper-models", icon: FileText, description: "استعرض النماذج الورقية المنشورة." },
+    { group: "التدريب", name: "تصحيح ورقة الإجابة", href: "/bubble-sheet-scan", icon: ClipboardIcon, description: "صحح ورقة إجابتك إذا كانت الميزة متاحة لاشتراكك." },
+    { group: "التدريب", name: "الاختبار القياسي", href: "/standard-test", icon: ClipboardIcon, description: "ابدأ اختبارًا قياسيًا من المحتوى المتاح." },
+    { group: "التدريب", name: "اختبار لفظي متقدم", href: "/advanced-verbal-test", icon: BookOpenIcon, description: "تدرب على أسئلة لفظية بمستوى متقدم." },
+    { group: "التدريب", name: "اختبار كمي متقدم", href: "/advanced-quantitative-test", icon: Calculator, description: "تدرب على أسئلة كمية بمستوى متقدم." },
+    { group: "التدريب", name: "الاختبارات الموسمية", href: "/seasonal-exams", icon: CalendarClock, description: "استعرض الاختبارات الموسمية المتاحة." },
+    { group: "التدريب", name: "اختبارات القدرات", href: "/abilities", icon: Target, description: "افتح اختبارات القدرات المتاحة لحسابك." },
+    { group: "التدريب", name: "الدورات التعليمية", href: "/courses", icon: GraduationCapIcon, description: "استعرض الدورات التعليمية المنشورة." },
 
-    { group: "التحصيلي", name: "مسار التحصيلي", href: "/tahsili", icon: GraduationCapIcon, description: "افتح مواد الدراسة ومكتبة المصادر ومركز الاختبارات." },
-    { group: "التحصيلي", name: "مصادر التحصيلي", href: "/tahsili/sources", icon: BookOpenIcon, description: "افتح ملفات التأسيس والتدريب المتاحة لكل مادة." },
-    { group: "التحصيلي", name: "اختبارات التحصيلي حسب المادة", href: "/tahsilik/tests", icon: ClipboardIcon, description: "اعرض المواد التي يتوفر لها بنك أسئلة معتمد." },
-    { group: "التحصيلي", name: "بنك أسئلة التحصيلي", href: "/tahsilik/question-bank", icon: Library, description: "تدرب على أسئلة التحصيلي حسب المادة." },
+    { group: "التأسيس", name: "مسار التحصيلي", href: "/tahsili", icon: GraduationCapIcon, description: "افتح مواد الدراسة ومكتبة المصادر ومركز الاختبارات." },
+    { group: "التأسيس", name: "مصادر التحصيلي", href: "/tahsili/sources", icon: BookOpenIcon, description: "افتح ملفات التأسيس والتدريب المتاحة لكل مادة." },
+    { group: "التدريب", name: "اختبارات التحصيلي حسب المادة", href: "/tahsilik/tests", icon: ClipboardIcon, description: "اعرض المواد التي يتوفر لها بنك أسئلة معتمد." },
+    { group: "التدريب", name: "بنك أسئلة التحصيلي", href: "/tahsilik/question-bank", icon: Library, description: "تدرب على أسئلة التحصيلي حسب المادة." },
 
-    { group: "مراجعة وتقدم", name: "تقدم المهارات", href: "/skill-progress", icon: TrendingUp, description: "تابع تقدمك في المهارات." },
-    { group: "مراجعة وتقدم", name: "تحليل الأداء", href: "/performance-report", icon: BarChart2, description: "راجع مؤشرات أدائك عبر المحاولات." },
-    { group: "مراجعة وتقدم", name: "تحليلاتي", href: "/analytics", icon: TrendingUp, description: "استعرض ملخص نشاطك ونتائجك." },
-    { group: "مراجعة وتقدم", name: "تحليل الأخطاء", href: "/error-analysis", icon: TrendingDown, description: "افهم أنماط الإجابات التي تحتاج مراجعة." },
-    { group: "مراجعة وتقدم", name: "اختبار تكيفي", href: "/adaptive-test", icon: Brain, description: "تدرب بأسئلة تتدرج حسب أدائك." },
-    { group: "مراجعة وتقدم", name: "بطاقات المراجعة", href: "/flashcards", icon: Layers, description: "راجع المفاهيم بالبطاقات." },
-    { group: "مراجعة وتقدم", name: "تحدي مراجعة الأخطاء", href: "/mistake-challenge", icon: GamepadIcon, description: "راجع ما أخطأت فيه بطريقة تفاعلية." },
-    { group: "مراجعة وتقدم", name: "تحدي مراجعة الأخطاء المتقدم", href: "/enhanced-mistake-challenge", icon: GamepadIcon, description: "راجع الأسئلة التي تحتاج إلى إعادة تدريب." },
-    { group: "مراجعة وتقدم", name: "مراجعة الاختبار", href: "/exam-review", icon: ClipboardIcon, description: "افتح مراجعة الأسئلة بعد تسليم الاختبار." },
-    { group: "مراجعة وتقدم", name: "نتائج الاختبارات", href: "/test-results", icon: FileText, description: "استعرض نتائج ومحاولات الاختبارات." },
-    { group: "مراجعة وتقدم", name: "نتائج الاختبار الورقي", href: "/paper-exam-results", icon: Printer, description: "راجع نتائج تصحيح النماذج الورقية." },
-    { group: "مراجعة وتقدم", name: "ملفي الدراسي", href: "/profile", icon: UserIcon, description: "راجع ملفك وإعداداتك التعليمية." },
-    { group: "مراجعة وتقدم", name: "تحديات التعلم", href: "/challenges", icon: Flame, description: "أنشطة قصيرة لتحفيز الممارسة." },
-    { group: "مراجعة وتقدم", name: "استراتيجيات الحل", href: "/strategy-library", icon: Lightbulb, description: "تعرف على طرق حل منظمة." },
+    { group: "لوحة التحكم", name: "تقدم المهارات", href: "/skill-progress", icon: TrendingUp, description: "تابع تقدمك في المهارات." },
+    { group: "لوحة التحكم", name: "تحليل الأداء", href: "/performance-report", icon: BarChart2, description: "راجع مؤشرات أدائك عبر المحاولات." },
+    { group: "لوحة التحكم", name: "تحليلاتي", href: "/analytics", icon: TrendingUp, description: "استعرض ملخص نشاطك ونتائجك." },
+    { group: "لوحة التحكم", name: "تحليل الأخطاء", href: "/error-analysis", icon: TrendingDown, description: "افهم أنماط الإجابات التي تحتاج مراجعة." },
+    { group: "التدريب", name: "اختبار تكيفي", href: "/adaptive-test", icon: Brain, description: "تدرب بأسئلة تتدرج حسب أدائك." },
+    { group: "التدريب", name: "بطاقات المراجعة", href: "/flashcards", icon: Layers, description: "راجع المفاهيم بالبطاقات." },
+    { group: "التدريب", name: "تحدي مراجعة الأخطاء", href: "/mistake-challenge", icon: GamepadIcon, description: "راجع ما أخطأت فيه بطريقة تفاعلية." },
+    { group: "التدريب", name: "تحدي مراجعة الأخطاء المتقدم", href: "/enhanced-mistake-challenge", icon: GamepadIcon, description: "راجع الأسئلة التي تحتاج إلى إعادة تدريب." },
+    { group: "التدريب", name: "مراجعة الاختبار", href: "/exam-review", icon: ClipboardIcon, description: "افتح مراجعة الأسئلة بعد تسليم الاختبار." },
+    { group: "لوحة التحكم", name: "نتائج الاختبارات", href: "/test-results", icon: FileText, description: "استعرض نتائج ومحاولات الاختبارات." },
+    { group: "لوحة التحكم", name: "نتائج الاختبار الورقي", href: "/paper-exam-results", icon: Printer, description: "راجع نتائج تصحيح النماذج الورقية." },
+    { group: "حسابي", name: "ملفي الدراسي", href: "/profile", icon: UserIcon, description: "راجع ملفك وإعداداتك التعليمية." },
+    { group: "التدريب", name: "تحديات التعلم", href: "/challenges", icon: Flame, description: "أنشطة قصيرة لتحفيز الممارسة." },
+    { group: "التدريب", name: "استراتيجيات الحل", href: "/strategy-library", icon: Lightbulb, description: "تعرف على طرق حل منظمة." },
 
-    { group: "خطة واستعداد", name: "جلسة اليوم", href: "/learning/today", icon: CalendarCheck, description: "تابع جلسة التعلم الموجهة لهذا اليوم." },
-    { group: "خطة واستعداد", name: "حجز موعد الاختبار", href: "/book-exam", icon: CalendarClock, description: "سجل موعد اختبارك أو احجز محاكاة." },
-    { group: "خطة واستعداد", name: "الاستعداد ليوم الاختبار", href: "/pre-exam-day", icon: CalendarClock, description: "راجع الاستعدادات والخطوات قبل الاختبار." },
-    { group: "خطة واستعداد", name: "إدارة الوقت", href: "/time-management", icon: Clock, description: "نظم وقت المذاكرة والراحة." },
-    { group: "خطة واستعداد", name: "غرف المذاكرة", href: "/study-rooms", icon: Users, description: "انضم إلى جلسة مذاكرة جماعية." },
+    { group: "لوحة التحكم", name: "مهام اليوم", href: "/learning/today", icon: CalendarCheck, description: "تابع جلسة التعلم الموجهة لهذا اليوم." },
+    { group: "لوحة التحكم", name: "حجز موعد الاختبار", href: "/book-exam", icon: CalendarClock, description: "سجل موعد اختبارك أو احجز محاكاة." },
+    { group: "لوحة التحكم", name: "الاستعداد ليوم الاختبار", href: "/pre-exam-day", icon: CalendarClock, description: "راجع الاستعدادات والخطوات قبل الاختبار." },
+    { group: "لوحة التحكم", name: "إدارة الوقت", href: "/time-management", icon: Clock, description: "نظم وقت المذاكرة والراحة." },
+    { group: "التدريب", name: "غرف المذاكرة", href: "/study-rooms", icon: Users, description: "انضم إلى جلسة مذاكرة جماعية." },
 
-    { group: "مصادر ومساعدة", name: "مسار القدرات", href: "/student-program/qudrat", icon: Brain, description: "افتح محتوى القدرات حسب مسارك." },
-    { group: "مصادر ومساعدة", name: "مركز التعلم", href: "/learn", icon: BookOpenIcon, description: "استكشف خيارات التعلم المتاحة." },
-    { group: "مصادر ومساعدة", name: "كتاب التأسيس الكمي", href: "/student/foundation-book/quantitative", icon: BookOpenIcon, description: "افتح كتاب التأسيس الكمي المنشور." },
-    { group: "مصادر ومساعدة", name: "المكتبة", href: "/library", icon: Library, description: "افتح مكتبتك التعليمية." },
-    { group: "مصادر ومساعدة", name: "كتبي", href: "/books", icon: BookOpenIcon, description: "تابع كتبك التعليمية." },
-    { group: "مصادر ومساعدة", name: "مجلداتي", href: "/folders", icon: FolderIcon, description: "نظم الأسئلة والمواد المحفوظة." },
-    { group: "مصادر ومساعدة", name: "محفظتي", href: "/wallet", icon: Wallet, description: "راجع رصيدك وعمليات حسابك." },
-    { group: "مصادر ومساعدة", name: "مساعد الشرح (اختياري)", href: "/ai-tutor", icon: BrainCircuitIcon, description: "اطلب شرحًا عند الحاجة؛ لا يعمل تلقائيًا." },
-    { group: "مصادر ومساعدة", name: "مركز الأدوات الذكية (اختياري)", href: "/ai-hub", icon: BrainCircuitIcon, description: "افتح الأدوات الذكية بإرادتك؛ لا تُشغّل تلقائيًا من قائمة التنقل." },
-    { group: "مصادر ومساعدة", name: "تحليل الأنماط الذكي (اختياري)", href: "/ai-hub/pattern-analysis", icon: TrendingDown, description: "تحليل اختياري عند فتحك لهذه الصفحة." },
-    { group: "مصادر ومساعدة", name: "اقتراح خطة ذكية (اختياري)", href: "/ai-hub/daily-plan", icon: CalendarCheck, description: "اقتراح اختياري عند فتحك لهذه الصفحة." },
-    { group: "مصادر ومساعدة", name: "توقع الدرجة (اختياري)", href: "/ai-hub/score-prediction", icon: TrendingUp, description: "توقع اختياري عند فتحك لهذه الصفحة." },
-    { group: "مصادر ومساعدة", name: "دليل الاستخدام", href: "/usage-guide", icon: HelpCircle, description: "تعرف على صفحات المنصة وطريقة استخدامها." },
-    { group: "مصادر ومساعدة", name: "كيف تعمل المنصة؟", href: "/how-it-works", icon: PlayCircleIcon, description: "شاهد مسار الاستخدام خطوة بخطوة." },
-    { group: "مصادر ومساعدة", name: "دليل المنصة", href: "/guide", icon: PlayCircleIcon, description: "افتح الدليل التعريفي للمنصة." },
-    { group: "مصادر ومساعدة", name: "تثبيت التطبيق", href: "/install", icon: Download, description: "تعرف على طريقة تثبيت المنصة على جهازك." },
-    { group: "مصادر ومساعدة", name: "الإشعارات", href: "/notifications", icon: Bell, description: "راجع تحديثات حسابك." },
-    { group: "مصادر ومساعدة", name: "إعدادات الإشعارات", href: "/notification-settings", icon: Bell, description: "اختر الإشعارات التي تريد استقبالها." },
-    { group: "مصادر ومساعدة", name: "الأمان", href: "/security-settings", icon: UserIcon, description: "راجع إعدادات أمان حسابك." },
-    { group: "مصادر ومساعدة", name: "حسابي", href: "/account", icon: UserIcon, description: "حدّث بياناتك وراجع اشتراكك." },
-    { group: "مصادر ومساعدة", name: "الاشتراك والباقات", href: "/subscription", icon: Wallet, description: "راجع تفاصيل الاشتراك والخيارات المتاحة." },
-    { group: "مصادر ومساعدة", name: "الباقات والأسعار", href: "/pricing", icon: Wallet, description: "قارن الباقات قبل الاشتراك." },
-    { group: "مصادر ومساعدة", name: "الأسئلة الشائعة والدعم", href: "/faq", icon: HelpCircleIcon, description: "ابحث عن إجابة أو تواصل مع الدعم." },
-    { group: "مصادر ومساعدة", name: "الدعم الفني", href: "/support", icon: MessageCircle, description: "افتح قنوات الدعم ومعلومات التواصل." },
-    { group: "مصادر ومساعدة", name: "دليل المنصة المتقدم", href: "/platform-guide", icon: HelpCircle, description: "استعرض الدليل التفصيلي لاستخدام المنصة." },
+    { group: "التأسيس", name: "مسار القدرات", href: "/student-program/qudrat", icon: Brain, description: "افتح محتوى القدرات حسب مسارك." },
+    { group: "التأسيس", name: "مركز التعلم", href: "/learn", icon: BookOpenIcon, description: "استكشف خيارات التعلم المتاحة." },
+    { group: "التأسيس", name: "كتاب التأسيس الكمي", href: "/student/foundation-book/quantitative", icon: BookOpenIcon, description: "افتح كتاب التأسيس الكمي المنشور." },
+    { group: "التأسيس", name: "المكتبة", href: "/library", icon: Library, description: "افتح مكتبتك التعليمية." },
+    { group: "حسابي", name: "كتبي", href: "/books", icon: BookOpenIcon, description: "تابع كتبك التعليمية." },
+    { group: "حسابي", name: "مجلداتي", href: "/folders", icon: FolderIcon, description: "نظم الأسئلة والمواد المحفوظة." },
+    { group: "حسابي", name: "محفظتي", href: "/wallet", icon: Wallet, description: "راجع رصيدك وعمليات حسابك." },
+    { group: "التأسيس", name: "مساعد الشرح (اختياري)", href: "/ai-tutor", icon: BrainCircuitIcon, description: "اطلب شرحًا عند الحاجة؛ لا يعمل تلقائيًا." },
+    { group: "حسابي", name: "مركز الأدوات الذكية (اختياري)", href: "/ai-hub", icon: BrainCircuitIcon, description: "افتح الأدوات الذكية بإرادتك؛ لا تُشغّل تلقائيًا من قائمة التنقل." },
+    { group: "حسابي", name: "تحليل الأنماط الذكي (اختياري)", href: "/ai-hub/pattern-analysis", icon: TrendingDown, description: "تحليل اختياري عند فتحك لهذه الصفحة." },
+    { group: "حسابي", name: "اقتراح خطة ذكية (اختياري)", href: "/ai-hub/daily-plan", icon: CalendarCheck, description: "اقتراح اختياري عند فتحك لهذه الصفحة." },
+    { group: "حسابي", name: "توقع الدرجة (اختياري)", href: "/ai-hub/score-prediction", icon: TrendingUp, description: "توقع اختياري عند فتحك لهذه الصفحة." },
+    { group: "حسابي", name: "دليل الاستخدام", href: "/usage-guide", icon: HelpCircle, description: "تعرف على صفحات المنصة وطريقة استخدامها." },
+    { group: "حسابي", name: "كيف تعمل المنصة؟", href: "/how-it-works", icon: PlayCircleIcon, description: "شاهد مسار الاستخدام خطوة بخطوة." },
+    { group: "حسابي", name: "دليل المنصة", href: "/guide", icon: PlayCircleIcon, description: "افتح الدليل التعريفي للمنصة." },
+    { group: "حسابي", name: "تثبيت التطبيق", href: "/install", icon: Download, description: "تعرف على طريقة تثبيت المنصة على جهازك." },
+    { group: "حسابي", name: "الإشعارات", href: "/notifications", icon: Bell, description: "راجع تحديثات حسابك." },
+    { group: "حسابي", name: "إعدادات الإشعارات", href: "/notification-settings", icon: Bell, description: "اختر الإشعارات التي تريد استقبالها." },
+    { group: "حسابي", name: "الأمان", href: "/security-settings", icon: UserIcon, description: "راجع إعدادات أمان حسابك." },
+    { group: "حسابي", name: "حسابي", href: "/account", icon: UserIcon, description: "حدّث بياناتك وراجع اشتراكك." },
+    { group: "حسابي", name: "الاشتراك والباقات", href: "/subscription", icon: Wallet, description: "راجع تفاصيل الاشتراك والخيارات المتاحة." },
+    { group: "حسابي", name: "الباقات والأسعار", href: "/pricing", icon: Wallet, description: "قارن الباقات قبل الاشتراك." },
+    { group: "حسابي", name: "الأسئلة الشائعة والدعم", href: "/faq", icon: HelpCircleIcon, description: "ابحث عن إجابة أو تواصل مع الدعم." },
+    { group: "حسابي", name: "الدعم الفني", href: "/support", icon: MessageCircle, description: "افتح قنوات الدعم ومعلومات التواصل." },
+    { group: "حسابي", name: "دليل المنصة المتقدم", href: "/platform-guide", icon: HelpCircle, description: "استعرض الدليل التفصيلي لاستخدام المنصة." },
   ];
 
   const learnerGoalActions = [
     { name: "أبني الأساس", href: "/foundation", icon: BookOpenIcon, description: "اختر مسار القدرات أو التحصيلي وابدأ من الأساس." },
-    { name: "أتدرب على اختبار", href: "/qiyas-hub", icon: Brain, description: "اختر تدريبًا أو اختبارًا محاكيًا." },
+    { name: "أتدرب على اختبار", href: "/training", icon: Brain, description: "اختر تدريبًا أو اختبارًا محاكيًا." },
     { name: "أراجع أخطائي", href: "/error-analysis", icon: TrendingDown, description: "اكتشف ما يحتاج إلى مراجعة." },
     { name: "أستعد لموعدي", href: "/pre-exam-day", icon: CalendarCheck, description: "راجع خطة الاستعداد للاختبار." },
   ];
@@ -580,38 +617,6 @@ function MainLayout({ children }: { children: React.ReactNode }) {
   const sidebarMoreGroups = sidebarMoreOpen
     ? moreNavGroups
     : [{ group: moreNavItems[0].group, items: moreNavItems.slice(0, 4) }];
-
-  const activeProgram = React.useMemo(() => {
-    const path = location.split("?")[0];
-    const match = path.match(/^\/student-program\/(qudrat|tahsili)$/);
-    if (match?.[1]) return match[1] as "qudrat" | "tahsili";
-    if (path === "/folders") {
-      const folderProgram = new URLSearchParams(location.split("?")[1] || "").get("program");
-      if (folderProgram && ["qudrat", "tahsili"].includes(folderProgram)) {
-        return folderProgram as "qudrat" | "tahsili";
-      }
-    }
-    return undefined;
-  }, [location]);
-
-  const activeProgramLabel = {
-    qudrat: "القدرات | Qudrat",
-    tahsili: "التحصيلي | Tahsili",
-  }[activeProgram || "qudrat"];
-  const activePracticeLabel = "المحوسب";
-
-  const programSubNavItems = activeProgram ? [
-    { name: "التأسيس", href: `/student-program/${activeProgram}?section=foundation`, icon: BookOpenIcon },
-    { name: activePracticeLabel, href: `/student-program/${activeProgram}?section=computer`, icon: Brain },
-    { name: "مجلداتي", href: `/folders?program=${activeProgram}`, icon: FolderIcon },
-  ] : [];
-
-  const isProgramSubNavActive = (item: { name: string; href: string }) => {
-    if (!activeProgram) return false;
-    if (item.name === "مجلداتي") return location.startsWith("/folders");
-    if (location === `/student-program/${activeProgram}`) return item.name === "التأسيس";
-    return location === item.href;
-  };
 
   // التحقق من كون المستخدم في اختبار
   const [qiyasExamActive, setQiyasExamActive] = React.useState(false);
@@ -648,6 +653,7 @@ function MainLayout({ children }: { children: React.ReactNode }) {
 
   return (
     <StudentExamChromeContext.Provider value={{ isActive: isExamLayoutActive, setActive: setIsExamLayoutActive }}>
+    <StudentStudyTimeTracker active={layoutUser?.role === "student"} />
     <div className={cn(
       "qodratak-app-shell flex min-h-screen bg-background text-foreground",
       isInTestMode && "h-[100dvh] max-h-[100dvh] overflow-hidden"
@@ -665,48 +671,7 @@ function MainLayout({ children }: { children: React.ReactNode }) {
 
           {/* Core Nav */}
            <nav className="flex-1 px-3 py-3 space-y-0.5 overflow-y-auto">
-             {activeProgram ? (
-               <>
-                 <Link href="/">
-                   <div className="mb-3 flex items-center gap-2 rounded-xl px-3 py-2 text-xs font-bold text-gray-500 transition hover:bg-gray-50 hover:text-gray-900 dark:hover:bg-gray-800 dark:hover:text-white">
-                     <ChevronLeft className="h-4 w-4" />
-                     <span>العودة للمسارات</span>
-                   </div>
-                 </Link>
-                 <div className="mb-2 rounded-2xl bg-gray-50 px-3 py-3 dark:bg-gray-800/70">
-                   <p className="text-[10px] font-bold text-gray-400">المسار الحالي</p>
-                   <p className="mt-1 text-sm font-black text-gray-900 dark:text-white">{activeProgramLabel}</p>
-                 </div>
-                 <p className="px-3 pb-1 pt-2 text-[10px] font-semibold uppercase tracking-wider text-gray-400">خطة المسار</p>
-                 {programSubNavItems.map((item) => {
-                   const isActive = isProgramSubNavActive(item);
-                   return (
-                     <Link key={item.href} href={item.href}>
-                       <div className={cn(
-                         "flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-colors",
-                         isActive
-                           ? "border border-green-100 bg-green-50 text-green-700 dark:border-green-900 dark:bg-green-950/30 dark:text-green-400"
-                           : "text-gray-600 hover:bg-gray-50 dark:text-gray-400 dark:hover:bg-gray-800"
-                       )}>
-                         <item.icon className="h-4 w-4 flex-shrink-0" />
-                         <span>{item.name}</span>
-                         {isActive && <div className="mr-auto h-1.5 w-1.5 rounded-full bg-green-500" />}
-                       </div>
-                     </Link>
-                   );
-                 })}
-                 <div className="my-3 border-t border-gray-100 dark:border-gray-800" />
-                 <Link href="/library">
-                   <div className={cn(
-                     "flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-colors",
-                     location.startsWith("/library") ? "bg-green-50 text-green-700 dark:bg-green-950/30 dark:text-green-400" : "text-gray-600 hover:bg-gray-50 dark:text-gray-400 dark:hover:bg-gray-800"
-                   )}>
-                     <Library className="h-4 w-4 flex-shrink-0" />
-                     <span>المكتبة المشتركة</span>
-                   </div>
-                 </Link>
-               </>
-             ) : coreNavItems.map((item) => {
+             {coreNavItems.map((item) => {
               const isActive = item.href === "/" ? location === "/" : location.startsWith(item.href);
               return (
                 <Link key={item.href} href={item.href}>
@@ -1045,7 +1010,6 @@ function MainLayout({ children }: { children: React.ReactNode }) {
         )}>
           <div key={location} className="qodratak-page-surface page-enter min-h-full">
             <ErrorBoundary>
-              {!isInTestMode && layoutUser?.role === 'student' && <StudentJourneyNavigation />}
               {children}
             </ErrorBoundary>
             {/* Footer - مخفي في وضع الاختبار */}
@@ -1060,21 +1024,8 @@ function MainLayout({ children }: { children: React.ReactNode }) {
             style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}
           >
             <nav className="mx-auto flex h-16 w-full max-w-screen-sm items-center gap-1 px-2">
-              {(activeProgram ? [
-                { href: `/student-program/${activeProgram}?section=foundation`, icon: BookOpenIcon, label: "التأسيس", exact: false },
-                { href: `/student-program/${activeProgram}?section=computer`, icon: Brain, label: "المحوسب", exact: false },
-                { href: "/folders", icon: FolderIcon, label: "مجلداتي", exact: false },
-                { href: "/", icon: HomeIcon, label: "المسارات", exact: true },
-              ] : [
-                { href: "/", icon: HomeIcon, label: "الرئيسية", exact: true },
-                { href: "/student-program/qudrat", icon: Brain, label: "القدرات", exact: false },
-                { href: "/student-program/tahsili", icon: GraduationCapIcon, label: "التحصيلي", exact: false },
-              ]).map((item) => {
-                const active = activeProgram && item.href.includes("?section=")
-                  ? isProgramSubNavActive({ name: item.label === "التأسيس" ? "التأسيس" : "المحوسب", href: item.href })
-                  : item.exact
-                    ? location === item.href
-                    : location === item.href || location.startsWith(item.href.split("?")[0]);
+              {coreNavItems.map((item) => {
+                const active = item.href === "/" ? location === "/" : location === item.href || location.startsWith(item.href);
                 return (
                   <Link
                     key={item.href}
@@ -1087,7 +1038,7 @@ function MainLayout({ children }: { children: React.ReactNode }) {
                   >
                     {active && <div className="absolute top-0 left-1/2 -translate-x-1/2 w-5 h-0.5 bg-primary rounded-full" />}
                     <item.icon className="h-5 w-5" />
-                    <span className="text-[9px] font-medium leading-none text-center">{item.label}</span>
+                    <span className="text-[9px] font-medium leading-none text-center">{item.name}</span>
                   </Link>
                 );
               })}
@@ -1297,6 +1248,10 @@ function Router({ splashDone }: { splashDone: boolean }) {
           if (serverUser.role !== 'teacher') return <Redirect to="/" />;
           return <TeacherHomePage />;
         }}
+      </Route>
+
+      <Route path="/training">
+        {() => <StudentShell><TrainingHubPage /></StudentShell>}
       </Route>
 
       <Route path="/qiyas-hub">

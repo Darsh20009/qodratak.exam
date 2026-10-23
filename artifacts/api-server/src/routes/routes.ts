@@ -15266,25 +15266,73 @@ app.post("/api/auth/register", async (req: Request, res: Response) => {
     const userId = studentOnly(req, res);
     if (!userId) return;
     const { User } = await import('../mongodb/models');
-    const user = await User.findById(userId).select('guardianPhone').lean();
+    const user = await User.findById(userId).select('guardianPhone schoolReferenceNumber').lean();
     if (!user) return res.status(404).json({ error: 'المستخدم غير موجود' });
-    return res.json({ guardianPhone: user.guardianPhone || null });
+    return res.json({
+      guardianPhone: user.guardianPhone || null,
+      schoolReferenceNumber: user.schoolReferenceNumber || null,
+    });
   });
 
   app.patch('/api/user/guardian', requireAuth, async (req: Request, res: Response) => {
     const userId = studentOnly(req, res);
     if (!userId) return;
-    let guardianPhone: string;
+    const updates: Record<string, string | null> = {};
     try {
-      guardianPhone = normalizeSaudiPhone(req.body?.guardianPhone);
-      if (!/^9665\d{8}$/.test(guardianPhone)) throw new Error('INVALID_PHONE');
+      if (Object.prototype.hasOwnProperty.call(req.body || {}, 'guardianPhone')) {
+        const rawPhone = String(req.body?.guardianPhone ?? '').trim();
+        if (!rawPhone) {
+          updates.guardianPhone = null;
+        } else {
+          const guardianPhone = normalizeSaudiPhone(rawPhone);
+          if (!/^9665\d{8}$/.test(guardianPhone)) throw new Error('INVALID_PHONE');
+          updates.guardianPhone = guardianPhone;
+        }
+      }
+      if (Object.prototype.hasOwnProperty.call(req.body || {}, 'schoolReferenceNumber')) {
+        const schoolReferenceNumber = String(req.body?.schoolReferenceNumber ?? '').trim().replace(/\s+/g, ' ');
+        if (schoolReferenceNumber.length > 80) throw new Error('INVALID_SCHOOL_REFERENCE');
+        updates.schoolReferenceNumber = schoolReferenceNumber || null;
+      }
+      if (Object.keys(updates).length === 0) throw new Error('NO_FIELDS');
     } catch {
-      return res.status(400).json({ error: 'رقم ولي الأمر يجب أن يكون رقم جوال سعودي صالحاً' });
+      return res.status(400).json({ error: 'تحقق من رقم ولي الأمر والرقم المرجعي للمدرسة' });
     }
     const { User } = await import('../mongodb/models');
-    const user = await User.findByIdAndUpdate(userId, { $set: { guardianPhone } }, { new: true }).select('guardianPhone').lean();
+    const user = await User.findByIdAndUpdate(userId, { $set: updates }, { new: true }).select('guardianPhone schoolReferenceNumber').lean();
     if (!user) return res.status(404).json({ error: 'المستخدم غير موجود' });
-    return res.json({ guardianPhone: user.guardianPhone });
+    return res.json({
+      guardianPhone: user.guardianPhone || null,
+      schoolReferenceNumber: user.schoolReferenceNumber || null,
+    });
+  });
+
+  app.post('/api/student/study-time/heartbeat', requireAuth, async (req: Request, res: Response) => {
+    const userId = studentOnly(req, res);
+    if (!userId) return;
+    const { User } = await import('../mongodb/models');
+    const now = new Date();
+    const current = await User.findById(userId).select('activeStudySeconds studyTimeHeartbeatAt').lean() as any;
+    if (!current) return res.status(404).json({ error: 'المستخدم غير موجود' });
+
+    const previousAt = current.studyTimeHeartbeatAt ? new Date(current.studyTimeHeartbeatAt) : null;
+    const elapsedSeconds = previousAt ? (now.getTime() - previousAt.getTime()) / 1000 : 0;
+    // Count only intervals between reasonable active-page heartbeats. Long pauses
+    // are reset without credit, so background tabs cannot accrue study time.
+    const addedSeconds = elapsedSeconds >= 15 && elapsedSeconds <= 90 ? Math.floor(elapsedSeconds) : 0;
+    const heartbeatMatch = previousAt
+      ? { studyTimeHeartbeatAt: previousAt }
+      : { $or: [{ studyTimeHeartbeatAt: { $exists: false } }, { studyTimeHeartbeatAt: null }] };
+    const updated = await User.findOneAndUpdate(
+      { _id: userId, ...heartbeatMatch },
+      { $inc: { activeStudySeconds: addedSeconds }, $set: { studyTimeHeartbeatAt: now } },
+      { new: true },
+    ).select('activeStudySeconds').lean() as any;
+    if (!updated) return res.status(204).send();
+    return res.json({
+      addedSeconds,
+      totalSeconds: Math.max(0, Number(updated.activeStudySeconds || 0)),
+    });
   });
 
   app.post('/api/user/change-password', requireAuth, async (req: Request, res: Response) => {
@@ -15319,6 +15367,7 @@ app.post("/api/auth/register", async (req: Request, res: Response) => {
     if (process.env.NODE_ENV !== 'production' && (mongoose.connection.readyState !== 1 || isDevelopmentDemo)) {
       return res.json({
         totals: { tests: 0, questions: 0, correct: 0, wrong: 0, skipped: 0, averagePercentage: 0 },
+        studySeconds: 0,
         progress: {
           overall: { percentage: 0, tests: 0, questions: 0 },
           qudrat: { percentage: 0, tests: 0, questions: 0 },
@@ -15338,7 +15387,7 @@ app.post("/api/auth/register", async (req: Request, res: Response) => {
       const { User, TestResult, ErrorLog, ExamBooking, Subscription, Folder, FolderQuestion } = await import('../mongodb/models');
       const now = new Date();
       const [user, testAggregate, recentTests, weakAreas, upcomingBooking, activeSubscription, folderCount, savedQuestionCount, progressAggregates] = await Promise.all([
-        User.findById(userId).select('level targetExamDate trialUsed trialStartDate trialEndDate subscription officialScores academicTrack').lean(),
+        User.findById(userId).select('level targetExamDate trialUsed trialStartDate trialEndDate subscription officialScores academicTrack activeStudySeconds').lean(),
         TestResult.aggregate([{ $match: { userId } }, { $group: { _id: null, total: { $sum: 1 }, averagePercentage: { $avg: '$percentage' }, correct: { $sum: '$correctAnswers' }, wrong: { $sum: '$wrongAnswers' }, skipped: { $sum: '$skippedQuestions' }, questions: { $sum: '$totalQuestions' } } }]),
         TestResult.find({ userId }).sort({ completedAt: -1 }).limit(5).select('testName testType percentage score totalQuestions completedAt weakAreas').lean(),
         ErrorLog.aggregate([{ $match: { userId } }, { $group: { _id: '$subcategory', count: { $sum: 1 } } }, { $sort: { count: -1, _id: 1 } }, { $limit: 5 }]),
@@ -15436,6 +15485,7 @@ app.post("/api/auth/register", async (req: Request, res: Response) => {
       });
       return res.json({
         totals: { tests: totals.total, questions: totals.questions, correct: totals.correct, wrong: totals.wrong, skipped: totals.skipped, averagePercentage: Number((totals.averagePercentage || 0).toFixed(2)) },
+        studySeconds: Math.max(0, Number((user as any).activeStudySeconds || 0)),
         progress: Object.fromEntries(Object.entries(progressBuckets).map(([key, value]) => [key, toProgress(value)])),
         recentTests,
         weaknesses: weakAreas.filter((area: any) => area._id).map((area: any) => ({ name: area._id, errorCount: area.count })),

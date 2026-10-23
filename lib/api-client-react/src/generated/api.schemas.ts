@@ -1952,6 +1952,36 @@ export interface QuantitativeBookQuizResult {
   unlockedNextLessonId: string | null;
 }
 
+export interface StudentStudyTimeHeartbeatResult {
+  /**
+     * @minimum 0
+     * @maximum 90
+     */
+  addedSeconds: number;
+  /** @minimum 0 */
+  totalSeconds: number;
+}
+
+export interface StudentAccountReferences {
+  /**
+     * @maxLength 32
+     * @nullable
+     */
+  guardianPhone: string | null;
+  /**
+     * @maxLength 80
+     * @nullable
+     */
+  schoolReferenceNumber: string | null;
+}
+
+export interface StudentAccountReferencesUpdate {
+  /** @maxLength 32 */
+  guardianPhone?: string;
+  /** @maxLength 80 */
+  schoolReferenceNumber?: string;
+}
+
 export type GetStudentExamReportsParams = {
 /**
  * @minLength 24

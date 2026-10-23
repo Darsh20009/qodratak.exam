@@ -10,7 +10,6 @@ import { HomeIcon, BookOpenIcon, BrainCircuitIcon, UserIcon, MenuIcon, XIcon, Lo
 import { BrandMark } from "@/components/BrandMark";
 import { StudentExamChromeContext } from "@/components/student/StudentExamChromeContext";
 import useSubscription from "@/hooks/useSubscription";
-import { StudentJourneyNavigation } from "@/components/student/StudentJourneyNavigation";
 import { PageGuideFilm } from "@/components/student/PageGuideFilm";
 
 const NAV_ITEMS = [
@@ -140,7 +139,6 @@ export function StudentShell({ children }: { children: React.ReactNode }) {
               <UserIcon className="h-4 w-4" /> حسابي
             </Link>
           </div>}
-          {!isExamLayoutActive && !subscription?.isExpired && <StudentJourneyNavigation />}
           {!isExamLayoutActive && <PageGuideFilm location={location} />}
           {children}
       </main>

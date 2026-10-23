@@ -121,15 +121,26 @@ function QuestionProgressLibraryCard() {
 }
 
 const paths = [
-  { href: "/foundation", label: "التأسيس", detail: "القدرات والتحصيلي وخطة كل مسار", icon: Calendar },
-  { href: "/computerized", label: "التدريب المحوسب", detail: "لفظي وكمي بتركيز", icon: Laptop },
-  { href: "/records", label: "تقاريري", detail: "راجع الخطأ والبطيء", icon: FileText },
+  { href: "/foundation", label: "التأسيس", detail: "دروس القدرات والتحصيلي", icon: Calendar },
+  { href: "/training", label: "التدريب", detail: "ورقي ومحوسب واختبارات قصيرة", icon: Laptop },
+  { href: "/account", label: "حسابي", detail: "الاشتراك والفواتير والتقييم", icon: FileText },
 ];
 
 export default function DashboardPage() {
   const { user, isLoading: isUserLoading } = useUser();
   const { subscription, isLoading: isSubscriptionLoading } = useSubscription();
   const isStudent = user?.role === "student";
+  const trainingStreakQuery = useQuery<{ streak?: { current?: number } }>({
+    queryKey: ["/api/daily-goal"],
+    queryFn: async () => {
+      const response = await fetch("/api/daily-goal", { credentials: "include" });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data?.error || "تعذر تحميل أيام التدريب");
+      return data;
+    },
+    enabled: isStudent && !isUserLoading && !isSubscriptionLoading && !subscription?.isExpired,
+    staleTime: 60_000,
+  });
   const {
     data: dashboard,
     isLoading,
@@ -261,11 +272,12 @@ export default function DashboardPage() {
   const dueTask = course && course.level !== "unassessed"
     ? course.days.filter((d) => d.date.slice(0, 10) <= saudiToday).flatMap((d) => d.tasks.map((t) => ({ t, day: d.day }))).find((x) => x.t.status === "pending")
     : undefined;
+  const recentTests = dashboard.recentTests ?? [];
+  const weaknesses = dashboard.weaknesses ?? [];
+  const trackedHours = dashboard.stats.studySeconds / 3600;
   const daysToExam = dashboard.upcomingExam.date
     ? Math.max(0, Math.ceil((new Date(dashboard.upcomingExam.date).getTime() - Date.now()) / 86400000))
     : null;
-  const recentTests = dashboard.recentTests ?? [];
-  const weaknesses = dashboard.weaknesses ?? [];
   const progressItems = [
     { key: "overall", label: "الإجمالي", ...dashboard.progress.overall },
     { key: "verbal", label: "اللفظي", ...dashboard.progress.verbal },
@@ -346,8 +358,16 @@ export default function DashboardPage() {
         </h1>
         <p className="text-sm leading-7 text-muted-foreground">خطوة واحدة الآن تكفي.</p>
       </header>
-      <DashboardGuideFilm studentId={user.id ?? user._id} displayName={userName} />
-      <QuestionProgressLibraryCard />
+      <details data-testid="details-guide-and-question-library" className="group rounded-3xl border border-border bg-card shadow-sm">
+        <summary className="flex cursor-pointer list-none items-center gap-3 p-4 text-sm font-black text-foreground [&::-webkit-details-marker]:hidden">
+          <span className="flex-1">الدليل التعريفي ومكتبة الأسئلة</span>
+          <ChevronDown className="h-4 w-4 text-muted-foreground transition-transform group-open:rotate-180" aria-hidden="true" />
+        </summary>
+        <div className="space-y-4 border-t border-border p-4">
+          <DashboardGuideFilm studentId={user.id ?? user._id} displayName={userName} />
+          <QuestionProgressLibraryCard />
+        </div>
+      </details>
 
       <section data-testid="student-next-step" className="overflow-hidden rounded-3xl border border-primary/20 bg-primary/5 shadow-sm">
         <div className="flex flex-col gap-5 p-5 sm:p-7 md:flex-row md:items-center md:justify-between">
@@ -356,7 +376,7 @@ export default function DashboardPage() {
               <PlayCircle className="h-6 w-6" aria-hidden="true" />
             </span>
             <div className="min-w-0">
-              <p className="text-xs font-black tracking-wide text-primary">مهمتك اليوم</p>
+              <p className="text-xs font-black tracking-wide text-primary">مهام اليوم</p>
               {courseQuery.isLoading ? (
                 <div className="mt-3 space-y-2" data-testid="status-course-loading">
                   <div className="h-6 w-56 animate-pulse rounded bg-muted" />
@@ -409,9 +429,9 @@ export default function DashboardPage() {
       </section>
 
       <dl data-testid="student-key-progress" aria-label="تقدمك باختصار" className="grid grid-cols-3 divide-x divide-x-reverse divide-border rounded-2xl border border-border bg-card text-center">
-        <div className="p-3"><dt className="text-xs font-bold text-muted-foreground">الإجمالي</dt><dd data-testid="text-key-overall" className="mt-1 text-xl font-black text-foreground">{clampPercentage(dashboard.progress.overall.percentage)}%</dd></div>
-        <div className="p-3"><dt className="text-xs font-bold text-muted-foreground">اختبارات</dt><dd data-testid="text-key-tests" className="mt-1 text-xl font-black text-foreground">{dashboard.stats.totalTests}</dd></div>
-        <div className="p-3"><dt className="text-xs font-bold text-muted-foreground">حتى الاختبار</dt><dd data-testid="text-key-days" className="mt-1 text-xl font-black text-foreground">{daysToExam === null ? "—" : `${daysToExam} يوم`}</dd></div>
+        <div className="p-3"><dt className="text-xs font-bold text-muted-foreground">ساعات الدراسة</dt><dd data-testid="text-key-study-hours" className="mt-1 text-xl font-black text-foreground">{trackedHours.toLocaleString("ar-SA", { maximumFractionDigits: 1 })}</dd></div>
+        <div className="p-3"><dt className="text-xs font-bold text-muted-foreground">اختبارات مكتملة</dt><dd data-testid="text-key-tests" className="mt-1 text-xl font-black text-foreground">{dashboard.stats.totalTests}</dd></div>
+        <div className="p-3"><dt className="text-xs font-bold text-muted-foreground">أيام متتالية</dt><dd data-testid="text-key-streak" className="mt-1 text-xl font-black text-foreground">{trainingStreakQuery.isLoading || trainingStreakQuery.isError ? "—" : Number(trainingStreakQuery.data?.streak?.current || 0)}</dd></div>
       </dl>
 
       <details data-testid="details-more-guidance" className="group rounded-3xl border border-border bg-card shadow-sm">
@@ -443,11 +463,12 @@ export default function DashboardPage() {
         </div>
       </details>
 
-      <details data-testid="student-progress-summary" className="rounded-3xl border border-border bg-card p-5 shadow-sm md:p-6"><summary className="cursor-pointer font-black text-foreground">ملخص التقدم</summary><div className="mt-4">
+      <section data-testid="student-progress-summary" aria-labelledby="student-progress-title" className="rounded-3xl border border-border bg-card p-5 shadow-sm md:p-6"><div className="mt-1">
         <div className="flex flex-col gap-4 border-b border-border pb-5 sm:flex-row sm:items-end sm:justify-between">
           <div>
-            <p className="text-xs font-black text-primary">ملخص التقدم</p>
-            <h2 className="mt-1 text-xl font-black text-foreground">أين وصلت حتى الآن؟</h2>
+            <p className="text-xs font-black text-primary">بياناتك</p>
+            <h2 id="student-progress-title" className="mt-1 text-xl font-black text-foreground">رسم بيانات تقدمك</h2>
+            <p className="mt-1 text-xs text-muted-foreground">النسب محسوبة من إجابات الاختبارات المحفوظة.</p>
           </div>
           <div className="flex gap-5 text-sm">
             <div data-testid="stat-average-score">
@@ -486,7 +507,12 @@ export default function DashboardPage() {
             ستظهر نسبك هنا بعد إتمام أول اختبار. ابدأ باختبار واحد في المسار الذي تدرسه.
           </p>
         )}
-      </div></details>
+      </div></section>
+
+      <Link href="/account" data-testid="link-platform-review" className="flex items-center justify-between gap-4 rounded-2xl border border-border bg-card p-4 text-sm font-black text-foreground transition hover:border-primary/40 hover:bg-primary/5">
+        <span>تقييم المنصة ومعلومات حسابك</span>
+        <ChevronLeft className="h-4 w-4 shrink-0" aria-hidden="true" />
+      </Link>
 
       <section data-testid="student-paths" className="space-y-3">
         <div>
@@ -527,7 +553,7 @@ export default function DashboardPage() {
                 <p className="text-xs font-black text-primary">سجل التدريب</p>
                 <h2 className="mt-1 text-lg font-black text-foreground">الاختبارات الأخيرة</h2>
               </div>
-              <Link href="/computerized" data-testid="link-all-tests" className="text-xs font-black text-muted-foreground hover:text-foreground">
+              <Link href="/records" data-testid="link-all-tests" className="text-xs font-black text-muted-foreground hover:text-foreground">
                 عرض الكل
               </Link>
             </div>

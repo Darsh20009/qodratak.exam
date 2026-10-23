@@ -3,7 +3,7 @@ import { useToast } from "@/hooks/use-toast";
 
 // Types
 export interface StudentDashboard {
-  stats: { totalTests: number; averageScore: number; points: number };
+  stats: { totalTests: number; averageScore: number; points: number; studySeconds: number };
   progress: {
     overall: { percentage: number; tests: number; questions: number };
     qudrat: { percentage: number; tests: number; questions: number };
@@ -454,6 +454,7 @@ export function useStudentDashboard(enabled = true) {
           totalTests: Number(data.totals?.tests || 0),
           averageScore: Math.round(Number(data.totals?.averagePercentage || 0)),
           points: Number(data.totals?.correct || 0),
+          studySeconds: Math.max(0, Number(data.studySeconds || 0)),
         },
         progress: {
           overall: data.progress?.overall || { percentage: 0, tests: 0, questions: 0 },
@@ -1061,7 +1062,11 @@ export function useUpdateGuardian() {
   const queryClient = useQueryClient();
   const { toast } = useToast();
   return useMutation({
-    mutationFn: async (data: { guardianPhone: string; notifyOnTestCompletion: boolean }) => {
+    mutationFn: async (data: {
+      guardianPhone?: string;
+      schoolReferenceNumber?: string;
+      notifyOnTestCompletion?: boolean;
+    }) => {
       return fetchJson("/api/user/guardian", {
           method: "PATCH",
           headers: { "Content-Type": "application/json" },
@@ -1070,9 +1075,10 @@ export function useUpdateGuardian() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/user"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/user/guardian"] });
       toast({
         title: "تم الحفظ",
-        description: "تم تحديث بيانات ولي الأمر بنجاح.",
+        description: "تم تحديث بيانات ولي الأمر والمرجع المدرسي.",
       });
     }
   });

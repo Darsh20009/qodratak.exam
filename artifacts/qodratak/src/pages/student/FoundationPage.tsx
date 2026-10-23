@@ -1400,7 +1400,7 @@ function FoundationPageContent() {
   const [, setLocation] = useLocation();
   const queryString = useSearch();
   const params = new URLSearchParams(queryString);
-  const hasProgram = params.get("program") === "qudrat" || params.get("program") === "tahsili";
+  const hasProgram = params.get("program") === "qudrat" || params.get("program") === "tahsili" || !params.has("program");
   const hasSubject = Boolean(params.get("subject"));
   const isPlanView = params.get("view") === "plan";
   const program: FoundationProgram = params.get("program") === "tahsili" ? "tahsili" : "qudrat";
@@ -1572,9 +1572,9 @@ function FoundationPageContent() {
           <span>التأسيس</span>
         </div>
          <h1 className="text-3xl font-black text-[#0D1B2A] dark:text-white mb-2">{activeSection.title} · التأسيس</h1>
-         <p className="max-w-3xl text-sm leading-7 text-muted-foreground">
-            تُعرض هنا الموارد المرتبطة بهذه المادة كما نُشرت. أي مورد غير متاح موضح بأنه «قريبًا».
-         </p>
+          <p className="max-w-3xl text-sm leading-7 text-muted-foreground">
+             دروس {activeSection.shortTitle} والملفات المرتبطة بكل درس.
+          </p>
          <Button type="button" className="mt-4 rounded-xl font-black" onClick={() => setLocation(subjectActionHref)}>
            {program === "tahsili" ? "ابدأ اختبار هذه المادة" : "ابدأ مهمة اليوم"}
          </Button>
@@ -1596,28 +1596,6 @@ function FoundationPageContent() {
          content={content}
          state={isLoading ? "loading" : isContentError ? "error" : "ready"}
        />
-
-        <section className="mb-8 rounded-3xl border border-primary/20 bg-primary/5 p-4 sm:p-5" aria-label={`طريقة استخدام مواد ${activeSection.shortTitle}`}>
-         <div className="flex items-center gap-2">
-           <BookOpen className="h-5 w-5 text-primary" />
-             <h2 className="text-base font-black text-foreground">كيف تتابع مواد {activeSection.shortTitle}؟</h2>
-         </div>
-         <div className="mt-4 grid gap-3 md:grid-cols-3">
-           {[
-              ["١", "ابدأ بالمتاح", "افتح الشرح أو الملف إذا كان منشورًا للمادة."],
-              ["٢", "تابع الفيديو", "شاهد الفيديو عند توفره؛ وإن لم يكن منشورًا فستظهر حالته «قريبًا»."],
-              ["٣", "راجع التدريب", "افتح الاختبار إذا كان مرتبطًا بالدرس."],
-           ].map(([number, title, description]) => (
-             <div key={number} className="flex items-start gap-3 rounded-2xl border border-primary/10 bg-background/70 p-3">
-               <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-primary text-sm font-black text-primary-foreground">{number}</span>
-               <div>
-                 <p className="text-sm font-black text-foreground">{title}</p>
-                 <p className="mt-1 text-xs leading-5 text-muted-foreground">{description}</p>
-               </div>
-             </div>
-           ))}
-         </div>
-       </section>
 
       {program === "qudrat" ? (
         <section className="mb-8" aria-label="مسارك حسب محاولاتك">
@@ -1805,7 +1783,7 @@ function FoundationPageContent() {
                   {selectedLesson && <Clock className="mt-1 h-5 w-5 text-slate-400" />}
                 </div>
                 <p className="mt-2 text-sm leading-7 text-slate-300">
-                  {selectedLesson?.description || "بنمشي معك خطوة خطوة، وبعد الشرح تقدر تختبر فهمك من نفس المكان."}
+                  {selectedLesson?.description || "اختر درسًا لعرض شرحه وملفاته."}
                 </p>
                 <div className="mt-4 flex flex-wrap items-center gap-2">
                   {selectedLesson && /^[a-f\d]{24}$/i.test(selectedLesson._id) && (
@@ -1855,15 +1833,6 @@ function FoundationPageContent() {
                   <p className="text-xs font-black text-primary">الشرح الكتابي للدرس</p>
                   <h2 className="mt-1 text-lg font-black text-foreground">{currentGuide.title}</h2>
                   <p className="mt-2 text-sm leading-7 text-muted-foreground">{currentGuide.summary} {activeSection.explanation}</p>
-                  <div className="mt-4 rounded-2xl bg-primary/5 p-4">
-                    <p className="text-sm font-black text-foreground">طريقة الحل</p>
-                    <ol className="mt-2 list-decimal space-y-2 pr-5 text-sm leading-6 text-muted-foreground">
-                      <li>اقرأ المطلوب وحدد الكلمات أو القيم المهمة في السؤال.</li>
-                      <li>طبّق الفكرة على مثال بسيط، ثم انتقل لمسألة من بنك المنصة.</li>
-                      <li>راجع سبب الإجابة، وليس الإجابة وحدها، قبل الانتقال للدرس التالي.</li>
-                    </ol>
-                  </div>
-                  <p className="mt-3 text-xs leading-5 text-primary">نصيحة سعودية: {currentGuide.coaching}</p>
                 </div>
               </div>
             </div>

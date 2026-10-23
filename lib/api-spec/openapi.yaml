@@ -17,6 +17,48 @@ tags:
   - name: admin
     description: Restricted administration and media management
 paths:
+  /student/study-time/heartbeat:
+    post:
+      operationId: recordStudentStudyTimeHeartbeat
+      tags: [learning]
+      responses:
+        "200":
+          description: Server-calculated active study time
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/StudentStudyTimeHeartbeatResult" }
+        "204":
+          description: A concurrent heartbeat was already recorded
+        "401":
+          description: Student session required
+  /user/guardian:
+    get:
+      operationId: getStudentAccountReferences
+      tags: [learning]
+      responses:
+        "200":
+          description: Parent contact and student-entered school reference
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/StudentAccountReferences" }
+    patch:
+      operationId: updateStudentAccountReferences
+      tags: [learning]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/StudentAccountReferencesUpdate" }
+      responses:
+        "200":
+          description: Updated account references
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/StudentAccountReferences" }
+        "400":
+          description: Invalid account reference
+        "401":
+          description: Student session required
   /student/course:
     get:
       operationId: getStudentCourse
@@ -2510,4 +2552,25 @@ components:
           items:
             $ref: "#/components/schemas/QuantitativeBookQuestionResult"
         unlockedNextLessonId: { type: ["string", "null"] }
+    StudentStudyTimeHeartbeatResult:
+      type: object
+      additionalProperties: false
+      required: [addedSeconds, totalSeconds]
+      properties:
+        addedSeconds: { type: number, minimum: 0, maximum: 90 }
+        totalSeconds: { type: number, minimum: 0 }
+    StudentAccountReferences:
+      type: object
+      additionalProperties: false
+      required: [guardianPhone, schoolReferenceNumber]
+      properties:
+        guardianPhone: { type: ["string", "null"], maxLength: 32 }
+        schoolReferenceNumber: { type: ["string", "null"], maxLength: 80 }
+    StudentAccountReferencesUpdate:
+      type: object
+      additionalProperties: false
+      minProperties: 1
+      properties:
+        guardianPhone: { type: string, maxLength: 32 }
+        schoolReferenceNumber: { type: string, maxLength: 80 }
 

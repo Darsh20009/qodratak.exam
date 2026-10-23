@@ -67,12 +67,15 @@ import type {
   RemedialPracticeStart,
   RemedialPracticeSubmission,
   StartFoundationPlacementAssessmentParams,
+  StudentAccountReferences,
+  StudentAccountReferencesUpdate,
   StudentCourseInput,
   StudentCoursePracticeInput,
   StudentCourseState,
   StudentLearningCoachChatRequest,
   StudentLearningCoachChatResponse,
   StudentLearningCoachReport,
+  StudentStudyTimeHeartbeatResult,
   TahsiliSubjectTestStartInput,
   TahsiliSubjectTestStartOutput,
   TahsiliSubjectTestSubmitInput,
@@ -112,6 +115,207 @@ const withQueryKey = <T extends object, K>(query: T, queryKey: K): T & { queryKe
   }
   return result;
 };
+
+export const getRecordStudentStudyTimeHeartbeatUrl = () => {
+
+
+
+
+  return `/api/student/study-time/heartbeat`
+}
+
+export const recordStudentStudyTimeHeartbeat = async ( options?: Parameters<typeof customFetch>[1]): Promise<StudentStudyTimeHeartbeatResult | void> => {
+
+  return customFetch<StudentStudyTimeHeartbeatResult | void>(getRecordStudentStudyTimeHeartbeatUrl(),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+
+
+export const getRecordStudentStudyTimeHeartbeatMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof recordStudentStudyTimeHeartbeat>>, TError,void, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof recordStudentStudyTimeHeartbeat>>, TError,void, TContext> => {
+
+const mutationKey = ['recordStudentStudyTimeHeartbeat'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof recordStudentStudyTimeHeartbeat>>, void> = () => {
+
+
+          return  recordStudentStudyTimeHeartbeat(requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type RecordStudentStudyTimeHeartbeatMutationResult = NonNullable<Awaited<ReturnType<typeof recordStudentStudyTimeHeartbeat>>>
+
+    export type RecordStudentStudyTimeHeartbeatMutationError = ErrorType<void>
+
+    export const useRecordStudentStudyTimeHeartbeat = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof recordStudentStudyTimeHeartbeat>>, TError,void, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof recordStudentStudyTimeHeartbeat>>,
+        TError,
+        void,
+        TContext
+      > => {
+      return useMutation(getRecordStudentStudyTimeHeartbeatMutationOptions(options));
+    }
+
+export const getGetStudentAccountReferencesUrl = () => {
+
+
+
+
+  return `/api/user/guardian`
+}
+
+export const getStudentAccountReferences = async ( options?: Parameters<typeof customFetch>[1]): Promise<StudentAccountReferences> => {
+
+  return customFetch<StudentAccountReferences>(getGetStudentAccountReferencesUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetStudentAccountReferencesQueryKey = () => {
+    return [
+    `/api/user/guardian`
+    ] as const;
+    }
+
+
+export const getGetStudentAccountReferencesQueryOptions = <TData = Awaited<ReturnType<typeof getStudentAccountReferences>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getStudentAccountReferences>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetStudentAccountReferencesQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getStudentAccountReferences>>> = ({ signal }) => getStudentAccountReferences({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getStudentAccountReferences>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetStudentAccountReferencesQueryResult = NonNullable<Awaited<ReturnType<typeof getStudentAccountReferences>>>
+export type GetStudentAccountReferencesQueryError = ErrorType<unknown>
+
+
+
+export function useGetStudentAccountReferences<TData = Awaited<ReturnType<typeof getStudentAccountReferences>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getStudentAccountReferences>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetStudentAccountReferencesQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getUpdateStudentAccountReferencesUrl = () => {
+
+
+
+
+  return `/api/user/guardian`
+}
+
+export const updateStudentAccountReferences = async (studentAccountReferencesUpdate: StudentAccountReferencesUpdate, options?: Parameters<typeof customFetch>[1]): Promise<StudentAccountReferences> => {
+
+  return customFetch<StudentAccountReferences>(getUpdateStudentAccountReferencesUrl(),
+  {
+    ...options,
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(studentAccountReferencesUpdate)
+  }
+);}
+
+
+
+
+
+export const getUpdateStudentAccountReferencesMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateStudentAccountReferences>>, TError,{data: BodyType<StudentAccountReferencesUpdate>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof updateStudentAccountReferences>>, TError,{data: BodyType<StudentAccountReferencesUpdate>}, TContext> => {
+
+const mutationKey = ['updateStudentAccountReferences'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof updateStudentAccountReferences>>, {data: BodyType<StudentAccountReferencesUpdate>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  updateStudentAccountReferences(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type UpdateStudentAccountReferencesMutationResult = NonNullable<Awaited<ReturnType<typeof updateStudentAccountReferences>>>
+    export type UpdateStudentAccountReferencesMutationBody = BodyType<StudentAccountReferencesUpdate>
+    export type UpdateStudentAccountReferencesMutationError = ErrorType<void>
+
+    export const useUpdateStudentAccountReferences = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateStudentAccountReferences>>, TError,{data: BodyType<StudentAccountReferencesUpdate>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof updateStudentAccountReferences>>,
+        TError,
+        {data: BodyType<StudentAccountReferencesUpdate>},
+        TContext
+      > => {
+      return useMutation(getUpdateStudentAccountReferencesMutationOptions(options));
+    }
 
 export const getGetStudentCourseUrl = () => {
 

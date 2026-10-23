@@ -8,6 +8,54 @@
 import * as zod from 'zod';
 
 
+export const recordStudentStudyTimeHeartbeatResponseAddedSecondsMin = 0;
+export const recordStudentStudyTimeHeartbeatResponseAddedSecondsMax = 90;
+
+export const recordStudentStudyTimeHeartbeatResponseTotalSecondsMin = 0;
+
+
+
+export const RecordStudentStudyTimeHeartbeatResponse = zod.object({
+  "addedSeconds": zod.number().min(recordStudentStudyTimeHeartbeatResponseAddedSecondsMin).max(recordStudentStudyTimeHeartbeatResponseAddedSecondsMax),
+  "totalSeconds": zod.number().min(recordStudentStudyTimeHeartbeatResponseTotalSecondsMin)
+})
+
+
+export const getStudentAccountReferencesResponseGuardianPhoneMax = 32;
+
+export const getStudentAccountReferencesResponseSchoolReferenceNumberMax = 80;
+
+
+
+export const GetStudentAccountReferencesResponse = zod.object({
+  "guardianPhone": zod.string().max(getStudentAccountReferencesResponseGuardianPhoneMax).nullable(),
+  "schoolReferenceNumber": zod.string().max(getStudentAccountReferencesResponseSchoolReferenceNumberMax).nullable()
+})
+
+
+export const updateStudentAccountReferencesBodyGuardianPhoneMax = 32;
+
+export const updateStudentAccountReferencesBodySchoolReferenceNumberMax = 80;
+
+
+
+export const UpdateStudentAccountReferencesBody = zod.object({
+  "guardianPhone": zod.string().max(updateStudentAccountReferencesBodyGuardianPhoneMax).optional(),
+  "schoolReferenceNumber": zod.string().max(updateStudentAccountReferencesBodySchoolReferenceNumberMax).optional()
+})
+
+export const updateStudentAccountReferencesResponseGuardianPhoneMax = 32;
+
+export const updateStudentAccountReferencesResponseSchoolReferenceNumberMax = 80;
+
+
+
+export const UpdateStudentAccountReferencesResponse = zod.object({
+  "guardianPhone": zod.string().max(updateStudentAccountReferencesResponseGuardianPhoneMax).nullable(),
+  "schoolReferenceNumber": zod.string().max(updateStudentAccountReferencesResponseSchoolReferenceNumberMax).nullable()
+})
+
+
 export const GetStudentCourseResponse = zod.object({
   "course": zod.union([zod.object({
   "id": zod.string(),

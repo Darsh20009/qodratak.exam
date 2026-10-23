@@ -68,3 +68,9 @@ The Tahsili experience needs a connected foundation-and-computerized course, not
 **Why:** The user explicitly said both the Tahsili foundation and computerized courses need substantial development and requested that work proceed in phases.
 
 **How to apply:** Organize available materials by subject and lesson, connect each lesson to practice and a useful result, and do not claim missing videos or unreviewed questions are ready.
+
+Keep the student's four primary destinations as «لوحة التحكم»، «التأسيس»، «التدريب»، and «حسابي». The dashboard summarizes active study time, completed tests, current practice streak, today's task, progress by track, results, and a route to platform feedback. Account details include billing, guardian contact, the student's school reference, and the linked institution's short reference.
+
+**Why:** The user explicitly defined this navigation and dashboard/account information set on 2026-10-23.
+
+**How to apply:** Keep existing student pages discoverable under «المزيد» without adding duplicate primary navigation. Track study time from active student use going forward; do not fabricate historical hours. Keep the student's entered school reference distinct from the generated institution reference.

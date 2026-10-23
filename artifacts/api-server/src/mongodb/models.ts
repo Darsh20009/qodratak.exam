@@ -1,4 +1,5 @@
 import mongoose, { Schema, Document } from 'mongoose';
+import { randomBytes } from 'node:crypto';
 import { contractSchema } from './institutionModels';
 
 export type UserRole = 'student' | 'parent' | 'teacher' | 'institution_admin' | 'system_admin' | 'support_admin';
@@ -22,6 +23,8 @@ export interface IUser extends Document {
   totalVisits: number;
   totalTestsTaken: number;
   totalStudyTime: number;
+  activeStudySeconds: number;
+  studyTimeHeartbeatAt?: Date;
   createdAt: Date;
   lastLogin: Date;
   isActive: boolean;
@@ -74,6 +77,7 @@ export interface IUser extends Document {
     updatedAt?: Date;
   };
   guardianPhone?: string;
+  schoolReferenceNumber?: string;
   targetExamDate?: Date;
   securitySetupDone?: boolean;
   guestInvite?: {
@@ -235,6 +239,8 @@ const userSchema = new Schema<IUser>({
   totalVisits: { type: Number, default: 0 },
   totalTestsTaken: { type: Number, default: 0 },
   totalStudyTime: { type: Number, default: 0 },
+  activeStudySeconds: { type: Number, default: 0, min: 0 },
+  studyTimeHeartbeatAt: { type: Date },
   createdAt: { type: Date, default: Date.now },
   lastLogin: { type: Date, default: Date.now },
   isActive: { type: Boolean, default: true },
@@ -280,6 +286,7 @@ const userSchema = new Schema<IUser>({
   },
   // Student-product fields. Kept separate from legacy parent account links.
   guardianPhone: { type: String },
+  schoolReferenceNumber: { type: String, trim: true, maxlength: 80 },
   targetExamDate: { type: Date },
   securitySetupDone: { type: Boolean, default: false },
   guestInvite: {
@@ -296,6 +303,7 @@ const userSchema = new Schema<IUser>({
 
 export interface IInstitution extends Document {
   name: string;
+  referenceCode?: string;
   nameEn?: string;
   type: 'school' | 'institute' | 'university';
   email: string;
@@ -323,6 +331,14 @@ export interface IInstitution extends Document {
 
 const institutionSchema = new Schema<IInstitution>({
   name: { type: String, required: true },
+  referenceCode: {
+    type: String,
+    uppercase: true,
+    trim: true,
+    unique: true,
+    sparse: true,
+    default: () => randomBytes(5).toString('hex').toUpperCase(),
+  },
   nameEn: { type: String },
   type: { type: String, enum: ['school', 'institute', 'university'], required: true },
   email: { type: String, required: true, unique: true },

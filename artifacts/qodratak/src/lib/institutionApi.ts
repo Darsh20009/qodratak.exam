@@ -119,6 +119,7 @@ export interface InstitutionTestSubmissionDTO {
 export interface Membership {
   institutionId: string;
   institutionName: string;
+  institutionReferenceCode?: string | null;
   role: InstitutionRole;
   status: string;
   joinedAt: string;

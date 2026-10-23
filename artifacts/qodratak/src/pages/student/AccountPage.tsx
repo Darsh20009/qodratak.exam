@@ -1,4 +1,5 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { useUser } from "@/hooks/use-user";
 import { useUpdateGuardian, useChangePassword } from "@/hooks/use-student";
 import { useStudentDashboard } from "@/hooks/use-student";
@@ -20,8 +21,21 @@ export default function AccountPage() {
   const changePassword = useChangePassword();
   const { data: dashboard } = useStudentDashboard();
   const { toast } = useToast();
+  const { data: accountReferences } = useQuery<{
+    guardianPhone: string | null;
+    schoolReferenceNumber: string | null;
+  }>({
+    queryKey: ["/api/user/guardian"],
+    queryFn: async () => {
+      const response = await fetch("/api/user/guardian", { credentials: "include" });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data?.error || "تعذر تحميل بيانات الحساب");
+      return data;
+    },
+  });
 
   const [guardianPhone, setGuardianPhone] = useState(user?.guardianPhone || "");
+  const [schoolReferenceNumber, setSchoolReferenceNumber] = useState("");
   const [notifyOnTest, setNotifyOnTest] = useState(user?.notifyOnTestCompletion || false);
   const [isGuardianDialogOpen, setIsGuardianDialogOpen] = useState(false);
 
@@ -32,6 +46,12 @@ export default function AccountPage() {
   const [subscriptionDialogOpen, setSubscriptionDialogOpen] = useState(false);
   const [avatarUploading, setAvatarUploading] = useState(false);
   const [avatarUrl, setAvatarUrl] = useState((user as any)?.profilePicture || (user as any)?.avatarUrl || "");
+
+  useEffect(() => {
+    if (!accountReferences) return;
+    setGuardianPhone(accountReferences.guardianPhone || "");
+    setSchoolReferenceNumber(accountReferences.schoolReferenceNumber || "");
+  }, [accountReferences]);
 
   const handleAvatarUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -67,7 +87,7 @@ export default function AccountPage() {
 
   const handleGuardianSubmit = () => {
     updateGuardian.mutate(
-      { guardianPhone, notifyOnTestCompletion: notifyOnTest },
+      { guardianPhone, schoolReferenceNumber, notifyOnTestCompletion: notifyOnTest },
       { onSuccess: () => setIsGuardianDialogOpen(false) }
     );
   };
@@ -167,7 +187,7 @@ export default function AccountPage() {
             <div className="flex items-center justify-between mb-6">
               <div className="flex items-center gap-3">
                 <Phone className="h-6 w-6 text-[#398B79]" />
-                <h2 className="text-lg font-black text-foreground">ولي الأمر</h2>
+                <h2 className="text-lg font-black text-foreground">ولي الأمر والمرجع المدرسي</h2>
               </div>
               <Dialog open={isGuardianDialogOpen} onOpenChange={setIsGuardianDialogOpen}>
                 <DialogTrigger asChild>
@@ -175,7 +195,7 @@ export default function AccountPage() {
                 </DialogTrigger>
                 <DialogContent className="sm:max-w-md rounded-2xl" dir="rtl">
                   <DialogHeader>
-                    <DialogTitle className="font-black text-xl">بيانات ولي الأمر</DialogTitle>
+                    <DialogTitle className="font-black text-xl">بيانات ولي الأمر والمدرسة</DialogTitle>
                   </DialogHeader>
                   <div className="space-y-4 py-4">
                     <div className="space-y-2">
@@ -187,6 +207,22 @@ export default function AccountPage() {
                         dir="ltr"
                         placeholder="05XXXXXXXX"
                       />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="school-reference-number" className="text-sm font-bold text-foreground">
+                        الرقم المرجعي لدى المدرسة أو المؤسسة
+                      </Label>
+                      <Input
+                        id="school-reference-number"
+                        value={schoolReferenceNumber}
+                        onChange={(e) => setSchoolReferenceNumber(e.target.value.slice(0, 80))}
+                        className="rounded-xl"
+                        placeholder="أدخله إذا زودتك به المدرسة"
+                        maxLength={80}
+                      />
+                      <p className="text-xs leading-5 text-muted-foreground">
+                        يظهر أيضًا رقم المؤسسة المرتبط بحسابك إذا كنت منضمًا إلى مؤسسة.
+                      </p>
                     </div>
                     <div className="flex items-center justify-between p-3 rounded-xl border border-border bg-muted/50">
                       <Label className="text-sm font-bold text-foreground cursor-pointer">
@@ -206,14 +242,20 @@ export default function AccountPage() {
               </Dialog>
             </div>
             <div className="space-y-3">
-              {user.guardianPhone ? (
+              {(accountReferences?.guardianPhone ?? user.guardianPhone) ? (
                 <div className="flex items-center gap-2 text-sm font-bold text-foreground">
                   <CheckCircle2 className="h-4 w-4 text-emerald-500" />
-                  <span dir="ltr">{user.guardianPhone}</span>
+                  <span dir="ltr">{accountReferences?.guardianPhone ?? user.guardianPhone}</span>
                 </div>
               ) : (
                 <p className="text-sm text-muted-foreground">لم يتم إضافة رقم ولي الأمر بعد.</p>
               )}
+              <div className="rounded-xl border border-border bg-muted/40 p-3">
+                <p className="text-xs font-bold text-muted-foreground">الرقم المرجعي المدرسي</p>
+                <p className="mt-1 break-all text-sm font-black text-foreground">
+                  {accountReferences?.schoolReferenceNumber || "لم يُضف بعد"}
+                </p>
+              </div>
             </div>
           </section>
         </div>

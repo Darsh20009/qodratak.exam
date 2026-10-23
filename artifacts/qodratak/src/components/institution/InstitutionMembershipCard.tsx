@@ -49,6 +49,11 @@ export default function InstitutionMembershipCard() {
         <div className="min-w-0 flex-1">
           <p className="text-[11px] font-black tracking-[.14em] text-[#91D7C5]">{ROLE_LABEL[m.role]} في مؤسسة</p>
           <p className="truncate text-lg font-black">{m.institutionName}</p>
+          {m.institutionReferenceCode && (
+            <p className="mt-1 text-[11px] font-semibold text-white/70">
+              الرقم المرجعي للمؤسسة: <b dir="ltr" className="font-mono tracking-wider text-white">{m.institutionReferenceCode}</b>
+            </p>
+          )}
         </div>
         <div className="flex items-center gap-2 text-xs text-white/75">
           <CalendarClock className="h-4 w-4 text-[#FF8A70]" />
