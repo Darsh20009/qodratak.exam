@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Link } from "wouter";
 import { useQuery } from "@tanstack/react-query";
 import {
@@ -15,13 +15,14 @@ import {
   Target,
 } from "lucide-react";
 import {
-  useAdaptiveLearningDecision,
   useStudentDashboard,
   useStudentLearningRecommendations,
   useTodayLearningSession,
+  useLearningContentProgressSummary,
   useUpdateExamDate,
 } from "@/hooks/use-student";
 import OfficialScoreCard from "@/components/student/OfficialScoreCard";
+import StudentDashboardProgressOverview from "@/components/student/StudentDashboardProgressOverview";
 import { useUser } from "@/hooks/use-user";
 import InstitutionMembershipCard from "@/components/institution/InstitutionMembershipCard";
 import InstitutionAssignmentsCard from "@/components/institution/InstitutionAssignmentsCard";
@@ -35,6 +36,12 @@ import AdaptiveLearningCoach from "@/components/student/AdaptiveLearningCoach";
 import useSubscription from "@/hooks/useSubscription";
 import { getGetStudentCourseQueryKey, useGetStudentCourse } from "@workspace/api-client-react";
 import { foundationHrefForScope, todayLearningHref } from "@/lib/foundationRoutes.mjs";
+import {
+  buildStudentDashboardJourney,
+  buildStudentDashboardTasks,
+  buildStudentDashboardTrend,
+  type StudentDashboardProgram,
+} from "@/lib/studentDashboardProgress";
 
 function formatDateInput(value: string | null) {
   if (!value) return "";
@@ -97,47 +104,37 @@ function QuestionProgressLibraryCard() {
   );
 }
 
-function JourneySequence({ activeStage, program }: { activeStage: number; program: "qudrat" | "tahsili" }) {
-  const stages = program === "tahsili"
-    ? ["اختيار المادة", "التأسيس", "التدريب", "المحاكاة"]
-    : ["تحديد المستوى", "التأسيس", "التدريب", "محاكاة قياس"];
-  return (
-    <ol data-testid="student-journey-sequence" className="grid grid-cols-2 gap-x-3 gap-y-4 sm:grid-cols-4" aria-label="مراحل رحلة الاستعداد">
-      {stages.map((stage, index) => (
-        <li key={stage} data-testid={`journey-stage-${index + 1}`} className="min-w-0">
-          <div className={`mb-2 h-1.5 rounded-full ${index <= activeStage ? "bg-primary" : "bg-border"}`} />
-          <span className={`text-xs font-bold sm:text-sm ${index === activeStage ? "text-foreground" : "text-muted-foreground"}`}>
-            {stage}
-          </span>
-          {index === activeStage && <span className="mr-1 text-[10px] font-black text-primary">أنت هنا</span>}
-        </li>
-      ))}
-    </ol>
-  );
-}
-
 export default function DashboardPage() {
   const { user, isLoading: isUserLoading } = useUser();
   const { subscription, isLoading: isSubscriptionLoading } = useSubscription();
   const isStudent = user?.role === "student";
   const dashboardQuery = useStudentDashboard(isStudent);
   const { data: dashboard, isLoading, isError, error, refetch: refetchDashboard } = dashboardQuery;
-  const trainingStreakQuery = useQuery<{ streak?: { current?: number } }>({
+  const dailyGoalQuery = useQuery<{ verifiedStudyDays?: number; streak?: { current?: number } }>({
     queryKey: ["/api/daily-goal"],
     queryFn: async () => {
       const response = await fetch("/api/daily-goal", { credentials: "include" });
       const body = await response.json().catch(() => null);
       if (!response.ok) throw new Error(body?.error || "تعذر تحميل أيام التدريب");
-      return body as { streak?: { current?: number } };
+      return body as { verifiedStudyDays?: number; streak?: { current?: number } };
     },
     enabled: isStudent && !isUserLoading && !isSubscriptionLoading && !subscription?.isExpired,
     staleTime: 60_000,
   });
-  const journeyProgram = dashboard?.recommendedPlan?.program === "tahsili" ? "tahsili" as const : "qudrat" as const;
-  const journeySubjectId = dashboard?.recommendedPlan?.subjectId;
+  const [activeProgram, setActiveProgram] = useState<StudentDashboardProgram>("qudrat");
+  useEffect(() => {
+    const suggestedProgram = dashboard?.recommendedPlan?.program;
+    if (suggestedProgram === "qudrat" || suggestedProgram === "tahsili") {
+      setActiveProgram(suggestedProgram);
+    }
+  }, [dashboard?.recommendedPlan?.program]);
+  const journeyProgram = activeProgram;
+  const journeySubjectId = dashboard?.recommendedPlan?.program === activeProgram
+    ? dashboard.recommendedPlan.subjectId
+    : undefined;
   const hasJourneyScope = isStudent && Boolean(dashboard) && !subscription?.isExpired;
+  const foundationProgress = useLearningContentProgressSummary(journeyProgram, journeySubjectId, hasJourneyScope);
   const todayLearning = useTodayLearningSession(hasJourneyScope, journeyProgram, journeySubjectId);
-  const adaptiveDecision = useAdaptiveLearningDecision(hasJourneyScope, journeyProgram, journeySubjectId);
   const recommendations = useStudentLearningRecommendations(hasJourneyScope, journeyProgram);
   const courseQuery = useGetStudentCourse({
     query: { queryKey: getGetStudentCourseQueryKey(), staleTime: 30000, enabled: hasJourneyScope },
@@ -186,7 +183,6 @@ export default function DashboardPage() {
 
   const userName = user.fullName || user.name || user.username || "طالب";
   const recentTests = dashboard.recentTests ?? [];
-  const weaknesses = dashboard.weaknesses ?? [];
   const course = courseQuery.data?.course ?? null;
   const isNewStudent = !courseQuery.isLoading && !courseQuery.isError &&
     recentTests.length === 0 && (dashboard.stats.totalTests ?? 0) === 0 && (!course || course.level === "unassessed");
@@ -194,7 +190,12 @@ export default function DashboardPage() {
   const matchingRecommendation = recommendations.data?.recommendations?.find((item) =>
     !journeySubjectId || item.subjectId === journeySubjectId
   );
-  const planProgram = todayPlan?.programId === "program.tahsili" ? "tahsili" : journeyProgram;
+  const planProgram: StudentDashboardProgram = String(todayPlan?.programId || "")
+    .toLowerCase()
+    .split(/[.:]/)
+    .includes("tahsili")
+    ? "tahsili"
+    : journeyProgram;
   const planSubjectId = todayPlan?.subjectId || (planProgram === "tahsili" ? undefined : journeySubjectId);
   const foundationHref = foundationHrefForScope(planProgram, planSubjectId);
   const diagnosticHref = planProgram === "tahsili"
@@ -202,50 +203,123 @@ export default function DashboardPage() {
     : "/foundation?program=qudrat&reassess=1&returnTo=preparation";
   const sessionHref = todayLearningHref(planProgram, planSubjectId);
   const planStatus = todayPlan?.planStatus;
-  const diagnosticRequired = planStatus === "DIAGNOSTIC_REQUIRED" || (!todayPlan && course?.level === "unassessed");
+  const diagnosticRequired = planStatus === "DIAGNOSTIC_REQUIRED"
+    || (!todayPlan && planProgram === "qudrat" && course?.level === "unassessed");
   const sessionAvailable = planStatus === "READY";
-  const sessionComplete = todayPlan?.state === "COMPLETED";
-  const unavailable = planStatus === "CONTENT_UNAVAILABLE" || planStatus === "NO_RECOMMENDATION";
   const saudiToday = new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Riyadh" }).format(new Date());
-  const dueTask = course && course.level !== "unassessed"
+  const dueTask = planProgram === "qudrat" && course && course.level !== "unassessed"
     ? course.days.filter((day) => day.date.slice(0, 10) <= saudiToday)
       .flatMap((day) => day.tasks.map((task) => ({ task, day: day.day })))
       .find(({ task }) => task.status === "pending")
     : undefined;
-  const useScheduledTaskFallback = journeyProgram === "qudrat" && Boolean(dueTask) && (!todayPlan || unavailable);
-  const primaryHref = diagnosticRequired
-    ? diagnosticHref
-    : sessionAvailable
-      ? sessionHref
-      : useScheduledTaskFallback
-        ? "/foundation?program=qudrat&view=plan"
-        : foundationHref;
-  const primaryLabel = diagnosticRequired
-    ? planProgram === "tahsili" ? "اختر مادة التحصيلي" : "ابدأ التقييم التشخيصي"
-    : sessionAvailable
-      ? sessionComplete ? "عرض جلسة اليوم" : todayLearning.data?.started ? "نكمل من حيث توقفت" : "ابدأ جلسة اليوم"
-      : useScheduledTaskFallback
-        ? "افتح مهمة اليوم"
-        : unavailable ? "افتح مسار التأسيس" : "افتح خطة الاستعداد";
-  const heroTitle = diagnosticRequired
-    ? planProgram === "tahsili" ? "اختر مادة التحصيلي لتبدأ مسارك" : "ابدأ بتقييم يحدد نقطة انطلاقك"
-    : useScheduledTaskFallback
-      ? dueTask?.task.title || "مهمة اليوم"
-      : todayPlan?.title || matchingRecommendation?.title ||
-        (sessionAvailable ? "خطوتك التالية" : unavailable ? "لا توجد جلسة متاحة الآن" : "خطتك التالية");
-  const suppliedReason = useScheduledTaskFallback
-    ? dueTask?.task.reason
-    : todayPlan?.sessionReason || adaptiveDecision.data?.reason || matchingRecommendation?.reason;
-  const suppliedMinutes = useScheduledTaskFallback
-    ? dueTask?.task.minutes
-    : todayPlan?.estimatedMinutes || matchingRecommendation?.estimatedMinutes;
-  const activeStage = diagnosticRequired
-    ? 0
-    : dashboard.recommendedPlan.level === "mastery"
-      ? 3
-      : dashboard.recommendedPlan.level === "practice"
-        ? 2
-        : 1;
+  const programTests = recentTests.filter((test) => test.program === activeProgram);
+  const reviewResult = programTests.find((test) => test.weakAreas.length > 0);
+  const reviewTopics = [...new Set((reviewResult?.weakAreas || []).map((topic) => topic.trim()).filter(Boolean))];
+  const taskLoading = todayLearning.isLoading
+    || recommendations.isLoading
+    || (planProgram === "qudrat" && courseQuery.isLoading);
+  const taskSourcesUnavailable = todayLearning.isError
+    && recommendations.isError
+    && (planProgram !== "qudrat" || courseQuery.isError)
+    && !reviewResult;
+  const tasks = buildStudentDashboardTasks({
+    diagnosticRequired,
+    diagnosticTitle: planProgram === "tahsili" ? "ابدأ تقييم التحصيلي" : "ابدأ تقييم القدرات",
+    diagnosticHref,
+    session: sessionAvailable && todayPlan
+      ? {
+          title: todayPlan.title,
+          programId: todayPlan.programId,
+          sessionReason: todayPlan.sessionReason,
+          state: todayPlan.state,
+          started: Boolean(todayLearning.data?.started),
+          estimatedMinutes: todayPlan.estimatedMinutes,
+          steps: todayPlan.steps.map((step) => ({ stepType: step.stepType, status: step.status })),
+        }
+      : null,
+    sessionHref,
+    recommendation: matchingRecommendation?.title
+      ? {
+          title: matchingRecommendation.title,
+          reason: matchingRecommendation.reason,
+          href: foundationHref,
+          estimatedMinutes: matchingRecommendation.estimatedMinutes,
+        }
+      : null,
+    scheduledTask: planProgram === "qudrat" && dueTask
+      ? {
+          title: dueTask.task.title,
+          reason: dueTask.task.reason || `مهمة اليوم ${dueTask.day} وفق خطة الدراسة المحفوظة.`,
+          href: "/foundation?program=qudrat&view=plan",
+          estimatedMinutes: dueTask.task.minutes,
+          status: dueTask.task.status,
+        }
+      : null,
+    review: reviewResult
+      ? { topics: reviewTopics, testTitle: reviewResult.title, href: "/records" }
+      : null,
+  });
+  const tasksState = taskLoading
+    ? "loading" as const
+    : taskSourcesUnavailable
+      ? "unavailable" as const
+      : "ready" as const;
+  const foundationTotal = typeof foundationProgress.data?.total === "number"
+    ? foundationProgress.data.total
+    : null;
+  const foundationCompleted = typeof foundationProgress.data?.completed === "number"
+    ? foundationProgress.data.completed
+    : null;
+  const stages = buildStudentDashboardJourney({
+    program: activeProgram,
+    foundation: {
+      loaded: dashboard.metricsAvailable !== false && !foundationProgress.isLoading && !foundationProgress.isError,
+      total: foundationTotal,
+      completed: foundationCompleted,
+    },
+    testEvidence: dashboard.testTypeEvidence ?? [],
+    reviewTopics,
+    session: sessionAvailable && todayPlan
+      ? {
+          title: todayPlan.title,
+          programId: todayPlan.programId,
+          started: Boolean(todayLearning.data?.started),
+          state: todayPlan.state,
+          steps: todayPlan.steps.map((step) => ({ stepType: step.stepType, status: step.status })),
+        }
+      : null,
+    links: {
+      foundation: foundationHrefForScope(activeProgram, journeySubjectId),
+      training: "/training",
+      simulation: activeProgram === "tahsili" ? "/tahsilik/tests" : "/qiyas",
+      analysis: "/records",
+      remediation: todayLearningHref(activeProgram, journeySubjectId),
+    },
+  });
+  const trendPoints = buildStudentDashboardTrend(recentTests, activeProgram);
+  const trendState = dashboardQuery.isError || dashboard.metricsAvailable === false
+    ? "error" as const
+    : dashboardQuery.isLoading || dashboardQuery.isFetching
+      ? "loading" as const
+      : trendPoints.length >= 2
+        ? "ready" as const
+        : trendPoints.length === 1
+          ? "insufficient" as const
+          : "empty" as const;
+  const metricsState = dashboardQuery.isLoading || dashboardQuery.isFetching
+    || dailyGoalQuery.isLoading || dailyGoalQuery.isFetching
+    ? "loading" as const
+    : dashboard.metricsAvailable === false
+      ? "unavailable" as const
+      : "ready" as const;
+  const verifiedStudyDays = dailyGoalQuery.isError
+    || !Number.isFinite(Number(dailyGoalQuery.data?.verifiedStudyDays))
+    ? null
+    : Math.max(0, Number(dailyGoalQuery.data?.verifiedStudyDays));
+  const currentGoalStreak = dailyGoalQuery.isError
+    || !Number.isFinite(Number(dailyGoalQuery.data?.streak?.current))
+    ? null
+    : Math.max(0, Number(dailyGoalQuery.data?.streak?.current));
   const daysToExam = dashboard.upcomingExam.date
     ? Math.max(0, Math.ceil((new Date(dashboard.upcomingExam.date).getTime() - Date.now()) / 86400000))
     : null;
@@ -289,8 +363,24 @@ export default function DashboardPage() {
 
   if (isNewStudent) {
     return (
-      <main className="mx-auto w-full max-w-5xl space-y-5 p-5 md:p-8" dir="rtl">
-        <NewStudentWelcome studentName={userName} program={journeyProgram} />
+      <main className="mx-auto w-full max-w-5xl space-y-5 p-5 pb-10 md:p-8" dir="rtl">
+        <NewStudentWelcome studentName={userName} program={activeProgram} />
+        <StudentDashboardProgressOverview
+          metricsState={metricsState}
+          metrics={{
+            studySeconds: dashboard.stats.studySeconds,
+            completedTests: dashboard.stats.totalTests,
+            verifiedStudyDays,
+            currentGoalStreak,
+          }}
+          program={activeProgram}
+          onProgramChange={setActiveProgram}
+          stages={stages}
+          tasks={tasks}
+          tasksState={tasksState}
+          trendState={trendState}
+          trendPoints={trendPoints}
+        />
         <details data-testid="details-new-student-support" className="group rounded-2xl border border-border bg-card">
           <summary className="flex cursor-pointer list-none items-center gap-3 p-4 font-black text-foreground">
             <span className="flex-1">أدوات ومعلومات إضافية</span><ChevronDown className="h-4 w-4 text-muted-foreground group-open:rotate-180" />
@@ -321,77 +411,22 @@ export default function DashboardPage() {
         </Link>
       </header>
 
-      <section data-testid="student-next-step" className="overflow-hidden rounded-3xl border border-primary/20 bg-card shadow-sm">
-        <div className="grid gap-6 p-5 sm:p-7 md:grid-cols-[1fr_0.9fr] md:items-center md:gap-10">
-          <div>
-            <p className="text-xs font-black tracking-wide text-primary">خطوتك الآن</p>
-            <h2 data-testid="text-next-step-title" className="mt-2 text-2xl font-black leading-snug text-foreground md:text-3xl">{heroTitle}</h2>
-            {suppliedReason && <p data-testid="text-next-step-reason" className="mt-2 max-w-xl text-sm leading-7 text-muted-foreground">{suppliedReason}</p>}
-            {typeof suppliedMinutes === "number" && suppliedMinutes > 0 && (
-              <p data-testid="text-next-step-duration" className="mt-3 text-xs font-bold text-muted-foreground">الوقت التقديري: {suppliedMinutes} دقيقة</p>
-            )}
-            {todayLearning.isLoading ? (
-              <div data-testid="status-today-loading" className="mt-5 space-y-2" role="status" aria-label="تحميل خطوتك التالية">
-                <div className="h-4 w-48 animate-pulse rounded bg-muted" /><div className="h-11 w-44 animate-pulse rounded-xl bg-muted" />
-              </div>
-            ) : todayLearning.isError ? (
-              <div data-testid="status-today-error" className="mt-4">
-                <p className="text-sm text-muted-foreground">تعذر تحميل جلسة التعلم الآن.</p>
-                <Button type="button" data-testid="button-retry-today-learning" variant="outline" onClick={() => todayLearning.refetch()} className="mt-3 rounded-xl">
-                  <RefreshCw className="ml-2 h-4 w-4" /> إعادة المحاولة
-                </Button>
-              </div>
-            ) : (
-              <Link href={primaryHref} data-testid="link-start-next-step" className="mt-5 inline-flex min-h-12 items-center justify-center gap-3 rounded-xl bg-primary px-5 text-sm font-black text-primary-foreground transition-opacity hover:opacity-90">
-                {primaryLabel}<ArrowLeft className="h-4 w-4" aria-hidden="true" />
-              </Link>
-            )}
-            {planStatus === "CONTENT_UNAVAILABLE" && !useScheduledTaskFallback && <p data-testid="status-content-unavailable" className="mt-3 text-xs leading-6 text-muted-foreground">المحتوى المناسب غير متاح في هذه الجلسة؛ يمكنك استعراض خطة التأسيس.</p>}
-            {planStatus === "NO_RECOMMENDATION" && !useScheduledTaskFallback && <p data-testid="status-no-recommendation" className="mt-3 text-xs leading-6 text-muted-foreground">لا يوجد اقتراح جاهز الآن؛ يمكنك اختيار مسارك من صفحة التأسيس.</p>}
-          </div>
-          <div className="rounded-2xl bg-muted/50 p-4 sm:p-5">
-            <p className="mb-4 text-xs font-black text-muted-foreground">مسار الاستعداد</p>
-            <JourneySequence activeStage={activeStage} program={planProgram} />
-            {todayPlan?.nextStep && (
-              <div data-testid="text-current-session-next-step" className="mt-5 border-t border-border pt-4">
-                <p className="text-xs font-bold text-muted-foreground">الخطوة التالية داخل الجلسة</p>
-                <p className="mt-1 text-sm font-black text-foreground">
-                  {{
-                    READ: "الدرس",
-                    EXAMPLE: "مثال محلول",
-                    PRACTICE: "تدريب",
-                    REFLECT: "مراجعة",
-                    CORRECT: "تصحيح",
-                    SIMILAR: "تدريب مشابه",
-                    MASTERY_CHECK: "تحقق من الإتقان",
-                  }[todayPlan.nextStep.stepType]}
-                </p>
-              </div>
-            )}
-          </div>
-        </div>
-      </section>
-
-      <dl data-testid="student-key-progress" aria-label="ملخص تقدمك" className="grid grid-cols-3 divide-x divide-x-reverse divide-border rounded-2xl border border-border bg-card text-center">
-        <div className="p-3">
-          <dt className="text-xs font-bold text-muted-foreground">ساعات الدراسة</dt>
-          <dd data-testid="text-key-study-hours" className="mt-1 text-xl font-black text-foreground">
-            {(dashboard.stats.studySeconds / 3600).toLocaleString("ar-SA", { maximumFractionDigits: 1 })}
-          </dd>
-        </div>
-        <div className="p-3">
-          <dt className="text-xs font-bold text-muted-foreground">اختبارات مكتملة</dt>
-          <dd data-testid="text-key-tests" className="mt-1 text-xl font-black text-foreground">{dashboard.stats.totalTests}</dd>
-        </div>
-        <div className="p-3">
-          <dt className="text-xs font-bold text-muted-foreground">أيام متتالية</dt>
-          <dd data-testid="text-key-streak" className="mt-1 text-xl font-black text-foreground">
-            {trainingStreakQuery.isLoading || trainingStreakQuery.isError
-              ? "—"
-              : Number(trainingStreakQuery.data?.streak?.current || 0)}
-          </dd>
-        </div>
-      </dl>
+      <StudentDashboardProgressOverview
+        metricsState={metricsState}
+        metrics={{
+          studySeconds: dashboard.stats.studySeconds,
+          completedTests: dashboard.stats.totalTests,
+          verifiedStudyDays,
+          currentGoalStreak,
+        }}
+        program={activeProgram}
+        onProgramChange={setActiveProgram}
+        stages={stages}
+        tasks={tasks}
+        tasksState={tasksState}
+        trendState={trendState}
+        trendPoints={trendPoints}
+      />
 
       <section className="grid gap-4 md:grid-cols-2">
         <div className="rounded-2xl border border-border bg-card p-5">
@@ -414,26 +449,26 @@ export default function DashboardPage() {
           </Dialog>
         </div>
         <div className="rounded-2xl border border-border bg-card p-5">
-          <div className="flex items-center gap-2"><Brain className="h-5 w-5 text-primary" /><h2 className="font-black text-foreground">مجالات للمراجعة</h2></div>
-          {weaknesses.length ? (
+          <div className="flex items-center gap-2"><Brain className="h-5 w-5 text-primary" /><h2 className="font-black text-foreground">مجالات للمراجعة في {activeProgram === "tahsili" ? "التحصيلي" : "القدرات"}</h2></div>
+          {reviewTopics.length ? (
             <ul className="mt-4 space-y-2">
-              {weaknesses.slice(0, 3).map((weakness, index) => <li key={`${weakness.topic}-${index}`} data-testid={`weakness-${index}`} className="flex items-center gap-3 rounded-xl bg-muted/50 p-3 text-sm font-bold text-foreground"><span className="h-2 w-2 shrink-0 rounded-full bg-primary" />{weakness.topic}</li>)}
+              {reviewTopics.slice(0, 3).map((topic, index) => <li key={`${topic}-${index}`} data-testid={`weakness-${index}`} className="flex items-center gap-3 rounded-xl bg-muted/50 p-3 text-sm font-bold text-foreground"><span className="h-2 w-2 shrink-0 rounded-full bg-primary" />{topic}</li>)}
             </ul>
           ) : <p data-testid="empty-weaknesses" className="mt-3 text-sm leading-6 text-muted-foreground">ستظهر هنا الموضوعات التي تحتاج مراجعة عندما تتوفر بياناتها.</p>}
-          <Link href="/training" data-testid="link-review-training" className="mt-4 inline-flex items-center gap-2 text-sm font-black text-primary">افتح التدريب <ArrowLeft className="h-4 w-4" /></Link>
+          <Link href="/records" data-testid="link-review-training" className="mt-4 inline-flex items-center gap-2 text-sm font-black text-primary">راجع النتائج المحفوظة <ArrowLeft className="h-4 w-4" /></Link>
         </div>
       </section>
 
       <section data-testid="section-recent-tests" className="rounded-2xl border border-border bg-card p-5">
         <div className="mb-4 flex items-center justify-between"><div><p className="text-xs font-black text-primary">سجل التدريب</p><h2 className="mt-1 text-lg font-black text-foreground">آخر الاختبارات</h2></div><Link href="/records" data-testid="link-all-tests" className="text-sm font-black text-primary">كل النتائج</Link></div>
-        {recentTests.length ? (
-          <div className="space-y-2">{recentTests.slice(0, 3).map((test) => (
+        {programTests.length ? (
+          <div className="space-y-2">{programTests.slice(0, 3).map((test) => (
             <div key={test.id} data-testid={`row-recent-test-${test.id}`} className="flex items-center justify-between gap-4 rounded-xl border border-border/70 p-3">
-              <div className="flex min-w-0 items-center gap-3"><FileText className="h-4 w-4 shrink-0 text-muted-foreground" /><div className="min-w-0"><p className="truncate text-sm font-bold text-foreground">{test.title}</p><p className="mt-1 text-xs text-muted-foreground">{new Date(test.date).toLocaleDateString("ar-SA", { year: "numeric", month: "long", day: "numeric" })}</p></div></div>
-              <span className="shrink-0 rounded-lg bg-primary/10 px-3 py-1 text-sm font-black text-primary">{test.score}%</span>
+              <div className="flex min-w-0 items-center gap-3"><FileText className="h-4 w-4 shrink-0 text-muted-foreground" /><div className="min-w-0"><p className="truncate text-sm font-bold text-foreground">{test.title}</p><p className="mt-1 text-xs text-muted-foreground">{test.date ? new Date(test.date).toLocaleDateString("ar-SA", { year: "numeric", month: "long", day: "numeric" }) : "التاريخ غير متاح"}</p></div></div>
+              <span className="shrink-0 rounded-lg bg-primary/10 px-3 py-1 text-sm font-black text-primary">{test.score === null ? "غير متاح" : `${test.score}%`}</span>
             </div>
           ))}</div>
-        ) : <p data-testid="empty-recent-tests" className="rounded-xl border border-dashed border-border p-5 text-center text-sm text-muted-foreground">لا توجد اختبارات محفوظة بعد.</p>}
+        ) : <p data-testid="empty-recent-tests" className="rounded-xl border border-dashed border-border p-5 text-center text-sm text-muted-foreground">لا توجد نتائج محفوظة في هذا المسار بعد.</p>}
       </section>
 
       <details data-testid="details-additional-tools" className="group rounded-2xl border border-border bg-card">

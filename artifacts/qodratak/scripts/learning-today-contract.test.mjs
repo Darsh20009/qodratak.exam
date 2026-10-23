@@ -5,6 +5,8 @@ import { foundationHrefForScope, todayLearningHref } from "../src/lib/foundation
 
 const hooks = await readFile(new URL("../src/hooks/use-student.ts", import.meta.url), "utf8");
 const home = await readFile(new URL("../src/pages/student/DashboardPage.tsx", import.meta.url), "utf8");
+const dashboardProgress = await readFile(new URL("../src/components/student/StudentDashboardProgressOverview.tsx", import.meta.url), "utf8");
+const dashboardChart = await readFile(new URL("../src/components/student/StudentProgressPathChart.tsx", import.meta.url), "utf8");
 const session = await readFile(new URL("../src/pages/student/LearningTodayPage.tsx", import.meta.url), "utf8");
 const reader = await readFile(new URL("../src/pages/student/FoundationReaderPage.tsx", import.meta.url), "utf8");
 const coverageTest = await readFile(new URL("../src/pages/student/FoundationCoverageTestPage.tsx", import.meta.url), "utf8");
@@ -46,12 +48,17 @@ test("content selection and answer submission use only owned session fields", ()
   }
 });
 
-test("student home and session UI provide the core Phase 16 states", () => {
-  assert.match(home, /data-testid="student-next-step"/);
+test("student home shows evidence-based progress and retains the learning session lifecycle", () => {
+  assert.match(home, /<StudentDashboardProgressOverview/);
+  assert.match(home, /buildStudentDashboardJourney/);
+  assert.match(home, /buildStudentDashboardTasks/);
   assert.match(home, /todayLearningHref\(planProgram, planSubjectId\)/);
   assert.match(home, /useTodayLearningSession\(hasJourneyScope, journeyProgram, journeySubjectId\)/);
+  assert.match(dashboardProgress, /data-testid="student-progress-overview"/);
+  assert.match(dashboardProgress, /ما يمكنك العمل عليه الآن/);
+  assert.match(dashboardChart, /data-testid="student-progress-path"/);
+  assert.match(dashboardChart, /ليست درجة قياس رسمية أو توقعًا/);
   assert.match(session, /useTodayLearningSession\(true, programId, subjectId\)/);
-  for (const label of ["خطوتك التالية", "نكمل من حيث توقفت", "ابدأ"]) assert.match(home, new RegExp(label));
   for (const label of ["ابدأ الآن", "أكمل القراءة", "إرسال الإجابة", "التالي", "اكتمل درس اليوم"]) {
     assert.match(session, new RegExp(label));
   }

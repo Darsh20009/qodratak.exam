@@ -3,9 +3,10 @@ import { useToast } from "@/hooks/use-toast";
 
 // Types
 export interface StudentDashboard {
+  metricsAvailable?: boolean;
   stats: { totalTests: number; averageScore: number; points: number; studySeconds: number };
   testTypeEvidence?: Array<{
-    program: "qudrat" | "tahsili";
+    program: "qudrat" | "tahsili" | "general";
     testType: string;
     tests: number;
   }>;
@@ -16,7 +17,16 @@ export interface StudentDashboard {
     quantitative: { percentage: number; tests: number; questions: number };
     tahsili: { percentage: number; tests: number; questions: number };
   };
-  recentTests: Array<{ id: string; title: string; score: number; date: string; type: string }>;
+  recentTests: Array<{
+    id: string;
+    title: string;
+    score: number | null;
+    date: string | null;
+    type: string;
+    program: "qudrat" | "tahsili" | "general";
+    totalQuestions: number | null;
+    weakAreas: string[];
+  }>;
   weaknesses: Array<{ subject: string; topic: string; errorRate: number }>;
   upcomingExam: { date: string | null; targetScore?: number };
   targetScore?: number | null;
@@ -456,6 +466,7 @@ export function useStudentDashboard(enabled = true) {
       const recentTests = Array.isArray(data.recentTests) ? data.recentTests : [];
       const maxErrors = Math.max(1, ...(data.weaknesses || []).map((item: any) => Number(item.errorCount || 0)));
       return {
+        metricsAvailable: data.metricsAvailable !== false,
         stats: {
           totalTests: Number(data.totals?.tests || 0),
           averageScore: Math.round(Number(data.totals?.averagePercentage || 0)),
@@ -471,7 +482,11 @@ export function useStudentDashboard(enabled = true) {
         },
         testTypeEvidence: Array.isArray(data.testTypeEvidence)
           ? data.testTypeEvidence.map((item: any) => ({
-              program: item?.program === "tahsili" ? "tahsili" as const : "qudrat" as const,
+              program: item?.program === "tahsili"
+                ? "tahsili" as const
+                : item?.program === "qudrat"
+                  ? "qudrat" as const
+                  : "general" as const,
               testType: String(item?.testType || ""),
               tests: Math.max(0, Number(item?.tests || 0)),
             }))
@@ -479,9 +494,24 @@ export function useStudentDashboard(enabled = true) {
         recentTests: recentTests.map((test: any) => ({
           id: String(test._id),
           title: test.testName || "اختبار تدريبي",
-          score: Math.round(Number(test.percentage ?? test.score ?? 0)),
-          date: test.completedAt || new Date(0).toISOString(),
+          score: Number.isFinite(Number(test.percentage)) && Number(test.percentage) >= 0 && Number(test.percentage) <= 100
+            ? Math.round(Number(test.percentage))
+            : null,
+          date: test.completedAt && Number.isFinite(Date.parse(String(test.completedAt)))
+            ? new Date(test.completedAt).toISOString()
+            : null,
           type: test.testType || "qudrat",
+          program: test.program === "tahsili"
+            ? "tahsili" as const
+            : test.program === "qudrat"
+              ? "qudrat" as const
+              : "general" as const,
+          totalQuestions: Number.isFinite(Number(test.totalQuestions)) && Number(test.totalQuestions) > 0
+            ? Math.floor(Number(test.totalQuestions))
+            : null,
+          weakAreas: Array.isArray(test.weakAreas)
+            ? test.weakAreas.map((area: unknown) => String(area || "").trim()).filter(Boolean)
+            : [],
         })),
         weaknesses: (data.weaknesses || []).map((item: any) => ({
           subject: "أخطاء متكررة",

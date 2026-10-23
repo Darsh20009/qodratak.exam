@@ -12,7 +12,7 @@ export interface StudentWorkflowEvidence {
   foundationEvidenceLoaded: boolean;
   diagnosticComplete: boolean;
   testTypeEvidence: Array<{
-    program: "qudrat" | "tahsili";
+    program: "qudrat" | "tahsili" | "general";
     testType: string;
     tests: number;
   }>;
@@ -57,7 +57,7 @@ export function resolveStudentWorkflowStatuses(
     foundation,
     skills: submittedQudratTests > 0 ? "IN_PROGRESS" : notAssessedOrStarted,
     banks: submittedSectionTests > 0 ? "IN_PROGRESS" : notAssessedOrStarted,
-    simulation: submittedSimulations > 0 ? "COMPLETED" : notAssessedOrStarted,
+    simulation: submittedSimulations > 0 ? "IN_PROGRESS" : notAssessedOrStarted,
   };
 }
 

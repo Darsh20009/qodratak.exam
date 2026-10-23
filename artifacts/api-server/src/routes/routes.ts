@@ -103,6 +103,7 @@ import {
   creditedStudySeconds,
   normalizeDailyGoalTarget,
 } from '../services/studentProgressPolicy';
+import { classifySavedTestProgram } from '../services/studentDashboardMetrics';
 import { ExamGradingError, gradeTrustedExam } from '../services/trustedExamGrade';
 import {
   PersonalizedQuestionPoolError,
@@ -9234,9 +9235,10 @@ app.post("/api/auth/register", async (req: Request, res: Response) => {
       if (!sessionUserId) return res.status(401).json({ error: 'يجب تسجيل الدخول' });
       const userId = String(sessionUserId);
       const { DailyGoal, DailyProgress } = await import('./mongodb/models');
-      const [goalDoc, todayDoc] = await Promise.all([
+      const [goalDoc, todayDoc, verifiedStudyDays] = await Promise.all([
         DailyGoal.findOne({ userId }).lean(),
         DailyProgress.findOne({ userId, date: getKsaDateStr() }).lean(),
+        DailyProgress.countDocuments({ userId, verifiedQuestionsAnswered: { $gt: 0 } }),
       ]);
       const target = normalizeDailyGoalTarget((goalDoc as any)?.targetQuestions);
       const answered = Number((todayDoc as any)?.verifiedQuestionsAnswered || 0);
@@ -9247,6 +9249,7 @@ app.post("/api/auth/register", async (req: Request, res: Response) => {
         verifiedAnswered: answered,
         legacyAnswered: (todayDoc as any)?.questionsAnswered ?? 0,
         date: getKsaDateStr(),
+        verifiedStudyDays,
         streak,
       });
     } catch (err) {
@@ -15419,6 +15422,7 @@ app.post("/api/auth/register", async (req: Request, res: Response) => {
       && String(userId).startsWith('development-');
     if (process.env.NODE_ENV !== 'production' && (mongoose.connection.readyState !== 1 || isDevelopmentDemo)) {
       return res.json({
+        metricsAvailable: false,
         totals: { tests: 0, questions: 0, correct: 0, wrong: 0, skipped: 0, averagePercentage: 0 },
         studySeconds: 0,
         targetScore: null,
@@ -15443,7 +15447,7 @@ app.post("/api/auth/register", async (req: Request, res: Response) => {
       const [user, testAggregate, recentTests, weakAreas, upcomingBooking, activeSubscription, folderCount, savedQuestionCount, progressAggregates] = await Promise.all([
         User.findById(userId).select('level targetExamDate targetScore trialUsed trialStartDate trialEndDate subscription officialScores academicTrack activeStudySeconds').lean(),
         TestResult.aggregate([{ $match: { userId } }, { $group: { _id: null, total: { $sum: 1 }, averagePercentage: { $avg: '$percentage' }, correct: { $sum: '$correctAnswers' }, wrong: { $sum: '$wrongAnswers' }, skipped: { $sum: '$skippedQuestions' }, questions: { $sum: '$totalQuestions' } } }]),
-        TestResult.find({ userId }).sort({ completedAt: -1 }).limit(5).select('testName testType percentage score totalQuestions completedAt weakAreas').lean(),
+         TestResult.find({ userId }).sort({ completedAt: -1 }).limit(20).select('program testName testType percentage score totalQuestions completedAt weakAreas').lean(),
         ErrorLog.aggregate([{ $match: { userId } }, { $group: { _id: '$subcategory', count: { $sum: 1 } } }, { $sort: { count: -1, _id: 1 } }, { $limit: 5 }]),
         ExamBooking.findOne({ userId, scheduledAt: { $gte: now }, status: { $in: ['pending', 'active'] } }).sort({ scheduledAt: 1 }).select('scheduledAt status examType').lean(),
         Subscription.findOne({ userId: { $in: subscriptionIdentityCandidates(userId) }, status: 'active', startDate: { $lte: now }, endDate: { $gt: now } }).sort({ endDate: -1 }).lean(),
@@ -15507,25 +15511,31 @@ app.post("/api/auth/register", async (req: Request, res: Response) => {
         tahsili: { tests: 0, questions: 0, correct: 0 },
       };
       for (const aggregate of progressAggregates as Array<any>) {
-        const program = String(aggregate._id?.program || '');
-        const testType = String(aggregate._id?.testType || '');
-        const bucket = program === 'tahsili'
+        const program = classifySavedTestProgram(aggregate._id?.program, aggregate._id?.testType);
+        const testType = String(aggregate._id?.testType || '').toLowerCase();
+        const isQudrat = program === 'qudrat';
+        const isTahsili = program === 'tahsili';
+        const bucket = isTahsili
           ? 'tahsili'
-          : testType === 'verbal'
+          : isQudrat && ['verbal', 'free-verbal'].includes(testType)
             ? 'verbal'
-            : testType === 'quantitative'
+            : isQudrat && ['quantitative', 'free-quantitative'].includes(testType)
               ? 'quantitative'
-              : 'qudrat';
+              : isQudrat
+                ? 'qudrat'
+                : null;
         const values = {
           tests: Number(aggregate.tests || 0),
           questions: Number(aggregate.questions || 0),
           correct: Number(aggregate.correct || 0),
         };
-        for (const key of ['overall', bucket] as const) {
-          progressBuckets[key].tests += values.tests;
-          progressBuckets[key].questions += values.questions;
-          progressBuckets[key].correct += values.correct;
-        }
+        progressBuckets.overall.tests += values.tests;
+        progressBuckets.overall.questions += values.questions;
+        progressBuckets.overall.correct += values.correct;
+        if (!bucket) continue;
+        progressBuckets[bucket].tests += values.tests;
+        progressBuckets[bucket].questions += values.questions;
+        progressBuckets[bucket].correct += values.correct;
         if (bucket === 'verbal' || bucket === 'quantitative') {
           progressBuckets.qudrat.tests += values.tests;
           progressBuckets.qudrat.questions += values.questions;
@@ -15537,7 +15547,11 @@ app.post("/api/auth/register", async (req: Request, res: Response) => {
         tests: bucket.tests,
         questions: bucket.questions,
       });
+      const recentTestsWithProgram = (recentTests as Array<any>).map((test) => {
+        return { ...test, program: classifySavedTestProgram(test.program, test.testType) };
+      });
       return res.json({
+        metricsAvailable: true,
         totals: { tests: totals.total, questions: totals.questions, correct: totals.correct, wrong: totals.wrong, skipped: totals.skipped, averagePercentage: Number((totals.averagePercentage || 0).toFixed(2)) },
         studySeconds: Math.max(0, Number((user as any).activeStudySeconds || 0)),
         targetScore: Number.isFinite(Number((user as any).targetScore))
@@ -15545,11 +15559,11 @@ app.post("/api/auth/register", async (req: Request, res: Response) => {
           : null,
         progress: Object.fromEntries(Object.entries(progressBuckets).map(([key, value]) => [key, toProgress(value)])),
         testTypeEvidence: (progressAggregates as Array<any>).map((aggregate) => ({
-          program: String(aggregate._id?.program || '') === 'tahsili' ? 'tahsili' : 'qudrat',
+          program: classifySavedTestProgram(aggregate._id?.program, aggregate._id?.testType),
           testType: String(aggregate._id?.testType || ''),
           tests: Number(aggregate.tests || 0),
         })),
-        recentTests,
+        recentTests: recentTestsWithProgram,
         weaknesses: weakAreas.filter((area: any) => area._id).map((area: any) => ({ name: area._id, errorCount: area.count })),
         upcomingExam: upcomingBooking || (user.targetExamDate && new Date(user.targetExamDate) >= now ? { targetExamDate: user.targetExamDate } : null),
         recommendedPlan,

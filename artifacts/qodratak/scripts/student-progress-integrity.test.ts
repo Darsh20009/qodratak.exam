@@ -10,6 +10,11 @@ import {
   currentWorkflowStage,
   resolveStudentWorkflowStatuses,
 } from "../src/lib/studentWorkflowProgress";
+import {
+  buildStudentDashboardJourney,
+  buildStudentDashboardTasks,
+  buildStudentDashboardTrend,
+} from "../src/lib/studentDashboardProgress";
 import { isTrackableStudyPath } from "../src/lib/studentStudyTimePolicy";
 
 const appSource = readFileSync(new URL("../src/App.tsx", import.meta.url), "utf8");
@@ -196,7 +201,7 @@ test("Tahsili results do not alter Qudrat stage status", () => {
   assert.equal(statuses.simulation, "NOT_ASSESSED");
 });
 
-test("only a saved Qiyas result completes the simulation stage", () => {
+test("a saved Qiyas result marks simulation in progress but never completes it alone", () => {
   const before = resolveStudentWorkflowStatuses(qodratEvidence({
     diagnosticComplete: true,
     testTypeEvidence: [{ program: "qudrat", testType: "verbal", tests: 3 }],
@@ -209,7 +214,7 @@ test("only a saved Qiyas result completes the simulation stage", () => {
     ],
   }));
   assert.equal(before.simulation, "NOT_STARTED");
-  assert.equal(after.simulation, "COMPLETED");
+  assert.equal(after.simulation, "IN_PROGRESS");
 });
 
 test("current stage follows evidence, not the numeric position of a later stage", () => {
@@ -219,4 +224,167 @@ test("current stage follows evidence, not the numeric position of a later stage"
   }));
   assert.equal(currentWorkflowStage(statuses), "skills");
   assert.equal(statuses.banks, "NOT_STARTED");
+});
+
+test("student dashboard journey keeps Qudrat and Tahsili evidence separate", () => {
+  const qudrat = buildStudentDashboardJourney({
+    program: "qudrat",
+    foundation: { loaded: true, total: 5, completed: 2 },
+    testEvidence: [
+      { program: "qudrat", testType: "qiyas", tests: 1 },
+      { program: "tahsili", testType: "custom", tests: 8 },
+      { program: "general", testType: "qiyas", tests: 3 },
+    ],
+    reviewTopics: [],
+    links: {
+      foundation: "/foundation?program=qudrat",
+      training: "/training",
+      simulation: "/qiyas",
+      analysis: "/records",
+      remediation: "/learning/today?programId=qudrat",
+    },
+  });
+  const tahsili = buildStudentDashboardJourney({
+    program: "tahsili",
+    foundation: { loaded: true, total: 5, completed: 0 },
+    testEvidence: [
+      { program: "qudrat", testType: "verbal", tests: 4 },
+      { program: "tahsili", testType: "custom", tests: 2 },
+    ],
+    reviewTopics: [],
+    links: {
+      foundation: "/foundation?program=tahsili",
+      training: "/training",
+      simulation: "/tahsilik/tests",
+      analysis: "/records",
+      remediation: "/learning/today?programId=tahsili",
+    },
+  });
+  assert.equal(qudrat[0].status, "IN_PROGRESS");
+  assert.equal(qudrat[1].status, "NOT_STARTED");
+  assert.equal(qudrat[2].status, "IN_PROGRESS");
+  assert.equal(tahsili[1].status, "IN_PROGRESS");
+  assert.equal(tahsili[2].status, "NOT_STARTED");
+});
+
+test("dashboard foundation completion requires all published lessons to be saved complete", () => {
+  const base = {
+    program: "qudrat" as const,
+    testEvidence: [],
+    reviewTopics: [],
+    links: {
+      foundation: "/foundation",
+      training: "/training",
+      simulation: "/qiyas",
+      analysis: "/records",
+      remediation: "/learning/today",
+    },
+  };
+  assert.equal(buildStudentDashboardJourney({
+    ...base,
+    foundation: { loaded: true, total: 3, completed: 2 },
+  })[0].status, "IN_PROGRESS");
+  assert.equal(buildStudentDashboardJourney({
+    ...base,
+    foundation: { loaded: true, total: 3, completed: 3 },
+  })[0].status, "COMPLETED");
+  assert.equal(buildStudentDashboardJourney({
+    ...base,
+    foundation: { loaded: true, total: 0, completed: 0 },
+  })[0].status, "NOT_ASSESSED");
+});
+
+test("a finished corrective session does not complete the broader remediation stage", () => {
+  const base = {
+    program: "qudrat" as const,
+    foundation: { loaded: true, total: 1, completed: 0 },
+    testEvidence: [],
+    reviewTopics: ["النسبة والتناسب"],
+    links: {
+      foundation: "/foundation",
+      training: "/training",
+      simulation: "/qiyas",
+      analysis: "/records",
+      remediation: "/learning/today",
+    },
+  };
+  const incomplete = buildStudentDashboardJourney({
+    ...base,
+    session: {
+      title: "جلسة اليوم",
+      programId: "subject.qudrat.quantitative",
+      started: true,
+      steps: [{ stepType: "CORRECT", status: "IN_PROGRESS" }],
+    },
+  });
+  const complete = buildStudentDashboardJourney({
+    ...base,
+    session: {
+      title: "جلسة اليوم",
+      programId: "program.qudrat",
+      started: true,
+      steps: [{ stepType: "CORRECT", status: "COMPLETED" }],
+    },
+  });
+  assert.equal(incomplete[4].status, "IN_PROGRESS");
+  assert.equal(complete[4].status, "IN_PROGRESS");
+  assert.match(complete[4].detail, /أنجزت 1 من 1 خطوة تصحيحية/);
+});
+
+test("dashboard tasks contain only sourced items and are capped at three", () => {
+  const tasks = buildStudentDashboardTasks({
+    diagnosticRequired: false,
+    diagnosticHref: "/foundation",
+    session: {
+      title: "جلسة تعلم اليوم",
+      programId: "program.qudrat",
+      started: false,
+      sessionReason: "خطة التعلم المحفوظة لهذا المسار.",
+      state: "READY",
+      estimatedMinutes: 20,
+      steps: [],
+    },
+    sessionHref: "/learning/today?programId=qudrat",
+    scheduledTask: {
+      title: "أكمل درس النسب",
+      reason: "موعده اليوم وفق خطتك المحفوظة.",
+      href: "/foundation?program=qudrat&view=plan",
+      status: "pending",
+    },
+    review: {
+      topics: ["النسبة والتناسب"],
+      testTitle: "اختبار كمي محفوظ",
+      href: "/records",
+    },
+  });
+  assert.equal(tasks.length, 3);
+  assert.ok(tasks.every((task) => task.title && task.reason && task.href));
+
+  const emptyTasks = buildStudentDashboardTasks({
+    diagnosticRequired: false,
+    diagnosticHref: "/foundation",
+    sessionHref: "/learning/today",
+  });
+  assert.deepEqual(emptyTasks, []);
+});
+
+test("dashboard trend contains only dated saved results for the selected program", () => {
+  const points = buildStudentDashboardTrend([
+    { id: "later-q", title: "اختبار كمي", score: 72, date: "2026-10-22T12:00:00.000Z", program: "qudrat" },
+    { id: "tahsili", title: "اختبار أحياء", score: 99, date: "2026-10-21T12:00:00.000Z", program: "tahsili" },
+    { id: "earlier-q", title: "اختبار لفظي", score: 61, date: "2026-10-20T12:00:00.000Z", program: "qudrat" },
+    { id: "undated", title: "نتيجة قديمة بلا تاريخ", score: 80, date: null, program: "qudrat" },
+    { id: "invalid", title: "نسبة غير صالحة", score: null, date: "2026-10-23T12:00:00.000Z", program: "qudrat" },
+  ], "qudrat");
+  assert.deepEqual(points.map((point) => point.id), ["earlier-q", "later-q"]);
+  assert.deepEqual(points.map((point) => point.percentage), [61, 72]);
+});
+
+test("dashboard API returns only verified study days and a bounded saved-test history", () => {
+  assert.match(routesSource, /DailyProgress\.countDocuments\(\{\s*userId,\s*verifiedQuestionsAnswered:\s*\{\s*\$gt:\s*0\s*\}\s*\}\)/);
+  assert.match(routesSource, /TestResult\.find\(\{\s*userId\s*\}\)\.sort\(\{\s*completedAt:\s*-1\s*\}\)\.limit\(20\)/);
+  assert.match(routesSource, /verifiedStudyDays,/);
+  assert.match(routesSource, /metricsAvailable:\s*false/);
+  assert.match(routesSource, /metricsAvailable:\s*true/);
+  assert.match(routesSource, /program testName testType percentage score totalQuestions completedAt weakAreas/);
 });
