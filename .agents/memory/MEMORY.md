@@ -22,6 +22,7 @@
 - [Tahsili extraction review boundary](tahsili-ocr-review-boundary.md) — keep OCR and geometric PDF extraction in review drafts with source crops; verify subject, choices, keys, and explanations before publishing.
 - [Tahsili source rights](tahsili-source-rights.md) — PDF redistribution is batch-limited; only uploaded original videos may be processed, with the first 30 seconds removed.
 - [Foundation progress metrics](foundation-progress-metrics.md) — current percentages reflect saved test performance; lesson completion needs separate persistence.
+- [Daily study integrity](daily-study-integrity.md) — complete a study day only from unique, server-verified answers against its goal; keep legacy counters separate.
 - [Computerized verbal video progress](computerized-verbal-video-progress.md) — keep watched coverage student-scoped and separate from quizzes, mastery, and foundation completion.
 - [Authenticated preview checks](authenticated-preview-checks.md) — a public preview can show an expected 401 for session-only APIs; validate protected flows with an authenticated browser session.
 - [Official score planning](official-score-planning.md) — keep externally reported verbal/quantitative scores separate from training results and use them to focus the next plan.

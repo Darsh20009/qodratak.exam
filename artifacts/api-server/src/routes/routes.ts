@@ -98,6 +98,11 @@ import {
   recordVerifiedDailyStudyQuestion,
   recordVerifiedLearningAttempt,
 } from '../services/learningProfileService';
+import {
+  calculateVerifiedStudyDayStreak,
+  creditedStudySeconds,
+  normalizeDailyGoalTarget,
+} from '../services/studentProgressPolicy';
 import { ExamGradingError, gradeTrustedExam } from '../services/trustedExamGrade';
 import {
   PersonalizedQuestionPoolError,
@@ -9210,38 +9215,17 @@ app.post("/api/auth/register", async (req: Request, res: Response) => {
   async function calcStreak(userId: string): Promise<{ current: number; longest: number; weekDays: boolean[] }> {
     const { DailyProgress } = await import('./mongodb/models');
     const docs = await DailyProgress.find({ userId, verifiedGoalCompleted: true })
-      .select('date')
+      .select('date verifiedGoalTarget')
       .sort({ date: -1 })
       .lean();
-    const completedSet = new Set(docs.map((d: any) => d.date));
-
-    let current = 0;
-    const today = getKsaDateStr();
-    const todayTs = new Date(today).getTime();
-
-    for (let i = 0; i <= 365; i++) {
-      const d = new Date(todayTs - i * 86400000).toISOString().split('T')[0];
-      if (completedSet.has(d)) { current++; } else { if (i > 0) break; }
-    }
-
-    let longest = 0, run = 0;
-    const sortedDates = Array.from(completedSet).sort();
-    for (let i = 0; i < sortedDates.length; i++) {
-      if (i === 0) { run = 1; }
-      else {
-        const prev = new Date(sortedDates[i - 1]).getTime();
-        const cur = new Date(sortedDates[i]).getTime();
-        run = (cur - prev === 86400000) ? run + 1 : 1;
-      }
-      if (run > longest) longest = run;
-    }
-
-    const weekDays: boolean[] = [];
-    for (let i = 6; i >= 0; i--) {
-      const d = new Date(todayTs - i * 86400000).toISOString().split('T')[0];
-      weekDays.push(completedSet.has(d));
-    }
-    return { current, longest, weekDays };
+    const targetByDate = new Map<string, number>(
+      docs.map((record: any) => [String(record.date), normalizeDailyGoalTarget(record.verifiedGoalTarget)]),
+    );
+    const completedActivity = docs.map((record: any) => ({
+      date: String(record.date),
+      questionsAnswered: normalizeDailyGoalTarget(record.verifiedGoalTarget),
+    }));
+    return calculateVerifiedStudyDayStreak(completedActivity, getKsaDateStr(), targetByDate);
   }
 
   app.get('/api/daily-goal', async (req: Request, res: Response) => {
@@ -9254,8 +9238,8 @@ app.post("/api/auth/register", async (req: Request, res: Response) => {
         DailyGoal.findOne({ userId }).lean(),
         DailyProgress.findOne({ userId, date: getKsaDateStr() }).lean(),
       ]);
-      const target = (goalDoc as any)?.targetQuestions ?? 20;
-      const answered = (todayDoc as any)?.verifiedQuestionsAnswered ?? 0;
+      const target = normalizeDailyGoalTarget((goalDoc as any)?.targetQuestions);
+      const answered = Number((todayDoc as any)?.verifiedQuestionsAnswered || 0);
       const streak = await calcStreak(userId);
       res.json({
         target,
@@ -9276,7 +9260,7 @@ app.post("/api/auth/register", async (req: Request, res: Response) => {
       if (!sessionUserId) return res.status(401).json({ error: 'يجب تسجيل الدخول' });
       const { target } = req.body;
       if (![5, 10, 20, 30, 50].includes(Number(target))) return res.status(400).json({ error: 'هدف غير صحيح' });
-      const { DailyGoal } = await import('./mongodb/models');
+      const { DailyGoal, DailyProgress } = await import('./mongodb/models');
       await DailyGoal.findOneAndUpdate(
         { userId: String(sessionUserId) },
         { targetQuestions: Number(target), updatedAt: new Date() },
@@ -9312,12 +9296,12 @@ app.post("/api/auth/register", async (req: Request, res: Response) => {
       if (!sessionUserId) return res.status(401).json({ error: 'يجب تسجيل الدخول' });
       const userId = String(sessionUserId);
       const rawAttemptIds = Array.isArray(req.body?.attemptIds) ? req.body.attemptIds : [];
-      const attemptIds = [...new Set(rawAttemptIds.map(String))];
+      const attemptIds = [...new Set<string>(rawAttemptIds.map((value: unknown) => String(value)))];
       if (!attemptIds.length || attemptIds.length > 100 ||
           attemptIds.some((id) => !mongoose.Types.ObjectId.isValid(id))) {
         return res.status(400).json({ error: 'أرسل معرّفات محاولات محفوظة وصالحة فقط.' });
       }
-      const { LearningAttempt } = await import('./mongodb/learningProfileModels');
+      const { LearningAttempt } = await import('../mongodb/learningProfileModels');
       const attempts = await LearningAttempt.find({
         _id: { $in: attemptIds },
         studentId: userId,
@@ -9336,7 +9320,7 @@ app.post("/api/auth/register", async (req: Request, res: Response) => {
           .select('verifiedQuestionsAnswered verifiedGoalCompleted')
           .lean() as any,
       ]);
-      const target = Number(goalDoc?.targetQuestions) || 20;
+      const target = normalizeDailyGoalTarget(goalDoc?.targetQuestions);
       const answered = Number(todayDoc?.verifiedQuestionsAnswered) || 0;
       return res.json({
         success: true,
@@ -15386,10 +15370,9 @@ app.post("/api/auth/register", async (req: Request, res: Response) => {
     if (!current) return res.status(404).json({ error: 'المستخدم غير موجود' });
 
     const previousAt = current.studyTimeHeartbeatAt ? new Date(current.studyTimeHeartbeatAt) : null;
-    const elapsedSeconds = previousAt ? (now.getTime() - previousAt.getTime()) / 1000 : 0;
     // Count only intervals between reasonable active-page heartbeats. Long pauses
     // are reset without credit, so background tabs cannot accrue study time.
-    const addedSeconds = elapsedSeconds >= 15 && elapsedSeconds <= 90 ? Math.floor(elapsedSeconds) : 0;
+    const addedSeconds = creditedStudySeconds(previousAt, now);
     const heartbeatMatch = previousAt
       ? { studyTimeHeartbeatAt: previousAt }
       : { $or: [{ studyTimeHeartbeatAt: { $exists: false } }, { studyTimeHeartbeatAt: null }] };
@@ -15561,6 +15544,11 @@ app.post("/api/auth/register", async (req: Request, res: Response) => {
           ? Math.max(0, Math.min(100, Number((user as any).targetScore)))
           : null,
         progress: Object.fromEntries(Object.entries(progressBuckets).map(([key, value]) => [key, toProgress(value)])),
+        testTypeEvidence: (progressAggregates as Array<any>).map((aggregate) => ({
+          program: String(aggregate._id?.program || '') === 'tahsili' ? 'tahsili' : 'qudrat',
+          testType: String(aggregate._id?.testType || ''),
+          tests: Number(aggregate.tests || 0),
+        })),
         recentTests,
         weaknesses: weakAreas.filter((area: any) => area._id).map((area: any) => ({ name: area._id, errorCount: area.count })),
         upcomingExam: upcomingBooking || (user.targetExamDate && new Date(user.targetExamDate) >= now ? { targetExamDate: user.targetExamDate } : null),

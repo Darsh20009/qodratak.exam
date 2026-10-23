@@ -4,6 +4,11 @@ import { useToast } from "@/hooks/use-toast";
 // Types
 export interface StudentDashboard {
   stats: { totalTests: number; averageScore: number; points: number; studySeconds: number };
+  testTypeEvidence?: Array<{
+    program: "qudrat" | "tahsili";
+    testType: string;
+    tests: number;
+  }>;
   progress: {
     overall: { percentage: number; tests: number; questions: number };
     qudrat: { percentage: number; tests: number; questions: number };
@@ -464,6 +469,13 @@ export function useStudentDashboard(enabled = true) {
           quantitative: data.progress?.quantitative || { percentage: 0, tests: 0, questions: 0 },
           tahsili: data.progress?.tahsili || { percentage: 0, tests: 0, questions: 0 },
         },
+        testTypeEvidence: Array.isArray(data.testTypeEvidence)
+          ? data.testTypeEvidence.map((item: any) => ({
+              program: item?.program === "tahsili" ? "tahsili" as const : "qudrat" as const,
+              testType: String(item?.testType || ""),
+              tests: Math.max(0, Number(item?.tests || 0)),
+            }))
+          : [],
         recentTests: recentTests.map((test: any) => ({
           id: String(test._id),
           title: test.testName || "اختبار تدريبي",

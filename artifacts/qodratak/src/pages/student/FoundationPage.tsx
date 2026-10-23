@@ -31,7 +31,12 @@ import {
   resolveFoundationVideoUrl,
 } from "@/lib/foundationVideoUrl";
 import { getQuestionImageUrls } from "@/lib/questionImages";
-import { StudentWorkflow, workflowStageForLevel, type WorkflowStage } from "@/components/student/StudentWorkflow";
+import { StudentWorkflow } from "@/components/student/StudentWorkflow";
+import {
+  currentWorkflowStage,
+  resolveStudentWorkflowStatuses,
+  type WorkflowStage,
+} from "@/lib/studentWorkflowProgress";
 import PreparationCoursePage from "@/pages/student/PreparationCoursePage";
 import LearningTodayPage from "@/pages/student/LearningTodayPage";
 import TahsiliOverviewPage from "@/pages/TahsiliOverviewPage";
@@ -715,6 +720,11 @@ function JourneyHome({
   error,
   onRetry,
   learningContent,
+  foundationContents,
+  completedFoundationContentIds,
+  isFoundationProgressLoading,
+  isFoundationProgressError,
+  testTypeEvidence,
   isLearningContentLoading,
   isLearningContentError,
   onRetryLearningContent,
@@ -725,6 +735,11 @@ function JourneyHome({
   error?: Error | null;
   onRetry: () => void;
   learningContent: FoundationContent | null;
+  foundationContents: FoundationContent[];
+  completedFoundationContentIds: Set<string>;
+  isFoundationProgressLoading: boolean;
+  isFoundationProgressError: boolean;
+  testTypeEvidence: NonNullable<StudentDashboard["testTypeEvidence"]>;
   isLearningContentLoading: boolean;
   isLearningContentError: boolean;
   onRetryLearningContent: () => void;
@@ -746,11 +761,16 @@ function JourneyHome({
   const [diagnosticOpen, setDiagnosticOpen] = useState(false);
   const [diagnosticProgram, setDiagnosticProgram] = useState<FoundationProgram>("qudrat");
   const diagnosticComplete = learningState?.status === "diagnostic_completed";
-  const qudratProgress = progress?.qudrat?.percentage || 0;
   const recommendation = learningState?.recommendation;
   const dashboardPlan = dashboard?.recommendedPlan;
-  const workflowLevel = dashboardPlan?.level || "foundation";
-  const workflowStage = diagnosticComplete ? workflowStageForLevel(workflowLevel) : "foundation";
+  const workflowStatuses = resolveStudentWorkflowStatuses({
+    foundationAvailableCount: foundationContents.length,
+    foundationCompletedCount: foundationContents.filter((item) => completedFoundationContentIds.has(item._id)).length,
+    foundationEvidenceLoaded: !isFoundationProgressLoading && !isFoundationProgressError,
+    diagnosticComplete,
+    testTypeEvidence,
+  });
+  const workflowStage = currentWorkflowStage(workflowStatuses);
 
   if (isError || isLearningStateError) {
     return (
@@ -849,9 +869,7 @@ function JourneyHome({
 
         {!isLoading && !isLearningStateLoading && (
           <StudentWorkflow
-            currentStage={workflowStage}
-            level={workflowLevel}
-            progress={qudratProgress}
+            statuses={workflowStatuses}
             focusLabel={learningState?.focus?.label}
           />
         )}
@@ -1452,6 +1470,11 @@ function FoundationPageContent() {
     refetch: refetchCompletionSummary,
   } = useLearningContentProgressSummary(program, contentSubjectId, shouldLoadFoundationContent);
   const {
+    data: homeFoundationSummary,
+    isLoading: isHomeFoundationSummaryLoading,
+    isError: isHomeFoundationSummaryError,
+  } = useLearningContentProgressSummary("qudrat", undefined, !hasProgram);
+  const {
     data: dashboard,
     isLoading: isDashboardLoading,
     isError: isDashboardError,
@@ -1486,6 +1509,20 @@ function FoundationPageContent() {
   const safeHomeQuantitativeContent = useMemo(
     () => normalizeFoundationContent(homeQuantitativeContent, "qudrat").filter((item) => !isSeparateFoundationBook(item)),
     [homeQuantitativeContent],
+  );
+  const homeFoundationContents = useMemo(
+    () => [...new Map(
+      [...safeHomeVerbalContent, ...safeHomeQuantitativeContent].map((item) => [item._id, item]),
+    ).values()],
+    [safeHomeVerbalContent, safeHomeQuantitativeContent],
+  );
+  const completedHomeFoundationContentIds = useMemo(
+    () => new Set(
+      Array.isArray(homeFoundationSummary?.completedContentIds)
+        ? homeFoundationSummary.completedContentIds.filter((id): id is string => typeof id === "string")
+        : [],
+    ),
+    [homeFoundationSummary?.completedContentIds],
   );
   const homeLearningContent = safeHomeVerbalContent[0] || safeHomeQuantitativeContent[0] || null;
   const isHomeContentLoading = isHomeVerbalContentLoading || isHomeQuantitativeContentLoading;
@@ -1525,6 +1562,11 @@ function FoundationPageContent() {
         error={dashboardError}
         onRetry={() => void refetchDashboard()}
         learningContent={homeLearningContent}
+        foundationContents={homeFoundationContents}
+        completedFoundationContentIds={completedHomeFoundationContentIds}
+        isFoundationProgressLoading={isHomeContentLoading || isHomeFoundationSummaryLoading}
+        isFoundationProgressError={isHomeVerbalContentError || isHomeQuantitativeContentError || isHomeFoundationSummaryError}
+        testTypeEvidence={dashboard?.testTypeEvidence || []}
         isLearningContentLoading={isHomeContentLoading}
         isLearningContentError={isHomeVerbalContentError || isHomeQuantitativeContentError}
         onRetryLearningContent={() => {

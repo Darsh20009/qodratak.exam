@@ -27,8 +27,15 @@ import {
   type QudratVerbalVideoProgressInput,
   type QudratVerbalVideoProgressSummary,
 } from "@workspace/api-client-react";
-import { useFoundationContent, useStudentDashboard, type FoundationContent } from "@/hooks/use-student";
+import {
+  useFoundationContent,
+  useFoundationLearningState,
+  useLearningContentProgressSummary,
+  useStudentDashboard,
+  type FoundationContent,
+} from "@/hooks/use-student";
 import { StudentWorkflow } from "@/components/student/StudentWorkflow";
+import { resolveStudentWorkflowStatuses } from "@/lib/studentWorkflowProgress";
 import { isDirectFoundationVideo, resolveFoundationAssetUrl } from "@/lib/foundationVideoUrl";
 import { VerbalVideoProgressCard } from "@/components/student/VerbalVideoProgressCard";
 
@@ -880,6 +887,24 @@ export default function ComputerizedPage() {
   const [activeTrack, setActiveTrack] = useState<ComputerizedTrack>("qudrat");
   const [activeMode, setActiveMode] = useState<ComputerizedMode>("quantitative");
   const { data: dashboard } = useStudentDashboard();
+  const { data: foundationContent = [], isLoading: foundationLoading, isError: foundationError } =
+    useFoundationContent("qudrat", activeTrack === "qudrat");
+  const {
+    data: foundationSummary,
+    isLoading: foundationSummaryLoading,
+    isError: foundationSummaryError,
+  } = useLearningContentProgressSummary("qudrat", undefined, activeTrack === "qudrat");
+  const { data: foundationLearningState, isLoading: foundationStateLoading } =
+    useFoundationLearningState("qudrat", activeTrack === "qudrat");
+  const foundationLessons = foundationContent.filter((item) => Boolean(item.videoUrl || item.quiz));
+  const completedFoundationIds = new Set(foundationSummary?.completedContentIds || []);
+  const workflowStatuses = resolveStudentWorkflowStatuses({
+    foundationAvailableCount: foundationLessons.length,
+    foundationCompletedCount: foundationLessons.filter((item) => completedFoundationIds.has(item._id)).length,
+    foundationEvidenceLoaded: !foundationLoading && !foundationSummaryLoading && !foundationError && !foundationSummaryError,
+    diagnosticComplete: foundationLearningState?.status === "diagnostic_completed",
+    testTypeEvidence: dashboard?.testTypeEvidence || [],
+  });
   const completed = dashboard?.stats.totalTests ?? 0;
   const average = dashboard?.stats.averageScore ?? 0;
 
@@ -957,13 +982,13 @@ export default function ComputerizedPage() {
           </div>
         </section>
 
-        <StudentWorkflow
-          currentStage="skills"
-          level={dashboard?.recommendedPlan.level || "foundation"}
-          progress={dashboard?.progress.qudrat.percentage || 0}
-          focusLabel={dashboard?.recommendedPlan.focusSubject === "verbal" ? "اللفظي" : dashboard?.recommendedPlan.focusSubject === "quantitative" ? "الكمي" : undefined}
-          nextAction={{ label: "افتح مهمة التدريب", href: "/computerized" }}
-        />
+        {activeTrack === "qudrat" && !foundationStateLoading && (
+          <StudentWorkflow
+            statuses={workflowStatuses}
+            focusLabel={dashboard?.recommendedPlan.focusSubject === "verbal" ? "اللفظي" : dashboard?.recommendedPlan.focusSubject === "quantitative" ? "الكمي" : undefined}
+            nextAction={{ label: "افتح مهمة التدريب", href: "/computerized" }}
+          />
+        )}
 
         {activeTrack === "qudrat" && (
           <>

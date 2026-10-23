@@ -1,6 +1,7 @@
 import React from 'react';
 import DailyExamPage from "./pages/DailyExamPage";
 import { Switch, Route, Link, useLocation, Router as WouterRouter } from "wouter";
+import { isTrackableStudyPath } from "@/lib/studentStudyTimePolicy";
 import { RotateDevicePrompt } from "@/components/RotateDevicePrompt";
 import { queryClient } from "./lib/queryClient";
 import { installAdminFetchBridge } from "./lib/adminSession";
@@ -351,17 +352,9 @@ function isTestModeLocation(
 
 function StudentStudyTimeTracker({ active }: { active: boolean }) {
   const [location] = useLocation();
-  const studyPath = location.split("?")[0];
-  const trackablePrefixes = [
-    "/foundation", "/student-program/", "/computerized", "/learning/today",
-    "/tahsili", "/question-bank", "/flashcards", "/courses",
-  ];
-  const isExcludedExamPage = [
-    "/qiyas", "/paper-exam", "/paper-models", "/tahsili/exams", "/tahsilik/tests", "/abilities",
-    "/custom-exam", "/adaptive-test", "/book-exam", "/test-results", "/exam-review",
-  ].some((prefix) => studyPath.startsWith(prefix)) ||
-    /^\/question-bank\/[^/]+\/\d+$/.test(studyPath);
-  const isStudyPage = !isExcludedExamPage && trackablePrefixes.some((prefix) => studyPath.startsWith(prefix));
+  const isStudyPage =
+    isTrackableStudyPath(location) &&
+    !isTestModeLocation(location, readActiveExamFlags());
 
   React.useEffect(() => {
     if (!active || !isStudyPage) return;
