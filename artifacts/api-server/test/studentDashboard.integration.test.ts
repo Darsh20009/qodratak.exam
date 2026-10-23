@@ -17,6 +17,7 @@ import {
   User,
 } from '../src/mongodb/models.ts';
 import { LearningContentProgress } from '../src/mongodb/learningContentModels.ts';
+import { ExamResultWhatsAppDelivery } from '../src/mongodb/examResultNotificationModels.ts';
 
 type HttpClient = {
   request(path: string, init?: RequestInit): Promise<Response>;
@@ -497,6 +498,7 @@ test(
         await Promise.all([
           User.deleteMany({ _id: { $in: studentIds } }),
           TestResult.deleteMany({ userId: { $in: studentIds } }),
+          ExamResultWhatsAppDelivery.deleteMany({ studentId: { $in: studentIds } }),
           DailyProgress.deleteMany({ userId: { $in: studentIds } }),
           LearningContentProgress.deleteMany({ studentId: { $in: studentIds } }),
         ]);

@@ -15,6 +15,12 @@ Protected dashboard visual checks should use a real login-issued session for a s
 
 **How to apply:** Confirm the session with protected API data, inspect task title/status/reason/destination after loading settles, capture desktop and mobile, and verify logout without weakening authentication.
 
+In Replit browser tests, establish the session through the real same-origin login instead of injecting the cookie into Chromium; the preview session cookie is Secure, Partitioned, and host-scoped.
+
+**Why:** Manual cookie injection can be rejected by browser cookie constraints even when the real login endpoint works.
+
+**How to apply:** Create a synthetic database-backed student, log in through the browser’s same-origin API, verify protected routes, then log out and remove only the test fixtures.
+
 Use a synthetic student backed by the actual data store when checking protected student flows; a legacy file-backed identity is not a valid substitute.
 
 **Why:** A tutorial capture used an old registration endpoint that created a numeric file-only identity. The Mongo-backed dashboard then failed, falsely suggesting the current signup flow was broken.
