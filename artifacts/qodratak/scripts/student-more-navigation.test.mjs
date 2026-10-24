@@ -50,7 +50,7 @@ test("the More directory covers the active learning pages without duplicate or b
 });
 
 test("the desktop and mobile More menus share search, learning goals, and grouped destinations", () => {
-  for (const group of ["اختبارات وتدريب", "مراجعة وتقدم", "خطة واستعداد", "مصادر ومساعدة"]) {
+  for (const group of ["التدريب", "التأسيس", "لوحة التحكم", "حسابي"]) {
     assert.ok(menuItems.some((item) => item.group === group), `missing student navigation group: ${group}`);
   }
 

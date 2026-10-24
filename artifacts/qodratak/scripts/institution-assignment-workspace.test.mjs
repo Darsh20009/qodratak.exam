@@ -17,8 +17,8 @@ test("institution managers can publish, inspect, and close organization-scoped e
   assert.match(portal, /useCloseInstitutionAssignment/);
 });
 
-test("institution students see the branded assignment card in both dashboard states", () => {
-  assert.equal(studentDashboard.split("<InstitutionAssignmentsCard />").length - 1, 2);
+test("institution students see the branded assignment card in all three dashboard states", () => {
+  assert.equal(studentDashboard.split("<InstitutionAssignmentsCard />").length - 1, 3);
   assert.match(studentCard, /اختبارات خاصة بمؤسسة/);
   assert.match(studentCard, /institutionTestId: test\.id/);
 });
