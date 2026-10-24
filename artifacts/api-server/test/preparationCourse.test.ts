@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { buildPreparationCourse, classifyCourseLevel, publicCourse, riyadhDay, validateCourseInput } from '../src/services/preparationCourseService';
 import { courseLessonUnits, questionMatchesLesson } from '../src/services/courseLessonUnits';
 import { isReadingQuestion, observedIdeas, questionIdea } from '../src/services/questionIdeas';
-import { requestsTahsili, sanitizeStudentPassages } from '../src/middleware/studentContentAvailability';
+import { enforceStudentContentAvailability, sanitizeStudentPassages } from '../src/middleware/studentContentAvailability';
 import { CreateStudentCourseBody } from '@workspace/api-zod';
 
 const now = new Date('2026-10-10T05:00:00Z');
@@ -67,13 +67,16 @@ test('ideas ignore unverified answers and confidence considers distinct question
   assert.equal(ideas[0].attempts, 2);
   assert.equal(ideas[0].confidence, 'limited');
 });
-test('Tahsili endpoints and scoped practice lock but historic records/admin stay intact', () => {
-  assert.equal(requestsTahsili('/api/tahsili/questions'), true);
-  assert.equal(requestsTahsili('/api/foundation/content', { program: 'tahsili' }), true);
-  assert.equal(requestsTahsili('/api/student/learning/today', {}, { programId: 'program.tahsili' }), true);
-  assert.equal(requestsTahsili('/api/student/exam-reports', { program: 'tahsili' }), false);
-  assert.equal(requestsTahsili('/api/admin/foundation', {}, { program: 'tahsili' }), false);
-  assert.equal(requestsTahsili('/api/questions', { program: 'qudrat' }), false);
+test('released Tahsili content is not blocked by the availability middleware', async () => {
+  let continued = false;
+  await new Promise<void>((resolve, reject) => {
+    enforceStudentContentAvailability({} as any, {} as any, (error?: unknown) => {
+      if (error) return reject(error);
+      continued = true;
+      resolve();
+    });
+  });
+  assert.equal(continued, true);
 });
 test('returning learner needs a new assessment; old evidence never drives current focus', () => {
   const old = new Date(now.getTime() - 90 * 86400000);

@@ -314,7 +314,6 @@ async function ensureProfile(studentId: string, programId: string): Promise<void
       {
         $setOnInsert: {
           userId: studentId,
-          studentId,
           profileVersion: 'phase-04-v1',
           program,
           status: 'needs_diagnostic',
@@ -400,7 +399,6 @@ export async function recordLearningAttempt(studentId: string, input: LearningAt
   const programKey = normalized.value.programId.replace(/^program\./, '').replace(/[^a-zA-Z0-9_-]/g, '_');
   const updates: Record<string, unknown> = {
     profileVersion: 'phase-04-v1',
-    studentId,
     lastActivityAt: now,
     overall: performanceExpression('overall', normalized.value.isAnswered, normalized.value.isCorrect, normalized.value.responseTime, now),
   };

@@ -98,6 +98,13 @@ test(
     const marker = `placement-${crypto.randomUUID()}`;
     const email = `${marker}@example.test`;
     const password = 'FoundationPlacement_Test_Password!2026';
+    const originalMongoUri = process.env.MONGODB_URI;
+    const sourceUri = new URL(originalMongoUri!);
+    const sourceDatabase = decodeURIComponent(sourceUri.pathname.replace(/^\/+/, '') || 'qodratak');
+    const safeDatabasePrefix = sourceDatabase.replace(/[^a-zA-Z0-9_-]/g, '_').slice(0, 53) || 'qodratak';
+    const isolatedDatabase = `${safeDatabasePrefix}_test`;
+    sourceUri.pathname = `/${isolatedDatabase}`;
+    const isolatedMongoUri = sourceUri.toString();
     const studentIds: string[] = [];
     const tahsiliQuestionIds: number[] = [];
     let questionDocumentId: string | undefined;
@@ -106,6 +113,7 @@ test(
     let connectedByTest = false;
 
     try {
+      process.env.MONGODB_URI = isolatedMongoUri;
       connectedByTest = !getConnectionStatus();
       await connectToMongoDB();
       assert.equal(getConnectionStatus(), true);
@@ -124,7 +132,6 @@ test(
 
       const restoreTimerBehavior = makeRegisteredTimersUnref();
       const originalNodeEnv = process.env.NODE_ENV;
-      const originalMongoUri = process.env.MONGODB_URI;
       process.env.NODE_ENV = 'test';
       delete process.env.MONGODB_URI;
       try {
@@ -133,7 +140,7 @@ test(
         const { registerRoutes } = await import('../src/routes/routes.ts');
         server = await registerRoutes(app);
       } finally {
-        process.env.MONGODB_URI = originalMongoUri;
+        process.env.MONGODB_URI = isolatedMongoUri;
         if (originalNodeEnv === undefined) delete process.env.NODE_ENV;
         else process.env.NODE_ENV = originalNodeEnv;
         restoreTimerBehavior();
@@ -282,7 +289,7 @@ test(
         answerConfidence: 'review' as const,
       };
       await TahsiliQuestion.deleteMany({
-        sourceBook: 'integration-test',
+        sourceBook: `${marker}-integration-test`,
         text: /^سؤال تحصيلي تكاملي /,
       });
       tahsiliQuestionIds.push(...tahsiliFixtures.map((question) => question.questionId), reviewOnlyFixture.questionId);
@@ -441,7 +448,11 @@ test(
       );
       assert.equal(qiyasSubmission.response.status, 201);
       assert.equal(qiyasSubmission.body.learningAttemptsRecorded, 1);
-      assert.equal(await TestResult.countDocuments({ userId: studentId }), 3);
+      assert.equal(
+        await TestResult.countDocuments({ userId: studentId }),
+        4,
+        'two diagnostic attempts, one Tahsili subject test, and one Qiyas result are saved',
+      );
       const savedExamAttempt = await LearningAttempt.findOne({
         studentId,
         questionId: questionDocumentId,
@@ -509,7 +520,7 @@ test(
             ? [TahsiliQuestion.deleteMany({ questionId: { $in: tahsiliQuestionIds } })]
             : []),
           TahsiliQuestion.deleteMany({
-            sourceBook: 'integration-test',
+            sourceBook: `${marker}-integration-test`,
             text: /^سؤال تحصيلي تكاملي /,
           }),
           DiagnosticAttempt.deleteMany({ userId: studentId }),
@@ -524,7 +535,12 @@ test(
         ]);
         await User.deleteMany({ _id: { $in: studentIds } });
       }
-      if (connectedByTest && getConnectionStatus()) await disconnectFromMongoDB();
+      try {
+        if (connectedByTest && getConnectionStatus()) await disconnectFromMongoDB();
+      } finally {
+        if (originalMongoUri === undefined) delete process.env.MONGODB_URI;
+        else process.env.MONGODB_URI = originalMongoUri;
+      }
     }
   },
 );

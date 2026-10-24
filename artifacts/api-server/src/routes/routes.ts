@@ -74,6 +74,7 @@ import { authPhoneStorageCandidates } from '../services/authPhoneLookup';
 import { sendWhatsAppText } from '../services/whatsappService';
 import { readDeviceTrials, writeDeviceTrials } from '../services/deviceTrialStore';
 import { getClientIp } from '../middleware/sessionIp';
+import { isPublicLeaderboardEntry } from '../services/publicLeaderboard';
 import { sendStudentExamResult } from '../services/whatsappBot';
 import {
   getDeviceKey,
@@ -6848,8 +6849,8 @@ app.post("/api/auth/register", async (req: Request, res: Response) => {
       const userId = (req as any).session?.userId;
       const leaderboard = await storage.getLeaderboard(10000);
 
-      // Only real users — filter out all bots (userId >= 10000)
-      const realEntries = leaderboard.filter((e: any) => !e.isBot && (typeof e.userId === 'string' || e.userId < 10000));
+      // Never present synthetic/demo entries as real students in the public ranking.
+      const realEntries = leaderboard.filter(isPublicLeaderboardEntry);
 
       // Get user details for each entry
       const leaderboardWithUsers = await Promise.all(
@@ -6866,32 +6867,6 @@ app.post("/api/auth/register", async (req: Request, res: Response) => {
 
       // Sort by points
       leaderboardWithUsers.sort((a, b) => b.totalPoints - a.totalPoints);
-
-      // إذا كان عدد الطلاب الحقيقيين أقل من 10، نُكمل بأسماء عربية مولّدة
-      const fillNames = [
-        'أحمد السالم','نورة العمري','خالد الزهراني','سارة الحربي',
-        'عمر المطيري','ريم القحطاني','فهد الشمري','لطيفة البدر',
-        'سلطان الغامدي','هيفاء المالكي','بندر العنزي','منى الدوسري'
-      ];
-      const lastRealPoints = leaderboardWithUsers.length > 0
-        ? leaderboardWithUsers[leaderboardWithUsers.length - 1].totalPoints
-        : 80;
-      let fillIndex = 0;
-      while (leaderboardWithUsers.length < 10) {
-        const pts = Math.max(5, lastRealPoints - (fillIndex + 1) * 8);
-        leaderboardWithUsers.push({
-          userId: `gen_lb_${fillIndex}`,
-          username: fillNames[fillIndex % fillNames.length],
-          name: fillNames[fillIndex % fillNames.length],
-          totalPoints: pts,
-          totalTests: Math.floor(Math.random() * 15) + 2,
-          averageScore: Math.floor(Math.random() * 30) + 50,
-          rankChange: 'stable',
-          isBot: false,
-          isGenerated: true,
-        } as any);
-        fillIndex++;
-      }
 
       // Update ranks
       leaderboardWithUsers.forEach((entry, index) => {
@@ -6929,7 +6904,7 @@ app.post("/api/auth/register", async (req: Request, res: Response) => {
     try {
       const { month, year } = req.query;
       const leaderboard = await storage.getLeaderboard(10000);
-      const realEntries = leaderboard.filter((e: any) => !e.isBot && (typeof e.userId === 'string' || e.userId < 10000));
+      const realEntries = leaderboard.filter(isPublicLeaderboardEntry);
       const leaderboardWithUsers = await Promise.all(
         realEntries.map(async (entry: any) => {
           const user = await storage.getUser(entry.userId);
@@ -6993,8 +6968,7 @@ app.post("/api/auth/register", async (req: Request, res: Response) => {
     try {
       const leaderboard = await storage.getLeaderboard(10000);
 
-      // فقط الطلاب الحقيقيون (userId < 10000 وليسوا bots)
-      const realEntries = leaderboard.filter((e: any) => !e.isBot && (typeof e.userId === 'string' || e.userId < 10000));
+      const realEntries = leaderboard.filter(isPublicLeaderboardEntry);
 
       const leaderboardWithUsers = await Promise.all(
         realEntries.map(async (entry: any) => {
@@ -7007,20 +6981,6 @@ app.post("/api/auth/register", async (req: Request, res: Response) => {
       );
 
       leaderboardWithUsers.sort((a, b) => b.totalPoints - a.totalPoints);
-
-      // توليد طلاب مؤقتين لملء المراكز إذا كان العدد أقل من 3
-      const arabicNames = ['أحمد السالم','نورة العمري','خالد الزهراني','سارة الحربي','عمر المطيري','ريم القحطاني','فهد الشمري','لطيفة البدر','سلطان الغامدي','هيفاء المالكي'];
-      const lowestPoints = leaderboardWithUsers.length > 0 ? leaderboardWithUsers[leaderboardWithUsers.length - 1].totalPoints : 50;
-      while (leaderboardWithUsers.length < 3) {
-        const idx = leaderboardWithUsers.length;
-        leaderboardWithUsers.push({
-          userId: `gen_${idx}`,
-          username: arabicNames[idx % arabicNames.length],
-          totalPoints: Math.max(10, lowestPoints - (idx + 1) * 5),
-          totalTests: Math.floor(Math.random() * 10) + 1,
-          isBot: false,
-        } as any);
-      }
 
       const prizes = [999, 599, 399];
       const today = new Date();

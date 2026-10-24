@@ -277,7 +277,7 @@ test("institution activation, registration, assignments, access and isolation ar
       const pending = await request("/api/institution/membership", undefined, String(owner!._id));
       assert.equal(pending.body.membership, null);
       assert.ok(pending.body.pendingInstitution.contractLink);
-      const token = new URLSearchParams(new URL(created.body.contractLink).hash.slice(1)).get("token")!;
+      const token = new URLSearchParams(new URL(pending.body.pendingInstitution.contractLink).hash.slice(1)).get("token")!;
       assert.equal((await request("/api/institutions/contract-portal", { token: "x".repeat(43) })).status, 403);
       const portal = await request("/api/institutions/contract-portal", { token });
       const reference = portal.body.reference;
