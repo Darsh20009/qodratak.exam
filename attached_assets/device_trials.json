@@ -180,5 +180,12 @@
     "trialEndDate": "2026-10-26T05:28:45.242Z",
     "isActive": true,
     "createdAt": "2026-10-23T05:28:45.242Z"
+  },
+  {
+    "deviceId": "aj9ngl",
+    "trialStartDate": "2026-10-24T20:21:57.674Z",
+    "trialEndDate": "2026-10-27T20:21:57.674Z",
+    "isActive": true,
+    "createdAt": "2026-10-24T20:21:57.674Z"
   }
 ]
