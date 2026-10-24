@@ -242,6 +242,16 @@ test(
       assert.equal(tahsiliState.body.placementAssessment.totalQuestions, 32);
 
       assert.equal(await TestResult.countDocuments({ userId: studentId }), 2);
+      const placementPrograms = await TestResult.find({ userId: studentId })
+        .distinct('program');
+      assert.deepEqual(placementPrograms.sort(), ['qudrat', 'tahsili']);
+      const placementProfiles = await StudentLearningProfile.find({ userId: studentId })
+        .select('program')
+        .lean();
+      assert.deepEqual(
+        placementProfiles.map((profile) => profile.program).sort(),
+        ['qudrat', 'tahsili'],
+      );
       const savedLearningAttempts = await LearningAttempt.find({ studentId })
         .select('programId subjectId sourceType sourceKey metadata')
         .lean();
@@ -360,6 +370,20 @@ test(
       assert.equal(subjectTestSubmit.body.wrongAnswers, 2);
       assert.equal(subjectTestSubmit.body.percentage, 60);
       assert.ok(subjectTestSubmit.body.questions.every((question: any) => 'correctOptionIndex' in question));
+      const resultsAfterSubjectTest = await TestResult.find({ userId: studentId })
+        .select('program testId')
+        .lean();
+      assert.equal(resultsAfterSubjectTest.length, 3);
+      assert.equal(
+        resultsAfterSubjectTest.filter((result) => result.program === 'tahsili').length,
+        2,
+      );
+      assert.equal(
+        resultsAfterSubjectTest.filter(
+          (result) => result.testId === subjectTestStart.body.attemptId,
+        ).length,
+        1,
+      );
 
       const subjectTestAttempts = await LearningAttempt.find({
         studentId,
@@ -448,10 +472,22 @@ test(
       );
       assert.equal(qiyasSubmission.response.status, 201);
       assert.equal(qiyasSubmission.body.learningAttemptsRecorded, 1);
+      const savedTestResults = await TestResult.find({ userId: studentId })
+        .select('program testId testType')
+        .lean();
+      assert.equal(savedTestResults.length, 4);
+      assert.equal(savedTestResults.filter((result) => result.program === 'qudrat').length, 2);
+      assert.equal(savedTestResults.filter((result) => result.program === 'tahsili').length, 2);
+      assert.equal(savedTestResults.filter((result) => result.testType === 'qiyas').length, 1);
       assert.equal(
-        await TestResult.countDocuments({ userId: studentId }),
-        4,
-        'two diagnostic attempts, one Tahsili subject test, and one Qiyas result are saved',
+        savedTestResults.filter((result) => result.testId === subjectTestStart.body.attemptId).length,
+        1,
+      );
+      assert.equal(
+        savedTestResults.filter((result) =>
+          String(result.testId || '').startsWith('foundation-placement-'),
+        ).length,
+        2,
       );
       const savedExamAttempt = await LearningAttempt.findOne({
         studentId,
