@@ -184,7 +184,6 @@ installAdminFetchBridge();
 // only when opened keeps the first visit, especially on mobile data, lightweight.
 const LearningHubPage = React.lazy(() => import("@/pages/LearningHubPage"));
 const PerformanceReportPage = React.lazy(() => import("@/pages/PerformanceReportPage"));
-const PaperExamResultsPage = React.lazy(() => import("@/pages/PaperExamResultsPage"));
 const PaperExamPage = React.lazy(() => import("@/pages/PaperExamPage"));
 const PaperModelsPage = React.lazy(() => import("@/pages/PaperModelsPage"));
 
@@ -1340,7 +1339,7 @@ function Router({ splashDone }: { splashDone: boolean }) {
       </Route>
 
       <Route path="/paper-exam-results">
-        {() => <StudentShell><ProtectedRoute requiresPremium={true}><PaperExamResultsPage /></ProtectedRoute></StudentShell>}
+        {() => <StudentShell><ProtectedRoute requiresPremium={true}><PaperExamPage /></ProtectedRoute></StudentShell>}
       </Route>
 
       <Route path="/paper-models">

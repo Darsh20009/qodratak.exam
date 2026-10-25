@@ -1,5 +1,4 @@
-import { useState, useEffect } from 'react';
-import { useMutation, useQuery } from '@tanstack/react-query';
+import { useEffect, useRef, useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
@@ -7,113 +6,203 @@ import { Label } from '@/components/ui/label';
 import { Progress } from '@/components/ui/progress';
 import { useToast } from '@/hooks/use-toast';
 import { apiRequest } from '@/lib/queryClient';
-import { Timer, CheckCircle2, AlertCircle, BarChart3 } from 'lucide-react';
+import { AlertCircle, CheckCircle2, ChevronLeft, ChevronRight, Flag, LoaderCircle, ListChecks, Save, Timer } from 'lucide-react';
 
 interface Question {
   id: number;
   category: string;
   text: string;
   options: string[];
-  correctOptionIndex: number;
+  imageUrl?: string;
+  imageUrls?: string[];
+  isTrial?: boolean;
 }
 
 interface PaperExam {
-  id: number;
+  id: string;
   title: string;
+  program: 'qudrat' | 'tahsili';
   totalQuestions: number;
-  trialQuestions: number;
-  examType: string;
   timeLimit: number;
-  status: string;
-}
-
-interface QuestionDetail {
-  questionNumber: number;
-  questionId: number;
-  category: string;
-  status: 'correct' | 'wrong' | 'skipped';
-  userAnswer: number | null;
-  correctAnswer: number;
+  expiresAt: string;
 }
 
 interface ExamResult {
+  totalQuestions: number;
+  scoredQuestions: number;
   totalScore: number;
-  verbalScore?: number;
-  quantitativeScore?: number;
   totalPercentage: number;
-  verbalPercentage?: number;
-  quantitativePercentage?: number;
   correctAnswers: number;
   wrongAnswers: number;
   skippedQuestions: number;
-  questionDetails?: QuestionDetail[];
+  verbalScore?: number;
+  verbalTotal?: number;
+  verbalPercentage?: number;
+  quantitativeScore?: number;
+  quantitativeTotal?: number;
+  quantitativePercentage?: number;
+  timeTaken: number;
+  timedOut: boolean;
+  questionDetails: Array<{
+    questionNumber: number;
+    category: string;
+    status: 'correct' | 'wrong' | 'skipped' | 'trial';
+    userAnswer: number | null;
+    correctAnswer: number;
+    isTrial: boolean;
+  }>;
+  incorrectQuestions: Array<{
+    questionIndex: number;
+    userAnswer: number | null;
+    correctAnswer: number;
+    question: Question & { correctOptionIndex: number; explanation?: string };
+  }>;
 }
 
 interface AnswerInputStepProps {
   exam: PaperExam;
+  questions: Question[];
+  initialAnswers: Record<number, number>;
+  initialReviewQuestionNumbers: number[];
   onSubmit: (result: ExamResult) => void;
 }
 
-export default function AnswerInputStep({ exam, onSubmit }: AnswerInputStepProps) {
+export default function AnswerInputStep({
+  exam,
+  questions,
+  initialAnswers,
+  initialReviewQuestionNumbers,
+  onSubmit,
+}: AnswerInputStepProps) {
   const { toast } = useToast();
-  const [userAnswers, setUserAnswers] = useState<Record<number, number>>({});
-  const [timeRemaining, setTimeRemaining] = useState(exam.timeLimit * 60);
-  const [timerActive, setTimerActive] = useState(true);
-  const [startTime] = useState(Date.now()); // Track start time for timeTaken calculation
-
-  const { data: questions = [], isLoading } = useQuery({
-    queryKey: ['/api/paper-exams', exam.id, 'questions'],
-    queryFn: async () => {
-      const response = await apiRequest('GET', `/api/paper-exams/${exam.id}/questions?count=${exam.totalQuestions}`);
-      return await response.json();
-    },
-    enabled: !!exam.id,
-  });
+  const [answers, setAnswers] = useState<Record<number, number>>(initialAnswers);
+  const [reviewQuestionNumbers, setReviewQuestionNumbers] = useState<number[]>(initialReviewQuestionNumbers);
+  const [currentIndex, setCurrentIndex] = useState(0);
+  const [showReview, setShowReview] = useState(false);
+  const [timeRemaining, setTimeRemaining] = useState(() =>
+    Math.max(0, Math.ceil((new Date(exam.expiresAt).getTime() - Date.now()) / 1000)),
+  );
+  const [saving, setSaving] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+  const answerStateRef = useRef(answers);
+  const reviewStateRef = useRef(reviewQuestionNumbers);
+  const saveQueueRef = useRef<Promise<void>>(Promise.resolve());
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const submitStartedRef = useRef(false);
+  const timeoutHandledRef = useRef(false);
+  const currentQuestion = questions[currentIndex];
+  const answeredCount = Object.keys(answers).length;
+  const flaggedCount = reviewQuestionNumbers.length;
 
   useEffect(() => {
-    let interval: NodeJS.Timeout;
-    if (timerActive && timeRemaining > 0) {
-      interval = setInterval(() => {
-        setTimeRemaining((prev) => {
-          if (prev <= 1) {
-            setTimerActive(false);
-            toast({
-              title: 'انتهى الوقت!',
-              description: 'تم انتهاء الوقت المخصص للاختبار',
-              variant: 'destructive',
-            });
-            return 0;
-          }
-          return prev - 1;
-        });
-      }, 1000);
-    }
-    return () => clearInterval(interval);
-  }, [timerActive, timeRemaining, toast]);
+    answerStateRef.current = answers;
+    reviewStateRef.current = reviewQuestionNumbers;
+  }, [answers, reviewQuestionNumbers]);
 
-  const submitAnswersMutation = useMutation({
-    mutationFn: async (data: { examId: number; answers: Record<number, number>; timeTaken: number }) => {
-      const response = await apiRequest('POST', `/api/paper-exams/${data.examId}/submit`, {
-        answers: data.answers,
-        timeTaken: data.timeTaken,
+  const enqueueSave = (nextAnswers: Record<number, number>, nextReview: number[]) => {
+    const save = async () => {
+      const response = await apiRequest('PUT', `/api/paper-exams/${encodeURIComponent(exam.id)}/answers`, {
+        answers: Object.fromEntries(Object.entries(nextAnswers).map(([number, answer]) => [number, answer])),
+        reviewQuestionNumbers: nextReview,
       });
-      return await response.json();
-    },
-    onSuccess: (result: ExamResult) => {
-      onSubmit(result);
+      if (!response.ok) {
+        const body = await response.json().catch(() => ({}));
+        throw new Error(body?.error || 'تعذر حفظ الإجابات');
+      }
+    };
+    const queued = saveQueueRef.current.catch(() => undefined).then(save);
+    saveQueueRef.current = queued;
+    return queued;
+  };
+
+  useEffect(() => {
+    if (!questions.length || timeRemaining === 0 || submitting) return;
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    debounceRef.current = setTimeout(() => {
+      setSaving(true);
+      void enqueueSave(answerStateRef.current, reviewStateRef.current)
+        .catch((error) => {
+          toast({
+            title: 'تعذر حفظ الإجابات',
+            description: error instanceof Error ? error.message : 'تحقق من الاتصال ثم أعد المحاولة.',
+            variant: 'destructive',
+          });
+        })
+        .finally(() => setSaving(false));
+    }, 250);
+    return () => {
+      if (debounceRef.current) clearTimeout(debounceRef.current);
+    };
+  }, [answers, reviewQuestionNumbers, questions.length, timeRemaining, submitting, toast]);
+
+  useEffect(() => {
+    const timer = setInterval(() => {
+      const remaining = Math.max(0, Math.ceil((new Date(exam.expiresAt).getTime() - Date.now()) / 1000));
+      setTimeRemaining(remaining);
+    }, 1000);
+    return () => clearInterval(timer);
+  }, [exam.expiresAt]);
+
+  const submitAttempt = async (timedOut: boolean) => {
+    if (submitStartedRef.current) return;
+    submitStartedRef.current = true;
+    setSubmitting(true);
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    try {
+      if (!timedOut) {
+        await enqueueSave(answerStateRef.current, reviewStateRef.current);
+      } else {
+        await saveQueueRef.current.catch(() => undefined);
+      }
+      const response = await apiRequest('POST', `/api/paper-exams/${encodeURIComponent(exam.id)}/submit`, {});
+      const body = await response.json();
+      if (!response.ok) throw new Error(body?.error || 'تعذر تسليم الاختبار');
+      onSubmit(body.result as ExamResult);
       toast({
         title: 'تم تصحيح الاختبار',
-        description: `درجتك: ${result.totalPercentage}%`,
+        description: `نتيجتك ${body.result?.totalPercentage ?? 0}%`,
       });
-    },
-    onError: () => {
+    } catch (error) {
+      submitStartedRef.current = false;
+      setSubmitting(false);
       toast({
-        title: 'خطأ',
-        description: 'فشل تصحيح الاختبار',
+        title: 'تعذر تسليم الاختبار',
+        description: error instanceof Error ? error.message : 'حاول مرة أخرى.',
         variant: 'destructive',
       });
-    },
-  });
+    }
+  };
+
+  useEffect(() => {
+    if (timeRemaining !== 0 || timeoutHandledRef.current || !questions.length) return;
+    timeoutHandledRef.current = true;
+    toast({
+      title: 'انتهى الوقت',
+      description: 'سيتم تصحيح الإجابات المحفوظة على الخادم.',
+      variant: 'destructive',
+    });
+    void submitAttempt(true);
+  }, [timeRemaining, questions.length, toast]);
+
+  const changeAnswer = (questionNumber: number, rawValue: string) => {
+    if (timeRemaining <= 0 || submitting) return;
+    setAnswers((current) => ({ ...current, [questionNumber]: Number(rawValue) }));
+  };
+
+  const toggleReview = (questionNumber: number) => {
+    if (submitting) return;
+    setReviewQuestionNumbers((current) => current.includes(questionNumber)
+      ? current.filter((number) => number !== questionNumber)
+      : [...current, questionNumber].sort((a, b) => a - b));
+  };
+
+  const handleManualSubmit = () => {
+    if (answeredCount < questions.length) {
+      const unanswered = questions.length - answeredCount;
+      if (!window.confirm(`تبقى ${unanswered} أسئلة بلا إجابة. هل تريد تسليم الاختبار؟`)) return;
+    }
+    void submitAttempt(timeRemaining <= 0);
+  };
 
   const formatTime = (seconds: number) => {
     const hours = Math.floor(seconds / 3600);
@@ -122,207 +211,144 @@ export default function AnswerInputStep({ exam, onSubmit }: AnswerInputStepProps
     return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
   };
 
-  const handleAnswerChange = (questionId: number, value: string) => {
-    const answerIndex = parseInt(value);
-    console.log(`إجابة السؤال ${questionId}: ${answerIndex}`);
-    setUserAnswers((prev) => ({
-      ...prev,
-      [questionId]: answerIndex
-    }));
-  };
-
-  const handleSubmit = () => {
-    const answeredQuestions = Object.keys(userAnswers).length;
-
-    if (answeredQuestions === 0) {
-      toast({
-        title: 'تنبيه',
-        description: 'لم تقم بالإجابة على أي سؤال',
-        variant: 'destructive',
-      });
-      return;
-    }
-
-    const timeTaken = exam.timeLimit * 60 - timeRemaining;
-    submitAnswersMutation.mutate({
-      examId: exam.id,
-      answers: userAnswers,
-      timeTaken,
-    });
-    setTimerActive(false);
-  };
-
-  const answeredCount = Object.keys(userAnswers).length;
-  const progress = (answeredCount / exam.totalQuestions) * 100;
-
-  if (isLoading) {
-    return (
-      <Card>
-        <CardContent className="py-12">
-          <p className="text-center text-muted-foreground">جاري تحميل الأسئلة...</p>
-        </CardContent>
-      </Card>
-    );
+  if (!questions.length) {
+    return <Card><CardContent className="py-12 text-center text-muted-foreground">لا توجد أسئلة في هذه المحاولة.</CardContent></Card>;
   }
 
+  const progress = (answeredCount / questions.length) * 100;
+
   return (
-    <div className="space-y-6 relative">
-      {/* حاسبة الوقت - تصميم بسيط ومركز */}
-      <Card className="relative z-10 border-2 border-green-600 shadow-2xl">
-        <CardContent className="py-8">
-          <div className="flex flex-col items-center gap-6">
-            <div className="text-center">
-              <h3 className="text-2xl font-bold mb-2">⏱️ الوقت المتبقي</h3>
-              <p className="text-muted-foreground">راقب الوقت وأدخل إجاباتك بعناية</p>
+    <div className="mx-auto w-full max-w-5xl space-y-4" dir="rtl">
+      <Card className="sticky top-2 z-20 border-primary/20 shadow-sm">
+        <CardContent className="flex flex-wrap items-center justify-between gap-3 p-4">
+          <div>
+            <p className="font-bold">{exam.title}</p>
+            <p className="text-sm text-muted-foreground">السؤال {currentIndex + 1} من {questions.length}</p>
+          </div>
+          <div className={`flex items-center gap-2 rounded-xl px-4 py-2 font-mono text-lg font-bold ${timeRemaining <= 300 ? 'bg-red-100 text-red-700 dark:bg-red-950 dark:text-red-300' : 'bg-muted'}`}>
+            <Timer className="h-5 w-5" aria-hidden="true" />
+            <span aria-live="polite">{formatTime(timeRemaining)}</span>
+          </div>
+          <div className="min-w-36 flex-1 sm:max-w-56">
+            <div className="mb-1 flex justify-between text-xs text-muted-foreground">
+              <span>الإجابات</span><span>{answeredCount}/{questions.length}</span>
             </div>
+            <Progress value={progress} />
+          </div>
+          <div className="flex items-center gap-1 text-xs text-muted-foreground" aria-live="polite">
+            {saving ? <LoaderCircle className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
+            {saving ? 'جارٍ الحفظ' : 'محفوظة تلقائيًا'}
+          </div>
+        </CardContent>
+      </Card>
 
-            <div className={`
-              text-6xl font-mono font-bold px-12 py-6 rounded-2xl
-              ${timeRemaining <= 300
-                ? 'bg-red-100 text-red-600 dark:bg-red-950 dark:text-red-400 animate-pulse'
-                : 'bg-gradient-to-r from-green-100 to-emerald-100 text-green-700 dark:from-green-950 dark:to-emerald-950 dark:text-green-300'
-              }
-            `} data-testid="text-timer">
-              {formatTime(timeRemaining)}
+      <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_17rem]">
+        <Card className="min-h-[25rem]">
+          <CardHeader>
+            <CardDescription className="flex items-center justify-between gap-2">
+              <span>{exam.program === 'tahsili' ? currentQuestion?.category : currentQuestion?.category === 'verbal' ? 'القسم اللفظي' : 'القسم الكمي'}</span>
+              {currentQuestion?.isTrial && <span className="rounded-full bg-blue-100 px-3 py-1 text-blue-800 dark:bg-blue-950 dark:text-blue-200">سؤال تجريبي</span>}
+            </CardDescription>
+            <CardTitle className="text-lg leading-8 sm:text-xl">السؤال {currentIndex + 1}</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-6">
+            <p className="whitespace-pre-wrap text-base leading-8">{currentQuestion?.text}</p>
+            {(currentQuestion?.imageUrls?.length ? currentQuestion.imageUrls : currentQuestion?.imageUrl ? [currentQuestion.imageUrl] : []).map((imageUrl, imageIndex) => (
+              <img key={`${imageUrl}-${imageIndex}`} src={imageUrl} alt={`شكل توضيحي للسؤال ${currentIndex + 1}`} className="mx-auto max-h-80 max-w-full rounded-xl border object-contain" loading="lazy" />
+            ))}
+            <RadioGroup
+              value={answers[currentIndex + 1] === undefined ? undefined : String(answers[currentIndex + 1])}
+              onValueChange={(value) => changeAnswer(currentIndex + 1, value)}
+              disabled={timeRemaining <= 0 || submitting}
+              className="grid gap-3 sm:grid-cols-2"
+            >
+              {currentQuestion?.options.map((option, optionIndex) => (
+                <Label
+                  key={optionIndex}
+                  htmlFor={`paper-q${currentIndex + 1}-o${optionIndex}`}
+                  className={`flex min-h-14 cursor-pointer items-center gap-3 rounded-xl border p-3 transition-colors ${answers[currentIndex + 1] === optionIndex ? 'border-primary bg-primary/5' : 'hover:bg-muted/60'}`}
+                >
+                  <RadioGroupItem id={`paper-q${currentIndex + 1}-o${optionIndex}`} value={String(optionIndex)} />
+                  <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full border text-sm font-bold">{['أ', 'ب', 'ج', 'د'][optionIndex] ?? optionIndex + 1}</span>
+                  <span className="leading-7">{option}</span>
+                </Label>
+              ))}
+            </RadioGroup>
+
+            <div className="flex flex-wrap items-center justify-between gap-2 border-t pt-4">
+              <Button variant="outline" disabled={currentIndex === 0} onClick={() => setCurrentIndex((index) => Math.max(0, index - 1))}>
+                <ChevronRight className="ml-2 h-4 w-4" /> السابق
+              </Button>
+              <Button
+                type="button"
+                variant={reviewQuestionNumbers.includes(currentIndex + 1) ? 'default' : 'outline'}
+                onClick={() => toggleReview(currentIndex + 1)}
+                aria-pressed={reviewQuestionNumbers.includes(currentIndex + 1)}
+              >
+                <Flag className="ml-2 h-4 w-4" />
+                {reviewQuestionNumbers.includes(currentIndex + 1) ? 'إزالة علامة المراجعة' : 'علّم للمراجعة'}
+              </Button>
+              <Button variant="outline" disabled={currentIndex === questions.length - 1} onClick={() => setCurrentIndex((index) => Math.min(questions.length - 1, index + 1))}>
+                التالي <ChevronLeft className="mr-2 h-4 w-4" />
+              </Button>
             </div>
+          </CardContent>
+        </Card>
 
-            {timeRemaining === 0 && (
-              <div className="bg-red-50 dark:bg-red-950 p-4 rounded-lg flex items-center gap-2 max-w-md">
-                <AlertCircle className="w-5 h-5 text-red-600 dark:text-red-400" />
-                <p className="text-sm text-red-800 dark:text-red-200">
-                  انتهى الوقت! يمكنك الاستمرار في إدخال الإجابات أو تقديم الاختبار الآن.
-                </p>
+        <Card className="h-fit">
+          <CardHeader className="pb-3">
+            <CardTitle className="flex items-center gap-2 text-base"><ListChecks className="h-5 w-5" />ورقة التظليل</CardTitle>
+            <CardDescription>اختر رقمًا للانتقال للسؤال. المعلّم للمراجعة يظهر باللون البرتقالي.</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="grid grid-cols-5 gap-2 sm:grid-cols-8 lg:grid-cols-5">
+              {questions.map((question, index) => {
+                const number = index + 1;
+                const marked = reviewQuestionNumbers.includes(number);
+                const answered = answers[number] !== undefined;
+                return (
+                  <button
+                    key={question.id}
+                    type="button"
+                    onClick={() => { setCurrentIndex(index); setShowReview(false); }}
+                    aria-label={`السؤال ${number}${answered ? ' تمت الإجابة' : ' بلا إجابة'}${marked ? ' للمراجعة' : ''}`}
+                    aria-current={index === currentIndex ? 'step' : undefined}
+                    className={`min-h-10 rounded-lg border text-sm font-semibold transition-colors ${index === currentIndex ? 'ring-2 ring-primary ring-offset-2' : ''} ${marked ? 'border-amber-500 bg-amber-100 text-amber-900 dark:bg-amber-950 dark:text-amber-200' : answered ? 'border-emerald-500 bg-emerald-50 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-200' : 'bg-background hover:bg-muted'}`}
+                  >
+                    {number}
+                  </button>
+                );
+              })}
+            </div>
+            <div className="flex flex-wrap gap-3 text-xs text-muted-foreground">
+              <span className="flex items-center gap-1"><span className="h-3 w-3 rounded border border-emerald-500 bg-emerald-100" /> مجاب</span>
+              <span className="flex items-center gap-1"><span className="h-3 w-3 rounded border border-amber-500 bg-amber-100" /> للمراجعة</span>
+              <span className="flex items-center gap-1"><span className="h-3 w-3 rounded border" /> بلا إجابة</span>
+            </div>
+            <Button type="button" variant="outline" className="w-full" onClick={() => setShowReview((visible) => !visible)}>
+              {showReview ? 'إخفاء المراجعة النهائية' : 'مراجعة نهائية قبل التسليم'}
+            </Button>
+            {showReview && (
+              <div className="space-y-2 rounded-xl border p-3" aria-live="polite">
+                <p className="font-semibold">ملخص قبل التسليم</p>
+                <p className="text-sm text-muted-foreground">أجبت عن {answeredCount}، والمتبقي {questions.length - answeredCount}، وعلامات المراجعة {flaggedCount}.</p>
+                <div className="max-h-40 space-y-1 overflow-y-auto">
+                  {questions.map((question, index) => (
+                    <button key={question.id} type="button" className="flex w-full items-center justify-between rounded-md px-2 py-1 text-sm hover:bg-muted" onClick={() => setCurrentIndex(index)}>
+                      <span>السؤال {index + 1}</span>
+                      <span>{reviewQuestionNumbers.includes(index + 1) ? 'للمراجعة' : answers[index + 1] === undefined ? 'بلا إجابة' : 'تمت الإجابة'}</span>
+                    </button>
+                  ))}
+                </div>
               </div>
             )}
-          </div>
-        </CardContent>
-      </Card>
-
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5 gap-4 relative z-10">
-        {questions.map((question: Question, index: number) => {
-          const questionNum = index + 1;
-          const isAnswered = userAnswers[questionNum] !== undefined;
-          return (
-            <Card
-              key={question.id}
-              className={`
-                transition-all duration-300 hover:shadow-xl
-                ${isAnswered
-                  ? 'border-2 border-green-500 bg-gradient-to-br from-green-50 to-emerald-50 dark:from-green-950 dark:to-emerald-950'
-                  : 'border-2 border-gray-200 hover:border-green-400'
-                }
-              `}
-            >
-              <CardHeader className="pb-2">
-                <CardTitle className="text-base flex items-center justify-between">
-                  <span className="flex items-center gap-2">
-                    <div className={`
-                      w-8 h-8 rounded-full flex items-center justify-center font-bold text-sm
-                      ${isAnswered
-                        ? 'bg-gradient-to-r from-green-500 to-emerald-500 text-white'
-                        : 'bg-gradient-to-r from-green-600 to-emerald-500 text-white'
-                      }
-                    `}>
-                      {questionNum}
-                    </div>
-                    <span className="text-sm font-semibold">السؤال</span>
-                  </span>
-                  {isAnswered && (
-                    <CheckCircle2 className="w-5 h-5 text-green-600 animate-pulse" />
-                  )}
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <RadioGroup
-                  value={userAnswers[questionNum] !== undefined ? userAnswers[questionNum].toString() : undefined}
-                  onValueChange={(value) => handleAnswerChange(questionNum, value)}
-                >
-                  <div className="grid grid-cols-2 gap-2">
-                    {['أ', 'ب', 'ج', 'د'].map((option, optionIndex) => (
-                      <div
-                        key={optionIndex}
-                        className={`
-                          flex items-center space-x-2 space-x-reverse p-2 rounded-lg transition-all
-                          ${userAnswers[questionNum] === optionIndex
-                            ? 'bg-gradient-to-r from-green-100 to-emerald-100 dark:from-green-900 dark:to-emerald-900'
-                            : 'hover:bg-gray-50 dark:hover:bg-gray-800'
-                          }
-                        `}
-                      >
-                        <RadioGroupItem
-                          value={optionIndex.toString()}
-                          id={`q${question.id}-opt${optionIndex}`}
-                          data-testid={`radio-q${question.id}-opt${optionIndex}`}
-                          checked={userAnswers[questionNum] === optionIndex}
-                          className="border-2"
-                        />
-                        <Label
-                          htmlFor={`q${question.id}-opt${optionIndex}`}
-                          className="cursor-pointer font-semibold text-base"
-                        >
-                          {option}
-                        </Label>
-                      </div>
-                    ))}
-                  </div>
-                </RadioGroup>
-              </CardContent>
-            </Card>
-          );
-        })}
-      </div>
-
-      <Card className="relative z-10 border-2 border-gradient-to-r from-green-500 to-blue-500 shadow-xl">
-        <CardContent className="pt-6">
-          <div className="flex flex-col md:flex-row justify-between items-center gap-6">
-            <div className="flex-1">
-              <div className="bg-gradient-to-r from-green-50 to-emerald-50 dark:from-green-950 dark:to-emerald-950 p-6 rounded-lg border-2 border-green-200 dark:border-green-800">
-                <div className="flex items-center gap-4 mb-4">
-                  <div className="bg-gradient-to-r from-green-600 to-emerald-500 text-white w-12 h-12 rounded-full flex items-center justify-center font-bold text-xl">
-                    {answeredCount}
-                  </div>
-                  <div>
-                    <p className="text-lg font-bold text-green-900 dark:text-green-100">
-                      تم الإجابة على {answeredCount} من {exam.totalQuestions} سؤال
-                    </p>
-                    <p className="text-sm text-green-700 dark:text-green-300 mt-1">
-                      الأسئلة المتبقية: {exam.totalQuestions - answeredCount}
-                    </p>
-                  </div>
-                </div>
-                <div className="h-3 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
-                  <div
-                    className="h-full bg-gradient-to-r from-green-500 to-emerald-500 transition-all duration-500"
-                    style={{ width: `${(answeredCount / exam.totalQuestions) * 100}%` }}
-                  />
-                </div>
-              </div>
-              <div className="mt-4 text-center text-sm text-gray-600 dark:text-gray-400">
-                جميع الحقوق محفوظة © {new Date().getFullYear()} - منصة قدراتك
-              </div>
-            </div>
-            <Button
-              onClick={handleSubmit}
-              disabled={submitAnswersMutation.isPending || answeredCount === 0}
-              size="lg"
-              data-testid="button-submit-answers"
-              className="bg-gradient-to-r from-green-700 to-emerald-600 hover:from-green-800 hover:to-emerald-700 text-white text-xl px-8 py-6 rounded-xl shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:scale-105"
-            >
-              {submitAnswersMutation.isPending ? (
-                <span className="flex items-center gap-2">
-                  <div className="animate-spin rounded-full h-5 w-5 border-2 border-white border-t-transparent" />
-                  جاري التصحيح...
-                </span>
-              ) : (
-                <span className="flex items-center gap-2">
-                  <CheckCircle2 className="w-6 h-6" />
-                  تقديم الإجابات
-                </span>
-              )}
+            {timeRemaining <= 0 && <p className="flex items-start gap-2 text-sm text-destructive"><AlertCircle className="mt-0.5 h-4 w-4 shrink-0" /> انتهى الوقت؛ تم إيقاف تغيير الإجابات.</p>}
+            <Button className="w-full" disabled={submitting || saving} onClick={handleManualSubmit} data-testid="button-submit-answers">
+              {submitting ? <><LoaderCircle className="ml-2 h-4 w-4 animate-spin" />جاري التسليم والتصحيح...</> : <><CheckCircle2 className="ml-2 h-4 w-4" />تسليم الاختبار</>}
             </Button>
-          </div>
-        </CardContent>
-      </Card>
+          </CardContent>
+        </Card>
+      </div>
     </div>
   );
 }

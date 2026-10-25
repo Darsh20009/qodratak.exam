@@ -522,6 +522,27 @@ export interface ITestResult extends Document {
   completedAt: Date;
 }
 
+export interface IPaperExamAttempt extends Document {
+  ownerUserId: string;
+  title: string;
+  program: 'qudrat' | 'tahsili';
+  subjectId?: string;
+  distribution: 'mixed' | 'verbal' | 'quantitative' | 'custom' | 'subject';
+  totalQuestions: number;
+  trialQuestions: number;
+  timeLimitMinutes: number;
+  startedAt: Date;
+  expiresAt: Date;
+  status: 'in_progress' | 'submitted';
+  questions: Array<Record<string, unknown>>;
+  answers: Record<string, number>;
+  reviewQuestionNumbers: number[];
+  result?: Record<string, unknown>;
+  submittedAt?: Date;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
 const testResultSchema = new Schema<ITestResult>({
   userId: { type: String, required: true, index: true },
   program: {
@@ -567,6 +588,27 @@ testResultSchema.post('save', async function (result) {
     await enqueueSavedTestResult(result);
   } catch { console.warn('[Exam result WhatsApp] result saved; notification enqueue will be retried'); }
 });
+
+const paperExamAttemptSchema = new Schema<IPaperExamAttempt>({
+  ownerUserId: { type: String, required: true, index: true },
+  title: { type: String, required: true, maxlength: 120 },
+  program: { type: String, enum: ['qudrat', 'tahsili'], required: true, index: true },
+  subjectId: { type: String, trim: true },
+  distribution: { type: String, enum: ['mixed', 'verbal', 'quantitative', 'custom', 'subject'], required: true },
+  totalQuestions: { type: Number, required: true, min: 10, max: 200 },
+  trialQuestions: { type: Number, required: true, min: 0 },
+  timeLimitMinutes: { type: Number, required: true, min: 30, max: 300 },
+  startedAt: { type: Date, required: true, index: true },
+  expiresAt: { type: Date, required: true, index: true },
+  status: { type: String, enum: ['in_progress', 'submitted'], required: true, default: 'in_progress', index: true },
+  questions: { type: [Schema.Types.Mixed] as any, required: true },
+  answers: { type: Schema.Types.Mixed, default: {} },
+  reviewQuestionNumbers: { type: [Number], default: [] },
+  result: { type: Schema.Types.Mixed },
+  submittedAt: { type: Date },
+}, { timestamps: true });
+
+paperExamAttemptSchema.index({ ownerUserId: 1, status: 1, startedAt: -1 });
 
 export interface IQuestion extends Document {
   questionId: number;
@@ -1309,6 +1351,9 @@ export const InstitutionRequest = mongoose.model<IInstitutionRequest>('Instituti
 export const Admin = mongoose.model<IAdmin>('Admin', adminSchema);
 export const Subscription = mongoose.model<ISubscription>('Subscription', subscriptionSchema);
 export const TestResult = mongoose.model<ITestResult>('TestResult', testResultSchema);
+export const PaperExamAttempt = mongoose.models['PaperExamAttempt']
+  ? mongoose.model<IPaperExamAttempt>('PaperExamAttempt')
+  : mongoose.model<IPaperExamAttempt>('PaperExamAttempt', paperExamAttemptSchema);
 export const Question = mongoose.model<IQuestion>('Question', questionSchema);
 
 // ─── Tahsili scanned-book questions ─────────────────────────────────────────

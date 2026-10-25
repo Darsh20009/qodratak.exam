@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { apiRequest } from '@/lib/queryClient';
 import ExamSetupStep from '@/components/paper-exam/ExamSetupStep';
@@ -14,22 +14,25 @@ interface Question {
   category: string;
   text: string;
   options: string[];
-  correctOptionIndex: number;
+  isTrial?: boolean;
   explanation?: string;
   hint?: string;
   imageUrl?: string;
+  imageUrls?: string[];
 }
 
 interface PaperExam {
-  id: number;
+  id: string;
   title: string;
   totalQuestions: number;
   trialQuestions: number;
-  examType: string;
+  program: 'qudrat' | 'tahsili';
+  subjectId?: string;
+  distribution: string;
   timeLimit: number;
   status: string;
-  questions: Question[];
-  answerKey: any[];
+  startedAt: string;
+  expiresAt: string;
 }
 
 interface ExamResult {
@@ -42,12 +45,31 @@ interface ExamResult {
   correctAnswers: number;
   wrongAnswers: number;
   skippedQuestions: number;
+  scoredQuestions: number;
+  timeTaken: number;
+  timedOut: boolean;
+  questionDetails: Array<{
+    questionNumber: number;
+    category: string;
+    status: 'correct' | 'wrong' | 'skipped' | 'trial';
+    userAnswer: number | null;
+    correctAnswer: number;
+    isTrial: boolean;
+  }>;
   incorrectQuestions?: {
     questionIndex: number;
-    question: Question;
-    userAnswer: number;
+    question: Question & { correctOptionIndex: number };
+    userAnswer: number | null;
     correctAnswer: number;
   }[];
+}
+
+interface PaperExamState {
+  exam: PaperExam;
+  questions: Question[];
+  answers: Record<string, number>;
+  reviewQuestionNumbers: number[];
+  result?: ExamResult;
 }
 
 type ExamStep = 'setup' | 'download' | 'input' | 'results';
@@ -58,6 +80,9 @@ export default function PaperExamPage() {
   const [currentExam, setCurrentExam] = useState<PaperExam | null>(null);
   const [questions, setQuestions] = useState<Question[]>([]);
   const [examResult, setExamResult] = useState<ExamResult | null>(null);
+  const [savedAnswers, setSavedAnswers] = useState<Record<string, number>>({});
+  const [savedReviewQuestionNumbers, setSavedReviewQuestionNumbers] = useState<number[]>([]);
+  const [isRestoring, setIsRestoring] = useState(() => Boolean(sessionStorage.getItem('paperExamAttemptId')));
   const [pdfModal, setPdfModal] = useState({
     isOpen: false,
     currentPage: 0,
@@ -65,41 +90,40 @@ export default function PaperExamPage() {
     fileName: ''
   });
 
-  const fetchQuestions = async (examId: number, totalQuestions: number = 120) => {
-    try {
-      console.log('جاري تحميل الأسئلة...', { examId, totalQuestions });
-      const response = await apiRequest('GET', `/api/paper-exams/${examId}/questions?count=${totalQuestions}`);
-
-      if (!response.ok) {
-        throw new Error(`فشل في تحميل الأسئلة: ${response.status}`);
-      }
-
-      const data = await response.json();
-      console.log('تم تحميل الأسئلة:', data.length);
-
-      if (!data || data.length === 0) {
-        toast({
-          title: 'تنبيه',
-          description: 'لا توجد أسئلة متاحة حالياً. جاري المحاولة مرة أخرى...',
-          variant: 'destructive',
-        });
-        return;
-      }
-
-      setQuestions(data);
-      toast({
-        title: 'تم التحميل',
-        description: `تم تحميل ${data.length} سؤال بنجاح`,
-      });
-    } catch (error) {
-      console.error('خطأ في تحميل الأسئلة:', error);
-      toast({
-        title: 'خطأ',
-        description: 'فشل تحميل الأسئلة. حاول مرة أخرى',
-        variant: 'destructive',
-      });
+  useEffect(() => {
+    const attemptId = sessionStorage.getItem('paperExamAttemptId');
+    if (!attemptId) {
+      setIsRestoring(false);
+      return;
     }
-  };
+    let cancelled = false;
+    void (async () => {
+      try {
+        const response = await apiRequest('GET', `/api/paper-exams/${encodeURIComponent(attemptId)}`);
+        if (!response.ok) throw new Error('تعذر استعادة المحاولة');
+        const state = await response.json() as PaperExamState;
+        if (cancelled) return;
+        setCurrentExam(state.exam);
+        setQuestions(state.questions);
+        setSavedAnswers(state.answers ?? {});
+        setSavedReviewQuestionNumbers(state.reviewQuestionNumbers ?? []);
+        setExamResult(state.result ?? null);
+        setStep(state.result ? 'results' : 'input');
+      } catch {
+        if (!cancelled) {
+          sessionStorage.removeItem('paperExamAttemptId');
+          toast({
+            title: 'تعذر استعادة الاختبار',
+            description: 'قد تكون المحاولة انتهت أو لم تعد متاحة لهذا الحساب.',
+            variant: 'destructive',
+          });
+        }
+      } finally {
+        if (!cancelled) setIsRestoring(false);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [toast]);
 
   const convertHtmlPageToPdf = async (htmlElement: HTMLElement): Promise<HTMLCanvasElement> => {
     await document.fonts.ready;
@@ -949,7 +973,7 @@ export default function PaperExamPage() {
 <body>
     <div class="container">
         <div class="header">
-            <div class="sheet-title">ورقة الإجابة المحلولة - ${currentExam.title || 'اختبار قدراتك'}</div>
+            <div class="sheet-title">ورقة الإجابة - ${currentExam.title || 'اختبار قدراتك'}</div>
         </div>
 
         <div class="notice">
@@ -970,7 +994,7 @@ export default function PaperExamPage() {
               const isTrial = trialIndices.has(globalIndex);
               const isVerbal = !isTrial && (question?.category === 'verbal' || question?.category === 'لفظي');
               const isQuantitative = !isTrial && (question?.category === 'quantitative' || question?.category === 'كمي');
-              const correctIndex = question?.correctOptionIndex ?? 0;
+              const correctIndex = -1;
               
               let cssClass = 'question-box';
               if (isTrial) cssClass += ' trial';
@@ -1023,7 +1047,7 @@ export default function PaperExamPage() {
         await new Promise(resolve => setTimeout(resolve, 10));
       }
 
-      pdf.save(`ورقة_إجابة_محلولة_${currentExam.title || 'اختبار_قدراتك'}.pdf`);
+      pdf.save(`ورقة_إجابة_${currentExam.title || 'اختبار_قدراتك'}.pdf`);
 
       toast({
         title: '✅ تم التنزيل بنجاح',
@@ -1456,7 +1480,7 @@ export default function PaperExamPage() {
                     
                     <div class="options-grid">
                         ${q.options.map((option, optIdx) => `
-                            <div class="option${optIdx === q.correctOptionIndex ? ' correct' : ''}">
+                            <div class="option">
                                 <div class="option-letter">${letters[optIdx]}</div>
                                 <div class="option-text">${option}</div>
                             </div>
@@ -1505,10 +1529,13 @@ export default function PaperExamPage() {
     });
   };
 
-  const handleExamCreated = async (exam: PaperExam) => {
-    console.log('تم إنشاء اختبار جديد:', exam);
-    setCurrentExam(exam);
-    await fetchQuestions(exam.id, exam.totalQuestions);
+  const handleExamCreated = (attempt: PaperExamState) => {
+    sessionStorage.setItem('paperExamAttemptId', attempt.exam.id);
+    setCurrentExam(attempt.exam);
+    setQuestions(attempt.questions);
+    setSavedAnswers(attempt.answers ?? {});
+    setSavedReviewQuestionNumbers(attempt.reviewQuestionNumbers ?? []);
+    setExamResult(null);
     setStep('download');
   };
 
@@ -1523,9 +1550,12 @@ export default function PaperExamPage() {
   };
 
   const handleRestart = () => {
+    sessionStorage.removeItem('paperExamAttemptId');
     setStep('setup');
     setCurrentExam(null);
     setQuestions([]);
+    setSavedAnswers({});
+    setSavedReviewQuestionNumbers([]);
     setExamResult(null);
   };
 
@@ -1540,8 +1570,6 @@ export default function PaperExamPage() {
             questions={questions}
             generateExamHTML={generateExamHTML}
             generateBubbleSheetHTML={generateBubbleSheetHTML}
-            generateBubbleSheetWithAnswers={generateBubbleSheetWithAnswers}
-            generateQuickCorrectionHTML={generateQuickCorrectionHTML}
             onProceed={handleDownloadComplete}
           />
         );
@@ -1549,6 +1577,11 @@ export default function PaperExamPage() {
         return (
           <AnswerInputStep
             exam={currentExam!}
+            questions={questions}
+            initialAnswers={Object.fromEntries(
+              Object.entries(savedAnswers).map(([number, value]) => [Number(number), value])
+            )}
+            initialReviewQuestionNumbers={savedReviewQuestionNumbers}
             onSubmit={handleAnswersSubmitted}
           />
         );
@@ -1584,7 +1617,9 @@ export default function PaperExamPage() {
         </header>
 
         <main>
-          {renderCurrentStep()}
+          {isRestoring ? (
+            <div className="rounded-2xl border p-8 text-center text-muted-foreground">جارٍ استعادة المحاولة المحفوظة...</div>
+          ) : renderCurrentStep()}
         </main>
       </div>
     </>

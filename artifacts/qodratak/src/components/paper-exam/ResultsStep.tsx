@@ -10,16 +10,16 @@ interface Question {
   category: string;
   text: string;
   options: string[];
-  correctOptionIndex: number;
   explanation?: string;
   hint?: string;
+  imageUrl?: string;
+  imageUrls?: string[];
 }
 
 interface QuestionDetail {
   questionNumber: number;
-  questionId: number;
   category: string;
-  status: 'correct' | 'wrong' | 'skipped';
+  status: 'correct' | 'wrong' | 'skipped' | 'trial';
   userAnswer: number | null;
   correctAnswer: number;
 }
@@ -36,19 +36,20 @@ interface ExamResult {
   skippedQuestions: number;
   incorrectQuestions?: {
     questionIndex: number;
-    question: Question;
-    userAnswer: number;
+    question: Question & { correctOptionIndex: number };
+    userAnswer: number | null;
     correctAnswer: number;
   }[];
   questionDetails?: QuestionDetail[];
 }
 
 interface PaperExam {
-  id: number;
+  id: string;
   title: string;
   totalQuestions: number;
   trialQuestions: number;
-  examType: string;
+  program: 'qudrat' | 'tahsili';
+  subjectId?: string;
   timeLimit: number;
   status: string;
 }
@@ -715,7 +716,7 @@ export default function ResultsStep({ exam, result, questions, onRestart }: Resu
             ${result.incorrectQuestions && result.incorrectQuestions.length > 0 ? `
                 <div style="margin-bottom: 30px;">
                     <h2 style="color: #dc2626; font-size: 22px; font-weight: 700; margin-bottom: 20px; padding-bottom: 10px; border-bottom: 2px solid #dc2626;">
-                        ❌ الإجابات الخاطئة (${result.incorrectQuestions.length})
+                        ❌ الأخطاء والأسئلة المتروكة (${result.incorrectQuestions.length})
                     </h2>
                     ${result.incorrectQuestions.map((mistake, index) => `
                         <div class="mistake-block">
@@ -729,9 +730,9 @@ export default function ResultsStep({ exam, result, questions, onRestart }: Resu
 
                             <div class="answers-section">
                                 <div class="answer-row wrong-answer">
-                                    <div class="answer-label">إجابتك (خاطئة)</div>
+                                    <div class="answer-label">${mistake.userAnswer === null ? 'إجابتك' : 'إجابتك (خاطئة)'}</div>
                                     <div class="answer-text">
-                                        ${String.fromCharCode(1571 + mistake.userAnswer)} - ${mistake.question.options[mistake.userAnswer] || 'لم يتم الاختيار'}
+                                        ${mistake.userAnswer === null ? 'لم تختر إجابة' : `${String.fromCharCode(1571 + mistake.userAnswer)} - ${mistake.question.options[mistake.userAnswer] || 'لم يتم الاختيار'}`}
                                     </div>
                                 </div>
 
@@ -766,10 +767,9 @@ export default function ResultsStep({ exam, result, questions, onRestart }: Resu
                     <h2 style="color: #64748b; font-size: 22px; font-weight: 700; margin-bottom: 20px; padding-bottom: 10px; border-bottom: 2px solid #64748b;">
                         ⏭️ الأسئلة المتروكة (${result.skippedQuestions})
                     </h2>
-                    ${questions.map((q, index) => {
-                        const isSkipped = !result.incorrectQuestions?.find(m => m.questionIndex === index) && 
-                                         result.correctAnswers !== exam.totalQuestions - result.skippedQuestions;
-                        if (!isSkipped) return '';
+                    ${(result.incorrectQuestions || []).filter((mistake) => mistake.userAnswer === null).map((mistake) => {
+                        const q = mistake.question;
+                        const index = mistake.questionIndex;
 
                         return `
                             <div class="mistake-block" style="border-color: #94a3b8; background: #f8fafc;">
@@ -972,6 +972,7 @@ export default function ResultsStep({ exam, result, questions, onRestart }: Resu
                     correct: { icon: '✓', bg: 'bg-green-500', text: 'text-white', border: 'border-green-600' },
                     wrong: { icon: '✗', bg: 'bg-red-500', text: 'text-white', border: 'border-red-600' },
                     skipped: { icon: '—', bg: 'bg-gray-300', text: 'text-gray-700', border: 'border-gray-400' },
+                    trial: { icon: '•', bg: 'bg-blue-100', text: 'text-blue-800', border: 'border-blue-300' },
                   };
 
                   const style = icons[detail.status];

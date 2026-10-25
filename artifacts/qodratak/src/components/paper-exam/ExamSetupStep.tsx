@@ -10,19 +10,36 @@ import { apiRequest } from '@/lib/queryClient';
 import { FileText, AlertCircle } from 'lucide-react';
 
 interface PaperExam {
-  id: number;
+  id: string;
   title: string;
   totalQuestions: number;
   trialQuestions: number;
-  examType: string;
+  program: 'qudrat' | 'tahsili';
+  subjectId?: string;
+  distribution: string;
   timeLimit: number;
   status: string;
-  questions: any[];
-  answerKey: any[];
+  startedAt: string;
+  expiresAt: string;
+}
+
+interface CreatedPaperExam {
+  exam: PaperExam;
+  questions: Array<{
+    id: number;
+    category: string;
+    text: string;
+    options: string[];
+    imageUrl?: string;
+    imageUrls?: string[];
+    isTrial: boolean;
+  }>;
+  answers: Record<string, number>;
+  reviewQuestionNumbers: number[];
 }
 
 interface ExamSetupStepProps {
-  onExamCreated: (exam: PaperExam) => void;
+  onExamCreated: (attempt: CreatedPaperExam) => void;
 }
 
 export default function ExamSetupStep({ onExamCreated }: ExamSetupStepProps) {
@@ -31,9 +48,10 @@ export default function ExamSetupStep({ onExamCreated }: ExamSetupStepProps) {
     title: '',
     totalQuestions: 120,
     trialQuestions: 20,
-    examType: 'قدرات',
-    timeLimit: 120,
-    questionDistribution: 'mixed', // 'mixed', 'verbal', 'quantitative', 'custom'
+    program: 'qudrat' as 'qudrat' | 'tahsili',
+    subjectId: 'رياضيات',
+    timeLimitMinutes: 120,
+    distribution: 'mixed',
     verbalCount: 60,
     quantitativeCount: 60,
   });
@@ -41,10 +59,11 @@ export default function ExamSetupStep({ onExamCreated }: ExamSetupStepProps) {
   const createExamMutation = useMutation({
     mutationFn: async (data: typeof formData) => {
       const response = await apiRequest('POST', '/api/paper-exams', data);
+      if (!response.ok) throw new Error('تعذر إنشاء الاختبار');
       return await response.json();
     },
-    onSuccess: (exam: PaperExam) => {
-      onExamCreated(exam);
+    onSuccess: (attempt: CreatedPaperExam) => {
+      onExamCreated(attempt);
     },
     onError: () => {
       toast({
@@ -97,38 +116,55 @@ export default function ExamSetupStep({ onExamCreated }: ExamSetupStepProps) {
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="examType">نوع الاختبار</Label>
+              <Label htmlFor="program">البرنامج</Label>
               <Select
-                value={formData.examType}
-                onValueChange={(value) => setFormData({ ...formData, examType: value })}
+                value={formData.program}
+                onValueChange={(value: 'qudrat' | 'tahsili') => setFormData({ ...formData, program: value })}
               >
-                <SelectTrigger id="examType" data-testid="select-exam-type">
+                <SelectTrigger id="program" data-testid="select-exam-type">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="قدرات" data-testid="select-option-qudrat">قدرات</SelectItem>
-                  <SelectItem value="تحصيلي" data-testid="select-option-tahsili">تحصيلي</SelectItem>
+                  <SelectItem value="qudrat" data-testid="select-option-qudrat">قدرات</SelectItem>
+                  <SelectItem value="tahsili" data-testid="select-option-tahsili">تحصيلي</SelectItem>
                 </SelectContent>
               </Select>
             </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="questionDistribution">توزيع الأسئلة</Label>
-              <Select
-                value={formData.questionDistribution}
-                onValueChange={(value) => setFormData({ ...formData, questionDistribution: value })}
-              >
-                <SelectTrigger id="questionDistribution">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="mixed">مختلط (كمي ولفظي)</SelectItem>
-                  <SelectItem value="verbal">لفظي فقط</SelectItem>
-                  <SelectItem value="quantitative">كمي فقط</SelectItem>
-                  <SelectItem value="custom">تخصيص يدوي</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
+            {formData.program === 'qudrat' ? (
+              <div className="space-y-2">
+                <Label htmlFor="distribution">توزيع الأسئلة</Label>
+                <Select
+                  value={formData.distribution}
+                  onValueChange={(value) => setFormData({ ...formData, distribution: value })}
+                >
+                  <SelectTrigger id="distribution"><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="mixed">مختلط (كمي ولفظي)</SelectItem>
+                    <SelectItem value="verbal">لفظي فقط</SelectItem>
+                    <SelectItem value="quantitative">كمي فقط</SelectItem>
+                    <SelectItem value="custom">تخصيص يدوي</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            ) : (
+              <div className="space-y-2">
+                <Label htmlFor="subjectId">المادة التحصيلية</Label>
+                <Select
+                  value={formData.subjectId}
+                  onValueChange={(value) => setFormData({ ...formData, subjectId: value })}
+                >
+                  <SelectTrigger id="subjectId"><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="رياضيات">رياضيات</SelectItem>
+                    <SelectItem value="فيزياء">فيزياء</SelectItem>
+                    <SelectItem value="كيمياء">كيمياء</SelectItem>
+                    <SelectItem value="أحياء">أحياء</SelectItem>
+                    <SelectItem value="علم الأرض">علم الأرض</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
 
             <div className="space-y-2">
               <Label htmlFor="totalQuestions">عدد الأسئلة</Label>
@@ -157,20 +193,20 @@ export default function ExamSetupStep({ onExamCreated }: ExamSetupStepProps) {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="timeLimit">المدة الزمنية (بالدقائق)</Label>
+              <Label htmlFor="timeLimitMinutes">المدة الزمنية (بالدقائق)</Label>
               <Input
-                id="timeLimit"
+                id="timeLimitMinutes"
                 data-testid="input-time-limit"
                 type="number"
                 min="30"
                 max="300"
-                value={formData.timeLimit}
-                onChange={(e) => setFormData({ ...formData, timeLimit: parseInt(e.target.value) || 0 })}
+                value={formData.timeLimitMinutes}
+                onChange={(e) => setFormData({ ...formData, timeLimitMinutes: parseInt(e.target.value) || 0 })}
               />
             </div>
           </div>
 
-          {formData.questionDistribution === 'custom' && (
+          {formData.program === 'qudrat' && formData.distribution === 'custom' && (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-4 bg-gradient-to-r from-blue-50 to-green-50 dark:from-blue-950 dark:to-green-950 rounded-lg border-2 border-blue-200 dark:border-blue-800">
               <div className="space-y-2">
                 <Label htmlFor="verbalCount" className="text-blue-700 dark:text-blue-300 font-semibold">

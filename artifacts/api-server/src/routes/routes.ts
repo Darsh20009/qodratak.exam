@@ -53,6 +53,14 @@ import { TestType, TestDifficulty } from "../shared/types";
 import bcrypt from 'bcryptjs';
 import { registerInstitutionRoutes } from './institutions';
 import { registerQuestionFeedbackRoutes } from './questionFeedbackRoutes';
+import { registerPaperExamRoutes } from './paperExamRoutes';
+import {
+  PaperExamService,
+  paperExamQuestionPlan,
+  type PaperExamConfig,
+  type PaperExamQuestionCandidate,
+} from '../services/paperExamService';
+import { paperExamMongoRepository } from '../services/paperExamMongoRepository';
 import { exec } from 'child_process';
 import { sendTestEmail, sendOTPEmail, sendWelcomeEmail, sendSubscriptionApprovalEmail, sendExamResults, sendPasswordResetEmail, notifyAdminNewSubscription, notifyAdminReceiptUploaded, notifyAdminInstitutionRequest, sendInvitationEmail, sendCustomEmail } from '../services/emailService';
 import crypto from 'crypto';
@@ -6475,98 +6483,75 @@ app.post("/api/auth/register", async (req: Request, res: Response) => {
     }
   });
 
-  // Paper Exam Routes
-  let paperExams: any[] = [];
+  const paperExamService = new PaperExamService(paperExamMongoRepository);
+  registerPaperExamRoutes(app, {
+    requireAuth,
+    requireStudent: requireRole('student'),
+    service: paperExamService,
+    loadCandidates: async (config: PaperExamConfig): Promise<PaperExamQuestionCandidate[][]> => {
+      const buckets = paperExamQuestionPlan(config);
+      return Promise.all(buckets.map(async (bucket) => {
+        if (config.program === "qudrat") {
+          const rows = await Question.aggregate([
+            { $match: { answerStatus: "approved", category: bucket.category } },
+            { $sample: { size: bucket.count } },
+            { $project: {
+              _id: 1,
+              questionId: 1,
+              category: 1,
+              text: 1,
+              options: 1,
+              correctOptionIndex: 1,
+              explanation: 1,
+              imageUrl: 1,
+              imageUrls: 1,
+              answerStatus: 1,
+            } },
+          ]);
+          return rows.map((question: any) => ({
+            sourceQuestionId: String(question._id),
+            sourceQuestionNumber: Number(question.questionId),
+            category: String(question.category),
+            text: String(question.text || ""),
+            options: Array.isArray(question.options) ? question.options : [],
+            correctOptionIndex: Number(question.correctOptionIndex),
+            quality: question.answerStatus === "approved" ? "approved" as const : "verified" as const,
+            explanation: question.explanation ? String(question.explanation) : undefined,
+            imageUrl: question.imageUrl ? String(question.imageUrl) : undefined,
+            imageUrls: Array.isArray(question.imageUrls) ? question.imageUrls.map(String) : undefined,
+          }));
+        }
 
-  app.post("/api/paper-exams", async (req: Request, res: Response) => {
-    try {
-      const { title, totalQuestions, trialQuestions, examType, timeLimit } = req.body;
-
-      if (!title || !totalQuestions || !timeLimit) {
-        return res.status(400).json({ error: "Missing required fields" });
-      }
-
-      const newExam = {
-        id: paperExams.length + 1,
-        title,
-        totalQuestions,
-        trialQuestions: trialQuestions || 0,
-        examType: examType || 'قدرات',
-        timeLimit,
-        status: 'created',
-        questions: [],
-        answerKey: [],
-        createdAt: new Date().toISOString(),
-      };
-
-      paperExams.push(newExam);
-
-      res.status(201).json(newExam);
-    } catch (error) {
-      console.error("Error creating paper exam:", error);
-      res.status(500).json({ error: "Error creating paper exam" });
-    }
-  });
-
-  // Get questions for paper exam
-  app.get('/api/paper-exams/:id/questions', async (req, res) => {
-    try {
-      const examId = parseInt(req.params.id);
-      const count = parseInt(req.query.count as string) || 120;
-
-      let exam = paperExams.find((e) => e.id === examId);
-      if (!exam) {
-        return res.status(404).json({ message: 'الاختبار غير موجود' });
-      }
-
-      console.log(`[Paper Exam] جاري تحميل ${count} سؤال للاختبار رقم ${examId} من نوع ${exam.examType}`);
-
-      // Get all questions from storage
-      const allQuestions = await storage.getAllQuestions();
-
-      // Filter by exam type
-      let filteredQuestions = allQuestions;
-      if (exam.examType === 'لفظي') {
-        filteredQuestions = allQuestions.filter(q =>
-          q.category === 'verbal'
-        );
-        console.log(`[Paper Exam] تمت تصفية ${filteredQuestions.length} سؤال لفظي من أصل ${allQuestions.length}`);
-      } else if (exam.examType === 'كمي') {
-        filteredQuestions = allQuestions.filter(q =>
-          q.category === 'quantitative'
-        );
-        console.log(`[Paper Exam] تمت تصفية ${filteredQuestions.length} سؤال كمي من أصل ${allQuestions.length}`);
-      }
-
-      if (filteredQuestions.length === 0) {
-        console.warn(`[Paper Exam] لا توجد أسئلة ${exam.examType} في قاعدة البيانات`);
-        return res.status(404).json({
-          message: `لا توجد أسئلة ${exam.examType} متاحة حالياً`,
-          questions: []
-        });
-      }
-
-      // Shuffle and select requested number of questions
-      const shuffled = [...filteredQuestions].sort(() => Math.random() - 0.5);
-      const selectedQuestions = shuffled.slice(0, count);
-
-      console.log(`[Paper Exam] تم تحميل ${selectedQuestions.length} سؤال ${exam.examType} من أصل ${filteredQuestions.length} سؤال متاح`);
-
-      // Store the questions and answer key in the exam
-      exam = paperExams.find((e) => e.id === examId); // Re-find exam to update it
-      if (exam) {
-        exam.questions = selectedQuestions;
-        exam.answerKey = selectedQuestions.map(q => ({
-          id: q.id,
-          correctOptionIndex: q.correctOptionIndex
+        const rows = await TahsiliQuestion.aggregate([
+          { $match: { answerConfidence: "verified", subject: bucket.subjectId } },
+          { $sample: { size: bucket.count } },
+          { $project: {
+            _id: 1,
+            questionId: 1,
+            subject: 1,
+            text: 1,
+            options: 1,
+            correctOptionIndex: 1,
+            explanation: 1,
+            sourceImageObjectKey: 1,
+            answerConfidence: 1,
+          } },
+        ]);
+        return rows.map((question: any) => ({
+          sourceQuestionId: String(question._id),
+          sourceQuestionNumber: Number(question.questionId),
+          category: String(question.subject),
+          text: String(question.text || ""),
+          options: Array.isArray(question.options) ? question.options : [],
+          correctOptionIndex: Number(question.correctOptionIndex),
+          quality: question.answerConfidence === "verified" ? "verified" as const : "approved" as const,
+          explanation: question.explanation ? String(question.explanation) : undefined,
+          imageUrl: question.sourceImageObjectKey
+            ? `/api/tahsili/question-bank/${Number(question.questionId)}/source-image`
+            : undefined,
         }));
-      }
-
-      res.json(selectedQuestions);
-    } catch (error) {
-      console.error('[Paper Exam] خطأ في جلب الأسئلة:', error);
-      res.status(500).json({ message: 'فشل في جلب الأسئلة' });
-    }
+      }));
+    },
   });
 
   // Submit paper model result
