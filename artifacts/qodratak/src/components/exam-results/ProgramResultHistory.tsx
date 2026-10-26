@@ -13,6 +13,7 @@ interface SavedTestResult {
   program?: string;
   testName?: string;
   testType?: string;
+  subjectId?: string;
   subject?: string;
   score?: number;
   totalQuestions?: number;
@@ -131,6 +132,9 @@ export default function ProgramResultHistory() {
                         <p className="flex items-center gap-2 text-muted-foreground">
                           <CalendarDays className="h-4 w-4" aria-hidden="true" />{resultDate(result)}
                         </p>
+                        {section.program === "tahsili" && result.subjectId && (
+                          <p className="text-muted-foreground">المادة: {result.subjectId}</p>
+                        )}
                         <div className="flex flex-wrap gap-x-4 gap-y-2 text-muted-foreground">
                           <span className="inline-flex items-center gap-1"><CheckCircle2 className="h-4 w-4 text-emerald-600" aria-hidden="true" />{correct} صحيحة</span>
                           {total > 0 && <span>{total} سؤالًا</span>}

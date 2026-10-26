@@ -54,6 +54,7 @@ import bcrypt from 'bcryptjs';
 import { registerInstitutionRoutes } from './institutions';
 import { registerQuestionFeedbackRoutes } from './questionFeedbackRoutes';
 import { registerPaperExamRoutes } from './paperExamRoutes';
+import { savePaperExamResultToHistory } from '../services/paperExamResultHistory';
 import {
   PaperExamService,
   paperExamQuestionPlan,
@@ -6488,6 +6489,7 @@ app.post("/api/auth/register", async (req: Request, res: Response) => {
     requireAuth,
     requireStudent: requireRole('student'),
     service: paperExamService,
+    saveResultToHistory: savePaperExamResultToHistory,
     loadCandidates: async (config: PaperExamConfig): Promise<PaperExamQuestionCandidate[][]> => {
       const buckets = paperExamQuestionPlan(config);
       return Promise.all(buckets.map(async (bucket) => {

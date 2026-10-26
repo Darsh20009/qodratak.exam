@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import { Trophy, TrendingUp, Target, RotateCcw, Download, FileText, AlertCircle, BarChart3 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { Link } from 'wouter';
 
 interface Question {
   id: number;
@@ -1038,6 +1039,9 @@ export default function ResultsStep({ exam, result, questions, onRestart }: Resu
                 تحميل الأخطاء والمتروك مع الشرح
               </Button>
             </div>
+            <Button asChild variant="outline" className="w-full" data-testid="button-open-results-history">
+              <Link href="/records">عرض سجل نتائجي</Link>
+            </Button>
             <Button
               onClick={onRestart}
               className="w-full"

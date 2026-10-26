@@ -7,6 +7,7 @@ import {
   type PaperExamConfig,
   type PaperExamQuestionCandidate,
 } from "../services/paperExamService";
+import type { PaperExamHistoryInput } from "../services/paperExamResultHistory";
 
 type PaperExamRouteApp = Pick<Express, "get" | "post" | "put">;
 
@@ -15,6 +16,7 @@ interface PaperExamRouteDependencies {
   requireStudent: RequestHandler;
   service: PaperExamService;
   loadCandidates: (config: PaperExamConfig) => Promise<PaperExamQuestionCandidate[][]>;
+  saveResultToHistory: (input: PaperExamHistoryInput) => Promise<unknown>;
 }
 
 function currentUserId(req: Request): string {
@@ -115,7 +117,20 @@ export function registerPaperExamRoutes(
       if (Object.keys(body).length > 0) {
         return res.status(400).json({ error: "التسليم لا يقبل درجة أو إجابات من العميل؛ احفظ الإجابات أولاً" });
       }
-      return res.json(await dependencies.service.submit(attemptId(req), ownerUserId));
+      const id = attemptId(req);
+      const submission = await dependencies.service.submit(id, ownerUserId);
+      const state = await dependencies.service.get(id, ownerUserId);
+      await dependencies.saveResultToHistory({
+        attemptId: id,
+        ownerUserId,
+        title: state.exam.title,
+        program: state.exam.program,
+        subjectId: state.exam.subjectId,
+        timeLimitMinutes: state.exam.timeLimit,
+        submittedAt: new Date(),
+        result: submission.result,
+      });
+      return res.json(submission);
     } catch (error) {
       return respondWithError(res, error);
     }

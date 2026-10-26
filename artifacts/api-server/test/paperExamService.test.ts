@@ -245,11 +245,13 @@ test("all simulator endpoints register behind both authentication and student-ro
   };
   const auth = () => undefined;
   const studentRole = () => undefined;
+  const savedHistoryResults: Array<Record<string, unknown>> = [];
   registerPaperExamRoutes(app as any, {
     requireAuth: auth as any,
     requireStudent: studentRole as any,
     service,
     loadCandidates: async () => candidatesForMixedConfig(),
+    saveResultToHistory: async (input) => { savedHistoryResults.push(input as unknown as Record<string, unknown>); },
   });
   assert.equal(registrations.length, 5);
   for (const route of registrations) {
@@ -287,4 +289,27 @@ test("all simulator endpoints register behind both authentication and student-ro
   const getAttempt = registrations.find((route) => route.method === "GET" && route.path === "/api/paper-exams/:id")!;
   await getAttempt.handlers[2]({ params: { id: "missing" }, session: {} }, unauthorized as any);
   assert.equal(unauthorized.statusCode, 401);
+
+  const secondCreated = { statusCode: 200, body: undefined as any, status(code: number) { this.statusCode = code; return this; }, json(body: any) { this.body = body; return this; } };
+  await create.handlers[2]({ body: baseInput, session: { userId: "student-a" } }, secondCreated as any);
+  const secondId = secondCreated.body.exam.id;
+  const secondAttempt = repository.attempts.get(secondId)!;
+  const answerHandler = registrations.find((route) => route.method === "PUT" && route.path === "/api/paper-exams/:id/answers")!;
+  const answers = Object.fromEntries(secondAttempt.questions.filter((question) => !question.isTrial)
+    .map((question) => [String(question.questionNumber), question.correctOptionIndex]));
+  const saveResponse = { statusCode: 200, body: undefined as any, status(code: number) { this.statusCode = code; return this; }, json(body: any) { this.body = body; return this; } };
+  await answerHandler.handlers[2]({ params: { id: secondId }, session: { userId: "student-a" }, body: { answers, reviewQuestionNumbers: [] } }, saveResponse as any);
+  const submitResponse = { statusCode: 200, body: undefined as any, status(code: number) { this.statusCode = code; return this; }, json(body: any) { this.body = body; return this; } };
+  await submit.handlers[2]({ params: { id: secondId }, session: { userId: "student-a" }, body: {} }, submitResponse as any);
+  assert.equal(submitResponse.statusCode, 200);
+  assert.equal(savedHistoryResults.length, 1);
+  assert.equal(savedHistoryResults[0].ownerUserId, "student-a");
+  assert.equal((savedHistoryResults[0].result as PaperExamResult).correctAnswers, 8);
+  assert.equal((submitResponse.body as any).duplicate, false);
+  const repeatedSubmitResponse = { statusCode: 200, body: undefined as any, status(code: number) { this.statusCode = code; return this; }, json(body: any) { this.body = body; return this; } };
+  await submit.handlers[2]({ params: { id: secondId }, session: { userId: "student-a" }, body: {} }, repeatedSubmitResponse as any);
+  assert.equal(repeatedSubmitResponse.statusCode, 200);
+  assert.equal(savedHistoryResults.length, 2);
+  assert.equal(savedHistoryResults[1].ownerUserId, "student-a");
+  assert.equal((repeatedSubmitResponse.body as any).duplicate, true);
 });

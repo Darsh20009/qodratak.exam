@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
@@ -75,6 +76,7 @@ export default function AnswerInputStep({
   onSubmit,
 }: AnswerInputStepProps) {
   const { toast } = useToast();
+  const queryClient = useQueryClient();
   const [answers, setAnswers] = useState<Record<number, number>>(initialAnswers);
   const [reviewQuestionNumbers, setReviewQuestionNumbers] = useState<number[]>(initialReviewQuestionNumbers);
   const [currentIndex, setCurrentIndex] = useState(0);
@@ -157,6 +159,7 @@ export default function AnswerInputStep({
       const response = await apiRequest('POST', `/api/paper-exams/${encodeURIComponent(exam.id)}/submit`, {});
       const body = await response.json();
       if (!response.ok) throw new Error(body?.error || 'تعذر تسليم الاختبار');
+      void queryClient.invalidateQueries({ queryKey: ['/api/test-results/user'] });
       onSubmit(body.result as ExamResult);
       toast({
         title: 'تم تصحيح الاختبار',
