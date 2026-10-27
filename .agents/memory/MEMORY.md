@@ -64,4 +64,4 @@
 - [Student page guide films](student-page-guide-films.md) — keep the matching chapter embedded on each page; the full guide remains separate.
 - [Geidea timeout authority](geidea-timeout-authority.md) — a ten-minute platform timeout is not a provider cancellation; verified delayed charges must remain recoverable.
 - [Personalized question reuse](personalized-question-reuse.md) — retire correct questions, retry missed ones, and keep question selection server-owned and load-conscious.
-- [GitHub publishing authentication](github-push-auth.md) — verify remote authentication and ref updates; a local commit alone does not mean a branch was published.
+- [GitHub publishing authentication](github-push-auth.md) — verify remote refs; large packs may need smaller fast-forward pushes through Replit’s GitHub proxy.
