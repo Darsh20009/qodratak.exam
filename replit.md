@@ -22,8 +22,16 @@ development.
 
 `MONGODB_URI` is configured in Replit Secrets. The API uses the existing MongoDB
 dataset for accounts, progress, questions, subscriptions, and persistent
-sessions. If the secret is unavailable in a development fork, the app falls
-back to in-memory preview data and development-only demo accounts.
+sessions. Do not replace this URI with a different database or migrate data
+without explicit approval. If the secret is unavailable in a development fork,
+the app falls back to in-memory preview data, which does not include the
+persisted question bank.
+
+Quantitative lesson videos and question images are streamed from the existing
+Cloudflare R2 bucket. Configure `CLOUDFLARE_R2_ACCOUNT_ID` and
+`CLOUDFLARE_R2_BUCKET_NAME` as environment variables, and keep
+`CLOUDFLARE_R2_ACCESS_KEY_ID` and `CLOUDFLARE_R2_SECRET_ACCESS_KEY` in Replit
+Secrets. The server supports byte-range video requests.
 
 Optional features such as AI assistance, email, OAuth, payments, WebAuthn, and
 push notifications require their corresponding environment variables. The
@@ -55,8 +63,10 @@ _Describe the high-level user-facing capabilities of this app once they exist._
 - `pnpm run build` — typecheck + build all packages
 - `pnpm --filter @workspace/api-spec run codegen` — regenerate API hooks and Zod schemas from the OpenAPI spec
 - `pnpm --filter @workspace/db run push` — push DB schema changes (dev only)
-- Required preview env: `SESSION_SECRET`
-- Optional durable env: `MONGODB_URI` and/or `DATABASE_URL`
+- Required preview secret: `SESSION_SECRET`
+- Required persistent-data secret: `MONGODB_URI`
+- Required R2 media settings: `CLOUDFLARE_R2_ACCOUNT_ID`, `CLOUDFLARE_R2_BUCKET_NAME`,
+  `CLOUDFLARE_R2_ACCESS_KEY_ID`, and `CLOUDFLARE_R2_SECRET_ACCESS_KEY`
 
 
 ## User preferences
@@ -76,9 +86,9 @@ _Populate as you build — sharp edges, "always run X before Y" rules._
 
 ## Stack
 
-- pnpm workspaces, Node.js 24, TypeScript 5.9
+- pnpm workspaces, Node.js 20, TypeScript 5.9
 - API: Express 5
-- DB: PostgreSQL + Drizzle ORM
+- DB: MongoDB/Mongoose for API data and sessions; the workspace also retains Drizzle modules
 - Validation: Zod (`zod/v4`), `drizzle-zod`
 - API codegen: Orval (from OpenAPI spec)
 - Build: esbuild (CJS bundle)
