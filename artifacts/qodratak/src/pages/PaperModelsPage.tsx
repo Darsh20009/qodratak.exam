@@ -57,57 +57,6 @@ export default function PaperModelsPage() {
   const [downloadTimeElapsed, setDownloadTimeElapsed] = useState(0);
   const [showProgressDialog, setShowProgressDialog] = useState(false);
   
-  const [examStarted, setExamStarted] = useState(false);
-  const [timeRemaining, setTimeRemaining] = useState(120 * 60);
-  const [timerMode, setTimerMode] = useState<'full' | 'practice'>('full');
-
-  useEffect(() => {
-    let interval: NodeJS.Timeout;
-    if (examStarted && timeRemaining > 0) {
-      interval = setInterval(() => {
-        setTimeRemaining(prev => {
-          if (prev <= 1) {
-            setExamStarted(false);
-            toast({
-              title: "انتهى الوقت!",
-              description: "انتهى وقت الاختبار",
-              variant: "destructive",
-            });
-            return 0;
-          }
-          return prev - 1;
-        });
-      }, 1000);
-    }
-    return () => clearInterval(interval);
-  }, [examStarted, timeRemaining, toast]);
-
-  const startExamTimer = (mode: 'full' | 'practice') => {
-    const initialTime = mode === 'full' ? 120 * 60 : 10 * 60;
-    setTimerMode(mode);
-    setTimeRemaining(initialTime);
-    setExamStarted(true);
-    toast({
-      title: mode === 'full' ? "بدأ العد التنازلي - ساعتين" : "بدأ العد التنازلي - 10 دقائق",
-      description: mode === 'full' ? "وقت الاختبار الحقيقي" : "وقت التمرين السريع",
-    });
-  };
-
-  const stopExamTimer = () => {
-    setExamStarted(false);
-    toast({
-      title: "تم إيقاف المؤقت",
-      description: "يمكنك إعادة البدء في أي وقت",
-    });
-  };
-
-  const formatTime = (seconds: number) => {
-    const hrs = Math.floor(seconds / 3600);
-    const mins = Math.floor((seconds % 3600) / 60);
-    const secs = seconds % 60;
-    return `${hrs.toString().padStart(2, '0')}:${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
-  };
-
   // Fetch exams automatically
   const { data: examsData, isLoading: examsLoading, error: examsError } = useQuery({
     queryKey: ['/api/paper-models'],
@@ -232,6 +181,11 @@ export default function PaperModelsPage() {
     return results.find(r => r.modelId === examId);
   };
 
+  const startDigitalSimulation = (exam: Exam) => {
+    sessionStorage.removeItem('paperExamAttemptId');
+    setLocation(`/paper-exam?model=${exam.modelNumber}`);
+  };
+
   // Generate answer key with colors (red=verbal, green=quantitative, blue=trial)
   const generateColoredAnswerKey = async (exam: Exam) => {
     setLoading({ ...loading, [exam.id]: true });
@@ -306,11 +260,17 @@ export default function PaperModelsPage() {
 
     try {
       toast({
-        title: "جاري إنشاء الاختبار...",
-        description: "قد يستغرق هذا بضع دقائق",
+        title: "جاري تجهيز كتيّب الاختبار...",
+        description: "يتضمن نسخة الأسئلة وورقة إجابة فارغة",
       });
 
-      const html = generateFullExamHTML(exam.allQuestions, exam.name);
+      const response = await apiRequest('GET', `/api/paper-models/${exam.modelNumber}/print`);
+      if (!response.ok) throw new Error('تعذر تحميل أسئلة النموذج للطباعة');
+      const printModel = await response.json();
+      if (!Array.isArray(printModel.questions) || printModel.questions.length === 0) {
+        throw new Error('لا توجد أسئلة قابلة للطباعة لهذا النموذج');
+      }
+      const html = generateFullExamHTML(printModel.questions, printModel.name || exam.name);
       await convertHtmlToPdfAndDownload(html, `اختبار_${exam.name}.pdf`);
 
       // Track download
@@ -320,10 +280,7 @@ export default function PaperModelsPage() {
         downloadType: 'full_exam'
       });
 
-      toast({
-        title: "تم التحميل بنجاح",
-        description: `اختبار ${exam.name} الكامل`,
-      });
+      toast({ title: "تم تجهيز ملف الطباعة", description: `كتيّب الأسئلة وورقة الإجابة الفارغة — ${exam.name}` });
     } catch (error) {
       console.error("Error generating exam:", error);
       toast({
@@ -423,8 +380,15 @@ export default function PaperModelsPage() {
     `;
   };
 
+  const escapeHtml = (value: unknown) => String(value ?? '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+
   const generateFullExamHTML = (questions: any[], examName: string) => {
-    const bubbleSheetPages = generateBubbleSheetPages(questions.length, examName);
+    const bubbleSheetPages = generateBubbleSheetPages(questions, examName);
     const questionPages = generateQuestionPages(questions, examName);
     
     return `
@@ -446,7 +410,8 @@ export default function PaperModelsPage() {
     `;
   };
 
-  const generateBubbleSheetPages = (totalQuestions: number, examName: string) => {
+  const generateBubbleSheetPages = (questions: any[], examName: string) => {
+    const totalQuestions = questions.length;
     const questionsPerPage = 60;
     const totalPages = Math.ceil(totalQuestions / questionsPerPage);
     
@@ -460,18 +425,19 @@ export default function PaperModelsPage() {
       pagesHtml += `
         <div class="page">
           <div style="text-align: center; margin-bottom: 10px; border-bottom: 2px solid #000; padding-bottom: 8px;">
-            <h2 style="margin: 0; font-size: 16px;">ورقة الإجابة - ${examName}</h2>
+            <h2 style="margin: 0; font-size: 16px;">ورقة الإجابة - ${escapeHtml(examName)}</h2>
             <p style="margin: 3px 0; font-size: 11px;">صفحة ${page + 1} من ${totalPages}</p>
           </div>
           
           <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px;">
             ${Array.from({ length: pageQuestions }, (_, idx) => {
               const questionNum = startIdx + idx + 1;
+              const optionCount = Math.max(2, Math.min(5, questions[questionNum - 1]?.options?.length || 4));
               return `
                 <div style="border: 1px solid #000; padding: 6px; display: flex; align-items: center; gap: 8px;">
                   <div style="font-weight: bold; font-size: 14px; min-width: 25px; color: #000;">${questionNum}</div>
                   <div style="display: flex; gap: 4px;">
-                    ${['أ', 'ب', 'ج', 'د'].map(option => `
+                    ${['أ', 'ب', 'ج', 'د', 'هـ'].slice(0, optionCount).map(option => `
                       <div style="
                         width: 22px;
                         height: 22px;
@@ -513,13 +479,18 @@ export default function PaperModelsPage() {
       pagesHtml += `
         <div class="page">
           <div style="text-align: center; margin-bottom: 15px; border-bottom: 2px solid #000; padding-bottom: 8px;">
-            <h2 style="margin: 0; font-size: 16px;">${examName}</h2>
+            <h2 style="margin: 0; font-size: 16px;">${escapeHtml(examName)}</h2>
             <p style="margin: 3px 0; font-size: 11px;">صفحة ${page + 1} من ${totalPages} (الأسئلة)</p>
           </div>
           
           ${pageQuestions.map((q, idx) => {
             const questionNum = startIdx + idx + 1;
-            const isLongQuestion = q.text.length > 250;
+            const questionText = String(q.text ?? '');
+            const options = Array.isArray(q.options) ? q.options : [];
+            const images = Array.isArray(q.imageUrls) && q.imageUrls.length
+              ? q.imageUrls
+              : q.imageUrl ? [q.imageUrl] : [];
+            const isLongQuestion = questionText.length > 250;
             
             return `
               <div style="
@@ -545,12 +516,14 @@ export default function PaperModelsPage() {
                     ${questionNum}
                   </div>
                   <div style="flex: 1; font-size: ${isLongQuestion ? '15px' : '16px'}; line-height: 1.8; color: #000;">
-                    ${q.text}
+                    ${escapeHtml(questionText)}
                   </div>
                 </div>
+
+                ${images.map((imageUrl: string) => `<img src="${escapeHtml(imageUrl)}" alt="شكل توضيحي للسؤال ${questionNum}" style="display:block;max-width:100%;max-height:125mm;object-fit:contain;margin:8px auto;" />`).join('')}
                 
                 <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; margin-top: 10px;">
-                  ${q.options.map((option: string, optIdx: number) => `
+                  ${options.map((option: string, optIdx: number) => `
                     <div style="display: flex; align-items: center; gap: 6px; padding: 8px;">
                       <div style="
                         border: 2px solid #000;
@@ -564,10 +537,10 @@ export default function PaperModelsPage() {
                         flex-shrink: 0;
                         color: #000;
                       ">
-                        ${['أ', 'ب', 'ج', 'د'][optIdx]}
+                        ${['أ', 'ب', 'ج', 'د', 'هـ'][optIdx] ?? optIdx + 1}
                       </div>
                       <div style="font-size: ${isLongQuestion ? '14px' : '15px'}; line-height: 1.6; color: #000;">
-                        ${option}
+                        ${escapeHtml(option)}
                       </div>
                     </div>
                   `).join('')}
@@ -851,7 +824,7 @@ export default function PaperModelsPage() {
             <Loader2 className="w-12 h-12 mx-auto mb-4 animate-spin text-blue-600" />
             <h3 className="text-xl font-bold">جاري تحضير النماذج...</h3>
             <p className="text-muted-foreground mt-2">
-              يتم الآن إنشاء 36 نموذج فريد بدون تكرار
+              جارٍ تحميل النماذج الورقية الثابتة
             </p>
             <p className="text-sm text-muted-foreground mt-1">
               قد يستغرق هذا بضع ثوان...
@@ -903,13 +876,8 @@ export default function PaperModelsPage() {
           <Card className="w-full max-w-md">
             <CardContent className="p-6 text-center">
               <FileText className="w-12 h-12 mx-auto mb-4 text-muted-foreground" />
-              <h3 className="text-xl font-bold mb-2">محاكاة الورقي متاحة للتدريب</h3>
-              <p className="text-muted-foreground mb-4">
-                ابدأ اختبارًا من بنك المنصة: 53 سؤالًا لفظيًا و47 كميًا، مع تصحيح وتقرير مفصل. هذه محاكاة تدريبية وليست نموذجًا رسميًا مستوردًا؛ ملفات النماذج المعتمدة لم تُنشر بعد.
-              </p>
-              <Link href="/qiyas?examId=10" className="mb-4 block font-bold text-primary underline underline-offset-4" data-testid="start-paper-simulation">
-                ابدأ محاكاة الورقي
-              </Link>
+              <h3 className="text-xl font-bold mb-2">النماذج الورقية غير متاحة مؤقتًا</h3>
+              <p className="text-muted-foreground mb-4">تعذر تحميل قائمة النماذج. أعد تحميل الصفحة أو حاول مرة أخرى لاحقًا.</p>
               <Button onClick={() => window.location.reload()}>
                 تحديث الصفحة
               </Button>
@@ -929,46 +897,9 @@ export default function PaperModelsPage() {
             نماذج الورقي
           </h1>
           <p className="text-xl text-muted-foreground">
-            {exams.length} اختبار ورقي احترافي بدون تكرار
+            {exams.length} نموذجًا ثابتًا — أعد أي نموذج متى شئت
           </p>
           
-          {/* Timer Controls */}
-          {!examStarted && (
-            <Card className="max-w-2xl mx-auto bg-gradient-to-br from-blue-50 to-emerald-600 dark:from-blue-900/20 dark:to-emerald-600/20 border-blue-200">
-              <CardContent className="p-6">
-                <div className="flex items-center justify-center gap-2 mb-3">
-                  <svg className="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                  </svg>
-                  <h3 className="text-lg font-bold">مؤقت الاختبار</h3>
-                </div>
-                <p className="text-sm text-muted-foreground mb-4 text-center">
-                  جرّب حل الاختبار في وقت محدد لمحاكاة الاختبار الحقيقي
-                </p>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                  <Button
-                    onClick={() => startExamTimer('full')}
-                    className="bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700"
-                  >
-                    <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                    </svg>
-                    بدء المؤقت - ساعتين (وقت حقيقي)
-                  </Button>
-                  <Button
-                    onClick={() => startExamTimer('practice')}
-                    variant="outline"
-                    className="border-green-400 hover:bg-green-100 dark:hover:bg-green-100/20"
-                  >
-                    <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
-                    </svg>
-                    تمرين سريع - 10 دقائق
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
-          )}
         </div>
 
         {/* Statistics Cards */}
@@ -1025,6 +956,10 @@ export default function PaperModelsPage() {
         )}
 
         {/* Exams Grid */}
+                <div className="mb-4 rounded-xl border border-orange-200 bg-orange-50 px-4 py-3 text-sm text-orange-900 dark:border-orange-900/50 dark:bg-orange-950/20 dark:text-orange-200">
+                  مفتاح الإجابة المحلول وورقة التظليل الصحيحة يظهران بعد تسليم المحاكاة الرقمية فقط.
+                </div>
+
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {exams.map((exam) => {
             const result = getResult(exam.id);
@@ -1044,6 +979,11 @@ export default function PaperModelsPage() {
                       <FileText className="w-6 h-6 text-blue-600" />
                       {exam.name}
                     </div>
+                    {exam.totalQuestions < 120 && (
+                      <span className="rounded-full bg-amber-100 px-2 py-1 text-[10px] font-semibold text-amber-800 dark:bg-amber-950/50 dark:text-amber-200">
+                        مجموعة جزئية
+                      </span>
+                    )}
                     {completed && (
                       <CheckCircle className="w-5 h-5 text-green-600" />
                     )}
@@ -1061,14 +1001,14 @@ export default function PaperModelsPage() {
                       <h4 className="font-bold text-center mb-2">النتيجة المسجلة</h4>
                       <div className="flex justify-between text-sm">
                         <span>اللفظي:</span>
-                        <span className="font-bold text-red-600">
-                          {result.verbalCorrect}/53 ({result.verbalPercentage}%)
+                          <span className="font-bold text-red-600">
+                          {result.verbalCorrect}/{result.verbalTotal} ({result.verbalPercentage}%)
                         </span>
                       </div>
                       <div className="flex justify-between text-sm">
                         <span>الكمي:</span>
-                        <span className="font-bold text-green-600">
-                          {result.quantitativeCorrect}/47 ({result.quantitativePercentage}%)
+                          <span className="font-bold text-green-600">
+                          {result.quantitativeCorrect}/{result.quantitativeTotal} ({result.quantitativePercentage}%)
                         </span>
                       </div>
                       <div className="flex justify-between text-sm pt-2 border-t">
@@ -1083,72 +1023,29 @@ export default function PaperModelsPage() {
                       <div className="text-sm text-muted-foreground space-y-1">
                         <div className="flex justify-between">
                           <span>أسئلة لفظية:</span>
-                          <span className="font-bold text-red-600">65 سؤال (12 تجريبي)</span>
+                          <span className="font-bold text-red-600">{exam.verbalCount} سؤال ({exam.trialVerbalCount} تجريبي)</span>
                         </div>
                         <div className="flex justify-between">
                           <span>أسئلة كمية:</span>
-                          <span className="font-bold text-green-600">55 سؤال (8 تجريبي)</span>
+                          <span className="font-bold text-green-600">{exam.quantitativeCount} سؤال ({exam.trialQuantCount} تجريبي)</span>
                         </div>
                         <div className="flex justify-between">
                           <span>المجموع:</span>
-                          <span className="font-bold">120 سؤال</span>
+                          <span className="font-bold">{exam.totalQuestions} سؤال</span>
                         </div>
                       </div>
 
-                      <div className="space-y-2">
-                        <Button
-                          onClick={() => {
-                            setSelectedExam(exam);
-                            setShowResultDialog(true);
-                          }}
-                          variant="default"
-                          className="w-full bg-gradient-to-r from-green-600 to-amber-600 hover:from-green-600 hover:to-amber-600"
-                          data-testid={`button-enter-result-${exam.modelNumber}`}
-                        >
-                          <Award className="w-4 h-4 mr-2" />
-                          إدخال النتيجة يدوياً
-                        </Button>
-                      </div>
                     </>
                   )}
 
                   <div className="space-y-2">
                     <Button
-                      onClick={() => generateColoredAnswerKey(exam)}
-                      disabled={loading[exam.id]}
-                      className="w-full bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600"
-                      data-testid={`button-answer-key-${exam.modelNumber}`}
+                      onClick={() => startDigitalSimulation(exam)}
+                      className="w-full bg-[#e47a55] text-white hover:bg-[#d96947]"
+                      data-testid={`button-simulate-model-${exam.modelNumber}`}
                     >
-                      {loading[exam.id] ? (
-                        <>
-                          <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                          جاري التحميل...
-                        </>
-                      ) : (
-                        <>
-                          <Download className="w-4 h-4 mr-2" />
-                          البابل شيت المحلول
-                        </>
-                      )}
-                    </Button>
-
-                    <Button
-                      onClick={() => generateQuestionsWithExplanations(exam)}
-                      disabled={loading[exam.id]}
-                      className="w-full bg-gradient-to-r from-yellow-500 to-orange-500 hover:from-yellow-600 hover:to-orange-600"
-                      data-testid={`button-questions-explanations-${exam.modelNumber}`}
-                    >
-                      {loading[exam.id] ? (
-                        <>
-                          <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                          جاري التحميل...
-                        </>
-                      ) : (
-                        <>
-                          <FileText className="w-4 h-4 mr-2" />
-                          الأسئلة مع الشرح
-                        </>
-                      )}
+                      <FileText className="w-4 h-4 mr-2" />
+                      ابدأ المحاكاة الرقمية
                     </Button>
 
                     <Button
@@ -1166,7 +1063,7 @@ export default function PaperModelsPage() {
                       ) : (
                         <>
                           <FileText className="w-4 h-4 mr-2" />
-                          الاختبار الكامل
+                          كتيّب الاختبار وورقة الإجابة
                         </>
                       )}
                     </Button>
@@ -1185,51 +1082,16 @@ export default function PaperModelsPage() {
               <div className="space-y-2 text-sm">
                 <p className="font-bold">ملاحظات مهمة:</p>
                 <ul className="list-disc list-inside space-y-1 text-muted-foreground">
-                  <li>كل اختبار يحتوي على 120 سؤال فريد (لا تكرار بين الاختبارات)</li>
-                  <li>البابل شيت المحلول: أحمر=لفظي، أخضر=كمي، أزرق=تجريبي</li>
-                  <li>الاختبار الكامل: يبدأ بصفحتي بابل شيت ثم الأسئلة</li>
-                  <li>التصميم أبيض وأسود فقط (موفر للحبر)</li>
-                  <li>النتائج المحسوبة تستثني الأسئلة التجريبية (53 لفظي + 47 كمي = 100)</li>
+                  <li>النماذج ١–٣٠ محفوظة كما هي، وأُضيفت نماذج من الأسئلة المعتمدة المتبقية.</li>
+                  <li>يمكنك حل النموذج رقميًا أو تنزيل كتيّب الأسئلة مع ورقة تظليل فارغة.</li>
+                  <li>مفتاح الإجابة المحلول لا يظهر إلا بعد تسليم المحاكاة الرقمية.</li>
+                  <li>كل محاولة تُحفظ على حسابك، ويمكنك إعادة النموذج وإنشاء محاولة جديدة.</li>
                 </ul>
               </div>
             </div>
           </CardContent>
         </Card>
       </div>
-
-      {/* Timer Bar - Fixed at bottom */}
-      {examStarted && (
-        <div className="fixed left-0 right-0 z-50 bg-gradient-to-r from-blue-600 to-emerald-600 text-white shadow-lg bottom-16 md:bottom-0">
-          <div className="container mx-auto px-4 py-3">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-4">
-                <div className="text-3xl font-mono font-bold">
-                  {formatTime(timeRemaining)}
-                </div>
-                <div className="text-sm">
-                  {timerMode === 'full' ? 'وقت الاختبار الحقيقي (ساعتين)' : 'وقت التمرين (10 دقائق)'}
-                </div>
-              </div>
-              <Button
-                onClick={stopExamTimer}
-                variant="outline"
-                size="sm"
-                className="bg-white/20 hover:bg-white/30 border-white/40"
-              >
-                إيقاف المؤقت
-              </Button>
-            </div>
-            <div className="mt-2 bg-white/20 rounded-full h-2">
-              <div 
-                className="bg-white rounded-full h-2 transition-all duration-1000"
-                style={{ 
-                  width: `${(timeRemaining / (timerMode === 'full' ? 120 * 60 : 10 * 60)) * 100}%` 
-                }}
-              />
-            </div>
-          </div>
-        </div>
-      )}
 
       {/* Download Progress Dialog */}
       <Dialog open={showProgressDialog} onOpenChange={() => {}}>

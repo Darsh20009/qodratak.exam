@@ -6,6 +6,7 @@ import {
   validatePaperExamConfig,
   type PaperExamConfig,
   type PaperExamQuestionCandidate,
+  type FixedPaperExamModel,
 } from "../services/paperExamService";
 import type { PaperExamHistoryInput } from "../services/paperExamResultHistory";
 
@@ -16,6 +17,7 @@ interface PaperExamRouteDependencies {
   requireStudent: RequestHandler;
   service: PaperExamService;
   loadCandidates: (config: PaperExamConfig) => Promise<PaperExamQuestionCandidate[][]>;
+  loadFixedModel?: (modelNumber: number) => Promise<FixedPaperExamModel | null>;
   saveResultToHistory: (input: PaperExamHistoryInput) => Promise<unknown>;
 }
 
@@ -49,6 +51,30 @@ export function registerPaperExamRoutes(
   dependencies: PaperExamRouteDependencies,
 ) {
   const middleware = [dependencies.requireAuth, dependencies.requireStudent] as const;
+
+  app.post("/api/paper-exams/fixed-models/:modelNumber", ...middleware, async (req, res) => {
+    try {
+      const ownerUserId = currentUserId(req);
+      if (!ownerUserId) return res.status(401).json({ error: "يجب تسجيل الدخول أولاً" });
+      const modelNumber = Number(req.params.modelNumber);
+      if (!Number.isSafeInteger(modelNumber) || modelNumber < 1) {
+        return res.status(400).json({ error: "رقم النموذج غير صالح" });
+      }
+      const body = req.body && typeof req.body === "object" ? req.body as Record<string, unknown> : {};
+      if (Object.keys(body).length > 0) {
+        return res.status(400).json({ error: "إنشاء المحاولة لا يقبل أسئلة أو إجابات من المتصفح" });
+      }
+      if (!dependencies.loadFixedModel) {
+        return res.status(503).json({ error: "النماذج الورقية الثابتة غير متاحة" });
+      }
+      const model = await dependencies.loadFixedModel(modelNumber);
+      if (!model) return res.status(404).json({ error: "النموذج الورقي غير موجود" });
+      const state = await dependencies.service.createFixedModel({ ownerUserId, model });
+      return res.status(201).json(state);
+    } catch (error) {
+      return respondWithError(res, error);
+    }
+  });
 
   app.post("/api/paper-exams", ...middleware, async (req, res) => {
     try {

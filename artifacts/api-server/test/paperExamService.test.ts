@@ -145,6 +145,36 @@ test("creation and restore state expose neither trusted answer keys nor hidden e
   assert.ok(!serialized.includes("شرح داخلي"));
 });
 
+test("fixed paper models preserve question order and reveal their answer key only after submission", async () => {
+  const repository = new FakePaperExamRepository();
+  const service = new PaperExamService(repository);
+  const now = new Date("2026-10-26T10:00:00.000Z");
+  const model = {
+    modelNumber: 31,
+    title: "النموذج الورقي ٣١",
+    timeLimitMinutes: 30,
+    questions: [
+      { ...questionCandidate("fixed-v1", "verbal", 0), text: "الأول" },
+      { ...questionCandidate("fixed-q1", "quantitative", 2), text: "الثاني", isTrial: true },
+      { ...questionCandidate("fixed-v2", "verbal", 3), text: "الثالث" },
+      { ...questionCandidate("fixed-q2", "quantitative", 1), text: "الرابع" },
+      { ...questionCandidate("fixed-v3", "verbal", 2), text: "الخامس" },
+    ],
+  };
+
+  const state = await service.createFixedModel({ ownerUserId: "student-a", model, now });
+  assert.deepEqual(state.questions.map((question) => question.text), ["الأول", "الثاني", "الثالث", "الرابع", "الخامس"]);
+  assert.equal(state.exam.totalQuestions, 5);
+  assert.equal(state.exam.trialQuestions, 1);
+  assert.ok(!JSON.stringify(state).includes("correctOptionIndex"));
+  assert.ok(!JSON.stringify(state).includes("شرح داخلي"));
+
+  const submitted = await service.submit(state.exam.id, "student-a", new Date(now.getTime() + 60_000));
+  assert.equal(submitted.result.questionDetails[0].correctAnswer, 0);
+  assert.equal(submitted.result.questionDetails[1].correctAnswer, 2);
+  assert.equal(submitted.result.questionDetails[1].status, "trial");
+});
+
 test("saved answers and review marks restore; malformed, unknown, and out-of-range answers are rejected", async () => {
   const repository = new FakePaperExamRepository();
   const service = new PaperExamService(repository);
@@ -251,13 +281,28 @@ test("all simulator endpoints register behind both authentication and student-ro
     requireStudent: studentRole as any,
     service,
     loadCandidates: async () => candidatesForMixedConfig(),
+    loadFixedModel: async (modelNumber) => modelNumber === 31 ? {
+      modelNumber: 31,
+      title: "النموذج الورقي ٣١",
+      timeLimitMinutes: 30,
+      questions: Array.from({ length: 5 }, (_, index) => questionCandidate(`fixed-${index + 1}`)),
+    } : null,
     saveResultToHistory: async (input) => { savedHistoryResults.push(input as unknown as Record<string, unknown>); },
   });
-  assert.equal(registrations.length, 5);
+  assert.equal(registrations.length, 6);
   for (const route of registrations) {
     assert.equal(route.handlers[0], auth);
     assert.equal(route.handlers[1], studentRole);
   }
+
+  const fixedCreate = registrations.find((route) => route.method === "POST" && route.path === "/api/paper-exams/fixed-models/:modelNumber")!;
+  const fixedResponse = { statusCode: 200, body: undefined as any, status(code: number) { this.statusCode = code; return this; }, json(body: any) { this.body = body; return this; } };
+  await fixedCreate.handlers[2]({ params: { modelNumber: "31" }, body: {}, session: { userId: "student-a" } }, fixedResponse as any);
+  assert.equal(fixedResponse.statusCode, 201);
+  assert.ok(!JSON.stringify(fixedResponse.body).includes("correctOptionIndex"));
+  const fixedBodyRejected = { statusCode: 200, body: undefined as any, status(code: number) { this.statusCode = code; return this; }, json(body: any) { this.body = body; return this; } };
+  await fixedCreate.handlers[2]({ params: { modelNumber: "31" }, body: { questions: [] }, session: { userId: "student-a" } }, fixedBodyRejected as any);
+  assert.equal(fixedBodyRejected.statusCode, 400);
 
   const create = registrations.find((route) => route.method === "POST" && route.path === "/api/paper-exams")!;
   const response = { statusCode: 200, body: undefined as any, status(code: number) { this.statusCode = code; return this; }, json(body: any) { this.body = body; return this; } };

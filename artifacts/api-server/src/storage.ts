@@ -2095,12 +2095,18 @@ export class MemStorage implements IStorage {
       // Load stable models from JSON file (NEVER regenerated unless manually done)
       const fs = await import('fs');
       const path = await import('path');
-      const modelsFile = path.join(process.cwd(), 'artifacts', 'api-server', 'server', 'data', 'paper-models.json');
-      
-       if (!fs.existsSync(modelsFile)) {
+      const modelFileCandidates = [
+        path.join(process.cwd(), 'artifacts', 'api-server', 'src', 'data', 'paper-models.json'),
+        path.join(process.cwd(), 'src', 'data', 'paper-models.json'),
+        path.join(process.cwd(), 'artifacts', 'api-server', 'server', 'data', 'paper-models.json'),
+        path.join(process.cwd(), 'server', 'data', 'paper-models.json'),
+      ];
+      const modelsFile = modelFileCandidates.find(candidate => fs.existsSync(candidate));
+
+      if (!modelsFile) {
          console.log('📭 No paper models available; waiting for a reviewed content import.');
          return;
-       }
+      }
 
       const fileContent = fs.readFileSync(modelsFile, 'utf-8');
       const { models, version, generatedAt } = JSON.parse(fileContent);

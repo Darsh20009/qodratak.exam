@@ -6484,11 +6484,144 @@ app.post("/api/auth/register", async (req: Request, res: Response) => {
     }
   });
 
+  let paperModelCatalogCache: any[] | null = null;
+  let paperModelCatalogLoad: Promise<any[]> | null = null;
+  let paperModelAssignmentsCache: any[] | null = null;
+  const getPaperModelAssignments = async (): Promise<any[]> => {
+    if (paperModelAssignmentsCache) return paperModelAssignmentsCache;
+    const assignmentCandidates = [
+      path.join(process.cwd(), "artifacts", "api-server", "src", "data", "paper-model-assignments.json"),
+      path.join(process.cwd(), "src", "data", "paper-model-assignments.json"),
+    ];
+    const assignmentFile = assignmentCandidates.find(candidate => fs.existsSync(candidate));
+    if (!assignmentFile) {
+      paperModelAssignmentsCache = [];
+      return [];
+    }
+    const manifest = JSON.parse(fs.readFileSync(assignmentFile, "utf-8"));
+    if (manifest.version !== 1 || !Array.isArray(manifest.models)) {
+      throw new Error("Paper model assignment manifest has an unsupported format");
+    }
+    paperModelAssignmentsCache = manifest.models;
+    return manifest.models;
+  };
+
+  const getPaperModelCatalog = async (): Promise<any[]> => {
+    if (paperModelCatalogCache) return paperModelCatalogCache;
+    if (paperModelCatalogLoad) return paperModelCatalogLoad;
+
+    paperModelCatalogLoad = (async () => {
+      await storage.seedPaperModels();
+      const existingModels = await storage.getAllPaperModels();
+      const assignments = await getPaperModelAssignments();
+      const generatedModels = assignments.map((assignment: any) => {
+        return {
+          id: Number(assignment.modelNumber),
+          modelNumber: Number(assignment.modelNumber),
+          name: String(assignment.name),
+          totalQuestions: Number(assignment.totalQuestions) || 0,
+          verbalCount: Number(assignment.verbalCount) || 0,
+          quantitativeCount: Number(assignment.quantitativeCount) || 0,
+          trialVerbalCount: 0,
+          trialQuantCount: 0,
+          timeLimitMinutes: Number(assignment.timeLimitMinutes) || 120,
+        };
+      });
+      paperModelCatalogCache = [...existingModels, ...generatedModels];
+      return paperModelCatalogCache;
+    })();
+
+    try {
+      return await paperModelCatalogLoad;
+    } finally {
+      paperModelCatalogLoad = null;
+    }
+  };
+
+  const loadPaperModelWithQuestions = async (modelNumber: number): Promise<any | null> => {
+    const catalogModel = (await getPaperModelCatalog()).find(item => item.modelNumber === modelNumber);
+    if (!catalogModel) return null;
+    if (Array.isArray(catalogModel.allQuestions)) return catalogModel;
+
+    const assignment = (await getPaperModelAssignments())
+      .find(item => Number(item.modelNumber) === modelNumber);
+    if (!assignment || !Array.isArray(assignment.questionIds)) return null;
+    if (assignment.questionIds.length !== Number(assignment.totalQuestions)) {
+      throw new Error(`Paper model ${modelNumber} has an invalid question count`);
+    }
+
+    const questionIds = assignment.questionIds.map((rawId: unknown) => {
+      const id = String(rawId);
+      if (!mongoose.isValidObjectId(id)) throw new Error(`Paper model ${modelNumber} contains an invalid question ID`);
+      return { id, objectId: new mongoose.Types.ObjectId(id) };
+    });
+    const sourceQuestions = await Question.find({
+      _id: { $in: questionIds.map((item: { objectId: mongoose.Types.ObjectId }) => item.objectId) },
+      answerStatus: "approved",
+    }).select({
+      _id: 1,
+      questionId: 1,
+      category: 1,
+      text: 1,
+      options: 1,
+      correctOptionIndex: 1,
+      explanation: 1,
+      imageUrl: 1,
+      imageUrls: 1,
+    }).lean();
+    const questionsById = new Map(sourceQuestions.map((question: any) => [String(question._id), question]));
+    const missingQuestionIds = questionIds.filter((item: { id: string }) => !questionsById.has(item.id));
+    if (missingQuestionIds.length) {
+      throw new Error(`Paper model ${modelNumber} has ${missingQuestionIds.length} missing or unapproved questions`);
+    }
+
+    const allQuestions = questionIds.map((item: { id: string }, index: number) => {
+      const question = questionsById.get(item.id) as any;
+      return {
+        id: Number(question.questionId ?? index + 1),
+        category: String(question.category),
+        questionType: String(question.category),
+        text: String(question.text || ""),
+        options: Array.isArray(question.options) ? question.options.map(String) : [],
+        correctOptionIndex: Number(question.correctOptionIndex),
+        explanation: question.explanation ? String(question.explanation) : undefined,
+        imageUrl: question.imageUrl ? String(question.imageUrl) : undefined,
+        imageUrls: Array.isArray(question.imageUrls) ? question.imageUrls.map(String) : undefined,
+        isTrial: false,
+        position: index + 1,
+        sourceQuestionId: item.id,
+      };
+    });
+    return { ...catalogModel, allQuestions };
+  };
+
   const paperExamService = new PaperExamService(paperExamMongoRepository);
   registerPaperExamRoutes(app, {
     requireAuth,
     requireStudent: requireRole('student'),
     service: paperExamService,
+    loadFixedModel: async (modelNumber: number) => {
+      const model = await loadPaperModelWithQuestions(modelNumber);
+      if (!model || !Array.isArray(model.allQuestions)) return null;
+      return {
+        modelNumber,
+        title: String(model.name),
+        timeLimitMinutes: Number(model.timeLimitMinutes) || 120,
+        questions: model.allQuestions.map((question: any, index: number) => ({
+          sourceQuestionId: String(question.sourceQuestionId || `fixed-model-${modelNumber}-question-${index + 1}`),
+          sourceQuestionNumber: Number(question.id) || index + 1,
+          category: String(question.questionType || question.category || ""),
+          text: String(question.text || ""),
+          options: Array.isArray(question.options) ? question.options.map(String) : [],
+          correctOptionIndex: Number(question.correctOptionIndex),
+          quality: "approved" as const,
+          isTrial: question.isTrial === true,
+          explanation: question.explanation ? String(question.explanation) : undefined,
+          imageUrl: question.imageUrl ? String(question.imageUrl) : undefined,
+          imageUrls: Array.isArray(question.imageUrls) ? question.imageUrls.map(String) : undefined,
+        })),
+      };
+    },
     saveResultToHistory: savePaperExamResultToHistory,
     loadCandidates: async (config: PaperExamConfig): Promise<PaperExamQuestionCandidate[][]> => {
       const buckets = paperExamQuestionPlan(config);
@@ -7140,64 +7273,72 @@ app.post("/api/auth/register", async (req: Request, res: Response) => {
   // Get all global paper models (same for everyone)
   app.get("/api/paper-models", async (req: Request, res: Response) => {
     try {
-      console.log('📝 Paper models request received');
-
       if (!(req.session as any).userId) {
-        console.log('❌ Unauthorized - No userId in session');
         return res.status(401).json({
           message: "يجب تسجيل الدخول للوصول إلى النماذج الورقية",
           error: "UNAUTHORIZED"
         });
       }
 
-      console.log(`📝 Fetching global paper models`);
-
-      // Fetch all global models
-      const models = await storage.getAllPaperModels();
-
-      if (models.length === 0) {
-        console.log('⚠️ No paper models found, seeding now...');
-        await storage.seedPaperModels();
-        const newModels = await storage.getAllPaperModels();
-
-        return res.json({
-          exams: newModels.map(m => ({
-            id: m.id,
-            name: m.name,
-            modelNumber: m.modelNumber,
-            allQuestions: m.allQuestions,
-            totalQuestions: m.totalQuestions,
-            verbalCount: m.verbalCount,
-            quantitativeCount: m.quantitativeCount,
-            trialVerbalCount: m.trialVerbalCount,
-            trialQuantCount: m.trialQuantCount,
-          }))
-        });
-      }
-
-      console.log(`✅ Found ${models.length} global paper models`);
+      const models = await getPaperModelCatalog();
       res.json({
         exams: models.map(m => ({
           id: m.id,
           name: m.name,
           modelNumber: m.modelNumber,
-          allQuestions: m.allQuestions,
           totalQuestions: m.totalQuestions,
           verbalCount: m.verbalCount,
           quantitativeCount: m.quantitativeCount,
           trialVerbalCount: m.trialVerbalCount,
           trialQuantCount: m.trialQuantCount,
+          timeLimitMinutes: Number(m.timeLimitMinutes) || 120,
         }))
       });
     } catch (error) {
-      console.error("❌ Error fetching paper models:", error);
+      console.error("Error fetching paper models:", error);
       res.status(500).json({
         error: "Failed to fetch paper models",
-        message: error instanceof Error ? error.message : "Unknown error"
+        message: "تعذر تحميل النماذج الورقية المعتمدة"
       });
     }
   });
 
+  app.get("/api/paper-models/:modelNumber/print", async (req: Request, res: Response) => {
+    try {
+      if (!(req.session as any).userId) {
+        return res.status(401).json({ message: "يجب تسجيل الدخول للوصول إلى النماذج الورقية", error: "UNAUTHORIZED" });
+      }
+      const rawModelNumber = Array.isArray(req.params.modelNumber) ? req.params.modelNumber[0] : req.params.modelNumber;
+      const modelNumber = Number(rawModelNumber);
+      if (!Number.isSafeInteger(modelNumber) || modelNumber < 1) {
+        return res.status(400).json({ error: "رقم النموذج غير صالح" });
+      }
+
+      const model = await loadPaperModelWithQuestions(modelNumber);
+      if (!model || !Array.isArray(model.allQuestions)) {
+        return res.status(404).json({ error: "النموذج الورقي غير موجود" });
+      }
+
+      return res.json({
+        modelNumber,
+        name: String(model.name),
+        totalQuestions: model.totalQuestions,
+        sections: 5,
+        questions: model.allQuestions.map((question: any, index: number) => ({
+          id: index + 1,
+          category: String(question.questionType || question.category || ""),
+          text: String(question.text || ""),
+          options: Array.isArray(question.options) ? question.options.map(String) : [],
+          imageUrl: question.imageUrl ? String(question.imageUrl) : undefined,
+          imageUrls: Array.isArray(question.imageUrls) ? question.imageUrls.map(String) : undefined,
+          isTrial: question.isTrial === true,
+        })),
+      });
+    } catch (error) {
+      console.error("Error loading a paper model for printing:", error);
+      return res.status(500).json({ error: "تعذر تجهيز نسخة الطباعة" });
+    }
+  });
   // ============================================
   // Admin Routes using MongoDB
   // ============================================

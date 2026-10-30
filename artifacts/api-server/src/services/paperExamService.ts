@@ -23,9 +23,17 @@ export interface PaperExamQuestionCandidate {
   options: string[];
   correctOptionIndex: number;
   quality: "approved" | "verified";
+  isTrial?: boolean;
   explanation?: string;
   imageUrl?: string;
   imageUrls?: string[];
+}
+
+export interface FixedPaperExamModel {
+  modelNumber: number;
+  title: string;
+  timeLimitMinutes: number;
+  questions: PaperExamQuestionCandidate[];
 }
 
 export interface PaperExamQuestionSnapshot extends PaperExamQuestionCandidate {
@@ -437,6 +445,67 @@ export function gradePaperExamAttempt(attempt: PaperExamAttemptRecord, now: Date
 
 export class PaperExamService {
   constructor(private readonly repository: PaperExamAttemptRepository) {}
+
+  async createFixedModel(input: {
+    ownerUserId: string;
+    model: FixedPaperExamModel;
+    now?: Date;
+  }) {
+    const { model } = input;
+    if (
+      !Number.isSafeInteger(model.modelNumber) ||
+      model.modelNumber < 1 ||
+      !model.title.trim() ||
+      model.title.length > 120 ||
+      !integerInRange(model.timeLimitMinutes, MIN_TIME_MINUTES, MAX_TIME_MINUTES) ||
+      !Array.isArray(model.questions) ||
+      model.questions.length < 5 ||
+      model.questions.length > MAX_QUESTIONS
+    ) {
+      throw new PaperExamServiceError("INVALID", "النموذج الورقي غير صالح");
+    }
+
+    const sourceIds = new Set<string>();
+    for (const question of model.questions) {
+      if (
+        !question.sourceQuestionId ||
+        sourceIds.has(question.sourceQuestionId) ||
+        !["verbal", "quantitative"].includes(question.category) ||
+        question.quality !== "approved" ||
+        !Array.isArray(question.options) ||
+        question.options.length < 2 ||
+        !Number.isSafeInteger(question.correctOptionIndex) ||
+        question.correctOptionIndex < 0 ||
+        question.correctOptionIndex >= question.options.length
+      ) {
+        throw new PaperExamServiceError("INVALID", "يحتوي النموذج على سؤال غير صالح أو غير معتمد");
+      }
+      sourceIds.add(question.sourceQuestionId);
+    }
+
+    const now = input.now ?? new Date();
+    const questions: PaperExamQuestionSnapshot[] = model.questions.map((question, index) => ({
+      ...question,
+      questionNumber: index + 1,
+      isTrial: question.isTrial === true,
+    }));
+    const attempt = await this.repository.create({
+      ownerUserId: input.ownerUserId,
+      title: model.title,
+      program: "qudrat",
+      distribution: "custom",
+      totalQuestions: questions.length,
+      trialQuestions: questions.filter(question => question.isTrial).length,
+      timeLimitMinutes: model.timeLimitMinutes,
+      startedAt: now,
+      expiresAt: new Date(now.getTime() + model.timeLimitMinutes * 60_000),
+      status: "in_progress",
+      questions,
+      answers: {},
+      reviewQuestionNumbers: [],
+    });
+    return this.toPublicState(attempt);
+  }
 
   async create(input: {
     ownerUserId: string;
