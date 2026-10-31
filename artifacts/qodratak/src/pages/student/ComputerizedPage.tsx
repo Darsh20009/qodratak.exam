@@ -691,7 +691,15 @@ function SubjectWorkspace({ mode }: { mode: "quantitative" | "verbal" }) {
           </div>
           <div className="rounded-xl border border-border bg-card px-4 py-3 text-right">
             <p className="text-[11px] font-bold text-muted-foreground">حالة المحتوى</p>
-             <p className="mt-1 text-sm font-black text-[#147D68] dark:text-emerald-400">{bankLessons.length ? `${bankLessons.length} بنكًا منشورًا` : "لا توجد بنوك منشورة"}</p>
+             <p className="mt-1 text-sm font-black text-[#147D68] dark:text-emerald-400">
+               {isLessonsLoading
+                 ? "جارٍ التحقق من المحتوى"
+                 : bankLessons.length
+                   ? `${bankLessons.length} بنكًا منشورًا`
+                   : isQuantitative
+                     ? "لا توجد بنوك منشورة"
+                     : "ملفات وفيديوهات منشورة"}
+             </p>
           </div>
         </div>
       </div>
@@ -745,7 +753,7 @@ function SubjectWorkspace({ mode }: { mode: "quantitative" | "verbal" }) {
                 <p className="mt-1 text-sm leading-6 text-muted-foreground">
                {isQuantitative
                   ? "هذه فيديوهات تدريب المحوسب، وليست دروس التأسيس. شاهد الفيديو ثم افتح ملف البنك واختباره من نفس البطاقة."
-                  : "فيديوهات اللفظي المحوسب منفصلة في هذه المرحلة عن فيديوهات التأسيس، ولكل بنك ملف واختبار مرتبطان به."}
+                  : "دروس اللفظي المحوسب وملفاتها متاحة في القسم أعلاه؛ بنوك الأسئلة المنفصلة تظهر هنا عند نشرها."}
              </p>
            </div>
            <span className="rounded-full bg-card px-3 py-1 text-xs font-black text-[#147D68] dark:text-emerald-400">
@@ -757,7 +765,16 @@ function SubjectWorkspace({ mode }: { mode: "quantitative" | "verbal" }) {
               {bankLessons.map((lesson, index) => <BankLessonCard key={lesson._id} lesson={lesson} index={index} subject={subject} />)}
            </div>
          ) : !isLessonsLoading ? (
-           <EmptyContentNotice label={`بنوك ${isQuantitative ? "الكمي" : "اللفظي"}`} />
+           isQuantitative ? (
+             <EmptyContentNotice label="بنوك الكمي" />
+           ) : (
+             <div className="mt-4 rounded-2xl border border-sky-500/20 bg-sky-500/5 p-4 text-sm leading-6 text-foreground" data-testid="status-verbal-banks-published-content">
+               لا توجد بنوك أسئلة منفصلة منشورة في هذه القائمة. ملفات PDF والفيديوهات الـ٢٣ متاحة في قسم «ملفات ودروس اللفظي» أعلاه، ويبدأ اختبار الدرس فقط إذا توفرت له ١٠ أسئلة منشورة من القسم نفسه.
+               <a href="#verbal-computerized-files-title" className="mr-2 font-black text-primary underline underline-offset-4" data-testid="link-verbal-files-section">
+                 انتقل إلى الملفات والدروس
+               </a>
+             </div>
+           )
          ) : null}
        </section>
 

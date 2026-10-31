@@ -41,6 +41,7 @@ import PreparationCoursePage from "@/pages/student/PreparationCoursePage";
 import LearningTodayPage from "@/pages/student/LearningTodayPage";
 import TahsiliOverviewPage from "@/pages/TahsiliOverviewPage";
 import TahsiliSourceLibrary from "@/pages/TahsiliSourceLibrary";
+import QudratVerbalFoundationBook from "@/components/student/QudratVerbalFoundationBook";
 
 function ProgressBar({ value, className = "" }: { value: number; className?: string }) {
   const safeValue = Number.isFinite(value) ? Math.max(0, Math.min(100, value)) : 0;
@@ -1634,10 +1635,12 @@ function FoundationPageContent() {
           )}
       </header>
 
-       <FoundationResourceAvailability
-         content={content}
-         state={isLoading ? "loading" : isContentError ? "error" : "ready"}
-       />
+       {program === "qudrat" && activeSection.key === "verbal" ? null : (
+         <FoundationResourceAvailability
+           content={content}
+           state={isLoading ? "loading" : isContentError ? "error" : "ready"}
+         />
+       )}
 
       {program === "qudrat" ? (
         <section className="mb-8" aria-label="مسارك حسب محاولاتك">
@@ -1723,6 +1726,10 @@ function FoundationPageContent() {
         ))}
       </div>
 
+      {program === "qudrat" && activeSection.key === "verbal" ? (
+        <QudratVerbalFoundationBook />
+      ) : (
+        <>
       <div className="mb-4 flex flex-wrap items-end justify-between gap-3">
         <div>
          <h2 className="text-xl font-black text-foreground">مواد {activeSection.shortTitle} المنشورة</h2>
@@ -1973,6 +1980,8 @@ function FoundationPageContent() {
           ))}
         </div>
       </section>
+        </>
+      )}
 
     </div>
   );

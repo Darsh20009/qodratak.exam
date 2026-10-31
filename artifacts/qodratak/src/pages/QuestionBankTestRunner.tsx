@@ -37,6 +37,7 @@ import {
 import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { useUser } from '@/hooks/use-user';
+import { matchesVerbalQuestionSection } from '@/lib/verbalSectionMatching';
 
 interface Question {
   id: number;
@@ -63,16 +64,6 @@ interface TestAnswer {
   correct: boolean;
   question: Question;
   timeSpent: number;
-}
-
-function normalizeVerbalSection(value: string): string {
-  return value
-    .normalize('NFKD')
-    .replace(/\p{M}/gu, '')
-    .replace(/ـ/g, '')
-    .replace(/[إأآ]/g, 'ا')
-    .replace(/\s+/g, ' ')
-    .trim();
 }
 
 export default function QuestionBankTestRunner() {
@@ -127,6 +118,7 @@ export default function QuestionBankTestRunner() {
   const [testAnswers, setTestAnswers] = useState<TestAnswer[]>([]);
   const [questionStartTime, setQuestionStartTime] = useState(Date.now());
   const [loading, setLoading] = useState(true);
+  const [questionLoadError, setQuestionLoadError] = useState<string | null>(null);
   const idempotencyKeyRef = React.useRef(
     `question-bank-${Date.now()}-${typeof crypto !== 'undefined' && crypto.randomUUID ? crypto.randomUUID() : Math.random().toString(36).slice(2)}`
   );
@@ -142,26 +134,31 @@ export default function QuestionBankTestRunner() {
   // Load questions for the specific test
   useEffect(() => {
     const loadQuestions = async () => {
+      setLoading(true);
+      setQuestionLoadError(null);
       try {
         const response = await fetch('/api/questions', { credentials: 'include' });
-        const allQuestions = await response.json();
+        if (!response.ok) {
+          throw new Error(`تعذر تحميل بنك الأسئلة (${response.status}).`);
+        }
+        const allQuestions: unknown = await response.json();
+        if (!Array.isArray(allQuestions)) {
+          throw new Error('وصلت استجابة غير صالحة من بنك الأسئلة.');
+        }
         
         // Filter questions by type
-        let filteredQuestions = allQuestions.filter((q: Question) => 
+        let filteredQuestions = (allQuestions as Question[]).filter((q: Question) =>
           q.category === testType
         );
         
         if (lessonSectionLabel) {
-          const normalizedTarget = normalizeVerbalSection(lessonSectionLabel);
           filteredQuestions = filteredQuestions.filter((q: Question) => {
-            const section = normalizeVerbalSection(`${q.subcategory || ''} ${q.category || ''}`);
-            return section.includes(normalizedTarget);
+            return matchesVerbalQuestionSection(q, lessonSection || "");
           });
         } else if (subcategoryFilter) {
           filteredQuestions = filteredQuestions.filter((q: Question) => 
             q.subcategory === subcategoryFilter
           );
-          console.log(`🎯 Filtered to ${subcategoryFilter}: ${filteredQuestions.length} questions`);
         }
         
         // Calculate question range for this test
@@ -172,7 +169,7 @@ export default function QuestionBankTestRunner() {
         setQuestions(testQuestions);
         setLoading(false);
       } catch (error) {
-        console.error('Error loading questions:', error);
+        setQuestionLoadError(error instanceof Error ? error.message : 'تعذر تحميل بنك الأسئلة.');
         setLoading(false);
       }
     };
@@ -683,17 +680,25 @@ export default function QuestionBankTestRunner() {
     );
   }
 
-  if (questions.length === 0) {
+  if (questionLoadError || questions.length === 0 || (Boolean(lessonSection) && questions.length < questionCount)) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50 dark:from-gray-900 dark:to-slate-900 flex items-center justify-center">
         <Card className="max-w-md">
           <CardHeader className="text-center">
-            <CardTitle className="text-red-600">خطأ</CardTitle>
+            <CardTitle className="text-red-600">
+              {questionLoadError ? "تعذر تحميل الاختبار" : lessonSection ? "الاختبار غير مكتمل بعد" : "لا توجد أسئلة"}
+            </CardTitle>
           </CardHeader>
           <CardContent className="text-center">
-            <p className="mb-4">لم يتم العثور على أسئلة لهذا الاختبار</p>
+            <p className="mb-4 text-sm leading-6 text-muted-foreground">
+              {questionLoadError
+                ? questionLoadError
+                : lessonSection
+                  ? `يلزم ${questionCount.toLocaleString("ar")} أسئلة لهذا الاختبار، والمتاح لهذا القسم والدرس ${questions.length.toLocaleString("ar")} فقط. لن يبدأ اختبار بعدد ناقص.`
+                  : "لم يتم العثور على أسئلة لهذا الاختبار."}
+            </p>
             <Button onClick={() => setLocation(returnLocation)}>
-              العودة لبنك الأسئلة
+              {lessonSection ? "العودة إلى اللفظي المحوسب" : "العودة لبنك الأسئلة"}
             </Button>
           </CardContent>
         </Card>
