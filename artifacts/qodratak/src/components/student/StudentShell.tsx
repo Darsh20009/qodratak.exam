@@ -4,6 +4,7 @@ import { useUser } from "@/hooks/use-user";
 import { StudentExamChromeContext } from "@/components/student/StudentExamChromeContext";
 import { StudentNavigation } from "@/components/student/StudentNavigation";
 import { StudentHeaderTools } from "@/components/student/StudentHeaderTools";
+import { StudentQuestionContributionButton } from "@/components/student/StudentQuestionContributionButton";
 
 export function StudentShell({ children }: { children: React.ReactNode }) {
   const { user } = useUser();
@@ -31,7 +32,10 @@ export function StudentShell({ children }: { children: React.ReactNode }) {
               data-testid="student-desktop-header"
               className="hidden h-14 shrink-0 items-center justify-end border-b border-border bg-background/95 px-6 backdrop-blur md:flex"
             >
-              <StudentHeaderTools />
+              <div className="flex items-center gap-2">
+                <StudentQuestionContributionButton className="h-10" />
+                <StudentHeaderTools />
+              </div>
             </header>
           )}
           <div className="min-h-0 min-w-0 flex-1">{children}</div>
