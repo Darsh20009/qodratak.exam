@@ -3,7 +3,7 @@ import { useTheme } from "next-themes";
 import { Button } from "@/components/ui/button";
 import { useEffect, useState } from "react";
 
-export function ThemeToggle() {
+export function ThemeToggle({ showLabel = false }: { showLabel?: boolean }) {
   const { theme, setTheme, resolvedTheme } = useTheme();
   const [mounted, setMounted] = useState(false);
 
@@ -15,11 +15,12 @@ export function ThemeToggle() {
     return (
       <Button
         variant="ghost"
-        size="icon"
+        size={showLabel ? "sm" : "icon"}
         className="relative"
         data-testid="button-theme-toggle-loading"
       >
         <div className="h-5 w-5 rounded-full bg-muted animate-pulse" />
+        {showLabel && <span className="h-3 w-16 animate-pulse rounded bg-muted" />}
       </Button>
     );
   }
@@ -29,11 +30,12 @@ export function ThemeToggle() {
   return (
     <Button
       variant="ghost"
-      size="icon"
+      size={showLabel ? "sm" : "icon"}
       onClick={() => setTheme(isDark ? "light" : "dark")}
-      className="relative overflow-visible group"
+      className={`relative overflow-visible group ${showLabel ? "gap-2 px-3" : ""}`}
       data-testid="button-theme-toggle"
       aria-label={isDark ? "تفعيل الوضع النهاري" : "تفعيل الوضع الليلي"}
+      title={isDark ? "تفعيل الوضع النهاري" : "تفعيل الوضع الليلي"}
     >
       <Sun
         className={`h-5 w-5 transition-all duration-300 ${
@@ -49,9 +51,15 @@ export function ThemeToggle() {
             : "-rotate-90 scale-0 opacity-0"
         }`}
       />
-      <span className="sr-only">
-        {isDark ? "تفعيل الوضع النهاري" : "تفعيل الوضع الليلي"}
-      </span>
+      {showLabel ? (
+        <span className="text-xs font-semibold">
+          {isDark ? "الوضع النهاري" : "الوضع الليلي"}
+        </span>
+      ) : (
+        <span className="sr-only">
+          {isDark ? "تفعيل الوضع النهاري" : "تفعيل الوضع الليلي"}
+        </span>
+      )}
     </Button>
   );
 }

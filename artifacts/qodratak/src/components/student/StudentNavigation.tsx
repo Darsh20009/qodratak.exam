@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { Link, useLocation } from "wouter";
 import { BarChart3, BookOpen, Brain, ChevronDown, CircleHelp, FileText, GraduationCap, House, Menu, Search, UserRound, X } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { StudentHeaderTools } from "./StudentHeaderTools";
 import { isStudentPrimaryActive, isStudentPathActive } from "./studentNavigationRoutes.mjs";
 
 const PRIMARY = [
@@ -190,12 +191,15 @@ export function StudentNavigation({ hidden = false }: { hidden?: boolean }) {
           <img src="/qodratak-icon.png" alt="" className="h-8 w-8 object-contain" />
           <span className="font-black text-foreground">قدراتك</span>
         </Link>
-        <button type="button" aria-label="فتح قائمة تنقل الطالب" aria-expanded={drawerOpen}
-          aria-controls="student-mobile-drawer" data-testid="button-open-student-drawer"
-          onClick={() => setDrawerOpen(true)}
-          className="flex h-10 items-center gap-2 rounded-xl border border-border px-3 text-sm font-bold text-foreground">
-          <Menu className="h-4 w-4" aria-hidden="true" />القائمة
-        </button>
+        <div className="flex items-center gap-2">
+          <StudentHeaderTools compact />
+          <button type="button" aria-label="فتح قائمة تنقل الطالب" aria-expanded={drawerOpen}
+            aria-controls="student-mobile-drawer" data-testid="button-open-student-drawer"
+            onClick={() => setDrawerOpen(true)}
+            className="flex h-10 items-center gap-2 rounded-xl border border-border px-3 text-sm font-bold text-foreground">
+            <Menu className="h-4 w-4" aria-hidden="true" />القائمة
+          </button>
+        </div>
       </header>
       {drawerOpen && <>
         <button type="button" aria-label="إغلاق القائمة" onClick={() => setDrawerOpen(false)}
