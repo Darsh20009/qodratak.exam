@@ -66,3 +66,4 @@
 - [Geidea timeout authority](geidea-timeout-authority.md) — a ten-minute platform timeout is not a provider cancellation; verified delayed charges must remain recoverable.
 - [Personalized question reuse](personalized-question-reuse.md) — retire correct questions, retry missed ones, and keep question selection server-owned and load-conscious.
 - [GitHub publishing authentication](github-push-auth.md) — verify remote refs; large packs may need smaller fast-forward pushes through Replit’s GitHub proxy.
+- [Post-merge package firewall](post-merge-package-firewall.md) — update blocked vulnerable transitive dependencies through the direct parent; never bypass Replit’s package firewall.
