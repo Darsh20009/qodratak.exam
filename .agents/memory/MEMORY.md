@@ -11,7 +11,7 @@
 - [Geidea KSA checkout prerequisites](geidea-ksa-checkout.md) — keep KSA HPP hosts separate from Egypt examples; sandbox code 110/080 indicates online payments need merchant-side enablement.
 - [Dark-mode page contrast](dark-mode-page-contrast.md) — legacy pages use fixed light colors; keep contrast overrides scoped to the shared app surface.
 - [Subscription entitlement consistency](subscription-entitlement-consistency.md) — keep paid access server-derived; trials are account-bound and expire into one daily Qudrat test.
-- [Question image import compatibility](question-image-import.md) — keep the first-image fields for legacy consumers while treating multi-image extraction as optional and reviewable.
+- [Question image import compatibility](question-image-import.md) — preserve first-image compatibility, keep source scans authoritative, and attach legacy paper images only after unique exact matching.
 - [Computer-bank content rights](computer-bank-51-70-content-rights.md) — permission covers uploaded banks 51–131; publish only question images and hold ambiguous keys or damaged scans.
 - [Computer-bank PDF bidi numbering](computer-bank-pdf-bidi.md) — visually confirm Arabic question headers when PDF text extraction reverses mixed-direction digits.
 - [Question-number badge cleanup](question-number-badge-cleanup.md) — badge positions vary; locate the capsule geometry and mask only digit ink inside the number disc.

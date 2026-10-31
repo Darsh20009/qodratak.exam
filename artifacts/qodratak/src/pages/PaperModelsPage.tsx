@@ -1,4 +1,6 @@
 import { useState, useEffect } from "react";
+import { getQuestionImageUrls } from "@/lib/questionImages";
+import { resolveFoundationAssetUrl } from "@/lib/foundationVideoUrl";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { Link, useLocation } from "wouter";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -487,9 +489,7 @@ export default function PaperModelsPage() {
             const questionNum = startIdx + idx + 1;
             const questionText = String(q.text ?? '');
             const options = Array.isArray(q.options) ? q.options : [];
-            const images = Array.isArray(q.imageUrls) && q.imageUrls.length
-              ? q.imageUrls
-              : q.imageUrl ? [q.imageUrl] : [];
+            const images = getQuestionImageUrls(q);
             const isLongQuestion = questionText.length > 250;
             
             return `
@@ -520,7 +520,7 @@ export default function PaperModelsPage() {
                   </div>
                 </div>
 
-                ${images.map((imageUrl: string) => `<img src="${escapeHtml(imageUrl)}" alt="شكل توضيحي للسؤال ${questionNum}" style="display:block;max-width:100%;max-height:125mm;object-fit:contain;margin:8px auto;" />`).join('')}
+                ${images.map((imageUrl: string) => `<img src="${escapeHtml(resolveFoundationAssetUrl(imageUrl))}" alt="شكل توضيحي للسؤال ${questionNum}" loading="eager" style="display:block;max-width:100%;max-height:125mm;object-fit:contain;margin:8px auto;" />`).join('')}
                 
                 <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; margin-top: 10px;">
                   ${options.map((option: string, optIdx: number) => `
@@ -747,6 +747,23 @@ export default function PaperModelsPage() {
     `;
   };
 
+  const waitForPrintImages = async (container: HTMLElement) => {
+    const images = Array.from(container.querySelectorAll<HTMLImageElement>('img'));
+    await Promise.all(images.map((image) => new Promise<void>((resolve) => {
+      let settled = false;
+      const finish = () => {
+        if (settled) return;
+        settled = true;
+        window.clearTimeout(timeout);
+        resolve();
+      };
+      const timeout = window.setTimeout(finish, 8000);
+      image.addEventListener('load', finish, { once: true });
+      image.addEventListener('error', finish, { once: true });
+      if (image.complete) finish();
+    })));
+  };
+
   const convertHtmlToPdfAndDownload = async (html: string, filename: string) => {
     setShowProgressDialog(true);
     setDownloadProgress(0);
@@ -778,6 +795,7 @@ export default function PaperModelsPage() {
         setDownloadProgress(Math.floor(((i + 1) / totalPages) * 100));
         
         await new Promise(resolve => requestAnimationFrame(resolve));
+        await waitForPrintImages(pageElement);
         
         const canvas = await html2canvas(pageElement, {
           scale: 1.0,

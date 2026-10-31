@@ -302,12 +302,18 @@ export function publicPaperExamQuestions(questions: PaperExamQuestionSnapshot[])
   return questions.map((question) => ({
     id: question.questionNumber,
     category: question.category,
-    text: question.text,
+    text: isImageBackedQuantitativeQuestion(question) ? "" : question.text,
     options: question.options,
     imageUrl: question.imageUrl,
     imageUrls: question.imageUrls,
     isTrial: question.isTrial,
   }));
+}
+
+function isImageBackedQuantitativeQuestion(question: Pick<PaperExamQuestionSnapshot, "category" | "imageUrl" | "imageUrls">) {
+  const isQuantitative = /quantitative|كمي|رياضيات|math/i.test(question.category);
+  const hasImage = Boolean(question.imageUrl?.trim()) || Boolean(question.imageUrls?.some((imageUrl) => imageUrl.trim()));
+  return isQuantitative && hasImage;
 }
 
 function normalizeSavedState(
@@ -405,7 +411,7 @@ export function gradePaperExamAttempt(attempt: PaperExamAttemptRecord, now: Date
         question: {
           id: question.questionNumber,
           category: question.category,
-          text: question.text,
+          text: isImageBackedQuantitativeQuestion(question) ? "" : question.text,
           options: question.options,
           correctOptionIndex: question.correctOptionIndex,
           explanation: question.explanation,

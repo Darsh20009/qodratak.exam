@@ -38,6 +38,7 @@ import passport from 'passport';
 import { Strategy as GoogleStrategy } from 'passport-google-oauth20';
 import { storage } from "../storage";
 import { examQuestionPayload, dailyExamQuestions } from "../services/examQuestionPayload";
+import { attachPaperModelSourceImages } from "../services/paperModelQuestionImages";
 import { registerExamLearningReportRoutes } from './examLearningReportRoutes';
 import { registerQuestionVideoRoutes } from './questionVideoRoutes';
 import { registerRemedialPracticeRoutes } from './remedialPracticeRoutes';
@@ -6541,7 +6542,33 @@ app.post("/api/auth/register", async (req: Request, res: Response) => {
   const loadPaperModelWithQuestions = async (modelNumber: number): Promise<any | null> => {
     const catalogModel = (await getPaperModelCatalog()).find(item => item.modelNumber === modelNumber);
     if (!catalogModel) return null;
-    if (Array.isArray(catalogModel.allQuestions)) return catalogModel;
+    if (Array.isArray(catalogModel.allQuestions)) {
+      const modelQuestions = catalogModel.allQuestions as Array<Record<string, unknown>>;
+      const questionIds = [...new Set(modelQuestions
+        .map((question) => Number(question.id))
+        .filter((id) => Number.isSafeInteger(id) && id > 0))];
+      const questionsNeedingImages = modelQuestions.some((question) =>
+        !question.imageUrl &&
+        !(Array.isArray(question.imageUrls) && question.imageUrls.length > 0) &&
+        Number.isSafeInteger(Number(question.id)),
+      );
+      if (!questionsNeedingImages || questionIds.length === 0) return catalogModel;
+
+      const sourceQuestions = await Question.find({
+        questionId: { $in: questionIds },
+        answerStatus: "approved",
+      }).select({
+        questionId: 1,
+        category: 1,
+        text: 1,
+        imageUrl: 1,
+        imageUrls: 1,
+      }).lean();
+      return {
+        ...catalogModel,
+        allQuestions: attachPaperModelSourceImages(modelQuestions as any[], sourceQuestions as any[]),
+      };
+    }
 
     const assignment = (await getPaperModelAssignments())
       .find(item => Number(item.modelNumber) === modelNumber);
@@ -7324,15 +7351,22 @@ app.post("/api/auth/register", async (req: Request, res: Response) => {
         name: String(model.name),
         totalQuestions: model.totalQuestions,
         sections: 5,
-        questions: model.allQuestions.map((question: any, index: number) => ({
-          id: index + 1,
-          category: String(question.questionType || question.category || ""),
-          text: String(question.text || ""),
-          options: Array.isArray(question.options) ? question.options.map(String) : [],
-          imageUrl: question.imageUrl ? String(question.imageUrl) : undefined,
-          imageUrls: Array.isArray(question.imageUrls) ? question.imageUrls.map(String) : undefined,
-          isTrial: question.isTrial === true,
-        })),
+        questions: model.allQuestions.map((question: any, index: number) => {
+          const category = String(question.questionType || question.category || "");
+          const imageUrls = getQuestionImageUrls(question);
+          const imageUrl = question.imageUrl ? String(question.imageUrl) : imageUrls[0];
+          const hideQuestionText =
+            /quantitative|كمي|رياضيات|math/i.test(category) && imageUrls.length > 0;
+          return {
+            id: index + 1,
+            category,
+            text: hideQuestionText ? "" : String(question.text || ""),
+            options: Array.isArray(question.options) ? question.options.map(String) : [],
+            imageUrl,
+            imageUrls,
+            isTrial: question.isTrial === true,
+          };
+        }),
       });
     } catch (error) {
       console.error("Error loading a paper model for printing:", error);

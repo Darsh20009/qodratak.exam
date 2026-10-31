@@ -128,6 +128,17 @@ test("public question payload never contains bank IDs, answer keys, explanations
     assert.ok(!("sourceQuestionId" in question));
     assert.ok(!("sourceQuestionNumber" in question));
   }
+
+  const imageBackedQuantitative = {
+    ...questions.find((question) => question.category === "quantitative")!,
+    text: "نص OCR غير معتمد",
+    imageUrl: "foundation/quantitative/computer-banks/exam-51/question-001.jpeg",
+    imageUrls: ["foundation/quantitative/computer-banks/exam-51/question-001.jpeg"],
+  };
+  const [publicImageQuestion] = publicPaperExamQuestions([imageBackedQuantitative]);
+  assert.equal(publicImageQuestion.text, "");
+  assert.equal(publicImageQuestion.imageUrl, imageBackedQuantitative.imageUrl);
+  assert.deepEqual(publicImageQuestion.imageUrls, imageBackedQuantitative.imageUrls);
 });
 
 test("creation and restore state expose neither trusted answer keys nor hidden explanations", async () => {

@@ -9,6 +9,9 @@ import ResultsStep from '@/components/paper-exam/ResultsStep';
 import PDFGenerationModal from '@/components/paper-exam/PDFGenerationModal';
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
+import { getQuestionImageUrls } from '@/lib/questionImages';
+import { resolveFoundationAssetUrl } from '@/lib/foundationVideoUrl';
+import { shouldHideImageBackedQuantitativeQuestionText } from '@/lib/questionTextVisibility';
 
 interface Question {
   id: number;
@@ -208,6 +211,29 @@ export default function PaperExamPage() {
     return canvas;
   };
 
+  const waitForQuestionImages = async (container: HTMLElement) => {
+    const images = Array.from(container.querySelectorAll<HTMLImageElement>('img[data-paper-question-image]'));
+    await Promise.all(images.map((image) => new Promise<void>((resolve) => {
+      let settled = false;
+      const finish = () => {
+        if (settled) return;
+        settled = true;
+        window.clearTimeout(timeout);
+        resolve();
+      };
+      const timeout = window.setTimeout(finish, 8000);
+      image.addEventListener('load', finish, { once: true });
+      image.addEventListener('error', finish, { once: true });
+      if (image.complete) finish();
+    })));
+  };
+
+  const escapeHtmlAttribute = (value: string) => value
+    .replace(/&/g, '&amp;')
+    .replace(/"/g, '&quot;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;');
+
   const generateExamHTML = async () => {
     if (!currentExam || !questions.length) {
       toast({
@@ -363,6 +389,14 @@ export default function PaperExamPage() {
             font-weight: 600;
         }
 
+        .question-image {
+            display: block;
+            max-width: 100%;
+            max-height: 250px;
+            object-fit: contain;
+            margin: 8px auto 12px;
+        }
+
         .options {
             display: grid;
             gap: 8px;
@@ -430,12 +464,15 @@ export default function PaperExamPage() {
 
         ${pageQuestions.map((question, idx) => {
             const isLong = question.text && question.text.length > 400;
+            const imageUrls = getQuestionImageUrls(question);
+            const hideQuestionText = shouldHideImageBackedQuantitativeQuestionText(question);
             return `
             <div class="question-box ${isLong ? 'long-question' : ''}">
                 <div class="question-header">
                     <div class="question-number">${startIdx + idx + 1}</div>
-                    <div class="question-text">${question.text || `السؤال ${startIdx + idx + 1}`}</div>
+                    <div class="question-text">${hideQuestionText ? '' : question.text || `السؤال ${startIdx + idx + 1}`}</div>
                 </div>
+                ${imageUrls.map((imageUrl) => `<img class="question-image" data-paper-question-image src="${escapeHtmlAttribute(resolveFoundationAssetUrl(imageUrl))}" alt="صورة السؤال ${startIdx + idx + 1}" loading="eager" />`).join('')}
                 <div class="options">
                     ${question.options.map((option, optIdx) => `
                         <div class="option">
@@ -457,6 +494,7 @@ export default function PaperExamPage() {
         tempDiv.innerHTML = htmlContent;
         document.body.appendChild(tempDiv);
 
+        await waitForQuestionImages(tempDiv);
         await new Promise(resolve => setTimeout(resolve, 50));
 
         const canvas = await convertHtmlPageToPdf(tempDiv);

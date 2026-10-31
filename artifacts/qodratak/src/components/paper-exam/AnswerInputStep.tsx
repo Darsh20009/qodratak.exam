@@ -2,6 +2,9 @@ import { useEffect, useRef, useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { useToast } from '@/hooks/use-toast';
 import { apiRequest } from '@/lib/queryClient';
+import { getQuestionImageUrls } from '@/lib/questionImages';
+import { resolveFoundationAssetUrl } from '@/lib/foundationVideoUrl';
+import { shouldHideImageBackedQuantitativeQuestionText } from '@/lib/questionTextVisibility';
 import { AlertCircle, CheckCircle2, Clock3, Flag, LoaderCircle, Save, Send, ShieldCheck } from 'lucide-react';
 
 interface Question {
@@ -342,7 +345,8 @@ export default function AnswerInputStep({
                     const questionNumber = section.startNumber + localIndex;
                     const selectedAnswer = answers[questionNumber];
                     const markedForReview = reviewQuestionNumbers.includes(questionNumber);
-                    const imageUrls = question.imageUrls?.length ? question.imageUrls : question.imageUrl ? [question.imageUrl] : [];
+                    const imageUrls = getQuestionImageUrls(question);
+                    const hideQuestionText = shouldHideImageBackedQuantitativeQuestionText(question);
                     return (
                       <article
                         id={`paper-question-${questionNumber}`}
@@ -357,7 +361,9 @@ export default function AnswerInputStep({
                                 {question.category === 'verbal' ? 'لفظي' : question.category === 'quantitative' ? 'كمي' : question.category}
                                 {question.isTrial ? ' · تجريبي' : ''}
                               </p>
-                              <h2 className="whitespace-pre-wrap text-sm font-bold leading-7 text-[#453e37]">{question.text}</h2>
+                              {!hideQuestionText && question.text?.trim() && (
+                                <h2 className="whitespace-pre-wrap text-sm font-bold leading-7 text-[#453e37]">{question.text}</h2>
+                              )}
                             </div>
                           </div>
                           <button
@@ -374,7 +380,7 @@ export default function AnswerInputStep({
                         {imageUrls.map((imageUrl, imageIndex) => (
                           <img
                             key={`${imageUrl}-${imageIndex}`}
-                            src={imageUrl}
+                            src={resolveFoundationAssetUrl(imageUrl)}
                             alt={`شكل توضيحي للسؤال ${questionNumber}`}
                             className="mx-auto mb-4 max-h-80 max-w-full rounded-lg border border-[#e6ddd1] object-contain"
                             loading="lazy"

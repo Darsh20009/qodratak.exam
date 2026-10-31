@@ -26,3 +26,9 @@ For image-backed quantitative questions, keep OCR/stem text out of student-facin
 **Why:** OCR for mathematical questions can be inaccurate, but AI explanations still need the canonical source text without exposing duplicate or misleading text to students.
 
 **How to apply:** Redact text in student response payloads and resolve explanation requests by source question ID on the server; never delete the canonical text or replace the source image with OCR.
+
+Legacy paper models can lack image metadata even when the approved question bank has source images. Attach an image only when legacy question ID, normalized category, and normalized text identify exactly one approved source question; leave unmatched or ambiguous records unchanged.
+
+**Why:** A wrong diagram can invalidate a paper question, and fuzzy matching could silently pair it with another question's image.
+
+**How to apply:** Enrich paper models from approved source records using the exact identity tuple, preserve `imageUrl` as the first-image compatibility field and `imageUrls` in order, and do not infer a match from position or similar wording.
