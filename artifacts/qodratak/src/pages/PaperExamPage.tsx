@@ -83,9 +83,6 @@ export default function PaperExamPage() {
   const search = useSearch();
   const modelValue = new URLSearchParams((search || '').replace(/^\?/, '')).get('model');
   const fixedModelNumber = modelValue && /^\d+$/.test(modelValue) ? Number(modelValue) : null;
-  const [deviceSupported, setDeviceSupported] = useState(() =>
-    typeof window === 'undefined' || window.matchMedia('(min-width: 1024px) and (orientation: landscape)').matches,
-  );
   const [step, setStep] = useState<ExamStep>('setup');
   const [currentExam, setCurrentExam] = useState<PaperExam | null>(null);
   const [questions, setQuestions] = useState<Question[]>([]);
@@ -93,7 +90,7 @@ export default function PaperExamPage() {
   const [savedAnswers, setSavedAnswers] = useState<Record<string, number>>({});
   const [savedReviewQuestionNumbers, setSavedReviewQuestionNumbers] = useState<number[]>([]);
   const [isRestoring, setIsRestoring] = useState(() =>
-    Boolean(sessionStorage.getItem('paperExamAttemptId')) || (fixedModelNumber !== null && deviceSupported),
+    Boolean(sessionStorage.getItem('paperExamAttemptId')) || fixedModelNumber !== null,
   );
   const [pdfModal, setPdfModal] = useState({
     isOpen: false,
@@ -103,15 +100,6 @@ export default function PaperExamPage() {
   });
 
   const startFixedModelAttempt = useCallback(async (modelNumber: number, isCancelled: () => boolean = () => false) => {
-    if (!deviceSupported) {
-      toast({
-        title: 'المحاكاة غير متاحة على هذا الجهاز',
-        description: 'استخدم آيباد بالوضع الأفقي أو حاسوبًا لبدء الاختبار.',
-        variant: 'destructive',
-      });
-      setIsRestoring(false);
-      return;
-    }
     setIsRestoring(true);
     try {
       const response = await apiRequest('POST', `/api/paper-exams/fixed-models/${modelNumber}`, {});
@@ -137,24 +125,12 @@ export default function PaperExamPage() {
     } finally {
       if (!isCancelled()) setIsRestoring(false);
     }
-  }, [deviceSupported, toast]);
-
-  useEffect(() => {
-    const media = window.matchMedia('(min-width: 1024px) and (orientation: landscape)');
-    const updateDeviceSupport = () => setDeviceSupported(media.matches);
-    updateDeviceSupport();
-    media.addEventListener('change', updateDeviceSupport);
-    return () => media.removeEventListener('change', updateDeviceSupport);
-  }, []);
+  }, [toast]);
 
   useEffect(() => {
     const attemptId = sessionStorage.getItem('paperExamAttemptId');
     if (!attemptId) {
       if (fixedModelNumber !== null) {
-        if (!deviceSupported) {
-          setIsRestoring(false);
-          return;
-        }
         let cancelled = false;
         void startFixedModelAttempt(fixedModelNumber, () => cancelled);
         return () => { cancelled = true; };
@@ -189,7 +165,7 @@ export default function PaperExamPage() {
       }
     })();
     return () => { cancelled = true; };
-  }, [deviceSupported, fixedModelNumber, startFixedModelAttempt, toast]);
+  }, [fixedModelNumber, startFixedModelAttempt, toast]);
 
   const convertHtmlPageToPdf = async (htmlElement: HTMLElement): Promise<HTMLCanvasElement> => {
     await document.fonts.ready;
@@ -1724,12 +1700,6 @@ export default function PaperExamPage() {
         <main>
           {isRestoring ? (
             <div className="rounded-2xl border p-8 text-center text-muted-foreground">جارٍ استعادة المحاولة المحفوظة...</div>
-          ) : fixedModelNumber !== null && !deviceSupported && !currentExam ? (
-            <div className="mx-auto max-w-xl rounded-3xl border border-orange-200 bg-orange-50 p-8 text-center text-orange-950 dark:border-orange-900/50 dark:bg-orange-950/20 dark:text-orange-100">
-              <h2 className="mb-3 text-2xl font-bold">المحاكاة تحتاج شاشة أوسع</h2>
-              <p className="mb-6 leading-7">لم يبدأ الاختبار بعد. استخدم آيباد بالوضع الأفقي أو حاسوبًا لعرض كتيّب الأسئلة وورقة التظليل معًا.</p>
-              <a href="/paper-models" className="inline-flex rounded-xl bg-[#e47a55] px-5 py-3 font-bold text-white hover:bg-[#d96947]">العودة إلى النماذج الورقية</a>
-            </div>
           ) : renderCurrentStep()}
         </main>
       </div>

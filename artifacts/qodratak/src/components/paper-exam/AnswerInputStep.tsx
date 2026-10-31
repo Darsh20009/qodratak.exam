@@ -5,7 +5,7 @@ import { apiRequest } from '@/lib/queryClient';
 import { getQuestionImageUrls } from '@/lib/questionImages';
 import { resolveFoundationAssetUrl } from '@/lib/foundationVideoUrl';
 import { shouldHideImageBackedQuantitativeQuestionText } from '@/lib/questionTextVisibility';
-import { AlertCircle, CheckCircle2, Clock3, Flag, LoaderCircle, Save, Send, ShieldCheck } from 'lucide-react';
+import { AlertCircle, CheckCircle2, Clock3, Flag, LoaderCircle, PanelRightOpen, Save, Send, ShieldCheck, X } from 'lucide-react';
 
 interface Question {
   id: number;
@@ -82,9 +82,9 @@ export default function AnswerInputStep({
   const [reviewQuestionNumbers, setReviewQuestionNumbers] = useState<number[]>(initialReviewQuestionNumbers);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [showSubmitConfirm, setShowSubmitConfirm] = useState(false);
-  const [supportedDevice, setSupportedDevice] = useState(() =>
-    typeof window === 'undefined' || window.matchMedia('(min-width: 1024px) and (orientation: landscape)').matches,
-  );
+  const [answerSheetOpen, setAnswerSheetOpen] = useState(false);
+  const answerSheetToggleRef = useRef<HTMLButtonElement>(null);
+  const answerSheetCloseRef = useRef<HTMLButtonElement>(null);
   const [timeRemaining, setTimeRemaining] = useState(() =>
     Math.max(0, Math.ceil((new Date(exam.expiresAt).getTime() - Date.now()) / 1000)),
   );
@@ -147,6 +147,19 @@ export default function AnswerInputStep({
     }, 1000);
     return () => clearInterval(timer);
   }, [exam.expiresAt]);
+
+  useEffect(() => {
+    if (!answerSheetOpen) return;
+    answerSheetCloseRef.current?.focus();
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        setAnswerSheetOpen(false);
+        window.requestAnimationFrame(() => answerSheetToggleRef.current?.focus());
+      }
+    };
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, [answerSheetOpen]);
 
   const submitAttempt = async (timedOut: boolean) => {
     if (submitStartedRef.current) return;
@@ -213,29 +226,6 @@ export default function AnswerInputStep({
     return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
   };
 
-  useEffect(() => {
-    const media = window.matchMedia('(min-width: 1024px) and (orientation: landscape)');
-    const updateSupport = () => setSupportedDevice(media.matches);
-    updateSupport();
-    media.addEventListener('change', updateSupport);
-    return () => media.removeEventListener('change', updateSupport);
-  }, []);
-
-  if (!supportedDevice) {
-    return (
-      <div dir="rtl" className="fixed inset-0 z-[100] flex min-h-screen items-center justify-center bg-[#f4f1ea] px-6 text-center text-[#3f3832]">
-        <div className="max-w-md rounded-3xl border border-[#eadfd4] bg-[#fffdf8] p-8 shadow-sm">
-          <div className="mx-auto mb-5 flex h-14 w-14 items-center justify-center rounded-2xl bg-[#fff0e8] text-[#dc7955]">
-            <ShieldCheck className="h-7 w-7" />
-          </div>
-          <p className="mb-2 text-xs font-bold tracking-wide text-[#c66f51]">محاكاة الاختبار الورقي</p>
-          <h2 className="mb-3 text-2xl font-extrabold">هذه التجربة تحتاج شاشة أوسع</h2>
-          <p className="text-sm leading-7 text-[#786d63]">استخدم حاسوبًا أو جهاز آيباد بالوضع الأفقي لعرض كتيّب الأسئلة وورقة التظليل معًا.</p>
-        </div>
-      </div>
-    );
-  }
-
   if (!questions.length) {
     return <div className="rounded-2xl border bg-background p-12 text-center text-muted-foreground">لا توجد أسئلة في هذه المحاولة.</div>;
   }
@@ -258,13 +248,96 @@ export default function AnswerInputStep({
 
   const navigateToQuestion = (questionNumber: number) => {
     setCurrentIndex(questionNumber - 1);
-    document.getElementById(`paper-question-${questionNumber}`)?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    const isMobile = window.matchMedia('(max-width: 1023px)').matches;
+    if (isMobile) setAnswerSheetOpen(false);
+    const scrollToQuestion = () => {
+      const question = document.getElementById(`paper-question-${questionNumber}`);
+      question?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      if (isMobile) question?.focus({ preventScroll: true });
+    };
+    if (isMobile) window.requestAnimationFrame(scrollToQuestion);
+    else scrollToQuestion();
   };
 
   const chooseBubbleAnswer = (questionNumber: number, choiceIndex: number) => {
     changeAnswer(questionNumber, String(choiceIndex));
-    setCurrentIndex(questionNumber - 1);
+    navigateToQuestion(questionNumber);
   };
+
+  const answerSheetContent = (
+    <>
+      <div className="mb-4 flex items-start justify-between">
+        <div>
+          <p className="mb-1 text-[10px] font-bold tracking-wide text-[#c47a5c]">نموذج الإجابة</p>
+          <h2 className="text-lg font-extrabold">ورقة التظليل</h2>
+        </div>
+        <span className="rounded-lg border border-[#e5dbce] bg-[#fffdf8] px-2.5 py-1 text-[10px] text-[#897e73]">١–{toArabicDigits(questions.length)}</span>
+      </div>
+
+      <div className="mb-3 rounded-xl border border-[#e5dacf] bg-[#fffdf8] p-3">
+        <div className="mb-2 flex items-center justify-between text-[10px] text-[#8e8378]">
+          <span>الإجابات المكتملة</span><span className="font-bold text-[#51483f]">{toArabicDigits(answeredCount)} من {toArabicDigits(questions.length)}</span>
+        </div>
+        <div className="h-1.5 overflow-hidden rounded-full bg-[#eee8df]"><div className="h-full rounded-full bg-[#e78a67] transition-all" style={{ width: `${progress}%` }} /></div>
+        <div className="mt-2 flex justify-between text-[9px] text-[#a0968a]"><span>للمراجعة: {toArabicDigits(flaggedCount)}</span><span>بلا إجابة: {toArabicDigits(questions.length - answeredCount)}</span></div>
+      </div>
+
+      <div className="mb-3 flex flex-wrap gap-x-3 gap-y-1 text-[9px] text-[#8d8378]">
+        <span className="flex items-center gap-1"><i className="h-2.5 w-2.5 rounded-full border border-[#d2c9be] bg-white" /> بلا إجابة</span>
+        <span className="flex items-center gap-1"><i className="h-2.5 w-2.5 rounded-full border border-[#7e9a78] bg-[#eaf0e8]" /> تمت الإجابة</span>
+        <span className="flex items-center gap-1"><i className="h-2.5 w-2.5 rounded-full border border-[#dc8965] bg-[#fff0e7]" /> للمراجعة</span>
+      </div>
+
+      <div className="min-h-0 flex-1 space-y-3 overflow-y-auto overscroll-contain pl-1">
+        {sections.map(section => (
+          <section key={section.index} className="rounded-xl border border-[#e8e0d6] bg-[#f5f1ea] p-3">
+            <button type="button" onClick={() => section.questions.length && navigateToQuestion(section.startNumber)} className="mb-2 flex w-full items-center justify-between text-right" data-testid={`button-answer-section-${section.index + 1}`}>
+              <span className="text-[10px] font-bold text-[#6c6258]">القسم {toArabicDigits(section.index + 1)}</span>
+              <span className="text-[9px] text-[#a0968a]">{toArabicDigits(section.startNumber)}–{toArabicDigits(section.endNumber)}</span>
+            </button>
+            <div className="space-y-1.5">
+              {section.questions.map((question, localIndex) => {
+                const questionNumber = section.startNumber + localIndex;
+                const selectedAnswer = answers[questionNumber];
+                const markedForReview = reviewQuestionNumbers.includes(questionNumber);
+                return (
+                  <div key={`bubble-${question.id}-${questionNumber}`} className={`grid grid-cols-[32px_minmax(0,1fr)] items-center gap-2 rounded-lg px-1.5 py-1 ${currentIndex === questionNumber - 1 ? 'bg-[#fffaf5]' : ''}`}>
+                    <button type="button" onClick={() => navigateToQuestion(questionNumber)} className="text-right text-[10px] font-bold text-[#80766b]" aria-label={`انتقل إلى السؤال ${toArabicDigits(questionNumber)}`} data-testid={`button-go-to-question-${questionNumber}`}>
+                      {toArabicDigits(questionNumber)}{markedForReview ? <span className="mr-1 text-[#d77d59]">•</span> : null}
+                    </button>
+                    <div className="grid gap-1" style={{ gridTemplateColumns: `repeat(${Math.max(question.options.length, 1)}, minmax(0, 1fr))` }}>
+                      {question.options.map((_, choiceIndex) => (
+                        <button
+                          key={choiceIndex}
+                          type="button"
+                          onClick={() => chooseBubbleAnswer(questionNumber, choiceIndex)}
+                          aria-label={`السؤال ${toArabicDigits(questionNumber)}، الإجابة ${['أ', 'ب', 'ج', 'د', 'هـ'][choiceIndex] ?? choiceIndex + 1}`}
+                          aria-pressed={selectedAnswer === choiceIndex}
+                          disabled={timeRemaining <= 0 || submitting}
+                          className={`mx-auto flex h-8 w-8 items-center justify-center rounded-full border text-[9px] font-bold transition touch-manipulation disabled:opacity-50 ${selectedAnswer === choiceIndex ? 'border-[#dc805f] bg-[#e77b56] text-white' : 'border-[#d7cfc4] bg-white text-[#95897d] hover:border-[#df9a7e]'}`}
+                          data-testid={`button-answer-bubble-${questionNumber}-${choiceIndex}`}
+                        >
+                          {['أ', 'ب', 'ج', 'د', 'هـ'][choiceIndex] ?? toArabicDigits(choiceIndex + 1)}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </section>
+        ))}
+      </div>
+
+      <p className="mb-3 mt-3 rounded-xl border border-[#e5dacf] bg-[#f3eee6] px-3 py-2 text-[9px] leading-5 text-[#958a7d]">
+        اختر الدائرة بالنقر أو بالقلم، أو اختر الإجابة من صفحة السؤال. الدوائر المحددة محفوظة تلقائيًا.
+      </p>
+      <button type="button" disabled={submitting || saving} onClick={handleManualSubmit} className="flex w-full items-center justify-center gap-2 rounded-xl bg-[#e47a55] py-3 text-xs font-bold text-white transition hover:bg-[#d96947] disabled:opacity-60" data-testid="button-submit-from-answer-sheet">
+        <CheckCircle2 className="h-4 w-4" /> مراجعة وتسليم الاختبار
+      </button>
+      {timeRemaining <= 0 && <p className="mt-2 flex items-start gap-2 text-xs text-red-700"><AlertCircle className="mt-0.5 h-4 w-4 shrink-0" /> انتهى الوقت؛ تم تسليم الإجابات المحفوظة.</p>}
+    </>
+  );
 
   return (
     <div dir="rtl" className="fixed inset-0 z-[100] flex min-h-0 flex-col bg-[#f1eee8] text-[#39332e]">
@@ -274,6 +347,19 @@ export default function AnswerInputStep({
           <p className="mt-1 text-[11px] text-[#8d8176]">محاكاة ورقية · {toArabicDigits(questions.length)} سؤالًا · خمسة أقسام</p>
         </div>
         <div className="flex shrink-0 items-center gap-3 sm:gap-6">
+            <button
+              type="button"
+              ref={answerSheetToggleRef}
+              onClick={() => setAnswerSheetOpen(true)}
+              aria-label="فتح ورقة التظليل"
+              aria-expanded={answerSheetOpen}
+              aria-controls="mobile-answer-sheet"
+              className="flex h-10 items-center gap-2 rounded-xl border border-[#e5dacf] bg-[#fffaf5] px-3 text-xs font-bold text-[#85543f] transition hover:bg-[#fff1e8] lg:hidden"
+              data-testid="button-open-answer-sheet"
+            >
+              <PanelRightOpen className="h-4 w-4" />
+              <span>الإجابة</span>
+            </button>
           <div className="hidden items-center gap-1.5 text-xs text-[#7a7168] sm:flex" aria-live="polite">
             {saving ? <LoaderCircle className="h-4 w-4 animate-spin text-[#d98260]" /> : <Save className="h-4 w-4 text-[#789273]" />}
             {saving ? 'جارٍ الحفظ' : 'محفوظة تلقائيًا'}
@@ -288,7 +374,7 @@ export default function AnswerInputStep({
         </div>
       </header>
 
-      <div className="flex min-h-0 flex-1">
+      <div className="flex min-h-0 min-w-0 flex-1 overflow-hidden">
         <main className="min-w-0 flex-1 overflow-y-auto px-4 py-5 sm:px-7 sm:py-7">
           <div className="mx-auto max-w-[920px]">
             <div className="mb-5 flex flex-wrap items-end justify-between gap-3">
@@ -301,7 +387,7 @@ export default function AnswerInputStep({
               </div>
             </div>
 
-            <div className="mb-5 grid grid-cols-5 gap-2">
+            <div className="mb-5 grid grid-cols-2 gap-2 sm:grid-cols-5">
               {sections.map(section => (
                 <button
                   key={section.index}
@@ -326,163 +412,145 @@ export default function AnswerInputStep({
               </div>
             </div>
 
-            {sections.map(section => (
-              <section key={section.index} id={`paper-section-${section.index}`} className="mb-7 scroll-mt-4">
-                <div className="mb-3 flex items-center justify-between rounded-xl border border-[#e6ddd1] bg-[#f8f4ed] px-4 py-3">
-                  <div>
-                    <p className="text-xs font-extrabold">القسم {toArabicDigits(section.index + 1)}</p>
-                    <p className="mt-1 text-[10px] text-[#897e73]">
-                      {toArabicDigits(section.questions.length)} سؤال · {section.verbalCount ? `لفظي ${toArabicDigits(section.verbalCount)}` : ''}
-                      {section.verbalCount && section.quantitativeCount ? ' · ' : ''}
-                      {section.quantitativeCount ? `كمي ${toArabicDigits(section.quantitativeCount)}` : ''}
-                    </p>
-                  </div>
-                  <span className="text-[10px] text-[#a09284]">{toArabicDigits(section.startNumber)}–{toArabicDigits(section.endNumber)}</span>
-                </div>
-
-                <div className="space-y-3">
-                  {section.questions.map((question, localIndex) => {
-                    const questionNumber = section.startNumber + localIndex;
-                    const selectedAnswer = answers[questionNumber];
-                    const markedForReview = reviewQuestionNumbers.includes(questionNumber);
-                    const imageUrls = getQuestionImageUrls(question);
-                    const hideQuestionText = shouldHideImageBackedQuantitativeQuestionText(question);
-                    return (
-                      <article
-                        id={`paper-question-${questionNumber}`}
-                        key={`${question.id}-${questionNumber}`}
-                        className={`scroll-mt-5 rounded-xl border bg-[#fffdf9] p-4 shadow-[0_2px_8px_rgba(70,53,34,.025)] sm:p-5 ${currentIndex === questionNumber - 1 ? 'border-[#e2a087]' : 'border-[#e5ddd2]'}`}
-                      >
-                        <div className="mb-3 flex items-start justify-between gap-3">
-                          <div className="flex items-start gap-3">
-                            <span className={`flex h-8 min-w-8 items-center justify-center rounded-lg px-1 text-xs font-bold ${selectedAnswer !== undefined ? 'bg-[#eaf0e8] text-[#64805d]' : 'bg-[#f1ebe2] text-[#80766b]'}`}>{toArabicDigits(questionNumber)}</span>
-                            <div>
-                              <p className="mb-1 text-[10px] font-bold text-[#b3836e]">
-                                {question.category === 'verbal' ? 'لفظي' : question.category === 'quantitative' ? 'كمي' : question.category}
-                                {question.isTrial ? ' · تجريبي' : ''}
-                              </p>
-                              {!hideQuestionText && question.text?.trim() && (
-                                <h2 className="whitespace-pre-wrap text-sm font-bold leading-7 text-[#453e37]">{question.text}</h2>
-                              )}
-                            </div>
-                          </div>
-                          <button
-                            type="button"
-                            onClick={() => toggleReview(questionNumber)}
-                            aria-label={markedForReview ? 'إزالة علامة المراجعة' : 'وضع علامة للمراجعة'}
-                            aria-pressed={markedForReview}
-                            className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-lg transition ${markedForReview ? 'bg-[#fff0e7] text-[#d87550]' : 'text-[#b5aa9d] hover:bg-[#f7f1e8]'}`}
-                          >
-                            <Flag className="h-4 w-4" fill={markedForReview ? 'currentColor' : 'none'} />
-                          </button>
-                        </div>
-
-                        {imageUrls.map((imageUrl, imageIndex) => (
-                          <img
-                            key={`${imageUrl}-${imageIndex}`}
-                            src={resolveFoundationAssetUrl(imageUrl)}
-                            alt={`شكل توضيحي للسؤال ${questionNumber}`}
-                            className="mx-auto mb-4 max-h-80 max-w-full rounded-lg border border-[#e6ddd1] object-contain"
-                            loading="lazy"
-                          />
-                        ))}
-
-                        <div className="grid gap-2 sm:grid-cols-2">
-                          {question.options.map((option, optionIndex) => (
-                            <button
-                              key={optionIndex}
-                              type="button"
-                              onClick={() => changeAnswer(questionNumber, String(optionIndex))}
-                              aria-pressed={selectedAnswer === optionIndex}
-                              disabled={timeRemaining <= 0 || submitting}
-                              className={`flex min-h-12 items-center gap-3 rounded-lg border px-3 py-2 text-right text-sm transition touch-manipulation disabled:cursor-not-allowed disabled:opacity-60 ${selectedAnswer === optionIndex ? 'border-[#df8968] bg-[#fff5ef] text-[#754a39]' : 'border-[#eee8df] bg-[#fdfbf7] text-[#696158] hover:border-[#dbc7b5] hover:bg-[#fbf6ee]'}`}
+            {sections.map(section => {
+              const sheetPages = Array.from(
+                { length: Math.ceil(section.questions.length / 12) },
+                (_, pageIndex) => {
+                  const start = pageIndex * 12;
+                  return {
+                    pageIndex,
+                    questions: section.questions.slice(start, start + 12),
+                    firstNumber: section.startNumber + start,
+                    lastNumber: Math.min(section.startNumber + start + 11, section.endNumber),
+                  };
+                },
+              );
+              return (
+                <section key={section.index} id={`paper-section-${section.index}`} className="mb-8 scroll-mt-4">
+                  {sheetPages.map(sheet => (
+                    <div
+                      key={`sheet-${section.index}-${sheet.pageIndex}`}
+                      className="relative mb-8 border border-[#d7e5e9] bg-white px-4 pb-14 pt-5 text-[#172d3b] shadow-[0_2px_10px_rgba(23,52,65,.08)] sm:px-6 sm:pt-6 md:min-h-[860px]"
+                    >
+                      <header className="mb-4 flex items-center justify-between gap-3 border-b border-[#b6d9e5] pb-3 text-[11px] font-extrabold text-[#176e91] sm:mb-5 sm:pb-4 sm:text-xs">
+                        <span>قدراتك · اختبار القدرات العامة</span>
+                        <span className="shrink-0">القسم {toArabicDigits(section.index + 1)} · الورقة {toArabicDigits(sheet.pageIndex + 1)} من {toArabicDigits(sheetPages.length)}</span>
+                      </header>
+                      <div className="grid grid-cols-1 gap-x-7 md:grid-flow-col md:grid-cols-2 md:grid-rows-[repeat(6,minmax(120px,1fr))]">
+                        {sheet.questions.map((question, localIndex) => {
+                          const questionNumber = sheet.firstNumber + localIndex;
+                          const selectedAnswer = answers[questionNumber];
+                          const markedForReview = reviewQuestionNumbers.includes(questionNumber);
+                          const imageUrls = getQuestionImageUrls(question);
+                          const hideQuestionText = shouldHideImageBackedQuantitativeQuestionText(question);
+                          return (
+                            <article
+                              id={`paper-question-${questionNumber}`}
+                              key={`${question.id}-${questionNumber}`}
+                              tabIndex={-1}
+                              className={`scroll-mt-5 flex min-w-0 flex-col border-b border-[#d1dfe3] px-1.5 py-2 ${currentIndex === questionNumber - 1 ? 'bg-[#fffaf5]' : ''}`}
                             >
-                              <span className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-full border text-xs font-bold ${selectedAnswer === optionIndex ? 'border-[#dc805f] bg-[#e77b56] text-white' : 'border-[#d7cfc4] bg-white text-[#9a8f83]'}`}>{['أ', 'ب', 'ج', 'د', 'هـ'][optionIndex] ?? toArabicDigits(optionIndex + 1)}</span>
-                              <span className="leading-6">{option}</span>
-                            </button>
-                          ))}
-                        </div>
-                      </article>
-                    );
-                  })}
-                </div>
-              </section>
-            ))}
+                              <div className="mb-1 flex items-center justify-between gap-2">
+                                <div className="flex min-w-0 items-center gap-2 text-[11px] font-extrabold text-[#172d3b]">
+                                  <span className="grid h-7 w-7 shrink-0 place-items-center rounded-full border border-[#607a84] text-[10px]">{toArabicDigits(questionNumber)}</span>
+                                  <span className="truncate">س{toArabicDigits(questionNumber)}:</span>
+                                  <span className="truncate text-[9px] font-bold text-[#176e91]">
+                                    {question.category === 'verbal' ? 'لفظي' : question.category === 'quantitative' ? 'كمي' : question.category}
+                                    {question.isTrial ? ' · تجريبي' : ''}
+                                  </span>
+                                </div>
+                                <button
+                                  type="button"
+                                  onClick={() => toggleReview(questionNumber)}
+                                  aria-label={markedForReview ? 'إزالة علامة المراجعة' : 'وضع علامة للمراجعة'}
+                                  aria-pressed={markedForReview}
+                                  className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full transition ${markedForReview ? 'bg-[#fff0e7] text-[#d87550]' : 'text-[#a1b1b6] hover:bg-[#eef7f9] hover:text-[#176e91]'}`}
+                                  data-testid={`button-review-question-${questionNumber}`}
+                                >
+                                  <Flag className="h-4 w-4" fill={markedForReview ? 'currentColor' : 'none'} />
+                                </button>
+                              </div>
+                              {!hideQuestionText && question.text?.trim() && (
+                                <p className="my-1 whitespace-pre-wrap text-[12px] leading-6 text-[#233a45] sm:text-[13px]">{question.text}</p>
+                              )}
+                              {imageUrls.map((imageUrl, imageIndex) => (
+                                <img
+                                  key={`${imageUrl}-${imageIndex}`}
+                                  src={resolveFoundationAssetUrl(imageUrl)}
+                                  alt={`شكل توضيحي للسؤال ${questionNumber}`}
+                                  className="mx-auto my-1 max-h-40 max-w-full object-contain"
+                                  loading="lazy"
+                                />
+                              ))}
+                              <div className="mt-auto grid grid-cols-2 gap-x-2 gap-y-1 pt-1">
+                                {question.options.map((option, optionIndex) => (
+                                  <button
+                                    key={optionIndex}
+                                    type="button"
+                                    onClick={() => changeAnswer(questionNumber, String(optionIndex))}
+                                    aria-pressed={selectedAnswer === optionIndex}
+                                    disabled={timeRemaining <= 0 || submitting}
+                                    className={`flex min-h-9 min-w-0 items-start gap-1.5 border-b px-1.5 py-1 text-right text-[11px] leading-5 transition touch-manipulation disabled:cursor-not-allowed disabled:opacity-60 sm:text-xs ${selectedAnswer === optionIndex ? 'border-[#e28a68] bg-[#fff5ef] text-[#754a39]' : 'border-[#dce7e9] text-[#394f58] hover:border-[#78aabe] hover:bg-[#f3fafc]'}`}
+                                    data-testid={`button-question-choice-${questionNumber}-${optionIndex}`}
+                                  >
+                                    <span className={`grid h-5 min-w-5 shrink-0 place-items-center border px-0.5 text-[9px] font-bold ${selectedAnswer === optionIndex ? 'border-[#dc805f] bg-[#e77b56] text-white' : 'border-[#607a84] text-[#176e91]'}`}>{['أ', 'ب', 'ج', 'د', 'هـ'][optionIndex] ?? toArabicDigits(optionIndex + 1)}</span>
+                                    <span className="min-w-0 whitespace-pre-wrap">{option}</span>
+                                  </button>
+                                ))}
+                              </div>
+                            </article>
+                          );
+                        })}
+                      </div>
+                      <footer className="absolute bottom-0 left-4 right-4 border-t border-[#c4d6dc] py-2.5 text-center text-[10px] text-[#52707d] sm:left-6 sm:right-6 sm:text-[11px]">
+                        الأسئلة {toArabicDigits(sheet.firstNumber)}–{toArabicDigits(sheet.lastNumber)} من {toArabicDigits(questions.length)}
+                      </footer>
+                    </div>
+                  ))}
+                </section>
+              );
+            })}
           </div>
         </main>
 
-        <aside className="flex w-[390px] shrink-0 flex-col border-r border-[#e2d9ce] bg-[#f8f5ef] px-4 py-5 xl:w-[420px] xl:px-5">
-          <div className="mb-4 flex items-start justify-between">
-            <div>
-              <p className="mb-1 text-[10px] font-bold tracking-wide text-[#c47a5c]">نموذج الإجابة</p>
-              <h2 className="text-lg font-extrabold">ورقة التظليل</h2>
-            </div>
-            <span className="rounded-lg border border-[#e5dbce] bg-[#fffdf8] px-2.5 py-1 text-[10px] text-[#897e73]">١–{toArabicDigits(questions.length)}</span>
-          </div>
-
-          <div className="mb-3 rounded-xl border border-[#e5dacf] bg-[#fffdf8] p-3">
-            <div className="mb-2 flex items-center justify-between text-[10px] text-[#8e8378]">
-              <span>الإجابات المكتملة</span><span className="font-bold text-[#51483f]">{toArabicDigits(answeredCount)} من {toArabicDigits(questions.length)}</span>
-            </div>
-            <div className="h-1.5 overflow-hidden rounded-full bg-[#eee8df]"><div className="h-full rounded-full bg-[#e78a67] transition-all" style={{ width: `${progress}%` }} /></div>
-            <div className="mt-2 flex justify-between text-[9px] text-[#a0968a]"><span>للمراجعة: {toArabicDigits(flaggedCount)}</span><span>بلا إجابة: {toArabicDigits(questions.length - answeredCount)}</span></div>
-          </div>
-
-          <div className="mb-3 flex flex-wrap gap-x-3 gap-y-1 text-[9px] text-[#8d8378]">
-            <span className="flex items-center gap-1"><i className="h-2.5 w-2.5 rounded-full border border-[#d2c9be] bg-white" /> بلا إجابة</span>
-            <span className="flex items-center gap-1"><i className="h-2.5 w-2.5 rounded-full border border-[#7e9a78] bg-[#eaf0e8]" /> تمت الإجابة</span>
-            <span className="flex items-center gap-1"><i className="h-2.5 w-2.5 rounded-full border border-[#dc8965] bg-[#fff0e7]" /> للمراجعة</span>
-          </div>
-
-          <div className="min-h-0 flex-1 space-y-3 overflow-y-auto pl-1">
-            {sections.map(section => (
-              <section key={section.index} className="rounded-xl border border-[#e8e0d6] bg-[#f5f1ea] p-3">
-                <button type="button" onClick={() => section.questions.length && navigateToQuestion(section.startNumber)} className="mb-2 flex w-full items-center justify-between text-right">
-                  <span className="text-[10px] font-bold text-[#6c6258]">القسم {toArabicDigits(section.index + 1)}</span>
-                  <span className="text-[9px] text-[#a0968a]">{toArabicDigits(section.startNumber)}–{toArabicDigits(section.endNumber)}</span>
-                </button>
-                <div className="space-y-1.5">
-                  {section.questions.map((question, localIndex) => {
-                    const questionNumber = section.startNumber + localIndex;
-                    const selectedAnswer = answers[questionNumber];
-                    const markedForReview = reviewQuestionNumbers.includes(questionNumber);
-                    return (
-                      <div key={`bubble-${question.id}-${questionNumber}`} className={`grid grid-cols-[32px_minmax(0,1fr)] items-center gap-2 rounded-lg px-1.5 py-1 ${currentIndex === questionNumber - 1 ? 'bg-[#fffaf5]' : ''}`}>
-                        <button type="button" onClick={() => navigateToQuestion(questionNumber)} className="text-right text-[10px] font-bold text-[#80766b]" aria-label={`انتقل إلى السؤال ${toArabicDigits(questionNumber)}`}>
-                          {toArabicDigits(questionNumber)}{markedForReview ? <span className="mr-1 text-[#d77d59]">•</span> : null}
-                        </button>
-                        <div className="grid gap-1" style={{ gridTemplateColumns: `repeat(${Math.max(question.options.length, 1)}, minmax(0, 1fr))` }}>
-                          {question.options.map((_, choiceIndex) => (
-                            <button
-                              key={choiceIndex}
-                              type="button"
-                              onClick={() => chooseBubbleAnswer(questionNumber, choiceIndex)}
-                              aria-label={`السؤال ${toArabicDigits(questionNumber)}، الإجابة ${['أ', 'ب', 'ج', 'د', 'هـ'][choiceIndex] ?? choiceIndex + 1}`}
-                              aria-pressed={selectedAnswer === choiceIndex}
-                              disabled={timeRemaining <= 0 || submitting}
-                              className={`mx-auto flex h-7 w-7 items-center justify-center rounded-full border text-[9px] font-bold transition touch-manipulation disabled:opacity-50 ${selectedAnswer === choiceIndex ? 'border-[#dc805f] bg-[#e77b56] text-white' : 'border-[#d7cfc4] bg-white text-[#95897d] hover:border-[#df9a7e]'}`}
-                            >
-                              {['أ', 'ب', 'ج', 'د', 'هـ'][choiceIndex] ?? toArabicDigits(choiceIndex + 1)}
-                            </button>
-                          ))}
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              </section>
-            ))}
-          </div>
-
-          <p className="mb-3 mt-3 rounded-xl border border-[#e5dacf] bg-[#f3eee6] px-3 py-2 text-[9px] leading-5 text-[#958a7d]">
-            اختر الدائرة بالنقر أو بالقلم، أو اختر الإجابة من صفحة السؤال. الدوائر المحددة محفوظة تلقائيًا.
-          </p>
-          <button type="button" disabled={submitting || saving} onClick={handleManualSubmit} className="flex w-full items-center justify-center gap-2 rounded-xl bg-[#e47a55] py-3 text-xs font-bold text-white transition hover:bg-[#d96947] disabled:opacity-60">
-            <CheckCircle2 className="h-4 w-4" /> مراجعة وتسليم الاختبار
-          </button>
-          {timeRemaining <= 0 && <p className="mt-2 flex items-start gap-2 text-xs text-red-700"><AlertCircle className="mt-0.5 h-4 w-4 shrink-0" /> انتهى الوقت؛ تم تسليم الإجابات المحفوظة.</p>}
+        <aside aria-label="ورقة الإجابة" className="hidden w-[360px] shrink-0 flex-col border-r border-[#e2d9ce] bg-[#f8f5ef] px-4 py-5 lg:flex xl:w-[400px] xl:px-5">
+          {answerSheetContent}
         </aside>
       </div>
+
+      {answerSheetOpen && (
+        <div className="fixed inset-0 z-[110] lg:hidden" dir="rtl">
+          <button
+            type="button"
+            className="absolute inset-0 h-full w-full bg-[#352b24]/40"
+            aria-label="إغلاق ورقة التظليل"
+            onClick={() => setAnswerSheetOpen(false)}
+            data-testid="button-dismiss-answer-sheet"
+          />
+          <aside
+            id="mobile-answer-sheet"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="mobile-answer-sheet-title"
+            className="absolute inset-y-0 right-0 flex w-[min(92vw,420px)] max-w-full flex-col border-l border-[#e2d9ce] bg-[#f8f5ef] px-4 pb-[max(1rem,env(safe-area-inset-bottom))] pt-[max(1rem,env(safe-area-inset-top))] shadow-xl"
+          >
+            <div className="mb-3 flex items-center justify-between border-b border-[#e5dacf] pb-3">
+              <h2 id="mobile-answer-sheet-title" className="text-sm font-extrabold">ورقة التظليل</h2>
+              <button
+                type="button"
+                ref={answerSheetCloseRef}
+                onClick={() => setAnswerSheetOpen(false)}
+                aria-label="إغلاق ورقة التظليل"
+                className="flex h-10 w-10 items-center justify-center rounded-xl border border-[#e5dacf] bg-[#fffdf8] text-[#765f50] hover:bg-[#fff1e8]"
+                data-testid="button-close-answer-sheet"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+            {answerSheetContent}
+          </aside>
+        </div>
+      )}
 
       {showSubmitConfirm && (
         <div className="fixed inset-0 z-[120] flex items-center justify-center bg-[#352b24]/40 p-5 backdrop-blur-sm" role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget) setShowSubmitConfirm(false); }}>
