@@ -10,13 +10,17 @@ import {
   publicVerbalQuestion,
 } from "../src/learning/qudratVerbalBook.ts";
 
-test("maps fifty verbal topics across five chapters and publishes the first six lessons", () => {
+test("maps fifty verbal topics across five chapters and publishes a complete lesson for each", () => {
   assert.equal(VERBAL_CHAPTERS.length, 5);
   assert.deepEqual(VERBAL_CHAPTERS.map((chapter) => chapter.topics.length), [10, 10, 10, 10, 10]);
   assert.equal(VERBAL_TOPICS.length, 50);
   assert.equal(new Set(VERBAL_TOPICS.map((topic) => topic.id)).size, 50);
-  assert.equal(VERBAL_LESSONS.length, 6);
+  assert.equal(VERBAL_LESSONS.length, 50);
   assert.ok(VERBAL_LESSONS.every((lesson) => VERBAL_TOPICS.some((topic) => topic.id === lesson.id)));
+  assert.deepEqual(
+    VERBAL_LESSONS.map((lesson) => lesson.id),
+    VERBAL_TOPICS.map((topic) => topic.id),
+  );
 });
 
 test("assessment and review questions have valid server-only answer keys and complete feedback", () => {
@@ -26,9 +30,19 @@ test("assessment and review questions have valid server-only answer keys and com
       assert.equal(questions.length, 4, `${lesson.id} ${mode} question count`);
       assert.equal(new Set(questions.map((question) => question.id)).size, questions.length);
       for (const question of questions) {
+        assert.ok(question.prompt.trim().length >= 12, `${question.id} prompt`);
+        assert.ok(question.explanation.trim().length >= 20, `${question.id} explanation`);
+        assert.equal(new Set(question.options).size, question.options.length, `${question.id} distinct options`);
+        assert.ok(question.options.length >= 4, `${question.id} options`);
         assert.ok(question.correctOptionIndex >= 0 && question.correctOptionIndex < question.options.length);
         assert.equal(question.optionFeedback.length, question.options.length);
         assert.equal(question.optionFeedback[question.correctOptionIndex], null);
+        assert.ok(
+          question.optionFeedback.every((feedback, index) =>
+            index === question.correctOptionIndex || Boolean(feedback?.trim()),
+          ),
+          `${question.id} feedback`,
+        );
         const publicPayload = publicVerbalQuestion(question);
         assert.equal("correctOptionIndex" in publicPayload, false);
         assert.equal("explanation" in publicPayload, false);
@@ -39,6 +53,27 @@ test("assessment and review questions have valid server-only answer keys and com
         }
       }
     }
+  }
+});
+
+test("every newly published lesson has complete instruction, a worked example, and two separate quizzes", () => {
+  const firstSix = new Set([
+    "verbal-word-context",
+    "verbal-analogy",
+    "verbal-sentence-completion",
+    "verbal-contextual-error",
+    "verbal-reading-main-idea",
+    "verbal-reading-inference",
+  ]);
+  const newLessons = VERBAL_LESSONS.filter((lesson) => !firstSix.has(lesson.id));
+  assert.equal(newLessons.length, 44);
+  for (const lesson of newLessons) {
+    assert.ok(lesson.summary.trim().length >= 25, `${lesson.id} summary`);
+    assert.ok(lesson.sections.length >= 3, `${lesson.id} sections`);
+    assert.ok(lesson.sections.every((section) => section.paragraphs.every((paragraph) => paragraph.trim().length >= 20)), `${lesson.id} explanation`);
+    assert.ok(lesson.sections.some((section) => section.workedExample?.steps.length >= 3 && section.workedExample.answer.trim()), `${lesson.id} worked example`);
+    assert.equal(lesson.assessmentQuestions.length, 4, `${lesson.id} assessment`);
+    assert.equal(lesson.remedialQuestions.length, 4, `${lesson.id} review`);
   }
 });
 

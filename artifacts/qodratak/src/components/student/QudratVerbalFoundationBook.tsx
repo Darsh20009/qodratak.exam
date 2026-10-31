@@ -173,7 +173,7 @@ export default function QudratVerbalFoundationBook() {
             </h2>
             <p className="mt-2 text-sm leading-7 text-muted-foreground">{bookQuery.data.description}</p>
             <p className="mt-3 rounded-2xl border border-amber-500/25 bg-amber-500/5 px-4 py-3 text-xs leading-6 text-foreground">
-              المتاح حاليًا {bookQuery.data.publishedLessonCount.toLocaleString("ar")} دروس من أصل {bookQuery.data.totalTopicCount.toLocaleString("ar")} موضوعًا. بقية الموضوعات تظهر بوضوح كـ«قريبًا» ولا تُعرض كأنها دروس جاهزة.
+              نُشر {bookQuery.data.publishedLessonCount.toLocaleString("ar")} درسًا من أصل {bookQuery.data.totalTopicCount.toLocaleString("ar")} موضوعًا، ولكل درس شرح واختبار ومراجعة.
             </p>
           </div>
           <div className="min-w-44 rounded-2xl border border-border bg-muted/40 p-4">
@@ -194,7 +194,7 @@ export default function QudratVerbalFoundationBook() {
           {!selectedLessonId ? (
             <div className="rounded-3xl border border-dashed border-border bg-card p-8 text-center">
               <BookOpen className="mx-auto h-10 w-10 text-muted-foreground" />
-              <p className="mt-3 font-black text-foreground">لا توجد دروس منشورة في هذا المسار بعد</p>
+              <p className="mt-3 font-black text-foreground">لا توجد دروس متاحة حاليًا</p>
             </div>
           ) : lessonQuery.isLoading ? (
             <div className="flex min-h-48 items-center justify-center gap-3 rounded-3xl border border-border bg-card p-6 text-sm font-bold text-muted-foreground" role="status">

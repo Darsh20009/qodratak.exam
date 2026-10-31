@@ -1,3 +1,5 @@
+import { createSupplementalVerbalLessons } from "./qudratVerbalBookSupplement";
+
 export const VERBAL_BOOK_ID = "qudrat-verbal-foundation-pilot";
 export const VERBAL_BOOK_PASSING_SCORE = 75;
 export const VERBAL_BOOK_SOURCE_KEY = "qudrat-verbal-foundation-pilot";
@@ -152,7 +154,7 @@ const waterPassage =
 const waterRemedialPassage =
   "لاحظ فريق مدرسي أن كثيرًا من الطلاب يتأخرون عن بداية الحصة الأولى. فراجع مواعيد الحافلات، واستمع إلى الطلاب، ثم عدل مسار حافلتين. بعد ذلك قل عدد المتأخرين، لكن الفريق واصل تسجيل الملاحظات للتأكد من أن التحسن مستمر ولا يؤثر في بقية المسارات.";
 
-export const VERBAL_LESSONS: VerbalLesson[] = [
+const INITIAL_VERBAL_LESSONS: VerbalLesson[] = [
   {
     id: "verbal-word-context",
     title: "معنى الكلمة من السياق",
@@ -491,12 +493,33 @@ export const VERBAL_LESSONS: VerbalLesson[] = [
   },
 ];
 
-export const VERBAL_LESSON_BY_ID = new Map(
-  VERBAL_LESSONS.map((lesson) => [lesson.id, lesson]),
-);
-
 export const VERBAL_TOPICS = VERBAL_CHAPTERS.flatMap(
   (chapter) => chapter.topics.map(([id, title]) => ({ id, title })),
+);
+
+const allVerbalLessons: VerbalLesson[] = [
+  ...INITIAL_VERBAL_LESSONS,
+  ...createSupplementalVerbalLessons(
+    VERBAL_TOPICS,
+    new Set(INITIAL_VERBAL_LESSONS.map((lesson) => lesson.id)),
+  ),
+];
+
+const verbalTopicOrder = new Map<string, number>(
+  VERBAL_TOPICS.map((topic, index): [string, number] => [topic.id, index]),
+);
+export const VERBAL_LESSONS = allVerbalLessons.sort(
+  (first, second) =>
+    (verbalTopicOrder.get(first.id) ?? Number.MAX_SAFE_INTEGER) -
+    (verbalTopicOrder.get(second.id) ?? Number.MAX_SAFE_INTEGER),
+);
+
+if (VERBAL_LESSONS.length !== VERBAL_TOPICS.length) {
+  throw new Error("Every verbal foundation topic must have one published lesson.");
+}
+
+export const VERBAL_LESSON_BY_ID = new Map(
+  VERBAL_LESSONS.map((lesson) => [lesson.id, lesson]),
 );
 
 export function getVerbalQuestionSet(

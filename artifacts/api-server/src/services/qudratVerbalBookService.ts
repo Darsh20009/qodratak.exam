@@ -228,7 +228,7 @@ export async function getQudratVerbalBook(userId: string) {
     id: VERBAL_BOOK_ID,
     title: "الكتاب التأسيسي للقدرات اللفظي",
     description:
-      "مسار تأسيسي تجريبي من 50 موضوعًا يغطي المفردات والتناظر اللفظي وإكمال الجمل والخطأ السياقي واستيعاب المقروء. الدروس المتاحة منشورة بشرح واختبار، وتظهر الموضوعات الأخرى بوضوح على أنها قادمة.",
+      "مسار تأسيسي من 50 موضوعًا يغطي المفردات والتناظر اللفظي وإكمال الجمل والخطأ السياقي واستيعاب المقروء، مع شرح واختبار تقييم ومراجعة لكل درس.",
     passingScore: VERBAL_BOOK_PASSING_SCORE,
     totalTopicCount: VERBAL_TOPICS.length,
     publishedLessonCount: VERBAL_LESSONS.length,
