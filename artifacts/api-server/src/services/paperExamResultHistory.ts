@@ -24,6 +24,7 @@ export interface PaperExamHistoryRecord {
   subjectId?: string;
   testType: "paper_model";
   testId: string;
+  resultNotificationKey: string;
   testName: string;
   difficulty: "mixed";
   score: number;
@@ -62,6 +63,7 @@ export function buildPaperExamHistoryRecord(input: PaperExamHistoryInput): Paper
     subjectId: input.subjectId,
     testType: "paper_model",
     testId,
+    resultNotificationKey: `paper-exam:${input.attemptId}`,
     testName: input.title,
     difficulty: "mixed",
     score: input.result.correctAnswers,

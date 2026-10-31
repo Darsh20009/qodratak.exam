@@ -83,6 +83,7 @@ test("config validation derives exact Qudrat distributions and rejects inconsist
   const mixed = validatePaperExamConfig(baseInput);
   assert.equal(mixed.verbalCount, 5);
   assert.equal(mixed.quantitativeCount, 5);
+  assert.equal(mixed.trialQuestions, 0);
   assert.throws(
     () => validatePaperExamConfig({ ...baseInput, distribution: "custom", verbalCount: 4, quantitativeCount: 4 }),
     (error: unknown) => error instanceof PaperExamServiceError && error.code === "INVALID",
@@ -156,7 +157,7 @@ test("creation and restore state expose neither trusted answer keys nor hidden e
   assert.ok(!serialized.includes("شرح داخلي"));
 });
 
-test("fixed paper models preserve question order and reveal their answer key only after submission", async () => {
+test("fixed paper models preserve order and count legacy trial-labeled questions", async () => {
   const repository = new FakePaperExamRepository();
   const service = new PaperExamService(repository);
   const now = new Date("2026-10-26T10:00:00.000Z");
@@ -176,14 +177,17 @@ test("fixed paper models preserve question order and reveal their answer key onl
   const state = await service.createFixedModel({ ownerUserId: "student-a", model, now });
   assert.deepEqual(state.questions.map((question) => question.text), ["الأول", "الثاني", "الثالث", "الرابع", "الخامس"]);
   assert.equal(state.exam.totalQuestions, 5);
-  assert.equal(state.exam.trialQuestions, 1);
+  assert.equal(state.exam.trialQuestions, 0);
   assert.ok(!JSON.stringify(state).includes("correctOptionIndex"));
   assert.ok(!JSON.stringify(state).includes("شرح داخلي"));
 
   const submitted = await service.submit(state.exam.id, "student-a", new Date(now.getTime() + 60_000));
+  assert.equal(submitted.result.scoredQuestions, 5);
+  assert.equal(submitted.result.skippedQuestions, 5);
   assert.equal(submitted.result.questionDetails[0].correctAnswer, 0);
   assert.equal(submitted.result.questionDetails[1].correctAnswer, 2);
-  assert.equal(submitted.result.questionDetails[1].status, "trial");
+  assert.equal(submitted.result.questionDetails[1].status, "skipped");
+  assert.equal(submitted.result.questionDetails[1].isTrial, false);
 });
 
 test("saved answers and review marks restore; malformed, unknown, and out-of-range answers are rejected", async () => {
@@ -240,7 +244,7 @@ test("attempt ownership is enforced and answer saves are refused after server ex
   }), (error: unknown) => error instanceof PaperExamServiceError && error.code === "EXPIRED");
 });
 
-test("server grading ignores client grade fields, excludes trial items, uses server time and submits once", async () => {
+test("server grading counts every question, ignores client grade fields, uses server time and submits once", async () => {
   const repository = new FakePaperExamRepository();
   const service = new PaperExamService(repository);
   const startedAt = new Date("2026-10-26T10:00:00.000Z");
@@ -253,9 +257,13 @@ test("server grading ignores client grade fields, excludes trial items, uses ser
   });
   const savedAnswers: Record<string, number> = {};
   const persistedAttempt = repository.attempts.get(state.exam.id)!;
-  for (const question of persistedAttempt.questions.filter((item) => !item.isTrial)) {
+  for (const question of persistedAttempt.questions) {
     savedAnswers[String(question.questionNumber)] = question.correctOptionIndex;
   }
+  assert.equal(persistedAttempt.trialQuestions, 0);
+  assert.ok(persistedAttempt.questions.every((question) => !question.isTrial));
+  persistedAttempt.questions.slice(0, 2).forEach((question) => { question.isTrial = true; });
+  persistedAttempt.trialQuestions = 2;
   await service.saveAnswers({
     id: state.exam.id,
     ownerUserId: "student-a",
@@ -264,8 +272,9 @@ test("server grading ignores client grade fields, excludes trial items, uses ser
     now: new Date(startedAt.getTime() + 60_000),
   });
   const first = await service.submit(state.exam.id, "student-a", new Date(startedAt.getTime() + 90_000));
-  assert.equal(first.result.scoredQuestions, 8);
-  assert.equal(first.result.correctAnswers, 8);
+  assert.equal(first.result.scoredQuestions, 10);
+  assert.equal(first.result.correctAnswers, 10);
+  assert.ok(first.result.questionDetails.every((question) => !question.isTrial));
   assert.equal(first.result.totalPercentage, 100);
   assert.equal(first.result.timeTaken, 90);
   assert.equal(first.result.timedOut, false);
@@ -296,7 +305,10 @@ test("all simulator endpoints register behind both authentication and student-ro
       modelNumber: 31,
       title: "النموذج الورقي ٣١",
       timeLimitMinutes: 30,
-      questions: Array.from({ length: 5 }, (_, index) => questionCandidate(`fixed-${index + 1}`)),
+    questions: Array.from({ length: 5 }, (_, index) => ({
+      ...questionCandidate(`fixed-${index + 1}`),
+      isTrial: true,
+    })),
     } : null,
     saveResultToHistory: async (input) => { savedHistoryResults.push(input as unknown as Record<string, unknown>); },
   });
@@ -311,6 +323,8 @@ test("all simulator endpoints register behind both authentication and student-ro
   await fixedCreate.handlers[2]({ params: { modelNumber: "31" }, body: {}, session: { userId: "student-a" } }, fixedResponse as any);
   assert.equal(fixedResponse.statusCode, 201);
   assert.ok(!JSON.stringify(fixedResponse.body).includes("correctOptionIndex"));
+  assert.equal(fixedResponse.body.exam.trialQuestions, 0);
+  assert.ok(fixedResponse.body.questions.every((question: any) => !question.isTrial));
   const fixedBodyRejected = { statusCode: 200, body: undefined as any, status(code: number) { this.statusCode = code; return this; }, json(body: any) { this.body = body; return this; } };
   await fixedCreate.handlers[2]({ params: { modelNumber: "31" }, body: { questions: [] }, session: { userId: "student-a" } }, fixedBodyRejected as any);
   assert.equal(fixedBodyRejected.statusCode, 400);
@@ -351,7 +365,7 @@ test("all simulator endpoints register behind both authentication and student-ro
   const secondId = secondCreated.body.exam.id;
   const secondAttempt = repository.attempts.get(secondId)!;
   const answerHandler = registrations.find((route) => route.method === "PUT" && route.path === "/api/paper-exams/:id/answers")!;
-  const answers = Object.fromEntries(secondAttempt.questions.filter((question) => !question.isTrial)
+  const answers = Object.fromEntries(secondAttempt.questions
     .map((question) => [String(question.questionNumber), question.correctOptionIndex]));
   const saveResponse = { statusCode: 200, body: undefined as any, status(code: number) { this.statusCode = code; return this; }, json(body: any) { this.body = body; return this; } };
   await answerHandler.handlers[2]({ params: { id: secondId }, session: { userId: "student-a" }, body: { answers, reviewQuestionNumbers: [] } }, saveResponse as any);
@@ -360,7 +374,7 @@ test("all simulator endpoints register behind both authentication and student-ro
   assert.equal(submitResponse.statusCode, 200);
   assert.equal(savedHistoryResults.length, 1);
   assert.equal(savedHistoryResults[0].ownerUserId, "student-a");
-  assert.equal((savedHistoryResults[0].result as PaperExamResult).correctAnswers, 8);
+  assert.equal((savedHistoryResults[0].result as PaperExamResult).correctAnswers, 10);
   assert.equal((submitResponse.body as any).duplicate, false);
   const repeatedSubmitResponse = { statusCode: 200, body: undefined as any, status(code: number) { this.statusCode = code; return this; }, json(body: any) { this.body = body; return this; } };
   await submit.handlers[2]({ params: { id: secondId }, session: { userId: "student-a" }, body: {} }, repeatedSubmitResponse as any);

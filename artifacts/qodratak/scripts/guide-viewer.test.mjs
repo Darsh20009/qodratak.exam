@@ -57,10 +57,19 @@ test("all dashboard branches wire the full guide and authenticated identity", ()
   assert.doesNotMatch(student, /chapter="dashboard"/);
   for (const [file, audience] of [
     ["admin/AdminDashboard", "admin"], ["InstitutionPortalPage", "institution"],
-    ["TeacherHomePage", "teacher"], ["TeacherSystemPage", "teacher"],
+    ["TeacherHomePage", "teacher"],
   ]) {
     const page = readFileSync(new URL(`../src/pages/${file}.tsx`, import.meta.url), "utf8");
     assert.match(page, new RegExp(`RoleGuideFilm audience="${audience}" viewerId=`));
     assert.match(page, /displayName=/);
   }
+
+  const studentDashboard = readFileSync(new URL("../src/pages/student/DashboardPage.tsx", import.meta.url), "utf8");
+  assert.equal((studentDashboard.match(/<DashboardGuideFilm /g) ?? []).length, 3);
+  const studentShell = readFileSync(new URL("../src/components/student/StudentShell.tsx", import.meta.url), "utf8");
+  assert.doesNotMatch(studentShell, /PageGuideFilm/);
+  const app = readFileSync(new URL("../src/App.tsx", import.meta.url), "utf8");
+  assert.doesNotMatch(app, /StudentPageGuide/);
+  const teacherSystem = readFileSync(new URL("../src/pages/TeacherSystemPage.tsx", import.meta.url), "utf8");
+  assert.doesNotMatch(teacherSystem, /RoleGuideFilm/);
 });

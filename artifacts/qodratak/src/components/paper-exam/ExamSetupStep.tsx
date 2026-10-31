@@ -47,7 +47,6 @@ export default function ExamSetupStep({ onExamCreated }: ExamSetupStepProps) {
   const [formData, setFormData] = useState({
     title: '',
     totalQuestions: 120,
-    trialQuestions: 20,
     program: 'qudrat' as 'qudrat' | 'tahsili',
     subjectId: 'رياضيات',
     timeLimitMinutes: 120,
@@ -176,19 +175,6 @@ export default function ExamSetupStep({ onExamCreated }: ExamSetupStepProps) {
                 max="200"
                 value={formData.totalQuestions}
                 onChange={(e) => setFormData({ ...formData, totalQuestions: parseInt(e.target.value) || 0 })}
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="trialQuestions">عدد أسئلة التجربة</Label>
-              <Input
-                id="trialQuestions"
-                data-testid="input-trial-questions"
-                type="number"
-                min="0"
-                max="50"
-                value={formData.trialQuestions}
-                onChange={(e) => setFormData({ ...formData, trialQuestions: parseInt(e.target.value) || 0 })}
               />
             </div>
 

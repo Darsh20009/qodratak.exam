@@ -378,6 +378,7 @@ export default function DashboardPage() {
     return (
       <main className="mx-auto w-full max-w-5xl space-y-5 p-5 md:p-8" dir="rtl">
         <header><p className="text-sm font-bold text-muted-foreground">مرحبًا،</p><h1 data-testid="text-student-name" className="text-3xl font-black text-foreground">{userName}</h1></header>
+        <DashboardGuideFilm studentId={user.id ?? user._id} displayName={userName} />
         <section className="rounded-3xl border border-border bg-card p-6">
           <h2 className="text-xl font-black">تابع رحلتك</h2>
           <p className="mt-2 text-sm leading-7 text-muted-foreground">يمكنك متابعة نتائجك ومراجعة المكتبة، أو معرفة خيارات الاشتراك.</p>
@@ -389,7 +390,6 @@ export default function DashboardPage() {
         <details className="group rounded-2xl border border-border bg-card p-4">
           <summary data-testid="summary-expired-tools" className="cursor-pointer list-none font-black">مساعدة وأدوات إضافية <ChevronDown className="inline h-4 w-4" /></summary>
           <div className="mt-4 space-y-4">
-            <DashboardGuideFilm studentId={user.id ?? user._id} displayName={userName} />
             <InstitutionAssignmentsCard />
             <StudentQuestionContributionButton />
             <AdaptiveLearningCoach trialExpired />
@@ -404,6 +404,7 @@ export default function DashboardPage() {
     return (
       <main className="mx-auto w-full max-w-5xl space-y-5 p-5 pb-10 md:p-8" dir="rtl">
         <NewStudentWelcome studentName={userName} program={activeProgram} />
+        <DashboardGuideFilm studentId={user.id ?? user._id} displayName={userName} />
         <StudentDashboardProgressOverview
           metricsState={metricsState}
           metrics={{
@@ -448,7 +449,6 @@ export default function DashboardPage() {
             <span className="flex-1">أدوات ومعلومات إضافية</span><ChevronDown className="h-4 w-4 text-muted-foreground group-open:rotate-180" />
           </summary>
           <div className="space-y-4 border-t border-border p-4">
-            <DashboardGuideFilm studentId={user.id ?? user._id} displayName={userName} />
             <QuestionProgressLibraryCard />
             <InstitutionMembershipCard />
             <InstitutionAssignmentsCard />
@@ -472,6 +472,7 @@ export default function DashboardPage() {
           <FileText className="h-4 w-4" aria-hidden="true" /> نتائجي
         </Link>
       </header>
+        <DashboardGuideFilm studentId={user.id ?? user._id} displayName={userName} />
 
       <StudentDashboardProgressOverview
         metricsState={metricsState}
@@ -570,7 +571,6 @@ export default function DashboardPage() {
           <details className="group rounded-xl border border-border">
             <summary data-testid="summary-support-tools" className="flex cursor-pointer list-none items-center gap-3 p-3 text-sm font-bold"><span className="flex-1">معلومات ومساندة</span><ChevronDown className="h-4 w-4 group-open:rotate-180" /></summary>
             <div className="space-y-4 border-t border-border p-3">
-              <DashboardGuideFilm studentId={user.id ?? user._id} displayName={userName} />
               <QuestionProgressLibraryCard />
               <InstitutionMembershipCard />
               <InstitutionAssignmentsCard />

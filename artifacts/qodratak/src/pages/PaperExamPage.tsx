@@ -322,6 +322,36 @@ export default function PaperExamPage() {
             color: #000;
         }
 
+        .declaration {
+            margin: 0 0 12px;
+            padding: 10px 14px;
+            border: 1px solid #5faec8;
+            border-radius: 6px;
+            background: #fff;
+            color: #172d3b;
+            font-size: 11px;
+            line-height: 1.7;
+        }
+
+        .declaration-title {
+            margin-bottom: 3px;
+            color: #806443;
+            font-size: 13px;
+            font-weight: 700;
+        }
+
+        .declaration-signature {
+            display: flex;
+            gap: 8px;
+            margin-top: 6px;
+            font-size: 10px;
+        }
+
+        .declaration-signature span {
+            flex: 1;
+            border-bottom: 1px dotted #617984;
+        }
+
         .question-box {
             border: 2px solid #000;
             padding: 12px;
@@ -437,6 +467,14 @@ export default function PaperExamPage() {
             <div class="logo">قدراتك</div>
             <div class="exam-title">${currentExam.title || 'اختبار قدراتك'}</div>
         </div>
+
+        ${pageNum === 0 ? `
+        <section class="declaration">
+            <div class="declaration-title">إقرار وتعهد</div>
+            <div>أقرّ بأنني اطلعت على عدد صفحات الاختبار، وأتعهد بالإجابة بنفسي وعدم استخدام أي وسيلة غير مسموح بها، وألتزم بتظليل إجابة واحدة أمام رقم السؤال المطابق.</div>
+            <div class="declaration-signature"><span>الاسم</span><span>التوقيع</span><span>التاريخ</span></div>
+        </section>
+        ` : ''}
 
         ${pageQuestions.map((question, idx) => {
             const isLong = question.text && question.text.length > 400;
@@ -578,8 +616,8 @@ export default function PaperExamPage() {
       const pdf = new jsPDF('p', 'mm', 'a4');
       let isFirstPage = true;
       
-      const trialCount = currentExam.trialQuestions || 0;
-      const scoredCount = questions.length - trialCount;
+      const trialCount = 0;
+      const scoredCount = questions.length;
 
       for (let pageNum = 0; pageNum < totalPages; pageNum++) {
         toast({
@@ -845,23 +883,9 @@ export default function PaperExamPage() {
       const pdf = new jsPDF('p', 'mm', 'a4');
       let isFirstPage = true;
       
-      const trialCount = currentExam.trialQuestions || 0;
-      const scoredCount = questions.length - trialCount;
-      
-      // 🎯 نظام توزيع ذكي للأسئلة التجريبية (موزعة عبر الاختبار وليس آخر 20)
+      const trialCount = 0;
+      const scoredCount = questions.length;
       const trialIndices = new Set<number>();
-      if (trialCount > 0) {
-        const positions = [];
-        for (let i = 0; i < questions.length; i++) {
-          positions.push(i);
-        }
-        // خلط عشوائي
-        positions.sort(() => Math.random() - 0.5);
-        // اختيار أول trialCount مواقع عشوائية
-        for (let i = 0; i < trialCount; i++) {
-          trialIndices.add(positions[i]);
-        }
-      }
 
       for (let pageNum = 0; pageNum < totalPages; pageNum++) {
         toast({
@@ -1054,7 +1078,7 @@ export default function PaperExamPage() {
         </div>
 
         <div class="notice">
-            <div class="notice-title">🎨 نظام الألوان الإبداعي: 🔴 أحمر (لفظي) • 🟢 أخضر (كمي) • 🔵 أزرق (تجريبي موزع)</div>
+            <div class="notice-title">نظام الألوان: 🔴 أحمر (لفظي) • 🟢 أخضر (كمي) — جميع الأسئلة محسوبة</div>
         </div>
         
         ${trialCount > 0 ? `
@@ -1068,9 +1092,9 @@ export default function PaperExamPage() {
             ${pageQuestions.map((question, i) => {
               const questionNum = startIdx + i + 1;
               const globalIndex = startIdx + i;
-              const isTrial = trialIndices.has(globalIndex);
-              const isVerbal = !isTrial && (question?.category === 'verbal' || question?.category === 'لفظي');
-              const isQuantitative = !isTrial && (question?.category === 'quantitative' || question?.category === 'كمي');
+              const isTrial = false;
+              const isVerbal = question?.category === 'verbal' || question?.category === 'لفظي';
+              const isQuantitative = question?.category === 'quantitative' || question?.category === 'كمي';
               const correctIndex = -1;
               
               let cssClass = 'question-box';
@@ -1152,13 +1176,13 @@ export default function PaperExamPage() {
       return;
     }
 
-    const trialCount = currentExam.trialQuestions || 0;
-    const scoredCount = questions.length - trialCount;
+    const trialCount = 0;
+    const scoredCount = questions.length;
     
     if (correctCount > scoredCount) {
       toast({
         title: 'خطأ',
-        description: `عدد الأسئلة الصحيحة لا يمكن أن يتجاوز ${scoredCount} (بدون التجريبي)`,
+        description: `عدد الأسئلة الصحيحة لا يمكن أن يتجاوز ${scoredCount}`,
         variant: 'destructive',
       });
       return;
@@ -1173,13 +1197,10 @@ export default function PaperExamPage() {
     let quantTotal = 0;
     
     questions.forEach((q, idx) => {
-      const isTrial = (idx + 1) > scoredCount;
-      if (!isTrial) {
-        if (q.category === 'verbal' || q.category === 'لفظي') {
-          verbalTotal++;
-        } else if (q.category === 'quantitative' || q.category === 'كمي') {
-          quantTotal++;
-        }
+      if (q.category === 'verbal' || q.category === 'لفظي') {
+        verbalTotal++;
+      } else if (q.category === 'quantitative' || q.category === 'كمي') {
+        quantTotal++;
       }
     });
     
@@ -1540,7 +1561,7 @@ export default function PaperExamPage() {
             
             ${questions.map((q, idx) => {
               const questionNum = idx + 1;
-              const isTrial = questionNum > scoredCount;
+              const isTrial = false;
               const letters = ['أ', 'ب', 'ج', 'د'];
               
               return `

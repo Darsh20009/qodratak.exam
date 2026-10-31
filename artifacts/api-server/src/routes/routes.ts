@@ -40,6 +40,7 @@ import { storage } from "../storage";
 import { examQuestionPayload, dailyExamQuestions } from "../services/examQuestionPayload";
 import { attachPaperModelSourceImages } from "../services/paperModelQuestionImages";
 import { createPaperModelPreparationCache } from "../services/paperModelPreparationCache";
+import { calculatePaperModelScore, PaperModelScoreError } from "../services/paperModelScoring";
 import { logger } from "../lib/logger";
 import { registerExamLearningReportRoutes } from './examLearningReportRoutes';
 import { registerQuestionVideoRoutes } from './questionVideoRoutes';
@@ -6733,12 +6734,48 @@ app.post("/api/auth/register", async (req: Request, res: Response) => {
         return res.status(401).json({ message: "يجب تسجيل الدخول أولاً" });
       }
 
-      if (!modelId || !modelNumber || verbalCorrect === undefined || quantCorrect === undefined) {
+      const numericModelId = Number(modelId);
+      const numericModelNumber = Number(modelNumber);
+      const verbalScore = Number(verbalCorrect);
+      const quantitativeScore = Number(quantCorrect);
+      if (
+        !Number.isSafeInteger(numericModelId) || numericModelId < 1 ||
+        !Number.isSafeInteger(numericModelNumber) || numericModelNumber < 1 ||
+        (typeof verbalCorrect === "string" && verbalCorrect.trim() === "") ||
+        (typeof quantCorrect === "string" && quantCorrect.trim() === "") ||
+        !Number.isSafeInteger(verbalScore) || verbalScore < 0 ||
+        !Number.isSafeInteger(quantitativeScore) || quantitativeScore < 0
+      ) {
         return res.status(400).json({ message: "بيانات غير مكتملة" });
       }
 
       try {
         console.log(`📝 Attempting to save result: userId=${userId}, modelId=${modelId}`);
+        const paperModel = (await getPaperModelCatalog()).find(
+          (item) => Number(item.modelNumber) === numericModelNumber && Number(item.id) === numericModelId,
+        );
+        if (!paperModel) {
+          return res.status(404).json({ message: "النموذج الورقي غير موجود" });
+        }
+
+        let calculatedScore: ReturnType<typeof calculatePaperModelScore>;
+        try {
+          calculatedScore = calculatePaperModelScore(paperModel, verbalScore, quantitativeScore);
+        } catch (error) {
+          if (error instanceof PaperModelScoreError) {
+            return res.status(error.statusCode).json({ message: error.message });
+          }
+          throw error;
+        }
+        const {
+          verbalTotal,
+          quantitativeTotal,
+          totalQuestions,
+          totalCorrect,
+          totalPercentage,
+          verbalPercentage,
+          quantitativePercentage,
+        } = calculatedScore;
 
         const useMongoStorage =
           mongoose.connection.readyState === 1 &&
@@ -6765,24 +6802,14 @@ app.post("/api/auth/register", async (req: Request, res: Response) => {
           });
         }
 
-        // Calculate totals and percentages
-        const verbalTotal = 53;
-        const quantitativeTotal = 47;
-        const totalQuestions = 100;
-
-        const verbalPercentage = Math.round((verbalCorrect / verbalTotal) * 100);
-        const quantitativePercentage = Math.round((quantCorrect / quantitativeTotal) * 100);
-        const totalCorrect = verbalCorrect + quantCorrect;
-        const totalPercentage = Math.round((totalCorrect / totalQuestions) * 100);
-
         // Create new result with all required fields
         const resultData = {
           userId: userId,
-          modelId: modelId,
-          modelNumber: modelNumber,
-          verbalCorrect: verbalCorrect,
+          modelId: numericModelId,
+          modelNumber: numericModelNumber,
+          verbalCorrect: calculatedScore.verbalCorrect,
           verbalTotal: verbalTotal,
-          quantitativeCorrect: quantCorrect,
+          quantitativeCorrect: calculatedScore.quantitativeCorrect,
           quantitativeTotal: quantitativeTotal,
           verbalPercentage: verbalPercentage,
           quantitativePercentage: quantitativePercentage,
@@ -6799,6 +6826,7 @@ app.post("/api/auth/register", async (req: Request, res: Response) => {
             userId: String(userId),
             program: 'qudrat',
             testId: `paper-${modelId}`,
+            resultNotificationKey: `paper-model-result:${String(userId)}:${numericModelNumber}`,
             testName: `النموذج الورقي ${modelNumber}`,
             testType: 'paper_model',
             difficulty: 'mixed',

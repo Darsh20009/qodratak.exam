@@ -1,14 +1,11 @@
 import React, { useCallback, useContext, useMemo, useState, useLayoutEffect } from "react";
 import { bindExamTimingOwner } from '@/lib/examTiming';
-import { useLocation } from "wouter";
 import { useUser } from "@/hooks/use-user";
 import { StudentExamChromeContext } from "@/components/student/StudentExamChromeContext";
-import { PageGuideFilm } from "@/components/student/PageGuideFilm";
 import { StudentNavigation } from "@/components/student/StudentNavigation";
 import { StudentHeaderTools } from "@/components/student/StudentHeaderTools";
 
 export function StudentShell({ children }: { children: React.ReactNode }) {
-  const [location] = useLocation();
   const { user } = useUser();
   useLayoutEffect(() => { bindExamTimingOwner(user?.id ? String(user.id) : null); }, [user?.id]);
   const inheritedExamChrome = useContext(StudentExamChromeContext);
@@ -25,7 +22,6 @@ export function StudentShell({ children }: { children: React.ReactNode }) {
 
   return (
     <StudentExamChromeContext.Provider value={examChrome}>
-      {!isExamLayoutActive && <PageGuideFilm location={location} />}
       <div className="flex min-h-[100dvh] flex-col md:flex-row" dir="rtl">
         <StudentNavigation hidden={isExamLayoutActive || user?.role !== "student"} />
         <div className="flex min-w-0 flex-1 flex-col">

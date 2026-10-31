@@ -185,7 +185,7 @@ export function createPaperModelPrintHtml(
     });
   }
 
-  return `<!doctype html>
+    return `<!doctype html>
   <html lang="ar" dir="rtl"><head><meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>${mode === "exam" ? "اختبار" : "ورقة إجابة محلولة"}_${safeName}</title>

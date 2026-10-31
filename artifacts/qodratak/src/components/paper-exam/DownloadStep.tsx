@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -38,6 +39,8 @@ export default function DownloadStep({
   generateBubbleSheetHTML,
   onProceed,
 }: DownloadStepProps) {
+  const [pledgeAccepted, setPledgeAccepted] = useState(false);
+
   return (
     <div className="space-y-6">
       <Card>
@@ -117,7 +120,21 @@ export default function DownloadStep({
             <p className="text-sm text-green-800 dark:text-green-200 mb-4">
               تُحفظ إجاباتك بأمان وتُصحح على الخادم بعد التسليم. لن يظهر مفتاح الإجابة قبل إنهاء الاختبار.
             </p>
-            <Button onClick={onProceed} size="lg" className="w-full" data-testid="button-start-timed-exam">
+            <div className="mb-4 rounded-xl border border-border bg-background p-4 text-sm leading-7 text-foreground">
+              <h4 className="font-bold">إقرار وتعهد</h4>
+              <p>أقرّ بأنني اطلعت على عدد صفحات الاختبار، وأتعهد بالإجابة بنفسي وعدم استخدام أي وسيلة غير مسموح بها، وألتزم بتظليل إجابة واحدة أمام رقم السؤال المطابق.</p>
+              <label className="mt-3 flex cursor-pointer items-start gap-3 font-semibold">
+                <input
+                  type="checkbox"
+                  checked={pledgeAccepted}
+                  onChange={(event) => setPledgeAccepted(event.target.checked)}
+                  className="mt-1 h-4 w-4 accent-primary"
+                  data-testid="checkbox-paper-exam-pledge"
+                />
+                <span>أوافق على الإقرار والتعهد وأبدأ الاختبار.</span>
+              </label>
+            </div>
+            <Button onClick={onProceed} size="lg" className="w-full" data-testid="button-start-timed-exam" disabled={!pledgeAccepted}>
               <Timer className="w-5 h-5 ml-2" />
               ابدأ الاختبار المحدد بوقت
             </Button>

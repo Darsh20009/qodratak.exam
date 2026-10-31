@@ -97,6 +97,33 @@
 .dark .qodratak-page-surface :is([class~="bg-purple-50"], [class~="bg-purple-100"], [class~="bg-violet-50"], [class~="bg-[#e6e6ef]"], [class~="bg-[#ebeaf3]"]):not([class*="dark:bg-"]) { background-color: rgb(168 85 247 / .12) !important; }
 .dark .qodratak-page-surface :is([class~="text-purple-600"], [class~="text-purple-700"], [class~="text-violet-700"], [class~="text-[#7964C1]"], [class~="text-[#7A4B91]"]):not([class*="dark:text-"]) { color: #d8b4fe !important; }
 
+/* Root-level legacy colors need the same treatment as nested cards. */
+.dark .qodratak-page-surface:is(
+  [class~="bg-white"], [class~="bg-white/70"], [class~="bg-white/80"], [class~="bg-white/90"],
+  [class~="bg-gray-50"], [class~="bg-gray-100"], [class~="bg-slate-50"], [class~="bg-slate-100"],
+  [class~="bg-zinc-50"], [class~="bg-neutral-50"], [class~="bg-[#f8fafc]"], [class~="bg-[#F8FAFC]"],
+  [class~="bg-[#FFFCF7]"], [class~="bg-[#F7F4EE]"], [class~="bg-[#F7F8FA]"],
+  [class~="bg-[#EDF1F4]"], [class~="bg-[#F8FAFB]"], [class~="bg-[#F0F3F5]"]
+):not([class*="dark:bg-"]) {
+  background-color: hsl(var(--card)) !important;
+}
+
+.dark .qodratak-page-surface:is(
+  [class~="text-black"], [class~="text-gray-800"], [class~="text-gray-900"],
+  [class~="text-slate-800"], [class~="text-slate-900"], [class~="text-zinc-800"],
+  [class~="text-zinc-900"], [class~="text-[#0D1B2A]"], [class~="text-[#171723]"],
+  [class~="text-[#24202D]"]
+):not([class*="dark:text-"]) {
+  color: hsl(var(--foreground)) !important;
+}
+
+.dark .qodratak-page-surface:is(
+  [class~="text-gray-400"], [class~="text-gray-500"], [class~="text-gray-600"],
+  [class~="text-slate-400"], [class~="text-slate-500"], [class~="text-slate-600"]
+):not([class*="dark:text-"]) {
+  color: hsl(var(--muted-foreground)) !important;
+}
+
 /* Neutral and pastel gradient stops must not retain a light wash. */
 .dark .qodratak-page-surface :is([class~="from-white"], [class~="from-gray-50"], [class~="from-slate-50"], [class~="from-blue-50"], [class~="from-green-50"], [class~="from-purple-50"]):not([class*="dark:from-"]) {
   --tw-gradient-from: hsl(var(--card)) var(--tw-gradient-from-position) !important;

@@ -172,7 +172,6 @@ import CoursePracticePage from "@/pages/student/CoursePracticePage";
 import { StudentAvailabilityBoundary } from "@/components/student/TahsiliComingSoon";
 import AccountPage from "@/pages/student/AccountPage";
 import { StudentShell } from "@/components/student/StudentShell";
-import { StudentPageGuide } from "@/components/student/PageGuideFilm";
 import { StudentExamChromeContext } from "@/components/student/StudentExamChromeContext";
 import { BrandLoadingScreen, PageTransition } from "@/components/PageTransition";
 import { BrandMark } from "@/components/BrandMark";
@@ -185,6 +184,7 @@ installAdminFetchBridge();
 const LearningHubPage = React.lazy(() => import("@/pages/LearningHubPage"));
 const PerformanceReportPage = React.lazy(() => import("@/pages/PerformanceReportPage"));
 const PaperExamPage = React.lazy(() => import("@/pages/PaperExamPage"));
+const PaperExamResultsPage = React.lazy(() => import("@/pages/PaperExamResultsPage"));
 const PaperModelsPage = React.lazy(() => import("@/pages/PaperModelsPage"));
 
 function RouteLoadingFallback() {
@@ -1339,7 +1339,7 @@ function Router({ splashDone }: { splashDone: boolean }) {
       </Route>
 
       <Route path="/paper-exam-results">
-        {() => <StudentShell><ProtectedRoute requiresPremium={true}><PaperExamPage /></ProtectedRoute></StudentShell>}
+        {() => <StudentShell><ProtectedRoute requiresPremium={true}><PaperExamResultsPage /></ProtectedRoute></StudentShell>}
       </Route>
 
       <Route path="/paper-models">
@@ -1430,19 +1430,19 @@ function Router({ splashDone }: { splashDone: boolean }) {
         {() => <StudentShell><ProtectedRoute requiresPremium={true}><MockExamPage /></ProtectedRoute></StudentShell>}
       </Route>
       <Route path="/flashcards">
-        {() => <StudentPageGuide location="/flashcards"><FlashcardsPage /></StudentPageGuide>}
+        {() => <FlashcardsPage />}
       </Route>
       <Route path="/performance-report">
-        {() => <StudentPageGuide location="/performance-report"><PerformanceReportPage /></StudentPageGuide>}
+        {() => <PerformanceReportPage />}
       </Route>
       <Route path="/adaptive-test">
         {() => <AdaptiveTestPage />}
       </Route>
       <Route path="/error-analysis">
-        {() => <StudentPageGuide location="/error-analysis"><ErrorAnalysisPage /></StudentPageGuide>}
+        {() => <ErrorAnalysisPage />}
       </Route>
       <Route path="/study-rooms/:code">
-        {() => <StudentPageGuide location="/study-rooms/:code"><StudyRoomLobbyPage /></StudentPageGuide>}
+        {() => <StudyRoomLobbyPage />}
       </Route>
       <Route path="/study-rooms">
         {() => <StudentShell><StudyRoomsPage /></StudentShell>}
@@ -1454,10 +1454,10 @@ function Router({ splashDone }: { splashDone: boolean }) {
         {() => <StudentShell><NotificationsPage /></StudentShell>}
       </Route>
       <Route path="/pre-exam-day">
-        {() => <StudentPageGuide location="/pre-exam-day"><PreExamDayPage /></StudentPageGuide>}
+        {() => <PreExamDayPage />}
       </Route>
       <Route path="/ai-tutor">
-        {() => <StudentPageGuide location="/ai-tutor"><AiTutorPage /></StudentPageGuide>}
+        {() => <AiTutorPage />}
       </Route>
       <Route path="/ai-hub">
         {() => <StudentShell><ProtectedRoute><AiHub /></ProtectedRoute></StudentShell>}
@@ -1504,7 +1504,7 @@ function Router({ splashDone }: { splashDone: boolean }) {
         {() => <Redirect to="/account" />}
       </Route>
       <Route path="/security-settings">
-        {() => <StudentPageGuide location="/security-settings"><SecuritySettingsPage /></StudentPageGuide>}
+        {() => <SecuritySettingsPage />}
       </Route>
       <Route path="/book-exam">
         {() => <StudentShell><BookExamPage /></StudentShell>}
@@ -1559,7 +1559,7 @@ function Router({ splashDone }: { splashDone: boolean }) {
         {() => <StudentShell><TestResultsPage /></StudentShell>}
       </Route>
       <Route path="/exam-review">
-        {() => <StudentPageGuide location="/exam-review"><ExamReviewPage /></StudentPageGuide>}
+        {() => <ExamReviewPage />}
       </Route>
 
       {/* Admin Routes */}

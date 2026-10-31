@@ -166,7 +166,7 @@ export default function PaperModelsManagementPage() {
                     </span>
                   </div>
                   <div className="flex flex-col">
-                    <span className="text-gray-500 dark:text-gray-400">أسئلة تجريبية</span>
+                    <span className="text-gray-500 dark:text-gray-400">موسومة قديمًا كتجريبية وتُحسب الآن</span>
                     <span className="font-semibold text-lg" data-testid={`text-trial-questions-${model.modelNumber}`}>
                       {model.trialVerbalCount + model.trialQuantCount}
                     </span>
@@ -207,7 +207,7 @@ export default function PaperModelsManagementPage() {
                 تفاصيل {selectedModelData.name}
               </CardTitle>
               <CardDescription>
-                قائمة بجميع الأسئلة في النموذج (الأسئلة التجريبية مميزة)
+                جميع أسئلة النموذج تدخل في النتيجة؛ وقد تظهر بعض الأسئلة موسومة قديمًا كتجريبية.
               </CardDescription>
             </CardHeader>
             <CardContent>
@@ -249,15 +249,11 @@ export default function PaperModelsManagementPage() {
                           </Badge>
                         </TableCell>
                         <TableCell className="text-center">
-                          {question.isTrial ? (
-                            <Badge variant="outline" className="bg-yellow-100 dark:bg-yellow-900/20 text-yellow-700 dark:text-yellow-400">
-                              تجريبي
-                            </Badge>
-                          ) : (
-                            <Badge variant="outline" className="bg-blue-100 dark:bg-blue-900/20 text-blue-700 dark:text-blue-400">
-                              محسوب
-                            </Badge>
-                          )}
+                          <Badge variant="outline" className={question.isTrial
+                            ? "bg-yellow-100 dark:bg-yellow-900/20 text-yellow-700 dark:text-yellow-400"
+                            : "bg-blue-100 dark:bg-blue-900/20 text-blue-700 dark:text-blue-400"}>
+                            {question.isTrial ? "محسوب · كان تجريبيًا" : "محسوب"}
+                          </Badge>
                         </TableCell>
                       </TableRow>
                     ))}

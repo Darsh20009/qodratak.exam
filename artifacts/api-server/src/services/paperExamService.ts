@@ -153,7 +153,9 @@ export function validatePaperExamConfig(input: unknown): PaperExamConfig {
   const title = typeof body.title === "string" ? body.title.trim() : "";
   const program = body.program;
   const totalQuestions = body.totalQuestions;
-  const trialQuestions = body.trialQuestions ?? 0;
+  // Every paper exam question is scored. Ignore legacy clients that still send
+  // a trial-question count so no question silently disappears from the result.
+  const trialQuestions = 0;
   const timeLimitMinutes = body.timeLimitMinutes;
 
   if (!title || title.length > 120) {
@@ -164,9 +166,6 @@ export function validatePaperExamConfig(input: unknown): PaperExamConfig {
   }
   if (!integerInRange(totalQuestions, MIN_QUESTIONS, MAX_QUESTIONS)) {
     throw new PaperExamServiceError("INVALID", `عدد الأسئلة يجب أن يكون بين ${MIN_QUESTIONS} و${MAX_QUESTIONS}`);
-  }
-  if (!integerInRange(trialQuestions, 0, Number(totalQuestions))) {
-    throw new PaperExamServiceError("INVALID", "عدد الأسئلة التجريبية غير صالح");
   }
   if (!integerInRange(timeLimitMinutes, MIN_TIME_MINUTES, MAX_TIME_MINUTES)) {
     throw new PaperExamServiceError("INVALID", `المدة يجب أن تكون بين ${MIN_TIME_MINUTES} و${MAX_TIME_MINUTES} دقيقة`);
@@ -294,7 +293,7 @@ export function preparePaperExamQuestions(
   return shuffle(selected, random).map((question, index) => ({
     ...question,
     questionNumber: index + 1,
-    isTrial: index >= config.totalQuestions - config.trialQuestions,
+    isTrial: false,
   }));
 }
 
@@ -306,7 +305,7 @@ export function publicPaperExamQuestions(questions: PaperExamQuestionSnapshot[])
     options: question.options,
     imageUrl: question.imageUrl,
     imageUrls: question.imageUrls,
-    isTrial: question.isTrial,
+    isTrial: false,
   }));
 }
 
@@ -358,7 +357,7 @@ function roundPercentage(score: number, total: number): number {
 }
 
 export function gradePaperExamAttempt(attempt: PaperExamAttemptRecord, now: Date): PaperExamResult {
-  const scoredQuestions = attempt.questions.filter((question) => !question.isTrial);
+  const scoredQuestions = attempt.questions;
   const questionDetails: PaperExamResult["questionDetails"] = [];
   const incorrectQuestions: PaperExamResult["incorrectQuestions"] = [];
   let correctAnswers = 0;
@@ -372,26 +371,22 @@ export function gradePaperExamAttempt(attempt: PaperExamAttemptRecord, now: Date
   for (const question of attempt.questions) {
     const answer = attempt.answers[String(question.questionNumber)];
     const userAnswer = Number.isSafeInteger(answer) ? answer : null;
-    const status = question.isTrial
-      ? "trial"
-      : userAnswer === null
-        ? "skipped"
-        : userAnswer === question.correctOptionIndex
-          ? "correct"
-          : "wrong";
+    const status = userAnswer === null
+      ? "skipped"
+      : userAnswer === question.correctOptionIndex
+        ? "correct"
+        : "wrong";
 
-    if (!question.isTrial) {
-      if (status === "correct") correctAnswers++;
-      else if (status === "wrong") wrongAnswers++;
-      else skippedQuestions++;
+    if (status === "correct") correctAnswers++;
+    else if (status === "wrong") wrongAnswers++;
+    else skippedQuestions++;
 
-      if (question.category === "verbal") {
-        verbalTotal++;
-        if (status === "correct") verbalScore++;
-      } else if (question.category === "quantitative") {
-        quantitativeTotal++;
-        if (status === "correct") quantitativeScore++;
-      }
+    if (question.category === "verbal") {
+      verbalTotal++;
+      if (status === "correct") verbalScore++;
+    } else if (question.category === "quantitative") {
+      quantitativeTotal++;
+      if (status === "correct") quantitativeScore++;
     }
 
     questionDetails.push({
@@ -400,10 +395,10 @@ export function gradePaperExamAttempt(attempt: PaperExamAttemptRecord, now: Date
       status,
       userAnswer,
       correctAnswer: question.correctOptionIndex,
-      isTrial: question.isTrial,
+      isTrial: false,
     });
 
-    if (!question.isTrial && status !== "correct") {
+    if (status !== "correct") {
       incorrectQuestions.push({
         questionIndex: question.questionNumber - 1,
         userAnswer,
@@ -493,7 +488,7 @@ export class PaperExamService {
     const questions: PaperExamQuestionSnapshot[] = model.questions.map((question, index) => ({
       ...question,
       questionNumber: index + 1,
-      isTrial: question.isTrial === true,
+      isTrial: false,
     }));
     const attempt = await this.repository.create({
       ownerUserId: input.ownerUserId,
@@ -501,7 +496,7 @@ export class PaperExamService {
       program: "qudrat",
       distribution: "custom",
       totalQuestions: questions.length,
-      trialQuestions: questions.filter(question => question.isTrial).length,
+      trialQuestions: 0,
       timeLimitMinutes: model.timeLimitMinutes,
       startedAt: now,
       expiresAt: new Date(now.getTime() + model.timeLimitMinutes * 60_000),
@@ -529,7 +524,7 @@ export class PaperExamService {
       subjectId: input.config.subjectId,
       distribution: input.config.distribution,
       totalQuestions: input.config.totalQuestions,
-      trialQuestions: input.config.trialQuestions,
+      trialQuestions: 0,
       timeLimitMinutes: input.config.timeLimitMinutes,
       startedAt: now,
       expiresAt: new Date(now.getTime() + input.config.timeLimitMinutes * 60_000),
@@ -596,7 +591,7 @@ export class PaperExamService {
         subjectId: attempt.subjectId,
         distribution: attempt.distribution,
         totalQuestions: attempt.totalQuestions,
-        trialQuestions: attempt.trialQuestions,
+        trialQuestions: 0,
         timeLimit: attempt.timeLimitMinutes,
         status: attempt.status,
         startedAt: attempt.startedAt,

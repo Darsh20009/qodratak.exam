@@ -23,6 +23,8 @@ test("120-question paper model follows the reference page structure", () => {
   assert.equal((html.match(/class="question-card/g) ?? []).length, 120);
   assert.equal((html.match(/class="sheet /g) ?? []).length, 13);
   assert.match(html, /grid-template-rows:repeat\(6,minmax\(0,1fr\)\)/);
+  assert.match(html, /إقرار وتعهد/);
+  assert.match(html, /أتعهد بالإجابة بنفسي/);
 });
 
 test("complex questions do not add extra sheets to a 13-page model", () => {

@@ -24,7 +24,7 @@ interface Exam {
   id: number;
   name: string;
   modelNumber: number;
-  allQuestions: any[]; // Mixed array of all questions in order
+  allQuestions?: any[]; // Loaded on demand from the print endpoint
   totalQuestions: number;
   verbalCount: number;
   quantitativeCount: number;
@@ -44,6 +44,16 @@ interface ModelResult {
   quantitativePercentage: number;
   totalPercentage: number;
   completedAt: Date;
+}
+
+async function loadPaperModelQuestions(exam: Exam): Promise<any[]> {
+  const response = await apiRequest("GET", `/api/paper-models/${exam.modelNumber}/print`);
+  if (!response.ok) throw new Error("تعذر تحميل أسئلة النموذج");
+  const printModel = await response.json();
+  if (!Array.isArray(printModel.questions) || printModel.questions.length === 0) {
+    throw new Error("لا توجد أسئلة في هذا النموذج");
+  }
+  return printModel.questions;
 }
 
 export default function PaperModelsPage() {
@@ -123,7 +133,14 @@ export default function PaperModelsPage() {
   // Submit result mutation
   const submitResultMutation = useMutation({
     mutationFn: async (data: any) => {
-      return await apiRequest('POST', '/api/paper-model-result', data);
+      const response = await apiRequest('POST', '/api/paper-model-result', data);
+      const payload = await response.json().catch(() => ({}));
+      if (!response.ok) {
+        const error = new Error(payload?.message || "تعذر حفظ نتيجة النموذج");
+        Object.assign(error, { existing: Boolean(payload?.existing) });
+        throw error;
+      }
+      return payload;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/paper-model-results'] });
@@ -146,7 +163,7 @@ export default function PaperModelsPage() {
       } else {
         toast({
           title: "خطأ",
-          description: "حدث خطأ أثناء حفظ النتيجة",
+          description: error instanceof Error ? error.message : "حدث خطأ أثناء حفظ النتيجة",
           variant: "destructive",
         });
       }
@@ -156,13 +173,20 @@ export default function PaperModelsPage() {
   const handleSubmitResult = () => {
     if (!selectedExam) return;
 
-    const verbal = parseInt(verbalCorrect);
-    const quant = parseInt(quantCorrect);
+    const verbal = Number(verbalCorrect);
+    const quant = Number(quantCorrect);
+    const verbalTotal = Number(selectedExam.verbalCount);
+    const quantitativeTotal = Number(selectedExam.quantitativeCount);
 
-    if (isNaN(verbal) || isNaN(quant) || verbal < 0 || verbal > 53 || quant < 0 || quant > 47) {
+    if (
+      verbalCorrect.trim() === "" || quantCorrect.trim() === "" ||
+      !Number.isSafeInteger(verbal) || !Number.isSafeInteger(quant) ||
+      !Number.isSafeInteger(verbalTotal) || !Number.isSafeInteger(quantitativeTotal) ||
+      verbal < 0 || verbal > verbalTotal || quant < 0 || quant > quantitativeTotal
+    ) {
       toast({
         title: "خطأ في الإدخال",
-        description: "اللفظي من 0 إلى 53، الكمي من 0 إلى 47",
+        description: `اللفظي من 0 إلى ${verbalTotal}، والكمي من 0 إلى ${quantitativeTotal}`,
         variant: "destructive",
       });
       return;
@@ -189,13 +213,13 @@ export default function PaperModelsPage() {
     setLocation(`/paper-exam?model=${exam.modelNumber}`);
   };
 
-  // Generate answer key with colors (red=verbal, green=quantitative, blue=trial)
+  // Generate answer key with section colors (red=verbal, green=quantitative)
   const generateColoredAnswerKey = async (exam: Exam) => {
     setLoading({ ...loading, [exam.id]: true });
 
     try {
-      // allQuestions already has questionType and isTrial properties
-      const html = generateAnswerKeyHTML(exam.allQuestions, exam.name);
+      const questions = await loadPaperModelQuestions(exam);
+      const html = generateAnswerKeyHTML(questions, exam.name);
       await convertHtmlToPdfAndDownload(html, `ورقة_الإجابة_المحلولة_${exam.name}.pdf`);
 
       // Track download
@@ -231,7 +255,8 @@ export default function PaperModelsPage() {
         description: "قد يستغرق هذا بضع دقائق",
       });
 
-      const html = generateQuestionsExplanationsHTML(exam.allQuestions, exam.name);
+      const questions = await loadPaperModelQuestions(exam);
+      const html = generateQuestionsExplanationsHTML(questions, exam.name);
       await convertHtmlToPdfAndDownload(html, `أسئلة_مع_شرح_${exam.name}.pdf`);
 
       // Track download
@@ -335,10 +360,7 @@ export default function PaperModelsPage() {
               let color = '#000';
               let bgColor = '#fff';
               
-              if (q.isTrial) {
-                color = '#0066ff';
-                bgColor = '#e6f2ff';
-              } else if (q.questionType === 'verbal') {
+              if (q.questionType === 'verbal' || q.category === 'verbal') {
                 color = '#cc0000';
                 bgColor = '#ffe6e6';
               } else {
@@ -599,10 +621,7 @@ export default function PaperModelsPage() {
             // Determine question type and color
             let typeLabel = '';
             let typeColor = '#000';
-            if (q.isTrial) {
-              typeLabel = 'تجريبي';
-              typeColor = '#0066ff';
-            } else if (q.questionType === 'verbal') {
+            if (q.questionType === 'verbal' || q.category === 'verbal') {
               typeLabel = 'لفظي';
               typeColor = '#cc0000';
             } else {
@@ -1057,11 +1076,11 @@ export default function PaperModelsPage() {
                       <div className="text-sm text-muted-foreground space-y-1">
                         <div className="flex justify-between">
                           <span>أسئلة لفظية:</span>
-                          <span className="font-bold text-red-600">{exam.verbalCount} سؤال ({exam.trialVerbalCount} تجريبي)</span>
+                          <span className="font-bold text-red-600">{exam.verbalCount} سؤال</span>
                         </div>
                         <div className="flex justify-between">
                           <span>أسئلة كمية:</span>
-                          <span className="font-bold text-green-600">{exam.quantitativeCount} سؤال ({exam.trialQuantCount} تجريبي)</span>
+                          <span className="font-bold text-green-600">{exam.quantitativeCount} سؤال</span>
                         </div>
                         <div className="flex justify-between">
                           <span>المجموع:</span>
@@ -1174,18 +1193,18 @@ export default function PaperModelsPage() {
           <DialogHeader>
             <DialogTitle>إدخال نتيجة {selectedExam?.name}</DialogTitle>
             <DialogDescription>
-              أدخل عدد الإجابات الصحيحة (بدون الأسئلة التجريبية)
+              أدخل عدد الإجابات الصحيحة في جميع أسئلة النموذج.
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4 py-4">
             <div className="space-y-2">
               <label className="text-sm font-medium">
-                عدد الإجابات الصحيحة في القسم اللفظي (من 0 إلى 53)
+                عدد الإجابات الصحيحة في القسم اللفظي (من 0 إلى {selectedExam?.verbalCount ?? 0})
               </label>
               <Input
                 type="number"
                 min="0"
-                max="53"
+                max={selectedExam?.verbalCount ?? 0}
                 value={verbalCorrect}
                 onChange={(e) => setVerbalCorrect(e.target.value)}
                 placeholder="مثال: 45"
@@ -1194,12 +1213,12 @@ export default function PaperModelsPage() {
             </div>
             <div className="space-y-2">
               <label className="text-sm font-medium">
-                عدد الإجابات الصحيحة في القسم الكمي (من 0 إلى 47)
+                عدد الإجابات الصحيحة في القسم الكمي (من 0 إلى {selectedExam?.quantitativeCount ?? 0})
               </label>
               <Input
                 type="number"
                 min="0"
-                max="47"
+                max={selectedExam?.quantitativeCount ?? 0}
                 value={quantCorrect}
                 onChange={(e) => setQuantCorrect(e.target.value)}
                 placeholder="مثال: 40"
