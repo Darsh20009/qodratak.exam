@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { BookOpen, Calculator, X } from "lucide-react";
-import formulasImg from "@assets/Screenshot_2026-03-08_071500_1772943315708.png";
+import formulasImg from "@/assets/formulas-reference.png";
 
 export type ExamStudyTool = "laws" | "calculator";
 

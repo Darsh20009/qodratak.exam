@@ -344,7 +344,7 @@ const courseSections: CourseSection[] = [
         id: 'quant-taqfeelat',
         title: '🔐 التقفيلات الكمية',
         description: 'ملف التقفيلات الحصري - أسرار وطرق متقدمة لحل الأسئلة الكمية بسرعة ودقة',
-        url: '/attached_assets/taqfeelat.pdf',
+        url: `${import.meta.env.BASE_URL}quantitative/taqfeelat.pdf`,
         type: 'taqfeelat',
         duration: '2.5 ساعة حصرية',
         progress: 0,

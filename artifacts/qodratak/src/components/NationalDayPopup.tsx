@@ -3,7 +3,7 @@ import { Dialog, DialogContent, DialogHeader } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { X, Gift, Clock, Star } from "lucide-react";
 import confetti from "canvas-confetti";
-import nationalDayImage from "@assets/Gemini_Generated_Image_txx6gftxx6gftxx6 (1)_1758552917496.png";
+import nationalDayImage from "@/assets/national-day-offer.png";
 
 interface NationalDayPopupProps {
   isOpen: boolean;
