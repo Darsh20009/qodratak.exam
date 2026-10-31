@@ -11,6 +11,7 @@ import { useToast } from "@/hooks/use-toast";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import html2canvas from "html2canvas";
 import jsPDF from "jspdf";
+import { createPaperModelPrintHtml, getPaperModelPrintPageCount } from "./paper-model-print";
 import {
   Dialog,
   DialogContent,
@@ -258,22 +259,36 @@ export default function PaperModelsPage() {
 
   // Generate full exam with bubble sheet
   const generateFullExam = async (exam: Exam) => {
+    const printWindow = window.open("", "_blank");
+    if (printWindow) {
+      printWindow.document.write("<!doctype html><html lang='ar' dir='rtl'><meta charset='utf-8'><title>تهيئة الطباعة</title><body style='font-family:Arial;padding:40px;color:#173834'>جاري تجهيز صفحات الاختبار للطباعة…</body></html>");
+    }
     setLoading({ ...loading, [exam.id]: true });
 
     try {
-      toast({
-        title: "جاري تجهيز كتيّب الاختبار...",
-        description: "يتضمن نسخة الأسئلة وورقة إجابة فارغة",
-      });
-
       const response = await apiRequest('GET', `/api/paper-models/${exam.modelNumber}/print`);
       if (!response.ok) throw new Error('تعذر تحميل أسئلة النموذج للطباعة');
       const printModel = await response.json();
       if (!Array.isArray(printModel.questions) || printModel.questions.length === 0) {
         throw new Error('لا توجد أسئلة قابلة للطباعة لهذا النموذج');
       }
-      const html = generateFullExamHTML(printModel.questions, printModel.name || exam.name);
-      await convertHtmlToPdfAndDownload(html, `اختبار_${exam.name}.pdf`);
+      if (getPaperModelPrintPageCount(printModel.questions.length) !== 13) {
+        printWindow?.close();
+        toast({
+          title: "هذا النموذج غير مكتمل",
+          description: "أكمل أسئلة النموذج أولًا ليصبح كتيّبه ١٣ صفحة مع البابل شيت.",
+          variant: "destructive",
+        });
+        return;
+      }
+      const html = createPaperModelPrintHtml(printModel.questions, printModel.name || exam.name);
+      if (!printWindow) {
+        toast({ title: "تعذر فتح معاينة الطباعة", description: "اسمح بالنوافذ المنبثقة ثم أعد المحاولة.", variant: "destructive" });
+        return;
+      }
+      printWindow.document.open();
+      printWindow.document.write(html);
+      printWindow.document.close();
 
       // Track download
       trackDownloadMutation.mutate({
@@ -282,9 +297,10 @@ export default function PaperModelsPage() {
         downloadType: 'full_exam'
       });
 
-      toast({ title: "تم تجهيز ملف الطباعة", description: `كتيّب الأسئلة وورقة الإجابة الفارغة — ${exam.name}` });
+      toast({ title: "معاينة الطباعة جاهزة", description: "اختر الطابعة أو حفظ بصيغة PDF من نافذة الطباعة." });
     } catch (error) {
       console.error("Error generating exam:", error);
+      printWindow?.close();
       toast({
         title: "خطأ في إنشاء الملف",
         description: "حدث خطأ أثناء إنشاء الاختبار",
@@ -1070,7 +1086,7 @@ export default function PaperModelsPage() {
                       onClick={() => generateFullExam(exam)}
                       disabled={loading[exam.id]}
                       variant="outline"
-                      className="w-full"
+                      className="w-full border-[#176e91] text-[#145a78] hover:bg-[#edf7fa]"
                       data-testid={`button-full-exam-${exam.modelNumber}`}
                     >
                       {loading[exam.id] ? (
@@ -1081,7 +1097,7 @@ export default function PaperModelsPage() {
                       ) : (
                         <>
                           <FileText className="w-4 h-4 mr-2" />
-                          كتيّب الاختبار وورقة الإجابة
+                          طباعة كتيّب الاختبار
                         </>
                       )}
                     </Button>

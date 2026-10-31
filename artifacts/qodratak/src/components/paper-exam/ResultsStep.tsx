@@ -5,6 +5,7 @@ import { Progress } from '@/components/ui/progress';
 import { Trophy, TrendingUp, Target, RotateCcw, Download, FileText, AlertCircle, BarChart3 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { Link } from 'wouter';
+import { createPaperModelPrintHtml } from '@/pages/paper-model-print';
 
 interface Question {
   id: number;
@@ -862,70 +863,35 @@ export default function ResultsStep({ exam, result, questions, onRestart }: Resu
       });
       return;
     }
-
-    const escapeHtml = (value: string) => value
-      .replace(/&/g, '&amp;')
-      .replace(/</g, '&lt;')
-      .replace(/>/g, '&gt;')
-      .replace(/"/g, '&quot;')
-      .replace(/'/g, '&#39;');
-    const letters = ['أ', 'ب', 'ج', 'د', 'هـ'];
-    const pages = [];
-    for (let offset = 0; offset < details.length; offset += 60) {
-      const pageDetails = details.slice(offset, offset + 60);
-      pages.push(`
-        <section class="page">
-          <header>
-            <strong>ورقة الإجابة المحلولة</strong>
-            <span>${escapeHtml(exam.title || 'اختبار قدراتك')}</span>
-            <small>صفحة ${Math.floor(offset / 60) + 1} من ${Math.ceil(details.length / 60)}</small>
-          </header>
-          <div class="answers">
-            ${pageDetails.map((detail) => {
-              const optionCount = Math.max(2, Math.min(5, questions[detail.questionNumber - 1]?.options?.length || 4));
-              return `<div class="row"><b>${detail.questionNumber}</b><div class="choices">${letters.slice(0, optionCount).map((letter, index) =>
-                `<span class="choice ${index === detail.correctAnswer ? 'correct' : ''}">${letter}</span>`,
-              ).join('')}</div></div>`;
-            }).join('')}
-          </div>
-        </section>
-      `);
+    const printWindow = window.open('', '_blank');
+    if (!printWindow) {
+      toast({
+        title: 'تعذر فتح معاينة الطباعة',
+        description: 'اسمح بالنوافذ المنبثقة ثم أعد المحاولة.',
+        variant: 'destructive',
+      });
+      return;
     }
-
-    const html = `<!doctype html>
-<html lang="ar" dir="rtl">
-<head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>ورقة الإجابة المحلولة - ${escapeHtml(exam.title || 'اختبار قدراتك')}</title>
-  <style>
-    *{box-sizing:border-box}body{margin:0;background:#eee;color:#171717;font-family:Arial,sans-serif}
-    .page{width:210mm;min-height:297mm;margin:12px auto;padding:12mm;background:#fff;page-break-after:always}
-    header{display:flex;align-items:center;justify-content:space-between;gap:10px;border-bottom:2px solid #222;padding:0 0 10px;margin-bottom:12px}
-    header strong{font-size:16px}header span{font-size:12px}header small{font-size:10px;color:#555}
-    .answers{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px}
-    .row{min-height:32px;display:flex;align-items:center;gap:8px;border:1px solid #bbb;padding:3px 6px}
-    .row b{width:24px;font-size:12px;text-align:center}
-    .choices{display:flex;gap:5px}
-    .choice{width:23px;height:23px;display:flex;align-items:center;justify-content:center;border:1.5px solid #333;border-radius:50%;font-size:10px}
-    .choice.correct{background:#161616;color:#fff;border-color:#161616}
-    .note{margin-top:12px;font-size:10px;color:#555}
-    @media print{body{background:#fff}.page{margin:0;padding:10mm;box-shadow:none;width:auto;min-height:0}}
-  </style>
-</head>
-<body>${pages.join('')}<script>window.addEventListener('load',()=>window.print())</script></body></html>`;
-    const blob = new Blob([html], { type: 'text/html;charset=utf-8' });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = `ورقة_الإجابة_المحلولة_${exam.title || 'اختبار'}.html`;
-    document.body.appendChild(link);
-    link.click();
-    setTimeout(() => {
-      document.body.removeChild(link);
-      URL.revokeObjectURL(url);
-    }, 200);
-    toast({ title: 'تم تنزيل ورقة الإجابة', description: 'افتح الملف ثم اطبعه أو احفظه بصيغة PDF.' });
+    if (details.length !== questions.length || details.some((detail, index) => detail.questionNumber !== index + 1)) {
+      printWindow.close();
+      toast({
+        title: 'تعذر إنشاء ورقة الإجابة',
+        description: 'بيانات الإجابات لا تطابق ترتيب أسئلة هذه المحاولة.',
+        variant: 'destructive',
+      });
+      return;
+    }
+    const solvedQuestions = questions.map((question, index) => ({
+      ...question,
+      id: index + 1,
+      correctOptionIndex: details[index].correctAnswer,
+    }));
+    printWindow.document.open();
+    printWindow.document.write(
+      createPaperModelPrintHtml(solvedQuestions, exam.title || 'اختبار قدراتك', 'solved-answers'),
+    );
+    printWindow.document.close();
+    toast({ title: 'ورقة الإجابة المحلولة جاهزة', description: 'اختر الطابعة أو حفظ بصيغة PDF من نافذة الطباعة.' });
   };
 
   const getScoreColor = (percentage: number) => {

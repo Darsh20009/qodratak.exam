@@ -39,6 +39,8 @@ import { Strategy as GoogleStrategy } from 'passport-google-oauth20';
 import { storage } from "../storage";
 import { examQuestionPayload, dailyExamQuestions } from "../services/examQuestionPayload";
 import { attachPaperModelSourceImages } from "../services/paperModelQuestionImages";
+import { createPaperModelPreparationCache } from "../services/paperModelPreparationCache";
+import { logger } from "../lib/logger";
 import { registerExamLearningReportRoutes } from './examLearningReportRoutes';
 import { registerQuestionVideoRoutes } from './questionVideoRoutes';
 import { registerRemedialPracticeRoutes } from './remedialPracticeRoutes';
@@ -6539,7 +6541,7 @@ app.post("/api/auth/register", async (req: Request, res: Response) => {
     }
   };
 
-  const loadPaperModelWithQuestions = async (modelNumber: number): Promise<any | null> => {
+  const loadPaperModelWithQuestionsFromSource = async (modelNumber: number): Promise<any | null> => {
     const catalogModel = (await getPaperModelCatalog()).find(item => item.modelNumber === modelNumber);
     if (!catalogModel) return null;
     if (Array.isArray(catalogModel.allQuestions)) {
@@ -6621,6 +6623,8 @@ app.post("/api/auth/register", async (req: Request, res: Response) => {
     });
     return { ...catalogModel, allQuestions };
   };
+  const paperModelPreparationCache = createPaperModelPreparationCache(loadPaperModelWithQuestionsFromSource);
+  const loadPaperModelWithQuestions = paperModelPreparationCache.load;
 
   const paperExamService = new PaperExamService(paperExamMongoRepository);
   registerPaperExamRoutes(app, {
@@ -15857,6 +15861,18 @@ app.post("/api/auth/register", async (req: Request, res: Response) => {
       return res.status(500).json({ error: 'فشل في جلب لوحة الطالب' });
     }
   });
+
+  void (async () => {
+    try {
+      const models = await getPaperModelCatalog();
+      const result = await paperModelPreparationCache.prewarm(
+        models.map((model) => Number(model.modelNumber)),
+      );
+      logger.info(result, "Paper model question data prewarmed for fast student access");
+    } catch (error) {
+      logger.warn({ error }, "Could not prewarm paper model question data");
+    }
+  })();
 
   const httpServer = createServer(app);
 
