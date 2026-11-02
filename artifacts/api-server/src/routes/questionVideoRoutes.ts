@@ -24,7 +24,7 @@ export function registerQuestionVideoRoutes(
 ) {
   app.get('/api/learning/computerized/quantitative/computer-bank-:bankNumber.mp4', ...middleware, async (req, res) => {
     const bankNumber = Number(req.params.bankNumber);
-    if (!Number.isInteger(bankNumber) || bankNumber < 51 || bankNumber > 90) {
+    if (!Number.isInteger(bankNumber) || bankNumber < 51 || bankNumber > 110) {
       res.status(404).json({ message: 'فيديو البنك غير موجود.' });
       return;
     }

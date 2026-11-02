@@ -50,6 +50,7 @@ COPY --from=build /app/artifacts/api-server/dist/private-assets/ /app/artifacts/
 COPY --from=build /app/artifacts/api-server/private-assets/ /app/artifacts/api-server/private-assets/
 COPY --from=build /app/artifacts/api-server/attached_assets/ /app/artifacts/api-server/attached_assets/
 COPY --from=build /app/artifacts/api-server/server/data/ /app/artifacts/api-server/server/data/
+COPY --from=build /app/artifacts/api-server/src/data/paper-models.json /app/artifacts/api-server/server/data/paper-models.json
 
 # Express serves these generated directories directly in production.
 COPY --from=build /app/artifacts/qodratak/dist/public/ /app/artifacts/qodratak/dist/public/
