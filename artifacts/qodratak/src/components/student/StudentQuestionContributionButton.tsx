@@ -13,7 +13,7 @@ const emptyForm = () => ({
   options: ['', '', '', ''], selected: -1, notes: '',
 });
 
-export function StudentQuestionContributionButton({ className }: { className?: string }) {
+export function StudentQuestionContributionButton({ className, compact = false }: { className?: string; compact?: boolean }) {
   const [open, setOpen] = useState(false);
   const [form, setForm] = useState(emptyForm);
   const [error, setError] = useState('');
@@ -50,9 +50,9 @@ export function StudentQuestionContributionButton({ className }: { className?: s
   return <>
     <button type="button" onClick={() => { setOpen(true); setDone(null); setError(''); }}
       className={cn('inline-flex items-center gap-2 rounded-xl border border-primary/30 bg-primary/10 px-3 py-2 text-xs font-bold text-primary transition-colors hover:bg-primary/15 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary', className)}
-      title="دخلت اختبارًا؟ شارك سؤالًا" data-testid="button-share-question">
+      title="ساعد زملاءك بمشاركة سؤال" aria-label="ساعد زملاءك بمشاركة سؤال" data-testid="button-share-question">
       <HandHeart className="h-4 w-4" aria-hidden />
-      <span>ساعد زملاءك</span>
+      <span className={compact ? 'sr-only sm:not-sr-only' : undefined}>ساعد زملاءك</span>
     </button>
     <Dialog open={open} onOpenChange={(v) => { if (!busy) setOpen(v); }}>
       <DialogContent dir="rtl" className="max-h-[92dvh] overflow-y-auto text-right sm:max-w-lg">

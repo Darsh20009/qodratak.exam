@@ -58,16 +58,19 @@ export default function ExamSetupStep({ onExamCreated }: ExamSetupStepProps) {
   const createExamMutation = useMutation({
     mutationFn: async (data: typeof formData) => {
       const response = await apiRequest('POST', '/api/paper-exams', data);
-      if (!response.ok) throw new Error('تعذر إنشاء الاختبار');
-      return await response.json();
+      const result = await response.json().catch(() => ({}));
+      if (!response.ok) {
+        throw new Error(result?.error || result?.message || 'تعذر إنشاء الاختبار');
+      }
+      return result;
     },
     onSuccess: (attempt: CreatedPaperExam) => {
       onExamCreated(attempt);
     },
-    onError: () => {
+    onError: (error) => {
       toast({
         title: 'خطأ',
-        description: 'فشل إنشاء الاختبار',
+        description: error instanceof Error ? error.message : 'فشل إنشاء الاختبار',
         variant: 'destructive',
       });
     },

@@ -3,6 +3,7 @@ import { Link, useLocation } from "wouter";
 import { BarChart3, BookOpen, Brain, ChevronDown, CircleHelp, FileText, GraduationCap, House, Menu, Search, UserRound, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { StudentHeaderTools } from "./StudentHeaderTools";
+import { StudentQuestionContributionButton } from "./StudentQuestionContributionButton";
 import { isStudentPrimaryActive, isStudentPathActive } from "./studentNavigationRoutes.mjs";
 
 const PRIMARY = [
@@ -192,6 +193,7 @@ export function StudentNavigation({ hidden = false }: { hidden?: boolean }) {
           <span className="font-black text-foreground">قدراتك</span>
         </Link>
         <div className="flex items-center gap-2">
+          <StudentQuestionContributionButton compact className="h-10 w-10 justify-center px-0 sm:w-auto sm:px-3" />
           <StudentHeaderTools compact />
           <button type="button" aria-label="فتح قائمة تنقل الطالب" aria-expanded={drawerOpen}
             aria-controls="student-mobile-drawer" data-testid="button-open-student-drawer"

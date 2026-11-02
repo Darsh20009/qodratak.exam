@@ -26,6 +26,8 @@ test("the five agreed student destinations are present once as primary links", (
 
 test("desktop navigation is persistent and mobile drawer offers open, select and close behavior", () => {
   assert.match(navigation, /data-testid="student-desktop-navigation"/);
+  assert.match(navigation, /<StudentQuestionContributionButton compact className="h-10 w-10 justify-center px-0 sm:w-auto sm:px-3" \/>/);
+  assert.match(navigation, /StudentQuestionContributionButton/);
   assert.match(navigation, /data-testid="button-open-student-drawer"/);
   assert.match(navigation, /data-testid="student-mobile-drawer"/);
   assert.match(navigation, /onClick=\{onNavigate\}/);
