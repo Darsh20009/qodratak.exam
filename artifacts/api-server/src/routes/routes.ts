@@ -77,6 +77,13 @@ import {
 import { createGeideaPaymentRouter } from '../routes/geideaPaymentRoutes';
 import { latestFutureSubscriptionEnd, subscriptionPeriod } from '../services/subscriptionBilling';
 import {
+  buildStudentQuestionSearchFilter,
+  normalizeStudentQuestionSearchQuery,
+  rankStudentQuestionSearchResults,
+  toStudentQuestionSearchResult,
+  type StudentQuestionSearchCategory,
+} from '../services/studentQuestionSearch';
+import {
   consumePhoneOtp,
   normalizeSaudiPhone,
   requestPhoneOtp,
@@ -1575,39 +1582,40 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Search questions by text with advanced options
-  app.get("/api/questions/search", async (req: Request, res: Response) => {
+  const searchStudentQuestions = async (req: Request, res: Response) => {
     try {
-      const { query, category, difficulty, dialect, limit } = req.query;
-
-      if (!query || typeof query !== 'string') {
-        return res.status(400).json({ message: "Query parameter is required" });
+      const query = normalizeStudentQuestionSearchQuery(req.query.query);
+      if (!query) {
+        return res.status(400).json({ message: "اكتب كلمة أو رقمًا للبحث (حتى 240 حرفًا)." });
       }
 
-      // Use advanced search if any filter is specified
-      if (category || difficulty || dialect || limit) {
-        const options = {
-          category: typeof category === 'string' ? category : undefined,
-          difficulty: typeof difficulty === 'string' ? difficulty : undefined,
-          dialect: typeof dialect === 'string' ? dialect : undefined,
-          limit: typeof limit === 'string' ? parseInt(limit) : undefined
-        };
-
-        const results = await storage.searchQuestionsAdvanced(query, options);
-        return res.json(results);
-      } else {
-        // Fallback to simple search
-        const questions = await storage.searchQuestions(query);
-        return res.json(questions.map(q => ({
-          question: q,
-          matchType: 'exact'
-        })));
+      const rawCategory = req.query.category;
+      const category = rawCategory === "verbal" || rawCategory === "quantitative" || rawCategory === "general"
+        ? rawCategory as StudentQuestionSearchCategory
+        : undefined;
+      if (rawCategory !== undefined && rawCategory !== "all" && !category) {
+        return res.status(400).json({ message: "تصنيف البحث غير صالح." });
       }
+
+      const candidateQuestions = await Question.find(buildStudentQuestionSearchFilter(query, category))
+        .select("questionId category subcategory text options difficulty topic section imageUrl imageUrls keywords")
+        .limit(160)
+        .lean()
+        .exec();
+      const results = rankStudentQuestionSearchResults(candidateQuestions as any[], query)
+        .slice(0, 20)
+        .map((question) => toStudentQuestionSearchResult(question as any));
+
+      return res.json({ query, total: results.length, results });
     } catch (error) {
-      console.error("Error searching questions:", error);
-      return res.status(500).json({ message: "Error searching questions" });
+      logger.error({ error }, "Student question search failed");
+      return res.status(500).json({ message: "تعذر البحث الآن. حاول مرة أخرى." });
     }
-  });
+  };
+
+  // Both paths now require a student session and return sanitized, approved content only.
+  app.get("/api/student/questions/search", requireAuth, requireRole("student"), searchStudentQuestions);
+  app.get("/api/questions/search", requireAuth, requireRole("student"), searchStudentQuestions);
 
   app.post('/api/learning/foundation-test', requireAuth, async (req: Request, res: Response): Promise<void> => {
     const userId = studentOnly(req, res);

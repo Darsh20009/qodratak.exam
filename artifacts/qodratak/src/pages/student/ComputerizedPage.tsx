@@ -1,4 +1,4 @@
-import { useCallback, useRef, useState, type FormEvent } from "react";
+import { useCallback, useRef, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { Link } from "wouter";
 import {
@@ -38,6 +38,7 @@ import { StudentWorkflow } from "@/components/student/StudentWorkflow";
 import { resolveStudentWorkflowStatuses } from "@/lib/studentWorkflowProgress";
 import { isDirectFoundationVideo, resolveFoundationAssetUrl } from "@/lib/foundationVideoUrl";
 import { VerbalVideoProgressCard } from "@/components/student/VerbalVideoProgressCard";
+import { ComputerizedQuestionSearch } from "@/components/student/ComputerizedQuestionSearch";
 
 type ComputerizedMode = "quantitative" | "verbal" | "exams" | "search";
 type ComputerizedTrack = "qudrat" | "tahsili";
@@ -846,60 +847,6 @@ function ExamsWorkspace() {
   );
 }
 
-function SearchWorkspace() {
-  const [query, setQuery] = useState("");
-  const [submittedQuery, setSubmittedQuery] = useState("");
-
-  const submitSearch = (event: FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-    setSubmittedQuery(query.trim());
-  };
-
-  return (
-    <section className="rounded-[1.5rem] border border-[#E4D8E9] bg-[#FCF9FD] p-5 md:p-6">
-      <div>
-        <p className="text-xs font-black text-[#7A4B91] dark:text-fuchsia-400">المحوسب · سؤال مباشر</p>
-        <h2 className="mt-1 text-2xl font-black text-foreground">ابحث عن سؤال فقط</h2>
-        <p className="mt-2 max-w-2xl text-sm leading-6 text-muted-foreground">
-          اكتب كلمة أو رقم السؤال للوصول إليه بعد إضافة بنك الأسئلة الجديد وتصنيفه.
-        </p>
-      </div>
-      <form onSubmit={submitSearch} className="mt-5 flex flex-col gap-2 sm:flex-row">
-        <label htmlFor="computerized-question-search" className="sr-only">ابحث في بنك الأسئلة</label>
-        <div className="relative flex-1">
-          <Search className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-          <input
-            id="computerized-question-search"
-            value={query}
-            onChange={(event) => setQuery(event.target.value)}
-            placeholder="مثال: سؤال الهندسة أو رقم السؤال"
-            className="h-12 w-full rounded-xl border border-[#DCCDE3] bg-card pr-10 pl-4 text-sm text-foreground outline-none transition placeholder:text-muted-foreground focus:border-[#7A4B91] focus:ring-2 focus:ring-[#7A4B91]/15"
-          />
-        </div>
-        <button type="submit" className="inline-flex h-12 items-center justify-center gap-2 rounded-xl bg-[#7A4B91] px-5 text-sm font-black text-white transition hover:bg-[#633D77]">
-          بحث
-          <Search className="h-4 w-4" />
-        </button>
-      </form>
-      <div className="mt-4 rounded-xl border border-dashed border-[#DCCDE3] bg-card/70 px-3 py-3 text-xs leading-5 text-muted-foreground">
-        {submittedQuery
-          ? `لا توجد نتائج حالية لعبارة «${submittedQuery}». ستظهر النتائج بعد إضافة الداتا الجديدة ومراجعتها.`
-          : "نتائج البحث ستظهر هنا بعد إضافة الداتا الجديدة ومراجعتها."}
-      </div>
-      <div className="mt-4 flex flex-col gap-4 border-t border-[#E4D8E9] pt-4 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <p className="text-sm font-black text-foreground">البحث المتقدم</p>
-          <p className="mt-1 text-xs text-muted-foreground">يمكن ربط الفلاتر بالقسم والمصدر والمستوى عند وصول الداتا.</p>
-        </div>
-        <span className="inline-flex items-center gap-2 rounded-full bg-fuchsia-500/10 px-3 py-2 text-[11px] font-black text-[#7A4B91] dark:text-fuchsia-400">
-          <Sparkles className="h-3.5 w-3.5" />
-          جاهز للتصنيف
-        </span>
-      </div>
-    </section>
-  );
-}
-
 export default function ComputerizedPage() {
   const [activeTrack, setActiveTrack] = useState<ComputerizedTrack>("qudrat");
   const [activeMode, setActiveMode] = useState<ComputerizedMode>("quantitative");
@@ -1044,7 +991,7 @@ export default function ComputerizedPage() {
         {activeMode === "quantitative" && <SubjectWorkspace mode="quantitative" />}
         {activeMode === "verbal" && <SubjectWorkspace mode="verbal" />}
         {activeMode === "exams" && <ExamsWorkspace />}
-        {activeMode === "search" && <SearchWorkspace />}
+        {activeMode === "search" && <ComputerizedQuestionSearch />}
           </>
         )}
       </div>

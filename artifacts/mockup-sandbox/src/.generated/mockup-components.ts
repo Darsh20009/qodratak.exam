@@ -6,6 +6,8 @@ export const modules: ModuleMap = {
   "./components/mockups/paper-simulation/PaperSimulator.tsx": () => import("../components/mockups/paper-simulation/PaperSimulator.tsx"),
   "./components/mockups/qodratak-geidea-checkout/Current.tsx": () => import("../components/mockups/qodratak-geidea-checkout/Current.tsx"),
   "./components/mockups/qodratak-geidea-checkout/Refined.tsx": () => import("../components/mockups/qodratak-geidea-checkout/Refined.tsx"),
+  "./components/mockups/computerized-question-search/Current.tsx": () => import("../components/mockups/computerized-question-search/Current.tsx"),
+  "./components/mockups/computerized-question-search/FinderConcept.tsx": () => import("../components/mockups/computerized-question-search/FinderConcept.tsx"),
   "./components/mockups/qodratak-tests/Current.tsx": () => import("../components/mockups/qodratak-tests/Current.tsx"),
   "./components/mockups/qodratak-tests/SystemAligned.tsx": () => import("../components/mockups/qodratak-tests/SystemAligned.tsx")
 };
