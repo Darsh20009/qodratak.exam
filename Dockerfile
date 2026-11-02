@@ -51,7 +51,8 @@ COPY --from=build /app/artifacts/api-server/private-assets/ /app/artifacts/api-s
 COPY --from=build /app/artifacts/api-server/attached_assets/ /app/artifacts/api-server/attached_assets/
 COPY --from=build /app/artifacts/api-server/server/data/ /app/artifacts/api-server/server/data/
 COPY --from=build /app/artifacts/api-server/src/data/paper-models.json /app/artifacts/api-server/server/data/paper-models.json
-RUN node -e "const data = JSON.parse(require('node:fs').readFileSync('/app/artifacts/api-server/server/data/paper-models.json', 'utf8')); if (!Array.isArray(data.models) || data.models.length === 0) throw new Error('Paper model catalog is missing or empty');"
+COPY --from=build /app/artifacts/api-server/src/data/paper-model-assignments.json /app/artifacts/api-server/server/data/paper-model-assignments.json
+RUN node -e "const fs=require('node:fs'); const dir='/app/artifacts/api-server/server/data/'; const catalog=JSON.parse(fs.readFileSync(dir+'paper-models.json','utf8')); const assignments=JSON.parse(fs.readFileSync(dir+'paper-model-assignments.json','utf8')); if (!Array.isArray(catalog.models) || catalog.models.length !== 30) throw new Error('Expected 30 fixed paper models'); if (assignments.version !== 1 || !Array.isArray(assignments.models) || assignments.models.length !== 80) throw new Error('Expected 80 generated paper model assignments'); for (const [i,model] of assignments.models.entries()) { if (Number(model.modelNumber) !== i+31 || !Array.isArray(model.questionIds) || model.questionIds.length !== Number(model.totalQuestions) || model.questionIds.some(id => !/^[a-f\\d]{24}$/i.test(String(id)))) throw new Error('Invalid paper model assignment '+(i+31)); }"
 
 # Express serves these generated directories directly in production.
 COPY --from=build /app/artifacts/qodratak/dist/public/ /app/artifacts/qodratak/dist/public/

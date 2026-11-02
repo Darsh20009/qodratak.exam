@@ -6496,6 +6496,8 @@ app.post("/api/auth/register", async (req: Request, res: Response) => {
     const assignmentCandidates = [
       path.join(process.cwd(), "artifacts", "api-server", "src", "data", "paper-model-assignments.json"),
       path.join(process.cwd(), "src", "data", "paper-model-assignments.json"),
+      path.join(process.cwd(), "artifacts", "api-server", "server", "data", "paper-model-assignments.json"),
+      path.join(process.cwd(), "server", "data", "paper-model-assignments.json"),
     ];
     const assignmentFile = assignmentCandidates.find(candidate => fs.existsSync(candidate));
     if (!assignmentFile) {
