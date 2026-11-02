@@ -51,6 +51,7 @@ COPY --from=build /app/artifacts/api-server/private-assets/ /app/artifacts/api-s
 COPY --from=build /app/artifacts/api-server/attached_assets/ /app/artifacts/api-server/attached_assets/
 COPY --from=build /app/artifacts/api-server/server/data/ /app/artifacts/api-server/server/data/
 COPY --from=build /app/artifacts/api-server/src/data/paper-models.json /app/artifacts/api-server/server/data/paper-models.json
+RUN node -e "const data = JSON.parse(require('node:fs').readFileSync('/app/artifacts/api-server/server/data/paper-models.json', 'utf8')); if (!Array.isArray(data.models) || data.models.length === 0) throw new Error('Paper model catalog is missing or empty');"
 
 # Express serves these generated directories directly in production.
 COPY --from=build /app/artifacts/qodratak/dist/public/ /app/artifacts/qodratak/dist/public/

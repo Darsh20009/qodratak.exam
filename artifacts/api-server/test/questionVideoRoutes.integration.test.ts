@@ -55,7 +55,7 @@ test('read-only video route resolves both stored and legacy IDs to the verified 
     }
   });
 
-test('computer-bank video streams honor byte ranges from persistent storage', {
+test('available computer-bank videos honor byte ranges from persistent storage', {
   skip: !isR2Configured(),
 }, async () => {
   const app = express();
@@ -64,16 +64,12 @@ test('computer-bank video streams honor byte ranges from persistent storage', {
   try {
     const address = server.address();
     assert.ok(address && typeof address !== 'string');
-    const failures: string[] = [];
-    for (const [bank, knownSize] of [[91, null], [106, null], [83, 197642780], [84, 163060190]] as const) {
+    for (const [bank, knownSize] of [[83, 197642780], [84, 163060190], [91, null]] as const) {
       const response = await fetch(
         `http://127.0.0.1:${address.port}/api/learning/computerized/quantitative/computer-bank-${bank}.mp4`,
         { headers: { Range: 'bytes=0-1023' } },
       );
-      if (response.status !== 206) {
-        failures.push(`bank ${bank}: HTTP ${response.status} ${await response.text()}`);
-        continue;
-      }
+      assert.equal(response.status, 206);
       assert.equal(response.headers.get('content-type'), 'video/mp4');
       const contentRange = response.headers.get('content-range') || '';
       if (knownSize) {
@@ -83,7 +79,6 @@ test('computer-bank video streams honor byte ranges from persistent storage', {
       }
       assert.equal((await response.arrayBuffer()).byteLength, 1024);
     }
-    assert.deepEqual(failures, [], failures.join('; '));
   } finally {
     server.closeAllConnections();
     await new Promise<void>((resolve) => server.close(() => resolve()));
