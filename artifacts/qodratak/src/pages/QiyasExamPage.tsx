@@ -1856,7 +1856,8 @@ const QiyasExamPage: React.FC<{ customConfiguration?: CustomExamConfiguration }>
           questionText={currentQuestionData.text}
           questionData={currentQuestionData}
           questionImageUrl={currentQuestionData.imageUrl}
-        questionImageUrls={currentQuestionData.imageUrls}
+          questionImageUrls={currentQuestionData.imageUrls}
+          preloadQuestionImageUrls={getQuestionImageUrls(questions[currentQuestionIdx + 1]).slice(0, 3)}
           options={currentQuestionData.options}
           selectedAnswer={selectedAnswer}
           onSelectAnswer={selectAnswer}

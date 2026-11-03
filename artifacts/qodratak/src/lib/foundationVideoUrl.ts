@@ -12,6 +12,44 @@ export function isDirectFoundationVideo(rawUrl: string): boolean {
   return /\.(mp4|m4v|webm|ogv|ogg)$/.test(pathname);
 }
 
+export function getFoundationQuestionThumbnailUrl(rawUrl: string): string | undefined {
+  const value = rawUrl.trim();
+  if (!value) return undefined;
+
+  const thumbnailPath = (sourcePath: string) => {
+    const relativePath = sourcePath.replace(/^\/+/, "");
+    const apiPrefix = relativePath.startsWith("api/foundation/quantitative/") ? "api/" : "";
+    const assetPath = relativePath.slice(apiPrefix.length);
+    const prefix = "foundation/quantitative/";
+    if (!assetPath.startsWith(prefix)) return undefined;
+
+    const questionPath = assetPath.slice(prefix.length);
+    const match = questionPath.match(
+      /^(computer-banks\/exam-\d{2,3}\/(?:background-removed\/)?)(question-\d{3})\.(?:jpe?g|png|webp)$/i,
+    );
+    if (!match) return undefined;
+    return `${apiPrefix}${prefix}${match[1]}optimized/${match[2]}.webp`;
+  };
+
+  if (EXTERNAL_URL.test(value)) {
+    try {
+      const url = new URL(value);
+      const pathMatch = url.pathname.match(/^(.*?)(\/(?:api\/)?foundation\/quantitative\/)(.*)$/i);
+      if (!pathMatch) return undefined;
+      const generated = thumbnailPath(pathMatch[2] + pathMatch[3]);
+      if (!generated) return undefined;
+      return `${url.origin}${pathMatch[1]}/${generated}`;
+    } catch {
+      return undefined;
+    }
+  }
+
+  const generated = thumbnailPath(value);
+  if (!generated) return undefined;
+  const leadingSlash = value.startsWith("/") ? "/" : "";
+  return `${leadingSlash}${generated}`;
+}
+
 export function resolveFoundationAssetUrl(rawUrl: string): string {
   const value = rawUrl.trim();
   if (!value || EXTERNAL_URL.test(value)) return value;

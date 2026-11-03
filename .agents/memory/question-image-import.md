@@ -21,6 +21,12 @@ For quantitative computer-bank scans, preserve the source JPEGs and `imageOrigin
 
 **How to apply:** Check representative layouts on a white composite, sample corners a few pixels inward, and verify every derivative's dimensions and alpha before changing active URLs. Review red masks against question text and diagrams; use image-specific exclusions or bounded forced regions only when visually confirmed, and still remove hue-matched pixels only. Keep originals available for recovery and verify that original database fields remain unchanged.
 
+Exam display may use separate persistent WebP previews for quantitative bank scans, but image zoom must continue to use the full-resolution source; source objects and question records remain unchanged.
+
+**Why:** Previews reduce wait and transfer size during normal question display without sacrificing the details students may need when zooming into a mathematical diagram.
+
+**How to apply:** Store previews under distinct sidecar paths, use them only for in-exam display and preloading, and retain the original image URL for the zoom view and recovery.
+
 For image-backed quantitative questions, keep OCR/stem text out of student-facing APIs and test/review screens. Retain canonical text on the server for trusted AI explanations, while the source image remains visible and authoritative.
 
 **Why:** OCR for mathematical questions can be inaccurate, but AI explanations still need the canonical source text without exposing duplicate or misleading text to students.

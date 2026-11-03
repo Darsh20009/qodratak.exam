@@ -9,7 +9,7 @@ test("hosted foundation videos support streaming, HEAD, ranges and safe paths", 
   const fetchAsset = async (key: string, options: { method?: string; range?: string } = {}) => {
     calls.push({ key, method: options.method, range: options.range });
     if (key.includes("missing")) return new Response(null, { status: 404 });
-    const isImage = /\.jpe?g$/i.test(key);
+    const isImage = /\.(?:jpe?g|png|webp)$/i.test(key);
     if (options.method === "HEAD") {
       return new Response(null, { headers: {
         "content-length": "10",
@@ -75,6 +75,16 @@ test("hosted foundation videos support streaming, HEAD, ranges and safe paths", 
     assert.equal(
       calls.at(-1)?.key,
       "foundation/quantitative/computer-banks/exam-110/background-removed/question-048.png",
+    );
+    const thumbnail = await fetch(
+      `${base}/computer-banks/exam-110/background-removed/optimized/question-048.webp`,
+    );
+    assert.equal(thumbnail.status, 206);
+    assert.equal(thumbnail.headers.get("content-type"), "image/webp");
+    assert.match(thumbnail.headers.get("cache-control") || "", /immutable/);
+    assert.equal(
+      calls.at(-1)?.key,
+      "foundation/quantitative/computer-banks/exam-110/background-removed/optimized/question-048.webp",
     );
     const apiBase = `http://127.0.0.1:${address.port}/api/foundation/quantitative`;
     const proxiedImage = await fetch(

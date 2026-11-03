@@ -7,6 +7,7 @@
     "dev": "export NODE_ENV=development && pnpm run build && pnpm run start",
     "build": "node ./build.mjs",
     "start": "node --enable-source-maps ./start.mjs",
+    "generate:quantitative-thumbnails": "esbuild src/scripts/generateQuantitativeQuestionThumbnails.ts --bundle --packages=external --platform=node --format=esm --outfile=dist/generateQuantitativeQuestionThumbnails.mjs && node dist/generateQuantitativeQuestionThumbnails.mjs",
     "test": "node ./scripts/test-with-isolated-mongo.mjs",
     "typecheck": "tsc -p tsconfig.json --noEmit"
   },

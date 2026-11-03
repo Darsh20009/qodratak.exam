@@ -3,7 +3,7 @@ import { useExamQuestionTiming } from '@/lib/examTiming';
 import { X, BookmarkCheck, Bookmark, Flag, AlertTriangle, CheckCircle2, LayoutGrid, ChevronRight, ChevronLeft, BookOpen, Calculator } from "lucide-react";
 import ImageZoom from "@/components/ImageZoom";
 import { getQuestionImageUrls } from "@/lib/questionImages";
-import { resolveFoundationAssetUrl } from "@/lib/foundationVideoUrl";
+import { getFoundationQuestionThumbnailUrl, resolveFoundationAssetUrl } from "@/lib/foundationVideoUrl";
 import { BrandMark } from "@/components/BrandMark";
 import { StudentExamChromeContext } from "@/components/student/StudentExamChromeContext";
 import { ExamStudyToolsDialog, type ExamStudyTool } from "@/components/ExamStudyTools";
@@ -37,6 +37,7 @@ export interface QiyasExamLayoutProps {
   questionTypeLabel?: string;
   questionImageUrl?: string;
   questionImageUrls?: string[];
+  preloadQuestionImageUrls?: string[];
   hideQuestionTextWhenImageBacked?: boolean;
   options: string[];
   selectedAnswer: number | null;
@@ -78,6 +79,36 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 
 function nonEmptyString(value: unknown): string | undefined {
   return typeof value === "string" && value.trim() ? value.trim() : undefined;
+}
+
+const prefetchedQuestionImages = new Map<string, HTMLImageElement>();
+const MAX_PREFETCHED_QUESTION_IMAGES = 36;
+
+function prefetchQuestionImage(rawUrl: string) {
+  if (typeof window === "undefined") return;
+
+  let src: string;
+  try {
+    src = resolveFoundationAssetUrl(getFoundationQuestionThumbnailUrl(rawUrl) ?? rawUrl);
+  } catch {
+    return;
+  }
+
+  if (!src || prefetchedQuestionImages.has(src)) return;
+
+  const image = new window.Image();
+  image.decoding = "async";
+  image.fetchPriority = "low";
+  image.addEventListener("error", () => {
+    if (prefetchedQuestionImages.get(src) === image) prefetchedQuestionImages.delete(src);
+  }, { once: true });
+  prefetchedQuestionImages.set(src, image);
+  image.src = src;
+
+  if (prefetchedQuestionImages.size > MAX_PREFETCHED_QUESTION_IMAGES) {
+    const oldestUrl = prefetchedQuestionImages.keys().next().value;
+    if (oldestUrl) prefetchedQuestionImages.delete(oldestUrl);
+  }
 }
 
 function getQuestionDisplayParts(questionData: unknown, originalQuestionText: string, typeLabel?: string) {
@@ -124,6 +155,7 @@ export function QiyasExamLayout({
   questionTypeLabel,
   questionImageUrl,
   questionImageUrls,
+  preloadQuestionImageUrls,
   hideQuestionTextWhenImageBacked = false,
   options,
   selectedAnswer,
@@ -166,6 +198,13 @@ export function QiyasExamLayout({
     imageUrl: questionImageUrl || recordImageUrl,
     imageUrls: questionImageUrls ?? recordImageUrls,
   });
+  const preloadImageKey = Array.from(new Set(
+    (preloadQuestionImageUrls ?? []).filter((url) => typeof url === "string" && url.trim()),
+  )).slice(0, 3).join("\u0000");
+  useEffect(() => {
+    if (!preloadImageKey) return;
+    preloadImageKey.split("\u0000").forEach(prefetchQuestionImage);
+  }, [preloadImageKey]);
   const hideImageBackedQuantitativeText =
     questionImages.length > 0 &&
     (hideQuestionTextWhenImageBacked ||
@@ -518,7 +557,14 @@ export function QiyasExamLayout({
                     <div key={`${imageUrl}-${index}`} className="flex justify-center">
                       <ImageZoom
                         src={resolveFoundationAssetUrl(imageUrl)}
+                        previewSrc={
+                          getFoundationQuestionThumbnailUrl(imageUrl)
+                            ? resolveFoundationAssetUrl(getFoundationQuestionThumbnailUrl(imageUrl)!)
+                            : undefined
+                        }
                         paperBackground
+                        loading="eager"
+                        fetchPriority="high"
                         imgClassName="rounded-xl object-contain border border-gray-200 shadow-sm max-w-full"
                         imgStyle={{ maxHeight: '280px', maxWidth: '100%', width: 'auto' }}
                       />
