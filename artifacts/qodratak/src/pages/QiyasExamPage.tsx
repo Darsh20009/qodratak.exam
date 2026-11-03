@@ -1418,26 +1418,35 @@ const QiyasExamPage: React.FC<{ customConfiguration?: CustomExamConfiguration }>
       const totalCount = stats?.total ?? 0;
       if (totalCount === 0) {
         toast({
-          title: "خطأ: لا توجد أسئلة",
-          description: "قاعدة الأسئلة فارغة. يرجى المحاولة لاحقاً أو التواصل مع الدعم الفني.",
+          title: "لا توجد أسئلة معتمدة",
+          description: "لا توجد أسئلة منشورة ومعتمدة لبدء هذا الاختبار حاليًا.",
           variant: "destructive"
         });
         return;
       }
 
-      // التحقق من توفر أسئلة كافية لكل قسم
-      let totalRequiredQuestions = 0;
+      let requiredVerbal = 0;
+      let requiredQuantitative = 0;
       for (const section of exam.sections) {
-        totalRequiredQuestions += section.questionCount;
+        if (section.category === "verbal") {
+          requiredVerbal += section.questionCount;
+        } else if (section.category === "quantitative") {
+          requiredQuantitative += section.questionCount;
+        } else {
+          requiredVerbal += section.verbalCount ?? Math.ceil(section.questionCount / 2);
+          requiredQuantitative += section.quantitativeCount ?? section.questionCount - Math.ceil(section.questionCount / 2);
+        }
       }
-
-      if (totalCount < totalRequiredQuestions * 0.5) {
+      const availableVerbal = Number(stats?.verbal) || 0;
+      const availableQuantitative = Number(stats?.quantitative) || 0;
+      if (availableVerbal < requiredVerbal || availableQuantitative < requiredQuantitative) {
         toast({
-          title: "تحذير: أسئلة محدودة",
-          description: `قاعدة الأسئلة تحتوي على ${totalCount} سؤال فقط. قد تواجه تكرار في الأسئلة.`,
-          variant: "default",
-          duration: 5000
+          title: "لا توجد أسئلة معتمدة كافية",
+          description: `المتاح: لفظي ${availableVerbal.toLocaleString("ar-SA")} من ${requiredVerbal.toLocaleString("ar-SA")}، وكمي ${availableQuantitative.toLocaleString("ar-SA")} من ${requiredQuantitative.toLocaleString("ar-SA")}.`,
+          variant: "destructive",
+          duration: 7000
         });
+        return;
       }
 
     } catch (error) {

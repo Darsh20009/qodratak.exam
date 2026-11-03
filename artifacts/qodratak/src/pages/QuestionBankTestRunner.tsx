@@ -38,6 +38,7 @@ import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { useUser } from '@/hooks/use-user';
 import { matchesVerbalQuestionSection } from '@/lib/verbalSectionMatching';
+import { validExamPool } from '@/lib/examQuestionSelection';
 
 interface Question {
   id: number;
@@ -50,6 +51,8 @@ interface Question {
   difficulty?: string;
   imageUrl?: string;
   imageUrls?: string[];
+  answerStatus?: string;
+  _id?: string;
   source?: {
     type?: string;
     section?: string;
@@ -146,8 +149,13 @@ export default function QuestionBankTestRunner() {
           throw new Error('وصلت استجابة غير صالحة من بنك الأسئلة.');
         }
         
-        // Filter questions by type
-        let filteredQuestions = (allQuestions as Question[]).filter((q: Question) =>
+        // Never launch or score review-draft questions in a student test.
+        const eligibleQuestions = validExamPool(
+          (allQuestions as unknown[]).filter((question) =>
+            question !== null && typeof question === "object",
+          ) as Question[],
+        );
+        let filteredQuestions = eligibleQuestions.filter((q: Question) =>
           q.category === testType
         );
         
@@ -680,22 +688,22 @@ export default function QuestionBankTestRunner() {
     );
   }
 
-  if (questionLoadError || questions.length === 0 || (Boolean(lessonSection) && questions.length < questionCount)) {
+  if (questionLoadError || questions.length < questionCount) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50 dark:from-gray-900 dark:to-slate-900 flex items-center justify-center">
         <Card className="max-w-md">
           <CardHeader className="text-center">
             <CardTitle className="text-red-600">
-              {questionLoadError ? "تعذر تحميل الاختبار" : lessonSection ? "الاختبار غير مكتمل بعد" : "لا توجد أسئلة"}
+              {questionLoadError ? "تعذر تحميل الاختبار" : questions.length ? "الاختبار غير مكتمل بعد" : "لا توجد أسئلة معتمدة"}
             </CardTitle>
           </CardHeader>
           <CardContent className="text-center">
             <p className="mb-4 text-sm leading-6 text-muted-foreground">
               {questionLoadError
                 ? questionLoadError
-                : lessonSection
-                  ? `يلزم ${questionCount.toLocaleString("ar")} أسئلة لهذا الاختبار، والمتاح لهذا القسم والدرس ${questions.length.toLocaleString("ar")} فقط. لن يبدأ اختبار بعدد ناقص.`
-                  : "لم يتم العثور على أسئلة لهذا الاختبار."}
+                : questions.length
+                  ? `يحتاج الاختبار إلى ${questionCount.toLocaleString("ar")} سؤالًا معتمدًا، والمتاح لهذا الاختبار ${questions.length.toLocaleString("ar")} فقط. لن يبدأ الاختبار بعدد ناقص.`
+                  : "لا توجد أسئلة منشورة ومعتمدة كافية لهذا القسم حاليًا؛ لم نستخدم أسئلة قيد المراجعة."}
             </p>
             <Button onClick={() => setLocation(returnLocation)}>
               {lessonSection ? "العودة إلى اللفظي المحوسب" : "العودة لبنك الأسئلة"}

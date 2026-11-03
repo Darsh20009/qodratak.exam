@@ -236,13 +236,14 @@ export function pickQuestionBatch(
   category: "verbal" | "quantitative",
   count: number,
   usedIds: Set<string>,
+  includeMasteredFallback = false,
 ): BankQuestion[] {
   if (count <= 0) return [];
   const seen = new Set((history.seenQuestionIds || []).map(String));
   const correct = new Set((history.correctQuestionIds || []).map(String));
   const incorrect = new Set((history.incorrectQuestionIds || []).map(String));
   const candidates = bank.filter((question) =>
-    question.category === category && !usedIds.has(String(question._id)) && !correct.has(String(question._id)),
+    question.category === category && !usedIds.has(String(question._id)),
   );
   const orderByWeakness = (items: BankQuestion[]) => {
     const byDifficulty = questionDifficultyOrder(bank, history, category);
@@ -250,14 +251,26 @@ export function pickQuestionBatch(
       shuffle(items.filter((question) => question.difficulty === difficulty)),
     );
   };
-  const newQuestions = orderByWeakness(candidates.filter((question) => !seen.has(String(question._id))));
+  const newQuestions = orderByWeakness(candidates.filter((question) =>
+    !correct.has(String(question._id)) && !seen.has(String(question._id)),
+  ));
   const reviewQuestions = orderByWeakness(candidates.filter((question) =>
+    !correct.has(String(question._id)) &&
     incorrect.has(String(question._id)) && seen.has(String(question._id)),
   ));
   const selected = [...newQuestions.slice(0, count)];
   if (selected.length < count) {
     const selectedIds = new Set(selected.map((question) => String(question._id)));
     selected.push(...reviewQuestions.filter((question) => !selectedIds.has(String(question._id))).slice(0, count - selected.length));
+  }
+  if (includeMasteredFallback && selected.length < count) {
+    const selectedIds = new Set(selected.map((question) => String(question._id)));
+    const masteredQuestions = orderByWeakness(candidates.filter((question) =>
+      correct.has(String(question._id)) && !incorrect.has(String(question._id)),
+    ));
+    selected.push(...masteredQuestions
+      .filter((question) => !selectedIds.has(String(question._id)))
+      .slice(0, count - selected.length));
   }
   selected.forEach((question) => usedIds.add(String(question._id)));
   return selected;
@@ -329,11 +342,13 @@ export async function selectPersonalizedExamSections(
       }
     }
 
-    const verbal = pickQuestionBatch(bank, history, "verbal", verbalCount, usedIds);
-    const quantitative = pickQuestionBatch(bank, history, "quantitative", quantitativeCount, usedIds);
+    // Simulated exams may reuse mastered questions only as a last resort;
+    // regular practice continues to retire questions answered correctly.
+    const verbal = pickQuestionBatch(bank, history, "verbal", verbalCount, usedIds, true);
+    const quantitative = pickQuestionBatch(bank, history, "quantitative", quantitativeCount, usedIds, true);
     if (verbal.length !== verbalCount || quantitative.length !== quantitativeCount) {
       throw new PersonalizedQuestionPoolError(
-        "لا توجد أسئلة جديدة أو أخطاء سابقة كافية لهذا الاختبار. أكمل المتاح أو اختر اختبارًا أقصر.",
+        "لا توجد أسئلة معتمدة وفريدة كافية لهذا الاختبار. أضف أسئلة مراجعة معتمدة أو اختر اختبارًا أقصر.",
       );
     }
     const questions = section.category === "mixed"

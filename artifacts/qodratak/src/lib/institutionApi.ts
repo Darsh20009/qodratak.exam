@@ -313,8 +313,11 @@ export function uploadIssuedContract(id: string, file: Blob, reference: string) 
   fd.append("file", file instanceof File ? file : new File([file], `${reference}.pdf`, { type: "application/pdf" }));
   return instFetch<{ institution?: InstitutionDTO }>(`/api/admin/institutions/${id}/issued-contract`, { method: "POST", body: fd });
 }
-export function sendContractLink(id: string) {
-  return instFetch<{ url: string; notification: DeliveryNotice }>(`/api/admin/institutions/${id}/send-contract`, { method: "POST", json: {} });
+export function sendContractLink(id: string, options: { resend?: boolean } = {}) {
+  return instFetch<{ url: string; notification: DeliveryNotice }>(
+    `/api/admin/institutions/${id}/send-contract`,
+    { method: "POST", json: options.resend ? { resend: true } : {} },
+  );
 }
 /** True only when the backend explicitly reports the message as delivered/sent. */
 export function deliveryConfirmed(n?: DeliveryNotice | null) {

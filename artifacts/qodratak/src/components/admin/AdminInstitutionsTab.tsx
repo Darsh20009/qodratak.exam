@@ -21,7 +21,7 @@ import { buildContractPdfBlob, generateContractPdf, serializePublishedPolicies }
 type PipelineResult = { ok: boolean; stage: "pdf" | "upload" | "send" | "done"; message: string; url?: string; delivered?: boolean };
 
 /** Build the approved contract PDF, store it as the issued document, then request delivery of the upload link. */
-async function runContractDelivery(inst: InstitutionDTO, skipUpload = false): Promise<PipelineResult> {
+async function runContractDelivery(inst: InstitutionDTO, skipUpload = false, resend = false): Promise<PipelineResult> {
   if (!inst.contract) return { ok: false, stage: "pdf", message: "لا يوجد عقد صادر لهذه المؤسسة" };
   if (!skipUpload) {
     let blob: Blob;
@@ -31,7 +31,7 @@ async function runContractDelivery(inst: InstitutionDTO, skipUpload = false): Pr
     catch (e) { return { ok: false, stage: "upload", message: (e as Error).message || "تعذر حفظ العقد الصادر على الخادم" }; }
   }
   try {
-    const r = await sendContractLink(inst.id);
+    const r = await sendContractLink(inst.id, { resend });
     const delivered = deliveryConfirmed(r.notification);
     return {
       ok: delivered, stage: delivered ? "done" : "send", url: r.url, delivered,
@@ -326,15 +326,19 @@ function DeliveryPanel({ inst }: { inst: InstitutionDTO }) {
   const qc = useQueryClient();
   const [busy, setBusy] = useState(false);
   const [result, setResult] = useState<PipelineResult | null>(null);
-  const run = async (skipUpload: boolean) => {
+  const run = async (skipUpload: boolean, resend = false) => {
     setBusy(true); setResult(null);
-    const r = await runContractDelivery(inst, skipUpload);
+    const r = await runContractDelivery(inst, skipUpload, resend);
     setResult(r); setBusy(false);
     qc.invalidateQueries({ queryKey: adminKeys.detail(inst.id) });
     qc.invalidateQueries({ queryKey: adminKeys.list });
   };
   const status = c.portalDeliveryStatus;
   const sendAlreadyClaimed = !!c.portalSentAt && status !== "failed";
+  const canResend = c.issuedDocumentReady &&
+    ["issued", "rejected"].includes(c.status) &&
+    !!c.portalSentAt &&
+    ["sent", "delivered", "failed"].includes(String(status || ""));
   return (
     <div data-testid="panel-contract-delivery" className="rounded-2xl border border-white/10 p-4">
       <p className="flex items-center gap-2 text-sm font-black text-white"><Send className="h-4 w-4 text-[#b8f36b]" /> إرسال العقد إلى المؤسسة</p>
@@ -350,11 +354,14 @@ function DeliveryPanel({ inst }: { inst: InstitutionDTO }) {
         </div>
       )}
       <div className="mt-3 flex flex-wrap gap-2">
-        <button data-testid="button-prepare-send-contract" disabled={busy || sendAlreadyClaimed || !!c.portalSentAt} onClick={() => run(Boolean(c.status === "rejected" && c.issuedDocumentReady))} className="inline-flex items-center gap-2 rounded-xl bg-[#b8f36b] px-4 py-2 text-xs font-black text-[#07111F] disabled:opacity-40">
+        {!c.portalSentAt && <button data-testid="button-prepare-send-contract" disabled={busy || sendAlreadyClaimed} onClick={() => run(Boolean(c.status === "rejected" && c.issuedDocumentReady))} className="inline-flex items-center gap-2 rounded-xl bg-[#b8f36b] px-4 py-2 text-xs font-black text-[#07111F] disabled:opacity-40">
           {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />} {c.status === "rejected" ? "إعادة إرسال رابط التوقيع والرفع" : c.issuedDocumentReady ? "إعادة توليد وإرسال" : "توليد العقد وإرسال الرابط"}
-        </button>
-        {c.issuedDocumentReady && status === "failed" && (
-          <button data-testid="button-resend-contract" disabled={busy} onClick={() => run(true)} className="inline-flex items-center gap-2 rounded-xl border border-white/15 px-4 py-2 text-xs font-black text-slate-200 disabled:opacity-40"><Send className="h-4 w-4" /> إعادة المحاولة</button>
+        </button>}
+        {canResend && (
+          <button data-testid="button-resend-contract" disabled={busy} onClick={() => run(true, true)} className="inline-flex items-center gap-2 rounded-xl border border-white/15 px-4 py-2 text-xs font-black text-slate-200 disabled:opacity-40">
+            {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
+            {status === "failed" ? "إعادة المحاولة" : "إعادة إرسال رابط العقد"}
+          </button>
         )}
       </div>
     </div>

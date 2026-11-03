@@ -1547,7 +1547,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/questions/stats", async (req: Request, res: Response) => {
     try {
       const { Question } = await import("../mongodb/models");
-      const [verbalCount, quantitativeCount] = await Promise.all([
+      const [verbalCount, quantitativeCount, allVerbalCount, allQuantitativeCount] = await Promise.all([
+        Question.countDocuments({ category: "verbal", answerStatus: "approved" }),
+        Question.countDocuments({ category: "quantitative", answerStatus: "approved" }),
         Question.countDocuments({ category: "verbal" }),
         Question.countDocuments({ category: "quantitative" }),
       ]);
@@ -1559,7 +1561,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
         verbal: verbalCount,
         quantitative: quantitativeCount,
         total: totalCount,
-        roundedTotal: roundedToHundred
+        roundedTotal: roundedToHundred,
+        allVerbal: allVerbalCount,
+        allQuantitative: allQuantitativeCount,
+        allTotal: allVerbalCount + allQuantitativeCount,
       });
     } catch (error) {
       console.error("Error fetching questions stats:", error);

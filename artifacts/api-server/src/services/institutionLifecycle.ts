@@ -22,6 +22,10 @@ export async function institutionMessage(phone: string, text: string, kind: What
 export function contractDeliveryAlreadyClaimed(contract: { portalSentAt?: Date | string; portalDeliveryStatus?: string }) {
   return Boolean(contract.portalSentAt) && contract.portalDeliveryStatus !== "failed";
 }
+export function contractDeliveryCanBeResent(contract: { portalSentAt?: Date | string; portalDeliveryStatus?: string }) {
+  return Boolean(contract.portalSentAt) &&
+    ["sent", "delivered", "failed"].includes(String(contract.portalDeliveryStatus || ""));
+}
 export async function contractLink(institution: any) {
   if (!institution.contract || institution.archivedAt) throw new InstitutionError("المؤسسة غير متاحة", 409);
   const reference = institution.contract.reference;

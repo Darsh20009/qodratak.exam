@@ -44,6 +44,18 @@ test("personalized selection retries wrong questions only after the unseen pool 
   assert.ok(selected.every((item) => item.questionId !== 1));
 });
 
+test("simulated exams reuse mastered questions only after new and incorrect questions run out", () => {
+  const bank = [question(1), question(2), question(3)];
+  const history: QuestionHistorySnapshot = {
+    seenQuestionIds: bank.slice(0, 2).map((item) => String(item._id)),
+    correctQuestionIds: [String(bank[0]._id)],
+    incorrectQuestionIds: [String(bank[1]._id)],
+  };
+  const selected = pickQuestionBatch(bank, history, "verbal", 3, new Set(), true);
+  assert.equal(selected.length, 3);
+  assert.deepEqual(selected.map((item) => item.questionId), [3, 2, 1]);
+});
+
 test("difficulty ordering targets the student's observed weak difficulty", () => {
   const bank = [
     question(1, "beginner"),

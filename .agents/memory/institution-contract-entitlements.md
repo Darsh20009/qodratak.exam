@@ -51,11 +51,11 @@ Keep Arabic contract headings at normal letter spacing in generated PDFs.
 
 **How to apply:** Avoid tracking on Arabic copy rendered through HTML-to-canvas PDF generation; inspect the first-page header after contract typography changes.
 
-Send one WhatsApp message for contract review, only after the issued PDF is ready. Its single secure portal link must support both downloading the contract and uploading the signed copy.
+The first contract delivery sends one WhatsApp message only after the issued PDF is ready; duplicate clicks must not send duplicates. Administrators may intentionally resend after an attempt reaches a terminal status, reusing the unchanged issued PDF and secure portal link.
 
-**Why:** Creating an institution and then sending its issued contract separately previously sent two messages with the same portal link.
+**Why:** Creating an institution and then sending its issued contract separately previously sent two messages with the same portal link. The user later asked to make deliberate resending available from administration.
 
-**How to apply:** Keep owner-account setup silent; route contract delivery through one idempotent send path. A later activation notice after approval is a separate lifecycle event.
+**How to apply:** Keep owner-account setup silent; route initial delivery through one idempotent send path, block resends while delivery is queued, and allow an explicit resend only after sent, delivered, or failed status. Do not regenerate the issued contract for a resend. A later activation notice after approval is a separate lifecycle event.
 
 Use shorter, human-enterable references and invitation codes for new institutions. Preserve existing contract references and continue accepting already-issued 36-character invitation codes.
 

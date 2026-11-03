@@ -18,7 +18,7 @@ import {
 import { ensureStudentAccountTrial } from "../src/middleware/studentTrialAccess";
 import { sealContract, openContract, validateSignedPdf } from "../src/services/institutionContractStorage";
 import { createPhoneVerificationToken, verifyPhoneVerificationToken } from "../src/services/phoneOtpService";
-import { contractDeliveryAlreadyClaimed } from "../src/services/institutionLifecycle";
+import { contractDeliveryAlreadyClaimed, contractDeliveryCanBeResent } from "../src/services/institutionLifecycle";
 
 test("institution grants use three Saudi calendar months, including month-end", () => {
   assert.equal(threeMonthsAfter(new Date("2026-09-30T21:30:00Z")).toISOString(), "2026-12-31T21:30:00.000Z");
@@ -40,6 +40,10 @@ test("contract delivery is not repeated while a message is queued or sent, but f
   assert.equal(contractDeliveryAlreadyClaimed({ portalSentAt: new Date(), portalDeliveryStatus: "queued" }), true);
   assert.equal(contractDeliveryAlreadyClaimed({ portalSentAt: new Date(), portalDeliveryStatus: "sent" }), true);
   assert.equal(contractDeliveryAlreadyClaimed({ portalSentAt: new Date(), portalDeliveryStatus: "failed" }), false);
+  assert.equal(contractDeliveryCanBeResent({ portalSentAt: new Date(), portalDeliveryStatus: "queued" }), false);
+  assert.equal(contractDeliveryCanBeResent({ portalSentAt: new Date(), portalDeliveryStatus: "sent" }), true);
+  assert.equal(contractDeliveryCanBeResent({ portalSentAt: new Date(), portalDeliveryStatus: "delivered" }), true);
+  assert.equal(contractDeliveryCanBeResent({ portalSentAt: new Date(), portalDeliveryStatus: "failed" }), true);
 });
 test("signed PDFs are encrypted and context-bound; active PDF content is rejected", () => {
   const saved = process.env.SESSION_SECRET;

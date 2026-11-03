@@ -4,7 +4,7 @@ import { Institution } from "../mongodb/models";
 import { InstitutionContractDelivery, InstitutionInvite } from "../mongodb/institutionModels";
 import { institutionCreationData, findInstitution, InstitutionError, institutionDto } from "../services/institutionService";
 import {
-  contractDeliveryAlreadyClaimed, contractLink, institutionMessage, resolveContractToken,
+  contractDeliveryAlreadyClaimed, contractDeliveryCanBeResent, contractLink, institutionMessage, resolveContractToken,
 } from "../services/institutionLifecycle";
 import { contractStorageReady, loadSignedContract, storeSignedContract, validateSignedPdf } from "../services/institutionContractStorage";
 
@@ -43,15 +43,19 @@ export function registerInstitutionLifecycleRoutes(app: Express, admin: RequestH
   app.post("/api/admin/institutions/:id/send-contract", admin, route(async (req, res) => {
     const institution = await findInstitution(String(req.params.id));
     const contract = institution.contract;
+    const resend = req.body?.resend === true;
     if (!contract?.issuedObjectKey) throw new InstitutionError("جهّز ملف PDF وارفعه قبل إرسال العقد", 409);
     if (!["issued", "rejected"].includes(contract.status)) throw new InstitutionError("العقد أُرسل للمراجعة أو اعتُمد بالفعل؛ لا حاجة لإرسال رابط توقيع جديد", 409);
+    if (resend && !contractDeliveryCanBeResent(contract)) {
+      throw new InstitutionError("انتظر انتهاء الإرسال الحالي قبل طلب إعادة الإرسال", 409);
+    }
     const url = await contractLink(institution);
-    if (contractDeliveryAlreadyClaimed(contract)) {
+    if (!resend && contractDeliveryAlreadyClaimed(contract)) {
       const delivered = ["sent", "delivered"].includes(contract.portalDeliveryStatus || "");
       return res.json({ url, notification: {
         status: delivered ? "sent" : "queued",
         message: delivered
-          ? "سبق إرسال رسالة العقد الموحدة؛ لم نرسل رسالة ثانية."
+          ? "سبق إرسال رسالة العقد؛ لم نرسل رسالة ثانية."
           : "إرسال رسالة العقد قيد التأكيد؛ لم نرسل رسالة ثانية.",
       } });
     }
@@ -68,16 +72,16 @@ export function registerInstitutionLifecycleRoutes(app: Express, admin: RequestH
     } }, { new: true });
     if (!claimed) {
       const latest = await findInstitution(String(req.params.id));
-      if (contractDeliveryAlreadyClaimed(latest.contract || {})) {
+      if (!resend && contractDeliveryAlreadyClaimed(latest.contract || {})) {
         const delivered = ["sent", "delivered"].includes(latest.contract.portalDeliveryStatus || "");
         return res.json({ url, notification: {
           status: delivered ? "sent" : "queued",
           message: delivered
-            ? "سبق إرسال رسالة العقد الموحدة؛ لم نرسل رسالة ثانية."
+            ? "سبق إرسال رسالة العقد؛ لم نرسل رسالة ثانية."
             : "إرسال رسالة العقد قيد التأكيد؛ لم نرسل رسالة ثانية.",
         } });
       }
-      throw new InstitutionError("بدأ إرسال رسالة العقد بالفعل؛ انتظر تأكيد الحالة قبل المحاولة مجددًا", 409);
+      throw new InstitutionError("تغيرت حالة إرسال العقد؛ حدّث الصفحة قبل المحاولة مجددًا", 409);
     }
     const notification = await institutionMessage(institution.phone || "", [
       `مرحبًا بك في منصة قدراتك — ${institution.name}`,
