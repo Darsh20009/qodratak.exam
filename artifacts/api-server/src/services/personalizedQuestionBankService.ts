@@ -50,6 +50,21 @@ export class PersonalizedQuestionPoolError extends Error {
 let bankCache: { expiresAt: number; questions: BankQuestion[] } | null = null;
 const historyInitializations = new Map<string, Promise<void>>();
 
+export function isExamEligibleBankQuestion(question: BankQuestion): boolean {
+  if (!Number.isSafeInteger(question.questionId) || question.questionId <= 0 ||
+      !Array.isArray(question.options) || question.options.length < 4 ||
+      !Number.isInteger(question.correctOptionIndex) ||
+      question.correctOptionIndex < 0 || question.correctOptionIndex >= question.options.length ||
+      !DIFFICULTIES.includes(question.difficulty) ||
+      (question.category !== "verbal" && question.category !== "quantitative")) return false;
+
+  const normalizedOptions = question.options.map((option) =>
+    typeof option === "string" ? option.trim() : "",
+  );
+  return normalizedOptions.every(Boolean) &&
+    new Set(normalizedOptions).size === normalizedOptions.length;
+}
+
 async function getApprovedQuestionBank(): Promise<BankQuestion[]> {
   if (bankCache && bankCache.expiresAt > Date.now()) return bankCache.questions;
   const rows = await Question.find({
@@ -59,18 +74,20 @@ async function getApprovedQuestionBank(): Promise<BankQuestion[]> {
     .select("_id questionId category subcategory text options correctOptionIndex difficulty explanation studentTip answerStatus source imageUrl imageUrls")
     .sort({ category: 1, questionId: 1 })
     .lean() as unknown as BankQuestion[];
-  const validQuestions: BankQuestion[] = [];
-  for (const question of rows) {
-    if (!Number.isSafeInteger(question.questionId) || question.questionId < 0 ||
-        !Array.isArray(question.options) || question.options.length < 2 ||
-        !Number.isInteger(question.correctOptionIndex) ||
-        question.correctOptionIndex < 0 || question.correctOptionIndex >= question.options.length ||
-        !DIFFICULTIES.includes(question.difficulty) ||
-        (question.category !== "verbal" && question.category !== "quantitative")) continue;
-    validQuestions.push(question);
-  }
+  // Keep the server's selectable pool aligned with the stricter exam-frame
+  // validator; otherwise the API can send a short-options question that the
+  // client drops, leaving its section short even though the bank is large.
+  const validQuestions = rows.filter(isExamEligibleBankQuestion);
   bankCache = { questions: validQuestions, expiresAt: Date.now() + QUESTION_BANK_CACHE_TTL_MS };
   return bankCache.questions;
+}
+
+export async function getExamEligibleQuestionCounts() {
+  const bank = await getApprovedQuestionBank();
+  return {
+    verbal: bank.filter((question) => question.category === "verbal").length,
+    quantitative: bank.filter((question) => question.category === "quantitative").length,
+  };
 }
 
 function historyUpdatePipeline(userId: string, seenIds: string[], correctIds: string[], incorrectIds: string[]) {

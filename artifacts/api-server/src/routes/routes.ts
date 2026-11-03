@@ -127,6 +127,7 @@ import {
 import { classifySavedTestProgram } from '../services/studentDashboardMetrics';
 import { ExamGradingError, gradeTrustedExam } from '../services/trustedExamGrade';
 import {
+  getExamEligibleQuestionCounts,
   PersonalizedQuestionPoolError,
   selectPersonalizedExamSections,
 } from '../services/personalizedQuestionBankService';
@@ -1547,11 +1548,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/questions/stats", async (req: Request, res: Response) => {
     try {
       const { Question } = await import("../mongodb/models");
-      const [verbalCount, quantitativeCount, allVerbalCount, allQuantitativeCount] = await Promise.all([
+      const [verbalCount, quantitativeCount, allVerbalCount, allQuantitativeCount, examEligibleCounts] = await Promise.all([
         Question.countDocuments({ category: "verbal", answerStatus: "approved" }),
         Question.countDocuments({ category: "quantitative", answerStatus: "approved" }),
         Question.countDocuments({ category: "verbal" }),
         Question.countDocuments({ category: "quantitative" }),
+        getExamEligibleQuestionCounts(),
       ]);
       const totalCount = verbalCount + quantitativeCount;
 
@@ -1565,6 +1567,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         allVerbal: allVerbalCount,
         allQuantitative: allQuantitativeCount,
         allTotal: allVerbalCount + allQuantitativeCount,
+        examEligibleVerbal: examEligibleCounts.verbal,
+        examEligibleQuantitative: examEligibleCounts.quantitative,
+        examEligibleTotal: examEligibleCounts.verbal + examEligibleCounts.quantitative,
       });
     } catch (error) {
       console.error("Error fetching questions stats:", error);

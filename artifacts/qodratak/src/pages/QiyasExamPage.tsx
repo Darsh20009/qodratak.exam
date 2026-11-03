@@ -1437,8 +1437,8 @@ const QiyasExamPage: React.FC<{ customConfiguration?: CustomExamConfiguration }>
           requiredQuantitative += section.quantitativeCount ?? section.questionCount - Math.ceil(section.questionCount / 2);
         }
       }
-      const availableVerbal = Number(stats?.verbal) || 0;
-      const availableQuantitative = Number(stats?.quantitative) || 0;
+      const availableVerbal = Number(stats?.examEligibleVerbal ?? stats?.verbal) || 0;
+      const availableQuantitative = Number(stats?.examEligibleQuantitative ?? stats?.quantitative) || 0;
       if (availableVerbal < requiredVerbal || availableQuantitative < requiredQuantitative) {
         toast({
           title: "لا توجد أسئلة معتمدة كافية",

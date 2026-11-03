@@ -1,6 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import {
+  isExamEligibleBankQuestion,
   pickQuestionBatch,
   type BankQuestion,
   type QuestionHistorySnapshot,
@@ -18,6 +19,16 @@ function question(id: number, difficulty: BankQuestion["difficulty"] = "beginner
     answerStatus: "approved",
   };
 }
+
+test("exam question eligibility matches the client validator", () => {
+  const valid = question(1);
+  assert.equal(isExamEligibleBankQuestion(valid), true);
+  assert.equal(isExamEligibleBankQuestion({ ...valid, options: ["a", "b", "c"] }), false);
+  assert.equal(isExamEligibleBankQuestion({ ...valid, options: ["a", "b", "c", " "] }), false);
+  assert.equal(isExamEligibleBankQuestion({ ...valid, options: ["a", "b", "c", "c"] }), false);
+  assert.equal(isExamEligibleBankQuestion({ ...valid, correctOptionIndex: 4 }), false);
+  assert.equal(isExamEligibleBankQuestion({ ...valid, questionId: 0 }), false);
+});
 
 test("personalized selection excludes mastered questions and chooses new questions first", () => {
   const bank = [question(1), question(2), question(3), question(4)];

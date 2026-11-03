@@ -184,6 +184,7 @@ export function StudentNavigation({ hidden = false }: { hidden?: boolean }) {
           <img src="/qodratak-icon-light.png" alt="" className="h-full w-full object-contain dark:hidden" />
           <img src="/qodratak-icon-dark.png" alt="" className="hidden h-full w-full object-contain dark:block" />
         </span>
+        <span className="text-lg font-black tracking-tight text-foreground">قدراتك</span>
       </Link>
        <PrimaryLinks path={path} instance="desktop" />
        <MoreDirectory path={path} instance="desktop" open={directoryOpen} onOpenChange={setDirectoryOpen} search={directorySearch} onSearchChange={setDirectorySearch} />
@@ -195,6 +196,7 @@ export function StudentNavigation({ hidden = false }: { hidden?: boolean }) {
             <img src="/qodratak-icon-light.png" alt="" className="h-full w-full object-contain dark:hidden" />
             <img src="/qodratak-icon-dark.png" alt="" className="hidden h-full w-full object-contain dark:block" />
           </span>
+          <span className="font-black text-foreground">قدراتك</span>
         </Link>
         <div className="flex items-center gap-2">
           <StudentQuestionContributionButton compact className="h-10 w-10 justify-center px-0 sm:w-auto sm:px-3" />

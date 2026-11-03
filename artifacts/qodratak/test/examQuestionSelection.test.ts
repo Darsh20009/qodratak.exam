@@ -6,7 +6,7 @@ test("the exam roster excludes unapproved, blank and duplicated choices before s
   const q = { id: 1, category: "quantitative", options: ["أ", "ب", "ج", "د"], correctOptionIndex: 0, answerStatus: "approved" };
   assert.deepEqual(validExamPool([
     q, { ...q, id: 2, answerStatus: undefined }, { ...q, id: 3, options: ["أ", "أ", "ج", "د"] },
-    { ...q, id: 4, options: ["أ", "  ", "ج", "د"] },
+    { ...q, id: 4, options: ["أ", "  ", "ج", "د"] }, { ...q, id: 5, options: ["أ", "ب", "ج"] },
   ]).map(row => row.id), [1]);
 });
 
