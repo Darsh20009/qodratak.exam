@@ -153,6 +153,20 @@ export interface AdminVideoUploadInput {
   video: Blob;
 }
 
+export interface AdminTestInvoiceInput {
+  /**
+     * @minLength 8
+     * @maxLength 20
+     */
+  phone: string;
+}
+
+export interface AdminTestInvoiceResult {
+  success: boolean;
+  providerAccepted: boolean;
+  message: string;
+}
+
 export interface QuestionVideoClipOutput {
   available: boolean;
   reason?: string;

@@ -15,6 +15,8 @@ export * from './adminBootstrapStatusReason';
 export * from './adminRecoveryInput';
 export * from './adminRecoveryResult';
 export * from './adminRecoveryResultAdmin';
+export * from './adminTestInvoiceInput';
+export * from './adminTestInvoiceResult';
 export * from './adminVideoAsset';
 export * from './adminVideoPage';
 export * from './adminVideoUploadInput';

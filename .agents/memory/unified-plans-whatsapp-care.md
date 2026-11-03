@@ -15,6 +15,12 @@ WhatsApp outbound delivery is restricted to OTP and essential transactional aler
 
 **How to apply:** Add no direct or bulk WhatsApp send path outside the central allowlist. Keep OTP highest priority, transactional customer messages next, admin event alerts after them, and the daily report last.
 
+The admin may send a clearly marked zero-value demo invoice through the shared queue for a WhatsApp delivery check. It must remain explicitly unpaid, be rate-limited per admin, and never create or modify a payment or subscription record.
+
+**Why:** The user approved a controlled test of the WhatsApp invoice message without making a real payment.
+
+**How to apply:** Keep the test behind real administrator authentication, validate the recipient at request time, retain queue spacing, and never store the supplied phone number or represent the test as a purchase.
+
 Student result alerts are an explicitly requested transactional exception to the earlier restriction on automated study messages.
 
 **Why:** The user asked that the student receive their result on WhatsApp when the exam result becomes available.

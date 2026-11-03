@@ -2224,6 +2224,25 @@ export const ListGeideaTransactionsResponse = zod.object({
 
 
 /**
+ * @summary Send a zero-value demo invoice through the protected WhatsApp queue
+ */
+export const sendAdminTestInvoiceBodyPhoneMin = 8;
+export const sendAdminTestInvoiceBodyPhoneMax = 20;
+
+
+
+export const SendAdminTestInvoiceBody = zod.object({
+  "phone": zod.string().min(sendAdminTestInvoiceBodyPhoneMin).max(sendAdminTestInvoiceBodyPhoneMax)
+})
+
+export const SendAdminTestInvoiceResponse = zod.object({
+  "success": zod.boolean(),
+  "providerAccepted": zod.boolean(),
+  "message": zod.string()
+})
+
+
+/**
  * @summary Refund the remaining paid balance through Geidea
  */
 export const RefundGeideaTransactionParams = zod.object({

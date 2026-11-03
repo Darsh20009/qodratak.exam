@@ -1,8 +1,11 @@
 import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useForm } from "react-hook-form";
+import { useSendAdminTestInvoice } from "@workspace/api-client-react";
 import { BarChart3, CheckCircle2, Link2, Loader2, MessageCircle, Power, RefreshCw, Send, ShieldAlert } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { useToast } from "@/hooks/use-toast";
 
 type Status = {
@@ -29,7 +32,7 @@ async function request(path: string, body?: unknown) {
 export default function WhatsAppAdminTab() {
   const queryClient = useQueryClient();
   const { toast } = useToast();
-  const [testPhone, setTestPhone] = useState("");
+  const testInvoiceForm = useForm<{ phone: string }>({ defaultValues: { phone: "" } });
   const [campaignForm, setCampaignForm] = useState({
     preset: "custom",
     title: "",
@@ -55,10 +58,14 @@ export default function WhatsAppAdminTab() {
     onError: (error: Error) => toast({ title: "تعذر تنفيذ العملية", description: error.message, variant: "destructive" }),
   });
 
-  const sendTest = useMutation({
-    mutationFn: () => request("/api/admin/whatsapp/test-message", { phone: testPhone.trim() }),
-    onSuccess: () => toast({ title: "تم الإرسال", description: "وصلت رسالة الاختبار إلى الرقم المحدد." }),
-    onError: (error: Error) => toast({ title: "تعذر إرسال الرسالة", description: error.message, variant: "destructive" }),
+  const sendTest = useSendAdminTestInvoice({
+    mutation: {
+      onSuccess: (result) => {
+        testInvoiceForm.reset();
+        toast({ title: "تم طلب إرسال الفاتورة التجريبية", description: result.message });
+      },
+      onError: (error) => toast({ title: "تعذر إرسال الفاتورة التجريبية", description: error.message, variant: "destructive" }),
+    },
   });
 
   const sendFinancialReport = useMutation({
@@ -165,20 +172,55 @@ export default function WhatsAppAdminTab() {
       </div>
 
       <div className="rounded-2xl border border-border bg-card p-5">
-        <h3 className="font-bold">اختبار الإرسال</h3>
-        <p className="mt-1 text-xs text-muted-foreground">أرسل رسالة قصيرة للتأكد من أن الرقم المرتبط يعمل.</p>
-        <div className="mt-4 flex max-w-lg gap-2" dir="ltr">
-          <Input aria-label="رقم جوال اختبار الإرسال" value={testPhone} onChange={(event) => setTestPhone(event.target.value)} placeholder="+9665XXXXXXXX" className="h-11 text-foreground" />
-          <button
-            type="button"
-            onClick={() => sendTest.mutate()}
-            disabled={!connected || !testPhone.trim() || sendTest.isPending}
-            className="flex shrink-0 items-center gap-2 rounded-xl bg-emerald-700 px-4 text-sm font-bold text-emerald-50 transition-colors enabled:hover:bg-emerald-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-not-allowed disabled:bg-muted disabled:text-muted-foreground"
+        <h3 className="font-bold" data-testid="text-admin-test-invoice-title">إرسال فاتورة تجريبية</h3>
+        <p className="mt-1 text-xs text-muted-foreground" data-testid="text-admin-test-invoice-notice">
+          يرسل نموذجًا نصيًا بقيمة صفر، موسومًا «تجريبي — غير مدفوع». لا ينشئ اشتراكًا أو سجل دفع، ومتاح مرة كل 15 دقيقة لكل مدير.
+        </p>
+        <Form {...testInvoiceForm}>
+          <form
+            className="mt-4 flex max-w-lg items-start gap-2"
+            dir="ltr"
+            onSubmit={testInvoiceForm.handleSubmit(({ phone }) => sendTest.mutate({ data: { phone: phone.trim() } }))}
           >
-            {sendTest.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
-            إرسال
-          </button>
-        </div>
+            <FormField
+              control={testInvoiceForm.control}
+              name="phone"
+              rules={{
+                required: "أدخل رقم واتساب",
+                minLength: { value: 8, message: "أدخل رقمًا صالحًا" },
+                maxLength: { value: 20, message: "الرقم طويل جدًا" },
+              }}
+              render={({ field }) => (
+                <FormItem className="min-w-0 flex-1">
+                  <FormLabel className="sr-only">رقم واتساب لإرسال الفاتورة التجريبية</FormLabel>
+                  <FormControl>
+                    <Input
+                      {...field}
+                      data-testid="input-admin-test-invoice-phone"
+                      aria-label="رقم واتساب لإرسال الفاتورة التجريبية"
+                      type="tel"
+                      inputMode="tel"
+                      autoComplete="off"
+                      maxLength={20}
+                      placeholder="05XXXXXXXX أو +9665XXXXXXXX"
+                      className="h-11 text-foreground"
+                    />
+                  </FormControl>
+                  <FormMessage className="text-right" dir="rtl" />
+                </FormItem>
+              )}
+            />
+            <button
+              type="submit"
+              data-testid="button-admin-test-invoice-send"
+              disabled={!testInvoiceForm.watch("phone").trim() || sendTest.isPending}
+              className="flex h-11 shrink-0 items-center gap-2 rounded-xl bg-emerald-700 px-4 text-sm font-bold text-emerald-50 transition-colors enabled:hover:bg-emerald-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-not-allowed disabled:bg-muted disabled:text-muted-foreground"
+            >
+              {sendTest.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
+              إرسال الفاتورة
+            </button>
+          </form>
+        </Form>
         <button
           type="button"
           onClick={() => sendNotificationTest.mutate()}

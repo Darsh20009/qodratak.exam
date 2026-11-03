@@ -1111,6 +1111,32 @@ paths:
           description: Admin authentication required
         "403":
           description: Accounting permission required
+  /admin/whatsapp/test-invoice:
+    post:
+      operationId: sendAdminTestInvoice
+      tags: [admin]
+      summary: Send a zero-value demo invoice through the protected WhatsApp queue
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AdminTestInvoiceInput"
+      responses:
+        "200":
+          description: Message accepted by the configured WhatsApp provider
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminTestInvoiceResult"
+        "400":
+          description: Invalid WhatsApp number
+        "401":
+          description: Administrator authentication required
+        "429":
+          description: Administrator test-invoice cooldown is active
+        "503":
+          description: No WhatsApp provider is available or delivery failed
   /admin/geidea/transactions/{id}/refund:
     post:
       operationId: refundGeideaTransaction
@@ -1238,6 +1264,20 @@ components:
           type: string
           contentMediaType: application/octet-stream
           description: Video file in the multipart form; the server validates the media container before storing it.
+    AdminTestInvoiceInput:
+      type: object
+      additionalProperties: false
+      required: [phone]
+      properties:
+        phone: { type: string, minLength: 8, maxLength: 20 }
+    AdminTestInvoiceResult:
+      type: object
+      additionalProperties: false
+      required: [success, providerAccepted, message]
+      properties:
+        success: { type: boolean }
+        providerAccepted: { type: boolean }
+        message: { type: string }
     QuestionVideoClipOutput:
       type: object
       required: [available]

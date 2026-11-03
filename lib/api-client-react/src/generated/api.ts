@@ -25,6 +25,8 @@ import type {
   AdminBootstrapStatus,
   AdminRecoveryInput,
   AdminRecoveryResult,
+  AdminTestInvoiceInput,
+  AdminTestInvoiceResult,
   AdminVideoAsset,
   AdminVideoPage,
   AdminVideoUploadInput,
@@ -3790,6 +3792,77 @@ export function useListGeideaTransactions<TData = Awaited<ReturnType<typeof list
 
 
 
+
+export const getSendAdminTestInvoiceUrl = () => {
+
+
+
+
+  return `/api/admin/whatsapp/test-invoice`
+}
+
+/**
+ * @summary Send a zero-value demo invoice through the protected WhatsApp queue
+ */
+export const sendAdminTestInvoice = async (adminTestInvoiceInput: AdminTestInvoiceInput, options?: Parameters<typeof customFetch>[1]): Promise<AdminTestInvoiceResult> => {
+
+  return customFetch<AdminTestInvoiceResult>(getSendAdminTestInvoiceUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(adminTestInvoiceInput)
+  }
+);}
+
+
+
+
+
+export const getSendAdminTestInvoiceMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof sendAdminTestInvoice>>, TError,{data: BodyType<AdminTestInvoiceInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof sendAdminTestInvoice>>, TError,{data: BodyType<AdminTestInvoiceInput>}, TContext> => {
+
+const mutationKey = ['sendAdminTestInvoice'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof sendAdminTestInvoice>>, {data: BodyType<AdminTestInvoiceInput>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  sendAdminTestInvoice(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type SendAdminTestInvoiceMutationResult = NonNullable<Awaited<ReturnType<typeof sendAdminTestInvoice>>>
+    export type SendAdminTestInvoiceMutationBody = BodyType<AdminTestInvoiceInput>
+    export type SendAdminTestInvoiceMutationError = ErrorType<void>
+
+    /**
+ * @summary Send a zero-value demo invoice through the protected WhatsApp queue
+ */
+export const useSendAdminTestInvoice = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof sendAdminTestInvoice>>, TError,{data: BodyType<AdminTestInvoiceInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof sendAdminTestInvoice>>,
+        TError,
+        {data: BodyType<AdminTestInvoiceInput>},
+        TContext
+      > => {
+      return useMutation(getSendAdminTestInvoiceMutationOptions(options));
+    }
 
 export const getRefundGeideaTransactionUrl = (id: string,) => {
 

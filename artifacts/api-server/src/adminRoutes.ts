@@ -8,7 +8,12 @@ import fs from 'fs';
 import os from 'node:os';
 import { randomUUID } from 'node:crypto';
 import mongoose from 'mongoose';
-import { BootstrapInitialAdminBody, RecoverAdminAccessBody } from '@workspace/api-zod';
+import {
+  BootstrapInitialAdminBody,
+  RecoverAdminAccessBody,
+  SendAdminTestInvoiceBody,
+  SendAdminTestInvoiceResponse,
+} from '@workspace/api-zod';
 import { mongoStorage } from './mongodb/mongoStorage';
 import { storage } from './storage';
 import { Question, ChatMessage, Admin, WhatsAppMessage, FoundationContent, PlatformReview, Institution, InstitutionRequest, User, TahsiliQuestion, TahsiliQuestionDraft, type TahsiliDraftSubject } from './mongodb/models';
@@ -69,10 +74,13 @@ import {
 } from './services/geideaService';
 import { subscriptionInvoiceNumber } from './services/geideaPaymentService';
 import { createSubscriptionInvoiceUrl } from './services/invoiceAccess';
+import { buildAdminTestInvoiceMessage, normalizeAdminTestInvoicePhone } from './services/adminTestInvoice';
 import { adminBootstrapReason, matchesAdminBootstrapToken } from './services/adminBootstrap';
 
 const router = Router();
 const adminBootstrapAttempts = new Map<string, { count: number; resetAt: number }>();
+const adminTestInvoiceSentAt = new Map<string, number>();
+const ADMIN_TEST_INVOICE_COOLDOWN_MS = 15 * 60_000;
 const ADMIN_VIDEO_MAX_BYTES = 1024 * 1024 * 1024;
 const ADMIN_VIDEO_TYPES: Record<string, string> = {
   '.mp4': 'video/mp4',
@@ -3234,6 +3242,60 @@ router.post('/whatsapp/disconnect', requireAdminAuth, async (req: Request, res: 
 router.post('/whatsapp/test-message', requireAdminAuth, async (req: Request, res: Response) => {
   void req;
   res.status(403).json({ error: 'رسائل الاختبار معطلة لحماية رقم واتساب' });
+});
+
+router.post('/whatsapp/test-invoice', requireAdminAuth, async (req: Request, res: Response): Promise<void> => {
+  const parsedBody = SendAdminTestInvoiceBody.safeParse(req.body);
+  if (!parsedBody.success) {
+    res.status(400).json({ error: 'أدخل رقم واتساب صالحًا' });
+    return;
+  }
+
+  const phone = normalizeAdminTestInvoicePhone(parsedBody.data.phone);
+  if (!phone) {
+    res.status(400).json({ error: 'أدخل رقم واتساب صالحًا' });
+    return;
+  }
+
+  const adminId = String((req.session as any)?.admin?.adminId || (req.session as any)?.adminId || '');
+  if (!adminId) {
+    res.status(401).json({ error: 'يجب تسجيل الدخول كمدير' });
+    return;
+  }
+
+  const now = Date.now();
+  const lastSentAt = adminTestInvoiceSentAt.get(adminId) || 0;
+  if (now - lastSentAt < ADMIN_TEST_INVOICE_COOLDOWN_MS) {
+    const retryAfterSeconds = Math.ceil((ADMIN_TEST_INVOICE_COOLDOWN_MS - (now - lastSentAt)) / 1000);
+    res.setHeader('Retry-After', String(retryAfterSeconds));
+    res.status(429).json({
+      error: `أُرسلت فاتورة اختبار مؤخرًا؛ حاول بعد ${retryAfterSeconds} ثانية`,
+      retryAfterSeconds,
+    });
+    return;
+  }
+
+  adminTestInvoiceSentAt.set(adminId, now);
+  const reference = `DEMO-${new Date(now).getFullYear()}-${randomUUID().slice(0, 8).toUpperCase()}`;
+  try {
+    await sendWhatsAppText(
+      phone,
+      buildAdminTestInvoiceMessage(reference, new Date(now)),
+      'admin_test_invoice',
+    );
+    res.json(SendAdminTestInvoiceResponse.parse({
+      success: true,
+      providerAccepted: true,
+      message: 'قبل مزود الرسائل طلب الإرسال؛ لا يوجد تأكيد باستلام الهاتف.',
+    }));
+  } catch (error) {
+    const errorCode = error instanceof Error ? error.message : 'UNKNOWN';
+    req.log.warn({ errorCode }, 'Admin test invoice send failed');
+    const message = errorCode === 'WHATSAPP_NOT_CONNECTED'
+      ? 'اربط واتساب أو تحقق من إعداد مزود الرسائل'
+      : 'تعذر إرسال فاتورة الاختبار الآن';
+    res.status(503).json({ error: message });
+  }
 });
 
 router.post('/whatsapp/financial-report', requireAdminAuth, async (req: Request, res: Response) => {
