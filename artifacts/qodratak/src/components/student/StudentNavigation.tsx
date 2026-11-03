@@ -180,7 +180,10 @@ export function StudentNavigation({ hidden = false }: { hidden?: boolean }) {
     <aside dir="rtl" aria-label="تنقل الطالب" data-testid="student-desktop-navigation"
       className="hidden min-h-screen w-64 shrink-0 border-l border-border bg-card px-4 py-5 md:sticky md:top-0 md:flex md:flex-col">
       <Link href="/" aria-label="قدراتك" className="mb-7 flex items-center gap-3 px-2">
-        <img src="/qodratak-icon.png" alt="" className="h-9 w-9 object-contain" />
+        <span className="relative block h-9 w-9 shrink-0">
+          <img src="/qodratak-icon-light.png" alt="" className="h-full w-full object-contain dark:hidden" />
+          <img src="/qodratak-icon-dark.png" alt="" className="hidden h-full w-full object-contain dark:block" />
+        </span>
       </Link>
        <PrimaryLinks path={path} instance="desktop" />
        <MoreDirectory path={path} instance="desktop" open={directoryOpen} onOpenChange={setDirectoryOpen} search={directorySearch} onSearchChange={setDirectorySearch} />
@@ -188,7 +191,10 @@ export function StudentNavigation({ hidden = false }: { hidden?: boolean }) {
     <div dir="rtl" className="md:hidden">
       <header className="sticky top-0 z-30 flex h-14 items-center justify-between border-b border-border bg-background/95 px-4 backdrop-blur">
         <Link href="/" aria-label="قدراتك" className="flex items-center gap-2">
-          <img src="/qodratak-icon.png" alt="" className="h-8 w-8 object-contain" />
+          <span className="relative block h-8 w-8 shrink-0">
+            <img src="/qodratak-icon-light.png" alt="" className="h-full w-full object-contain dark:hidden" />
+            <img src="/qodratak-icon-dark.png" alt="" className="hidden h-full w-full object-contain dark:block" />
+          </span>
         </Link>
         <div className="flex items-center gap-2">
           <StudentQuestionContributionButton compact className="h-10 w-10 justify-center px-0 sm:w-auto sm:px-3" />
