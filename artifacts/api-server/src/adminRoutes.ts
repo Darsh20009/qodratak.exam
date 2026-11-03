@@ -68,6 +68,7 @@ import {
   refundGeideaOrder,
 } from './services/geideaService';
 import { subscriptionInvoiceNumber } from './services/geideaPaymentService';
+import { createSubscriptionInvoiceUrl } from './services/invoiceAccess';
 import { adminBootstrapReason, matchesAdminBootstrapToken } from './services/adminBootstrap';
 
 const router = Router();
@@ -1958,6 +1959,26 @@ router.post('/subscriptions/:id/approve', requireAdminAuth, async (req: Request,
     if (!sub) {
       return res.status(404).json({ error: 'الاشتراك غير موجود' });
     }
+    const billedUserId = String(sub.userId);
+    const billedUser = mongoose.Types.ObjectId.isValid(billedUserId)
+      ? await User.findById(billedUserId).select('fullName username email phone whatsappPhone').lean()
+      : await User.findOne({ $or: [
+        { legacyId: billedUserId },
+        { email: billedUserId.toLowerCase() },
+        { username: billedUserId },
+      ] }).select('fullName username email phone whatsappPhone').lean();
+    if (!sub.billingSnapshot?.name && billedUser) {
+      const billingSnapshot = {
+        name: String(billedUser.fullName || billedUser.username || 'الطالب'),
+        email: String(billedUser.email || ''),
+        phone: String(billedUser.whatsappPhone || billedUser.phone || ''),
+      };
+      await Subscription.updateOne(
+        { _id: sub._id, 'billingSnapshot.name': { $exists: false } },
+        { $set: { billingSnapshot, currency: sub.currency || 'SAR' } },
+      );
+      sub.billingSnapshot = billingSnapshot;
+    }
 
     // Update user.json to activate subscription for this user
     try {
@@ -2006,6 +2027,8 @@ router.post('/subscriptions/:id/approve', requireAdminAuth, async (req: Request,
       plan: sub.type,
       price: sub.price,
       endDate: sub.endDate,
+      invoiceNumber: subscriptionInvoiceNumber(sub),
+      invoiceUrl: createSubscriptionInvoiceUrl(sub) || undefined,
     }).catch((error) =>
       console.error('Student approved-subscription WhatsApp notification failed:', error),
     );
@@ -2718,6 +2741,12 @@ router.post('/subscriptions/create-manual', requireAdminAuth, async (req: Reques
       endDate,
       price: parsedPrice,
       paymentMethod: 'manual',
+      currency: 'SAR',
+      billingSnapshot: {
+        name: String(user.fullName || user.username || 'الطالب'),
+        email: String(user.email || ''),
+        phone: String(user.whatsappPhone || user.phone || ''),
+      },
       notes: notes || `أضيف يدوياً بواسطة ${adminSession?.username}`,
       approvedBy: adminSession?._id,
       approvedAt: new Date(),
@@ -2744,6 +2773,8 @@ router.post('/subscriptions/create-manual', requireAdminAuth, async (req: Reques
       plan: type,
       price: parsedPrice,
       endDate,
+      invoiceNumber: subscriptionInvoiceNumber(sub),
+      invoiceUrl: createSubscriptionInvoiceUrl(sub) || undefined,
     }).catch((error) =>
       console.error('Student manual-subscription WhatsApp notification failed:', error),
     );

@@ -7,7 +7,6 @@ import {
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
 import { useUser } from "@/hooks/use-user";
-import { RoleGuideFilm } from "@/components/RoleGuideFilm";
 import { RoleBasedLayout } from "@/components/layouts/RoleBasedLayout";
 import { cn } from "@/lib/utils";
 import {
@@ -304,7 +303,6 @@ function Director() {
   return (
     <div className="min-h-full bg-[#F7F4EE] dark:bg-[#0E0F17]" dir="rtl">
       <div className="mx-auto max-w-6xl space-y-6 px-4 py-8 sm:px-6">
-        <RoleGuideFilm audience="institution" viewerId={user?.id ?? user?._id} displayName={user?.fullName || user?.name || user?.username} />
         <header className="relative overflow-hidden rounded-3xl bg-[#171723] p-6 text-white sm:p-8">
           <div aria-hidden className="pointer-events-none absolute -left-16 -top-16 h-56 w-56 rounded-full border-[28px] border-[#91D7C5]/10" />
           <div className="relative flex flex-wrap items-end justify-between gap-6">

@@ -18,7 +18,6 @@ import {
 import type { LucideIcon } from "lucide-react";
 import { BrandMark } from "@/components/BrandMark";
 import { ThemeToggle } from "@/components/ThemeToggle";
-import { GuideFilm } from "@/components/GuideFilm";
 import { SEO } from "@/components/SEO";
 import { useUser } from "@/hooks/use-user";
 
@@ -108,10 +107,9 @@ export default function HowItWorksPage() {
             كل صفحة،<br /><span className="text-[#FF8A70]">وماذا تجد داخلها.</span>
           </h1>
           <p className="mt-5 max-w-md text-sm leading-7 text-[#6B625B] dark:text-slate-300">
-            شاهد الفيلم، ثم امشِ مع الخريطة: من خطتك اليومية إلى التأسيس والاختبار ومراجعة نتيجتك في مساري القدرات والتحصيلي.
+            اتبع الخريطة للوصول إلى خطتك اليومية والتأسيس والاختبارات ومراجعة نتيجتك في مساري القدرات والتحصيلي.
           </p>
         </div>
-        <GuideFilm />
       </section>
 
       <section className="border-y border-[#24202D]/[.09] bg-[#FFFCF7] dark:border-white/10 dark:bg-[#0D1726]" aria-labelledby="map-title">

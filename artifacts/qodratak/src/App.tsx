@@ -14,6 +14,7 @@ import useSubscription from "@/hooks/useSubscription";
 import NotFound from "@/pages/not-found";
 import Home from "@/pages/NewHome";
 import GeideaPaymentReturnPage from "@/pages/GeideaPaymentReturnPage";
+import GeideaInvoicePage from "@/pages/GeideaInvoicePage";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import ExamRecordsPage from "@/pages/ExamRecordsPage";
 import { ThemeProvider } from "next-themes";
@@ -211,6 +212,7 @@ const PUBLIC_PATHS = new Set([
   "/platform-guide",
   "/how-it-works",
   "/institution-contract",
+  "/payment/geidea/invoice",
 ]);
 
 function isPublicPath(pathname: string) {
@@ -242,6 +244,7 @@ function AuthenticatedRouteBoundary({ children }: { children: React.ReactNode })
     "/subscription",
     "/enhanced-subscription",
     "/payment/geidea/return",
+  "/payment/geidea/invoice",
   ].includes(cleanPath);
 
   useEffect(() => {
@@ -1156,6 +1159,9 @@ function Router({ splashDone }: { splashDone: boolean }) {
       <Switch>
       <Route path="/payment/geidea/return">
         <GeideaPaymentReturnPage />
+      </Route>
+      <Route path="/payment/geidea/invoice">
+        <GeideaInvoicePage />
       </Route>
       <Route path="/parent-dashboard">
         <ProtectedRoute>

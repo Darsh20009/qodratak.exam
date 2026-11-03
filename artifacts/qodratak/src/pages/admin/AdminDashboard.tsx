@@ -9,7 +9,6 @@ import AdminVideoLibraryTab from './AdminVideoLibraryTab';
 import AdminAccountManagementTab from './AdminAccountManagementTab';
 import AdminGeideaTransactionsTab from './AdminGeideaTransactionsTab';
 import WhatsAppAdminTab from './WhatsAppAdminTab';
-import { RoleGuideFilm } from "@/components/RoleGuideFilm";
 import EmailAdminTab from './EmailAdminTab';
 import AdminOverview from './AdminOverview';
 import AdminInstitutionsTab, { type InstitutionPrefill } from '@/components/admin/AdminInstitutionsTab';
@@ -790,8 +789,6 @@ export default function AdminDashboard({ initialTab = 'overview' }: { initialTab
         )}
 
         <div className="p-4 md:p-6">
-          <RoleGuideFilm audience="admin" viewerId={admin?.adminId ?? admin?.id ?? admin?._id} displayName={admin?.fullName || admin?.username} />
-
           {/* ─── OVERVIEW ─── */}
           {activeTab === 'overview' && (
             statsLoading ? (

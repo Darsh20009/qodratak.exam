@@ -2,6 +2,7 @@ import mongoose from "mongoose";
 import { Subscription, User } from "../mongodb/models";
 import { logger } from "../lib/logger";
 import { notifyStudentSubscriptionActivated } from "./adminWhatsAppNotifications";
+import { createSubscriptionInvoiceUrl } from "./invoiceAccess";
 import {
   latestFutureSubscriptionEnd,
   subscriptionPeriod,
@@ -59,9 +60,32 @@ export function subscriptionInvoiceNumber(subscription: {
   return `QDR-${year}-${String(subscription._id).slice(-8).toUpperCase()}`;
 }
 
+export function publicSubscriptionInvoice(subscription: any, customer?: any) {
+  if (subscription.paymentGateway === "geidea" && subscription.paymentStatus !== "paid") return null;
+  if (subscription.paymentGateway !== "geidea" && !["active", "expired"].includes(String(subscription.status))) return null;
+  const billedTo = subscription.billingSnapshot?.name ? subscription.billingSnapshot : customer;
+  if (!billedTo) return null;
+  const issueDate = subscription.paidAt || subscription.approvedAt || subscription.createdAt;
+  const startDate = subscription.startDate ? new Date(subscription.startDate).toISOString() : undefined;
+  const endDate = subscription.endDate ? new Date(subscription.endDate).toISOString() : undefined;
+  return {
+    invoiceNumber: subscriptionInvoiceNumber(subscription),
+    customerName: String(billedTo.name || billedTo.fullName || billedTo.username || "الطالب"),
+    customerEmail: String(billedTo.email || ""),
+    customerPhone: String(billedTo.phone || billedTo.whatsappPhone || ""),
+    planName: subscriptionPlanName(subscription.type),
+    amount: Number(subscription.price),
+    currency: String(subscription.currency || "SAR"),
+    paymentMethod: String(subscription.paymentMethod || (subscription.paymentGateway === "geidea" ? "geidea" : "manual")),
+    issueDate: new Date(issueDate || Date.now()).toISOString(),
+    startDate,
+    endDate,
+    status: String(subscription.status) === "expired" ? "expired" : "active",
+  };
+}
+
 export function publicGeideaPaymentStatus(subscription: any, customer?: any) {
   const invoiceNumber = subscriptionInvoiceNumber(subscription);
-  const billedTo = subscription.billingSnapshot?.name ? subscription.billingSnapshot : customer;
   const startDate = new Date(subscription.startDate).toISOString();
   const endDate = new Date(subscription.endDate).toISOString();
   return {
@@ -76,20 +100,7 @@ export function publicGeideaPaymentStatus(subscription: any, customer?: any) {
     startDate,
     endDate,
     durationDays: Number(subscription.durationDays || 0),
-    invoice: subscription.paymentStatus === "paid" && billedTo ? {
-      invoiceNumber,
-      customerName: String(billedTo.name || billedTo.fullName || billedTo.username || "الطالب"),
-      customerEmail: String(billedTo.email || ""),
-      customerPhone: String(billedTo.phone || billedTo.whatsappPhone || ""),
-      planName: subscriptionPlanName(subscription.type),
-      amount: Number(subscription.price),
-      currency: String(subscription.currency || "SAR"),
-      paymentMethod: "geidea",
-      issueDate: new Date(subscription.paidAt || subscription.createdAt).toISOString(),
-      startDate,
-      endDate,
-      status: "active",
-    } : null,
+    invoice: subscription.paymentStatus === "paid" ? publicSubscriptionInvoice(subscription, customer) : null,
   };
 }
 
@@ -408,7 +419,7 @@ export async function deliverGeideaPurchaseNotification(paymentId: string) {
       price: Number(payment.price),
       endDate: payment.endDate,
       invoiceNumber: subscriptionInvoiceNumber(payment),
-      invoiceUrl: `${getGeideaPublicAppUrl()}/payment/geidea/return?paymentId=${encodeURIComponent(paymentId)}`,
+      invoiceUrl: createSubscriptionInvoiceUrl(payment) || undefined,
       paymentMethod: "Geidea",
       createInApp: payment.purchaseNotificationAttempts === 1,
     });

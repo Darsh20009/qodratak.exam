@@ -11,9 +11,11 @@ import {
   verifyGeideaCallbackPayload,
 } from "../services/geideaService";
 import {
+  publicSubscriptionInvoice,
   publicGeideaPaymentStatus,
   reconcileGeideaSubscriptionPayment,
 } from "../services/geideaPaymentService";
+import { verifyInvoiceAccessToken } from "../services/invoiceAccess";
 import { latestFutureSubscriptionEnd, subscriptionPeriod } from "../services/subscriptionBilling";
 
 type Plan = {
@@ -43,9 +45,10 @@ async function findSessionUser(req: Request): Promise<any | null> {
   return identityQuery.length ? User.findOne({ $or: identityQuery }) : null;
 }
 
-function paymentOwnerCandidates(userId: unknown): Array<string | mongoose.Types.ObjectId> {
+function paymentOwnerCandidates(userId: unknown): Array<string | number | mongoose.Types.ObjectId> {
   const value = String(userId);
-  const candidates: Array<string | mongoose.Types.ObjectId> = [value];
+  const candidates: Array<string | number | mongoose.Types.ObjectId> = [value];
+  if (/^\d+$/.test(value)) candidates.push(Number(value));
   if (mongoose.Types.ObjectId.isValid(value)) {
     candidates.push(new mongoose.Types.ObjectId(value));
   }
@@ -54,6 +57,46 @@ function paymentOwnerCandidates(userId: unknown): Array<string | mongoose.Types.
 
 export function createGeideaPaymentRouter(options: RouterOptions): Router {
   const router = Router();
+
+  router.get("/payments/geidea/invoices/:paymentId", async (req: Request, res: Response) => {
+    res.setHeader("Cache-Control", "private, no-store, max-age=0");
+    res.setHeader("X-Robots-Tag", "noindex, nofollow");
+    res.setHeader("Referrer-Policy", "no-referrer");
+    try {
+      const paymentId = String(req.params.paymentId || "");
+      const token = String(req.get("authorization") || "").replace(/^Bearer\s+/i, "");
+      if (!mongoose.Types.ObjectId.isValid(paymentId)) {
+        res.status(404).json({ error: "الفاتورة غير متاحة" });
+        return;
+      }
+      const payment = await Subscription.findById(paymentId);
+      if (!payment || !verifyInvoiceAccessToken(payment, token)) {
+        res.status(404).json({ error: "الفاتورة غير متاحة" });
+        return;
+      }
+      const isPaid = payment.paymentGateway === "geidea"
+        ? payment.paymentStatus === "paid"
+        : ["active", "expired"].includes(String(payment.status));
+      if (!isPaid) {
+        res.status(404).json({ error: "الفاتورة غير متاحة" });
+        return;
+      }
+      const customer = payment.billingSnapshot?.name
+        ? payment.billingSnapshot
+        : await User.findOne({ _id: { $in: paymentOwnerCandidates(payment.userId) } })
+          .select("fullName username email phone whatsappPhone")
+          .lean();
+      const invoice = publicSubscriptionInvoice(payment, customer);
+      if (!invoice) {
+        res.status(404).json({ error: "الفاتورة غير متاحة" });
+        return;
+      }
+      res.json({ invoice });
+    } catch (error) {
+      req.log.error({ error }, "Could not load a shared subscription invoice");
+      res.status(503).json({ error: "تعذر تحميل الفاتورة الآن" });
+    }
+  });
 
   router.post("/subscription/geidea/sessions", options.requireAuth, async (req: Request, res: Response) => {
     try {
