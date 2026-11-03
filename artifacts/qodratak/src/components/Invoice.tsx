@@ -205,6 +205,7 @@ export function Invoice({
                 <span className="font-bold text-gray-700">طريقة الدفع:</span> {
                   paymentMethod === 'bank' ? 'حوالة بنكية' : 
                   paymentMethod === 'card' ? 'بطاقة ائتمانية' : 
+                  paymentMethod === 'geidea' ? 'بطاقة عبر Geidea' :
                   paymentMethod === 'wallet' ? 'رصيد المحفظة' : 
                   paymentMethod === 'qodratak_pay' ? 'قدراتك باي' : 
                   paymentMethod

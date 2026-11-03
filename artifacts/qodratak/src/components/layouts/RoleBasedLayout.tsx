@@ -144,7 +144,7 @@ export function RoleBasedLayout({ children, role, user, onLogout }: RoleBasedLay
 
   return (
     <SidebarProvider style={sidebarStyle}>
-      <div className="flex h-screen w-full" dir={isInstitutionAdmin ? 'rtl' : undefined}>
+      <div className="qodratak-page-surface flex h-screen w-full" dir={isInstitutionAdmin ? 'rtl' : undefined}>
         <Sidebar
           side={isInstitutionAdmin ? 'right' : 'left'}
           dir={isInstitutionAdmin ? 'rtl' : undefined}

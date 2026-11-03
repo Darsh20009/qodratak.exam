@@ -75,7 +75,7 @@ export default function TeacherHomePage() {
   const m = data?.membership;
   // Any institutional teacher membership (even suspended) is scoped to director-assigned students only.
   if (m && m.role === "teacher" && m.status === "active") {
-    return <div className="min-h-[100dvh] bg-[#F7F4EE] dark:bg-[#0E0F17]"><InstitutionTeacherPortal /></div>;
+    return <div className="qodratak-page-surface min-h-[100dvh] bg-[#F7F4EE] dark:bg-[#0E0F17]"><InstitutionTeacherPortal /></div>;
   }
   return <TeacherSystemPage />;
 }

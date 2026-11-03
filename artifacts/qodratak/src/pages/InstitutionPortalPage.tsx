@@ -301,7 +301,7 @@ function Director() {
   const left = daysLeft(inst.freeEndDate);
 
   return (
-    <div className="min-h-full bg-[#F7F4EE] dark:bg-[#0E0F17]" dir="rtl">
+    <div className="qodratak-page-surface min-h-full bg-[#F7F4EE] dark:bg-[#0E0F17]" dir="rtl">
       <div className="mx-auto max-w-6xl space-y-6 px-4 py-8 sm:px-6">
         <header className="relative overflow-hidden rounded-3xl bg-[#171723] p-6 text-white sm:p-8">
           <div aria-hidden className="pointer-events-none absolute -left-16 -top-16 h-56 w-56 rounded-full border-[28px] border-[#91D7C5]/10" />

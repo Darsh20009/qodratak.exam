@@ -33,6 +33,7 @@ test("a paid invoice retains the billing identity captured at payment, not later
     paidAt: new Date("2026-10-13T10:01:00Z"),
     startDate: new Date("2026-10-13T10:01:00Z"),
     endDate: new Date("2027-01-13T10:01:00Z"),
+    paymentGateway: "geidea",
     paymentStatus: "paid",
     price: 117,
     type: "ربع سنوي",

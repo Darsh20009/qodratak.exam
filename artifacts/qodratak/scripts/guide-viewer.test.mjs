@@ -51,21 +51,24 @@ test("hide preferences are account- and role-scoped with existing student compat
   assert.equal(new Set(keys).size, 8);
 });
 
-test("all dashboard branches wire the full guide and authenticated identity", () => {
+test("only the student dashboard embeds the full guide film", () => {
   const student = readFileSync(new URL("../src/components/student/DashboardGuideFilm.tsx", import.meta.url), "utf8");
   assert.match(student, /audience="student"/);
   assert.doesNotMatch(student, /chapter="dashboard"/);
-  for (const [file, audience] of [
-    ["admin/AdminDashboard", "admin"], ["InstitutionPortalPage", "institution"],
-    ["TeacherHomePage", "teacher"],
-  ]) {
-    const page = readFileSync(new URL(`../src/pages/${file}.tsx`, import.meta.url), "utf8");
-    assert.match(page, new RegExp(`RoleGuideFilm audience="${audience}" viewerId=`));
-    assert.match(page, /displayName=/);
-  }
 
   const studentDashboard = readFileSync(new URL("../src/pages/student/DashboardPage.tsx", import.meta.url), "utf8");
   assert.equal((studentDashboard.match(/<DashboardGuideFilm /g) ?? []).length, 3);
+  for (const file of [
+    "../src/pages/admin/AdminDashboard.tsx",
+    "../src/pages/InstitutionPortalPage.tsx",
+    "../src/pages/TeacherHomePage.tsx",
+    "../src/pages/NewHome.tsx",
+    "../src/pages/HowItWorksPage.tsx",
+  ]) {
+    const page = readFileSync(new URL(file, import.meta.url), "utf8");
+    assert.doesNotMatch(page, /RoleGuideFilm|GuideFilmCard|<GuideFilm(?:\s|>)/);
+  }
+
   const studentShell = readFileSync(new URL("../src/components/student/StudentShell.tsx", import.meta.url), "utf8");
   assert.doesNotMatch(studentShell, /PageGuideFilm/);
   const app = readFileSync(new URL("../src/App.tsx", import.meta.url), "utf8");

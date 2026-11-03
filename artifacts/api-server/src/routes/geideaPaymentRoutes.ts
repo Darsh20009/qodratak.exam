@@ -83,9 +83,12 @@ export function createGeideaPaymentRouter(options: RouterOptions): Router {
       }
       const customer = payment.billingSnapshot?.name
         ? payment.billingSnapshot
-        : await User.findOne({ _id: { $in: paymentOwnerCandidates(payment.userId) } })
-          .select("fullName username email phone whatsappPhone")
-          .lean();
+        : await User.findOne({
+          _id: {
+            $in: paymentOwnerCandidates(payment.userId)
+              .filter((candidate): candidate is string | mongoose.Types.ObjectId => typeof candidate !== "number"),
+          },
+        }).select("fullName username email phone whatsappPhone").lean();
       const invoice = publicSubscriptionInvoice(payment, customer);
       if (!invoice) {
         res.status(404).json({ error: "الفاتورة غير متاحة" });

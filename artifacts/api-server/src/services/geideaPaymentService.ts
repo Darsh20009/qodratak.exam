@@ -12,7 +12,6 @@ import {
   fetchGeideaOrdersByMerchantReference,
   geideaPaymentIsFailed,
   geideaPaymentIsSuccessful,
-  getGeideaPublicAppUrl,
 } from "./geideaService";
 
 type PaymentStatus =

@@ -9,7 +9,7 @@ const styles = await readFile(new URL("../src/index.css", import.meta.url), "utf
 test("institution management sidebar opens from the right and uses RTL direction", () => {
   assert.match(layout, /side=\{isInstitutionAdmin \? 'right' : 'left'\}/);
   assert.match(layout, /dir=\{isInstitutionAdmin \? 'rtl' : undefined\}/);
-  assert.match(layout, /<div className="flex h-screen w-full" dir=\{isInstitutionAdmin \? 'rtl' : undefined\}>/);
+  assert.match(layout, /<div className="qodratak-page-surface flex h-screen w-full" dir=\{isInstitutionAdmin \? 'rtl' : undefined\}>/);
 });
 
 test("the institution sidebar panel keeps its custom background in both mobile and desktop layouts", () => {
