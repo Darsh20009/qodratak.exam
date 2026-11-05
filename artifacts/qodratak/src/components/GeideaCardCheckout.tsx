@@ -1,4 +1,4 @@
-import { useEffect, useId, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { CheckCircle2, CreditCard, ExternalLink, Loader2, RefreshCw, ShieldCheck, XCircle } from "lucide-react";
 import { apiRequest } from "@/lib/queryClient";
@@ -8,7 +8,6 @@ import {
   GEIDEA_RETURN_MESSAGE,
   type GeideaSession,
   formatArDate,
-  loadGeideaScript,
   readApiError,
   safeGeideaUrl,
   statusCopy,
@@ -23,38 +22,25 @@ type Props = {
   onDone?: () => void;
 };
 
-type Phase = "idle" | "creating" | "embedding" | "embedded" | "sdk_error" | "error";
+type Phase = "idle" | "creating" | "ready" | "error";
 
 export default function GeideaCardCheckout({ planKey, planLabel, price, onActiveChange, onDone }: Props) {
   const queryClient = useQueryClient();
-  const containerId = `geidea-${useId().replace(/[^a-zA-Z0-9]/g, "")}`;
   const [phase, setPhase] = useState<Phase>("idle");
   const [session, setSession] = useState<GeideaSession | null>(null);
   const [errorText, setErrorText] = useState("");
-  const [userClosed, setUserClosed] = useState(false);
-  const [embedRetry, setEmbedRetry] = useState(0);
-  const [applePaySupported, setApplePaySupported] = useState(false);
+  const [checkoutOpened, setCheckoutOpened] = useState(false);
   const attempt = useRef(0); // invalidates late responses / callbacks
   const inFlight = useRef(false);
   const onActiveRef = useRef(onActiveChange);
   onActiveRef.current = onActiveChange;
 
-  useEffect(() => {
-    const ApplePay = (window as any).ApplePaySession;
-    if (typeof ApplePay?.canMakePayments !== "function") return;
-    try {
-      setApplePaySupported(Boolean(ApplePay.canMakePayments()));
-    } catch {
-      setApplePaySupported(false);
-    }
-  }, []);
-
-  const payment = useGeideaPaymentStatus(session?.paymentId);
+  const payment = useGeideaPaymentStatus(checkoutOpened ? session?.paymentId : null);
   const status = payment.data?.status;
   const recheckRef = useRef(payment.recheck);
   recheckRef.current = payment.recheck;
 
-  const active = phase !== "idle" || Boolean(session);
+  const active = phase === "creating" || Boolean(session);
   useEffect(() => {
     onActiveRef.current?.(active);
   }, [active]);
@@ -66,6 +52,7 @@ export default function GeideaCardCheckout({ planKey, planLabel, price, onActive
     setSession(null);
     setPhase("idle");
     setErrorText("");
+    setCheckoutOpened(false);
   }, [planKey]);
 
   // Unmount: drop late results.
@@ -79,15 +66,16 @@ export default function GeideaCardCheckout({ planKey, planLabel, price, onActive
     const myAttempt = ++attempt.current;
     setPhase("creating");
     setErrorText("");
-    setUserClosed(false);
     try {
       const response = await apiRequest("POST", "/api/subscription/geidea/sessions", { planKey });
       const result = (await response.json()) as GeideaSession;
       if (myAttempt !== attempt.current) return;
-      if (!result?.paymentId || !result?.sessionId) throw new Error("لم تصل بيانات جلسة الدفع من Geidea.");
-      setSession({ ...result, checkoutUrl: safeGeideaUrl(result.checkoutUrl) || "" });
-      setEmbedRetry(0);
-      setPhase("embedding");
+      const checkoutUrl = safeGeideaUrl(result?.checkoutUrl);
+      if (!result?.paymentId || !result?.sessionId || !checkoutUrl) {
+        throw new Error("لم تصل بيانات صفحة الدفع الآمنة من Geidea.");
+      }
+      setSession({ ...result, checkoutUrl });
+      setPhase("ready");
     } catch (error) {
       if (myAttempt !== attempt.current) return;
       setErrorText(readApiError(error, "تعذر بدء الدفع"));
@@ -99,96 +87,21 @@ export default function GeideaCardCheckout({ planKey, planLabel, price, onActive
 
   const terminal = Boolean(status && status !== "session_created" && status !== "pending");
 
-  // Mount the SDK once per session / explicit retry. Display phase is NOT a dependency,
-  // so updating it never tears down the iframe. Cleared on session change, plan reset,
-  // explicit retry, terminal status, or unmount.
+  // Refresh immediately when the student returns from Geidea's separate browser page.
   useEffect(() => {
-    if (!session || terminal) return;
-    const myAttempt = attempt.current;
-    let disposed = false;
-    const live = () => !disposed && myAttempt === attempt.current;
-    setPhase("embedding");
-
-    // The SDK refuses window !== top (checkWindowPosition). In nested contexts
-    // (e.g. preview iframes) embed the official hosted checkout directly.
-    let nested = true;
-    try {
-      nested = window.self !== window.top;
-    } catch {
-      nested = true;
-    }
-    if (nested) {
-      const hosted = safeGeideaUrl(session.checkoutUrl);
-      const container = document.getElementById(containerId);
-      if (!hosted || !container) {
-        setPhase("sdk_error");
-        return () => {
-          disposed = true;
-        };
-      }
-      const url = new URL(hosted);
-      url.searchParams.set("parentOrigin", window.location.origin);
-      const providerOrigin = url.origin;
-      const frame = document.createElement("iframe");
-      frame.src = url.toString();
-      frame.title = "نموذج الدفع الآمن من Geidea";
-      frame.allow = "payment *";
-      frame.style.width = "100%";
-      frame.style.minHeight = "650px";
-      frame.style.border = "0";
-      frame.onload = () => {
-        if (live()) setPhase("embedded");
-      };
-      container.innerHTML = "";
-      container.appendChild(frame);
-      // Provider messages are hints only: exact origin + our live iframe, then recheck.
-      const onMessage = (event: MessageEvent) => {
-        if (!live()) return;
-        if (event.origin !== providerOrigin || event.source !== frame.contentWindow) return;
-        recheckRef.current();
-      };
-      window.addEventListener("message", onMessage);
-      return () => {
-        disposed = true;
-        window.removeEventListener("message", onMessage);
-        frame.onload = null;
-        frame.remove();
-      };
-    }
-
-    loadGeideaScript()
-      .then(() => {
-        if (!live() || !window.GeideaCheckout) return;
-        const container = document.getElementById(containerId);
-        if (!container) return;
-        container.innerHTML = "";
-        // Callbacks are UX hints only; the server decides payment state.
-        // They stay valid until this effect's cleanup runs.
-        const checkout = new window.GeideaCheckout(
-          () => { if (live()) recheckRef.current(); },
-          () => { if (live()) recheckRef.current(); },
-          () => {
-            if (!live()) return;
-            setUserClosed(true);
-            recheckRef.current();
-          },
-        );
-        checkout.startPayment(session.sessionId, null, containerId);
-        setPhase("embedded");
-      })
-      .catch(() => {
-        if (live()) setPhase("sdk_error");
-      });
-    return () => {
-      // The public SDK exposes no teardown API; removing its iframe and gating
-      // callbacks via live() prevents late updates from abandoned instances.
-      disposed = true;
-      const container = document.getElementById(containerId);
-      if (container) container.innerHTML = "";
+    if (!checkoutOpened || !session || terminal) return;
+    const recheckWhenVisible = () => {
+      if (document.visibilityState === "visible") recheckRef.current();
     };
-  }, [session, embedRetry, terminal, containerId]);
+    window.addEventListener("focus", recheckWhenVisible);
+    document.addEventListener("visibilitychange", recheckWhenVisible);
+    return () => {
+      window.removeEventListener("focus", recheckWhenVisible);
+      document.removeEventListener("visibilitychange", recheckWhenVisible);
+    };
+  }, [checkoutOpened, session, terminal]);
 
-  // Same-origin hint from the return page loaded inside the iframe.
+  // Same-origin return-page messages only trigger a server-side status check.
   useEffect(() => {
     if (!session) return;
     const handler = (event: MessageEvent) => {
@@ -206,7 +119,7 @@ export default function GeideaCardCheckout({ planKey, planLabel, price, onActive
     setSession(null);
     setPhase("idle");
     setErrorText("");
-    setUserClosed(false);
+    setCheckoutOpened(false);
     queryClient.removeQueries({ queryKey: ["/api/subscription/geidea/payments", session?.paymentId] });
   };
 
@@ -241,7 +154,7 @@ export default function GeideaCardCheckout({ planKey, planLabel, price, onActive
       <div className="space-y-3 rounded-2xl border border-border bg-card p-4 text-foreground">
         <h3 className="font-black">انتهت مهلة انتظار تأكيد الدفع</h3>
         <p className="text-sm leading-7 text-muted-foreground">
-          لم يصل تأكيد يمكن الاعتماد عليه خلال عشر دقائق، فتوقف نموذج الدفع هنا.
+          لم يصل تأكيد يمكن الاعتماد عليه خلال عشر دقائق، فتوقفت المتابعة التلقائية هنا.
           إذا ظهر خصم في البنك فلا تكرر الدفع؛ سيواصل الخادم التحقق من أي تأكيد متأخر،
           ويمكنك متابعة العملية من حسابك أو التواصل مع الدعم.
         </p>
@@ -271,73 +184,92 @@ export default function GeideaCardCheckout({ planKey, planLabel, price, onActive
 
   if (!session) {
     return (
-      <div className="rounded-2xl border border-border bg-card p-4 text-card-foreground">
-        <p className="text-sm font-bold leading-6">أكمل الدفع داخل نموذج Geidea الآمن: مدى، Visa، Mastercard، وأي وسيلة تظهر لحسابك وجهازك.</p>
-        {applePaySupported && (
-          <p className="mt-2 rounded-xl border border-[#FF8A70]/30 bg-[#FF8A70]/10 px-3 py-2 text-xs font-bold text-foreground">
-            جهازك يدعم Apple Pay؛ سيظهر الخيار داخل Geidea إذا كان مفعّلًا لحساب التاجر.
-          </p>
-        )}
-        {phase === "error" && <p className="mt-2 text-xs font-bold text-red-500">{errorText}</p>}
+      <div className="overflow-hidden rounded-2xl border border-border bg-card text-card-foreground">
+        <div className="flex items-start gap-3 bg-[#0D1B2A] p-4 text-white">
+          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#FF8A70] text-[#0D1B2A]">
+            <ShieldCheck className="h-5 w-5" />
+          </div>
+          <div>
+            <p className="font-black">دفع آمن في صفحة مستقلة</p>
+            <p className="mt-1 text-xs leading-6 text-white/70">
+              لن نعرض نموذج Geidea داخل إطار. ستفتح صفحة الدفع مباشرةً، وقد يظهر Apple Pay حسب جهازك وإعدادات التاجر.
+            </p>
+          </div>
+        </div>
+        <div className="p-4">
+          <div className="flex flex-wrap gap-2 text-[11px] font-bold text-muted-foreground">
+            {["مدى", "Visa", "Mastercard", "Apple Pay"].map((method) => (
+              <span key={method} className="rounded-full border border-border bg-background px-3 py-1.5">{method}</span>
+            ))}
+          </div>
+          {phase === "error" && (
+            <p className="mt-3 rounded-xl border border-red-500/20 bg-red-500/5 p-3 text-xs font-bold leading-6 text-red-600 dark:text-red-300">
+              {errorText}
+            </p>
+          )}
         <Button
           type="button"
           onClick={start}
           disabled={phase === "creating" || !planKey}
+          data-testid="button-geidea-prepare-checkout"
           className="mt-4 h-11 w-full rounded-xl bg-[#FF8A70] font-black text-[#17202C] hover:bg-[#ff9b83]"
         >
           {phase === "creating" ? <Loader2 className="ml-2 h-4 w-4 animate-spin" /> : <CreditCard className="ml-2 h-4 w-4" />}
-          {phase === "creating" ? "جارٍ تجهيز الدفع..." : phase === "error" ? "إعادة المحاولة" : `ادفع ${price} ريال بالبطاقة`}
+          {phase === "creating" ? "جارٍ تجهيز صفحة الدفع..." : phase === "error" ? "إعادة التجهيز" : `تجهيز الدفع · ${price} ر.س`}
         </Button>
-        <p className="mt-3 flex items-center justify-center gap-1 text-center text-[11px] font-medium text-muted-foreground">
-          <ShieldCheck className="h-3.5 w-3.5" /> لا يتم التفعيل إلا بعد تأكيد خادم قدراتك من Geidea.
-        </p>
+          <p className="mt-3 flex items-center justify-center gap-1 text-center text-[11px] font-medium leading-5 text-muted-foreground">
+            <ShieldCheck className="h-3.5 w-3.5 shrink-0" /> لا يُفعّل الاشتراك إلا بعد تأكيد خادم قدراتك من Geidea.
+          </p>
+        </div>
       </div>
     );
   }
 
   const copy = statusCopy(status, payment.pollingExhausted);
   return (
-    <div className="space-y-3">
-        <div className="flex items-center justify-between rounded-xl border border-border bg-card px-3 py-2 text-xs font-bold text-card-foreground">
-        <span>{planLabel} · {price} ريال</span>
-          <button type="button" onClick={reset} className="text-muted-foreground underline underline-offset-4">
-          إلغاء وتغيير الباقة
-        </button>
+    <div className="space-y-3" data-testid="geidea-top-level-checkout">
+      <div className="flex items-center gap-3 rounded-2xl border border-border bg-card p-4 text-card-foreground">
+        <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-[#FF8A70]/15 text-[#D65F48] dark:text-[#FF8A70]">
+          <CreditCard className="h-5 w-5" />
+      </div>
+        <div className="min-w-0 flex-1">
+          <p className="font-black">{checkoutOpened ? copy.title : "صفحة الدفع جاهزة"}</p>
+          <p className="mt-1 text-xs leading-6 text-muted-foreground">
+            {checkoutOpened ? copy.body : `باقة ${planLabel} · ${price.toLocaleString("ar-SA")} ر.س`}
+          </p>
+        </div>
       </div>
 
-      {phase === "embedding" && (
-        <div className="flex items-center justify-center gap-2 rounded-2xl border border-border bg-card py-3 text-xs font-bold text-muted-foreground">
-          <Loader2 className="h-4 w-4 animate-spin" /> جارٍ تحميل نموذج الدفع...
-        </div>
-      )}
-      {phase === "sdk_error" && (
-        <div className="rounded-2xl border border-amber-200 bg-amber-50 p-3 text-xs font-bold text-amber-800">
-          تعذر تحميل نموذج الدفع داخل الصفحة.
-          <button type="button" onClick={() => setEmbedRetry((n) => n + 1)} className="mr-2 underline underline-offset-4">
-            إعادة التحميل
-          </button>
-        </div>
-      )}
-      <div
-        id={containerId}
-        className={`w-full overflow-hidden rounded-2xl bg-white [&_iframe]:!w-full [&_iframe]:min-h-[520px] ${phase === "sdk_error" ? "hidden" : "min-h-[520px]"}`}
-      />
+      <a
+        href={session.checkoutUrl}
+        target="_blank"
+        rel="noopener noreferrer"
+        onClick={() => setCheckoutOpened(true)}
+        data-testid="link-geidea-open-top-level"
+        className="flex min-h-12 w-full items-center justify-center gap-2 rounded-xl bg-[#FF8A70] px-4 py-3 text-sm font-black text-[#17202C] transition hover:bg-[#ff9b83] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+      >
+        <CreditCard className="h-4 w-4" />
+        فتح صفحة الدفع الآمنة
+        <ExternalLink className="h-4 w-4" />
+      </a>
 
-      <div className="rounded-xl border border-border bg-card p-3 text-xs font-bold leading-6 text-muted-foreground">
-        <p className="text-foreground">{userClosed ? "أغلقت نموذج الدفع" : copy.title}</p>
-        <p>{userClosed ? "إن لم تكمل الدفع فلن يتم الخصم. يمكنك إلغاء العملية أو إعادة التحقق." : copy.body}</p>
-        <div className="mt-2 flex flex-wrap gap-3">
-          <button type="button" onClick={() => payment.recheck()} className="inline-flex items-center gap-1 underline underline-offset-4">
-            <RefreshCw className={`h-3.5 w-3.5 ${payment.isFetching ? "animate-spin" : ""}`} /> إعادة التحقق
-          </button>
-          {session.checkoutUrl && (
-            <a href={session.checkoutUrl} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 underline underline-offset-4">
-              فتح صفحة الدفع الآمنة <ExternalLink className="h-3.5 w-3.5" />
-            </a>
-          )}
-        </div>
-        <p className="mt-1 text-[11px] text-muted-foreground">استخدم الرابط إذا لم يعمل التحقق الثلاثي داخل النافذة.</p>
-      </div>
+      {checkoutOpened && (
+        <Button
+          type="button"
+          variant="outline"
+          onClick={() => payment.recheck()}
+          disabled={payment.isFetching}
+          className="h-11 w-full rounded-xl border-border"
+        >
+          <RefreshCw className={`ml-2 h-4 w-4 ${payment.isFetching ? "animate-spin" : ""}`} />
+          أتممت الدفع؟ تحقق من الحالة
+        </Button>
+      )}
+
+      <p className="flex items-start gap-2 rounded-xl bg-muted/70 p-3 text-[11px] font-medium leading-5 text-muted-foreground">
+        <ShieldCheck className="mt-0.5 h-3.5 w-3.5 shrink-0 text-emerald-600" />
+        Apple Pay يظهر فقط إذا كان متاحًا لجهازك ومفعّلًا لدى التاجر. التفعيل يعتمد على تأكيد Geidea من الخادم.
+      </p>
     </div>
   );
 }

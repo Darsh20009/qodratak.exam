@@ -10,6 +10,7 @@ export default function GeideaPaymentReturnPage() {
   const params = new URLSearchParams(search);
   const paymentId = params.get("paymentId") || "";
   const embedded = params.get("embedded") === "1";
+  const popup = params.get("popup") === "1";
   const paymentQuery = useGeideaPaymentStatus(paymentId);
   const status = paymentQuery.data?.status;
   const isPaid = status === "paid";
@@ -17,13 +18,19 @@ export default function GeideaPaymentReturnPage() {
 
   // Hint only: the parent polls the server itself.
   useEffect(() => {
-    if (!embedded || !paymentId || window.parent === window) return;
+    if (!paymentId) return;
     try {
-      window.parent.postMessage({ type: GEIDEA_RETURN_MESSAGE, paymentId, status: status || null }, window.location.origin);
+      const message = { type: GEIDEA_RETURN_MESSAGE, paymentId, status: status || null };
+      if (embedded && window.parent !== window) {
+        window.parent.postMessage(message, window.location.origin);
+      }
+      if (popup && window.opener && window.opener !== window) {
+        window.opener.postMessage(message, window.location.origin);
+      }
     } catch {
-      // cross-origin parent: ignore
+      // Cross-origin parent or opener: ignore; the server status remains authoritative.
     }
-  }, [embedded, paymentId, status]);
+  }, [embedded, popup, paymentId, status]);
 
   const copy = !paymentId
     ? { title: "رابط العودة غير مكتمل", body: "لا يوجد رقم عملية يمكن التحقق منه." }
@@ -41,6 +48,11 @@ export default function GeideaPaymentReturnPage() {
           <p className="text-xs font-black tracking-[0.16em] text-emerald-500">قدراتك · الدفع بالبطاقة</p>
           <h1 className="mt-3 text-2xl font-black sm:text-3xl">{copy.title}</h1>
           <p className="mx-auto mt-3 max-w-sm text-sm leading-7 text-muted-foreground">{copy.body}</p>
+          {popup && (
+            <p className="mx-auto mt-4 max-w-sm rounded-xl bg-muted px-4 py-3 text-xs font-bold leading-6 text-muted-foreground">
+              يمكنك العودة إلى تبويب قدراتك؛ حالة الدفع تُراجع من الخادم ولا تعتمد على هذه الصفحة.
+            </p>
+          )}
 
           {paymentQuery.data && (
             <div className="mt-6 space-y-2 rounded-2xl bg-muted p-4 text-right text-sm">

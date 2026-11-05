@@ -2,7 +2,6 @@ import { useEffect, useRef, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 
 export const GEIDEA_HOST = "www.ksamerchant.geidea.net";
-export const GEIDEA_SCRIPT_URL = `https://${GEIDEA_HOST}/hpp/geideaCheckout.min.js`;
 export const GEIDEA_RETURN_MESSAGE = "qodratak:geidea-return";
 
 export type GeideaStatus =
@@ -62,46 +61,6 @@ export function safeGeideaUrl(raw?: string | null): string | null {
   } catch {
     return null;
   }
-}
-
-declare global {
-  interface Window {
-    GeideaCheckout?: new (
-      onSuccess: (data?: unknown) => void,
-      onError: (data?: unknown) => void,
-      onCancel: (data?: unknown) => void,
-    ) => { startPayment: (sessionId: string, options: null, containerId: string) => void };
-  }
-}
-
-let scriptPromise: Promise<void> | null = null;
-
-/** Loads the Geidea SDK once; a failed load is forgotten so the next call retries. */
-export function loadGeideaScript(): Promise<void> {
-  if (window.GeideaCheckout) return Promise.resolve();
-  if (scriptPromise) return scriptPromise;
-  scriptPromise = new Promise<void>((resolve, reject) => {
-    document.querySelectorAll(`script[data-geidea-sdk]`).forEach((node) => node.remove());
-    const script = document.createElement("script");
-    script.src = GEIDEA_SCRIPT_URL;
-    script.async = true;
-    script.dataset.geideaSdk = "1";
-    const timer = window.setTimeout(() => fail(new Error("timeout")), 20000);
-    function fail(err: Error) {
-      window.clearTimeout(timer);
-      scriptPromise = null;
-      script.remove();
-      reject(err);
-    }
-    script.onload = () => {
-      window.clearTimeout(timer);
-      if (window.GeideaCheckout) resolve();
-      else fail(new Error("sdk-missing"));
-    };
-    script.onerror = () => fail(new Error("load-failed"));
-    document.head.appendChild(script);
-  });
-  return scriptPromise;
 }
 
 export function readApiError(error: unknown, fallback: string) {

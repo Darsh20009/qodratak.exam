@@ -17,8 +17,8 @@ Do not infer sandbox versus live from the KSA hostname: real live credentials wo
 
 **How to apply:** Keep payment-mode changes explicit, save credentials only through secret tooling, and distinguish a working preview checkout from a deployed site's configuration. Never test a live charge without separate authorization.
 
-Geidea's KSA JavaScript checkout rejects pages that are themselves inside another iframe, even though the HPP guide documents drop-in embedding.
+Geidea checkout must open as a top-level browser page rather than inside an app iframe. The student app can use its branded mobile bottom sheet to prepare the checkout, then open the validated KSA HPP URL in a separate browser tab. Apple Pay availability still depends on the device/browser, secure domain setup, and merchant configuration.
 
-**Why:** Its public SDK checks `window !== top` before mounting. Replit's framed preview therefore differs from a standalone production page. Hot-reloading React payment files during verification can also reset an unpaid checkout and look like a provider failure.
+**Why:** Geidea's public SDK rejects nested frames, and Apple Pay requires a supported top-level browser context. A hosted-page redirect also avoids presenting the provider form inside the framed Replit preview.
 
-**How to apply:** Use the documented SDK on standalone pages and a validated official hosted iframe with server-owned status checks in nested previews. Keep a secure external fallback for browser restrictions. Never trust iframe messages as payment evidence; do not edit checkout modules during its browser verification.
+**How to apply:** Create sessions and verify final status on the server, accept only the official KSA hosted-checkout URL, and launch it from a direct user click with a top-level link. Treat return-page messages only as hints; never infer payment from browser navigation or promise Apple Pay before merchant-side support is verified.

@@ -161,7 +161,7 @@ export function createGeideaPaymentRouter(options: RouterOptions): Router {
           amount,
           merchantReferenceId,
           callbackUrl: `${publicAppUrl}/api/payments/geidea/callback`,
-          returnUrl: `${publicAppUrl}/payment/geidea/return?paymentId=${encodeURIComponent(String(payment._id))}&embedded=1`,
+          returnUrl: `${publicAppUrl}/payment/geidea/return?paymentId=${encodeURIComponent(String(payment._id))}&popup=1`,
           customer: {
             email: user.email || undefined,
             phoneNumber: user.whatsappPhone || user.phone || undefined,

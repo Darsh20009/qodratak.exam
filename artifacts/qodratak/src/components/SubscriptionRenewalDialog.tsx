@@ -155,8 +155,9 @@ export default function SubscriptionRenewalDialog({
     <Dialog open={open} onOpenChange={close}>
       <DialogContent
         dir="rtl"
-        className="max-sm:fixed max-sm:inset-x-0 max-sm:bottom-0 max-sm:left-0 max-sm:top-auto max-sm:w-full max-sm:max-w-none max-sm:translate-x-0 max-sm:translate-y-0 max-sm:rounded-t-[1.75rem] max-sm:rounded-b-none max-sm:border-b-0 max-sm:max-h-[94dvh] w-[calc(100vw-1.5rem)] max-w-lg overflow-hidden rounded-[1.75rem] border border-border bg-background p-0 text-foreground shadow-2xl"
+        className="max-sm:fixed max-sm:inset-x-0 max-sm:bottom-0 max-sm:left-0 max-sm:top-auto max-sm:w-full max-sm:max-w-none max-sm:translate-x-0 max-sm:translate-y-0 max-sm:rounded-t-[1.75rem] max-sm:rounded-b-none max-sm:border-b-0 max-sm:max-h-[94dvh] max-sm:data-[state=open]:slide-in-from-bottom max-sm:data-[state=closed]:slide-out-to-bottom w-[calc(100vw-1.5rem)] max-w-lg overflow-hidden rounded-[1.75rem] border border-border bg-background p-0 pb-[env(safe-area-inset-bottom)] text-foreground shadow-2xl"
       >
+        <div className="absolute left-1/2 top-2 z-20 h-1.5 w-12 -translate-x-1/2 rounded-full bg-[#FF8A70]/70 sm:hidden" aria-hidden="true" />
         <DialogHeader className="relative overflow-hidden bg-[#0D1B2A] px-5 pb-5 pt-6 text-right text-white">
           <div className="absolute -left-10 -top-12 h-32 w-32 rounded-full bg-[#FF8A70]/20 blur-2xl" />
           <button
