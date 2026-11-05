@@ -2371,3 +2371,40 @@ svg.lucide-sparkles-icon {
   animation: approved-reviews-marquee var(--approved-reviews-duration, 40s) linear infinite !important;
   will-change: transform;
 }
+
+@keyframes subscription-sheet-enter {
+  from {
+    opacity: 0;
+    translate: 0 100%;
+  }
+  to {
+    opacity: 1;
+    translate: 0 0;
+  }
+}
+
+@keyframes subscription-sheet-exit {
+  from {
+    opacity: 1;
+    translate: 0 0;
+  }
+  to {
+    opacity: 0;
+    translate: 0 100%;
+  }
+}
+
+.subscription-renewal-sheet[data-state="open"] {
+  animation: subscription-sheet-enter 320ms cubic-bezier(0.16, 1, 0.3, 1) both !important;
+}
+
+.subscription-renewal-sheet[data-state="closed"] {
+  animation: subscription-sheet-exit 200ms ease-in both !important;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .subscription-renewal-sheet[data-state="open"],
+  .subscription-renewal-sheet[data-state="closed"] {
+    animation-duration: 0.01ms !important;
+  }
+}
