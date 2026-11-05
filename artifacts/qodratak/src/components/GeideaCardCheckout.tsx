@@ -32,6 +32,7 @@ export default function GeideaCardCheckout({ planKey, planLabel, price, onActive
   const [checkoutOpened, setCheckoutOpened] = useState(false);
   const attempt = useRef(0); // invalidates late responses / callbacks
   const inFlight = useRef(false);
+  const paymentWindowRef = useRef<Window | null>(null);
   const onActiveRef = useRef(onActiveChange);
   onActiveRef.current = onActiveChange;
 
@@ -58,25 +59,69 @@ export default function GeideaCardCheckout({ planKey, planLabel, price, onActive
   // Unmount: drop late results.
   useEffect(() => () => {
     attempt.current += 1;
+    const pendingWindow = paymentWindowRef.current;
+    paymentWindowRef.current = null;
+    if (pendingWindow && !pendingWindow.closed) pendingWindow.close();
   }, []);
 
   const start = async () => {
     if (inFlight.current || session) return;
     inFlight.current = true;
     const myAttempt = ++attempt.current;
+    // Reserve a top-level browser tab during the user's click. Navigating it
+    // after session creation avoids popup blockers and removes the second step.
+    const paymentWindow = window.open("about:blank", "_blank");
+    paymentWindowRef.current = paymentWindow;
+    if (paymentWindow) {
+      try {
+        paymentWindow.opener = null;
+        paymentWindow.document.title = "الدفع الآمن | قدراتك";
+        const body = paymentWindow.document.body;
+        if (body) {
+          body.dir = "rtl";
+          body.style.cssText = "margin:0;min-height:100vh;display:grid;place-items:center;background:#f7f8fa;color:#0d1b2a;font:700 16px system-ui,sans-serif";
+          const message = paymentWindow.document.createElement("p");
+          message.textContent = "جارٍ تجهيز صفحة الدفع الآمنة...";
+          body.replaceChildren(message);
+        }
+      } catch {
+        // Some browsers restrict access to a newly opened tab; navigation is
+        // still attempted once the server returns the validated checkout URL.
+      }
+    }
     setPhase("creating");
     setErrorText("");
     try {
       const response = await apiRequest("POST", "/api/subscription/geidea/sessions", { planKey });
       const result = (await response.json()) as GeideaSession;
-      if (myAttempt !== attempt.current) return;
+      if (myAttempt !== attempt.current) {
+        if (paymentWindow && !paymentWindow.closed) paymentWindow.close();
+        if (paymentWindowRef.current === paymentWindow) paymentWindowRef.current = null;
+        return;
+      }
       const checkoutUrl = safeGeideaUrl(result?.checkoutUrl);
       if (!result?.paymentId || !result?.sessionId || !checkoutUrl) {
         throw new Error("لم تصل بيانات صفحة الدفع الآمنة من Geidea.");
       }
       setSession({ ...result, checkoutUrl });
       setPhase("ready");
+      setCheckoutOpened(true);
+      if (paymentWindow && !paymentWindow.closed) {
+        paymentWindow.location.replace(checkoutUrl);
+        if (paymentWindowRef.current === paymentWindow) paymentWindowRef.current = null;
+      } else {
+        paymentWindowRef.current = null;
+        // If the browser blocks a new tab (common in installed web apps),
+        // continue in the current top-level page instead of requiring another click.
+        window.location.assign(checkoutUrl);
+      }
     } catch (error) {
+      try {
+        if (paymentWindow && !paymentWindow.closed) paymentWindow.close();
+      } catch {
+        // Ignore browser restrictions while preserving the visible error.
+      }
+      if (paymentWindowRef.current === paymentWindow) paymentWindowRef.current = null;
       if (myAttempt !== attempt.current) return;
       setErrorText(readApiError(error, "تعذر بدء الدفع"));
       setPhase("error");
@@ -190,9 +235,9 @@ export default function GeideaCardCheckout({ planKey, planLabel, price, onActive
             <ShieldCheck className="h-5 w-5" />
           </div>
           <div>
-            <p className="font-black">دفع آمن في صفحة مستقلة</p>
+            <p className="font-black">انتقال مباشر إلى صفحة الدفع الآمنة</p>
             <p className="mt-1 text-xs leading-6 text-white/70">
-              لن نعرض نموذج Geidea داخل إطار. ستفتح صفحة الدفع مباشرةً، وقد يظهر Apple Pay حسب جهازك وإعدادات التاجر.
+              ستفتح صفحة Geidea خارج التطبيق تلقائيًا بعد تجهيز العملية، وقد يظهر Apple Pay حسب جهازك وإعدادات التاجر.
             </p>
           </div>
         </div>
@@ -215,7 +260,7 @@ export default function GeideaCardCheckout({ planKey, planLabel, price, onActive
           className="mt-4 h-11 w-full rounded-xl bg-[#FF8A70] font-black text-[#17202C] hover:bg-[#ff9b83]"
         >
           {phase === "creating" ? <Loader2 className="ml-2 h-4 w-4 animate-spin" /> : <CreditCard className="ml-2 h-4 w-4" />}
-          {phase === "creating" ? "جارٍ تجهيز صفحة الدفع..." : phase === "error" ? "إعادة التجهيز" : `تجهيز الدفع · ${price} ر.س`}
+          {phase === "creating" ? "جارٍ فتح صفحة الدفع الآمنة..." : phase === "error" ? "إعادة المحاولة" : `ادفع الآن · ${price} ر.س`}
         </Button>
           <p className="mt-3 flex items-center justify-center gap-1 text-center text-[11px] font-medium leading-5 text-muted-foreground">
             <ShieldCheck className="h-3.5 w-3.5 shrink-0" /> لا يُفعّل الاشتراك إلا بعد تأكيد خادم قدراتك من Geidea.

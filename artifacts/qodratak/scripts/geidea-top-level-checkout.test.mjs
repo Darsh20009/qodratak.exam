@@ -13,12 +13,16 @@ test("Geidea checkout opens its validated hosted URL as a top-level page, never 
   assert.match(checkout, /target="_blank"/);
   assert.match(checkout, /rel="noopener noreferrer"/);
   assert.match(checkout, /onClick=\{\(\) => setCheckoutOpened\(true\)\}/);
+  assert.match(checkout, /window\.open\("about:blank", "_blank"\)/);
+  assert.match(checkout, /paymentWindow\.location\.replace\(checkoutUrl\)/);
+  assert.match(checkout, /window\.location\.assign\(checkoutUrl\)/);
   assert.doesNotMatch(checkout, /<iframe|createElement\(["']iframe|loadGeideaScript|GeideaCheckout/);
 });
 
 test("subscription dialog slides up from the bottom at every screen size", () => {
-  assert.match(renewalDialog, /subscription-renewal-sheet fixed inset-x-0 bottom-0/);
+  assert.match(renewalDialog, /subscription-renewal-sheet fixed bottom-0 left-0 right-0 top-auto z-50 mx-auto/);
   assert.match(renewalDialog, /!translate-y-0/);
+  assert.match(renewalDialog, /!translate-x-0/);
   assert.match(renewalDialog, /safe-area-inset-bottom/);
   assert.match(globalCss, /@keyframes subscription-sheet-enter/);
   assert.match(globalCss, /translate: 0 100%/);
@@ -27,6 +31,12 @@ test("subscription dialog slides up from the bottom at every screen size", () =>
   assert.match(globalCss, /both !important/);
   assert.match(renewalDialog, /safe-area-inset-bottom/);
   assert.match(renewalDialog, /rounded-full bg-\[#FF8A70\]\/70/);
+});
+
+test("student mobile header reserves the installed app safe area", async () => {
+  const navigation = await readFile(new URL("../src/components/student/StudentNavigation.tsx", import.meta.url), "utf8");
+  assert.match(navigation, /height: "calc\(3\.5rem \+ env\(safe-area-inset-top, 0px\)\)"/);
+  assert.match(navigation, /paddingTop: "env\(safe-area-inset-top, 0px\)"/);
 });
 
 test("Geidea return page shows popup guidance and only sends server-check hints", () => {

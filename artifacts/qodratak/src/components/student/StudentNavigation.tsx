@@ -190,7 +190,13 @@ export function StudentNavigation({ hidden = false }: { hidden?: boolean }) {
        <MoreDirectory path={path} instance="desktop" open={directoryOpen} onOpenChange={setDirectoryOpen} search={directorySearch} onSearchChange={setDirectorySearch} />
     </aside>
     <div dir="rtl" className="md:hidden">
-      <header className="sticky top-0 z-30 flex h-14 items-center justify-between border-b border-border bg-background/95 px-4 backdrop-blur">
+      <header
+        className="sticky top-0 z-30 flex items-center justify-between border-b border-border bg-background/95 px-4 backdrop-blur"
+        style={{
+          height: "calc(3.5rem + env(safe-area-inset-top, 0px))",
+          paddingTop: "env(safe-area-inset-top, 0px)",
+        }}
+      >
         <Link href="/" aria-label="قدراتك" className="flex items-center gap-2">
           <span className="relative block h-8 w-8 shrink-0">
             <img src="/qodratak-icon-light.png" alt="" className="h-full w-full object-contain dark:hidden" />

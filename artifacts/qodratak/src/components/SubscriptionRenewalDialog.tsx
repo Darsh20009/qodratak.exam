@@ -155,7 +155,7 @@ export default function SubscriptionRenewalDialog({
     <Dialog open={open} onOpenChange={close}>
       <DialogContent
         dir="rtl"
-        className="subscription-renewal-sheet fixed inset-x-0 bottom-0 left-1/2 top-auto z-50 grid max-h-[94dvh] w-[calc(100vw-1.5rem)] -translate-x-1/2 !translate-y-0 gap-4 overflow-hidden rounded-t-[1.75rem] rounded-b-none border border-border border-b-0 bg-background p-0 pb-[env(safe-area-inset-bottom)] text-foreground shadow-2xl max-sm:w-full sm:max-w-lg"
+        className="subscription-renewal-sheet fixed bottom-0 left-0 right-0 top-auto z-50 mx-auto grid max-h-[94dvh] w-[calc(100vw-1.5rem)] !translate-x-0 !translate-y-0 gap-4 overflow-hidden rounded-t-[1.75rem] rounded-b-none border border-border border-b-0 bg-background p-0 pb-[env(safe-area-inset-bottom)] text-foreground shadow-2xl max-sm:w-full sm:max-w-lg"
       >
         <div className="absolute left-1/2 top-2 z-20 h-1.5 w-12 -translate-x-1/2 rounded-full bg-[#FF8A70]/70" aria-hidden="true" />
         <DialogHeader className="relative overflow-hidden bg-[#0D1B2A] px-5 pb-5 pt-6 text-right text-white">
